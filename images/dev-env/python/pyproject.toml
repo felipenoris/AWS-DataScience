@@ -27,17 +27,22 @@
 # `requires-python` is `>=3.13` and the Dockerfile's PYTHON_VERSION matches it. Raising it again is
 # the same edit in reverse, and TensorFlow is the row to check first.
 #
-# WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - JupyterLab itself, its
-# extensions, the Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor
-# extensions - belongs to the base environment, which runs the UI this kernel talks to. Installing a
-# second copy here would buy nothing and would make two JupyterLab versions answer the same question.
-# `ipykernel` is the one server-facing package this environment needs, and it is not optional: it is
-# how the kernel starts.
+# WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - the JupyterLab extensions, the
+# Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor extensions -
+# belongs to the base environment, which runs the UI this kernel talks to. `ipykernel` is the one
+# server-facing package this environment asks for by name, and it is not optional: it is how the
+# kernel starts.
+#
+# `jupyterlab`, `notebook` and `jupyter-server` ARE here all the same, and not by choice: measured
+# 2026-09-10, `aws-glue-sessions` depends on `notebook`, and `sagemaker-studio-dataengineering-sessions`
+# reaches the same place through `sparkmagic`. They are files on disk that nothing starts - the server
+# a space runs is the base environment's, and this environment is only ever a kernel - so the cost is
+# image size and the risk is a reader believing two servers compete. They do not.
 #
 # THE COST OF THIS LIST IS THE IMAGE, and it was measured from the lock rather than guessed
-# (2026-09-10, summing the linux x86_64 / cp313 wheels the lock names): **about 1.5 GiB** of wheels -
-# 1.27 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
-# none. TensorFlow alone is 546 MiB of that. The first resolution of this list, before the two CPU
+# (2026-09-10, summing the linux x86_64 / cp313 wheels the lock names): **about 1.6 GiB** of wheels -
+# 1.35 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
+# none. TensorFlow alone is 546 MiB of that; 460 packages resolve in all. The first resolution of this list, before the two CPU
 # choices at the end of this file, was **4.7 GiB**. A space pulls the whole image before it starts and
 # that pull crosses an account boundary (INT-01), so trimming is editing lines here and re-locking -
 # cheaper than discovering the size in a build. The heavy rows are tensorflow, catboost, ray and
@@ -95,6 +100,34 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "pyhive",
+
+    # The distribution's kernel-side integrations, added 2026-09-10 after the comparison against its
+    # own cpu.env.in. Each is something that works in the distribution's kernel and would silently
+    # not work in this one - which is the worst shape a difference between two kernels can have.
+    #
+    #   aws-s3-access-grants-boto3-plugin  the plugin that makes S3 Access Grants transparent to
+    #                                      boto3 - this estate's vending path for the Sandbox lake
+    #                                      (Stage 16), so without it a notebook here reaches the
+    #                                      bucket by a different door than the default kernel does
+    #   amazon-sagemaker-sql-magic         %%sql in a cell
+    #   sagemaker-studio-dataengineering-sessions   the project's connection magics
+    #   sagemaker-kernel-wrapper           what SMUS wraps a kernel with
+    #   sagemaker-headless-execution-driver  running the notebook as a job
+    #   aws-glue-sessions                  the Glue interactive-session magics
+    #   sagemaker-studio-cli               the Studio CLI inside a session
+    "aws-s3-access-grants-boto3-plugin",
+    "amazon-sagemaker-sql-magic",
+    "sagemaker-studio-dataengineering-sessions",
+    "sagemaker-kernel-wrapper",
+    "sagemaker-headless-execution-driver",
+    "aws-glue-sessions",
+    "sagemaker-studio-cli",
+
+    # The agent SDKs the distribution carries.
+    "mcp",
+    "strands-agents",
+    "strands-agents-tools",
+    "strands-agents-mcp-server",
 ]
 
 # torch and torchvision come from PyTorch's CPU index, not from PyPI's default wheel.
