@@ -73,7 +73,7 @@ pins its dependents in both directions (Lesson 39).
 
 ## To execute
 
-### 0. Preflight — measure what the account holds before anything is removed
+### 0. Measure what the account holds before anything is removed
 
 **Action:** take the readings and paste them into the stage log. **Why:** every destroy count below is
 quoted from a snapshot; a reading that contradicts this file stops the stage rather than adjusting it,
@@ -129,8 +129,7 @@ and the disagreement is the finding.
   After the fixes: six notes, `0 check(s) FAILED` — the clean BEFORE verdict.
 - **0.5 — Read the organization's two switches, with the two instruments that already read them.** A
   third script (`aws/cloudshell/management-account-switches.sh`) was not written: both switches were
-  already read, one per instrument (Lesson 33). What each lacked was the interpretation, added on
-  2026-09-05.
+  already read, one per instrument (Lesson 33); what each lacked was the interpretation.
   - **0.5a — [Claude] `account.amazonaws.com` trusted access**: `./aws/org-trusted-access-services.py`,
     from the laptop as `awsds-infra-identity`. Section 1 lists every principal and names this one as a
     switch: it is the prerequisite for passing `--account-id` to the Account Management API, which is
@@ -163,15 +162,15 @@ and the disagreement is the finding.
 - **0.6 — [user] Paste the five readings into the stage log's first entry**, so every count below is
   measured rather than quoted.
 
-### 1. Unwind the SMUS surface — while the account is still in `Interactive`
+### 1. Unwind the SMUS surface inside `Interactive`
 
 **Action:** delete the project profile, the eleven blueprint configurations and their grants, then
 disassociate the account from the domain. **Why:** this is the only window in which the deletes are
 permitted (see the ordering note above). **Explanation:** the order inside the pass is profile →
-configurations → association → vocabulary, the exact reverse of how 6a built it; each step has a read-back,
+configurations → association → vocabulary, the reverse of how 6a built it; each step has a read-back,
 because an error and an empty list are different outcomes and only the empty list closes a step.
 
-- **1.1 — DONE 2026-09-06.** Applied as `awsds-infra-data`: **`0 to add, 0 to change, 2 to destroy`**,
+- **1.1 done 2026-09-06.** Applied as `awsds-infra-data`: **`0 to add, 0 to change, 2 to destroy`**,
   exactly the two the step named —
   `awscc_datazone_policy_grant.create_project_from_profile["engineering"]` and
   `awscc_datazone_project_profile.this["engineering"]` — re-plan **`No changes`**, and the domain now
@@ -180,16 +179,15 @@ because an error and an empty list are different outcomes and only the empty lis
   invalidated were corrected in the same commit: `providers.tf`'s "TWO ALIASES", `data.tf`'s "member
   accounts" plural, and `locals.tf`'s "WHY THESE TWO GROUPS" — the last of which had itself predicted this
   removal as *"the expected outcome, not a regression"*.
-  - **And `studio.py`'s `US-4` went red the moment the apply landed** — it asserted the *two*-profile
+  - **`studio.py`'s `US-4` went red when the apply landed** — it asserted the *two*-profile
     shape, so it now read `missing engineering`. Re-scoped in the same sitting to expect
     `experimentation` **alone**, with `engineering` kept as a `RETIRED_PROFILE_NAMES` entry so its
     **return** is the failure rather than an unknown name: a check that only knows what it expects cannot
     report what it found. `0 check(s) FAILED` after the fix. **This is the third instrument that pass 5
     would have re-scoped four passes too late** (the probe token at 3.7 was the second) — see the note on
     pass 5.
-- **1.1 — [Claude] Remove the `engineering` project profile — four sites in three files** (enumerated
-  2026-09-05, because "and the provider alias with it" hides one): the `engineering` key in
-  `local.project_profiles` **and** the `development` row of `local.member_account_ids`
+- **1.1 — [Claude] Remove the `engineering` project profile — four sites in three files**: the
+  `engineering` key in `local.project_profiles` **and** the `development` row of `local.member_account_ids`
   (`locals.tf`), `data.aws_caller_identity.development` (`data.tf`), and the `aws.development` provider
   alias (`providers.tf`). They come out together — the data source is the alias's only consumer and
   `member_account_ids` is the profile's. **[Claude⚡] Apply as `awsds-infra-data`. Expect exactly
@@ -197,17 +195,15 @@ because an error and an empty list are different outcomes and only the empty lis
   `sso-group-deployment-managers`; the two removals above are a data source and a provider, which have no
   plan line of their own. **This precedes 1.2's vocabulary edit**, which is what removes the `members` map
   row those sites read.
-- **1.2 — DONE 2026-09-06.** Applied as `awsds-infra-dev`: **`0 to add, 1 to change, 22 to destroy`** —
+- **1.2 done 2026-09-06.** Applied as `awsds-infra-dev`: **`0 to add, 1 to change, 22 to destroy`** —
   the count this step was corrected to predict, and the composition read out of the saved plan before
   applying: **11 × `awscc_datazone_environment_blueprint_configuration`** and **11 ×
   `awscc_datazone_policy_grant`** deleted, **1 × `aws_kms_key` updated**, namely
   `module.sagemaker_prereqs.module.project_key.aws_kms_key.this`. One apply, in one plan — **Recipe F was
   not needed**, which answers this stage's verification 1: the provider orders the grant before its
   configuration by itself. Re-plan **`No changes`**.
-- **1.2 — [Claude⚡] Destroy the eleven configurations and their grants — and the edit that does it is
-  1.6's, taken here.** *Corrected 2026-09-05 while preparing the stage; this step used to read "set
-  `blueprints_enabled = false` in `terraform-live/development/sagemaker/`", which names a value **nothing
-  in that folder owns**.* `blueprints_enabled` is **generated**: `scripts/tfhygiene/backend.py` emits it as
+- **1.2 — [Claude⚡] Destroy the eleven configurations and their grants; the edit that does it is
+  1.6's, taken here.** `blueprints_enabled` is **generated**: `scripts/tfhygiene/backend.py` emits it as
   `account in SMUS_ASSOCIATED`, `slices.py`'s `prepare()` re-runs `gen-tfvars.py` before **every** `init`,
   and `terraform.auto.tfvars` is git-ignored — so a hand-edited flag is overwritten by the very command
   that would consume it. **Do 1.6's vocabulary edit first** (both lists, one commit), regenerate, then
@@ -223,7 +219,7 @@ because an error and an empty list are different outcomes and only the empty lis
   - If the provider orders grant and configuration wrongly, fall back to **Recipe F** (staged destroy, one
     `-target` per resource type, `plan` between them) — a destroy of a blueprint configuration with a grant
     attached has never been exercised in this estate.
-- **1.3 — DONE 2026-09-06, and this step asked the second call for an answer it cannot give.**
+- **1.3 done 2026-09-06; the second call cannot give the answer this step asked for.**
   `list-environment-blueprint-configurations` from `awsds-infra-dev` returns **0 items** — empty, and
   *succeeding*, which is the association still being in place. But `list-policy-grants` on the grant's own
   entity (`ENVIRONMENT_BLUEPRINT_CONFIGURATION`, identified `<account>:<blueprintId>`) **cannot return
@@ -247,15 +243,14 @@ because an error and an empty list are different outcomes and only the empty lis
     Associations*. The second is the one 6a actually walked; either lands on the member row. Select the
     member → **Disassociate**, typing `disassociate` to confirm. There is no API for this, and the
     documentation lists no prerequisite — which is why 1.3 runs first.
-- **1.5 — DONE 2026-09-06, both halves.** `list-environment-blueprint-configurations` from the member
+- **1.5 done 2026-09-06, both halves.** `list-environment-blueprint-configurations` from the member
   now raises **`UnauthorizedException: Unauthorized`** — it fails rather than returning empty, which
   **answers this stage's verification 2** and is 6a step 1.3's proof exactly in reverse. And the RAM
   listing is down to the **two `LakeFormation-V4-*` shares, both `ACTIVE`**: the
   `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` share went with the disassociation. `./aws/rename-check.py` turns
   **RC-3 and RC-4 to `pass`** ("no domain visible - the association is gone", "no DataZone share held - the
-  disassociation has landed") with RC-4b still noting the lake's two — **which is the whole point of having
-  split them**: unsplit, RC-4 would still be reporting *"the console disassociation has not run"* about a
-  step that had just run.
+  disassociation has landed") with RC-4b still noting the lake's two. Unsplit, RC-4 would still be
+  reporting *"the console disassociation has not run"* about a step that had just run.
   - **`studio.py` needed a third state, and got one.** Its two "nothing here" notes read *"correct **before**
     this account's association"* — green, and describing the wrong side of the event: an operator debugging
     an incident would be told the association is *pending* when it was *retired*. Added
@@ -265,20 +260,20 @@ because an error and an empty list are different outcomes and only the empty lis
 - **1.5 — [Claude] Read the association back**: from `awsds-infra-dev`,
   `aws ram get-resource-shares --resource-owner OTHER-ACCOUNTS` shows no DataZone share, and
   `list-environment-blueprint-configurations` now **fails** rather than returning empty — 6a step 1.3's
-  proof, in reverse. **The account holds THREE shares, from two different steps (measured 2026-09-05)**:
+  proof, in reverse. **The account holds three shares, from two different steps** (measured 2026-09-05):
   the `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` one is this step's, and the two `LakeFormation-V4-*` are the
   lake's and are **expected to survive until 2.3**. Read `RC-4` and `RC-4b` rather than a share count —
   "three became two" is the success here, and a bare count would read like a failed disassociation.
-- **1.6 — [Claude] The vocabulary edit, and the proof it cost nothing else. PERFORMED AT 1.2** (the
+- **1.6 — [Claude] The vocabulary edit, and the proof it cost nothing else; performed at 1.2** (the
   numbers are identifiers, not an order): remove `development` from **both** `SMUS_MEMBERS` and
   `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, regenerate the tfvars, and re-plan
-  `data-governance/governance/` to **`No changes`**. **DONE 2026-09-06 — the governance re-plan is
-  `No changes`, so `profiles_enabled` did not flip and `experimentation` survived.** `profiles_enabled` is
+  `data-governance/governance/` to **`No changes`**. **Done 2026-09-06**: the governance re-plan is
+  `No changes`, so `profiles_enabled` did not flip and `experimentation` survived. `profiles_enabled` is
   `set(SMUS_MEMBERS) <= set(SMUS_ASSOCIATED)`, so editing one list alone flips it false and destroys the
   **`experimentation`** profile too; the empty plan is the proof that it did not. What is left at *this*
   point in the pass is that re-plan, taken after 1.5.
-  - **Two side effects of the same edit, both by design and neither obvious from the diff.**
-    (i) **AVOIDED, on the vocabulary's own instruction (2026-09-06).** `PERSONA_VENDING_ACCOUNTS` is
+  - **Two side effects of the same edit, both by design.**
+    (i) **Avoided, on the vocabulary's own instruction (2026-09-06).** `PERSONA_VENDING_ACCOUNTS` is
     derived as `list(SMUS_MEMBERS)`, so this edit would have dropped `persona_vending_policy_name` from
     `development/foundation/`'s tfvars and left that slice carrying a **destroy blocked by
     `prevent_destroy`** for a whole pass. But the comment above that constant already says what to do when
@@ -290,32 +285,32 @@ because an error and an empty list are different outcomes and only the empty lis
     list's operative meaning is *"this member should carry blueprint configurations"*, and 6b is the one
     pass where that separates from *"is associated"* — necessarily, since the configurations must go
     **before** the association does.
-- **1.7 — DONE 2026-09-06.** **`0 added, 0 changed, 14 destroyed`**, re-plan `No changes`: the two service
+- **1.7 done 2026-09-06.** **`0 added, 0 changed, 14 destroyed`**, re-plan `No changes`: the two service
   roles and their attachments, the D13 boundary policy, the project CMK and its alias, the
-  `/awsds/dev/studio` log group, and the projects bucket with its five configuration resources. **Nothing
-  in the plan was anything but a delete.** The bucket needed no emptying — `list-object-versions` returned
+  `/awsds/dev/studio` log group, and the projects bucket with its five configuration resources. **Every
+  line in the plan was a delete.** The bucket needed no emptying — `list-object-versions` returned
   **0 versions and 0 delete markers**, which is 0.1's "no project" seen a third way. The project CMK
   `alias/awsds-dev-project` is `PendingDeletion` with **`DeletionDate` 2026-10-06**; the alias and the
   bucket are gone (`404` on `head-bucket`).
-  - **The two-commit shape does not survive this repository's own gates, and that is worth knowing before
-    the next whole-slice teardown.** With the module call removed, the slice's remaining declarations are
+  - **The two-commit shape does not survive this repository's own gates.** With the module call removed,
+    the slice's remaining declarations are
     orphans — three `terraform_remote_state` data sources and one variable — and **tflint fails the commit**
     on `terraform_unused_declarations`. So "the configuration that permits the destroy" is **not a
     committable state** here. The runbook's two-commit rule is for lifting `prevent_destroy` on a resource
     that *stays*; a whole-slice teardown applies from the working tree and commits the **end** state: the
     folder deleted, its `layers.py` row with it.
-  - **Same sitting, because the rule says so**: `docs/NETWORK.md`'s row for the two `sagemaker/` slices
+  - **Same sitting**: `docs/NETWORK.md`'s row for the two `sagemaker/` slices
     loses this one, and `terraform-live/README.md`'s "applied twice, so the two accounts cannot drift"
     becomes a dated past tense. `docs/plan/conventions.md` §6, `D21` and `INT-15` still name the slice and
     are **5.3's**, not this step's.
 - **1.7 — [Claude⚡] Destroy the rest of the slice**: list and empty `awsds-dev-smus-projects` by hand,
   remove the module call so the `prevent_destroy` lifecycle block leaves the configuration with it, then
-  destroy `terraform-live/development/sagemaker/`. **MEASURED 2026-09-05: the bucket is empty** —
+  destroy `terraform-live/development/sagemaker/`. **Measured 2026-09-05: the bucket is empty** —
   `list-objects-v2` returns no `Contents` at all, which is 0.1's "no project" seen from the storage side.
   Still list it rather than assuming: the bucket is versioned, so **delete markers and non-current versions
   are a separate listing** (`list-object-versions`) and they are what a destroy actually trips on. The project CMK
   `alias/awsds-dev-project` enters its deletion window — **record the scheduled date in the log**.
-- **1.8 — DONE 2026-09-06, and it closes pass 1.** `./aws/studio.py`: **`0 check(s) FAILED`**, one
+- **1.8 done 2026-09-06; it closes pass 1.** `./aws/studio.py`: **`0 check(s) FAILED`**, one
   associated account, `US-4` `pass` at one project profile, and every row about this account naming the
   **retirement** rather than a pending association. `US-8`'s note lost the word *"yet"* in the same
   sitting — with the two service roles and the boundary destroyed at 1.7, no blueprint-provisioned role
@@ -325,7 +320,7 @@ because an error and an empty list are different outcomes and only the empty lis
   profile, and no Development row anywhere. `US-6` ("datazone reads denied in Workloads") is checked again
   at step 3.6, after the move.
 
-### 2. Make the account read-only — the persona swap and the lake revocation, in the order that locks nobody out
+### 2. Make the account read-only
 
 **Action:** replace the read-write data-scientist seat with `DataScientistStagingAccess`, revoke the lake
 share from the producer side, and destroy the consumer slice. **Why:** D18 says "Staging — read-only, and
@@ -334,13 +329,13 @@ nothing else" and D20 says Staging is never on the lake share; the account holds
 it references by name, and the share is revoked from the **producer** side before the consumer slice that
 uses it is destroyed.
 
-- **2.1 — DONE 2026-09-06.** Applied as `awsds-infra-identity`: **`1 added, 0 changed, 2 destroyed`** —
+- **2.1 done 2026-09-06.** Applied as `awsds-infra-identity`: **`1 added, 0 changed, 2 destroyed`** —
   `data-scientist@development` **replaced** (the permission-set ARN is a forced replacement; the map key,
   and therefore the resource address, is untouched) and `dev-env-steward@development` deleted. Re-plan
   `No changes`. **The account now carries exactly six permission sets** — `DataScientistStagingAccess`,
   `DeploymentManagerAccess`, `InfrastructureAccess`, beside the landing zone's three — which is the count
   0.3 corrected this stage to expect.
-- **2.1 — [Claude] Swap the permission set WITHOUT renaming the key**: in
+- **2.1 — [Claude] Swap the permission set without renaming the key**: in
   `terraform-live/identity/sso/locals.tf`, leave the assignment key `data-scientist@development` and the
   `account = "development"` field alone, and change only `set = "data_scientist"` →
   `set = "data_scientist_staging"` (`DataScientistStagingAccess` already exists, unassigned, with
@@ -348,19 +343,18 @@ uses it is destroyed.
   here would change the resource address and destroy/recreate the assignment for no reason**; the key is
   renamed at step 4.6 behind `moved {}` blocks, after the account itself is renamed.
   **[Claude⚡] Apply as `awsds-infra-identity`.**
-  - **Why the steward seat goes, corrected 2026-09-05.** This step used to say *"a Workload account has no
-    image steward"*, and the estate contradicts it: **Production is a Workload account and holds
-    `DevEnvStewardAccess` today**. The reason is narrower and it is D14's — the steward curates **images**,
-    the registry is ECR **in Production**, and Staging has no registry to steward.
+  - **Why the steward seat goes.** The reason is D14's: the steward curates **images**, the registry is
+    ECR **in Production**, and Staging has no registry to steward. It is not that a Workload account has
+    no image steward — **Production is a Workload account and holds `DevEnvStewardAccess` today**.
   - **Both permission sets survive the stage**: `DataScientistAccess` stays on Sandbox,
     `DevEnvStewardAccess` on Sandbox and Production. What is deleted here is two *assignments*, never a
     set — which is also why nothing in `identity/sso/`'s permission-set half changes.
-- **2.2 — DONE 2026-09-06, in the two commits the runbook asks for.** Commit 1 lifted `prevent_destroy`
-  and the plan after it read **`No changes`** — which is the point of splitting it: "the guard came off" is
-  a reviewable act with no side effect. Commit 2 removed the object, its variable and the derivation's
-  literal together, and applied **`0 added, 0 changed, 1 destroyed`**; re-plan `No changes`.
-  - **The variable is `nullable = false` with no default**, so the intermediate state that step 2.2 used to
-    imply — the resource still declared while the tfvar stops being emitted — is not a state Terraform will
+- **2.2 done 2026-09-06, in the two commits the runbook asks for.** Commit 1 lifted `prevent_destroy`
+  and the plan after it read **`No changes`**: "the guard came off" is a reviewable act with no side
+  effect. Commit 2 removed the object, its variable and the derivation's literal together, and applied
+  **`0 added, 0 changed, 1 destroyed`**; re-plan `No changes`.
+  - **The variable is `nullable = false` with no default**, so the intermediate state — the resource still
+    declared while the tfvar stops being emitted — is not a state Terraform will
     even load: it fails with *no value for required variable*. That is why the resource, the variable and
     the `PERSONA_VENDING_ACCOUNTS` restoration are **one** commit, and only the guard is its own.
   - **Read back in both accounts**: the policy is gone from this one and **still present in Sandbox**,
@@ -374,8 +368,8 @@ uses it is destroyed.
   `awsds-org-project-storage-vending` in `terraform-live/development/foundation/persona-vending.tf` in one
   commit and destroy it in the next (the runbook's two-commit rule). The object is referenced **by name**
   by the permission set, so it goes after 2.1 and never before.
-- **2.3 — DONE 2026-09-06.** Applied as `awsds-infra-data`: **`0 added, 6 changed, 2 destroyed`** — and
-  the shape is the one this step was corrected to predict. The **2 destroyed** are the TBAC triples
+- **2.3 done 2026-09-06.** Applied as `awsds-infra-data`: **`0 added, 6 changed, 2 destroyed`**, the
+  shape this step predicts. The **2 destroyed** are the TBAC triples
   (`share_databases["development"]`, `share_tables["development"]`); the **6 changed** are the **five
   bucket policies and the lake's data CMK key policy**, because the account's root principal and its S3
   gateway endpoint leave `trusted_vpce_ids`. Re-plan `No changes`. `list-permissions` naming that account
@@ -385,31 +379,28 @@ uses it is destroyed.
   `writer_role_patterns` in `terraform-live/data-governance/data/`; apply as `awsds-infra-data`. Annotate
   the two triples in `docs/AWS_STATE.md`'s grant register as **revoked, with the date** — never delete a
   register row.
-  - **This apply is not only grants: it rewrites the lake's BUCKET POLICIES** (read 2026-09-06).
+  - **This apply also rewrites the lake's bucket policies** (read 2026-09-06).
     `local.consumer_vpce_ids` is built by iterating `data.terraform_remote_state.consumer_foundation`,
     which is keyed by `consumer_accounts` — so dropping the row also drops **this account's S3 gateway
     endpoint id** out of `local.trusted_vpce_ids`, which is INT-05's `aws:SourceVpce` allow-list in
     `buckets.tf`. Expect bucket-policy updates in the plan and read them: the perimeter narrowing is
     correct and intended, but it is a **different kind of change** from a grant revocation and it is the
     one that could lock out a principal nobody was thinking about.
-- **2.4 — DONE 2026-09-06.** **`0 added, 0 changed, 5 destroyed`**, state empty afterwards, folder and
-  `layers.py` row removed. Three things measured rather than assumed:
-  - **The blocker was the missing VARIABLE, not the missing role.** This step said the slice "cannot be
-    converted — its `data.tf` resolves `AWSReservedSSO_DataScientistAccess_*` with `one()`, which fails at
-    plan time the moment 2.1 lands". **`one()` returns null on an empty collection** and errors only on two
-    or more, so 2.1 would have produced a silent null, not a failure. What actually stops the slice is 2.3
-    dropping the account from `DATA_CONSUMERS`: the `lake` variable is `nullable = false` with no default
-    and stops being emitted, so Terraform cannot **load** the slice. The configuration was stripped, as at
-    1.7.
+- **2.4 done 2026-09-06.** **`0 added, 0 changed, 5 destroyed`**, state empty afterwards, folder and
+  `layers.py` row removed. Three things measured:
+  - **The blocker was the missing variable, not the missing role.** **`one()` returns null on an empty
+    collection** and errors only on two or more, so 2.1 would have produced a silent null rather than the
+    plan-time failure this step predicted. What stops the slice is 2.3 dropping the account from
+    `DATA_CONSUMERS`: the `lake` variable is `nullable = false` with no default and stops being emitted,
+    so Terraform cannot **load** the slice. The configuration was stripped, as at 1.7.
   - **The four Lake Formation re-grants were gone before the apply reached them** — the plan carried
     5 deletes, not 9, and `list-permissions` in the account reads **0** afterwards. They went with the
-    resource-link databases and the share, not by a separate revocation. *A first reading of the plan
-    guessed an orphan; the measurement says there is none.*
-  - **Destroying `aws_lakeformation_data_lake_settings` is a RESET, not a deletion.** The account came back
+    resource-link databases and the share, not by a separate revocation; there is no orphan.
+  - **Destroying `aws_lakeformation_data_lake_settings` is a reset, not a deletion.** The account came back
     with `CROSS_ACCOUNT_VERSION=1` and an **empty administrator list**, which read as `DL-5` and `DL-13`
     failing until `datalake.py` was re-scoped (below). `DL-6` did **not** revert — no `IAMAllowedPrincipals`
     default returned.
-- **2.5 — DONE 2026-09-06.** `./aws/datalake.py` **`0 check(s) FAILED`** with `DL-7` at **2 resource
+- **2.5 done 2026-09-06.** `./aws/datalake.py` **`0 check(s) FAILED`** with `DL-7` at **2 resource
   links** (from 4, both survivors Sandbox's); `./aws/rename-check.py` turns **RC-5 and RC-6 to `pass`** —
   the six permission sets and **no** Lake Formation grant naming the account — leaving only RC-1 and RC-2,
   which are pass 3's console acts. **`datalake.py` was the fifth instrument to need its scope moved at the
@@ -422,27 +413,27 @@ uses it is destroyed.
 - **2.5 — [Claude] Read the conversion**: `./aws/datalake.py` `DL-7`'s resource-link count falls from
   **4 to 2** (both survivors Sandbox's) and `DL-5`/`DL-13` show no Development consumer and no orphan
   admin.
-  - **`DT-8` is NOT answerable here** *(corrected 2026-09-05)*. `deploytargets.py` gates **every** Staging
+  - **`DT-8` is not answerable here.** `deploytargets.py` gates **every** Staging
     reading on `STAGING_PROFILE = "awsds-infra-staging"` being live, and at 2.5 the account is still
     reached as `awsds-infra-dev`: the check is not failing, it is **not running**, which is the pair
     Lesson 13 is about. It becomes answerable after step 4's migration and the `~/.aws/config` rename of
     5.0, and it is asserted in the Validation rather than here. The instrument also still says
-    *"`Staging` has no profile until the vend"* — stale prose from before the re-scope, corrected at 5.1.
+    *"`Staging` has no profile until the vend"*, corrected at 5.1.
 
-### 3. Rename the account and move the OU — the two console acts, and the code that keys on the name
+### 3. Rename the account and move the OU
 
 **Action:** enable trusted access — **0.5a measured it absent** — rename the account, move it to
 `Workloads` through Control Tower, and re-point the two sites that resolve it by name. **Why:** `identity/sso/locals.tf` resolves the
 account by the exact string `Development Account` behind a precondition that fails the plan, and
 `aws/import-ids.py` maps the same string. **Explanation:** between the rename and the code edit the
-`identity/sso` plan is **expected** to fail — which is why both happen in one sitting.
+`identity/sso` plan is **expected** to fail, which is why both happen in one sitting.
 
-- **3.1 — DONE 2026-09-06 by the user**, CloudShell in Management; the call produced no output, which is
+- **3.1 done 2026-09-06 by the user**, CloudShell in Management; the call produced no output, which is
   its success. **Read back the same day**: `./aws/org-trusted-access-services.py` section 1 now reports
   *"PRESENT — `account.amazonaws.com` holds trusted access"*, so `put-account-name --account-id` is
   available and **step 3.2 is unblocked**. `INV-09` restated: **ten** principals, not nine; `account` is
   the fourth this project turned on, it holds no delegation, and the delegated count stays **four**.
-- **3.1 — [user] Enable trusted access — 0.5a measured it ABSENT on 2026-09-05, so this runs**,
+- **3.1 — [user] Enable trusted access**; 0.5a measured it absent on 2026-09-05, so this runs.
   Management, CloudShell as `AWS Control Tower Admin` / `AWSAdministratorAccess`:
 
   ```bash
@@ -452,9 +443,9 @@ account by the exact string `Development Account` behind a precondition that fai
   AWS documents this as the prerequisite for using the `--account-id` parameter of the Account Management
   API against a member: management (or delegated-admin) credentials, **all features enabled**, trusted
   access on. Success produces no output. **[Claude]** restates `INV-09`'s count afterwards.
-- **3.2 — DONE 2026-09-06 by the user**, and the **root e-mail was changed in the same sitting**,
-  which the step did not ask for and is worth recording as its own fact: the account now carries a
-  `staging`-flavoured root address, so the vended-name pattern and the root address agree again.
+- **3.2 done 2026-09-06 by the user**, and the **root e-mail was changed in the same sitting**: the
+  account now carries a `staging`-flavoured root address, so the vended-name pattern and the root address
+  agree again.
   **Read back the same day** with `./aws/rename-check.py`: `RC-1 pass — Staging Account`, resolved by
   **exact** match against the ACTIVE roster. No propagation delay was observed between the console act
   and the read.
@@ -469,30 +460,29 @@ account by the exact string `Development Account` behind a precondition that fai
   management account cannot pass **its own** id. **Keep the ` Account` suffix** — it is the vended-name
   pattern the SSO slice measured. **A propagation delay is not documented**: read the name back with
   `aws organizations list-accounts` rather than re-issuing the call, and record what the read showed.
-- **3.3 — DONE 2026-09-06.** Both **values** changed, both **keys** left alone (`development` stays the
+- **3.3 done 2026-09-06.** Both **values** changed, both **keys** left alone (`development` stays the
   for_each key until 4.6 renames it behind a `moved {}` block). `identity/sso/` re-planned as
   `awsds-infra-identity`: **`No changes`** — the precondition resolves the account by the new name and
-  not one assignment moved, which is the whole gate.
-  - **A third site was corrected in the same commit, and it is prose rather than code**:
-    `aws/import-ids.py`'s header said *"`Staging` arrives at the vend"* — the vend the quota refused.
+  not one assignment moved, which is the gate.
+  - **A third site was corrected in the same commit, in prose rather than code**:
+    `aws/import-ids.py`'s header said *"`Staging` arrives at the vend"*, the vend the quota refused.
     It now says the row's key is the **AWS name** and its value the **folder**, that the two disagree on
     purpose between 3.2 and 4.6, and that matching the row to the slice is the reason the row exists.
 - **3.3 — [Claude] Re-point the two name-keyed sites, same sitting**: in
   `terraform-live/identity/sso/locals.tf` change the **value** `development = "Development Account"` to
   `"Staging Account"` (not the key), and update `aws/import-ids.py`. Re-plan `identity/sso/` and expect the
   precondition to pass again with **`No changes`** to the assignments.
-- **3.4 — DONE 2026-09-06 by the user, "via console AWS", and the account IS in `Workloads`.** Which
-  console is the half that still matters and it is **not** a question anyone should answer from memory —
-  **3.5's read-back settles it**, and 3.5 is the same act either way: Control Tower *Update account* is
-  both the reading and, if the move went through the Organizations console, the repair. **One
-  consequence to expect rather than discover**: that act is precisely the account update Stage 1b
-  verification (vi) watches for, so a direct `AWSAdministratorAccess` assignment reappearing afterwards
-  is **expected** and gets restated, not reported as a finding. **The account IS in `Workloads`, measured
-  two independent ways on 2026-09-06.** The two readings:
-  `./aws/rename-check.py` `RC-2 pass` from `organizations list-parents`, and — the stronger one, because
-  it is the ceiling answering rather than the directory — the battery's `region` phase attributes the
-  us-east-1 deny in this account to **`p-i0ney7mx`, the same policy id Production returns**, where
-  `Sandbox Account 1` returns a different one. Same id, same OU, said by a denial rather than by a list.
+- **3.4 done 2026-09-06 by the user, "via console AWS"; the account is in `Workloads`.** Which console
+  was used is the half that still matters, and **3.5's read-back settles it** — 3.5 is the same act
+  either way: Control Tower *Update account* is both the reading and, if the move went through the
+  Organizations console, the repair. **One consequence to expect**: that act is the account update
+  Stage 1b verification (vi) watches for, so a direct `AWSAdministratorAccess` assignment reappearing
+  afterwards is **expected** and gets restated, not reported as a finding. **The account is in
+  `Workloads`, measured two independent ways on 2026-09-06**: `./aws/rename-check.py` `RC-2 pass` from
+  `organizations list-parents`, and — the stronger one, because it is the ceiling answering rather than
+  the directory — the battery's `region` phase attributing the us-east-1 deny in this account to
+  **`p-i0ney7mx`, the same policy id Production returns**, where `Sandbox Account 1` returns a different
+  one. Same id, same OU, said by a denial rather than by a list.
   - **What no instrument here can distinguish** is Control Tower *Update account* from
     `organizations move-account`, and the difference is not cosmetic: the second leaves the Account
     Factory **provisioned product** pointing at the old OU under the old name, and raises
@@ -503,13 +493,10 @@ account by the exact string `Development Account` behind a precondition that fai
   registered OU = `Workloads`*, or the Service Catalog update of the provisioned product with
   `ManagedOrganizationalUnit = Workloads`. **Never `aws organizations move-account`** — that path raises
   `ACCOUNT_MOVED_BETWEEN_OUS` drift and leaves the Account Factory **provisioned product** pointing at the
-  old OU under the old name, which auto-enrollment explicitly does not fix. *This step used to carry a
-  third reason — "without auto-enrollment it leaves the old OU's Config-rule controls attached" — and
-  **0.5b measured the switch ON on 2026-09-06**, so that clause is struck rather than left to be
-  re-derived by whoever reads it next.*
-- **3.5 — DONE 2026-09-06 by the user, and it answered its own question in the STRONGEST form: the
-  provisioned product does not follow an out-of-band rename, AND IT CANNOT BE MADE TO.** On Control
-  Tower's *Update account* screen, **`Display Name` and `Account Email` are rendered READ-ONLY**, still
+  old OU under the old name, which auto-enrollment explicitly does not fix.
+- **3.5 done 2026-09-06 by the user: the provisioned product does not follow an out-of-band rename, and
+  it cannot be made to.** On Control Tower's *Update account* screen,
+  **`Display Name` and `Account Email` are rendered read-only**, still
   holding `Development Account` and the old root address — while the OU tree beside them already reads
   `Staging Account`. This step asked *"whether `AccountName` follows is not documented"*; the answer is no,
   and there is no field through which to correct it. **It is a permanent divergence of the provisioned
@@ -529,8 +516,8 @@ account by the exact string `Development Account` behind a precondition that fai
   e-mail field as *not* following an out-of-band change; whether `AccountName` does is not documented. If
   it refuses, record the divergence as a permanent property of the provisioned product — the treatment D32
   gives the direct assignment.
-- **3.6 — RE-READ 2026-09-06 AFTER 3.5, and the trigger DID fire.** The morning's reading — six
-  assignments, no direct `USER` one — was taken **before** any account update had run, which is exactly the
+- **3.6 re-read 2026-09-06 after 3.5; the trigger did fire.** The morning's reading — six
+  assignments, no direct `USER` one — was taken **before** any account update had run, which is the
   ambiguity it recorded. After the *Update account*, `./aws/list-identities.py` §5.2 reads **seven**, the
   new row being **`AWSAdministratorAccess` → the infrastructure user `(USER)`**. **Stage 1b verification
   (vi) closes in the affirmative**, 25 days after 5.1 removed it: a Control Tower account update
@@ -539,18 +526,17 @@ account by the exact string `Development Account` behind a precondition that fai
   - **The consequence is a rule rather than a row.** The absence of that assignment on the other four
     vended accounts is **not a control** — it survives only until each account's next update, and no gate
     may be written assuming otherwise.
-  - **`rename-check.py`'s `RC-5` passed while listing it**, and that is correct scoping rather than a
+  - **`rename-check.py`'s `RC-5` passed while listing it**, which is correct scoping rather than a
     miss: it checks D18's persona row (no read-write, no image steward), and the landing zone's sets are
-    not its subject. Worth knowing before someone reads a `pass` there as "the assignment list is as
-    designed".
-- **3.6 — DONE 2026-09-06, and the trigger did NOT fire — with a caveat that is the honest half of the
-  answer.** `./aws/list-identities.py` §5.2: `Staging Account` carries **six** assignments — the three
+    not its subject.
+- **3.6 read 2026-09-06 before the update; the trigger had not fired.**
+  `./aws/list-identities.py` §5.2: `Staging Account` carries **six** assignments — the three
   landing-zone group ones (`AWSOrganizationsFullAccess`, `AWSPowerUserAccess`, `AWSReadOnlyAccess`) and
   this repository's three (`InfrastructureAccess`, `DeploymentManagerAccess`,
   `DataScientistStagingAccess`). **No direct `USER` assignment, and no `AWSAdministratorAccess` at all**,
   so `AWS_STATE.md`'s roster row and `INV-05` stand unedited, and the one surviving D32 direct assignment
   is still `Policy Canary`'s alone.
-  - **This does not yet answer Stage 1b verification (vi)**, and saying so is the point. That
+  - **This does not yet answer Stage 1b verification (vi).** That
     verification watches for the direct assignment returning *when an account update runs*. Whether an
     account update ran at all is exactly what 3.4 above cannot read from this side. If the user took the
     Control Tower path, this reading answers (vi) **in the negative** and it can be closed; if the move
@@ -560,37 +546,35 @@ account by the exact string `Development Account` behind a precondition that fai
 - **3.6 — [Claude] Check D32's trigger**: `./aws/list-identities.py`. An *account update* is exactly what
   re-creates the direct `AWSAdministratorAccess` assignment (Stage 1b verification (vi)); if it came back,
   it is **expected**, and the row is restated rather than removed.
-- **3.7 — DONE 2026-09-06. Full battery, every phase: `89 as expected, 0 unexpected, 10 not measured`**
+- **3.7 done 2026-09-06. Full battery, every phase: `89 as expected, 0 unexpected, 10 not measured`**
   — all ten notes are the by-design ones (`EXC-03`'s four `DENY-NOT-SCP` Athena rows, six `UNTESTED` in
   accounts with no subnet). **The token is `staging` in both files** and no `dev` string survives
   anywhere under `aws/probes/`.
-  - **This step's own first sentence was wrong and 3.8 is why**: it predicted the account would **lose**
-    `DenyAthenaSparkStartSession` because *"that Sid exists only in the `Interactive` document"*. It did
-    not — **3.8 put the Sid into the Workloads document three hours earlier**, deliberately before the
-    move, so the account crossed with the deny rather than into a gap. The rest of the prediction held
-    exactly: it lost `DenyClassicNotebookInstances` (fully absorbed) and gained
+  - **The account did not lose `DenyAthenaSparkStartSession`**, against this step's prediction that the
+    Sid exists only in the `Interactive` document: **3.8 put the Sid into the Workloads document three
+    hours earlier**, before the move, so the account crossed with the deny rather than into a gap. The
+    rest of the prediction held: it lost `DenyClassicNotebookInstances` (fully absorbed) and gained
     `DenyInteractiveSageMakerSurface` and `DenyDataZoneEntirely`.
-  - **The `ou` phase was not a retarget, it was a re-composition — five rows, and only one of them moved
-    to `staging`.** A token flip alone would have produced three copies of questions `prod` and
+  - **The `ou` phase was a re-composition rather than a retarget — five rows, and only one moved to
+    `staging`.** A token flip alone would have produced three copies of questions `prod` and
     `sandbox1` already ask, and a battery whose probe count stops meaning a question count is the failure
     this file's own comments warn about:
-    - **Two `allow` rows moved to `sandbox1`** (`sagemaker:CreateSpace`, `datazone:ListDomains`) — the
-      block's whole point is that decision 1 *costs no feature*, and deleting them would have left the
+    - **Two `allow` rows moved to `sandbox1`** (`sagemaker:CreateSpace`, `datazone:ListDomains`): the
+      block exists to show that decision 1 *costs no feature*, and deleting them would have left the
       Interactive document with no permissive evidence at all. **Both passed.** The sample is now an
       **inherited** one, and it is not weaker: an SCP can only deny, `Sandboxes` carries no document of
       its own (the row below them is that evidence), so an `allow` under Interactive+Sandboxes is at
-      least as strong as one under Interactive alone. What is genuinely gone is the direct-attachment
-      sample, and **no account can restore it** — nothing sits directly in `Interactive` any more.
+      least as strong as one under Interactive alone. What is gone is the direct-attachment sample, and
+      **no account can restore it** — nothing sits directly in `Interactive` any more.
     - **Three rows deleted, not moved**: `sagemaker:CreateNotebookInstance` (the same question, from a
       different Sid, already asked by `prod` and `sandbox1`), `athena:StartSession` (`sandbox1` carries
       the Interactive half, `prod` the Workloads half), and 1.6's `athena:StartQueryExecution` negative
       probe — whose own comment already said Sandbox's identical row exists as 4e's contrast. That row
       is now the **only** place D13's query path is watched, and it passed.
-    - **One row added for `staging`**, and it asks something none of the others do: not *is the Workloads
-      document in force* but *did the account this stage moved actually acquire it*. It is
-      `datazone:ListDomains`, `ro`, and it came back **`DENY-SCP p-83t232f4` — the same policy id
-      Production's three rows return**. That is 3.4's attribution, and it is worth keeping permanently:
-      this is the account that will hold deploy credentials.
+    - **One row added for `staging`**, asking something none of the others do: *did the account this
+      stage moved actually acquire the Workloads document*. It is `datazone:ListDomains`, `ro`, and it
+      came back **`DENY-SCP p-83t232f4` — the same policy id Production's three rows return**. That is
+      3.4's attribution, kept permanently: this is the account that will hold deploy credentials.
   - **The silent half of the flip was the tag values, and both were caught**: the `tags` allow-probe and
     the `decl` IMDSv1 probe hard-coded `Environment=development` in their `--tag-specifications`. The tag
     policy allows all six values org-wide, so neither would have *failed* after the flip — they would
@@ -610,8 +594,8 @@ account by the exact string `Development Account` behind a precondition that fai
     is a gap**, which is what 3.8 closes. Everything else is unchanged: both OUs carry a Control Tower
     guardrail, the Region ceiling (`CTMULTISERVICEPV1`) and the root controls, and the three root documents
     apply either way.
-  - **The token edit belongs HERE, not at 5.1** *(corrected 2026-09-05 — 5.1 scheduled it a pass late, and
-    a battery run against a `dev` token that no longer resolves is not a measurement)*. It is **two files,
+  - **The token edit belongs here, not at 5.1**: a battery run against a `dev` token that no longer
+    resolves is not a measurement. It is **two files,
     not one**: `scp-battery.py`'s `PROFILES` map — the single place a probe's account token becomes a CLI
     profile, and a token missing from it **stops the run** rather than skipping a probe — and `probes.py`,
     where the token is the probe's second positional argument and the OU expectations hang off it.
@@ -622,7 +606,7 @@ account by the exact string `Development Account` behind a precondition that fai
   - **Left deliberately undone:** `development` stays an allowed value in `awsds-org-tag-policy` even
     though nothing carries it after 4.4. Removing a value is a policy change with its own `POLICIES.md`
     row and its own battery run, and it is not this stage's.
-- **3.8 — DONE 2026-09-06, and taken BEFORE the OU move rather than after it.** The step is listed after
+- **3.8 done 2026-09-06, before the OU move rather than after it.** The step is listed after
   3.4 but does not depend on it, and the order matters in one direction only: applied first, the account
   **never spends a moment in `Workloads` without the deny it had in `Interactive`**; applied after, that
   window is real. Applied as `awsds-infra-identity`, **`0 added, 1 changed, 0 destroyed`**, re-plan
@@ -644,7 +628,7 @@ account by the exact string `Development Account` behind a precondition that fai
   `athena:UpdateSession` as the control — so a Workload account that can start a session has an unproxied
   path out of the account that will hold deploy credentials. Keep `UpdateSession` even though it appears in
   no API model this project could read: the deny costs nothing and AWS's own example carries it.
-  - **Copy the Sid as it stands — it is THREE actions and it is workgroup-scoped** (read 2026-09-06; this
+  - **Copy the Sid as it stands — three actions, workgroup-scoped** (read 2026-09-06; this
     step named two actions and no resource). The applied statement denies `athena:StartSession`,
     `athena:UpdateSession` **and `athena:StartCalculationExecution`** on
     **`arn:aws:athena:*:*:workgroup/*`**, not on `*`. `POLICIES.md` records all three; only this step was
@@ -652,7 +636,7 @@ account by the exact string `Development Account` behind a precondition that fai
   [`terraform-live/identity/org-policies/POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)
   in the **same sitting**, and move `EXC-03`'s Athena contrast probe to `Policy Canary`.
 
-### 4. Migrate the tree — `development/` to `staging/`, folder first and token second
+### 4. Migrate the tree from `development/` to `staging/`
 
 **Action:** create the new state home, move each surviving slice with Recipe E, then flip the token.
 **Why:** the folder name is the Terraform state key and the token is every physical name. **Explanation:**
@@ -660,40 +644,34 @@ splitting *migration* from *token flip* is what keeps each plan readable — the
 `No changes`, the second a short, explainable replacement list. Recipe E was written on 2026-09-05 and is
 followed here, not authored.
 
-- **4.1 — DONE 2026-09-06, and SPLIT IN TWO on purpose.** `CIDRS["staging"]` is `10.50.0.0/16` as of
+- **4.1 done 2026-09-06, split in two on purpose.** `CIDRS["staging"]` is `10.50.0.0/16` as of
   the 4.3 commit — the half that prevents the VPC replacement, and it had to land in the same commit as
-  the `git mv` because the tfvars are generated from the folder key. **The `development` row was NOT
-  deleted and 10.40 is NOT free yet**: `production/foundation/peers.tf` reads `var.peers["development"]`
-  by literal, and that map is built from this table's KEYS, so deleting the row breaks Production's slice
+  the `git mv` because the tfvars are generated from the folder key. **The `development` row was not
+  deleted and 10.40 is not free yet**: `production/foundation/peers.tf` reads `var.peers["development"]`
+  by literal, and that map is built from this table's keys, so deleting the row breaks Production's slice
   until 4.5 re-points the four hand-written provider aliases. Both go in that one commit — Recipe E step
   8's rule (*keep the old vocabulary rows alive*) applied to the one table that is read by another
-  account. **6c step 0 does not consume 10.40 at all** — step 0.2 keeps it unallocated; this sentence assumed
-    otherwise, from the same wrong clause at 4.1.
-- **4.1 — [Claude] Fix the address table BEFORE the token flip — the hazard that would replace the VPC**:
+  account. **6c step 0 does not consume 10.40 at all**: step 0.2 keeps it unallocated.
+- **4.1 — [Claude] Fix the address table before the token flip — the hazard that would replace the VPC**:
   in `scripts/tfhygiene/backend.py`, `CIDRS` is keyed by **account folder** and today reads
   `staging = 10.40.0.0/16`, `development = 10.50.0.0/16`. The moment the folder becomes `staging/`, the
   generated `vpc_cidr` would change and the plan would propose **replacing the VPC**. Set
-  `CIDRS["staging"] = "10.50.0.0/16"`, delete the `development` row, and **free `10.40.0.0/16`** — 6c step 0
-  consumes the freed block; it does not perform this edit. *(**That clause is WRONG and was corrected
-  2026-09-06 before any 6c code was written**: 6c step 0.2 says 10.40 "is free and **stays
-  unallocated**", and the hub is built from 10.30 re-labelled plus 10.31 and 10.32. This sentence had
-  already been copied into five other files — two instruments among them — which is why it is corrected
-  in place rather than deleted.)* The account keeps 10.50 because a VPC CIDR is
-  immutable and a rebuild would replace every subnet, route table, endpoint and the peering with it.
-  - **The reason this step used to give expires two passes earlier, and that is worth saying rather than
-    leaving to be re-derived** *(2026-09-06)*: it said a rebuild "would invalidate the `[P]`
-    gateway-endpoint ids **the lake's bucket policy names**" — but **step 2.3 already removes this
-    account's endpoint from `trusted_vpce_ids`**, so by pass 4 the lake names none of them. The
-    conclusion is unchanged and now rests where it should: a VPC replacement rebuilds the whole
-    `foundation/` slice and forces 6c to re-cut a peering it has not built yet. **Second instance of the
-    same shape in this stage** — step 3.4's Config-rule clause was the first — and both are Lesson 3 read
-    backwards: a fact that moved invalidates the sentence that cited it, even when the conclusion holds.
-- **4.2 — DONE 2026-09-06** (the user ran the apply; Claude wrote, planned and migrated).
+  `CIDRS["staging"] = "10.50.0.0/16"` and delete the `development` row. **`10.40.0.0/16` is freed and
+  6c step 0.2 leaves it unallocated**; the hub is built from 10.30 re-labelled plus 10.31 and 10.32. The
+  account keeps 10.50 because a VPC CIDR is immutable and a rebuild would replace every subnet, route
+  table, endpoint and the peering with it.
+  - **The lake is not the reason.** A rebuild would invalidate the `[P]` gateway-endpoint ids, but
+    **step 2.3 already removes this account's endpoint from `trusted_vpce_ids`**, so by pass 4 the lake
+    names none of them. The reason that holds: a VPC replacement rebuilds the whole `foundation/` slice
+    and forces 6c to re-cut a peering it has not built yet. Second instance of that shape in this stage —
+    step 3.4's Config-rule clause was the first — and both are Lesson 3 read backwards: a fact that moved
+    invalidates the sentence that cited it, even when the conclusion holds.
+- **4.2 done 2026-09-06** (the user ran the apply; Claude wrote, planned and migrated).
   **`8 to add, 0 to change, 0 to destroy`** → `awsds-staging-tfstate` and
   `alias/awsds-staging-tfstate`, then **phase 2 of the bootstrap pattern**: backend uncommented,
   `init -migrate-state` into the bucket the slice had just created, local state deleted, re-plan
   **`No changes`**. `./scripts/check-bootstrap-parity.py` clean in both phases.
-  - **The parity check rejected the first attempt, and the reason is worth carrying**: three lines of
+  - **The parity check rejected the first attempt.** Three lines of
     prose were added above the commented backend block explaining the phase. Parity compares that file
     **with the comment markers removed**, so prose inside it is *content*, and the slice read as diverged.
     The two forms it tolerates are exactly two — commented and live — and the explanation already lives
@@ -701,39 +679,39 @@ followed here, not authored.
 - **4.2 — [Claude⚡] Create the new state home**: `terraform-live/staging/bootstrap/`, producing
   `awsds-staging-tfstate` and `alias/awsds-staging-tfstate` from the existing bootstrap module. **`PROFILES`
   is the only table missing a `staging` row** — `ENV_TOKENS`, `ENVIRONMENT_TAGS` and `ZONE_IDS` already
-  carry one (read 2026-09-05; this step used to name `ZONE_IDS` among the missing). **`CIDRS` carries one
-  too, with the WRONG VALUE** — that is 4.1's edit, not this one, and the two must not both claim it. The
+  carry one (read 2026-09-05). **`CIDRS` carries one
+  too, with the wrong value** — that is 4.1's edit, not this one, and the two must not both claim it. The
   `staging` slice rows go into `scripts/tfhygiene/layers.py`, whose `staging joins at vend` comment is
   stale prose to correct in the same commit. **Keep the `development` rows alive** until the old bucket is gone — the
   generator still has to emit the old backend.
-- **4.3 — DONE 2026-09-06. The gate passed: `terraform plan` → `No changes` after
+- **4.3 done 2026-09-06. The gate passed: `terraform plan` → `No changes` after
   `init -migrate-state`**, with the same gateway-endpoint ids the baseline showed, so the state arrived
   intact. `foundation/`, `egress/` and `probes/` moved with `git mv`; `development/bootstrap/` stayed.
-  - **The tfvars were NOT regenerated, and that is the whole of Recipe E step 3.** The untracked
+  - **The tfvars were not regenerated, which is Recipe E step 3.** The untracked
     `terraform.auto.tfvars` moved with the directory still reading `env = "dev"`,
     `environment_tag = "development"`, so the plan compares the same names against the same resources
     and an empty plan means the migration. Only `gen-backend-hcl.py` ran.
-  - **The two `[E]` slices WERE migrated after all, and this step said they need not be.** That was right
-    about the *necessity* and wrong about the tidiest path: zero resources is still a state OBJECT with a
-    lineage (measured: 749 and 697 bytes in the old bucket), and their `.terraform/` directories moved
-    still pointing at `awsds-dev-tfstate` — a bucket 4.7 destroys. Leaving them would have made the next
-    `make up` prompt for a backend change in a slice nobody was thinking about. Two `init -migrate-state`
-    calls, no plan gate, because there is genuinely nothing to gate in a torn-down slice.
-- **4.3 — Recipe E step 1 DONE 2026-09-06; steps 3-5 wait on 4.2's apply.** `development/foundation/`
-  initialised against the OLD backend (`awsds-dev-tfstate`, key `development/foundation/…`) and planned:
-  **`No changes`**. That is the baseline the whole recipe rests on and it is worth taking *before* the
-  move rather than after: with it, a non-empty plan on the far side is the **migration**; without it, a
+  - **The two `[E]` slices were migrated after all**, though they need not have been: zero resources is
+    still a state object with a lineage (measured: 749 and 697 bytes in the old bucket), and their
+    `.terraform/` directories moved still pointing at `awsds-dev-tfstate`, a bucket 4.7 destroys. Leaving
+    them would have made the next `make up` prompt for a backend change in a slice nobody was thinking
+    about. Two `init -migrate-state` calls, no plan gate, because there is nothing to gate in a torn-down
+    slice.
+- **4.3 — Recipe E step 1 done 2026-09-06; steps 3-5 wait on 4.2's apply.** `development/foundation/`
+  initialised against the old backend (`awsds-dev-tfstate`, key `development/foundation/…`) and planned:
+  **`No changes`**. That is the baseline the recipe rests on, and it is taken *before* the
+  move: with it, a non-empty plan on the far side is the **migration**; without it, a
   non-empty plan is ambiguous between the migration and drift that was already there. The state is now
   cached locally, which is what Recipe E step 1 exists to produce.
-  - **The generated `peers` map already carries BOTH keys** — `development` and `staging`, both resolving
+  - **The generated `peers` map already carries both keys** — `development` and `staging`, both resolving
     to `awsds-infra-staging` — because 4.2 added the `staging` PROFILES row while `staging` was still in
     `CIDRS`. It is **inert**: `production/foundation/peers.tf` builds `local.peer_vpc_ids` as a
     hand-written two-row map and never iterates `var.peers`, so an extra key creates no peering. Checked
     rather than assumed, because the opposite would have been a third VPC peering proposed by a plan
     nobody was reading for that.
-- **4.3 — [Claude⚡] Migrate with Recipe E — and only ONE slice actually needs it** *(measured
-  2026-09-06)*. `foundation/` is the only surviving slice carrying resources; **`egress/` and `probes/` are
-  `[E]` and their states are EMPTY — zero resources each**, because D11 leaves them torn down between
+- **4.3 — [Claude⚡] Migrate with Recipe E; only one slice needs it** (measured
+  2026-09-06). `foundation/` is the only surviving slice carrying resources; **`egress/` and `probes/` are
+  `[E]` and their states are empty — zero resources each**, because D11 leaves them torn down between
   sittings. So they are not migrations at all: their folders move with a `git mv` and their state is
   created fresh at the next `up`, with no `init -migrate-state` and no empty-plan gate, because there is
   nothing to gate. This also settles a contradiction: `conventions.md` §6 said `egress/` was *destroyed*
@@ -742,25 +720,25 @@ followed here, not authored.
   gate is that
   `terraform plan` returns **`No changes`** after `init -migrate-state`; nothing proceeds past a slice that
   does not.
-- **4.4 — DONE 2026-09-06** (the user ran the apply). **Re-plan `No changes`.** The outputs are the
-  verification and they are the load-bearing ones: **`s3_gateway_endpoint_id = vpce-0a222aef0c577abbb`
+- **4.4 done 2026-09-06** (the user ran the apply). **Re-plan `No changes`.** The outputs are the
+  verification: **`s3_gateway_endpoint_id = vpce-0a222aef0c577abbb`
   and `dynamodb_gateway_endpoint_id = vpce-0d70ec5dc14566c45` — byte-identical to the pre-move
   baseline**, so INT-05's anchors survived a folder rename, a state migration and a token flip. The
   private route tables kept their ids too. **All four security groups came back new**, as planned.
-- **4.4 — PLANNED AND READ 2026-09-06.** `8 to add, 16 to change, 8 to destroy`, and
+- **4.4 planned and read 2026-09-06.** `8 to add, 16 to change, 8 to destroy`, and
   the shape is the predicted one: **the VPC, all six subnets, both gateway endpoints, all four route
-  tables, the IGW and `aws_vpc_peering_connection.to_production` are IN-PLACE tag changes** — every id
+  tables, the IGW and `aws_vpc_peering_connection.to_production` are in-place tag changes** — every id
   survives, which is what INT-05's anchors and the peering depend on.
-  - **The step named five replacements and there are EIGHT, all of one class.** Predicted: the four
+  - **The step named five replacements; there are eight, all of one class.** Predicted: the four
     security groups (`endpoints` + the three tiers) and the flow-log **log group**. Also replaced, and
     unlisted: **`module.flow_log_role.aws_iam_role.this`** (its name is `awsds-dev-vpc-flow-logs`, an
     input built from the env token — exactly the class the step describes), **its inline policy**, and
-    **`aws_flow_log.this`**, which binds the two and cannot outlive either. So the rule the step states is
-    right and its enumeration was short; the reading is *"every resource whose NAME is built from the env
-    token, plus whatever binds them"*, which is a rule rather than a list.
-  - **Nothing outside the account is replaced, and that was checked rather than assumed**: the lake's
+    **`aws_flow_log.this`**, which binds the two and cannot outlive either. The rule holds and the
+    enumeration was short: *every resource whose name is built from the env token, plus whatever binds
+    them*.
+  - **Nothing outside the account is replaced**: the lake's
     `trusted_vpce_ids` stopped naming this account at 2.3, and the gateway endpoints keep their ids
-    anyway; the two `[E]` slices that read this state are torn down. **What DOES break the moment this
+    anyway; the two `[E]` slices that read this state are torn down. **What breaks the moment this
     applies is `production/foundation/`**, whose data sources look the VPC up by the tag `awsds-dev-vpc`
     — which is 4.5, and why the two applies are back to back.
 - **4.4 — [Claude⚡] Flip the token**: set `env = "staging"` and `environment_tag = "staging"` and read the
@@ -769,16 +747,16 @@ followed here, not authored.
   naming this account at 2.3),
   while the security groups and the flow-log group **are replaced**. Anything else in the replacement list
   is a surprise and stops the step.
-- **4.5 — DONE 2026-09-06, planned and read; the apply is the user's.**
+- **4.5 done 2026-09-06, planned and read; the apply is the user's.**
   **`production/foundation`: `4 to add, 1 to change, 4 to destroy`** — and the one change is
-  **`aws_vpc_peering_connection_accepter.peer["staging"]` UPDATED IN PLACE**, which is the whole point
-  of the five `moved {}` blocks: eight addresses moved in state and the peering was never touched. The
+  **`aws_vpc_peering_connection_accepter.peer["staging"]` updated in place**, which is what the five
+  `moved {}` blocks are for: eight addresses moved in state and the peering was never touched. The
   four adds and four destroys are `aws_route.return`, the deliberate exception, with unchanged
   destination CIDRs.
   **`production/registry`: `No changes`** — as predicted, because the account id behind the renamed
   alias is the same account, so none of the four policies moved.
-- **4.5 — READ BEFORE WRITING, 2026-09-06, and it is BIGGER than this step says: without `moved {}`
-  blocks it DESTROYS THE PEERING.** The step describes an edit to the accepter side and four provider
+- **4.5 read before writing, 2026-09-06: without `moved {}` blocks it destroys the peering.**
+  The step describes an edit to the accepter side and four provider
   aliases. What it does not say is that `development` is a **`for_each` key**, not just a name, in
   `production/foundation/peers.tf` — so renaming it is an address change, and Terraform's answer to an
   address change is destroy-and-create:
@@ -799,17 +777,16 @@ followed here, not authored.
     `data.aws_caller_identity.development` and one `locals` reference. Data sources hold no address the
     apply defends, and the account id behind them is unchanged, so its policies do not move.
   - **`REGISTRY_CONSUMERS` keeps the row**, renamed — Staging pulls images and packages like any deploy
-    target; it is `DATA_CONSUMERS` that lost it (2.4). The two lists answering different questions is
-    exactly what that table's comment predicted would matter one day.
+    target; it is `DATA_CONSUMERS` that lost it (2.4). The two lists answer different questions.
 - **4.5 — [Claude] Re-point the peer lookup in the same commit**: `production/foundation/peers.tf` finds a
   peer by the tag `awsds-<env>-vpc`, which 4.4 renames to `awsds-staging-vpc`. Edit the accepter side and
   the four literal provider aliases (`production/foundation/peers.tf`,
   `production/registry/providers.tf`, `data-governance/data/providers.tf`,
   `data-governance/governance/providers.tf`) together — provider aliases cannot be iterated, so all four
   are hand-written and all four move in one commit with the `backend.py` lists (Lesson 14).
-- **4.6 — DONE 2026-09-06, planned to `0 to add, 0 to change, 0 to destroy` exactly as this step
+- **4.6 done 2026-09-06, planned to `0 to add, 0 to change, 0 to destroy` exactly as this step
   predicts; the apply is the user's.** Three `moved {}` blocks, in `identity/sso/moved.tf`.
-  - **THE STEP NAMES TWO AND THERE ARE THREE, AND THE THIRD IS THE DANGEROUS ONE.** It lists the two
+  - **The step names two moves; there are three, and the third is the dangerous one.** It lists the two
     `local.assignments` keys and the `accounts` map key. What it does not say is that
     **`aws_ssoadmin_account_assignment.infrastructure` `for_each`es over `local.accounts` itself** — so
     renaming that map key moves a third address. Without a block for it the plan read **`1 to add, 0 to
@@ -823,7 +800,7 @@ followed here, not authored.
   `data-scientist-staging@staging` and `deployment-manager@development` → `…@staging`, plus the
   `accounts` map key `development` → `staging`. Without `moved {}` these are address changes and Terraform
   destroys and re-creates each assignment; with them the plan reads `0 to add, 0 to change, 0 to destroy`.
-- **4.7 — DONE 2026-09-06. `awsds-dev-tfstate` and `alias/awsds-dev-tfstate` are gone;
+- **4.7 done 2026-09-06. `awsds-dev-tfstate` and `alias/awsds-dev-tfstate` are gone;
   `awsds-staging-tfstate` is the only bucket in the account.** `terraform-live/development/` no longer
   exists, and the `development` row left `ENV_TOKENS`, `ENVIRONMENT_TAGS`, `PROFILES`, `layers.py`,
   `check-bootstrap-parity.py`, `conventions.md` §6 and `terraform-live/README.md` in one commit.
@@ -833,25 +810,23 @@ followed here, not authored.
     a data source stays in state after a destroy because it is re-read, not destroyed. Nothing was
     orphaned and 1.7's record stands, but *"2 resources"* in a state about to be deleted is exactly the
     reading that should stop one, and the field that answers it is one word.
-  - **Object Lock re-measured rather than trusted** (`ObjectLockConfigurationNotFoundError`): it is the
-    single property that would have made this step unexecutable, and this step's own note about it dated
-    from a different instrument's run.
-  - **The state left the bucket by returning the slice to LOCAL state, a refinement of Recipe E step 7
-    rather than a deviation.** The recipe says *migrate*; its purpose is to get the state out of the
+  - **Object Lock re-measured** (`ObjectLockConfigurationNotFoundError`): it is the single property that
+    would have made this step unexecutable.
+  - **The state left the bucket by returning the slice to local state**, a refinement of Recipe E step 7
+    rather than a deviation. The recipe says *migrate*; its purpose is to get the state out of the
     bucket about to be destroyed, and this slice is **destroyed, not moved**, so no destination outlives
     it. Commenting the backend block is phase 1 of the bootstrap pattern in reverse — only the two forms
     that file documents, and no temporary lie in the vocabulary tables to name a bucket the generator
     would otherwise refuse to produce.
-  - **`force_destroy` REPLACED this step's "empty it by hand" instruction** — measured **163 object
+  - **`force_destroy` replaced this step's "empty it by hand" instruction** — measured **163 object
     versions and 98 delete markers**. Emptying through `terraform destroy` makes it a **reviewable code
     change** and a planned operation rather than a loop of `delete-objects` calls whose blast radius
-    exists only in the operator's head. The safety the instruction bought is bought better by that line
-    being visible in a diff.
-  - **The two-commit shape did NOT survive the gates, and this is its second instance in this stage.**
+    exists only in the operator's head.
+  - **The two-commit shape did not survive the gates**, its second instance in this stage.
     A bootstrap slice with `prevent_destroy` lifted has stopped being a copy, so
     `check-bootstrap-parity.py` fails the intermediate commit; dropping the folder from its lists early
-    fails it the other way. **There is no committable intermediate state** — the teardown commits its END
-    state, which is what step 1.7 found about a whole slice on the same day.
+    fails it the other way. **There is no committable intermediate state** — the teardown commits its
+    **end** state, which is what step 1.7 found about a whole slice on the same day.
 - **4.7 — [Claude⚡] Retire the old bucket, last**: migrate `development/bootstrap/`'s own state to the new
   bucket, lift `prevent_destroy` in one commit, empty the versioned bucket by hand (object versions **and**
   delete markers), destroy it in the next commit. **Measured 2026-09-06 (`./aws/tf-backends.py` §2):
@@ -860,21 +835,20 @@ followed here, not authored.
   emptying impossible and the step unexecutable, and it is on in exactly one bucket in this estate
   (`INV-14`'s CloudTrail bucket), so the shape is not hypothetical. Only then remove the `development` rows from
   `backend.py` and `layers.py`.
-- **4.8 — DONE 2026-09-06, in the `git mv` commit.** `staging` is REQUIRED, `development` is OPTIONAL —
-  and the comment says what the word now means, because it inverted: it used to mean *"not vended yet,
-  and this check starts comparing it the day somebody writes it"*; it now means *"still present, and its
-  absence is the expected end state"*.
+- **4.8 done 2026-09-06, in the `git mv` commit.** `staging` is REQUIRED, `development` is OPTIONAL, and
+  the comment says what OPTIONAL now means: *"still present, and its absence is the expected end state"*,
+  inverting *"not vended yet"*.
 - **4.8 — [Claude] Swap the parity gate**, in the `git mv` commit: `scripts/check-bootstrap-parity.py`
   makes `development` REQUIRED and `staging` OPTIONAL — the two swap.
 
-### 5. Close the stage — instruments, vocabularies and the documents that state the account as a fact
+### 5. Close the stage: instruments, vocabularies and documents
 
-> **Read this pass before running passes 1-4, not after.** Three times now an instrument listed here has
-> gone red — or gone unrunnable — at the pass that *caused* the change rather than at this one: `studio.py`'s
+> **Read this pass before running passes 1-4, not after.** Three times an instrument listed here has gone
+> red — or gone unrunnable — at the pass that *caused* the change rather than at this one: `studio.py`'s
 > `US-4` at 1.1 (2026-09-06, measured), the probe token at 3.7, and `deploytargets.py`'s `DT-8`, which is
 > not runnable until step 4 makes the profile resolve. **A check that is red for four passes is a check
-> nobody reads on the fifth.** So each item below carries the pass that actually owns it, and what stays
-> here is only what the *finished* conversion changes.
+> nobody reads on the fifth.** So each item below carries the pass that owns it, and what stays here is
+> only what the *finished* conversion changes.
 
 **Action:** re-scope every instrument and revise every document that names the account. **Why:** a role
 change is the trigger to re-read every instrument in the same sitting (Lesson 31) — a check written for an
@@ -888,19 +862,19 @@ Interactive Development keeps reporting `pass` about an account that no longer e
   permission set leaves the account, so the profile authenticates into nothing. **No instrument depends on
   any of the three names** — `awslib/profiles.py` enumerates `awsds-*` at run time, and the only tracked
   files naming the last two are log entries, which are never edited. So this is a `~/.aws/config` act with
-  no code half, which is exactly why it needs a step of its own.
-- **5.1 — DONE 2026-09-06, across two sittings, and ONE of its instructions was refused.**
+  no code half, which is why it needs a step of its own.
+- **5.1 done 2026-09-06, across two sittings; one of its instructions was refused.**
   `studio.py`, `cicd.py`, `supplychain.py`, `dlp.py`, `networking.py`, `datalake.py`,
   `deploytargets.py` and six usage-example comments are retargeted; `rename-check.py` keeps both
   spellings on purpose. No live `awsds-infra-dev` reference survives under `aws/`.
-  - **The refusal is `dns-allowlist.py`, and the step's reasoning was right about the DESIGN while
-    being wrong about the CODE.** It said to **remove** the Development slice rather than retarget it,
+  - **The refusal is `dns-allowlist.py`: the step's reasoning was right about the design and wrong about
+    the code.** It said to **remove** the Development slice rather than retarget it,
     because a DNS allow-list is a list of names a *person* chose to reach from an interactive session
-    and a deployment target resolves whatever its pipeline resolves. True — but
+    and a deployment target resolves whatever its pipeline resolves. But
     `terraform-live/staging/egress/main.tf` **still declares `dns_firewall = true` and still carries
     `dns_firewall_allow_domains`**, so removing the row would have left an allow-list that exists in
     the tree with nothing reading it: a check whose scope shrank while the thing it measures did not
-    (**Lesson 31**, which is the failure this entire pass exists to catch). The row is **retargeted**,
+    (Lesson 31). The row is **retargeted**,
     the design question is left to **6c** — which rewrites egress outright under D38 — and the comment
     says what would make 5.1's sentence true.
   - `networking.py`'s `NT-3`/`NT-5`/`NT-6` were the ones deliberately **flagged a sitting earlier
@@ -909,12 +883,12 @@ Interactive Development keeps reporting `pass` about an account that no longer e
     naming an account it had stopped describing. Run: **`0 check(s) FAILED`**.
 - **5.1 — [Claude] Re-scope the instruments**: drop `awsds-infra-dev` from `studio.py`'s
   `INTERACTIVE_PROFILES`, and **remove** the Development slice from `dns-allowlist.py` rather than
-  retargeting it (Staging is headless — it resolves nothing a person chose). **The probe token is NOT
+  retargeting it (Staging is headless — it resolves nothing a person chose). **The probe token is not
   here** — it moved to step 3.7, which is the run that needs it. Rename the profile constants — **and, in
   `deploytargets.py`, the prose that still waits for a vend that will not happen** — in
   `cicd.py`, `deploytargets.py`,
   `supplychain.py`, `datalake.py`, `networking.py`, `egress.py`, `vpn.py` and `sandboxlake.py`.
-- **5.2 — DONE 2026-09-06: `./aws/rename-check.py` prints the AFTER verdict, `0 check(s) FAILED`.**
+- **5.2 done 2026-09-06: `./aws/rename-check.py` prints the AFTER verdict, `0 check(s) FAILED`.**
   `RC-1 Staging Account` · `RC-2 Workloads` · `RC-3 datazone denied here` · `RC-4 no share` ·
   `RC-5 the three persona sets` · `RC-6 no grant names the account`. **No MIXED verdict at any point
   in the stage** — which is the instrument's own claim about the step order, not a claim about a
@@ -922,7 +896,7 @@ Interactive Development keeps reporting `pass` about an account that no longer e
 - **5.2 — [Claude] Run the conversion report**: `./aws/rename-check.py` must now print the **AFTER**
   verdict — new name, `Workloads`, the three persona sets, zero DataZone objects, no share, no vending
   policy. A **MIXED** verdict names the object that failed to cross.
-- **5.3 — DONE 2026-09-06.** `docs/ORGANIZATION.md` (banner, lifecycle axis, account table, naming
+- **5.3 done 2026-09-06.** `docs/ORGANIZATION.md` (banner, lifecycle axis, account table, naming
   table, the `Development Account` section retired, the persona prose, and the assignment table **down to
   14 rows, renumbered** — which is exactly what `list-identities.py` reads: 2 Data Governance, 1 Identity,
   4 Production, 4 Sandbox, 3 Staging); `docs/AWS_STATE.md` (roster, A.1, the VPC row, the SMUS, lake,
@@ -980,7 +954,7 @@ Interactive Development keeps reporting `pass` about an account that no longer e
 - `./aws/datalake.py` `DL-5`/`DL-13` pass with no Development row, and `DL-7` reads two resource links.
 - `./aws/deploytargets.py` `DT-8` **runs at all** — it is skipped until `awsds-infra-staging` resolves —
   and passes: no resource link from the deployment target to Data Governance (D20).
-  - **RAN 2026-09-06, and the D20 half passed while the OTHER half went red** — `DT-8` is a **pair**, and
+  - **Ran 2026-09-06: the D20 half passed and the other half went red.** `DT-8` is a **pair**, and
     this line named one of them. `staging isolation` = **pass**, *"no resource link reaches Data
     Governance"*. `mirror curated` = **fail**, *"DIVERGES (missing 1, extra 0)"* — and **nothing had
     drifted**: Stage 9 has not built the mirror, so Staging holds zero tables against the lake's one, and
@@ -1009,21 +983,20 @@ bucket is cents; the old bucket's storage disappears with it.
 
 ## Verifications to answer while executing
 
-1. ~~Does a blueprint configuration with an attached grant destroy in one plan, or does it need Recipe F?~~
-   **ANSWERED 2026-09-06 (1.2): one plan, one apply.** The provider orders each grant before its
+1. Does a blueprint configuration with an attached grant destroy in one plan, or does it need Recipe F?
+   **Answered 2026-09-06 (1.2): one plan, one apply.** The provider orders each grant before its
    configuration by itself; Recipe F was not needed and stays unexercised.
-2. ~~Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?~~
-   **ANSWERED 2026-09-06 (1.5): it fails — `UnauthorizedException: Unauthorized`.** Not an access-denied
+2. Does `list-environment-blueprint-configurations` fail rather than return empty after disassociation?
+   **Answered 2026-09-06 (1.5): it fails — `UnauthorizedException: Unauthorized`.** Not an access-denied
    naming a policy: the domain is simply no longer shared into the account. 6a step 1.3's proof in reverse,
    and the distinction 1.3's own read-back turns on.
 3. Does the OU move through Control Tower re-baseline the account by itself, or does it depend on account
-   auto-enrollment? (0.5 + 3.4.) **Narrowed by documentation on 2026-09-05 and then made UNANSWERABLE by
-   measurement on 2026-09-06**, which is the honest outcome rather than a gap: auto-enrollment is **ON** in
-   this landing zone, so both paths re-baseline and the estate can no longer show what the other one would
-   have done (Lesson 22 — the failing case cannot be produced without an `update-landing-zone`, which is a
-   write nobody should take as a measurement). **What stays measurable at 3.4/3.5 is the narrower question
-   that actually matters here**: does the account come out carrying **only** the `Workloads` baseline, and
-   do the provisioned product's parameters follow?
+   auto-enrollment? (0.5 + 3.4.) **Unanswerable, by measurement on 2026-09-06**: auto-enrollment is **on**
+   in this landing zone, so both paths re-baseline and the estate can no longer show what the other one
+   would have done (Lesson 22 — the failing case cannot be produced without an `update-landing-zone`,
+   which is a write nobody should take as a measurement). **What stays measurable at 3.4/3.5**: does the
+   account come out carrying **only** the `Workloads` baseline, and do the provisioned product's
+   parameters follow?
 4. Does the direct `AWSAdministratorAccess` assignment return after the account update? (3.6, D32.)
    **The negative baseline is measured (2026-09-05): the account carries no such assignment today**, so a
    return is detectable rather than arguable — which is what 1b verification (vi) has been waiting for.
