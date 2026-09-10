@@ -7,21 +7,22 @@ output "interface_endpoint_ids" {
   value       = module.egress.interface_endpoint_ids
 }
 
-# The address the internet sees for this estate is the proxy's, a [P] output of
-# `production/networking/`. It survives `make down`, so unlike anything here it can be named by a
-# condition, which is what 4.12 does.
+# `nat_gateway_id` and `nat_public_ip` went with the NAT itself at `vpc-egress-v0.6.0` (6c step
+# 5.1), consumed by nothing across terraform-live/, aws/, scripts/ and docs/. The address the
+# internet now sees for this estate is the proxy's, a [P] output of `production/networking/`: it
+# survives `make down`, so unlike these two it can be named by a condition, which is what 4.12 does.
 
-# ------------------------------------------------------- NO_PROXY (6c step 5.6, 2026-09-06)
+# ------------------------------------------------------------------- NO_PROXY (6c step 5.6)
 #
-# The one output of this slice meant to be consumed, and the exception to the warning above: it is
-# not an id. It is the list of names a client in this VPC must not send to the proxy, generated in
-# the module from the services this slice declares, so it cannot disagree with the endpoints that
-# were built and it changes in the same apply they do.
+# The one output of this slice meant to be consumed, and the one that is not an id: the list of
+# names a client in this VPC must not send to the proxy, generated in the module from the services
+# this slice declares, so it cannot disagree with the endpoints that were built and it changes in
+# the same apply they do.
 #
-# Read it through terraform_remote_state, never by transcription (Lesson 3). Eight of its names are
-# not derivable from the service token - `ecr.dkr` alone resolves as `*.dkr.ecr.<region>...` - so a
-# copied list is wrong for the estate's busiest path and wrong silently, since a bypass entry that
-# matches nothing merely sends the call to Squid.
+# Read it through terraform_remote_state, never by transcription (Lesson 3). Eight of the names in
+# it are not derivable from the service token - `ecr.dkr` alone resolves as `*.dkr.ecr.<region>...`
+# - so a copied list is wrong for the estate's busiest path, and wrong silently, since a bypass
+# entry that matches nothing merely sends the call to Squid.
 #
 # `images/base` may not consume it. Every application image inherits from that one and runs as a
 # Production job behind endpoints, so an `ENV HTTP_PROXY`/`ENV NO_PROXY` baked there would travel

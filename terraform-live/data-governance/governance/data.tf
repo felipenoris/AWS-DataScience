@@ -4,15 +4,14 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
-# The member account the one project profile provisions into - resolved live so that no account
-# id enters a tracked file (aws/INDEX.md rule 1). The `development` read left with the
-# `engineering` profile at Stage 6b step 1.1 (2026-09-06).
+# The member account the project profile provisions into - resolved live so that no account id
+# enters a tracked file (aws/INDEX.md rule 1).
 data "aws_caller_identity" "sandbox" {
   provider = aws.sandbox
 }
 
 
-# The blueprint ids, resolved BY NAME on the domain (pass 2c only). Terraform's project-profile
+# The blueprint ids, resolved by name on the domain (pass 2c only). Terraform's project-profile
 # resource takes ids; the decision, the documentation and ./aws/studio.py all speak names, so
 # the lookup happens here rather than opaque identifiers being pasted into a variable.
 data "aws_datazone_environment_blueprint" "enabled" {
@@ -25,12 +24,12 @@ data "aws_datazone_environment_blueprint" "enabled" {
 
 # ------------------------------------------------------------------- the directory lookups
 #
-# WHO MAY CREATE A PROJECT (grants.tf, 2026-08-22). Two reads, both through the Identity
-# alias, both resolving a NAME written in locals.tf to the id the grant takes. The groups
-# themselves are NOT declared in Terraform anywhere and must not be: a group is person-shaped
-# and its count grows with headcount, so it stays a directory object and what code owns is the
-# ENTITLEMENT pointing at it - the identity seam of docs/plan/conventions.md, and the same
-# split identity/sso/data.tf already makes for the permission-set half.
+# Who may create a project (grants.tf). Two reads, both through the Identity alias, both
+# resolving a name written in locals.tf to the id the grant takes. The groups themselves are
+# declared in Terraform nowhere and must not be: a group is person-shaped and its count grows
+# with headcount, so it stays a directory object and code owns the entitlement pointing at it -
+# the identity seam of docs/plan/conventions.md, and the split identity/sso/data.tf makes for
+# the permission-set half.
 data "aws_ssoadmin_instances" "this" {
   provider = aws.identity
 }

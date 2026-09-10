@@ -1,29 +1,29 @@
-# The five buckets (steps 1.2, 1.4; docs/GOVERNANCE.md "Persistence") - one module call per
-# name, every bucket [P] by construction (prevent_destroy in the module) and PERMANENT twice
-# over here: DenyLakeDeletionAndDeregistration denies s3:DeleteBucket to every principal in
-# this account, InfrastructureAccess included. Slow down exactly where it feels routine.
+# The five buckets (steps 1.2, 1.4; docs/GOVERNANCE.md "Persistence") - one module call per name,
+# every bucket [P] by construction (prevent_destroy in the module) and permanent twice over here:
+# DenyLakeDeletionAndDeregistration denies s3:DeleteBucket to every principal in this account,
+# InfrastructureAccess included.
 #
-# DELIBERATELY NOT CREATED (step 1.5): an athena-results bucket. Query output lands in each
-# consumer's own derived zone (the SMUS project path since 2026-08-26, D19 revised) - a results bucket here would be
-# an undesigned copy zone inside the governed account.
+# There is no athena-results bucket (step 1.5). Query output lands in each consumer's own derived
+# zone (the SMUS project path since 2026-08-26, D19); a results bucket here would be an
+# undesigned copy zone inside the governed account.
 
 # ------------------------------------------------------- the perimeter (step 1.3, INT-05)
 #
-# ONE DENY, THREE LEGITIMATE BRANCHES, on every bucket - the resource-side half of the
-# trusted-networks axis (docs/plan/architecture.md 4.2), the data-perimeter-examples shape:
+# One deny on every bucket - the resource-side half of the trusted-networks axis
+# (docs/plan/architecture.md 4.2), in the data-perimeter-examples shape. Its legitimate branches:
 #
-#   branch 1  aws:SourceVpce in the consumers' [P] GATEWAY endpoints - never the [E]
-#             interface endpoints (Lesson 3, INT-05): those change id on every make up and
-#             live in accounts this policy cannot see change.
+#   branch 1  aws:SourceVpce in the consumers' [P] gateway endpoints, never the [E] interface
+#             endpoints (Lesson 3, INT-05): those change id on every make up and live in
+#             accounts this policy cannot see change.
 #   branch 2  aws:SourceIp = the WireGuard Elastic IPs - a list, per D35 (D18's laptop path).
 #   branch 3  aws:PrincipalAccount = this account - the stage's own "looser and easier to
-#             get right" option, chosen DELIBERATELY over naming the maintenance role alone:
-#             the crawler runs in Glue with no VPC and no tunnel (D27's collision), and the
-#             infrastructure user works off-VPN by decision (open question 17, option a) -
-#             a role-only branch would lock the account's own administrator out of the
-#             console path to its own lake.
+#             get right" option, chosen over naming the maintenance role alone: the crawler
+#             runs in Glue with no VPC and no tunnel (D27's collision), and the infrastructure
+#             user works off-VPN by decision (open question 17, option a), so a role-only
+#             branch would lock the account's own administrator out of the console path to its
+#             own lake.
 #
-# And two carve-outs the deny must carry or it breaks the design it protects:
+# The carve-outs the deny must carry, or it breaks the design it protects:
 #   aws:ViaAWSService       - D13 forces every tabular read through Athena/Lake Formation
 #                             vended access, which arrives as a service-on-behalf call; a
 #                             bare SourceVpce deny makes step 6 unusable (stage step 1.3).
@@ -32,9 +32,9 @@
 #                             IP and no account; without the guard the deny eats the
 #                             delivery (the 3.4 shape, on a bucket).
 #
-# Plus the s3:signatureAge cap - the preventive counterpart of Stage 11's presigned-URL
-# detection: a presigned link is a bearer credential, and 15 minutes bounds how long a
-# leaked one works. Milliseconds, per the condition key.
+# The s3:signatureAge cap is the preventive counterpart of Stage 11's presigned-URL detection: a
+# presigned link is a bearer credential, and 15 minutes bounds how long a leaked one works.
+# Milliseconds, per the condition key.
 
 locals {
   perimeter_statements = {
@@ -68,20 +68,19 @@ locals {
     ]
   }
 
-  # The drop-box asymmetry (step 1.4; D18, D25, D27): three principals, three statements,
-  # nobody holding two of the three. The WRITER cannot read back or list - confirmation is
-  # the PutObject response; versioning keeps overwritten versions internally. The date in
-  # the key is a convention (incoming/<yyyy>/<mm>/<dd>/...); the policy scopes the prefix.
+  # The drop-box asymmetry (step 1.4; D18, D25, D27): three principals, three statements, nobody
+  # holding two of the three. The writer cannot read back or list - confirmation is the PutObject
+  # response, and versioning keeps overwritten versions internally. The date in the key is a
+  # convention (incoming/<yyyy>/<mm>/<dd>/...); the policy scopes the prefix.
   #
-  # MEASURED 2026-08-20 (Stage 5 pass 4d), and in three verbs rather than the two this comment
-  # names: the persona's PutObject succeeds; GetObject, ListObjectsV2 AND DeleteObject are each
-  # denied implicitly. The delete is the one worth stating - a writer that can retract is a
-  # writer that can launder, so put-only is a claim about retraction, not only about reading.
-  # AllowInteractiveWriterPutOnly is therefore EXERCISED, not merely attached (Lesson 20).
-  # One residue by design: the writer cannot clean up after itself and the collector is Stage
-  # 9's awsds-prod-job-exec, which does not exist yet, so the proof object is uncollectable
-  # until then - AWS_STATE.md EXC-02 declares it so a later snapshot does not read it as
-  # someone writing to the drop-box outside a recorded proof.
+  # Measured 2026-08-20 (Stage 5 pass 4d): the persona's PutObject succeeds; GetObject,
+  # ListObjectsV2 and DeleteObject are each denied implicitly. The delete is worth stating - a
+  # writer that can retract is a writer that can launder, so put-only is a claim about retraction
+  # as well as about reading. AllowInteractiveWriterPutOnly is exercised, not merely attached
+  # (Lesson 20). One residue by design: the writer cannot clean up after itself and the collector
+  # is Stage 9's awsds-prod-job-exec, which does not exist yet, so the proof object is
+  # uncollectable until then - AWS_STATE.md EXC-02 declares it so a later snapshot does not read
+  # it as someone writing to the drop-box outside a recorded proof.
   dropbox_statements = [
     {
       Sid       = "AllowInteractiveWriterPutOnly"
@@ -111,8 +110,8 @@ locals {
       }
     },
     # Same-account IAM would suffice for the maintenance role (its inline policy carries the
-    # read) - the statement is here so the asymmetry is READABLE in one place, which is what
-    # keeps the drop-box from quietly becoming the exchange bucket D18 refuses.
+    # read). The statement is here so the asymmetry is readable in one place, which keeps the
+    # drop-box from becoming the exchange bucket D18 refuses.
     {
       Sid       = "AllowMaintenanceSchemaRead"
       Effect    = "Allow"

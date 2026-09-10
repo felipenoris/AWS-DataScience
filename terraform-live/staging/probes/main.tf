@@ -1,26 +1,24 @@
-# development/probes/ - ONE host, and it is here because two things this stage claims had no
-# reading anywhere else.
+# staging/probes/ - one host, measuring two things that have no reading anywhere else.
 #
-#   INT-09. The stage's Proves row is the Development-to-Production peering, and the
+#   INT-09. The stage's Proves row is this account's peering to Production, and the
 #   Deliverables measure Sandbox-to-Production. Those are different peering connections with
 #   different routes on both sides; exercising one says nothing about the other, and INT-09
-#   is the one a promotion will actually run over.
+#   is the one a promotion will run over.
 #
-#   THE OTHER HALF OF THE DNS DELIVERABLE. It asks that probe.awsds.internal resolve from a
-#   Sandbox host AND from a Development host. The zone association reaching this VPC can be
-#   READ from Route 53, but reading an association is not resolving a name (Lesson 5), and
+#   The other half of the DNS deliverable. It asks that probe.awsds.internal resolve from a
+#   Sandbox host and from a host in this account. The zone association reaching this VPC can
+#   be read from Route 53, but reading an association is not resolving a name (Lesson 5), and
 #   the harness can produce this principal - so it is attempted rather than inferred. The
 #   third clause, NXDOMAIN from Staging, waits on the vend: with no Staging VPC there is no
 #   host to be refused, and an absent negative control is recorded rather than substituted.
 #
-# THERE IS NO PERIMETER PROBE HERE, and that is a decision rather than an omission: the S3
-# gateway policy is byte-identical across the three accounts, `./aws/egress.py` EG-4 reads it
-# in each of them, and the same allow-list measured a second time from a second account is a
-# second copy of one reading. What differs per account is the ROUTE, which is what this host
-# measures.
+# There is no perimeter probe here, by decision: the S3 gateway policy is byte-identical across
+# the three accounts, `./aws/egress.py` EG-4 reads it in each of them, and the same allow-list
+# measured a second time from a second account is a second copy of one reading. What differs
+# per account is the route, which is what this host measures.
 #
-# NO IAM PRINCIPAL, no credentials, and the reading leaves by the serial console - same as
-# the other two slices, for the same reasons.
+# No IAM principal, no credentials; the reading leaves by the serial console, as in the other
+# two probe slices.
 
 data "terraform_remote_state" "foundation" {
   backend = "s3"
@@ -41,8 +39,8 @@ locals {
   vpc_id   = data.terraform_remote_state.foundation.outputs.vpc_id
   vpc_cidr = data.terraform_remote_state.foundation.outputs.vpc_cidr
 
-  # THE SAME THREE ATTEMPTS the Sandbox peering probe makes, against the same target host,
-  # over a DIFFERENT peering connection - which is the whole point of running them twice.
+  # The same three attempts the Sandbox peering probe makes, against the same target host,
+  # over a different peering connection.
   #   permitted address + admitted port -> connects   (INT-09 route and security group agree)
   #   FORBIDDEN address, same port      -> no answer  (only the route differs)
   #   permitted address, blocked port   -> no answer  (only the security group differs)
@@ -75,7 +73,7 @@ locals {
 }
 
 # Egress to the peer VPCs and to this VPC - the second is the Route 53 resolver at base+2,
-# without which no name resolves. The peer range is kept WHOLE so the permitted address and
+# without which no name resolves. The peer range is kept whole so the permitted address and
 # the forbidden one are equally allowed here: the security group must not be part of what
 # distinguishes them.
 resource "aws_security_group" "int09" {
@@ -111,15 +109,15 @@ resource "aws_instance" "int09" {
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = "t4g.nano"
 
-  # The PRIVATE tier: it is the only one carrying INT-09's routes. The public tier has an IGW
+  # The private tier is the only one carrying INT-09's routes. The public tier has an IGW
   # default and no peering route at all, and the isolated tier has neither.
   subnet_id              = data.terraform_remote_state.foundation.outputs.private_subnet_ids[local.zone]
   vpc_security_group_ids = [aws_security_group.int09.id]
   user_data              = local.user_data
-  # THE USER DATA IS THE INSTRUMENT, so a changed instrument must produce a NEW RUN:
+  # The user data is the instrument, so a changed instrument must produce a new run:
   # user-data executes at first boot only, and the provider's default is to update the
-  # attribute in place - which would leave the old reading running and look like a
-  # re-measurement that agreed with itself.
+  # attribute in place, leaving the old reading running and looking like a re-measurement
+  # that agreed with itself.
   user_data_replace_on_change = true
 
   associate_public_ip_address = false

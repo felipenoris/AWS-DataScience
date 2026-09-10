@@ -1,14 +1,11 @@
-# development/foundation/ - Development's [P] network (Stage 3 pass 1). One vpc-module
-# instance plus its flow-log delivery role. NO private zone, by decision (step 4.2): nothing
-# in Development is addressed by a private name. Pass 2 (the peering requester toward
-# Production, INT-09, and the two zone associations of 4.4) lands here in its own sitting,
-# additively.
+# staging/foundation/ - Staging's [P] network (Stage 3 pass 1). One vpc-module instance plus
+# its flow-log delivery role; the child private zone is in zones.tf and the peering toward the
+# hub in peering-to-hub.tf.
 #
-# MODULES ARRIVE BY GIT TAG, NEVER BY BRANCH (docs/plan/conventions.md §6; Stage 3 step
-# 1.1a). The host the first callers pin is GITHUB, over SSH - the transport the operator's
-# remote already uses - and moving to GitLab (D8, Stage 7) is every caller's init changing
-# with it, recorded there. `terraform init` fetches these over the user's own git
-# credentials: a failure there is auth, not Terraform.
+# Modules are pinned by git tag, never by branch (docs/plan/conventions.md §6; Stage 3 step
+# 1.1a). The host is GitHub over SSH, the transport the operator's remote already uses; moving
+# to GitLab (D8, Stage 7) changes every caller's init. `terraform init` fetches these over the
+# user's own git credentials, so a failure there is auth, not Terraform.
 
 data "aws_partition" "current" {}
 
@@ -17,15 +14,13 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 # The flow-log delivery role - the iam-role module's first caller. permissions_boundary is
-# REQUIRED by the module; null here is the deliberate case: a service role authored by the
-# identity that authors boundaries (Lesson 18). The role name and the log-group name are one
-# contract: the vpc module creates "awsds-<env>-vpc-flow-logs" and this policy is scoped to
-# exactly that group.
-# THE NAME PREFIX, DERIVED ONCE (Stage 6c step 0.4, 2026-09-06). It mirrors the vpc module's own
-# local so the flow-log ROLE and the LOG GROUP keep the single contract the comment above states:
-# the module creates "<prefix>-vpc-flow-logs" and this policy is scoped to exactly that group.
-# Empty suffix reproduces the pre-6c names byte for byte, which is what makes this slice's plan
-# read `No changes` on the version bump alone.
+# required by the module; null here is the deliberate case, a service role authored by the
+# identity that authors boundaries (Lesson 18).
+#
+# The name prefix mirrors the vpc module's own local, so the role and the log group keep one
+# contract: the module creates "<prefix>-vpc-flow-logs" and the policy below is scoped to
+# exactly that group. An empty suffix reproduces the pre-Stage 6c names byte for byte, which is
+# what makes this slice's plan read `No changes` on the version bump alone.
 locals {
   name_prefix = var.name_suffix == "" ? "awsds-${var.env}" : "awsds-${var.env}-${var.name_suffix}"
 }
@@ -47,7 +42,7 @@ module "flow_log_role" {
         Effect    = "Allow"
         Principal = { Service = "vpc-flow-logs.amazonaws.com" }
         Action    = "sts:AssumeRole"
-        # The confused-deputy guard: only flow logs OF THIS ACCOUNT may assume the role.
+        # The confused-deputy guard: only flow logs of this account may assume the role.
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }

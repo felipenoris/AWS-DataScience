@@ -1,8 +1,8 @@
-# The backend - partial configuration (Stage 2 step 2.5), live from the first init: unlike
-# bootstrap/, this slice's state bucket already exists, so there is no two-phase dance.
+# The backend - partial configuration (Stage 2 step 2.5), live from the first init: this slice's
+# state bucket already exists, so there is no two-phase dance.
 #
-#   ./scripts/gen-backend-hcl.py development foundation   (writes the untracked backend.hcl)
-#   ./scripts/gen-tfvars.py development foundation        (region, env, tag, vpc_cidr, zone_ids)
+#   ./scripts/gen-backend-hcl.py staging foundation   (writes the untracked backend.hcl)
+#   ./scripts/gen-tfvars.py staging foundation        (region, env, tag, vpc_cidr, zone_ids)
 #   terraform init -backend-config=backend.hcl
 
 terraform {

@@ -1,29 +1,26 @@
-# The account data CMK (steps 1.1, decision 2 - revised 2026-08-19, the user: the
-# security-zone dimension withdrawn) - ONE key for the whole lake, drop-box included:
-# encryption granularity is per ACCOUNT (docs/GOVERNANCE.md "Encryption"), and this account
-# holds the five lake buckets. The binding is each bucket's default-encryption configuration
-# (buckets.tf) - no catalog attribute is involved. A dataset whose blast radius argues for a
-# key of its own is a new module call here plus Bucket Keys re-pointing - a bucket-level
-# change, not a migration.
+# The account data CMK (step 1.1, decision 2) - one key for the whole lake, drop-box included:
+# encryption granularity is per account (docs/GOVERNANCE.md "Encryption"), and this account holds
+# the five lake buckets. The binding is each bucket's default-encryption configuration
+# (buckets.tf); no catalog attribute is involved. A dataset whose blast radius argues for a key of
+# its own is a new module call here plus Bucket Keys re-pointing - a bucket-level change, not a
+# migration.
 #
-# THE POLICY IS PASSED, NOT DEFAULTED, because two cross-account statements must ride on the
-# object (Lesson 14's good direction - one copy, on the key):
+# The policy is passed rather than defaulted, because two cross-account statements must ride on
+# the key object (Lesson 14):
 #
-#   - the drop-box WRITERS (D18): SSE-KMS PutObject needs GenerateDataKey, and a multipart
-#     upload needs Decrypt with it (documented; the error otherwise names S3, not KMS -
-#     stage step 1.4's warning). Scoped kms:ViaService=S3, so the persona cannot use the
-#     key outside an S3 call.
-#   - the PICKUP (D25, INT-10): awsds-prod-job-exec reads SSE-KMS objects, so kms:Decrypt.
+#   - the drop-box writers (D18): SSE-KMS PutObject needs GenerateDataKey, and a multipart
+#     upload needs Decrypt with it (the error otherwise names S3, not KMS - stage step 1.4's
+#     warning). Scoped kms:ViaService=S3, so the persona cannot use the key outside an S3 call.
+#   - the pickup (D25, INT-10): awsds-prod-job-exec reads SSE-KMS objects, so kms:Decrypt.
 #     The role exists at Stage 9; until then the ArnLike matches nothing, which is the
 #     recorded "pickup half unexercised" state.
 #
-# WHAT THE SINGLE KEY COSTS, said where the key is made (decision 3's deviation,
-# docs/GOVERNANCE.md "Encryption"): these grants land on the ACCOUNT key, so at the KMS
-# layer the matched principals reach every lake bucket - the drop-box's isolation
-# rests on the S3 statements and Lake Formation alone.
+# What the single key costs (decision 3's deviation, docs/GOVERNANCE.md "Encryption"): these
+# grants land on the account key, so at the KMS layer the matched principals reach every lake
+# bucket - the drop-box's isolation rests on the S3 statements and Lake Formation alone.
 
-# The module address moved with the 2026-08-19 revision (zn_lab_key -> data_key); the block
-# keeps the applied key object in place and can be dropped once every caller has applied.
+# The module address moved from zn_lab_key to data_key; this block keeps the applied key object
+# in place and can be dropped once every caller has applied.
 moved {
   from = module.zn_lab_key
   to   = module.data_key
@@ -59,7 +56,7 @@ module "data_key" {
       },
       {
         # The crawlers' log encryption (maintenance.tf's security configuration): CloudWatch
-        # Logs encrypts with the key ITSELF, as a service principal - the crawler role's own
+        # Logs encrypts with the key itself, as a service principal - the crawler role's own
         # KMS grant does not cover it. Scoped by the log-group encryption context, so the
         # service can use this key for /aws-glue/* in this account and for nothing else.
         Sid       = "AllowCloudWatchLogsEncryptionForGlue"

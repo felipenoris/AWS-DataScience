@@ -1,7 +1,7 @@
-# Inputs. The first three arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py data-governance data) - region and env for Stage 2's standing
-# reasons - and so do the three maps, because profile names live in the PROFILES table of
-# scripts/tfhygiene/backend.py and may be a literal in no .tf file (Lesson 14).
+# Inputs. Everything but the tag defaults arrives from the generated, untracked
+# terraform.auto.tfvars (./scripts/gen-tfvars.py data-governance data) - region and env for
+# Stage 2's standing reasons, and the account maps because profile names live in the PROFILES
+# table of scripts/tfhygiene/backend.py and may be a literal in no .tf file (Lesson 14).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."

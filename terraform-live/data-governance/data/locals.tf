@@ -4,7 +4,7 @@ locals {
   infrastructure_access_role_arn = one(data.aws_iam_roles.infrastructure_access.arns)
 
   # The governance manager (step 6, pass 2) - resolved the same way and for the same reason,
-  # and NOT an admin by decision 5: it holds the specific grants in governance.tf instead.
+  # and not an admin by decision 5: it holds the specific grants in governance.tf instead.
   # one() failing here means the set is not provisioned in this account, which would make
   # every grant below aim at nothing - a loud failure rather than a silent no-op.
   governance_manager_role_arn = one(data.aws_iam_roles.governance_manager.arns)
@@ -18,22 +18,18 @@ locals {
     dropbox = aws_glue_catalog_database.dropbox.name
   }
 
-  # The consumer accounts of step 7's shares. Production is absent BY DESIGN, not by omission:
-  # its share carries the governed write and arrives with Stage 9, which has a job role to
-  # receive it. The ids come from the aliased providers, so no account id enters a tracked
-  # file, and an account that cannot be read fails by name here.
-  # ONE CONSUMER SINCE STAGE 6b STEP 2.3 (2026-09-06). `development` left because the account
-  # becomes the headless `Staging`, which D20 keeps off the lake share entirely - a deployment
-  # target reads what the pipeline gives it, not the catalog. Dropping the row revokes the two
-  # TBAC triples AND removes that account's S3 gateway endpoint from `trusted_vpce_ids` below,
-  # so this apply narrows the bucket policies as well as the grants.
+  # The consumer accounts of step 7's shares. Production is absent by design: its share carries
+  # the governed write and arrives with Stage 9, which has a job role to receive it. Staging is
+  # absent by D20 - a deployment target reads what the pipeline gives it, not the catalog. The
+  # ids come from the aliased providers, so no account id enters a tracked file, and an account
+  # that cannot be read fails by name here.
   consumer_accounts = {
     sandbox = data.aws_caller_identity.sandbox.account_id
   }
 
-  # The five buckets. Names are FOREVER in this account - DenyLakeDeletionAndDeregistration
-  # denies s3:DeleteBucket unconditionally (stage callout at 1.2) - so they are built from
-  # the env token exactly as docs/GOVERNANCE.md prints them, and from nothing else.
+  # The five buckets. A name is permanent in this account - DenyLakeDeletionAndDeregistration
+  # denies s3:DeleteBucket unconditionally (stage callout at 1.2) - so they are built from the
+  # env token exactly as docs/GOVERNANCE.md prints them, and from nothing else.
   bucket_keys  = ["raw", "curated", "artifacts", "logs", "dropbox"]
   bucket_names = { for k in local.bucket_keys : k => "awsds-${var.env}-${k}" }
   bucket_arns  = { for k, n in local.bucket_names : k => "arn:${data.aws_partition.current.partition}:s3:::${n}" }
@@ -42,15 +38,13 @@ locals {
   consumer_vpce_ids = [
     for k, s in data.terraform_remote_state.consumer_foundation : s.outputs.s3_gateway_endpoint_id
   ]
-  # `distinct()`/`sort()` since 6c step 4.12's union (2026-09-06): two VPN homes now share one
-  # address, because the Elastic IP was TRANSFERRED between accounts rather than reallocated.
-  # Without it this bucket policy carries the same /32 twice.
-  # THE PROXY'S ADDRESS JOINED AT 6c step 4.12 (2026-09-06) - the same change as identity/sso's,
-  # for the same reason: under D38 a persona's direct S3 call from a laptop leaves through the
-  # hub's Squid proxy, so the lake perimeter must know that address. `try(..., null)` because a
-  # VPN home need not hold a proxy (Sandbox does not, and is still a home while the union stands);
-  # `compact()` drops the nulls. The NAME still says wireguard because the whole list is the VPN
-  # home's egress, and renaming it would touch the bucket policies for nothing.
+  # The union of every VPN home's tunnel address and proxy address (6c step 4.12). Under D38 a
+  # persona's direct S3 call from a laptop leaves through the hub's Squid proxy, so the lake
+  # perimeter must know that address too. `try(..., null)` because a VPN home need not hold a
+  # proxy (Sandbox does not, and is still a home); `compact()` drops the nulls. `distinct()` and
+  # `sort()` because two homes can share one address - the Elastic IP was transferred between
+  # accounts rather than reallocated - and without them the bucket policy carries the same /32
+  # twice. The name says wireguard because the whole list is the VPN home's egress.
   wireguard_eip_cidrs = sort(distinct(compact(flatten([
     for k, s in data.terraform_remote_state.vpn_home : [
       "${s.outputs.wireguard_eip_public_ip}/32",
@@ -58,14 +52,14 @@ locals {
     ]
   ]))))
 
-  # THE VPN HOMES' OWN S3 ENDPOINTS, ON THE AXIS THAT CARRIES THEM (2026-08-20; Lesson 33's
-  # second finding, stage 5 log's controls entry). Every tunnel call - whichever account's
-  # persona makes it - exits through the HOME's gateway endpoint, so its id belongs in the
-  # trusted list because the home is the tunnel's exit, NOT because the home happens to
-  # consume the lake. Today the two lists intersect (the single home is also a consumer) and
-  # the rendered policy is UNCHANGED by this line; the day a second home appears, or the host
-  # moves to a non-consumer account, this is what keeps the perimeter's S3 branch honest
-  # instead of correct by coincidence (Lessons 10, 29).
+  # The VPN homes' own S3 endpoints, on the axis that carries them (measured 2026-08-20; Lesson
+  # 33's second finding, stage 5 log's controls entry). Every tunnel call, whichever account's
+  # persona makes it, exits through the home's gateway endpoint, so its id belongs in the trusted
+  # list because the home is the tunnel's exit and not because the home consumes the lake. The
+  # two lists intersect today (the single home is also a consumer) and the rendered policy is
+  # unchanged by this line; the day a second home appears, or the host moves to a non-consumer
+  # account, this keeps the perimeter's S3 branch honest instead of correct by coincidence
+  # (Lessons 10, 29).
   vpn_home_vpce_ids = [
     for k, s in data.terraform_remote_state.vpn_home : s.outputs.s3_gateway_endpoint_id
   ]
@@ -80,12 +74,10 @@ locals {
   production_root = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.production.account_id}:root"
 
   # D18's writers: the data-scientist persona in each Interactive account. The path is the
-  # reserved-SSO one; the suffix is minted per account, so both are patterns. Stage 6's
+  # reserved-SSO one and the suffix is minted per account, so both are patterns. Stage 6's
   # project execution roles join this list when they exist (step 9.3's extension-point rule).
-  # ONE WRITER SINCE STAGE 6b STEP 2.3 (2026-09-06), for the same reason and by the same rule:
-  # D18's writer is the data-scientist persona, and that persona left this account at step 2.1
-  # (`DataScientistStagingAccess` carries `DenyEveryWrite`). The pattern would have matched a
-  # role that no longer exists, which is worse than no pattern - it reads like a live grant.
+  # Staging holds no writer: `DataScientistStagingAccess` carries `DenyEveryWrite`, and a pattern
+  # matching a role that cannot write reads like a live grant.
   writer_role_patterns = [
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*",
   ]
@@ -93,8 +85,8 @@ locals {
   # Stage 9 step 3's contract - the exact name deploytargets.py reads from both sides.
   prod_job_exec_pattern = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.production.account_id}:role/awsds-prod-job-exec"
 
-  # The maintenance role's crawler reads the drop-box under this prefix; writers write under
-  # it, dated by convention (incoming/<yyyy>/<mm>/<dd>/...) - the POLICY scopes the prefix,
-  # the DATE is a convention a policy cannot spell.
+  # The maintenance role's crawler reads the drop-box under this prefix; writers write under it,
+  # dated by convention (incoming/<yyyy>/<mm>/<dd>/...). The policy scopes the prefix; the date
+  # is a convention a policy cannot spell.
   dropbox_prefix = "incoming"
 }
