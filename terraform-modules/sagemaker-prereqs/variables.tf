@@ -3,7 +3,7 @@
 # caller says which account, never what.
 
 variable "env" {
-  description = "The <env> NAME TOKEN (docs/plan/conventions.md) - what every name below is built from. Never *the* sandbox: D35 vends one per business unit."
+  description = "The <env> name token (docs/plan/conventions.md) - what every name below is built from. Never *the* sandbox: D35 vends one per business unit."
   type        = string
   nullable    = false
 }
@@ -27,7 +27,7 @@ variable "vpc_id" {
 }
 
 variable "private_subnet_ids" {
-  description = "The private subnets, keyed by AZ ZONE ID (never a name, never a list position - Stage 3 step 1.5). Project apps attach ENIs here; the map is flattened for the blueprint's Subnets parameter and its keys become the AZs parameter."
+  description = "The private subnets, keyed by AZ zone ID (never a name, never a list position - Stage 3 step 1.5). Project apps attach ENIs here; the map is flattened for the blueprint's Subnets parameter and its keys become the AZs parameter."
   type        = map(string)
   nullable    = false
 
@@ -44,7 +44,7 @@ variable "private_subnet_ids" {
 # here rather than a deny that quietly stops matching anything.
 
 variable "lake_registered_bucket_arns" {
-  description = "The bucket ARNs Lake Formation has REGISTERED (raw and curated today). The boundary denies s3:* on these and on everything under them - D13's whole content: a project role that could read the objects directly would make Lake Formation decorative."
+  description = "The bucket ARNs Lake Formation has registered (raw and curated today). The boundary denies s3:* on these and on everything under them - D13's whole content: a project role that could read the objects directly would make Lake Formation decorative."
   type        = list(string)
   nullable    = false
 }
@@ -56,14 +56,14 @@ variable "lake_dropbox_write_arn" {
 }
 
 variable "lake_data_key_arn" {
-  description = "The lake account's data CMK. The boundary lets a project role use it ONLY through S3 (kms:ViaService), mirroring UseLakeDataKeyViaS3 and the key policy's own condition - each side scoping the other."
+  description = "The lake account's data CMK. The boundary lets a project role use it only through S3 (kms:ViaService), mirroring UseLakeDataKeyViaS3 and the key policy's own condition - each side scoping the other."
   type        = string
   nullable    = false
 }
 
 # ------------------------------------------------------------------------ the cost ceiling
 variable "allowed_instance_types" {
-  description = "Pass-through to terraform-modules/sagemaker-denies, which OWNS the list (Lesson 33 - structure and values are both one copy). null, the default, means \"whatever the shared module says\" - which is what every caller should want: identity/sso/ composes the same fragment for the six persona sets, and a second list here is the divergence the shared module exists to prevent."
+  description = "Pass-through to terraform-modules/sagemaker-denies, which owns the list (Lesson 33 - structure and values are both one copy). null, the default, means \"whatever the shared module says\" - which is what every caller should want: identity/sso/ composes the same fragment for the six persona sets, and a second list here is the divergence the shared module exists to prevent."
   type        = list(string)
   default     = null
 }
@@ -94,7 +94,7 @@ variable "domain_id" {
 }
 
 variable "domain_account_id" {
-  description = "The DOMAIN account id - the value aws:SourceAccount must carry on both service-role trusts (roles.tf, v0.3.3): the service assumes them on behalf of the domain, so the guard names the domain's account, never this one. Known before the domain exists (it is the Data Governance account), so not gated."
+  description = "The domain account id - the value aws:SourceAccount must carry on both service-role trusts (roles.tf, v0.3.3): the service assumes them on behalf of the domain, so the guard names the domain's account, never this one. Known before the domain exists (it is the Data Governance account), so not gated."
   type        = string
   nullable    = false
 }
@@ -120,7 +120,7 @@ variable "root_domain_unit_id" {
 # data-governance/governance/locals.tf, and in ./aws/studio.py's US-3 constant. A category change
 # moves all three in one commit.
 variable "blueprint_names" {
-  description = "Decision 5's category 1, by API name (docs/SMUS.md is the reference table; ./aws/studio.py US-3 holds the same list). A category-2 blueprint joins BOTH in the same commit that enables it (Lesson 14)."
+  description = "Decision 5's category 1, by API name (docs/SMUS.md is the reference table; ./aws/studio.py US-3 holds the same list). A category-2 blueprint joins both in the same commit that enables it (Lesson 14)."
   type        = list(string)
   default = [
     # The base environment, first: it provisions the project's SageMaker AI domain, roles and

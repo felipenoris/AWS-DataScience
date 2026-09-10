@@ -8,7 +8,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
   type        = string
   nullable    = false
 
@@ -19,7 +19,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -30,31 +30,31 @@ variable "environment_tag" {
 }
 
 variable "account_folder" {
-  description = "This slice's own account FOLDER - the first token of its state key, which no .tf file may re-derive from the env token (the reverse map would be a second copy of ENV_TOKENS, Lesson 14). Used for the same-account foundation/ read."
+  description = "This slice's own account folder - the first token of its state key, which no .tf file may re-derive from the env token (the reverse map would be a second copy of ENV_TOKENS, Lesson 14). Used for the same-account foundation/ read."
   type        = string
   nullable    = false
 }
 
 variable "lake" {
-  description = "The account that OWNS the governed lake (DATA_LAKE in scripts/tfhygiene/backend.py) - read for the Lake Formation-registered bucket ARNs the D13 boundary excludes, the drop-box prefix it carves back in, and the lake data key."
+  description = "The account that owns the governed lake (DATA_LAKE in scripts/tfhygiene/backend.py) - read for the Lake Formation-registered bucket ARNs the D13 boundary excludes, the drop-box prefix it carves back in, and the lake data key."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 
 variable "domain" {
-  description = "The account that owns the SMUS domain (SMUS_DOMAIN in scripts/tfhygiene/backend.py). Read only on the SECOND apply, for the domain id the blueprint configurations name. Same account as `lake` today and a different question - see the backend.py comment."
+  description = "The account that owns the SMUS domain (SMUS_DOMAIN in scripts/tfhygiene/backend.py). Read only on the second apply, for the domain id the blueprint configurations name. Same account as `lake` today and a different question - see the backend.py comment."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 
 variable "blueprints_enabled" {
-  description = "false until this account's SMUS association has been ACCEPTED and the row added to backend.SMUS_ASSOCIATED (Stage 6 step 1.3 - the association has no public API). true is the pass 2b apply: the blueprint configurations."
+  description = "false until this account's SMUS association has been accepted and the row added to backend.SMUS_ASSOCIATED (Stage 6 step 1.3 - the association has no public API). true is the pass 2b apply: the blueprint configurations."
   type        = bool
   default     = false
 }
 
 variable "allowed_instance_types" {
-  description = "The ml.* ceiling (D12). null - the default - is the right answer: the list lives ONCE, in terraform-modules/sagemaker-denies, and the six persona sets in identity/sso/ compose the same fragment. The variable survives so that a business unit which genuinely needs a different ceiling can say so in ITS tfvars rather than in the shared module (D35: this slice is one unit's, not *the* Sandbox's)."
+  description = "The ml.* ceiling (D12). null - the default - is the right answer: the list lives once, in terraform-modules/sagemaker-denies, and the six persona sets in identity/sso/ compose the same fragment. The variable survives so that a business unit which genuinely needs a different ceiling can say so in its tfvars rather than in the shared module (D35: this slice is one unit's, not *the* Sandbox's)."
   type        = list(string)
   default     = null
 }
@@ -66,7 +66,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

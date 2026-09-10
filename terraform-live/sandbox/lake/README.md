@@ -7,9 +7,9 @@ The [Stage 16](../../../docs/plan/stages/stage-16-sandbox-lake.md) slice; the op
 
 Applied 2026-08-26: `12 added, 0 changed, 0 destroyed`, re-plan `No changes`, `./aws/sandboxlake.py`
 **11/11 `pass`, 0 FAILED**. The bucket, the access role, the location `3b7613eb-…` and the three standing
-grants exist and read back. The per-project half is only declared: `var.wired_projects` is empty, so the
-`SmusProject*` trust statements below are documentation until step 4.2 measures or amends them, and no
-sentence about them may move into the perfect tense before it
+grants exist and read back. `var.wired_projects` has carried one entry since 2026-08-26 (step 4.1, the
+Stage 6 test project), and the `SmusProject*` trust statements below stay documentation until step 4.2
+measures or amends them: no sentence about them may move into the perfect tense before it
 ([Lesson 37](../../../docs/plan/lessons.md)).
 
 ## What this bucket is, and what it is not

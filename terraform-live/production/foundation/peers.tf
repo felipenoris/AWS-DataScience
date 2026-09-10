@@ -2,8 +2,8 @@
 # ordered apply (steps 4.4-4.5 and 6). Production is where it can be one apply: the authorization
 # must precede the association, and a route to a peering needs the peering active, so the accepting
 # side, applied after both requesters exist, is the one place every arrow points forward.
-# "Production accepts two peerings and nothing else" (6.2) is enforced by this file being the only
-# accepter and its map having two rows.
+# "Production accepts only the peerings 6.2 names" is enforced by this file being the only accepter
+# and by local.peer_vpc_ids, which has held Sandbox alone since 6c step 3.1 retired the Staging one.
 #
 # The two aliased providers act as the peer account: the association and the forward routes are the
 # VPC owner's own API calls (4.4 says "in the VPC owner, behind a provider alias"), executed from
@@ -54,7 +54,8 @@ data "aws_vpc" "staging" {
 
 # Sandbox sources, per 6.3's table: the public tier (the WireGuard instance SNATs the laptop there
 # - omit it and the tunnel comes up while GitLab stays unreachable) and the private tier (Studio
-# apps). Staging contributes only its private tier (INT-09).
+# apps), which is where INT-09 rides since 6c step 3.1. Staging contributes no subnet: it kept the
+# apex association and lost the peering, so it has no route to source.
 data "aws_subnets" "sandbox_public" {
   provider = aws.sandbox
 

@@ -6,11 +6,11 @@ output "instance_id" {
 }
 
 output "private_ip" {
-  description = "The address to reach it on FROM THE TUNNEL - the only place it is reachable from. Also what a flow log in this account shows for the build's traffic on its way to the WireGuard host."
+  description = "The address to reach it on from the tunnel - the only place it is reachable from. Also what a flow log in this account shows for the build's traffic on its way to the WireGuard host."
   value       = aws_instance.buildbox.private_ip
 }
 
 output "instance_role_arn" {
-  description = "The host's role. Named because its ABSENCES are the interesting part: Session Manager and nothing else - no ecr:, so this host builds images and publishes none (main.tf carries the reasoning)."
+  description = "The host's role. Named because its absences are the interesting part: Session Manager and nothing else - no ecr:, so this host builds images and publishes none (main.tf carries the reasoning)."
   value       = module.role.role_arn
 }

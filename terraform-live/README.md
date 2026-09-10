@@ -187,8 +187,9 @@ worth writing if what it names outlives the thing using it**: an address that ch
 persona every API call until each client config and the permission-set fragment were edited together.
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
 the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
-event that touches it). The Sandbox copies of the first three stand in `sandbox/foundation/vpn-anchors.tf`
-until 6.5 removes them, which is why that slice plans `1 to add` and **must not be applied** until then.
+event that touches it). The Sandbox copies went at 6c step 6.5 (2026-09-08), once the `VPN_HOMES` trim had
+removed the last remote-state read of them; `sandbox/foundation/vpn-anchors.tf` is now one `removed {}`
+block with `destroy = false`, forgetting the Elastic IP this account no longer owns without releasing it.
 
 Three of the checks exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
 `aws_s3_account_public_access_block`** (the SCP that denies the API carves out exactly the principal every

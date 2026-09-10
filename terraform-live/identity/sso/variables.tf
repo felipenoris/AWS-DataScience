@@ -36,7 +36,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary. `org` marks org-level and platform resources."
+  description = "The Environment tag value - the third vocabulary. `org` marks org-level and platform resources."
   type        = string
   nullable    = false
 
@@ -105,7 +105,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md). The entitlement plane is the infrastructure group's, whichever persona a set describes."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md). The entitlement plane is the infrastructure group's, whichever persona a set describes."
   type        = string
   default     = "sso-group-infrastructure"
 }

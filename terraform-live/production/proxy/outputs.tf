@@ -8,7 +8,7 @@ output "instance_id" {
 }
 
 output "private_ip" {
-  description = "The address the spokes and the tunnel open TCP/3128 to. A peered spoke reaches it across the peering; a tunnel client reaches it un-masqueraded, which is what makes the access log per-device (step 4.7)."
+  description = "The address the spokes and the tunnel open tcp/3128 to. A peered spoke reaches it across the peering; a tunnel client reaches it un-masqueraded, which is what makes the access log per-device (step 4.7)."
   value       = aws_instance.this.private_ip
 }
 
@@ -18,7 +18,7 @@ output "role_arn" {
 }
 
 output "association_id" {
-  description = "The State Manager association that re-renders the allow-lists (step 4.10). Its failures are its own report; a SUCCESS that changed nothing it should have is what ./aws/proxy.py exists to catch."
+  description = "The State Manager association that re-renders the allow-lists (step 4.10). Its failures are its own report; a success that changed nothing it should have is what ./aws/proxy.py exists to catch."
   value       = aws_ssm_association.reconfigure.association_id
 }
 

@@ -2,13 +2,13 @@
 # (./scripts/gen-tfvars.py data-governance governance).
 
 variable "region" {
-  description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1). The domain and IAM Identity Center MUST share it (Stage 6 step 1.1) and neither can move afterwards."
+  description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1). The domain and IAM Identity Center must share it (Stage 6 step 1.1) and neither can move afterwards."
   type        = string
   nullable    = false
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -19,7 +19,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -30,19 +30,19 @@ variable "environment_tag" {
 }
 
 variable "members" {
-  description = "The accounts a project profile may provision into (SMUS_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Staging and Production are absent BY DESIGN (D28), not by omission."
+  description = "The accounts a project profile may provision into (SMUS_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Staging and Production are absent by design (D28), not by omission."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 
 variable "identity_profile" {
-  description = "The CLI profile for the Identity account, used by ONE read-only aliased provider: resolving the sso-group-* names in local.project_profiles to the group ids the CREATE_PROJECT_FROM_PROJECT_PROFILE grants take. IdC is delegated to Identity (Stage 2 step 5), so the directory cannot be read from Data Governance; the value arrives from the generated tfvars (PROFILES in scripts/tfhygiene/backend.py), never as a literal here."
+  description = "The CLI profile for the Identity account, used by one read-only aliased provider: resolving the sso-group-* names in local.project_profiles to the group ids the CREATE_PROJECT_FROM_PROJECT_PROFILE grants take. IdC is delegated to Identity (Stage 2 step 5), so the directory cannot be read from Data Governance; the value arrives from the generated tfvars (profiles in scripts/tfhygiene/backend.py), never as a literal here."
   type        = string
   nullable    = false
 }
 
 variable "profiles_enabled" {
-  description = "false until EVERY member account's association has been accepted (SMUS_ASSOCIATED in backend.py). true is the pass 2c apply: the two project profiles, whose environment configurations name blueprints that must already be configured in the target account."
+  description = "false until every member account's association has been accepted (SMUS_ASSOCIATED in backend.py). true is the pass 2c apply: the two project profiles, whose environment configurations name blueprints that must already be configured in the target account."
   type        = bool
   default     = false
 }
@@ -60,7 +60,7 @@ variable "idle_timeout_minutes" {
 }
 
 variable "max_idle_timeout_minutes" {
-  description = "The ADMIN CEILING a project member cannot raise (Stage 6 step 8.1). The pair matters: idle_timeout_minutes is the default, this is the most a user may set it to, and without the second the first is a suggestion (Lesson 5)."
+  description = "The admin ceiling a project member cannot raise (Stage 6 step 8.1). The pair matters: idle_timeout_minutes is the default, this is the most a user may set it to, and without the second the first is a suggestion (Lesson 5)."
   type        = number
   default     = 120
 }
@@ -72,7 +72,7 @@ variable "max_ebs_volume_size_gb" {
 }
 
 variable "enable_trusted_identity_propagation" {
-  description = "Stage 6 DECISION 2, and the recommendation is FOLLOW THE GRAIN STAGE 5 CHOSE. Stage 5 decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that REMOTE ACCESS STOPS WORKING - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5 decision 6, not a tuning knob."
+  description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5 chose. Stage 5 decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5 decision 6, not a tuning knob."
   type        = bool
   default     = false
 }
@@ -84,7 +84,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

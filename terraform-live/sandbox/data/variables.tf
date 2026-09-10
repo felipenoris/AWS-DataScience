@@ -10,7 +10,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
   type        = string
   nullable    = false
 
@@ -21,7 +21,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -32,7 +32,7 @@ variable "environment_tag" {
 }
 
 variable "lake" {
-  description = "The account that OWNS the lake (DATA_LAKE in scripts/tfhygiene/backend.py) - keyed by account folder, carrying the profile and the env token its state bucket name is built from. Consumed twice: an aliased provider that resolves the catalog id live, and a terraform_remote_state read of data-governance/data/ for the shared database names. A map rather than a scalar so it renders through the same emission every other cross-account read in this tree uses."
+  description = "The account that owns the lake (DATA_LAKE in scripts/tfhygiene/backend.py) - keyed by account folder, carrying the profile and the env token its state bucket name is built from. Consumed twice: an aliased provider that resolves the catalog id live, and a terraform_remote_state read of data-governance/data/ for the shared database names. A map rather than a scalar so it renders through the same emission every other cross-account read in this tree uses."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
@@ -44,7 +44,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

@@ -68,15 +68,15 @@ locals {
     PROXY="${local.proxy_url}"
     NOPROXY="${local.no_proxy}"
 
-    # AND IN THIS SCRIPT'S OWN ENVIRONMENT, which /etc/environment does NOT provide: that file is
-    # read by PAM at login and by systemd units that name it, and cloud-init's user data is
-    # neither. Without these four lines every command below runs with no proxy at all - which is
-    # the shape of a first boot that "works" until something needs the internet.
+    # This script's own environment, which /etc/environment does not provide: that file is read
+    # by PAM at login and by systemd units that name it, and cloud-init's user data is neither.
+    # Without these three lines every command below runs with no proxy at all - the shape of a
+    # first boot that "works" until something needs the internet.
     export http_proxy="$PROXY" https_proxy="$PROXY"
     export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
     export no_proxy="$NOPROXY" NO_PROXY="$NOPROXY"
 
-    # (1) EVERY SHELL AND EVERY systemd UNIT THAT READS THIS FILE. Both cases, deliberately.
+    # (1) Every shell and every systemd unit that reads this file. Both cases, deliberately.
     echo "--- proxy: /etc/environment"
     cat >> /etc/environment <<ENVEOF
     http_proxy=$PROXY
@@ -87,18 +87,18 @@ locals {
     NO_PROXY=$NOPROXY
     ENVEOF
 
-    # (4) dnf IS CONFIGURED BY THE `export` ABOVE AND BY NOTHING ELSE. A `proxy=` line in
+    # (4) dnf is configured by the `export` above and by nothing else. A `proxy=` line in
     # /etc/dnf/dnf.conf stood here and is deliberately gone: dnf.conf has a proxy setting and no
     # exclusion setting to pair with it, so it would send the AL2023 repositories - which are on
     # S3 and must go direct through the gateway endpoint - at a proxy whose plane refuses
     # `.amazonaws.com`. That is what broke this host's first boot on 2026-09-06.
 
-    # docker AND git: git because a build context is usually a checkout, and because the
+    # docker and git: git because a build context is usually a checkout, and because the
     # dev-env image's own INT-09 story starts with one.
     echo "--- installing docker and git"
     dnf -y install docker git
 
-    # (2) THE DAEMON. Not a child of any shell, so /etc/environment never reaches it. This is
+    # (2) The daemon. Not a child of any shell, so /etc/environment never reaches it. This is
     # the file whose absence makes `docker pull` hang while `curl` works.
     echo "--- proxy: the docker daemon"
     mkdir -p /etc/systemd/system/docker.service.d
@@ -114,9 +114,9 @@ locals {
     systemctl enable --now docker
     usermod -aG docker ec2-user
 
-    # (3) THE BUILD CONTAINERS. `proxies` in the CLIENT's config is what injects http_proxy into
-    # every RUN step; without it the base image pulls and the first `pip install` inside the
-    # build hangs. Written for BOTH accounts that run docker on this host - root (the ssm-user
+    # (3) The build containers. `proxies` in the **client's** config is what injects http_proxy
+    # into every RUN step; without it the base image pulls and the first `pip install` inside the
+    # build hangs. Written for both accounts that run docker on this host - root (the ssm-user
     # `sudo docker` path) and ec2-user (the docker-group path) - because a setting present for
     # one of them is a build that behaves differently depending on how you got your shell.
     echo "--- proxy: the docker client's build containers"
@@ -136,42 +136,38 @@ locals {
     done
     chown -R ec2-user:ec2-user /home/ec2-user/.docker
 
-    # THE EGRESS READING, TAKEN ONCE AND LEFT IN THE LOG - AND IT IS TWO READINGS, BECAUSE ONE
-    # WOULD NOT BE A VERIFICATION (Lesson 13).
+    # The egress reading, taken once and left in the boot log. Two probes, because one would not
+    # be a verification (Lesson 13).
     #
-    # THE SECOND PROBE WAS REPLACED ON 2026-09-08, AND THE REPLACED ONE IS WHY THIS COMMENT IS
-    # LONG. It used to be `http://example.com/`, *"deliberately NOT on any plane"*, and it read
-    # 403. That stopped being true the day this plane became `open` (D38 section 6 amended, 6d
-    # step 9): `example.com` is now permitted, and the line would have printed
-    # `must be 403: 200` at every boot - a diagnostic announcing a failure that is the design,
-    # in the file somebody opens precisely when something IS wrong (Lesson 50).
-    #
-    # SO THE REFUSED PROBE IS NOW A PRIVATE ADDRESS, and it is a better probe than the one it
-    # replaces because it tests the control that still applies here. `deny to_private` is line 1
-    # of squid.conf and sits above every plane's allow: it is what stops this proxy becoming an
-    # L7 bridge between VPCs that peering keeps apart. On an `open` plane that deny IS the
-    # perimeter, so proving it is in force is worth more than proving an allow-list nobody has
-    # any more. `10.31.0.1` is the hub VPC's own first address - it needs to answer nothing,
-    # because the refusal happens at Squid before any connection is attempted.
+    # The refused probe is a private address. `deny to_private` is line 1 of squid.conf and sits
+    # above every plane's allow: it is what stops this proxy becoming an L7 bridge between VPCs
+    # that peering keeps apart. On an `open` plane that deny is the perimeter, so proving it is
+    # in force is worth more than proving an allow-list this plane no longer has. `10.31.0.1` is
+    # the hub VPC's own first address and needs to answer nothing, because the refusal happens at
+    # Squid before any connection is attempted. `http://example.com/` stood here until
+    # 2026-09-08, reading 403 while it was on no plane; the plane became `open` that day (D38
+    # section 6 amended, 6d step 9), which would have printed `must be 403: 200` at every boot -
+    # a diagnostic announcing a failure that is the design, in the file somebody opens precisely
+    # when something is wrong (Lesson 50).
     #
     # A boot log showing 200 then 403 says the proxy is up, the peering route works, and the
     # private-destination deny is being enforced. 000 on both says the proxy is unreachable.
-    # 200 on both would mean `deny to_private` is gone or has been moved below an allow, which
-    # is the one failure in this file that opens a path between spokes.
+    # 200 on both means `deny to_private` is gone or has been moved below an allow, the one
+    # failure in this file that opens a path between spokes.
     #
-    # IT NO LONGER PRINTS THE EXIT ADDRESS, and the reason is the control rather than an
-    # oversight: `checkip.amazonaws.com` would answer that question and this plane refuses
-    # `.amazonaws.com` on purpose - a build host has no business calling the AWS control plane
-    # through the proxy, since everything it legitimately calls has an endpoint. The address is
-    # measured from the TUNNEL plane instead, at 6c step 6.1.
-    # AND THE REFUSED PROBE IS `http://`, NOT `https://`, WHICH IS NOT A DETAIL. Measured
-    # 2026-09-06: over https the client asks for a CONNECT tunnel, Squid refuses it, and `curl`
-    # reports `%%{http_code}` as **000** because no HTTP response ever crossed the tunnel - the
-    # 403 exists but is on the CONNECT, where this format string cannot see it. Over http the
-    # refusal IS the response and reads as a plain 403 whose body names Squid. So the two probes
-    # deliberately use different schemes: the allowed one proves a working tunnel (200), the
-    # refused one proves a deny is being enforced (403). A 000 on the second would mean the proxy
-    # is unreachable, which is a different fault with the same appearance (Lesson 42).
+    # The exit address is not printed here: `checkip.amazonaws.com` would answer that question
+    # and this plane refuses `.amazonaws.com` on purpose - a build host has no business calling
+    # the AWS control plane through the proxy, since everything it legitimately calls has an
+    # endpoint. The address is measured from the tunnel plane instead, at 6c step 6.1.
+    #
+    # The refused probe is `http://` and not `https://`, and the scheme decides what curl can
+    # see. Measured 2026-09-06: over https the client asks for a CONNECT tunnel, Squid refuses
+    # it, and `curl` reports `%%{http_code}` as **000** because no HTTP response ever crossed the
+    # tunnel - the 403 exists but is on the CONNECT, where this format string cannot see it. Over
+    # http the refusal is the response and reads as a plain 403 whose body names Squid. So the
+    # two probes use different schemes: the allowed one proves a working tunnel (200), the
+    # refused one proves a deny is being enforced (403). A 000 on the second means the proxy is
+    # unreachable, a different fault with the same appearance (Lesson 42).
     echo "--- egress check: an allowed name, then a refused destination"
     echo "    pypi.org over https (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || true)"
     echo "    10.31.0.1 over http, a PRIVATE address (must be 403): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" http://10.31.0.1/ || true)"
@@ -185,11 +181,11 @@ locals {
     echo "  You are $(id -un). Session Manager gives you passwordless sudo; the docker group"
     echo "  belongs to ec2-user, so use  sudo docker ...  or  sudo -iu ec2-user"
     echo
-    echo "  THE INTERNET HERE IS A PROXY, and nothing reaches it without being told:"
+    echo "  The internet here is a proxy, and nothing reaches it without being told:"
     echo "    $PROXY   - already set for shells, dnf, the docker daemon and build containers"
     echo "    a hang, not a refusal, is the shape of a client that was not told"
-    echo "    this plane is OPEN since 2026-09-08: any public name, all of it logged"
-    echo "    a 403 means a GLOBAL deny - a private destination, or a port nobody named"
+    echo "    this plane is open since 2026-09-08: any public name, all of it logged"
+    echo "    a 403 means a global deny - a private destination, or a port nobody named"
     echo
     echo "  build context (after ./scripts/buildbox.py sync):  /opt/awsds/images"
     echo "  first-boot log:                                    /var/log/awsds-buildbox-boot.log"

@@ -5,37 +5,37 @@
 # accident (Lesson 14).
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
   type        = string
   nullable    = false
 }
 
 variable "lake_catalog_id" {
-  description = "The Data Governance account id, resolved LIVE by the caller's aliased provider (aws/INDEX.md rule 1 - never a literal in a tracked file). It addresses two different things and both are cross-account: the target catalog of every resource link, and the catalog that OWNS the LF-Tags the re-grants below are written over."
+  description = "The Data Governance account id, resolved live by the caller's aliased provider (aws/INDEX.md rule 1 - never a literal in a tracked file). It addresses two different things and both are cross-account: the target catalog of every resource link, and the catalog that owns the LF-Tags the re-grants below are written over."
   type        = string
   nullable    = false
 }
 
 variable "lake_databases" {
-  description = "The shared databases to resource-link, by short key, read from data-governance/data/'s own state output rather than typed (Lesson 14). The DROP-BOX is expected to be absent: it is gated out of the share by the `layer` expression (Lesson 29), so a link to it would resolve nothing - and its presence in this map is a finding, not a convenience."
+  description = "The shared databases to resource-link, by short key, read from data-governance/data/'s own state output rather than typed (Lesson 14). The drop-box is expected to be absent: it is gated out of the share by the `layer` expression (Lesson 29), so a link to it would resolve nothing - and its presence in this map is a finding, not a convenience."
   type        = map(string)
   nullable    = false
 }
 
 variable "data_lake_admin_role_arn" {
-  description = "This account's data lake administrator - InfrastructureAccess, per Stage 5 decision 5. Resolved BY PATTERN in the caller (the AWSReservedSSO_* suffix is minted per account and cannot be written down). Without one, AWS shows the account an EMPTY catalog while its RAM holds the share - measured on both consumers 2026-08-19, and the reason this resource exists at all."
+  description = "This account's data lake administrator - InfrastructureAccess, per Stage 5 decision 5. Resolved by pattern in the caller (the AWSReservedSSO_* suffix is minted per account and cannot be written down). Without one, AWS shows the account an empty catalog while its RAM holds the share - measured on both consumers 2026-08-19, and the reason this resource exists at all."
   type        = string
   nullable    = false
 }
 
 variable "data_scientist_role_arn" {
-  description = "The persona the share is re-granted to (D18). A cross-account grant lands on the ACCOUNT; nothing inside it can read a row until the local administrator passes the permission on to a local principal - that re-grant is this module's, and it is why the producer side grants everything WITH the grant option (docs/GOVERNANCE.md, Grants)."
+  description = "The persona the share is re-granted to (D18). A cross-account grant lands on the account; nothing inside it can read a row until the local administrator passes the permission on to a local principal - that re-grant is this module's, and it is why the producer side grants everything with the grant option (docs/GOVERNANCE.md, Grants)."
   type        = string
   nullable    = false
 }
 
 variable "additional_data_key_policy_statements" {
-  description = "Extra statements appended to the account data CMK's policy - KMS holds ONE policy per key, so a second reader can only arrive through the module (the same constraint s3-bucket's additional_policy_statements answers for buckets). Empty by default, which is what keeps a consumer that adds nothing byte-identical across the tag bump. Type `any`, deliberately: IAM statements are heterogeneous objects and the module only ever concat()s and jsonencode()s them. The first caller is Stage 16's sandbox lake, admitting its access role; anything passed here is a WIDENING of D31's read control and belongs in the calling slice's README row."
+  description = "Extra statements appended to the account data CMK's policy - KMS holds one policy per key, so a second reader can only arrive through the module (the same constraint s3-bucket's additional_policy_statements answers for buckets). Empty by default, which is what keeps a consumer that adds nothing byte-identical across the tag bump. Type `any`, deliberately: IAM statements are heterogeneous objects and the module only ever concat()s and jsonencode()s them. The first caller is Stage 16's sandbox lake, admitting its access role; anything passed here is a widening of D31's read control and belongs in the calling slice's README row."
   type        = any
   default     = []
 }

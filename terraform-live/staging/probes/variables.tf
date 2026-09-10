@@ -15,7 +15,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -26,7 +26,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -43,7 +43,7 @@ variable "zone_ids" {
 }
 
 variable "zone_index" {
-  description = "Which authored zone the probe lands in. THE READING IS AZ-AGNOSTIC and that is measured, not assumed: both private route tables carry the same two INT-09 peering routes and the same NAT default, and the peer routes back to both private ranges. It exists for one reason: RunInstances answers Server.InsufficientInstanceCapacity per AZ and per instance type, and a probe blocked by a transient shortage in one zone should move rather than wait."
+  description = "Which authored zone the probe lands in. The reading is AZ-agnostic and that is measured, not assumed: both private route tables carry the same two INT-09 peering routes and the same NAT default, and the peer routes back to both private ranges. It exists for one reason: RunInstances answers Server.InsufficientInstanceCapacity per AZ and per instance type, and a probe blocked by a transient shortage in one zone should move rather than wait."
   type        = number
   default     = 0
 
@@ -60,7 +60,7 @@ variable "account_folder" {
 }
 
 variable "peer_cidrs" {
-  description = "Every TARGET account VPC range this slice reaches (scripts/tfhygiene/backend.py PROBE_PEERS) - one here, Production. Each is kept WHOLE deliberately: the permitted address and the forbidden one are both inside it, so this security group is constant across the pair and the ROUTE is the single variable the reading turns on."
+  description = "Every target account VPC range this slice reaches (scripts/tfhygiene/backend.py PROBE_PEERS) - one here, Production. Each is kept whole deliberately: the permitted address and the forbidden one are both inside it, so this security group is constant across the pair and the route is the single variable the reading turns on."
   type        = list(string)
   nullable    = false
 }
@@ -72,7 +72,7 @@ variable "target_name" {
 }
 
 variable "target_forbidden_name" {
-  description = "The SAME host's second interface, in a tier this account holds no route to. That this name RESOLVES and still does not connect is the reading: resolution proves the zone association reaches THIS VPC too - the half of the DNS Deliverable a Sandbox host cannot answer - and proves the host is known, so only the route is left to explain the silence."
+  description = "The same host's second interface, in a tier this account holds no route to. That this name resolves and still does not connect is the reading: resolution proves the zone association reaches this VPC too - the half of the DNS Deliverable a Sandbox host cannot answer - and proves the host is known, so only the route is left to explain the silence."
   type        = string
   default     = "probe-isolated.awsds.internal"
 }
@@ -84,7 +84,7 @@ variable "listener_port" {
 }
 
 variable "blocked_port" {
-  description = "Any port the target does NOT admit, which is every port but listener_port. The packet reaches the ENI and is dropped by the group, writing a REJECT flow-log record; the forbidden ADDRESS produces no record at all because the packet never leaves this account."
+  description = "Any port the target does not admit, which is every port but listener_port. The packet reaches the ENI and is dropped by the group, writing a REJECT flow-log record; the forbidden address produces no record at all because the packet never leaves this account."
   type        = number
   default     = 8080
 
@@ -101,7 +101,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

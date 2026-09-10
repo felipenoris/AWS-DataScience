@@ -450,12 +450,13 @@ SMUS_ASSOCIATED: list = ["sandbox"]
 # member's foundation/ creates the object, identity/sso/ references it.
 #
 # `org` is the correct env token, and the exception is deliberate. Every other name in this
-# design carries the token of the account it lives in, but this object is materialised in sandbox
-# and development under one name, so an <env> token would make the two names differ and a
-# permission set can reference only one. conventions.md gives `org` to platform resources of the
-# identity plane, which is what this is: entitlement-plane content that happens to need a
-# per-account body. The Environment tag still says sandbox or development, because the tag
-# describes where the object lives and the name describes what references it.
+# design carries the token of the account it lives in, but this object is materialised in every
+# account the set reaches under one name, so an <env> token would make those names differ and a
+# permission set can reference only one. It is one account today, sandbox, and D35 vends more.
+# conventions.md gives `org` to platform resources of the identity plane, which is what this is:
+# entitlement-plane content that happens to need a per-account body. The Environment tag still
+# says which account, because the tag describes where the object lives and the name describes
+# what references it.
 PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
 
 # Where that object must exist. The list AWS actually constrains is "every account
@@ -512,10 +513,10 @@ VPC_SLICES = {"foundation", "networking", "workloads"}
 # rather than authored in any slice - an address literal in a .tf file is a copy of this table
 # that nothing keeps in step (Lesson 14).
 #
-# The target admits both sources: Sandbox to Production is the peering the Deliverables measure,
-# and Development to Production is INT-09, the integration this stage's Proves row claims. One
-# target host exercises both, so the second source costs one instance rather than a second
-# target.
+# The target admits both sources: Sandbox to `VPC-SharedServices` is the peering the Deliverables
+# measure and, since 6c step 3.1 re-homed it, INT-09 as well; Staging reaches `VPC-Networking` for
+# the proxy and nothing else. One target host exercises both sources, so the second costs one
+# instance rather than a second target.
 #
 # The hand-kept `PROBE_PEERS` table was deleted at 6c step 6.3, and it arrived as a timeout
 # rather than as a diff: the Sandbox peering probe could not reach the proxy at all, because

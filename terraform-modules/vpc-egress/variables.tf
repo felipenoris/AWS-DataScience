@@ -1,5 +1,5 @@
 variable "env" {
-  description = "The <env> NAME TOKEN (docs/plan/conventions.md) - builds every name here. Not the Environment tag, which the caller's provider default_tags applies."
+  description = "The <env> name token (docs/plan/conventions.md) - builds every name here. Not the Environment tag, which the caller's provider default_tags applies."
   type        = string
   nullable    = false
 }
@@ -31,13 +31,13 @@ variable "name_suffix" {
 }
 
 variable "endpoint_subnet_id" {
-  description = "The ONE subnet every interface endpoint lands in - single AZ (D9, step 8.5): two AZs doubles the largest hourly line item, and a resource in the other AZ still resolves and reaches it. The caller picks the private subnet of the first authored zone."
+  description = "The one subnet every interface endpoint lands in - single AZ (D9, step 8.5): two AZs doubles the largest hourly line item, and a resource in the other AZ still resolves and reaches it. The caller picks the private subnet of the first authored zone."
   type        = string
   nullable    = false
 }
 
 variable "endpoint_security_group_id" {
-  description = "foundation/'s endpoint SG (step 2.4) - TCP/443 from the VPC CIDR, attached to every interface endpoint here."
+  description = "foundation/'s endpoint SG (step 2.4) - tcp/443 from the VPC CIDR, attached to every interface endpoint here."
   type        = string
   nullable    = false
 }
@@ -49,7 +49,7 @@ variable "core_services" {
 }
 
 variable "extra_services" {
-  description = "The per-account-role adds of step 8.3 - authored in each caller, because the list being DIFFERENT per role is the point: one list everywhere was wrong in both directions. Short service tokens ('sagemaker.api'); the region prefix is built here. Every entry is ~USD 0.010/h for the whole session."
+  description = "The per-account-role adds of step 8.3 - authored in each caller, because the list being different per role is the point: one list everywhere was wrong in both directions. Short service tokens ('sagemaker.api'); the region prefix is built here. Every entry is ~USD 0.010/h for the whole session."
   type        = list(string)
   default     = []
 }
@@ -74,7 +74,7 @@ variable "extra_services" {
 # "which endpoints does Bedrock need" would diverge on the first addition, and the failure mode is
 # an account where a blueprint half-works.
 variable "optional_service_groups" {
-  description = "Which optional endpoint families to create, by group name. EMPTY BY DEFAULT - no optional endpoint exists unless a group is named. Threaded from `make up ENV=<x> GROUPS=a,b` through TF_VAR_optional_service_groups. Each group is ~USD 0.010/h per endpoint for the whole session (docs/PRICING.md 8)."
+  description = "Which optional endpoint families to create, by group name. Empty by default - no optional endpoint exists unless a group is named. Threaded from `make up ENV=<x> GROUPS=a,b` through TF_VAR_optional_service_groups. Each group is ~USD 0.010/h per endpoint for the whole session (docs/PRICING.md 8)."
   type        = list(string)
   default     = []
 
@@ -88,13 +88,13 @@ variable "optional_service_groups" {
 }
 
 variable "dns_firewall" {
-  description = "Attach the Route 53 Resolver DNS Firewall to this VPC. THIS SENTENCE WAS REWRITTEN AT v0.6.0 AND THE OLD ONE IS WHY: it said the firewall was design A's allow-list, that mode B made it pointless, and that `dns-firewall.tf` enforced that second half so a caller could not half-enable it. All three stopped being true when the NAT left - the module no longer reads egress_mode at all, so THIS FLAG IS NOW THE ONLY GATE and a caller gets exactly what it asks for. What the firewall is FOR also changed (6c step 5.7): not filtering the internet, which is the proxy's allow-list now, but closing the recursive resolver as an exfiltration channel - a job that exists with or without a default route. false where there is no interactive user to constrain, and false in the hub, which must resolve everything the proxy is asked to fetch."
+  description = "Attach the Route 53 Resolver DNS Firewall to this VPC. This sentence was rewritten at v0.6.0 and the old one is why: it said the firewall was design A's allow-list, that mode B made it pointless, and that `dns-firewall.tf` enforced that second half so a caller could not half-enable it. All three stopped being true when the NAT left - the module no longer reads egress_mode at all, so this flag is now the only gate and a caller gets exactly what it asks for. What the firewall is for also changed (6c step 5.7): not filtering the internet, which is the proxy's allow-list now, but closing the recursive resolver as an exfiltration channel - a job that exists with or without a default route. false where there is no interactive user to constrain, and false in the hub, which must resolve everything the proxy is asked to fetch."
   type        = bool
   default     = false
 }
 
 variable "firewall_domain_redirection_action" {
-  description = "How the ALLOW rule treats a CNAME/DNAME chain. INSPECT_REDIRECTION_DOMAIN (the API default, and this module's) evaluates EVERY domain in the chain, so a hop that is not listed blocks the lookup. TRUST_REDIRECTION_DOMAIN evaluates the QUERIED name only and trusts the chain beneath it. Declared by the caller, like the list it governs."
+  description = "How the ALLOW rule treats a CNAME/DNAME chain. INSPECT_REDIRECTION_DOMAIN (the API default, and this module's) evaluates every domain in the chain, so a hop that is not listed blocks the lookup. TRUST_REDIRECTION_DOMAIN evaluates the queried name only and trusts the chain beneath it. Declared by the caller, like the list it governs."
   type        = string
   default     = "INSPECT_REDIRECTION_DOMAIN"
 
@@ -122,7 +122,7 @@ variable "firewall_domain_redirection_action" {
 }
 
 variable "dns_firewall_allow_domains" {
-  description = "The allow-list, declared BY THE CALLER. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Since v0.4.0 the ALLOW rule trusts the redirection chain, so an entry is THE NAME A TOOL QUERIES and never a CNAME target - listing a hop is a widening, not a safety net."
+  description = "The allow-list, declared by the caller. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Since v0.4.0 the ALLOW rule trusts the redirection chain, so an entry is the name A tool queries and never a CNAME target - listing a hop is a widening, not a safety net."
   type        = list(string)
 
   # Empty by design, and the default is the policy. The list is not a property of the mechanism,

@@ -11,7 +11,7 @@ output "vpc_cidr" {
 }
 
 output "s3_gateway_endpoint_id" {
-  description = "THE INT-05 ANCHOR (step 3.2) - what Stage 5's bucket policies condition on."
+  description = "The INT-05 anchor (step 3.2) - what Stage 5's bucket policies condition on."
   value       = module.vpc.s3_gateway_endpoint_id
 }
 
@@ -80,12 +80,12 @@ output "wireguard_security_group_id" {
 }
 
 output "wireguard_host_key_secret_arn" {
-  description = "The [P] host-key container. production/vpn/ passes it into the wireguard module, which grants its instance role GetSecretValue on exactly this ARN. The VALUE is copied in by the user at 4.3 and never crosses Terraform."
+  description = "The [P] host-key container. production/vpn/ passes it into the wireguard module, which grants its instance role GetSecretValue on exactly this ARN. The value is copied in by the user at 4.3 and never crosses Terraform."
   value       = aws_secretsmanager_secret.wireguard_host_key.arn
 }
 
 output "proxy_eip_public_ip" {
-  description = "THE ADDRESS 4.12 RE-KEYS THE WHOLE CONTROL PLANE ONTO. A VPN client's internet now crosses Squid, so every VPN-only condition that named the WireGuard EIP names this instead. Read through terraform_remote_state, never pasted."
+  description = "The address 4.12 re-keys the whole control plane onto. A VPN client's internet now crosses Squid, so every VPN-only condition that named the WireGuard EIP names this instead. Read through terraform_remote_state, never pasted."
   value       = aws_eip.proxy.public_ip
 }
 
@@ -95,7 +95,7 @@ output "proxy_eip_allocation_id" {
 }
 
 output "proxy_security_group_id" {
-  description = "The [P] proxy security group. Admits TCP/3128 from every peered spoke and the tunnel; the policy that decides what those sources may REACH is the allow-list, not this group."
+  description = "The [P] proxy security group. Admits tcp/3128 from every peered spoke and the tunnel; the policy that decides what those sources may reach is the allow-list, not this group."
   value       = aws_security_group.proxy.id
 }
 
@@ -105,7 +105,7 @@ output "proxy_allowlist_parameter_name" {
 }
 
 output "proxy_access_log_group_name" {
-  description = "The [P] Squid access log (4.11) - Stage 11's egress evidence. The [D] proxy WRITES here and does not own it: a record that dies with the host it describes is not a record."
+  description = "The [P] Squid access log (4.11) - Stage 11's egress evidence. The [D] proxy writes here and does not own it: a record that dies with the host it describes is not a record."
   value       = aws_cloudwatch_log_group.proxy_access.name
 }
 
@@ -115,11 +115,11 @@ output "proxy_access_log_group_arn" {
 }
 
 output "wireguard_eip_allocation_id" {
-  description = "The [P] Elastic IP allocation - production/vpn/ associates it with the [D] host. NOT the id it had in Sandbox: a transfer mints a new one (measured 2026-09-06, the stage's verification 1)."
+  description = "The [P] Elastic IP allocation - production/vpn/ associates it with the [D] host. Not the id it had in Sandbox: a transfer mints a new one (measured 2026-09-06, the stage's verification 1)."
   value       = aws_eip.wireguard.allocation_id
 }
 
 output "wireguard_eip_public_ip" {
-  description = "THE ADDRESS EVERY CLIENT .conf PINS, and the one thing the account move does not change. Read by identity/sso/ and data-governance/data/ through terraform_remote_state once VPN_HOMES flips at 4.12 - never pasted, because a paste is a copy nothing keeps in step and the failure mode is every persona denied every API call."
+  description = "The address every client .conf pins, and the one thing the account move does not change. Read by identity/sso/ and data-governance/data/ through terraform_remote_state once VPN_HOMES flips at 4.12 - never pasted, because a paste is a copy nothing keeps in step and the failure mode is every persona denied every API call."
   value       = aws_eip.wireguard.public_ip
 }

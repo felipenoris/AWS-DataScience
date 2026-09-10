@@ -228,19 +228,19 @@ probe("ou", "sandbox1", "deny", "ValidationException|does not exist", "blocked",
 # --- The Stage 6 1.6 amendment (2026-08-21) - DenyAthenaSparkStartSession. The rows below are
 #     one measurement, for the reason 4e's are (the long comment further down): Athena's
 #     AccessDenied names no policy, so classify() files a real ceiling deny as DENY-NOT-SCP and
-#     reports `note`. No wording fixes that; the attribution is carried by the `prod` row.
+#     reports `note`. No wording fixes that; the attribution is carried by the `canary` row.
 #
-#     Why prod is the contrast and data is not: the contrast has to be an account the amendment
-#     does not reach, where the same call is otherwise authorized. awsds-org-scp-ou-workloads
-#     carries no athena action at all (measured 2026-08-21: DenyInteractiveSageMakerSurface is
-#     sagemaker-only, DenyDataZoneEntirely is datazone:*), so Production is authorized and dies
-#     on the workgroup. Data Governance and Identity are not usable: 4e put
-#     athena:StartQueryExecution into their DenyUserCompute, and an account already carrying an
-#     athena deny is the worst possible control for an athena probe, even for another action.
+#     Why the contrast is an account and not a policy read: it has to be an account the
+#     amendment does not reach, where the same call is otherwise authorized. `prod` was that
+#     account until 3.8 put DenyAthenaSparkStartSession into the Workloads document too, and
+#     the contrast moved to `canary` with it - the block below carries the move. Data
+#     Governance and Identity were never usable: 4e put athena:StartQueryExecution into their
+#     DenyUserCompute, and an account already carrying an athena deny is the worst possible
+#     control for an athena probe, even for another action.
 #
-#     Denied in both Interactive accounts and authorized in Workloads means the deny is the
+#     Denied where the amendment reaches and authorized where it does not means the deny is the
 #     amended document. It does not prove the ordering Lesson 21 asks about for this action: if
-#     the `prod` row ever comes back as a validation error before authorization, these two notes
+#     the `canary` row ever comes back as a validation error before authorization, these notes
 #     stop attributing anything and that is the first row to read. Measured for
 #     StartQueryExecution on 2026-08-20 and not assumed for StartSession - per-action, not
 #     per-service.
@@ -596,7 +596,7 @@ probe("rcp", "data", "allow", None, "ro", "rcp floor: glue still reads the catal
 #
 # These may not run in Data Governance or Identity, whose per-OU documents deny
 # ec2:RunInstances outright (7.6a): a deny there proves nothing about this
-# document and AWS names only one policy (Lesson 20). Development is the account
+# document and AWS names only one policy (Lesson 20). Staging is the account
 # where a launch is legitimate, which is what makes the third row meaningful.
 # ==========================================================================
 

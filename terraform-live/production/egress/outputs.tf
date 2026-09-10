@@ -3,7 +3,7 @@
 # foundation/'s.
 
 output "interface_endpoint_ids" {
-  description = "Endpoint id per service token - expected ALL NEW after a make down/up cycle."
+  description = "Endpoint id per service token - expected all new after a make down/up cycle."
   value       = module.egress.interface_endpoint_ids
 }
 

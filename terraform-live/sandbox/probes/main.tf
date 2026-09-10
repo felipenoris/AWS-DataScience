@@ -139,27 +139,28 @@ locals {
 
     # ------------------------------------------------- the proxy, added at 6c step 6.3 (2026-09-06)
     #
-    # WHAT THIS SECTION MEASURES THAT THE THREE ABOVE CANNOT. Those three are about a PEERING - a
+    # What this section measures that the three above cannot. Those three are about a peering - a
     # route and a security group. D38 puts a second thing in the path that neither can see: an
     # explicit proxy in another VPC, which every spoke reaches over its own peering and which is the
-    # estate's ONLY way to the internet. Three properties follow, and each one is silent in a
+    # estate's only way to the internet. Three properties follow, and each one is silent in a
     # different way if it is wrong:
     #
-    #   no default route      the internet is unreachable WITHOUT the proxy. This is design B's
+    #   no default route      the internet is unreachable without the proxy. This is design B's
     #                         whole claim, and it is the absence of a thing - so it reads as
-    #                         silence, which is why it is taken here beside a reading that is NOT
+    #                         silence, which is why it is taken here beside a reading that is not
     #                         silent (Lesson 13).
-    #   not an L7 bridge      the proxy CAN route to every spoke; `http_access deny to_private`
+    #   not an L7 bridge      the proxy can route to every spoke; `http_access deny to_private`
     #                         fires before any allow, so it refuses. Without that rule a peering
     #                         nobody built would exist at layer 7, which is the isolation this
     #                         estate gets for free from the absent peerings (Lesson 44).
     #   the plane is enforced this source CIDR's own allow-list admits one name and refuses
-    #                         another. A 403 from Squid is a POLICY answer; silence is a network
+    #                         another. A 403 from Squid is a policy answer; silence is a network
     #                         one, and the two must not be confused.
     #
-    # THE REFUSED PROBES USE `http://`, NOT `https://`, AND THAT IS NOT A DETAIL. Over https the
-    # refusal is a CONNECT refusal and `curl` reports `%%{http_code}` as 000 - the 403 exists where
-    # that format string cannot see it. Over http the refusal IS the response and reads as 403.
+    # The refused probes use `http://` and not `https://`, and the scheme decides what curl can
+    # see. Over https the refusal is a CONNECT refusal and `curl` reports `%%{http_code}` as 000 -
+    # the 403 exists where that format string cannot see it. Over http the refusal is the response
+    # and reads as 403.
     echo "--- the single egress (D38), one property at a time"
     proxy_probe () {
       printf '%-58s ' "$1"

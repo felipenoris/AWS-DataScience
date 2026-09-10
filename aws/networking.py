@@ -63,9 +63,10 @@
 # only AWS changes it, which is NT-9's job), 11 is this account's instantiation of it.
 #
 # What it cannot see, stated because an empty listing and a missing account look alike:
-#   - Staging is unvended (held on the account cap) and has no profile: the deliverable
-#     "describe-vpc-peering-connections in Staging returns empty" cannot run from here
-#     until the vend. Absence from this report is silence, not evidence.
+#   - The account the Stage 3 deliverable called Staging was never vended - the quota refused
+#     it - so "describe-vpc-peering-connections in Staging returns empty" has no account to run
+#     in. Today's Staging is Development renamed (Stage 6b, 2026-09-06); it is measured here
+#     like any other. Absence from this report is silence, not evidence.
 #   - Management, Log Archive and Audit hold no CLI profile by design; their default VPCs
 #     (if any) are unmeasured here. None of them is meant to hold a Stage 3 VPC.
 #   - This is a control-plane reading. The stage's behavioural proofs - dnf through the

@@ -340,13 +340,15 @@ what the strict one costs in day-to-day friction.
 requirement text). Both designs constrain the **SageMaker-managed compute** and nothing else. The **client
 plane** — the laptop on the VPN — has its own egress: all of its internet runs through the cloud's single
 egress point behind an institutional **HTTP/HTTPS proxy** (monitored, broad; D6's territory, Stage 11's
-build, open question 23's topology), and that plane serves the SMUS portal's public-internet requirements.
+build, the topology [D38](decisions/D38-single-egress-hub.md) settled), and that plane serves the SMUS
+portal's public-internet requirements.
 Three consequences. The (A)/(B) gap is smaller than the names suggest: with a whitelist as the mechanism,
 (B) is the empty list and (A) a short one, and under both designs the compute reaches the *intranet*
 (GitLab included) identically. Every allowed compute connection still crosses the institutional proxy —
 two filters, the proxy's and then SageMaker's stricter one, so the compute's effective reach is the
-intersection. And the lab's per-account NATs are the **interim** shape of an egress that converges on one
-point; the comparison below measures the designs, not the interim topology.
+intersection. And the lab's per-account NATs were the **interim** shape of an egress that converges on one
+point — all of them destroyed at 6c step 5.1; the comparison below measures the designs, not that
+topology.
 
 **(A) Limited internet — NAT plus allowlist.** The SageMaker private subnets route to the NAT gateway;
 Route 53 Resolver DNS Firewall permits an explicit list of domains and blocks the rest, optionally with a
@@ -396,10 +398,10 @@ Neither is a Stage 6 deliverable. They answer *"the requirement is SNI, not name
 requirement from the one design A was built for. The objectives state an institutional **HTTP/HTTPS
 proxy** between the VPN-connected client and the cloud's single egress, which every compute connection
 also crosses, so the explicit-proxy row above is a **candidate shape for a stated requirement**. The
-objectives name only "an HTTP/HTTPS proxy", so which shape is built (this row, or Network Firewall's) is
-open question 23's to settle; the build belongs to Stage 11's egress-control leg, and the row's two
-catches (every tool needs `http_proxy`/`https_proxy`; the proxy resolves outside the DNS Firewall) are
-design inputs rather than reasons not to build it.
+objectives name only "an HTTP/HTTPS proxy", and open question 23 settled which shape is built: this row,
+closed 2026-09-05 by D38 and built at Stage 6c. The row's two catches (every tool needs
+`http_proxy`/`https_proxy`; the proxy resolves outside the DNS Firewall) were design inputs, and both are
+carried by the built hub.
 
 **(B) No internet — proxied artifacts only.** The SageMaker subnets have no route to a NAT gateway at all.
 Packages arrive through **CodeArtifact** repositories configured with an upstream to the public registry

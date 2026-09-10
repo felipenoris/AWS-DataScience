@@ -9,7 +9,7 @@ output "vpc_cidr" {
 }
 
 output "s3_gateway_endpoint_id" {
-  description = "THE INT-05 ANCHOR - the [P] id Stage 5's bucket policies condition on, read through terraform_remote_state, never pasted (step 3.2). The only endpoint id any policy may name (Lesson 3)."
+  description = "The INT-05 anchor - the [P] id Stage 5's bucket policies condition on, read through terraform_remote_state, never pasted (step 3.2). The only endpoint id any policy may name (Lesson 3)."
   value       = aws_vpc_endpoint.s3.id
 }
 

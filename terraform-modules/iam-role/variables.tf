@@ -17,7 +17,7 @@ variable "assume_role_policy" {
 }
 
 variable "permissions_boundary" {
-  description = "Boundary policy ARN. REQUIRED, no default: pass null only when omitting the boundary is a decision (docs/plan/conventions.md, IAM rules) - a service role authored by the infrastructure user is the one legitimate case today."
+  description = "Boundary policy ARN. Required, no default: pass null only when omitting the boundary is a decision (docs/plan/conventions.md, IAM rules) - a service role authored by the infrastructure user is the one legitimate case today."
   type        = string
   nullable    = true
 

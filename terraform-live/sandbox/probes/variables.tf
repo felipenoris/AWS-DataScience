@@ -15,7 +15,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -26,7 +26,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -43,7 +43,7 @@ variable "zone_ids" {
 }
 
 variable "zone_index" {
-  description = "Which authored zone both probes land in. THE SOURCE READINGS ARE AZ-AGNOSTIC and that is measured, not assumed: both private route tables carry the same two peering routes and the same NAT default, the isolated route table is a single shared one, and the peer routes back to both private ranges - so nothing in this slice's answers depends on the value. It exists for one reason: RunInstances answers Server.InsufficientInstanceCapacity per AZ and per instance type, and a probe blocked by a transient capacity shortage in one zone should move rather than wait. The target in production/probes has no such knob - a secondary ENI cannot cross an AZ, so that instance is pinned."
+  description = "Which authored zone both probes land in. The source readings are AZ-agnostic and that is measured, not assumed: both private route tables carry the same two peering routes and the same NAT default, the isolated route table is a single shared one, and the peer routes back to both private ranges - so nothing in this slice's answers depends on the value. It exists for one reason: RunInstances answers Server.InsufficientInstanceCapacity per AZ and per instance type, and a probe blocked by a transient capacity shortage in one zone should move rather than wait. The target in production/probes has no such knob - a secondary ENI cannot cross an AZ, so that instance is pinned."
   type        = number
   default     = 0
 
@@ -60,7 +60,7 @@ variable "account_folder" {
 }
 
 variable "peer_cidrs" {
-  description = "Every TARGET account VPC range this slice reaches (scripts/tfhygiene/backend.py PROBE_PEERS) - one here. The peering probe egress is scoped to them. Each is kept WHOLE deliberately: the permitted address and the forbidden one are both inside it, so this security group is constant across the pair and the ROUTE is the single variable the reading turns on."
+  description = "Every target account VPC range this slice reaches (scripts/tfhygiene/backend.py PROBE_PEERS) - one here. The peering probe egress is scoped to them. Each is kept whole deliberately: the permitted address and the forbidden one are both inside it, so this security group is constant across the pair and the route is the single variable the reading turns on."
   type        = list(string)
   nullable    = false
 }
@@ -72,7 +72,7 @@ variable "target_name" {
 }
 
 variable "target_forbidden_name" {
-  description = "The SAME host's second interface, in a tier this account holds no route to. That this name RESOLVES and still does not connect is the reading: resolution proves the zone association and the host, so only the route is left to explain the silence."
+  description = "The same host's second interface, in a tier this account holds no route to. That this name resolves and still does not connect is the reading: resolution proves the zone association and the host, so only the route is left to explain the silence."
   type        = string
   default     = "probe-isolated.awsds.internal"
 }
@@ -84,7 +84,7 @@ variable "listener_port" {
 }
 
 variable "blocked_port" {
-  description = "Any port the target does NOT admit, which is every port but listener_port - the target's security group carries exactly one ingress rule, so this needs no counterpart there. The packet reaches the ENI and is dropped by the group, writing a REJECT flow-log record; the forbidden ADDRESS produces no record at all because the packet never leaves this account. The two failures being distinguishable is the point (Lesson 13)."
+  description = "Any port the target does not admit, which is every port but listener_port - the target's security group carries exactly one ingress rule, so this needs no counterpart there. The packet reaches the ENI and is dropped by the group, writing a REJECT flow-log record; the forbidden address produces no record at all because the packet never leaves this account. The two failures being distinguishable is the point (Lesson 13)."
   type        = number
   default     = 8080
 
@@ -95,7 +95,7 @@ variable "blocked_port" {
 }
 
 variable "al2023_repo_suffix" {
-  description = "The region-specific suffix of the AL2023 repository bucket - the allow-listed half of the perimeter pair. It is NOT guessed: reading (2) of the same probe prints the mirrorlist line the running AMI is configured with, so the current value is visible in every run. A stale value fails as a 404, which the reading deliberately does not treat as a 403 - the two would otherwise be confused, and only one of them is a finding about the perimeter."
+  description = "The region-specific suffix of the AL2023 repository bucket - the allow-listed half of the perimeter pair. It is not guessed: reading (2) of the same probe prints the mirrorlist line the running AMI is configured with, so the current value is visible in every run. A stale value fails as a 404, which the reading deliberately does not treat as a 403 - the two would otherwise be confused, and only one of them is a finding about the perimeter."
   type        = string
   default     = "de612dc2"
 }
@@ -107,7 +107,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }
@@ -121,13 +121,13 @@ variable "cost_center" {
 # ------------------------------------------------- the proxy readings (6c step 6.3, 2026-09-06)
 
 variable "proxy_url" {
-  description = "The estate's single internet exit (D38), as a client is told about it. A NAME, resolved through the `awsds.internal` apex this VPC is associated with (6c step 2.1) - and the PRIVATE address behind it, because a spoke reaches 3128 over a peering and a peering carries the private address only. The public one would resolve perfectly and time out with no message."
+  description = "The estate's single internet exit (D38), as a client is told about it. A name, resolved through the `awsds.internal` apex this VPC is associated with (6c step 2.1) - and the private address behind it, because a spoke reaches 3128 over a peering and a peering carries the private address only. The public one would resolve perfectly and time out with no message."
   type        = string
   default     = "http://proxy.awsds.internal:3128"
 }
 
 variable "proxy_probe_private_target" {
-  description = "An address inside VPC-Workloads' range. NOTHING ANSWERS ON IT AND NOTHING NEEDS TO: the reading is Squid's REFUSAL, which `http_access deny to_private` produces before any connection is attempted, so a listening host would prove less rather than more. Sandbox has no peering to Workloads, which is what makes this the L7-bridge question rather than a routing one."
+  description = "An address inside VPC-Workloads' range. Nothing answers on it and nothing needs to: the reading is Squid's refusal, which `http_access deny to_private` produces before any connection is attempted, so a listening host would prove less rather than more. Sandbox has no peering to Workloads, which is what makes this the L7-bridge question rather than a routing one."
   type        = string
   default     = "10.32.0.10"
 }

@@ -1,5 +1,5 @@
 variable "allowed_instance_types" {
-  description = "Every ml.* instance type any principal in this design may ask SageMaker for OUTSIDE a space - jobs, endpoints, notebook instances. Since v0.2.0 (2026-09-07, the user's decision) the space path (CreateApp, CreateSpace, UpdateSpace) carries NO ceiling. D12's budget expressed as a control: the budget notifies nobody, so the only thing that stops a USD 30/hour job parameter is a policy that refuses it in the first hour."
+  description = "Every ml.* instance type any principal in this design may ask SageMaker for outside a space - jobs, endpoints, notebook instances. Since v0.2.0 (2026-09-07, the user's decision) the space path (CreateApp, CreateSpace, UpdateSpace) carries no ceiling. D12's budget expressed as a control: the budget notifies nobody, so the only thing that stops a USD 30/hour job parameter is a policy that refuses it in the first hour."
   type        = list(string)
   nullable    = false
 

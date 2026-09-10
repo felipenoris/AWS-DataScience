@@ -16,7 +16,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -27,7 +27,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary. NOT cosmetic here: awsds-org-scp-tag-enforcement denies ec2:RunInstances outright when Environment or Project is absent, so a missing default_tag is an apply that fails at the instance."
+  description = "The Environment tag value - the third vocabulary. Not cosmetic here: awsds-org-scp-tag-enforcement denies ec2:RunInstances outright when Environment or Project is absent, so a missing default_tag is an apply that fails at the instance."
   type        = string
   nullable    = false
 
@@ -58,7 +58,7 @@ variable "account_folder" {
 # ------------------------------------------------------------ the two knobs, and one caveat
 
 variable "instance_type" {
-  description = "THE BUILD HOST'S SIZE, SELECTED PER APPLY, from the tracked instance_type.auto.tfvars beside this file. WHERE THIS DIFFERS FROM sandbox/vpn/'s KNOB OF THE SAME NAME, and it is the thing to read before assuming the two files behave alike: there, the default is a POSTURE - t3.nano is what the design runs at and a larger value is a temporary switch. Here the default is a FLOOR. This host exists to build a container image whose base alone is ~3.9 GB compressed and several times that unpacked, and a default too small to do that would be a value that looks like a choice and is a trap. So the default IS the working shape (t3.xlarge - 4 vCPU, 16 GiB, 0.1664 USD/h measured, docs/PRICING.md 8) and the file beside this one assigns it explicitly, so the two agree and a fresh clone builds something that works. THE LIST IS x86_64, and that is not a preference either: SageMaker images are amd64 and the sagemaker-distribution repository publishes no arm64 tag at all, so building on Graviton would produce an image no SMUS space can run. It is the whole reason this slice exists rather than a laptop."
+  description = "The build host's size, selected per apply, from the tracked instance_type.auto.tfvars beside this file. Where this differs from sandbox/vpn/'s knob of the same name, and it is the thing to read before assuming the two files behave alike: there, the default is a posture - t3.nano is what the design runs at and a larger value is a temporary switch. Here the default is a floor. This host exists to build a container image whose base alone is ~3.9 GB compressed and several times that unpacked, and a default too small to do that would be a value that looks like a choice and is a trap. So the default is the working shape (t3.xlarge - 4 vCPU, 16 GiB, 0.1664 USD/h measured, docs/PRICING.md 8) and the file beside this one assigns it explicitly, so the two agree and a fresh clone builds something that works. The list is x86_64, and that is not a preference either: SageMaker images are amd64 and the sagemaker-distribution repository publishes no arm64 tag at all, so building on Graviton would produce an image no SMUS space can run. It is the whole reason this slice exists rather than a laptop."
   type        = string
   default     = "t3.xlarge"
 
@@ -72,7 +72,7 @@ variable "instance_type" {
 }
 
 variable "root_volume_size" {
-  description = "THE BUILD HOST'S DISK, IN GiB, from the same tracked file. 64 is the working value: the base image is ~3.9 GB compressed and roughly 12 GB unpacked, dev-env adds Julia, an R environment and a Rust toolchain on top, and docker keeps the pulled layers AND the built ones - so 64 is comfortable rather than generous, and the failure mode of guessing low is a build that dies most of the way through. THE ASYMMETRY THAT BITES IN sandbox/vpn/ DOES NOT BITE HERE, and that is the one real difference between the two slices' copies of this knob: there the host is [D] and the volume is a STANDING cost that EBS will not shrink, so the value is a commitment. This slice is [E]. The volume is created with the host and destroyed with it, so a value that turns out wrong costs one teardown and one apply, and it bills only while the session runs."
+  description = "The build host's disk, in GiB, from the same tracked file. 64 is the working value: the base image is ~3.9 GB compressed and roughly 12 GB unpacked, dev-env adds Julia, an R environment and a Rust toolchain on top, and docker keeps the pulled layers and the built ones - so 64 is comfortable rather than generous, and the failure mode of guessing low is a build that dies most of the way through. The asymmetry that bites in sandbox/vpn/ does not bite here, and that is the one real difference between the two slices' copies of this knob: there the host is [D] and the volume is a standing cost that EBS will not shrink, so the value is a commitment. This slice is [E]. The volume is created with the host and destroyed with it, so a value that turns out wrong costs one teardown and one apply, and it bills only while the session runs."
   type        = number
   default     = 64
 
@@ -89,13 +89,13 @@ variable "root_volume_size" {
 # ------------------------------------------------------------------------- the five tags
 
 variable "project" {
-  description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy - and REQUIRED at RunInstances by awsds-org-scp-tag-enforcement."
+  description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy - and required at RunInstances by awsds-org-scp-tag-enforcement."
   type        = string
   default     = "AWS-DataScience"
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

@@ -20,7 +20,7 @@
 # Trusted access is an organization-level allowlist keyed by *service principal*, switched on
 # from the management account. What it grants is not an IAM permission and appears in no
 # policy evaluation: it lets the service read the organization's structure and create
-# service-linked roles inside member accounts (Lesson 10). Delegated administration is a
+# service-linked roles inside member accounts (Lesson 17). Delegated administration is a
 # second, separate registration: which member account operates that service org-wide, so that
 # the management account does not have to.
 #

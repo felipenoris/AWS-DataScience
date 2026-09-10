@@ -1,16 +1,28 @@
 # staging/probes/ - one host, measuring two things that have no reading anywhere else.
 #
-#   INT-09. The stage's Proves row is this account's peering to Production, and the
-#   Deliverables measure Sandbox-to-Production. Those are different peering connections with
-#   different routes on both sides; exercising one says nothing about the other, and INT-09
-#   is the one a promotion will run over.
+#   This account's own peering to Production. The Deliverables measure Sandbox-to-Production;
+#   these are different peering connections with different routes on both sides, and exercising
+#   one says nothing about the other. It carried INT-09 until 6c step 3.1 re-homed that
+#   integration onto Sandbox to `VPC-SharedServices` and retired Staging's peering to the same
+#   VPC; what is left here is Staging to `VPC-Networking`, the path to the proxy. Every INT-09
+#   name below - the slice's resources, the boot markers the stage log greps for - is that
+#   history, kept because the log refers to it.
+#
+#   The slice does not measure what it was written to measure, and this is read before it is
+#   applied. The target host is `production/probes/`, which sits in
+#   `VPC-SharedServices` (10.30), and the peering that reached it is gone: `peer_cidrs` is
+#   `10.31.0.0/16` alone. The three reachability probes would all report silence, the permitted
+#   one included - a reading uniformly silent for a reason that is not the one the probe is
+#   about (Lesson 13). Re-point it at a host this account can still reach, or retire it; do not
+#   run it as written and read the silence as a finding.
 #
 #   The other half of the DNS deliverable. It asks that probe.awsds.internal resolve from a
 #   Sandbox host and from a host in this account. The zone association reaching this VPC can
 #   be read from Route 53, but reading an association is not resolving a name (Lesson 5), and
 #   the harness can produce this principal - so it is attempted rather than inferred. The
-#   third clause, NXDOMAIN from Staging, waits on the vend: with no Staging VPC there is no
-#   host to be refused, and an absent negative control is recorded rather than substituted.
+#   deliverable's third clause wanted NXDOMAIN from an account that was never vended - the
+#   quota refused it and 6c step 0.2 left `10.40.0.0/16` unallocated - so it has no host to be
+#   refused, and an absent negative control is recorded rather than substituted.
 #
 # There is no perimeter probe here, by decision: the S3 gateway policy is byte-identical across
 # the three accounts, `./aws/egress.py` EG-4 reads it in each of them, and the same allow-list
@@ -105,7 +117,7 @@ resource "aws_security_group" "int09" {
 resource "aws_instance" "int09" {
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same day buys nothing - the reading is the serial console, and CloudWatch is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t4g.nano is not EBS-optimized-capable and the probe moves no volume traffic - the instance type is chosen by price (docs/PRICING.md 3)
-  # checkov:skip=CKV2_AWS_41:NO instance profile, deliberately - the probe makes no AWS API call, and a role would be blast radius bought for nothing
+  # checkov:skip=CKV2_AWS_41:no instance profile - the probe makes no AWS API call, and a role would be blast radius bought for nothing
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = "t4g.nano"
 

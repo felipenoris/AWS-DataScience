@@ -97,7 +97,8 @@ resource "aws_ssoadmin_managed_policy_attachment" "infrastructure_admin" {
 # persona assignments resolve through. This set exists in exactly the accounts this repository
 # applies into, so a further account folder and its assignment are one edit rather than two.
 #
-# `Staging` will appear here at the vend, in the same edit that adds it to locals.accounts.
+# `Staging` arrived here 2026-09-06, in the same edit Stage 6b step 4.6 added it to
+# locals.accounts by renaming `development`.
 #
 # Not modelled, listed so that "not here" and "missed" stay distinguishable:
 #   - The Account Factory direct assignments (D32, 1b step 3.8) - Control Tower's

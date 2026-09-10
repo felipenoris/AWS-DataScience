@@ -11,7 +11,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -22,7 +22,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -49,19 +49,19 @@ variable "account_folder" {
 # and an L7 bridge between VPCs peering keeps apart. Generated from one constant so the two lists
 # cannot part company (Lesson 51).
 variable "rfc1918_cidrs" {
-  description = "The private address space - denied as a proxy DESTINATION. Generated; never authored here."
+  description = "The private address space - denied as a proxy destination. Generated; never authored here."
   type        = list(string)
   nullable    = false
 }
 
 variable "zone_index" {
-  description = "Which authored zone this host lands in. Everything it consumes is AZ-free - the Elastic IP, the security group and the internet gateway all belong to the VPC - so this is a one-variable retry when nano capacity is short in a zone, which Stage 3 MEASURED rather than anticipated."
+  description = "Which authored zone this host lands in. Everything it consumes is AZ-free - the Elastic IP, the security group and the internet gateway all belong to the VPC - so this is a one-variable retry when nano capacity is short in a zone, which Stage 3 measured rather than anticipated."
   type        = number
   default     = 0
 }
 
 variable "instance_type" {
-  description = "The proxy's size. t3.micro (1 GiB) at a measured 0.0104 USD/h (docs/PRICING.md 8; Lesson 6 - the rate is measured, never reasoned). THE SIZE IS DECIDED BY THE BUILD, NOT BY THE STEADY STATE: a forward proxy that relays CONNECT and caches nothing is a socket pump and would run on a nano forever - but `dnf install squid jq amazon-cloudwatch-agent` will not FIT on one. Measured 2026-09-06, twice and with opposite outcomes: the first proxy host installed fine, the second was OOM-killed mid-resolve with the kernel naming it (`Out of memory: Killed process (dnf)`) on a host reporting 415 MiB usable. So the nano is not too small, it is MARGINAL - which is worse, because it boots most of the time and the estate's single internet exit is the wrong place to keep a coin-flip. EVERY ADMITTED VALUE IS x86_64 because main.tf pins the AL2023 x86_64 AMI, and an AMI is specific to its architecture: a t4g is not a same-shape alternative, EC2 refuses the request. Unlike the VPN host this slice has no tracked size file, deliberately - nobody works ON the proxy, so there is no reason to switch it up for a session."
+  description = "The proxy's size. t3.micro (1 GiB) at a measured 0.0104 USD/h (docs/PRICING.md 8; Lesson 6 - the rate is measured, never reasoned). The size is decided by the build, not by the steady state: a forward proxy that relays CONNECT and caches nothing is a socket pump and would run on a nano forever - but `dnf install squid jq amazon-cloudwatch-agent` will not fit on one. Measured 2026-09-06, twice and with opposite outcomes: the first proxy host installed fine, the second was OOM-killed mid-resolve with the kernel naming it (`Out of memory: Killed process (dnf)`) on a host reporting 415 MiB usable. So the nano is not too small, it is marginal - which is worse, because it boots most of the time and the estate's single internet exit is the wrong place to keep a coin-flip. Every admitted value is x86_64 because main.tf pins the AL2023 x86_64 AMI, and an AMI is specific to its architecture: a t4g is not a same-shape alternative, EC2 refuses the request. Unlike the VPN host this slice has no tracked size file, deliberately - nobody works on the proxy, so there is no reason to switch it up for a session."
   type        = string
   default     = "t3.micro"
 
@@ -78,7 +78,7 @@ variable "instance_type" {
 # `Failed` association as a working proxy's first impression. `0/30` is the same half-hourly
 # cadence, at predictable wall-clock times.
 variable "reconfigure_schedule" {
-  description = "How often State Manager re-renders the allow-lists onto the running host (step 4.10). Half-hourly is the trade the step names: an allow-list edit is an apply plus at most one interval, against no write API from the laptop, no host replacement and no estate-wide outage. MUST be a cron() expression: apply_only_at_cron_interval, which is what stops the boot race, is rejected by the API on a rate() schedule."
+  description = "How often State Manager re-renders the allow-lists onto the running host (step 4.10). Half-hourly is the trade the step names: an allow-list edit is an apply plus at most one interval, against no write API from the laptop, no host replacement and no estate-wide outage. Must be a cron() expression: apply_only_at_cron_interval, which is what stops the boot race, is rejected by the API on a rate() schedule."
   type        = string
   default     = "cron(0/30 * * * ? *)"
 
@@ -95,7 +95,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

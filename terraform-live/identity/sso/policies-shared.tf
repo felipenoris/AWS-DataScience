@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "shared_denies" {
   #
   # 1c's ceiling carves out two principals by name, and a carve-out cannot defend itself:
   #
-  #   DenyAccountBpaChangeExceptInfrastructure  matches the ARN PATTERN
+  #   DenyAccountBpaChangeExceptInfrastructure  matches the ARN pattern
   #     `...:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*`
   #     (1c decision 7 - the one wildcard-account ARN in the whole design), so anybody who can
   #     mint a role under /aws-reserved/ with that name mints the exemption.

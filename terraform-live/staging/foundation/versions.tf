@@ -1,13 +1,14 @@
-# Version pin - Stage 2 step 1. This file is byte-identical in every slice.
+# Version pin - Stage 2 step 1. The same constraint every slice carries.
 #
 # It is a step of its own rather than a detail of the tooling because two of Stage 2's
 # verifications are phrased "in the pinned provider version": whether aws_organizations_policy
 # accepts DECLARATIVE_POLICY_EC2, and whether the descendant-OU data source recurses. A
 # verification whose subject was never written down is one nobody can repeat.
 #
-# Terraform has no repository-wide pin: the constraint belongs to each root module. The same lines
-# are repeated per slice and step 9 checks the copies have not drifted (Lesson 14). Change it in
-# one slice and the check fails; change it everywhere and it is a deliberate act with a diff.
+# Terraform has no repository-wide pin: the constraint belongs to each root module, so these lines
+# are repeated per slice (Lesson 14). scripts/check-provider-locks.py compares required_version and
+# the hashicorp/aws constraint against sandbox/foundation's; a second provider is allowed and is
+# not compared, which is why the copies are not byte-compared.
 #
 # The constraint admits a range; the exact build is pinned in the committed .terraform.lock.hcl,
 # which carries darwin_arm64, linux_amd64 and linux_arm64 (step 6.3) so the Stage 7-8 runners do

@@ -3,7 +3,7 @@
 # This file is separate from maintenance.tf because those grants are machinery - what the catalog
 # needs to maintain itself, named-resource by necessity. These are the first grants made to a
 # human persona, and they deliver decision 5's second half: "the governance manager is never an
-# admin ... and receives SPECIFIC GRANTS instead, each in the register" (docs/AWS_STATE.md, the
+# admin ... and receives specific grants instead, each in the register" (docs/AWS_STATE.md, the
 # Lake Formation grant register).
 #
 # What the persona is for: locals.tf in identity/sso/ describes the set as "The catalog, never

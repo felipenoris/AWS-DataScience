@@ -4,7 +4,7 @@
 # foundation/: the gateway endpoint id and aws:SourceVpc.
 
 output "interface_endpoint_ids" {
-  description = "Endpoint id per service token - the ids the Validation expects to be ALL NEW after a make down/up cycle, which is exactly why nothing may reference them."
+  description = "Endpoint id per service token - the ids the Validation expects to be all new after a make down/up cycle, which is exactly why nothing may reference them."
   value       = { for s, ep in aws_vpc_endpoint.interface : s => ep.id }
 }
 

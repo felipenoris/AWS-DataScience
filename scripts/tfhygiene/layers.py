@@ -337,7 +337,7 @@ SLICES = [
     # anywhere: an explicit Squid proxy on a host of its own, priced from the same
     # docs/PRICING.md row (Lesson 6). Two hosts and not one because the WireGuard host receives
     # untrusted UDP from the internet and this one parses untrusted internet responses;
-    # separating them keeps a compromise of either off the other, for the price of one more nano.
+    # separating them keeps a compromise of either off the other, for the price of one more host.
     #
     # It ranks below vpn (41 against 40) and that order is load-bearing: `make down` walks the
     # table in reverse, so the proxy goes first and the tunnel last - the tunnel is the way back
