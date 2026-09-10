@@ -95,7 +95,8 @@ work at all* — is still open.
     API reference gives the cap as 25 entries, 256 characters per key and per value, and the generated
     `NO_PROXY` is 50 entries and about 2,300 characters. **This is the mechanism 2.2 and 8.4(c) both
     name**, so the delivery stopped being a choice between (b) and (c): decision due 8 was opened and
-    **taken the same day — the `ENV` in the Dockerfile**, delivered in code with the rebuild owed
+    **taken the same day — the `ENV` in the Dockerfile**, the list a dated literal there, with the
+    rebuild owed and `./aws/devenv.py` reading the drift
     ([`runbooks/dev-env.md`](../runbooks/dev-env.md) §E). The four proxy variables were **not** delivered
     without the bypass list: with `.amazonaws.com` on the compute plane a missing `NO_PROXY` succeeds
     while losing `aws:SourceVpce`, which is the failure that does not announce itself (8.8's own
@@ -1072,13 +1073,16 @@ measurement.
    with no endpoint would become a silent timeout rather than a public call).
    **Delivered in code the same day**: [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile)
    §6 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
-   `NO_PROXY` arriving as a build argument read from `<account>/egress` — the build **fails** on an
-   empty value, because an image carrying a proxy and no bypass list works while losing the perimeter.
+   **`NO_PROXY` as a dated literal** — Sandbox's, 50 entries, sha256 `856bc57bb…` — and the command
+   that refreshes it in the comment beside it; the `ARG` stays as its default, so another account
+   overrides it at build time without editing the file, and an empty override still **fails** the
+   build, because an image carrying a proxy and no bypass list works while losing the perimeter.
    **What it costs is a standing obligation rather than a one-off**: the image is shaped by one VPC's
-   endpoint list, so a change there is a rebuild, a new tag, a version replace and a re-attach, and no
-   gate sees it. The image writes `/opt/awsds-proxy.txt` — entry count and sha256 prefix — so the
-   staleness is at least readable; [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain
-   and the comparison. **Owed: the rebuild.** `default-v0.1.1` predates this, so `image_tag` stays where
+   endpoint list, so a change there is a Dockerfile edit, a rebuild, a new tag, a version replace and a
+   re-attach, and no gate sees it. Two readings make it visible instead — `./aws/devenv.py`
+   (`DE-1`..`DE-4`) compares the literal with the account's current output and names each side's extra
+   entries, and `/opt/awsds-proxy.txt` inside a space carries the digest of what was actually baked;
+   [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Owed: the rebuild.** `default-v0.1.1` predates this, so `image_tag` stays where
    it is until a buildbox session pushes the next tag.
 
 ## Verifications to answer while executing
