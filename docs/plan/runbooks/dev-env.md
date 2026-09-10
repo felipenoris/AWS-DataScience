@@ -180,40 +180,69 @@ boundary carries (INT-15), and Stage 6d step 2.4 is the reading. Until it has an
 attachment as something to re-check after any blueprint or project-profile change, and re-attach rather
 than re-argue.
 
-## E. Delivering the proxy environment
+## E. The proxy environment, and where it is delivered
 
 Every internet call from a space crosses the Squid proxy (D38), so a working session needs six variables
-and `NO_PROXY` is the load-bearing one: it is what keeps AWS traffic on the VPC endpoints. Without it, and
-with a proxy set, every AWS call leaves through the hub as a public call carrying neither `aws:SourceVpc`
-nor `aws:SourceVpce` — and the compute plane allows `.amazonaws.com`, so it **succeeds** while the
-perimeter is quietly gone. Half the pair is worse than neither: never deliver `http_proxy` without its
-bypass list.
+and `NO_PROXY` is the load-bearing one: it is what keeps AWS traffic on the VPC endpoints. Without it,
+and with a proxy set, every AWS call leaves through the hub as a public call carrying neither
+`aws:SourceVpc` nor `aws:SourceVpce` — and the compute plane allows `.amazonaws.com`, so it **succeeds**
+while the perimeter is quietly gone. Half the pair is worse than neither.
 
-**`ContainerEnvironmentVariables` cannot carry it, measured 2026-09-10.** The app image configuration is
-where Stage 6d steps 2.2 and 8.4(c) put the six variables, and `CreateAppImageConfig` refused both
-configurations: `ValidationException … Member must have length less than or equal to 256`. The API
-reference gives the shape — `ContainerConfig` takes at most 25 map entries, each key and each value at
-most 256 characters — and this estate's generated `NO_PROXY` is 50 entries and about 2,300 characters. No
-rewriting of those resources makes it fit, so the two configurations bind an app type to the image and
-carry no environment.
+**The image carries them, decided 2026-09-10 by the user** (Stage 6d decision 8). Neither API-side
+mechanism can:
 
-The delivery is therefore open, with three candidates. It is a decision rather than a lookup because each
-buys the same fact at a different price:
+| Mechanism | Why not |
+|---|---|
+| `ContainerEnvironmentVariables` on the app image configuration | each value caps at 256 characters (`ContainerConfig`: 25 entries, 256 per key and per value) against a `NO_PROXY` of about 2,300 — `CreateAppImageConfig` refuses it outright, measured at step 2.2 |
+| A lifecycle configuration | it fits — a 16 KB script — but there is no `UpdateStudioLifecycleConfig`, and the API says deleting one needs *"no running apps using the Lifecycle Configuration"* and its removal *"from UserSettings in all Domains and UserProfiles"*: every list change becomes detach, replace, re-attach, in a console the CLI cannot stand in for |
 
-| Candidate | What it costs | What is unknown |
-|---|---|---|
-| **A lifecycle configuration** (`StudioLifecycleConfig`, `CodeEditor` and `JupyterLab` app types) | a base64 script, 16 KB, so the value fits with room to spare; attached to the same blueprint-provisioned domain as §C6, so one more field in the same hand step | whether variables it exports reach the **`codeeditorserver` supervisord program** and the JupyterLab server, which is the only thing that matters (Stage 6d step 8.4's reading names the target; Lesson 5) |
-| **`ENV` in the Dockerfile** | a rebuild, a new tag and a buildbox session; and it couples one artifact to one VPC's endpoint list, which changed 28 → 50 entries on 2026-09-09 alone | nothing technical — the cost is that a second member account, or an endpoint added, makes the baked list wrong with no gate that can see it |
-| **A `NO_PROXY` compressed to suffix form** | it fits in 256 characters (`.us-west-2.amazonaws.com`, `.us-west-2.api.aws`, and the handful of literals), and the app image configuration then delivers all six | it is a **perimeter change**: every AWS name in the Region would bypass the proxy, so a service with no endpoint stops being a public call through the hub and becomes a timeout with no message (Lesson 42) |
+So [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) §6 sets the six as `ENV`, plus the
+two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
+because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-Until one is taken, a session's variables are exported by hand in the space's terminal
-([`sg-proxy.md`](sg-proxy.md)), and `NO_PROXY` comes from `terraform output -raw no_proxy` on
-`<account>/egress`, never from a transcription.
+**The list is a build argument, never a literal.** `NO_PROXY_LIST` is read from the account the image
+will run in (`terraform output -raw no_proxy` on `<account>/egress`) and passed to `docker build`; the
+Dockerfile **fails the build** on an empty value rather than producing an image that works and loses the
+perimeter. The section sits last in the file so its `ENV` does not reach the build's own `RUN` steps,
+which run in `VPC-SharedServices` against a different endpoint set.
+
+### What an endpoint change costs
+
+The price of this choice, and the reason it is written here rather than remembered: **the image is
+shaped by one VPC's endpoint list**. A change to that list — including one nobody typed, as when
+`sandbox/egress` went 28 → 50 entries on a module bump — makes every existing image stale, and the
+repair is the whole chain:
+
+1. `make up ENV=<env>` and read the new value (`terraform output -raw no_proxy`).
+2. A buildbox session: `base` if it moved, then `dev-env` with the new `--build-arg`
+   ([`buildbox.md`](buildbox.md) §U), and a push under a **new tag** — the repositories are tag-immutable.
+3. `image_tag` in [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf), then apply — a version replace (§B).
+4. Re-attach: the domain's `CustomImages` names a version number (§C6).
+5. Every space restarts. A running app keeps the environment it started with, under any mechanism.
+
+Nothing in the estate notices when steps 1-4 have not happened. **What makes it detectable** is
+`/opt/awsds-proxy.txt` in the image — the entry count and the first 16 hex of the list's sha256, written
+at build time. From inside a space:
+
+```bash
+cat /opt/awsds-proxy.txt
+```
+
+against the operator's side, in the account the space runs in:
+
+```bash
+AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy | shasum -a 256 | cut -c1-16
+```
+
+Two different digests mean the image predates the current endpoint set, and the first symptom to expect
+is not a refusal but a **success without `aws:SourceVpce`** for a name added since the build — which
+CloudTrail shows and the space does not.
 
 ## B. A new build, and the version bump
 
 A steward approves a digest, the tag lands in both repositories, and the change here is one line:
-`image_tag` in the slice's `variables.tf`.
+`image_tag` in the slice's `variables.tf`. A **list change** reaches this same place by a longer road —
+§E's chain — because the proxy environment is baked at build time.
 
 `base_image` is force-new, because a SageMaker image version is immutable. The plan therefore reads
 `1 to add, 1 to destroy` on `aws_sagemaker_image_version` — the image itself and both configurations stay
@@ -255,8 +284,9 @@ which is the guard rather than a problem.
 | `ImageVersionStatus: CREATE_FAILED`, with a `FailureReason` naming permissions | the image role cannot read the repository: the identity half (§C5) or the repository policy half is missing | fix the half named, then taint and re-apply the version |
 | The image does not appear in the portal's picker | the attachment, not the registration | re-read §C7's `describe-domain`; if the entry is there, try the `DefaultSpaceSettings` block, which is §C6's unmeasured fallback |
 | A space stays in *starting* and never comes up | a pull that cannot complete: `ecr.dkr`, `ecr.api` or the S3 gateway endpoint absent, or the session down | `make up ENV=<env>`, then `./aws/egress.py` |
-| A space starts, and the terminal has no proxy | expected today | §E; the by-hand export is [`sg-proxy.md`](sg-proxy.md) |
-| `sudo apt` fails to resolve a name that is on the plane | `sudo` resets the environment, so `apt` runs with none of the six variables | the `-o Acquire::http::Proxy=` form in `sg-proxy.md`; the durable fix is two image-side files, and it belongs to the Dockerfile |
+| A space starts, and the terminal has no proxy | the space is on the stock image, or on a `dev-env` built before 2026-09-10 | select the house image (§C7); until one is attached, the by-hand export is [`sg-proxy.md`](sg-proxy.md) |
+| `sudo apt` fails to resolve a name that is on the plane | on an image built before 2026-09-10, `sudo` resets the environment and `apt` runs with none of the six variables | the `-o Acquire::http::Proxy=` form in `sg-proxy.md`; the durable fix is the Dockerfile's two files, live since §E's decision |
+| An AWS call from a space arrives with no `aws:SourceVpce`, and nothing failed | a name added to the endpoint set after the image was built: it is not in the baked `NO_PROXY`, so it went out through the proxy | compare `/opt/awsds-proxy.txt` against the current list (§E), then rebuild |
 
 ---
 

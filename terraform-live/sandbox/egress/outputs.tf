@@ -27,9 +27,13 @@ output "interface_endpoint_ids" {
 # `images/base` may not consume it. Every application image inherits from that one and runs as a
 # Production job behind endpoints, so an `ENV HTTP_PROXY`/`ENV NO_PROXY` baked there would travel
 # into a VPC whose list is different, and a wrong entry sends S3 and STS out through the proxy as
-# public calls, past every `aws:SourceVpc` condition. Build time is a BuildKit `--build-arg`; run
-# time is `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle
-# configuration, which for a SMUS domain must be attached in the console.
+# public calls, past every `aws:SourceVpc` condition.
+#
+# `images/dev-env` does consume it, since 6d decision 8 (2026-09-10): that image runs in exactly one
+# account, and both API-side mechanisms were measured unable to carry the value -
+# ContainerEnvironmentVariables caps each value at 256 characters, and a lifecycle configuration
+# cannot be updated in place. It arrives there as a `--build-arg`, never transcribed, and the image
+# is therefore stale the moment this list changes: docs/plan/runbooks/dev-env.md E owns that chain.
 
 output "no_proxy" {
   description = "The literal NO_PROXY value for a client inside this VPC - comma-joined, no wildcard, no CIDR, no port."

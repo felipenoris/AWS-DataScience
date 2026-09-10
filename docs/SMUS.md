@@ -731,8 +731,10 @@ repository across the account boundary. The recipe, per account and per release,
 
 **What the app image configuration cannot carry is the proxy environment.**
 `ContainerEnvironmentVariables` caps each value at 256 characters against a generated `NO_PROXY` of
-about 2,300, so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4 both assumed does not exist. The
-delivery is 6d's decision due 8.
+about 2,300, so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4 both assumed does not exist. 6d
+decision 8 (2026-09-10) puts the six variables in the **image** instead — `ENV` in
+`images/dev-env/Dockerfile`, with the list arriving as a build argument — which makes the image
+estate-shaped: an endpoint added to the account's list is a rebuild, a new tag and a re-attach.
 
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the

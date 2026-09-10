@@ -234,9 +234,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `awsds-sandbox-sagemaker-image` is what SageMaker assumes to read the repository cross-account
   (CloudTrail: `BatchGetImage`, session `SageMaker`), so the `RoleArn` is not decorative. **The proxy
   variables do not fit**: `ContainerEnvironmentVariables` caps each value at 256 characters and
-  `NO_PROXY` is ~2,300, so both app image configs carry no environment and the delivery is an open
-  decision (LCC / Dockerfile `ENV` / a compressed `NO_PROXY`) — [`runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) §E, which
-  also carries the attach recipe. Owed: 2.3-2.5 (the attach is a hand `update-domain` on the
+  `NO_PROXY` is ~2,300, so both app image configs carry no environment. **Decision 8 taken the same day
+  (the user): the six variables are `ENV` in `images/dev-env/Dockerfile`**, `NO_PROXY` as a build arg
+  read from `<account>/egress`, the build failing on an empty value, plus the apt and sudoers files;
+  the image is now shaped by one VPC's endpoint list, so a list change is a rebuild + tag + version +
+  re-attach, readable through `/opt/awsds-proxy.txt` —
+  [`runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) §E, which also carries the attach recipe.
+  **The rebuild is owed**: `default-v0.1.1` predates it. Owed: 2.3-2.5 (the attach is a hand `update-domain` on the
   blueprint's domain, full-replace, unexercised); 3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5
   beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
