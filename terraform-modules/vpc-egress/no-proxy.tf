@@ -187,7 +187,7 @@ locals {
   # rather than by dropping the dots, which are what makes the plan converge.
   dns_firewall_allow_normalised = [for e in var.dns_firewall_allow_domains : trimsuffix(e, ".")]
 
-  # The coverage matcher, run over two readings of one question. They differ in WHEN they can answer,
+  # The coverage matcher, run over two readings of one question. They differ in when they can answer,
   # never in what they ask:
   #
   #   declared   the service's canonical name, from the data source. One per declared service, known
