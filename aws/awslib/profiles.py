@@ -4,8 +4,7 @@ The multi-profile scripts (AZs, account-bpa, declarative-ec2, tf-backends, netwo
 egress) share one preflight: enumerate the ``awsds-*`` profiles (or take the ones named on
 the command line), ask ``sts get-caller-identity`` through each, and split them into the
 live set the report measures and the ``(failed)`` rows section 1 shows. A failed profile is
-excluded from every check and never counted as compliant - the preflight is where that rule
-is enforced once.
+excluded from every check and never counted as compliant.
 """
 
 from __future__ import annotations
@@ -37,8 +36,7 @@ def discover(prefix: str = context.PROFILE_PREFIX) -> list:
 def select(argv: list, prefix: str = context.PROFILE_PREFIX):
     """The scripts' shared argument convention: names on the command line, else discovery.
 
-    Returns ``(profiles, source_description)``; exits 1 with the shell's message when
-    nothing matched.
+    Returns ``(profiles, source_description)``; exits 1 when nothing matched.
     """
     if argv:
         return list(argv), "named on the command line"
@@ -68,8 +66,8 @@ def wrong_identity(failure: str) -> bool:
 
     ``GetRoleCredentials`` is the call the CLI makes *after* it already has a valid SSO
     token, to exchange it for the profile's role. A ``ForbiddenException`` there means the
-    token authenticated somebody - just not somebody with an assignment to this account and
-    permission set. Measured 2026-08-20: the browser silently re-approved a live portal
+    token authenticated somebody without an assignment to this account and permission set.
+    Measured 2026-08-20: the browser silently re-approved a live portal
     session belonging to a different user, and every ``awsds-infra-*`` profile failed this
     way while ``aws sso login`` reported success.
     """
@@ -84,14 +82,14 @@ def preflight(
 ) -> list:
     """sts:GetCallerIdentity through every profile; one Caller per profile, in order.
 
-    Progress goes to stderr exactly as before (``  <profile>  OK`` / ``FAILED``). When no
-    profile authenticates the script cannot measure anything: say how to log in and exit 1,
-    leaving any previous report untouched.
+    Progress goes to stderr (``  <profile>  OK`` / ``FAILED``). When no profile
+    authenticates the script cannot measure anything: say how to log in and exit 1, leaving
+    any previous report untouched.
 
-    "How to log in" is two different answers, and printing the wrong one costs a sitting.
-    The token cache is keyed by *sso-session name*, never by user, so a sign-in as the wrong
-    identity fills the right identity's slot - and re-running the login below finds a valid
-    token and does nothing. ``wrong_identity`` tells the two apart from the error text.
+    "How to log in" has two answers. The token cache is keyed by *sso-session name*, never by
+    user, so a sign-in as the wrong identity fills the right identity's slot, and re-running
+    the login below finds a valid token and does nothing. ``wrong_identity`` tells the two
+    apart from the error text.
     """
     note(f"region: {region}")
     callers = []

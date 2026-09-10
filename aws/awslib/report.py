@@ -1,10 +1,9 @@
 """The report file: section headers, ``column -t`` tables, echoed commands.
 
-Every snapshot is a sectioned text file whose shape the shell versions fixed: a ``====``
-banner, numbered ``h1`` sections, ``$ aws ...`` lines above the output they produced, and
-tab-separated tables aligned exactly as BSD ``column -t -s $'\\t'`` aligned them. The Python
-scripts keep that shape byte for byte - a diff of two runs is one of the standing
-deliverables (networking's [P]-stability), so the formatting is part of the contract.
+Every snapshot is a sectioned text file: a ``====`` banner, numbered ``h1`` sections,
+``$ aws ...`` lines above the output they produced, and tab-separated tables aligned exactly
+as BSD ``column -t -s $'\\t'`` aligns them. A diff of two runs is a standing deliverable
+(networking's [P]-stability), so the formatting is part of the contract.
 """
 
 from __future__ import annotations
@@ -26,10 +25,9 @@ def note(*parts: str) -> None:
 def tabulate(rows: Rows) -> str:
     """Align tab-separated rows exactly as BSD ``column -t -s $'\\t'`` does.
 
-    Measured behaviour, reproduced deliberately: empty fields are DROPPED (which is why
-    every caller writes ``-`` for an empty cell), empty lines are dropped, each column is
-    padded to its widest cell plus a two-space gutter, and the last cell of a row carries
-    no trailing padding.
+    Measured behaviour: empty fields are dropped (which is why every caller writes ``-``
+    for an empty cell), empty lines are dropped, each column is padded to its widest cell
+    plus a two-space gutter, and the last cell of a row carries no trailing padding.
     """
     split: list[list[str]] = []
     for row in rows:
@@ -51,9 +49,8 @@ def tabulate(rows: Rows) -> str:
 class Report:
     """A report under construction, wrapping the output stream.
 
-    The shell versions built the report by redirecting ``main`` to the output file; this
-    class is that redirection made explicit. ``line``/``text`` write verbatim - the prose
-    blocks of each report are kept exactly as the shell printed them.
+    ``line`` and ``text`` write verbatim: each report's prose blocks reach the file
+    unchanged.
     """
 
     def __init__(self, stream: IO[str]):
@@ -92,7 +89,7 @@ class Report:
 
     # ------------------------------------------------------------------ aws calls
     def show(self, cli: AwsCli, *args: str, lead_blank: bool = False) -> int:
-        """The shell's ``show()``: echo the command, then its output or its error.
+        """Echo the command, then its output or its error.
 
         Failures are echoed in place *and* logged for the failed-calls section, so an
         empty block is never ambiguous between "nothing there" and "denied".

@@ -3,7 +3,7 @@
 # policies attached to it, the Control Tower controls enabled on it, and the quota that
 # says how much more will fit.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -21,39 +21,37 @@
 #             controltower:ListEnabledControls, servicequotas:ListServiceQuotas,
 #             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
 #
-# WHY THIS EXISTS. Stage 1c step 7.0 is a preflight: five measurements that every policy in
-# 7.5-7.8 needs as input, collected in one pass *before* the first `create-policy`. Written
-# out by hand they are a dozen commands with ids threaded between them, run in the evening,
-# at the start of the one landing-zone step that has no in-account repair. Three of the five
-# are here (7.0 steps 1, 2, 3) plus the quota (step 5); step 4 is per-account and lives in
-# aws/account-bpa.py, because its subject is the difference between accounts.
+# Stage 1c step 7.0 is a preflight: five measurements that every policy in 7.5-7.8 needs as
+# input, collected in one pass *before* the first `create-policy`. By hand they are a dozen
+# commands with ids threaded between them, at the start of the one landing-zone step that has
+# no in-account repair. Three of the five are here (7.0 steps 1, 2, 3) plus the quota
+# (step 5); step 4 is per-account and lives in aws/account-bpa.py, whose subject is the
+# difference between accounts.
 #
-# The three things it is collected FOR, so that a reader knows what to do with each section:
-#   - The ids, ARNs and full OU PATHS that 7.5's `aws:PrincipalOrgPaths` carve-out and 7.7's
-#     control targets are written from. A path derived at 23:00 is how a policy lands on the
-#     wrong node.
-#   - The GAP. Control Tower's mandatory controls already deny changes to CloudTrail and to
+# What each section is collected for:
+#   - The ids, ARNs and full OU paths that 7.5's `aws:PrincipalOrgPaths` carve-out and 7.7's
+#     control targets are written from. A derived path is how a policy lands on the wrong
+#     node.
+#   - The gap. Control Tower's mandatory controls already deny changes to CloudTrail and to
 #     the Config recorder on every registered OU, with the service-role carve-outs that keep
 #     the landing zone able to update itself. Section 4 prints those documents so that 7.5
-#     writes only what is missing instead of a second, thinner copy of them (verification
-#     (iii) - which is a thing to read BEFORE writing, not to notice afterwards).
-#   - The BUDGET. 10 SCPs per node and 10 240 characters per document since May 2026, but
+#     writes only what is missing rather than a second, thinner copy of them (verification
+#     (iii)).
+#   - The budget. 10 SCPs per node and 10 240 characters per document since May 2026, but
 #     RCPs are still 5 and 5 120, and 7.7 spends one more SCP slot on every OU it touches.
-#     Section 6 goes looking for those numbers rather than trusting a remembered one
-#     (Lesson 6 applied to a quota) - and its first run, 2026-08-13, found that Service
-#     Quotas publishes NONE of them for `organizations`, only account counts. That is a
-#     finding about the API, not about the limits: the numbers above are AWS's own, from the
-#     announcement recorded in docs/REFERENCES.md.
+#     Section 6 reads those numbers rather than trusting a remembered one (Lesson 6).
+#     Measured 2026-08-13: Service Quotas publishes none of them for `organizations`, only
+#     account counts - a finding about the API, not about the limits. The numbers above are
+#     AWS's own, from the announcement recorded in docs/REFERENCES.md.
 #
-# IDENTITY, and the question this script answers by running. Organizations is administered
-# from the management account, for which there is no local profile and never will be
-# (guiding principle 1). Reads are a different matter: Stage 1b step 4 measured that a
-# delegated administrator answers the Organizations read surface, and 2026-08-12 extended
-# that to the trusted-access calls. Whether it extends to the *policy* reads
-# (ListPoliciesForTarget, DescribePolicy) is Stage 1c verification (x), open at the time
-# this script was written - so the script does not assume it: a denial is reported in full
-# in the last section, with a non-zero exit, and the fallback is one line in CloudShell on
-# the management account as `AWS Control Tower Admin`:
+# Organizations is administered from the management account, for which there is no local
+# profile and never will be (guiding principle 1). Reads are a different matter: Stage 1b
+# step 4 measured that a delegated administrator answers the Organizations read surface, and
+# 2026-08-12 extended that to the trusted-access calls. Whether it extends to the *policy*
+# reads (ListPoliciesForTarget, DescribePolicy) is Stage 1c verification (x), so the script
+# does not assume it: a denial is reported in full in the last section, with a non-zero exit,
+# and the fallback is one line in CloudShell on the management account as
+# `AWS Control Tower Admin`:
 #
 #     python3 aws/org-policy-baseline.py -
 #
@@ -61,17 +59,17 @@
 # list-enabled-controls` (section 5) is expected to need that fallback even if the
 # Organizations reads do not - it is not an Organizations call at all.
 #
-# WHAT IT CANNOT SEE, stated because an empty block and a missing thing look alike:
+# What it cannot see, since an empty block and a missing thing look alike:
 #   - A policy type that is not ENABLED on the root cannot be listed per target: the call
 #     raises instead of returning empty, and section 3 prints `(policy type not enabled)`.
 #     Today that is the expected answer for RCP, tag and declarative policies - it is
 #     Stage 1c step 7.2's precondition, measured rather than assumed.
-#   - An UNREGISTERED target errors on list-enabled-controls rather than returning an empty
-#     list, and section 5 keeps the two apart on purpose (Lesson 13). 7.7 may not enable a
-#     control on an OU this call rejected.
-#   - Accounts are not listed here at all. The tree with its accounts is
-#     aws/list-identities.py section 2.3; this script's subject is the NODES and what is
-#     attached to them, which is why it prints ARNs and paths that one does not.
+#   - An unregistered target errors on list-enabled-controls rather than returning an empty
+#     list, and section 5 keeps the two apart (Lesson 13). 7.7 may not enable a control on
+#     an OU this call rejected.
+#   - Accounts are not listed here. The tree with its accounts is aws/list-identities.py
+#     section 2.3; this script's subject is the nodes and what is attached to them, so it
+#     prints ARNs and paths that one does not.
 
 from __future__ import annotations
 
@@ -259,9 +257,8 @@ and not PENDING_ENABLE.""")
         root_arn = res.text or "-"
         nodes = [Node("ROOT", "(root)", root_id, root_arn, f"{org_id}/{root_id}/", 0)]
 
-        # Breadth-first, because the tree is two levels deep (INV-03: `Sandboxes` under
-        # `Interactive`) and a one-level walk would silently miss every nested OU - the
-        # same failure a one-level Terraform for_each would have.
+        # Breadth-first: the tree is two levels deep (INV-03: `Sandboxes` under
+        # `Interactive`), and a one-level walk would silently miss every nested OU.
         queue = deque([(root_id, f"{org_id}/{root_id}/", 0)])
         while queue:
             parent_id, parent_path, depth = queue.popleft()

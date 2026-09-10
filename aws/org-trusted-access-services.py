@@ -2,7 +2,7 @@
 # org-trusted-access-services.py - which AWS services are allowed to act across this
 # organization, and which account administers each of them.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -17,33 +17,27 @@
 #             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
 #             This script never creates, updates or deletes anything.
 #
-# WHY THIS EXISTS. Trusted access is an organization-level allowlist keyed by *service
-# principal*, switched on from the management account. What it grants is not an IAM
-# permission and appears in no policy evaluation: it lets the service read the
-# organization's structure and create service-linked roles inside member accounts. That is
-# Lesson 10's "a service that sets itself up creates principals nobody chose", by design -
-# so the list of who holds it is worth being able to re-read rather than remember.
-# Delegated administration is the *second*, separate registration: which member account
-# operates that service org-wide, so that the management account does not have to.
+# Trusted access is an organization-level allowlist keyed by *service principal*, switched on
+# from the management account. What it grants is not an IAM permission and appears in no
+# policy evaluation: it lets the service read the organization's structure and create
+# service-linked roles inside member accounts (Lesson 10). Delegated administration is a
+# second, separate registration: which member account operates that service org-wide, so that
+# the management account does not have to.
 #
-# The list is not static, and every stage that adds to it says so: `access-analyzer` in
-# Stage 1b step 8.2, `ram` in Stage 1d step 11 (without which a Lake Formation grant
-# silently becomes a pending RAM invitation), then GuardDuty at Stage 15 (the 2026-08-18
-# split moved it out of Stage 4), Security Hub at
-# Stage 5 and Macie at Stage 11 - each of those delegations *enables* its service, which is
-# why they are not here yet (Stage 1b step 8.1).
+# Stages that add to the list: `access-analyzer` in Stage 1b step 8.2, `ram` in Stage 1d
+# step 11 (without which a Lake Formation grant silently becomes a pending RAM invitation),
+# GuardDuty at Stage 15, Security Hub at Stage 5 and Macie at Stage 11. Each of those
+# delegations *enables* its service, so none of them is here yet (Stage 1b step 8.1).
 #
-# IDENTITY, and why a management-account script has a member-account profile. Both calls
-# are AWS Organizations reads, and Organizations is administered from the management
-# account - for which there is no local profile and never will be (guiding principle 1).
-# The default is `awsds-infra-identity`: a delegated administrator for *any* service may
-# make a set of Organizations read-only calls, which Stage 1b step 4 measured from this
-# account for the calls it used. These two were outside that set until the first run of
-# this script, 2026-08-12, and **both returned** - so the read boundary measured in step 4
-# covers them too, and no CloudShell session is needed to read this state.
-# The script still does not assume it: a denial is reported in full, in section 4, with a
-# non-zero exit - and the fallback is one line, in CloudShell on the management account as
-# `AWS Control Tower Admin`:
+# Both calls are AWS Organizations reads, and Organizations is administered from the
+# management account - for which there is no local profile and never will be (guiding
+# principle 1). The default profile is `awsds-infra-identity`: a delegated administrator for
+# *any* service may make a set of Organizations read-only calls, which Stage 1b step 4
+# measured from this account for the calls it used. Measured 2026-08-12, this script's first
+# run: both calls returned, so that read boundary covers them and no CloudShell session is
+# needed to read this state. The script still does not assume it: a denial is reported in
+# full, in section 4, with a non-zero exit - and the fallback is one line, in CloudShell on
+# the management account as `AWS Control Tower Admin`:
 #
 #     python3 aws/org-trusted-access-services.py -
 #
@@ -62,10 +56,10 @@ from awslib.report import Report, note, tabulate
 # The service principal section 3 is about. One edit moves the whole section.
 FOCUS_PRINCIPAL = "access-analyzer.amazonaws.com"
 
-# The principal section 1 reports on as a SWITCH: trusted access for Account Management is
-# the prerequisite for renaming a MEMBER account from the management account (Stage 6b
-# step 3). It is not a delegated administration question, which is why it is answered in
-# section 1 and not in sections 2-3.
+# The principal section 1 reports on as a switch: trusted access for Account Management is
+# the prerequisite for renaming a member account from the management account (Stage 6b
+# step 3). It is not a delegated administration question, so it is answered in section 1
+# rather than in sections 2-3.
 ACCOUNT_MGMT_PRINCIPAL = "account.amazonaws.com"
 
 OUT_NAME = "org-trusted-access-services.txt"
@@ -159,13 +153,13 @@ inside member accounts. Add `DateEnabled` to the --query above to see when each 
 was switched on, which is what distinguishes a landing-zone default from something
 this project turned on.""")
 
-        # ONE OF THOSE ROWS IS A SWITCH RATHER THAN AN INVENTORY ENTRY, and it is read here
-        # rather than looked for by eye (added 2026-09-05, for Stage 6b step 0.5). Trusted
-        # access for `account.amazonaws.com` is what lets the management account pass
-        # `--account-id` to the Account Management API - which is how a MEMBER account gets
-        # renamed. Without it the parameter is refused and the rename can only be done from
-        # inside the account being renamed. AWS documents it as enableable only from the
-        # management account, and only with all features enabled.
+        # One of those rows is a switch rather than an inventory entry, read here rather
+        # than looked for by eye (Stage 6b step 0.5). Trusted access for
+        # `account.amazonaws.com` lets the management account pass `--account-id` to the
+        # Account Management API, which is how a member account gets renamed. Without it the
+        # parameter is refused and the rename can only be done from inside the account being
+        # renamed. AWS documents it as enableable only from the management account, and only
+        # with all features enabled.
         res = cli.run(
             "organizations",
             "list-aws-service-access-for-organization",

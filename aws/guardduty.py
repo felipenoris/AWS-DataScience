@@ -1,17 +1,17 @@
 #!/usr/bin/env -S uv run --quiet
 # guardduty.py - Stage 15's evidence, per account, side by side: the detector each account
-# holds (org-wide coverage is only meaningful read across every account at once - one
-# account silently uncovered is exactly the finding), every protection-plan feature on each
-# detector (they all arrive ON except Runtime Monitoring - Stage 15 step 0 - and step 3
-# switches them off, so any ENABLED reading is either drift or an unfinished step 3, and
-# the two are supposed to look the same here), and the delegated-administrator
+# holds, every protection-plan feature on each detector, and the delegated-administrator
 # registration visible from Identity.
 #
-# CARVED OUT OF ./aws/vpn.py ON 2026-08-18, the day GuardDuty left Stage 4 for Stage 15.
-# The check ids there were VP-8; they are GD-* here, and VP-8 is RETIRED in vpn.py rather
-# than renumbered - the Stage 4 log's readings cite it by that name.
+# Coverage is read across every account at once: one account silently uncovered is the
+# finding. Every protection plan arrives ON except Runtime Monitoring (Stage 15 step 0) and
+# step 3 switches them off, so an ENABLED reading here is either drift or an unfinished
+# step 3.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+# These checks were VP-8 in ./aws/vpn.py; they are GD-* here, and VP-8 stays RETIRED there
+# rather than renumbered - the Stage 4 log's readings cite it by that name.
+#
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -24,8 +24,8 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
-#   - GuardDuty's ORG CONFIGURATION (auto-enable ALL, the per-plan NONE list) lives in
+# What it cannot see, since an empty listing and a missing account look alike:
+#   - GuardDuty's org configuration (auto-enable ALL, the per-plan NONE list) lives in
 #     Audit, which holds no CLI profile (D33/D34): it is verified in the Audit console or
 #     CloudShell, never here. This file reads only the members' detectors and the
 #     delegation registration.
@@ -47,15 +47,13 @@ OUT_NAME = "guardduty.txt"
 
 IDENTITY_PROFILE = "awsds-infra-identity"
 
-# The optional protection plans. Enabling GuardDuty turns on EVERY ONE OF THEM except
-# Runtime Monitoring (documented 2026-08-18, Stage 15 step 0), so step 3 is a SWITCH-OFF
-# and not an omission, and GD-3 is written against the whole set rather than the two the
-# plan first named (S3 Protection, Malware Protection for EC2 - Stage 11 step 4's pair).
-# THE CHECK IS NOT DRIVEN BY THIS TUPLE: the report prints every feature the API returns
-# and the check fails on any that reads ENABLED, so a protection plan AWS adds next year
-# is measured on the day it appears instead of staying invisible until somebody remembers
-# to extend a constant (Lesson 23). The names below only fix the report's column order;
-# anything unknown is appended in the API's own order.
+# The optional protection plans. Enabling GuardDuty turns on every one of them except
+# Runtime Monitoring (documented 2026-08-18, Stage 15 step 0), so step 3 is a switch-off, and
+# GD-3 is written against the whole set rather than only S3 Protection and Malware Protection
+# for EC2 (Stage 11 step 4's pair). The check is not driven by this tuple: the report prints
+# every feature the API returns and the check fails on any that reads ENABLED, so a protection
+# plan AWS adds later is measured the day it appears (Lesson 23). The names below only fix the
+# report's column order; anything unknown is appended in the API's own order.
 KNOWN_FEATURES = (
     "S3_DATA_EVENTS",
     "EKS_AUDIT_LOGS",
@@ -176,8 +174,8 @@ def main(argv: list) -> int:
             )
 
     # GD-2: a detector ENABLED in every measured account (step 2's auto-enable ALL). One
-    # account without one, while others have theirs, is the gap org-wide enablement exists
-    # to close - with one documented exception: up to 24 h of propagation.
+    # account without one while others have theirs is a gap, with one documented exception:
+    # up to 24 h of propagation.
     detectors = [r for r in gd_rows if r[1] != "-" and r[2] not in ("(call failed)",)]
     if not detectors:
         checks.note(
@@ -202,10 +200,9 @@ def main(argv: list) -> int:
                 checks.ok("GD-2", f"GuardDuty in {p}", "ENABLED")
 
     # GD-3: every optional protection plan off, on every detector this file can read
-    # (steps 0/3). They arrive ENABLED, so this check reads red between step 1 and the end
-    # of step 3 by design - and if decision 1's option (b) (the trial window) is ever taken
-    # instead, FLIP THIS CHECK rather than living with the red: a decision left only in
-    # prose is measured by nobody (the VP-7 precedent, Stage 4).
+    # (steps 0/3). They arrive ENABLED, so this check reads red between step 1 and the end of
+    # step 3. If decision 1's option (b), the trial window, is taken instead, flip this check
+    # rather than living with the red (the VP-7 precedent, Stage 4).
     for p, det, status, plans in gd_rows:
         if det == "-" or status != "ENABLED":
             continue

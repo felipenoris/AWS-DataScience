@@ -2,29 +2,26 @@
 # eip-transfer.py - Stage 6c step 4.2. Can the WireGuard Elastic IP move from Sandbox to
 # Production, and what exactly are the two calls that would move it?
 #
-# WHY THIS EXISTS AS ITS OWN FILE. An Elastic IP transfer has FOUR documented refusals and
-# they are not symmetrical in when they fire: three are visible on the source address before
-# anything is called, and the fourth - the destination account being at its Elastic IP quota
-# - is invisible from the source entirely. Worse, the refusal that costs a sitting fires at
-# ACCEPT time and not at ENABLE time: `enable-address-transfer` on an ASSOCIATED address
-# succeeds, and `accept-address-transfer` then answers `InvalidTransfer.AddressAssociated`
-# with the transfer already pending and a seven-day clock running. So the reading that
-# matters has to be taken across two accounts, before the first write, which is exactly what
-# no single `describe-addresses` can do.
+# An Elastic IP transfer has four documented refusals, and they do not fire at the same
+# moment: three are visible on the source address before anything is called, and the fourth -
+# the destination account being at its Elastic IP quota - is invisible from the source. The
+# expensive one fires at accept time rather than at enable time: `enable-address-transfer` on
+# an associated address succeeds, and `accept-address-transfer` then answers
+# `InvalidTransfer.AddressAssociated` with the transfer already pending and a seven-day clock
+# running. The reading has to be taken across two accounts, before the first write, which no
+# single `describe-addresses` can do.
 #
-# THE ADDRESS IS THE ONE THING IN THIS ESTATE THAT MAY NOT CHANGE (Stage 4 step 2.1): every
-# client `.conf` pins it as `Endpoint =`, and `DenyControlPlaneOffVpn` and the lake's bucket
-# policy carry it as a branch. Transferring it is what keeps a cut-over that moves the tunnel
-# between two AWS accounts invisible to every device. The fallback - a fresh allocation in
-# Production - is a new `Endpoint` line in every configuration, which is a client-side edit
-# in the stage's risk table and not the plan.
+# The address may not change (Stage 4 step 2.1): every client `.conf` pins it as
+# `Endpoint =`, and `DenyControlPlaneOffVpn` and the lake's bucket policy carry it as a
+# branch. Transferring it keeps a cut-over between two AWS accounts invisible to every
+# device. The fallback, a fresh allocation in Production, is a new `Endpoint` line in every
+# configuration - a client-side edit in the stage's risk table, not the plan.
 #
-# IT PRINTS THE TWO WRITE COMMANDS AND RUNS NEITHER. `aws/` is a read-only folder (CLAUDE.md);
-# the two calls are [Claude+] acts the user authorizes in chat, one at a time, and they are
-# printed with the ids already resolved so that neither is retyped from prose (Lesson 38 - an
-# identifier read out of prose is a claim, not a reading).
+# It prints the two write commands and runs neither: `aws/` is a read-only folder
+# (CLAUDE.md). The two calls are [Claude+] acts the user authorizes in chat, one at a time,
+# printed with the ids already resolved so that neither is retyped from prose (Lesson 38).
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -40,20 +37,19 @@
 #             1 a call failed
 #             2 a check FAILED - the transfer would be refused, and the row says which refusal
 #
-# EXIT 2 IS THE EXPECTED READING BEFORE STEP 4.4, and saying so here is the point (Lesson 50 -
-# a check written to a stage's FINAL expectation is red for every pass until that stage ends).
-# ET-2 fails while the address is still associated with the Sandbox host, because that is a
-# true statement about the transfer: run 4.4, then run this again. What separates "not yet"
-# from "never" is WHICH row is red - ET-2 clears with one destroy; ET-4 would not clear at all.
+# Exit 2 is the expected reading before step 4.4 (Lesson 50). ET-2 fails while the address is
+# still associated with the Sandbox host, which is a true statement about the transfer: run
+# 4.4, then run this again. What separates "not yet" from "never" is which row is red - ET-2
+# clears with one destroy; ET-4 would not clear at all.
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing read look alike:
-#   - Whether the ALLOCATION ID survives the transfer. It is not documented either way, and
+# What it cannot see, since an empty listing and a missing read look alike:
+#   - Whether the allocation id survives the transfer. It is not documented either way, and
 #     no read taken before the transfer can answer it. That is verification 1 of this stage
 #     and it decides 4.6's `import` id: re-run this file after the accept and read section 2.
-#   - A quota INCREASE request in flight. `get-service-quota` returns the applied value; a
+#   - A quota increase request in flight. `get-service-quota` returns the applied value; a
 #     pending increase lives in `list-requested-service-quota-change-history`, which this
 #     file does not read because a pending increase is not headroom.
-#   - The destination account's IDENTITY beyond its profile. Account ids do not appear in
+#   - The destination account's identity beyond its profile. Account ids do not appear in
 #     this repository's tracked files (aws/INDEX.md rule 1), so the destination is named by
 #     profile and the id is resolved live for the printed command only.
 
@@ -68,17 +64,17 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "eip-transfer.txt"
 
-# The address is resolved by its Name TAG and never by a literal id: an id in this file would
-# be a copy of state that `sandbox/foundation/` owns, and the tag is the same seam
-# scripts/slices.py already uses. The tag survives the address; the TRANSFER does not carry it
-# (tags are reset), which is why section 4 says so and Terraform re-applies them at 4.6.
+# The address is resolved by its Name tag and never by a literal id: an id in this file would
+# copy state that `sandbox/foundation/` owns, and the tag is the same seam scripts/slices.py
+# already uses. The transfer resets tags, so the address arrives untagged and Terraform
+# re-applies them at 4.6.
 SOURCE_PROFILE = "awsds-infra-sandbox-1"
 SOURCE_NAME_TAG = "awsds-sandbox-vpn"
 
 DEST_PROFILE = "awsds-infra-prod"
 
-# EC2-VPC Elastic IPs, the per-Region quota. Default five; adjustable. The transfer needs ONE
-# free slot in the destination at ACCEPT time.
+# EC2-VPC Elastic IPs, the per-Region quota. Default five; adjustable. The transfer needs one
+# free slot in the destination at accept time.
 EIP_QUOTA_CODE = "L-0263D0A3"
 EIP_QUOTA_SERVICE = "ec2"
 
@@ -98,9 +94,9 @@ def main(argv: list) -> int:
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
 
-    # BOTH PROFILES ALWAYS, and the argv is ignored on purpose: this measurement is a
-    # COMPARISON across two accounts, and a single-profile version of it answers nothing -
-    # the same deliberate deviation from aws/INDEX.md's one-profile rule that AZs.py carries.
+    # Both profiles always, argv ignored: the measurement compares two accounts, so a
+    # single-profile version of it answers nothing - the same deviation from aws/INDEX.md's
+    # one-profile rule that AZs.py carries.
     selected = [SOURCE_PROFILE, DEST_PROFILE]
     source = f"{SOURCE_PROFILE} (source) + {DEST_PROFILE} (destination) - fixed, argv ignored"
 
@@ -160,7 +156,7 @@ def main(argv: list) -> int:
             f"border group\t{addr.get('NetworkBorderGroup', '-')}\tthe transfer is same-Region only (ET-5)",
         ]
 
-        # ET-2 - the refusal that fires LATE. `enable-address-transfer` accepts an associated
+        # ET-2 - the refusal that fires late. `enable-address-transfer` accepts an associated
         # address without complaint; the accept then answers InvalidTransfer.AddressAssociated
         # with the seven-day clock already running.
         if addr.get("AssociationId"):

@@ -1,8 +1,8 @@
 #!/usr/bin/env -S uv run --quiet
-# org-policies.py - what governs each node RIGHT NOW, by Sid, with inheritance resolved -
-# and the handful of checks that no probe can perform.
+# org-policies.py - what governs each node right now, by Sid, with inheritance resolved,
+# plus the checks that no probe can perform.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -16,53 +16,44 @@
 #             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# ALL FOUR POLICY TYPES CARRY THEIR ID SINCE 2026-08-15, and the omission it fixes was not
-# cosmetic. Section 1 used to list `SERVICE_CONTROL_POLICY` documents with their ids and
-# reduce the RCP to a presence check, while the tag policy and the declarative policy did
-# not appear at all - so THREE OF THE TEN ATTACHED DOCUMENTS had no id in any snapshot and
-# existed only in docs/log/log-stage-01c-preventive-policies.md. That was survivable while they
-# were console-managed and stops being survivable at Stage 2 step 5.5, where the id is the
-# argument `terraform import` takes. Reading one filter is also how a read-back reports
-# three attached documents as absent (Lesson 13, and 1c nearly did it).
+# Section 1 carries the id of every attached document, in all four policy types: that id is
+# the argument Stage 2 step 5.5 passes to `terraform import`, and a listing that reads one
+# filter reports the documents of the other three types as absent (Lesson 13).
 #
-# WHY THIS EXISTS, AND HOW IT DIFFERS FROM org-policy-baseline.py - which walks the same
-# tree and would otherwise be a duplicate of it.
+# How this differs from org-policy-baseline.py, which walks the same tree:
 #
-#   org-policy-baseline.py is a PREFLIGHT, run once before writing policy (Stage 1c step
+#   org-policy-baseline.py is a preflight, run once before writing policy (Stage 1c step
 #   7.0). It prints whole documents, the quota and the organization's metadata, and its
 #   question is "what already exists that I must not duplicate".
 #
-#   THIS script is a CHECK, run after every policy change and at every vend. It prints no
+#   This script is a check, run after every policy change and at every vend. It prints no
 #   document bodies at all - only `Sid` lists - and its questions are:
 #
 #     1. what is attached where, condensed enough to diff by eye;
 #     2. what actually governs a given ACCOUNT once inheritance is resolved;
 #     3. do the statements that no probe can reach still say what they must.
 #
-# THE THREE THINGS THAT MADE IT WORTH WRITING, each one a lesson that has already cost
-# something:
+# What it is written against:
 #
-#   - LESSON 23 - a managed service owns its artifacts' packing. Control Tower packs per
-#     ENABLEMENT, not per control, and inconsistently: the two root-user controls landed in
-#     the original guardrail on Policy Test, Workloads and Interactive, and in the REGION
-#     document on Identity and Data. So a document cannot be identified by its id or by the
-#     job it was created for, and every section here binds to `Sid`.
+#   - Lesson 23. Control Tower packs per enablement, not per control, and inconsistently:
+#     the two root-user controls landed in the original guardrail on `Policy Test`,
+#     `Workloads` and `Interactive`, and in the Region document on `Identity` and `Data`. A
+#     document cannot be identified by its id or by the job it was created for, so every
+#     section here binds to `Sid`.
 #
-#   - LESSON 22 - a control whose principal the harness cannot produce is verified by
-#     READING, not by attempting. `GRRESTRICTROOTUSER` is conditioned on an ARN no Identity
-#     Center role can ever match, so the SCP battery is structurally blind to it: it was
-#     enabled on Policy Test without `ExemptAssumeRoot` while the battery reported 61 of 61
-#     as expected. Section 3 is that class, and it is the reason this script exits 2.
+#   - Lesson 22. `GRRESTRICTROOTUSER` is conditioned on an ARN no Identity Center role can
+#     ever match, so the SCP battery is structurally blind to it: it was enabled on `Policy
+#     Test` without `ExemptAssumeRoot` while the battery reported 61 of 61 as expected.
+#     Section 3 is that class, and the reason this script exits 2.
 #
-#   - D37 - `Sandboxes` carries nothing unless it DIFFERS from `Interactive`, so reading the
-#     OU tells you nothing about what governs the accounts inside it. Section 2 resolves the
-#     chain so that the answer does not depend on remembering that.
+#   - D37. `Sandboxes` carries nothing unless it differs from `Interactive`, so reading the
+#     OU says nothing about what governs the accounts inside it. Section 2 resolves the
+#     chain.
 #
-# IDENTITY. Every Organizations *policy* read answers from the Identity account as the
-# delegated administrator - Stage 1c verification (x), measured 2026-08-13. The `-` fallback
-# is CloudShell on Management as `AWS Control Tower Admin`, for the day that stops being
-# true. Nothing here needs `controltower:*`, which is the one surface a member account
-# cannot read.
+# Every Organizations *policy* read answers from the Identity account as the delegated
+# administrator - Stage 1c verification (x), measured 2026-08-13. The `-` fallback is
+# CloudShell on Management as `AWS Control Tower Admin`. Nothing here needs `controltower:*`,
+# the one surface a member account cannot read.
 
 from __future__ import annotations
 
@@ -77,12 +68,12 @@ from awslib.report import Checks, Report, note
 
 OUT_NAME = "org-policies.txt"
 
-# NODEPOL below stays SCP-only ON PURPOSE. Sections 2, 3 and 4 resolve inheritance and read
+# `node_pol` below stays SCP-only. Sections 2, 3 and 4 resolve inheritance and read
 # conditions, and only an SCP composes down the tree the way those sections describe: an RCP
 # bounds a resource rather than a principal, a tag policy reports instead of denying, and a
-# declarative policy is not a permission boundary in either direction. Widening it would
-# have made section 2's "N statements in force over this account" quietly wrong.
-# NODEALL is the inventory; NODEPOL is the ceiling.
+# declarative policy is not a permission boundary in either direction. Widening it would make
+# section 2's "N statements in force over this account" wrong. `node_all` is the inventory;
+# `node_pol` is the ceiling.
 POLICY_TYPES = [
     "SERVICE_CONTROL_POLICY",
     "RESOURCE_CONTROL_POLICY",
@@ -190,7 +181,7 @@ def main(argv: list) -> int:
 
     note("listing attached policies per node, all four types...")
     node_all = []  # (node id, type, pid, pname)
-    node_pol = []  # (node id, pid, pname) - SCP ONLY
+    node_pol = []  # (node id, pid, pname) - SCP only
     node_rcp = []  # (node id, pname)
     for _kind, _name, node_id, _anc in nodes:
         for ptype in POLICY_TYPES:
@@ -260,9 +251,9 @@ def main(argv: list) -> int:
         return len(lines) if lines else 0
 
     def entries_of(pid: str) -> str:
-        # Deliberately the same extraction as check-index.py, and for the same reason: the
-        # property worth printing is "what entries does this document contain", and a type
-        # nobody taught the script about is named rather than skipped (Lesson 13).
+        # The same extraction as check-index.py: the property worth printing is what entries
+        # a document contains, and a type nobody taught the script about is named rather
+        # than skipped (Lesson 13).
         doc = fetch_doc(pid)
         if doc is None:
             return UNREADABLE

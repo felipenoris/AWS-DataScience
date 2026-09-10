@@ -1,17 +1,16 @@
 """The ``aws`` CLI as a subprocess, with the conventions every script here shares.
 
-Why the CLI and not boto3, said once for the whole folder: these scripts are wrappers around
-the same commands an operator would type by hand, their documentation prints the exact
-command above each output block, and the SCP battery reads the *wording* of CLI errors
-(a standing rule: read the denial wording, never the exit code). Shelling out keeps the
-authentication path, the profile semantics and the error text identical to a hand-run
-command - which is what a snapshot is for - and keeps this package dependency-free, which is
-what the CloudShell fallback needs.
+The CLI rather than boto3: these scripts wrap the same commands an operator would type by
+hand, their documentation prints the exact command above each output block, and the SCP
+battery reads the *wording* of CLI errors (a standing rule: read the denial wording, never the
+exit code). Shelling out keeps the authentication path, the profile semantics and the error
+text identical to a hand-run command, and keeps this package dependency-free, which the
+CloudShell fallback needs.
 
-Two call styles, the same two the shell versions had:
+Two call styles:
 
     run   capture the output for later use; a failure is logged (or tolerated) and returns
-          an empty ``text`` so callers can keep the shell's ``[ -n "$RUN_OUT" ]`` shape
+          an empty ``text``, so a caller can test the result for emptiness
     show  is on the Report class: echo the command into the report, then its output
 """
 
@@ -23,7 +22,7 @@ from dataclasses import dataclass, field
 
 from . import context
 
-# The two spellings the shell scripts accepted for "no --profile: ambient credentials".
+# The two spellings for "no --profile: ambient credentials".
 AMBIENT = ("-", "none")
 
 
@@ -32,11 +31,7 @@ def is_ambient(profile: str | None) -> bool:
 
 
 def head2(text: str) -> str:
-    """First two lines, joined by spaces - the shell's ``head -n 2 | tr '\\n' ' '``.
-
-    A space joins the lines; a third-and-beyond line collapses into a single trailing
-    space, exactly as the shell pipeline behaved.
-    """
+    """First two lines joined by a space; anything past them collapses to a trailing space."""
     lines = text.split("\n")
     head = " ".join(lines[:2])
     if len(lines) > 2:
@@ -76,24 +71,24 @@ class CallResult:
 
     @property
     def merged(self) -> str:
-        """stdout+stderr as one stream - what the shell's ``2>&1`` captured."""
+        """stdout and stderr as one stream."""
         if self.stdout and self.stderr:
             return self.stdout + self.stderr
         return self.stdout or self.stderr
 
     @property
     def text(self) -> str:
-        """The shell's ``RUN_OUT``: the output on success, empty after a failure."""
+        """The output on success, empty after a failure."""
         return self.stdout if self.ok else ""
 
 
 @dataclass
 class AwsCli:
-    """One profile/region binding, mirroring the shell's ``aws_()`` function.
+    """One profile/region binding.
 
     ``profile=None`` (or ``-``/``none``) means ambient credentials - CloudShell, or an
     assumed role already in the environment. ``stdin`` is always closed, so a call made from
-    inside a loop cannot swallow the loop's input (the shell's ``</dev/null``).
+    inside a loop cannot swallow the loop's input.
     """
 
     profile: str | None = None
@@ -138,8 +133,8 @@ class AwsCli:
             text=True,
             env=context.subprocess_env(),
         )
-        # $(...) in shell strips trailing newlines; matching that here keeps every
-        # downstream comparison and printf-style reassembly identical.
+        # Trailing newlines are stripped, so every downstream comparison and printf-style
+        # reassembly works on the exact text.
         return CallResult(
             stdout=proc.stdout.rstrip("\n"),
             stderr=proc.stderr.rstrip("\n"),
@@ -149,10 +144,9 @@ class AwsCli:
     def run(self, *args: str, tolerate: str | None = None, log: bool = True) -> CallResult:
         """The shell's ``run()``: capture; log a failure unless it matches ``tolerate``.
 
-        ``tolerate`` is a regex of error text that means "the question does not apply
-        here", not "this failed" - a matched error is reported as an empty, tolerated
-        success and kept out of the failed-calls section, because a section that lists
-        non-problems stops being read (the mirror image of Lesson 13).
+        ``tolerate`` is a regex of error text meaning "the question does not apply here"
+        rather than "this failed": a matched error becomes an empty, tolerated success and
+        stays out of the failed-calls section.
         """
         res = self.call(*args)
         if res.ok:
