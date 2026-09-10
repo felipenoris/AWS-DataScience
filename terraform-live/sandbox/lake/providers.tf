@@ -2,16 +2,14 @@
 # tfvars, the five mandatory tags as default_tags, CostCenter naming the stage that created
 # the resources rather than the stage that happens to be open.
 #
-# THE WRONG-ACCOUNT GUARD IS THE BACKEND: this slice's state lives in this account's own
+# The wrong-account guard is the backend: this slice's state lives in this account's own
 # awsds-<env>-tfstate, which admits no cross-account principal.
 #
-# ONE PROVIDER, AND THE ABSENCE OF A SECOND IS THE DESIGN. Nothing here crosses an account
-# boundary: the bucket, the key it encrypts under, the access role, the Access Grants location
-# and every grant are objects of THIS account, and the only principals named are its own
-# reserved SSO roles and (from pass 4 onwards) its own SMUS project roles. Compare
-# sandbox/data/, which needs an aliased provider precisely because the lake it consumes lives
-# somewhere else - the contrast is the point of this bucket's whole compensation argument
-# (Stage 16: "it never leaves the account").
+# There is no second, aliased provider because nothing here crosses an account boundary. The bucket,
+# the key it encrypts under, the access role, the Access Grants location and every grant are objects
+# of this account, and the only principals named are its own reserved SSO roles and, from pass 4
+# onwards, its own SMUS project roles. sandbox/data/ needs an aliased provider because the lake it
+# consumes lives elsewhere.
 
 provider "aws" {
   region = var.region

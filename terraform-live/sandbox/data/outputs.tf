@@ -1,8 +1,8 @@
 # Outputs - what other slices read through terraform_remote_state (never pasted).
 #
-# FOUR OUTPUTS LEFT 2026-08-26 with the derived zone (derived bucket + workgroup, name and
-# ARN each) - D19 revised: the zone is the SMUS project path, and identity/sso/ stopped
-# reading this state in the same revision.
+# The derived zone's outputs (derived bucket and workgroup, name and ARN each) went with the zone on
+# 2026-08-26 - D19 revised: the zone is the SMUS project path, and identity/sso/ stopped reading this
+# state in the same revision.
 
 output "data_key_arn" {
   description = "This account's data CMK - the sandbox lake's key in Sandbox (Stage 16), held empty in Development (D19 as revised 2026-08-26)."

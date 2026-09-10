@@ -60,9 +60,9 @@ output "tier_security_group_ids" {
   value       = module.vpc.tier_security_group_ids
 }
 
-# THE STAGE 4 VPN ANCHOR OUTPUTS LEFT AT 6c step 6.5 (2026-09-07): the Elastic IP (transferred,
-# forgotten by the `removed` block in vpn-anchors.tf), the security group and the host-key
-# secret container (destroyed). Their readers had already gone - sandbox/vpn/ is retired, and
+# This slice no longer reports the Stage 4 VPN anchors (6c step 6.5): the Elastic IP is transferred
+# and forgotten by the `removed` block in vpn-anchors.tf, and the security group and the host-key
+# secret container are destroyed. Their readers are gone too - sandbox/vpn/ is retired, and
 # identity/sso/ and data-governance/data/ read production/networking/ since the VPN_HOMES trim.
 
 # Stage 6c step 2.5 reads this from Production, to associate VPC-Networking after this account

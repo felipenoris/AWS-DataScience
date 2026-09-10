@@ -1,10 +1,9 @@
 # What this slice reports - Stage 2 step 5.
 #
-# NOTHING HERE PRINTS AN ACCOUNT ID (aws/INDEX.md rule 1), which costs one output: the access
-# role's ARN carries the account and is therefore NOT reported, even though it is the value the
-# portal's S3-connection form asks for. The runbook's §W reads it from the role NAME below plus
-# the operator's own `aws sts get-caller-identity`, which is where an account id is allowed to
-# be - on a terminal, not in a tracked file.
+# Nothing here prints an account id (aws/INDEX.md rule 1), which costs one output: the access role's
+# ARN carries the account and is not reported, even though it is the value the portal's S3-connection
+# form asks for. The runbook's §W builds it from the role name below plus the operator's own `aws sts
+# get-caller-identity` - an account id belongs on a terminal, not in a tracked file.
 
 output "bucket_name" {
   description = "The lake bucket."

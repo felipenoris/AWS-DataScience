@@ -1,19 +1,18 @@
-# sandbox/probes/ - the SOURCE half of Stage 3's Deliverables: two throwaway hosts that
-# measure what a describe call cannot, write their findings to the serial console, and are
-# destroyed in the same sitting through `make down ENV=sandbox` (D11).
+# sandbox/probes/ - the source half of Stage 3's Deliverables: throwaway hosts that measure what a
+# describe call cannot, write their findings to the serial console, and are destroyed in the same
+# sitting through `make down ENV=sandbox` (D11).
 #
-# WHY TWO HOSTS AND NOT ONE, which is the plan's own estimate revised by the route tables:
-# the perimeter reading is only worth taking from a subnet WITH NO DEFAULT ROUTE - that
-# absence is what makes a dnf success attributable to the S3 gateway policy rather than to
-# the NAT - and the isolated tier, which is the only such tier, carries no peering route
-# either. One host cannot be in both places, and moving a peering route into the [P] isolated
-# route table to save an instance would edit the thing being measured.
+# There are two hosts because one cannot be in both places. The perimeter reading is only worth
+# taking from a subnet with no default route - that absence is what makes a dnf success attributable
+# to the S3 gateway policy rather than to the NAT - and the isolated tier, the only such tier,
+# carries no peering route either. Moving a peering route into the [P] isolated route table to save
+# an instance would edit the thing being measured.
 #
-# NEITHER PROBE CARRIES CREDENTIALS, and no IAM principal is created by this slice. The two
-# endpoint-policy statements the perimeter reading exercises carry NO principal condition -
-# one keys on aws:ResourceOrgID, the other enumerates AWS-owned buckets - so an anonymous
-# request is judged by exactly the statement under test. An instance profile would have added
-# a second possible explanation for every denial.
+# Neither probe carries credentials, and this slice creates no IAM principal. The endpoint-policy
+# statements the perimeter reading exercises carry no principal condition - one keys on
+# aws:ResourceOrgID, the other enumerates AWS-owned buckets - so an anonymous request is judged by
+# exactly the statement under test. An instance profile would add a second possible explanation for
+# every denial.
 
 data "terraform_remote_state" "foundation" {
   backend = "s3"
@@ -34,39 +33,33 @@ locals {
   vpc_id   = data.terraform_remote_state.foundation.outputs.vpc_id
   vpc_cidr = data.terraform_remote_state.foundation.outputs.vpc_cidr
 
-  # THE PERIMETER READING, and it is four readings rather than one because each of the first
-  # three is worthless without the others (the Deliverable says so in its own words: "either
-  # result alone proves nothing").
+  # The perimeter reading is four readings, because each of the first three is worthless without the
+  # others (the Deliverable's words: "either result alone proves nothing").
   #
-  #   (1) THE PREMISE, measured rather than assumed. This subnet has no default route, so a
-  #       host that is neither S3 nor DynamoDB must fail to connect. If this one SUCCEEDS,
-  #       every reading under it is void - a dnf that worked would prove nothing about the
-  #       allow-list.
-  #   (2) WHERE THE MIRROR LIST COMES FROM. The stage's second log entry withdrew a caveat by
-  #       claiming AL2023 serves its mirror list from the repository bucket itself. That claim
-  #       is load-bearing here, so it is read rather than trusted: the repo file is printed,
-  #       and cdn.amazonlinux.com is reached for on its own. If dnf fails AND the cdn is
-  #       unreachable, the withdrawn caveat was right and the finding is the plan's, not the
-  #       policy's - which is a different repair from an incomplete allow-list.
-  #   (3) THE ALLOW-LISTED PATH, end to end and for real.
-  #   (4) THE PAIR THAT MAKES (3) EVIDENCE. Two anonymous GETs of REAL, PUBLIC OBJECTS in
-  #       REAL buckets - both Amazon Linux repository buckets in this region, both readable
-  #       without credentials - differing in exactly one thing: the endpoint policy names
-  #       al2023-repos-<region>-* and does not name amazonlinux-2-repos-<region>.
+  #   (1) The premise, measured rather than assumed. This subnet has no default route, so a host
+  #       that is neither S3 nor DynamoDB must fail to connect. If this one succeeds, every reading
+  #       under it is void - a dnf that worked would prove nothing about the allow-list.
+  #   (2) Where the mirror list comes from. The stage's second log entry withdrew a caveat by
+  #       claiming AL2023 serves its mirror list from the repository bucket itself. That claim is
+  #       load-bearing here, so it is read rather than trusted: the repo file is printed, and
+  #       cdn.amazonlinux.com is reached for on its own. If dnf fails and the cdn is unreachable,
+  #       the withdrawn caveat was right and the finding is the plan's, not the policy's - a
+  #       different repair from an incomplete allow-list.
+  #   (3) The allow-listed path, end to end.
+  #   (4) The pair that makes (3) evidence. Two anonymous GETs of real, public objects in real
+  #       buckets - both Amazon Linux repository buckets in this region, both readable without
+  #       credentials - differing in one thing: the endpoint policy names al2023-repos-<region>-*
+  #       and does not name amazonlinux-2-repos-<region>.
   #         200 / 403  -> the allow-list is what decides. The reading holds.
   #         200 / 200  -> the perimeter is open.
   #         403 / 403  -> something else is denying; nothing was measured.
-  #         404 on the first -> al2023_repo_suffix is stale; reading (2) prints the current
-  #                             value, and a 404 is deliberately NOT a 403 so the two cannot
-  #                             be confused.
+  #         404 on the first -> al2023_repo_suffix is stale; reading (2) prints the current value,
+  #                             and a 404 is not a 403 so the two cannot be confused.
   #
-  #       THE FIRST VERSION OF THIS READING USED BUCKETS THAT DO NOT EXIST, and it was wrong
-  #       in the way Lesson 21 names: S3 answers NoSuchBucket BEFORE it evaluates
-  #       authorization, so a nonexistent bucket returns 404 whatever the endpoint policy
-  #       says. It returned 404/404 - which by the criterion above would have read as "the
-  #       perimeter is open" - and the nonexistence chosen to keep the bucket's OWN policy
-  #       out of the comparison had removed the policy under test along with it. Public
-  #       objects in real buckets are what put the endpoint back in the decision.
+  #       The buckets must exist. S3 answers NoSuchBucket before it evaluates authorization, so a
+  #       nonexistent bucket returns 404 whatever the endpoint policy says (Lesson 21) - 404/404,
+  #       which by the criterion above reads as "the perimeter is open". Public objects in real
+  #       buckets are what put the endpoint back in the decision.
   perimeter_user_data = <<-EOT
     #!/bin/bash
     exec > /dev/console 2>&1
@@ -108,18 +101,17 @@ locals {
     echo "=== AWSDS-PROBE-PERIMETER-END ==="
   EOT
 
-  # THE PEERING READING - three attempts against ONE host, differing one variable at a time.
+  # The peering reading - three attempts against one host, differing one variable at a time.
   #   permitted address + admitted port -> connects        (route and security group agree)
-  #   FORBIDDEN address, same port      -> no answer       (only the route differs)
+  #   forbidden address, same port      -> no answer       (only the route differs)
   #   permitted address, blocked port   -> no answer       (only the security group differs)
-  # The two failures are not the same failure, and telling them apart is the point: the
-  # blocked port produces a REJECT record in the target's flow log because the packet reaches
-  # the ENI, while the forbidden address produces no record at all because the packet never
-  # leaves this account. That pair is also the flow-log Deliverable, answered here.
+  # The two failures are distinguishable: the blocked port produces a REJECT record in the target's
+  # flow log because the packet reaches the ENI, while the forbidden address produces no record at
+  # all because the packet never leaves this account. That pair is also the flow-log Deliverable.
   #
-  # Both names are resolved FIRST and printed: a name that resolves proves the private zone
-  # is associated with this VPC across the account boundary (the DNS Deliverable) and proves
-  # the host is known - so silence afterwards has only one remaining explanation.
+  # Both names are resolved first and printed: a name that resolves proves the private zone is
+  # associated with this VPC across the account boundary (the DNS Deliverable) and proves the host
+  # is known, so silence afterwards has one remaining explanation.
   peering_user_data = <<-EOT
     #!/bin/bash
     exec > /dev/console 2>&1
@@ -193,11 +185,10 @@ locals {
 
 # ------------------------------------------------------------------ the perimeter probe
 #
-# Egress is 0.0.0.0/0 ON PURPOSE, and the suppression below is the argument rather than an
-# excuse: this probe's first reading asserts that it CANNOT reach the internet, and that
-# assertion is only about ROUTING if nothing else is in the way. A tightened security group
-# would produce the same silence and prove nothing - it would move the control being measured
-# into the instrument measuring it (Lesson 13).
+# Egress is 0.0.0.0/0 on purpose. This probe's first reading asserts that it cannot reach the
+# internet, and that assertion is only about routing if nothing else is in the way. A tightened
+# security group would produce the same silence and prove nothing - it would move the control being
+# measured into the instrument measuring it (Lesson 13).
 resource "aws_security_group" "perimeter" {
   # checkov:skip=CKV_AWS_382:deliberate - see the note above; the absent default route is the control under test, and an egress rule here would substitute for it
   name        = "awsds-${var.env}-probe-perimeter"
@@ -218,21 +209,21 @@ resource "aws_security_group" "perimeter" {
 }
 
 resource "aws_instance" "perimeter" {
-  # checkov:skip=CKV2_AWS_41:NO instance profile, deliberately - and for this probe it is load-bearing rather than merely unnecessary: the endpoint-policy statements under test carry no principal condition, so an anonymous request is judged by exactly the statement being measured. Credentials would have added a second possible explanation for every denial (see the header)
+  # checkov:skip=CKV2_AWS_41:no instance profile, deliberately - the endpoint-policy statements under test carry no principal condition, so an anonymous request is judged by exactly the statement being measured; credentials would add a second possible explanation for every denial (see the header)
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same day buys nothing - the reading is the serial console, and CloudWatch is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t4g.nano is not EBS-optimized-capable and the probe moves no volume traffic - the instance type is chosen by price (docs/PRICING.md 3)
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = "t4g.nano"
 
-  # THE ISOLATED TIER, and the whole reading depends on it: no default route by design, the
-  # S3 and DynamoDB gateway endpoints only.
+  # The isolated tier, on which the whole reading depends: no default route by design, the S3 and
+  # DynamoDB gateway endpoints only.
   subnet_id              = data.terraform_remote_state.foundation.outputs.isolated_subnet_ids[local.zone]
   vpc_security_group_ids = [aws_security_group.perimeter.id]
   user_data              = local.perimeter_user_data
-  # THE USER DATA IS THE INSTRUMENT, so a changed instrument must produce a NEW RUN:
-  # user-data executes at first boot only, and the provider's default is to update the
-  # attribute in place - which would leave the old reading running and look like a
-  # re-measurement that agreed with itself.
+  # The user data is the instrument, so a changed instrument must produce a new run: user-data
+  # executes at first boot only, and the provider's default is to update the attribute in place,
+  # which would leave the old reading running and look like a re-measurement that agreed with
+  # itself.
   user_data_replace_on_change = true
   associate_public_ip_address = false
 
@@ -255,10 +246,10 @@ resource "aws_instance" "perimeter" {
 
 # -------------------------------------------------------------------- the peering probe
 #
-# Egress is scoped to two ranges and both are needed: the peer VPC (the targets) and this
-# VPC (the resolver at base+2, without which the names never resolve). The peer range is kept
-# WHOLE so that the permitted address and the forbidden one are equally allowed here - the
-# security group must not be part of what distinguishes them.
+# Egress is scoped to two ranges and both are needed: the peer VPC (the targets) and this VPC (the
+# resolver at base+2, without which the names never resolve). The peer range is kept whole so that
+# the permitted address and the forbidden one are equally allowed here - the security group must not
+# be part of what distinguishes them.
 resource "aws_security_group" "peering" {
   name        = "awsds-${var.env}-probe-peering"
   description = "Stage 3 peering probe - egress to the peer VPC and to the resolver of this VPC"
@@ -286,22 +277,22 @@ resource "aws_security_group" "peering" {
 }
 
 resource "aws_instance" "peering" {
-  # checkov:skip=CKV2_AWS_41:NO instance profile, deliberately - and for this probe it is load-bearing rather than merely unnecessary: the endpoint-policy statements under test carry no principal condition, so an anonymous request is judged by exactly the statement being measured. Credentials would have added a second possible explanation for every denial (see the header)
+  # checkov:skip=CKV2_AWS_41:no instance profile, deliberately - the endpoint-policy statements under test carry no principal condition, so an anonymous request is judged by exactly the statement being measured; credentials would add a second possible explanation for every denial (see the header)
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same day buys nothing - the reading is the serial console, and CloudWatch is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t4g.nano is not EBS-optimized-capable and the probe moves no volume traffic - the instance type is chosen by price (docs/PRICING.md 3)
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = "t4g.nano"
 
-  # The PRIVATE tier, which is the one this account routes to the peer from. The plan named
-  # the public subnet; private carries the same peering routes and needs no public address,
-  # and the peer routes back to both - so the choice costs the reading nothing.
+  # The private tier, the one this account routes to the peer from. It carries the same peering
+  # routes as the public subnet the plan named, needs no public address, and the peer routes back to
+  # both, so the choice costs the reading nothing.
   subnet_id              = data.terraform_remote_state.foundation.outputs.private_subnet_ids[local.zone]
   vpc_security_group_ids = [aws_security_group.peering.id]
   user_data              = local.peering_user_data
-  # THE USER DATA IS THE INSTRUMENT, so a changed instrument must produce a NEW RUN:
-  # user-data executes at first boot only, and the provider's default is to update the
-  # attribute in place - which would leave the old reading running and look like a
-  # re-measurement that agreed with itself.
+  # The user data is the instrument, so a changed instrument must produce a new run: user-data
+  # executes at first boot only, and the provider's default is to update the attribute in place,
+  # which would leave the old reading running and look like a re-measurement that agreed with
+  # itself.
   user_data_replace_on_change = true
   associate_public_ip_address = false
 
