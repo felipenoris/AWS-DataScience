@@ -1,10 +1,10 @@
 # D21 — The Development account, and where experimentation ends
 
-**Status:** Decided (2026-08-08): **a dedicated Development account; Sandbox becomes pure experimentation; the promotion chain starts in Development.** **Re-examined 2026-08-13 and held unchanged** — what came out of that review is a named test and a revision trigger, recorded below, not an amendment.
+**Status:** Decided (2026-08-08): a dedicated Development account; Sandbox becomes pure experimentation; the promotion chain starts in Development. Re-examined 2026-08-13 and held unchanged — that review produced a named test and a revision trigger, recorded below, not an amendment.
 
-**SUPERSEDED BY ITS OWN LARGER BRANCH, 2026-09-05 (user).** The branch this file wrote out on 2026-08-13 — Development leaves the chain, Sandbox graduates straight to Staging — is taken: the trigger fired on experience (no work was found that needs a person next to Development's data) rather than on the quota, which merely removed the alternative. The chain is **N Sandboxes → one Staging → one Production**; `objectives.md` was edited by the user in the same sitting. Its stated precondition is now Stage 7's to deliver (one shared GitLab group namespace), and its surviving objection is answered: CI applies into Staging and never into Sandbox, so the by-hand engineering apply lives in `sandbox/app/`. The file and its number are kept — the record of what was tried is the point.
+**Superseded by its own larger branch, 2026-09-05 (user).** The branch this file wrote out on 2026-08-13 — Development leaves the chain, Sandbox graduates straight to Staging — is taken: the trigger fired on experience (no work was found that needs a person next to Development's data) rather than on the quota, which merely removed the alternative. The chain is **N Sandboxes → one Staging → one Production**; `objectives.md` was edited by the user in the same sitting. Its stated precondition is now Stage 7's to deliver (one shared GitLab group namespace), and its surviving objection is answered: CI applies into Staging and never into Sandbox, so the by-hand engineering apply lives in `sandbox/app/`. The file and its number are kept as the record of what was tried.
 
-**CARRIED OUT 2026-09-06.** There is no Development account: `terraform-live/development/` is deleted, `awsds-dev-tfstate` destroyed, and the `engineering` project profile with it. What replaced the account is **nothing** — a pipeline definition is developed in git and executed into Staging, so the boundary this file argued for survives and now runs between a Sandbox and a repository rather than between two accounts.
+**Carried out 2026-09-06.** There is no Development account: `terraform-live/development/` is deleted, `awsds-dev-tfstate` destroyed, and the `engineering` project profile with it. Nothing replaced the account — a pipeline definition is developed in git and executed into Staging, so the boundary this file argued for now runs between a Sandbox and a repository rather than between two accounts.
 
 **In one line:** A Development account: Sandbox becomes pure experimentation and the promotion chain starts in Development.
 
@@ -14,7 +14,7 @@
 
 ---
 
-## The distinction this restores
+## Experimentation and development
 
 The AWS MLOps roadmap draws a line that the previous revision had collapsed "because there is one user":
 
@@ -23,14 +23,13 @@ The AWS MLOps roadmap draws a line that the previous revision had collapsed "bec
 - **Development** — the unit of work is a **pipeline**. A repository with tests, a SageMaker Pipeline, git,
   CI, and the expectation that running it again on Tuesday gives the same answer.
 
-## What the boundary buys, even with a single operator
+## What the boundary buys, with a single operator
 
 1. **The promotion chain gets an honest origin.** What enters CI is already repository-shaped, so the
    pipeline never has to pretend a notebook is an artifact.
-2. **The graduation step becomes visible.** Leaving Sandbox is a deliberate act — a git commit into a
-   Development repository — not a gradual blurring inside one account.
-3. **Cost attribution separates exploration from engineering**, which is the split a real budget
-   conversation needs.
+2. **The graduation step becomes visible.** Leaving Sandbox is a git commit into a Development
+   repository, not a gradual blurring inside one account.
+3. **Cost attribution separates exploration from engineering**, the split a budget conversation needs.
 
 ## What Development is
 
@@ -48,48 +47,46 @@ The AWS MLOps roadmap draws a line that the previous revision had collapsed "bec
 
 - Sandbox → Development is a **rewrite**: the notebook's logic is rewritten into the repository, reviewed
   and committed.
-- There is deliberately **no automated path** that lifts a notebook out of Sandbox — **the rewrite is the
-  quality gate**.
+- There is **no automated path** that lifts a notebook out of Sandbox; the rewrite is the quality gate.
 - Promotion is Development → Staging → Production, and it never starts in Sandbox.
 
 ---
 
-## Re-examined 2026-08-13 — does Development need an interactive surface at all?
+## Does Development need an interactive surface?
 
-**The decision is held as written.** This section records the reasoning so the question is not re-derived
-from scratch the next time it is asked, and so the thing that would actually settle it is written down.
+Re-examined 2026-08-13 and held as written. This section records the reasoning and names what would
+settle the question.
 
-### Two questions, and they turn on different facts
+### The interactive surface and the origin of the chain
 
-The review conflated them once; keeping them apart is what makes either one answerable.
+The review conflated the two questions once; keeping them apart is what makes either one answerable.
 
 | Question | What settles it |
 |---|---|
 | Does Development need an **interactive surface**? | **The data test** below. It is a question about duplicated tooling |
 | Should Development be the **origin of the promotion chain**? | **Who carries the code convergence** — see below. It is a question about where the promotion anchors |
 
-**The data test does not reach the second question**, and this is the trap: Development's role in the chain
-was never to be where the data is, it was to be the **funnel** — N sandboxes converge on one Development,
-one Staging, one Production. Finding that Sandbox holds the same data removes the duplicated Studio and says
-nothing about the funnel. Answering the first question does **not** license acting on the second.
+**The data test does not reach the second question.** Development's role in the chain was never to be where
+the data is; it was to be the **funnel** — N sandboxes converge on one Development, one Staging, one
+Production. Finding that Sandbox holds the same data removes the duplicated Studio and says nothing about
+the funnel. Answering the first question does not license acting on the second.
 
-### The funnel is a repository namespace, not an account (settled 2026-08-13)
+### The funnel is a repository namespace, not an account
 
-The second question was first written as *"it turns on N"*, on the reading that N sandboxes deploying into
-Staging would multiply the trust paths into it. **That reading was wrong on the mechanism**, and correcting
-it is what produced the answer:
+Settled 2026-08-13. The second question was first written as *"it turns on N"*, on the reading that N
+sandboxes deploying into Staging would multiply the trust paths into it. That reading was wrong on the
+mechanism, and correcting it produced the answer:
 
 - **The deploy path does not multiply with N.** The runner lives in Production (D14) and assumes **one**
   deploy role in Staging. A Sandbox is where the person was sitting when they committed; it is not in the
   deploy path at all. What multiplies is **artifact streams**, not credentials and not trust directions.
-- **What the funnel actually buys is a place where N units' work meets *as code*** — one review, one
-  standard, a home for shared libraries — and that is a **GitLab group**, which lives in Production and in
-  no environment account.
+- **What the funnel buys is a place where N units' work meets *as code*** — one review, one standard, a home
+  for shared libraries. That is a **GitLab group**, which lives in Production and in no environment account.
 - **Remove the funnel from git and three things break together:** Staging is where two units first meet, and
   they meet as *deployed artifacts* rather than as code; `terraform-live/staging/app/app-etl/` is one state
-  and one set of resources, so N streams either collide or force Staging to namespace per unit — the
-  multiplication does not vanish, it lands somewhere less free than upstream; and a shared transform needed
-  by two units has no owner.
+  and one set of resources, so N streams either collide or force Staging to namespace per unit, so the
+  multiplication lands somewhere less free than upstream; and a shared transform needed by two units has no
+  owner.
 - **Remove it from AWS but keep it in git and none of them break**, because convergence has already happened
   before the tag. The chain reads: N sandboxes → one shared repository namespace → tag → Staging.
 
@@ -98,14 +95,13 @@ Development *account* has only two residual jobs — cost attribution (benefit 3
 instead, and being a runtime target for data Sandbox does not hold, which is the data test again. Neither
 holds a whole account on its own, and **Sandbox → Staging becomes defensible even with N > 1**.
 
-**One correction to carry, on how expensive the reversal is.** Rebuilding the funnel later is not expensive
-because of the *account* — Account Factory vends it and [Stage 14](../stages/stage-14-sandbox-vending.md) is
-already the machinery for exactly that. It is expensive because of **repository structure and habit**: N
-units that each grew their own layout, CI configuration and Terraform tree are N divergent structures to
-merge. The irreversibility is structural and social, not technical — which also says where to spend the care
-if the branch is ever taken.
+Rebuilding the funnel later is not expensive because of the *account*: Account Factory vends it, and
+[Stage 14](../stages/stage-14-sandbox-vending.md) is the machinery for exactly that. It is expensive because
+of **repository structure and habit** — N units that each grew their own layout, CI configuration and
+Terraform tree are N divergent structures to merge. The irreversibility is structural and social, not
+technical, which says where to spend the care if the branch is ever taken.
 
-### Back to the first question, in D17's vocabulary
+### The interactive half, in D17's vocabulary
 
 SageMaker is two halves and D17 runs the account boundary between them.
 
@@ -115,11 +111,11 @@ SageMaker is two halves and D17 runs the account boundary between them.
 
 It is a live question because **everything the person does to *author* is already available in Sandbox**: a
 notebook, a VS Code space, the visual workflow and ETL tools, an export of the pipeline definition, and a
-git commit. And the commit triggers CI **on the Production runner (D14), not in Development** — CI then
-assumes a deploy role *into* Development. So Development certainly needs a deploy role; whether it needs a
-Studio is a separate claim.
+git commit. The commit triggers CI **on the Production runner (D14), not in Development**; CI then assumes a
+deploy role *into* Development. So Development needs a deploy role; whether it needs a Studio is a separate
+claim.
 
-### What holds the interactive surface in place today
+### What holds the interactive surface in place
 
 | Where | What depends on it |
 |---|---|
@@ -128,45 +124,44 @@ Studio is a separate claim.
 | [D19](D19-derived-zone.md) | a per-principal derived zone, with its own CMK, in **each** Interactive account |
 | [Stage 8](../stages/stage-08-cicd-pipelines.md) | `awsds-deploy-devenv-dev` — half of INT-18 exists to deliver the `dev-env` image to Development's Studio |
 
-### What argues the other way
+### What argues against the interactive surface
 
 - **No data difference is declared anywhere.** Both accounts read the lake through the same LF share, both
   have a derived zone, both are read-write for the same `DataScientistAccess`, both are associated with the
   same unified domain. Development's interactive surface is a **duplicate** of Sandbox's.
-- **So the notebook/pipeline distinction is one of *discipline*, which an account boundary does not
-  enforce.** Nothing stops an exploratory notebook in Development or a pipeline in Sandbox — the account
-  does not know what the unit of work is (Lesson 5).
-- **Two of the three benefits above are carried by something other than the account.** Benefits 1 and 2 are
-  properties of the **git repository**, which lives in GitLab in Production: a commit from a Sandbox VS Code
-  and one from a Development VS Code are the same commit. Stage 6 already names the enforcing thing — the
-  **project profile**: *"it stops being which URL the person opened and becomes a property of the project
-  they opened."* Only benefit 3 is carried by the account, and it survives without a Studio, because
-  pipeline executions are still billed where they run.
+- **The notebook/pipeline distinction is one of *discipline*, which an account boundary does not enforce.**
+  Nothing stops an exploratory notebook in Development or a pipeline in Sandbox; the account does not know
+  what the unit of work is (Lesson 5).
+- **Benefits 1 and 2 are carried by something other than the account** — the **git repository**, which lives
+  in GitLab in Production: a commit from a Sandbox VS Code and one from a Development VS Code are the same
+  commit. Stage 6 names the enforcing thing, the **project profile**: *"it stops being which URL the person
+  opened and becomes a property of the project they opened."* Only benefit 3 is carried by the account, and
+  it survives without a Studio, because pipeline executions are still billed where they run.
 - **The plan already treats Development's interactive surface as second-class.** It has no shared filesystem
   at all — since 2026-08-17 no account does (the NFS requirement was withdrawn, D24 with it) — and its
   exchange with Sandbox is S3 and git.
 
-### The discriminating test — it is about data, not about tooling
+### The discriminating test
 
 > **Is there anything a person must do next to *Development's* data that they cannot do next to
 > *Sandbox's* data?**
 
 - **Today the plan names nothing.** If it still names nothing once Stage 5 fixes the actual grants, the
   interactive surface in Development is redundant.
-- **If something does appear, the decision was never about interactivity** — it is about **data grants**,
-  which is a far better place to argue it.
-- **The one real cost of removing it is the feedback loop.** A pipeline exercisable only through
-  commit → runner → logs iterates slowly, and data-science pipelines fail for *data* reasons — schema,
-  nulls, cardinality, distribution — that are much faster to diagnose sitting beside the data. That
-  diagnosis can happen in Sandbox **only if Sandbox holds the same data**, which is the same test again.
-  The pattern for everywhere else already exists in D17: debugging a failed run is a time-boxed elevated
-  role with an approval, not a standing notebook.
+- **If something does appear, the decision was never about interactivity** but about **data grants**, a far
+  better place to argue it.
+- **The cost of removing it is the feedback loop.** A pipeline exercisable only through commit → runner →
+  logs iterates slowly, and data-science pipelines fail for *data* reasons — schema, nulls, cardinality,
+  distribution — that are much faster to diagnose sitting beside the data. That diagnosis can happen in
+  Sandbox **only if Sandbox holds the same data**, which is the same test again. D17 already carries the
+  pattern for everywhere else: debugging a failed run is a time-boxed elevated role with an approval, not a
+  standing notebook.
 - **One assumption to measure before relying on "author everything in Sandbox":** that SMUS visual workflow
   and ETL artifacts export to a git-committable definition CI can consume. That is D28's contract and it is
-  **unverified** — if the export is not clean, "export and commit from Sandbox" silently becomes "rewrite by
-  hand", which is a different decision.
+  **unverified**. If the export is not clean, "export and commit from Sandbox" becomes "rewrite by hand",
+  which is a different decision.
 
-### If the test ever answers "nothing" — what moves
+### What moves if the test answers "nothing"
 
 - **D17's invariant sharpens.** Development keeps the runtime and loses the domain, so the sentence becomes
   *humans run code in Sandbox and nowhere else* — one account class with interactive compute instead of two.
@@ -175,61 +170,54 @@ Studio is a separate claim.
   intention becomes a **control** rather than a convention (Lesson 5).
 - **Files that would be revised:** this one (benefit 1 moves to Sandbox), **D17**, **D18**, **D19**, **D23**
   (`Interactive` collapses onto `Sandboxes`), **D26** and Stage 6 (domain associations become N, not N + 1;
-  the `engineering` profile changes target or disappears — **and since 2026-08-22, its profile grant in
-  `data-governance/governance/grants.tf` and the member's `development/sagemaker/` configurations + grants
-  come out with it**), **D35**, Stage 8 (INT-18 loses half) and
-  Stage 10.
-- **The cost model barely moves, and an earlier draft of this section said otherwise.** Losing the Studio
-  does **not** return Development's interface endpoints: the account keeps running pipeline jobs, those jobs
-  are VPC-only, and the endpoints are what they resolve through — which is the term that dominates
-  `docs/plan/cost-model.md`. What is saved is the domain and its apps, which are `[E]` and idle-cheap anyway.
-  **The endpoints only come back in the larger branch below**, where the account leaves the chain entirely.
-  Stating it the other way makes the cheaper, likelier move look like the one that pays.
+  the `engineering` profile changes target or disappears, and since 2026-08-22 its profile grant in
+  `data-governance/governance/grants.tf` and the member's `development/sagemaker/` configurations and grants
+  come out with it), **D35**, Stage 8 (INT-18 loses half) and Stage 10.
+- **The cost model barely moves.** Losing the Studio does **not** return Development's interface endpoints:
+  the account keeps running pipeline jobs, those jobs are VPC-only, and the endpoints are what they resolve
+  through — the term that dominates `docs/plan/cost-model.md`. What is saved is the domain and its apps,
+  which are `[E]` and idle-cheap. **The endpoints only come back in the larger branch below**, where the
+  account leaves the chain entirely.
 
 ### The larger branch — CI/CD deploying from Sandbox into Sandbox
 
 If experimentation shows the two accounts are barely distinguishable in practice, the move is not just
 "Development without a Studio" but **Development out of the chain**:
 
-- The commit made in Sandbox triggers the Production runner, which **applies straight back into Sandbox** —
+- The commit made in Sandbox triggers the Production runner, which **applies straight back into Sandbox**,
   the account the person is already working in.
 - The promotion chain shortens to **Sandbox → Staging → Production**, and Development stops being the
   pipeline's test target rather than merely losing its Studio.
 - **Its precondition is the shared repository namespace above**, not the data test. Taken without one, this
   is the branch that scatters N divergent repository structures and makes the reversal expensive.
-- **One objection survives and it is worth keeping:** it puts CI-applied infrastructure in the account with
-  the loosest policy set and the widest human access. That is an argument about *where an apply runs*, and
-  it is unaffected by anything above.
-- **The objection that does not survive, recorded so it is not raised again:** that removing the account
-  removes the visible graduation act. The account boundary never *enforced* the rewrite — it prompted it,
-  and a prompt is not a control (Lesson 5). What carries the act is an immutable tag on a reviewed
-  repository, which is in GitLab either way.
+- **One objection survives:** it puts CI-applied infrastructure in the account with the loosest policy set
+  and the widest human access. That is an argument about *where an apply runs*, unaffected by anything
+  above.
+- **The objection that does not survive** is that removing the account removes the visible graduation act.
+  The account boundary never *enforced* the rewrite; it prompted it, and a prompt is not a control (Lesson
+  5). What carries the act is an immutable tag on a reviewed repository, which is in GitLab either way.
 
-### Why this stays open, and what would close it
+### What would close this
 
 - **Nothing is blocked by leaving it open.** The accounts are vended and the OU tree is built; what the
   answer changes is Stage 6's project profiles and which OU an empty account sits in.
-- **The cheap moment has not passed, but it is passing.** Stages 3, 5 and 6 have not run, so today the
-  change is prose. After Stage 6 it is a domain, a blueprint and an OU move. *(Written before Stages 3
-  and 5 ran; the note below is where the trigger's clock actually started.)*
-  **The boundary was crossed 2026-08-21/22**: the open half now has applied artifacts standing on it —
-  the `engineering` profile with its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant to the deployment
-  managers (governance `grants.tf`, applied 2026-08-22; **removing that grant is the expected first act
-  if this closes as "nothing"**), and Development's 11 blueprint configurations with their
-  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants (`development/sagemaker/`, v0.3.3). Closure now also
-  unwinds those.
-- **Revision trigger:** the test above being asked with **real grants in place** — that is, once Stage 5
-  settles what Sandbox and Development may each read — or a first stretch of real work in Development that
-  reports nothing Sandbox could not have done.
+- **The cheap moment is passing.** Before Stages 3, 5 and 6 ran, the change was prose; after Stage 6 it is
+  a domain, a blueprint and an OU move. **The boundary was crossed 2026-08-21/22**: the open half now has
+  applied artifacts standing on it — the `engineering` profile with its
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant to the deployment managers (governance `grants.tf`, applied
+  2026-08-22; **removing that grant is the expected first act if this closes as "nothing"**), and
+  Development's 11 blueprint configurations with their `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants
+  (`development/sagemaker/`, v0.3.3). Closure now also unwinds those.
+- **Revision trigger:** the test above asked with **real grants in place** — once Stage 5 settles what
+  Sandbox and Development may each read — or a first stretch of real work in Development that reports
+  nothing Sandbox could not have done.
 
-**The trigger's first condition fired 2026-08-19 — recorded, not yet answered.** Stage 5 passes 3-4c
+**The trigger's first condition fired 2026-08-19, recorded and not yet answered.** Stage 5 passes 3-4c
 applied the real grants, and they are **identical** for the two consumers: the same two TBAC expressions
 account-to-account, the same re-grants to `DataScientistAccess`, the same five-column view of
-`sample_trades` (the grant register in [`docs/AWS_STATE.md`](../../AWS_STATE.md)). So the test is now
-askable and today's answer is still "nothing" — **the answer deliberately waits for pass 4d's first
-behavioural persona queries** (the grants exist but no persona has read a row), and for the first real
-stretch of work. What was prose in the bullet above is now a domain-and-OU move away from being cheap:
-Stage 6 is the boundary.
+`sample_trades` (the grant register in [`docs/AWS_STATE.md`](../../AWS_STATE.md)). The test is now askable
+and today's answer is still "nothing". The answer waits for pass 4d's first behavioural persona queries —
+the grants exist but no persona has read a row — and for the first real stretch of work.
 
 ---
 

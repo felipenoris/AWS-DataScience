@@ -2,7 +2,7 @@
 
 **Status:** Decided (2026-08-07): **execution roles get no direct S3 access to registered locations**
 
-**In one line:** Execution roles get NO direct S3 access to Lake Formation-registered prefixes, or every filter is decoration.
+**In one line:** Execution roles get no direct S3 access to Lake Formation-registered prefixes, or every filter is decoration.
 
 **Related decisions:** —
 

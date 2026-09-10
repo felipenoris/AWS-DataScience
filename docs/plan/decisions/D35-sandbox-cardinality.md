@@ -1,10 +1,10 @@
 # D35 — Two classes of account: structural, and the Sandbox multiplied per business unit
 
-**Status:** Decided (2026-08-09): **`Sandbox` is one *per business unit*; every other account in the map, `Development` included, is structural and stays singular. The multiplied one gets an automated, Terraform-driven vending flow ([Stage 14](../stages/stage-14-sandbox-vending.md)); the structural ones keep the console flow of D34. N is 1 today**
+**Status:** Decided (2026-08-09): `Sandbox` is one *per business unit*; every other account in the map, `Development` included, is structural and stays singular. The multiplied one gets an automated, Terraform-driven vending flow ([Stage 14](../stages/stage-14-sandbox-vending.md)); the structural ones keep the console flow of D34. N is 1 today.
 
-**AMENDED 2026-09-05:** the chain reads **N Sandboxes → one Staging → one Production**, and the VPN bullet this file left open is **settled in the direction it named**: a designated hub, `VPC-Networking` in Production, so the tunnel does not multiply with the Sandboxes ([D38](D38-single-egress-hub.md)).
+**Amended 2026-09-05:** the chain reads **N Sandboxes → one Staging → one Production**, and the VPN bullet this file left open is settled in the direction it named: a designated hub, `VPC-Networking` in Production, so the tunnel does not multiply with the Sandboxes ([D38](D38-single-egress-hub.md)).
 
-**AMENDED 2026-09-06 by the doing.** The chain is now measurably `N Sandboxes → one Staging → one Production`, and the cardinality argument moved one step with it: what is *institutional* past the graduation boundary is no longer "one shared Development account" but one set of engineering **repositories** plus one Staging. The per-unit/institutional split is unchanged; only the object on the institutional side is.
+**Amended 2026-09-06.** The chain is measurably `N Sandboxes → one Staging → one Production`, and the cardinality argument moved one step with it: what is *institutional* past the graduation boundary is no longer "one shared Development account" but one set of engineering **repositories** plus one Staging. The per-unit/institutional split is unchanged; only the object on the institutional side is.
 
 **In one line:** The account population has a cardinality property the map did not have, and its boundary is exactly D21's graduation boundary — experimentation multiplies per business unit, the engineering chain that follows it does not.
 
@@ -24,60 +24,58 @@ question "how many of these will exist in five years", and it splits in two:
 | **Structural** | Management, Log Archive, Audit, Identity, Policy Canary, Data Governance, **Development**, Staging, Production | **one, always** | console, by the D34 owner |
 | **Multiplied** | **Sandbox** | **one per business unit** | automated ([Stage 14](../stages/stage-14-sandbox-vending.md)) |
 
-**The boundary is not arbitrary — it is D21's graduation boundary, and that is what makes this decision hold
-together.** D21 already draws the line: in Sandbox the unit of work is a *notebook* and the account is for
-experimentation; in Development the unit of work is a *pipeline* and the promotion chain begins. Work crosses
-that line by being **rewritten into a Development repository through git, never by a pipeline**. This decision
-adds one observation on top: **experimentation is naturally per-business-unit** — each unit explores its own
-data, with its own people, on its own schedule — while **engineering is institutional**, a single discipline,
-a single set of repositories, a single chain. So the cardinality boundary and the graduation boundary are the
-same line, seen from two directions. The chain reads: **N Sandboxes → one Development → one Staging → one
-Production.**
+**The boundary is D21's graduation boundary**, which is what makes this decision hold together. D21 draws the
+line: in Sandbox the unit of work is a *notebook* and the account is for experimentation; in Development the
+unit of work is a *pipeline* and the promotion chain begins. Work crosses that line by being **rewritten into
+a Development repository through git, never by a pipeline**. This decision adds one observation:
+**experimentation is naturally per-business-unit** — each unit explores its own data, with its own people, on
+its own schedule — while **engineering is institutional**, a single discipline, a single set of repositories,
+a single chain. The cardinality boundary and the graduation boundary are the same line seen from two
+directions. The chain reads: **N Sandboxes → one Development → one Staging → one Production.**
 
-**A useful consequence of that coincidence: the promotion chain is untouched by N.** Nothing in Stages 8, 9
-or 10 multiplies — one Development means one set of pipelines, one deploy role pair, one approval gate. The
-multiplication is entirely upstream of the gate, which is the cheapest place for it to be.
+**The promotion chain is untouched by N.** Nothing in Stages 8, 9 or 10 multiplies — one Development means
+one set of pipelines, one deploy role pair, one approval gate. The multiplication is entirely upstream of the
+gate, the cheapest place for it to be.
 
 **This is a property, not a fourth axis.** The map's axes say *what an account is for* — lifecycle,
 ownership, platform. Cardinality says *how many there will be*. It cuts across: the lifecycle axis carries
 both classes (Sandbox multiplies; Development, Staging and Production do not), while ownership and platform
 are entirely structural.
 
-**Where per-unit isolation stops, stated plainly because it is the thing most likely to be assumed
-wrongly.** A business unit's *experimentation* is private to it — its own account, its
-own people. Its *engineering* is not: everything that graduates lands in one shared Development account, and
-from there in one Staging and one Production. So the account boundary carries isolation only up to the
+**Where per-unit isolation stops.** A business unit's *experimentation* is private to it: its own account,
+its own people. Its *engineering* is not — everything that graduates lands in one shared Development account,
+and from there in one Staging and one Production. The account boundary carries isolation only up to the
 graduation point. Past it, whatever isolation is required has to be carried by **Lake Formation grants,
-LF-Tags and per-pipeline execution roles** — not by an account boundary that is deliberately not there. A
+LF-Tags and per-pipeline execution roles**, not by an account boundary that is deliberately not there. A
 request to isolate one unit's *pipelines* from another's is a request for a second Development, which is this
 decision's revision trigger rather than a configuration change.
 
 **Why decide it now, before any of it is built.** Automation at the end is the cheap part. The expensive part
-is that **several stages are currently written for exactly one Sandbox**, and each of those singular
-assumptions is nearly free to loosen while it is prose:
+is that **several stages are written for exactly one Sandbox**, and each of those singular assumptions is
+nearly free to loosen while it is prose:
 
 - **CIDR allocation (Stage 3).** Ranges are hardcoded one per account. Three of the four stay fixed; the
   **Sandbox class needs a supernet with room for the units that will exist**, one `/16` allocated per unit
   from a recorded table. Ranges stay non-overlapping even between accounts that never peer — D20's argument
   applies unchanged: an overlap cannot be revisited without rebuilding the VPC. The concrete allocation is
-  settled when Stage 3 is written, which has not happened yet, which is exactly why this costs nothing today.
-- **Where the VPN terminates, and this is the one that actually breaks (Stage 4).** The tunnel lands in
-  *the* Sandbox account, the client resolver points at the Sandbox VPC, and one Sandbox↔Production peering
-  carries the path to GitLab. **The VPN lives on the multiplied side** — so all of it is per-unit: N landing
-  accounts, N resolver targets, N peerings. Development's own peering is fixed and single, and is not part of
-  the problem. **This decision does not settle the topology** (a designated hub, a Transit Gateway in a shared
-  network account, or per-unit VPN endpoints are all live) because the answer depends on N and on whether
-  units may reach each other at all. What it settles is that **Stage 4 must not write "the Sandbox account"
-  as though there is one** — it names the VPN home as a role an account plays, so the topology change is a
-  substitution rather than a rewrite. [Stage 14](../stages/stage-14-sandbox-vending.md) carries it as its
-  central open question.
-- **Identity (Stage 1b).** `DataScientistAccess` is currently assigned to one `sso-group-data-scientists` group on
+  settled when Stage 3 is written, which is why this costs nothing today.
+- **Where the VPN terminates (Stage 4)** is the one that breaks. The tunnel lands in *the* Sandbox account,
+  the client resolver points at the Sandbox VPC, and one Sandbox↔Production peering carries the path to
+  GitLab. **The VPN lives on the multiplied side**, so all of it is per-unit: N landing accounts, N resolver
+  targets, N peerings. Development's own peering is fixed and single, and is not part of the problem.
+  **This decision does not settle the topology** (a designated hub, a Transit Gateway in a shared network
+  account, or per-unit VPN endpoints are all live), because the answer depends on N and on whether units may
+  reach each other at all. What it settles is that **Stage 4 must not write "the Sandbox account" as though
+  there is one**: it names the VPN home as a role an account plays, so the topology change is a substitution
+  rather than a rewrite. [Stage 14](../stages/stage-14-sandbox-vending.md) carries it as its central open
+  question.
+- **Identity (Stage 1b).** `DataScientistAccess` is assigned to one `sso-group-data-scientists` group on
   Sandbox and Development. The Development half is right and stays — it is the shared engineering account.
   The Sandbox half becomes **`sso-group-data-scientists-<bu>`, assigned on that unit's Sandbox only**, or every data
-  scientist can enter every unit's experimentation account. **Do not create per-unit groups yet** — there is
+  scientist can enter every unit's experimentation account. **Do not create per-unit groups yet**: there is
   one unit. Create the *naming* and write the assignment so the second unit is an addition rather than a
   refactor; the permission set itself is unchanged and shared.
-  **Amended 2026-08-11 — the per-unit token is an ordinal, and `<bu>` above is now only half true.** The
+  **Amended 2026-08-11: the per-unit token is an ordinal**, so `<bu>` above is only half true. The
   user settled the token as an integer at the moment the first SSO profile was created:
   `awsds-infra-sandbox-1`, matching the account AWS already names `Sandbox Account 1`
   (`docs/plan/conventions.md`). That is the **account** axis. Whether the *group* takes the ordinal too, or keeps
@@ -87,9 +85,9 @@ assumptions is nearly free to loosen while it is prose:
 - **Domain association (Stage 6, D26).** The single unified domain is associated with **N + 1** interactive
   accounts — every Sandbox plus the one Development — each needing its own blueprint configuration. That is
   the intended mechanism, so it scales; what it makes heavier is the root deny on `datazone:CreateDomain`
-  (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is exactly
-  what that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with
-  every unit.
+  (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is what
+  that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with every
+  unit.
 - **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, a **KMS key per job in that account** (the enumeration and its running total live in `docs/plan/cost-model.md`'s per-unit paragraph, which is the one copy — it went from two to three on 2026-08-21, when Stage 6 gave every Interactive account a project CMK) —
   and the term that dominates, **one set of interface VPC endpoints**. `docs/plan/institutional-delta.md`
   already names per-account endpoints as the largest hourly cost multiplied by account count; under this
