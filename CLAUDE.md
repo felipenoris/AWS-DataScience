@@ -102,9 +102,9 @@ the Makefile, and this file. The test for a sentence is whether the reader does 
 Facts, identifiers, measurements and their dates, commands, quoted output and a log entry's provenance
 are never cut; the words around them are.
 
-1. **A heading names its subject**, in the file's own vocabulary: "Account tree", "The identities and the
-   role each plays in the battery". Not a label that needs the body to be understood ("The map"), and
-   not a rhetorical tail ("and why each one is the one it is").
+1. **A heading names its subject**, in the file's own vocabulary: "Account tree", "The identities the
+   battery runs as". Not a label that needs the body to be understood ("The map"), and not a
+   rhetorical tail ("and why each one is the one it is").
 2. **No counts in headings or titles.** "The two identities", "Four rules for reading this picture",
    "ONE MATCHER, TWO INPUTS" go stale the day an item is added, and the number is not the information.
    Write "The identities", "Rules for reading this picture", "The DNS Firewall coverage matcher".
