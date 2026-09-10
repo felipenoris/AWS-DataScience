@@ -1,6 +1,6 @@
-# Inputs. Everything that differs between one member account and the next - and nothing else:
+# Inputs. Everything that differs between one member account and the next, and nothing else:
 # the design lives here so that Sandbox and Development cannot drift (Lesson 14), and each
-# caller says WHICH account, never WHAT.
+# caller says which account, never what.
 
 variable "env" {
   description = "The <env> NAME TOKEN (docs/plan/conventions.md) - what every name below is built from. Never *the* sandbox: D35 vends one per business unit."
@@ -16,7 +16,7 @@ variable "region" {
 
 # ------------------------------------------------------------------- the network parameters
 #
-# What the blueprint configuration is POINTED AT (Stage 6 step 1.4). Read from this account's
+# What the blueprint configuration is pointed at (Stage 6 step 1.4). Read from this account's
 # own foundation/ state by the caller, never pasted: an id in a .tf file is a copy of another
 # slice's state that nothing keeps in step.
 
@@ -39,8 +39,8 @@ variable "private_subnet_ids" {
 
 # ----------------------------------------------------------------------- the lake's surface
 #
-# THE D13 EXCLUSION IS BUILT FROM THESE. They arrive from the LAKE account's state, through
-# the caller's cross-account read - so a bucket renamed on the producer side is a plan diff
+# The D13 exclusion is built from these. They arrive from the lake account's state, through
+# the caller's cross-account read, so a bucket renamed on the producer side is a plan diff
 # here rather than a deny that quietly stops matching anything.
 
 variable "lake_registered_bucket_arns" {
@@ -76,9 +76,9 @@ variable "log_retention_days" {
 
 # ------------------------------------------------------------- the second apply (pass 2b)
 #
-# THE ACCOUNT ASSOCIATION HAS NO PUBLIC API (Stage 6 step 1.3), so the blueprint configuration
+# The account association has no public API (Stage 6 step 1.3), so the blueprint configuration
 # cannot be created in the same apply as the roles it names: a domain has to exist and this
-# account has to have ACCEPTED an invitation to it. Both halves ride on one flag, emitted from
+# account has to have accepted an invitation to it. Both halves ride on one flag, emitted from
 # backend.SMUS_ASSOCIATED - a table whose rows are measurements, not intentions.
 
 variable "blueprints_enabled" {
@@ -111,47 +111,45 @@ variable "root_domain_unit_id" {
   default     = null
 }
 
-# Decision 5's category 1, BY API NAME - and the emphasis is earned: three of the four names this
-# default used to carry do not exist in the API (`EMRServerless`, `EMRonEC2`, and
-# `AmazonBedrockGenerativeAI`, which is a console grouping the API expands into seven). Measured
-# against the live domain 2026-08-21 after step 1.4's plan failed on them; Lesson 38.
+# Decision 5's category 1, by API name. Three names that do not exist in the API -
+# `EMRServerless`, `EMRonEC2`, and `AmazonBedrockGenerativeAI`, a console grouping the API
+# expands into seven - were measured against the live domain 2026-08-21 after step 1.4's plan
+# failed on them (Lesson 38).
 #
-# THE SAME LIST LIVES IN THREE PLACES (Lesson 14, and locals.tf says so too): here, in
+# The same list lives in three places (Lesson 14, and locals.tf says so too): here, in
 # data-governance/governance/locals.tf, and in ./aws/studio.py's US-3 constant. A category change
-# moves all three in ONE commit.
+# moves all three in one commit.
 variable "blueprint_names" {
   description = "Decision 5's category 1, by API name (docs/SMUS.md is the reference table; ./aws/studio.py US-3 holds the same list). A category-2 blueprint joins BOTH in the same commit that enables it (Lesson 14)."
   type        = list(string)
   default = [
-    # The base environment, FIRST and deliberately so - it provisions the project's SageMaker AI
-    # domain, roles and security groups, and nothing else works without it. `deployment_order`
-    # below is `index()` into this list.
+    # The base environment, first: it provisions the project's SageMaker AI domain, roles and
+    # security groups, and nothing else works without it. `deployment_order` below is `index()`
+    # into this list.
     "Tooling",
-    # ToolingLite IS DELIBERATELY ABSENT - category 3 since 2026-08-21 (user decision, the second
-    # amendment to decision 5 that day). Step 1.5's apply measured what no page documents: it is a
-    # BASE variant, not a capability - the service refuses it ON_DEMAND in a project profile
-    # ("ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"),
-    # and a second base beside Tooling would double-provision every new project with a shape
-    # nobody measured. Category 3 means disabled: re-enabling starts by amending the decision.
+    # ToolingLite is absent - category 3 since 2026-08-21 (the user's decision). Step 1.5's apply
+    # measured what no page documents: it is a base variant, not a capability - the service
+    # refuses it ON_DEMAND in a project profile ("ToolingLite environment blueprint configuration
+    # must have deployment mode ON_CREATE") - and a second base beside Tooling would
+    # double-provision every new project with a shape nobody measured. Category 3 means disabled:
+    # re-enabling starts by amending the decision.
     # Storage and catalog.
     "DataLake",
     "S3Bucket",
     "S3TableCatalog",
-    # LakehouseAdmin IS DELIBERATELY ABSENT - category 2 since 2026-08-21, not an omission. It is a
-    # PROVISIONING TEMPLATE whose own description is an account-wide automatic ingest-and-catalog,
-    # and NOT Lake Formation's data lake administrator (different objects, similar names). It was
-    # briefly category 1 with a comment saying "measure it at 2.4 first"; a comment is an intention,
-    # not a control (Lesson 5), so the measurement became the enabling trigger instead. It joins
-    # this list when step 2.4 has read what the environment provisions and what the D13 boundary
-    # actually stops - or when a blueprint here proves to depend on it.
+    # LakehouseAdmin is absent - category 2 since 2026-08-21. It is a provisioning template whose
+    # own description is an account-wide automatic ingest-and-catalog, and not Lake Formation's
+    # data lake administrator (different objects, similar names). A comment saying "measure it at
+    # 2.4 first" is an intention, not a control (Lesson 5), so the measurement is the enabling
+    # trigger instead. It joins this list when step 2.4 has read what the environment provisions
+    # and what the D13 boundary actually stops - or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface. SIX ENTRIES, NOT ONE AND NOT SEVEN: `AmazonBedrockGenerativeAI`
-    # is a CONSOLE GROUPING with no API identifier (measured 2026-08-21 -
-    # `list-environment-blueprints` returns seven `AmazonBedrock*` blueprints and no aggregate),
-    # and SIX of the seven are category 1. AmazonBedrockKnowledgeBase IS DELIBERATELY ABSENT -
-    # category 2 (its vector store bills while it exists); it joins in the commit that enables it
-    # (Lesson 14). Decision 5's category 1 is delivered by naming them.
+    # The generative-AI surface, six entries: `AmazonBedrockGenerativeAI` is a console grouping
+    # with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
+    # `AmazonBedrock*` blueprints and no aggregate), and six of the seven are category 1.
+    # AmazonBedrockKnowledgeBase is absent - category 2, its vector store billing while it
+    # exists; it joins in the commit that enables it (Lesson 14).
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",

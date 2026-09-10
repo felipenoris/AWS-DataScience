@@ -1,31 +1,27 @@
-# THE ACCOUNT'S PROJECT KMS KEY (Stage 6 step 2.1).
+# The account's project KMS key (Stage 6 step 2.1).
 #
-# WHAT IT IS FOR: the resources a blueprint provisions in this account that take a customer
-# key - the per-project SageMaker AI domain's EBS volumes and its home EFS, the blueprint's
-# own artifacts. It is NOT the account's DATA key: docs/GOVERNANCE.md §Encryption puts one
-# data CMK per account (alias/awsds-<env>-data, D31) and the derived zone lives under it. Two
-# keys, two jobs - a project's scratch volume and a governed copy of the lake are not the same
-# blast radius, and the second one's key policy is a control this module has no business
-# widening.
+# It encrypts the resources a blueprint provisions in this account that take a customer key -
+# the per-project SageMaker AI domain's EBS volumes and its home EFS, the blueprint's own
+# artifacts. It is not the account's data key: docs/GOVERNANCE.md §Encryption puts one data CMK
+# per account (alias/awsds-<env>-data, D31) and the derived zone lives under it. A project's
+# scratch volume and a governed copy of the lake are not the same blast radius, and the data
+# key's policy is a control this module has no business widening.
 #
-# THE CONSUMER ARRIVED 2026-08-22 (v0.3.2) - the paragraph that stood here said "nothing names
-# it as of pass 1" with verification (xx) as the revision trigger, and what fired the trigger
-# was a measurement, not (xx): aws-samples' SMUS-IaC Tooling block passes the key as the
-# KmsKeyArn REGIONAL PARAMETER (the wizard's optional "Data encryption" field, which the
-# API-enabled configuration had silently left at the AWS managed key). Two consumers now name
-# it: Tooling's KmsKeyArn in blueprints.tf, and the projects bucket's SSE in s3.tf.
+# Two consumers name this key: Tooling's KmsKeyArn regional parameter in blueprints.tf - the
+# wizard's optional "Data encryption" field, which the API-enabled configuration had silently
+# left at the AWS managed key (aws-samples' SMUS-IaC Tooling block, 2026-08-22) - and the
+# projects bucket's SSE in s3.tf.
 #
-# THE POLICY STOPPED BEING THE DELEGATE-TO-IAM DEFAULT AT v0.3.3 (2026-08-22), and the change
-# was forced by a measurement: the first deploy to reach KMS validation died with "Could not
-# resolve KMS key ... may not be accessible". The validator is the DATAZONE SERVICE PRINCIPAL
-# (and the domain execution role, which lives in the DOMAIN account) - neither passes through
-# delegate-to-IAM, which only reaches this account's own IAM principals. The statements below
-# are the documented contract for a CMK handed to the Tooling blueprint
-# (adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html), adapted:
-# our role names for the doc's console names, this Region for its us-east-1, and the
-# category-1 roster for its full menu - the Redshift and Airflow CreateGrant statements are
-# DELIBERATELY ABSENT because no enabled blueprint reaches either service; each joins in the
-# same commit that promotes its blueprint out of category 2 (Lesson 14).
+# The policy is not the delegate-to-IAM default, because the first deploy to reach KMS
+# validation died with "Could not resolve KMS key ... may not be accessible". The validator is
+# the datazone service principal and the domain execution role, which lives in the domain
+# account; neither passes through delegate-to-IAM, which only reaches this account's own IAM
+# principals. The statements below are the documented contract for a CMK handed to the Tooling
+# blueprint (adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html),
+# adapted: our role names for the doc's console names, this Region for its us-east-1, and the
+# category-1 roster for its full menu. The Redshift and Airflow CreateGrant statements are
+# absent because no enabled blueprint reaches either service; each joins in the same commit
+# that promotes its blueprint out of category 2 (Lesson 14).
 locals {
   # The IAM-delegation root statement the default policy had - kept first, because losing it
   # would orphan the key from its own account's administration.
@@ -140,7 +136,7 @@ locals {
     },
   ]
 
-  # The project-role statements are scoped by the DOMAIN id in the encryption context and the
+  # The project-role statements are scoped by the domain id in the encryption context and the
   # principal tag, so they cannot exist before the domain does - the same gate domain_id
   # already rides for the blueprint configurations.
   # (comprehension-with-filter rather than a ternary: [] and a tuple of objects do not unify)

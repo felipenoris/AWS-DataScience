@@ -1,5 +1,5 @@
-# Inputs. The module is deliberately small: a repository, its three non-negotiable settings,
-# a lifecycle policy and ONE resource policy whose whole content is "which accounts may pull".
+# Inputs. A repository, its three non-negotiable settings, a lifecycle policy and one resource
+# policy whose whole content is "which accounts may pull".
 
 variable "name" {
   description = "Repository name, awsds-<env>-ecr-<image> (docs/plan/conventions.md 6). The image name is the last token because that is what a `docker pull` line reads."

@@ -4,17 +4,17 @@ variable "env" {
   nullable    = false
 }
 
-# STAGE 6c step 0.4 (2026-09-06) - the one input that exists because an ACCOUNT can hold more
-# than one VPC. Until D38 every account had exactly one, so `awsds-<env>-` was unambiguous and
-# two of the names below are ACCOUNT-unique rather than VPC-unique: the flow-log log group is a
-# hard create-time conflict, and every `Name` tag is what ./aws/networking.py reads to tell one
-# object from another. Security-group NAMES would not have collided - they are scoped to a VPC -
-# but their tags would, which is the same failure one layer up.
+# 6c step 0.4 - the one input that exists because an account can hold more than one VPC. Until
+# D38 every account had exactly one, so `awsds-<env>-` was unambiguous and two of the names
+# below are account-unique rather than VPC-unique: the flow-log log group is a hard create-time
+# conflict, and every `Name` tag is what ./aws/networking.py reads to tell one object from
+# another. Security-group names would not have collided - they are scoped to a VPC - but their
+# tags would, which is the same failure one layer up.
 #
-# DEFAULT EMPTY, SO EVERY EXISTING CALLER IS UNTOUCHED. `sandbox/foundation/` and
+# The default is empty, so every existing caller is untouched. `sandbox/foundation/` and
 # `staging/foundation/` pass nothing and keep `awsds-sandbox-*` and `awsds-staging-*`; only
 # Production's three VPCs carry a suffix (`shared`, `networking`, `workloads`). A suffix is part
-# of a security group's `name`, so ADDING one to a live slice replaces its security groups -
+# of a security group's `name`, so adding one to a live slice replaces its security groups -
 # which is why 6c step 1.1 reads that plan rather than assuming it.
 variable "name_suffix" {
   description = "Distinguishes VPCs inside one account: names become awsds-<env>-<suffix>-*. Empty for an account with a single VPC, which is every account but Production."
@@ -23,14 +23,14 @@ variable "name_suffix" {
   nullable    = false
 }
 
-# STAGE 6c step 1.3 (2026-09-06) - and this input exists because that step needs a VPC whose
-# public tier reaches nothing. Under D38 exactly ONE VPC in the estate routes to an internet
-# gateway; every other one is private BY THE ABSENCE OF THIS ROUTE, not by lacking a gateway.
+# 6c step 1.3 - this input exists because that step needs a VPC whose public tier reaches
+# nothing. Under D38 exactly one VPC in the estate routes to an internet gateway; every other
+# one is private by the absence of this route, not by lacking a gateway.
 #
-# WHY THE GATEWAY IS STILL CREATED WHEN THIS IS FALSE. A module that varied its resource SET per
+# The gateway is still created when this is false. A module that varied its resource set per
 # caller would make "is this VPC private?" a question about which code path ran, answerable only
 # by reading the module. Keeping the gateway and dropping the route makes it a question about a
-# ROUTE TABLE - which `./aws/networking.py` reads, which a console shows, and which is the same
+# route table - which `./aws/networking.py` reads, which a console shows, and which is the same
 # object the answer is enforced in. An unattached internet gateway is free.
 variable "public_internet_route" {
   description = "Whether the public tier carries 0.0.0.0/0 -> igw. False makes the VPC private without removing the gateway, which is how D38's spokes differ from its hub."

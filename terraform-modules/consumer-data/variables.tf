@@ -1,8 +1,8 @@
-# Inputs. Everything that differs between the two callers is here and nothing else is: the
-# whole point of this module is that `sandbox/data/` and `development/data/` are the SAME
-# design applied twice (Stage 5 step 8's heading, "one module for both"), and D35 makes that
-# three times at the second business unit. A setting that lives in the slice instead of here
-# is a setting that will differ between accounts by accident (Lesson 14).
+# Inputs. Everything that differs between the two callers is here and nothing else is:
+# `sandbox/data/` and `development/data/` are the same design applied twice (Stage 5 step 8,
+# "one module for both"), and D35 makes that three times at the second business unit. A setting
+# that lives in the slice instead of here is a setting that will differ between accounts by
+# accident (Lesson 14).
 
 variable "env" {
   description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."

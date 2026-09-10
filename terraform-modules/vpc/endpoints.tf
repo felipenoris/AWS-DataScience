@@ -1,14 +1,13 @@
-# The S3 and DynamoDB GATEWAY endpoints (Stage 3 step 3) - free, [P], associated with the
-# route tables of all three tiers (3.1), and THE ONLY ENDPOINT IDS ANY POLICY MAY EVER NAME
-# (3.3, Lesson 3, INT-05): the [E] interface endpoints of egress/ get new IDs on every
+# The S3 and DynamoDB gateway endpoints (Stage 3 step 3) - free, [P], associated with the
+# route tables of all three tiers (3.1), and the only endpoint ids any policy may name
+# (3.3, Lesson 3, INT-05): the [E] interface endpoints of egress/ get new ids on every
 # make up and anchor nothing.
 #
-# THEIR POLICIES LIVE HERE, NOT IN egress/ - a refinement of the step 9 pass, recorded at
-# implementation (2026-08-16): the policy is an attribute of the endpoint, the endpoint is
-# [P], and Stage 4's WireGuard host installs packages through this endpoint while egress/
-# may be down - an allow-list that vanished with make down would leave the gateway on the
-# default full-access document exactly when the [D] host can boot. The interface-endpoint
-# policies stay [E] with their endpoints, in egress/.
+# Their policies live here rather than in egress/: the policy is an attribute of the endpoint,
+# the endpoint is [P], and Stage 4's WireGuard host installs packages through this endpoint
+# while egress/ may be down - an allow-list that vanished with make down would leave the
+# gateway on the default full-access document exactly when the [D] host can boot. The
+# interface-endpoint policies stay [E] with their endpoints, in egress/.
 
 data "aws_organizations_organization" "current" {} # DescribeOrganization answers from any member account (measured, Stage 1b)
 
@@ -17,10 +16,10 @@ data "aws_partition" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  # Step 9.3's five families as the DOCUMENTED DEFAULT - names from AWS's documentation, not
+  # Step 9.3's five families as the documented default - names from AWS's documentation, not
   # measured (Lesson 23); verification (iii) confirms each at execution. The list is a
   # variable because it is the statement most likely to be trimmed by somebody tidying up
-  # (9.5), and its failure mode is a package manager that HANGS, not an AccessDenied.
+  # (9.5), and its failure mode is a package manager that hangs, not an AccessDenied.
   default_aws_buckets = [
     "al2023-repos-${data.aws_region.current.region}-*",             # AL2023 repositories - packages AND the mirror list (9.3's correction)
     "amazoncloudwatch-agent-${data.aws_region.current.region}",     # CloudWatch agent (Stage 4 step 7)
@@ -47,7 +46,7 @@ locals {
 }
 
 # The single most consequential policy in the stage (step 3.4): an endpoint policy is an
-# allow-list, so these two statements are the WHOLE of what this endpoint carries - anything
+# allow-list, so these two statements are the whole of what this endpoint carries - anything
 # else is denied at the endpoint. Statement 1 is the trusted-networks axis (9.1); statement 2
 # is the carve-out the data-perimeter examples will not write for you (9.3): AWS's own
 # service-owned buckets carry no aws:ResourceOrgID, so without it dnf, the agents, ECR pulls

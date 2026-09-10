@@ -1,26 +1,24 @@
-# THE TWO ROLES A BLUEPRINT CONFIGURATION NAMES (Stage 6 step 2.1, the associated-accounts
+# The two roles a blueprint configuration names (Stage 6 step 2.1, the associated-accounts
 # documentation).
 #
-# WHY THEY ARE OURS AND NOT THE CONSOLE'S. The console's "enable blueprints" flow offers to
-# create both, with names carrying the account id or the domain id. Letting it would be
-# Lesson 17 - a service that "sets itself up" creates principals nobody chose - and it would
-# put two roles with real provisioning power outside Terraform in an account this repository
-# otherwise owns completely. So they are declared here, named by the convention
-# (awsds-<env>-<component>), and the AWS managed policies are attached rather than copied:
-# binding to CONTENTS is impossible for a policy AWS revises, so the ARN is the contract and
-# the revision is AWS's (the opposite of Lesson 23's case, and for the same reason).
+# They are ours rather than the console's. The console's "enable blueprints" flow offers to
+# create both, with names carrying the account id or the domain id; letting it would be
+# Lesson 17, and would put two roles with real provisioning power outside Terraform in an
+# account this repository otherwise owns completely. So they are declared here, named by the
+# convention (awsds-<env>-<component>), and the AWS managed policies are attached rather than
+# copied: binding to contents is impossible for a policy AWS revises, so the ARN is the contract
+# and the revision is AWS's (Lesson 23's case, inverted).
 #
-# THE MANAGED POLICY ARNs WERE MEASURED, NOT REMEMBERED (2026-08-21, iam list-policies against
-# the live partition). The names that read like they should exist and do NOT are worth having
-# written down, because each is a plausible guess:
+# The managed policy ARNs were measured, not remembered (2026-08-21, iam list-policies against
+# the live partition). Two plausible names that do not exist:
 # SageMakerStudioProjectRoleForManageAccessPolicy, AmazonDataZoneSageMakerProvisioningPolicy.
 # The two that do exist are below.
 #
-# NEITHER CARRIES A PERMISSIONS BOUNDARY, and that is the IAM convention's one legitimate null
+# Neither carries a permissions boundary, the IAM convention's one legitimate null
 # (terraform-modules/iam-role's own comment, Lesson 18): they are service roles authored by
 # the identity that authors boundaries, and a boundary on the provisioning role would cap what
-# DataZone can build in this account - a control aimed at the wrong object. What the project
-# roles get is the boundary in boundary.tf, imposed through the blueprint configuration.
+# DataZone can build in this account - a control aimed at the wrong object. The project roles
+# get the boundary in boundary.tf, imposed through the blueprint configuration.
 
 data "aws_iam_policy_document" "provisioning_trust" {
   statement {
@@ -33,16 +31,15 @@ data "aws_iam_policy_document" "provisioning_trust" {
       identifiers = ["datazone.amazonaws.com", "cloudformation.amazonaws.com"]
     }
 
-    # THE CONFUSED-DEPUTY GUARD, AND ITS VALUE WAS WRONG UNTIL v0.3.3 (2026-08-22).
-    # aws:SourceAccount on a service-principal trust names the account of the RESOURCE the
-    # service acts on behalf of - the DataZone DOMAIN's account - and until v0.3.3 this said
-    # data.aws_caller_identity.current (the MEMBER account), which made both roles
+    # The confused-deputy guard. aws:SourceAccount on a service-principal trust names the
+    # account of the resource the service acts on behalf of - the DataZone domain's account.
+    # Naming data.aws_caller_identity.current (the member account) here makes both roles
     # unassumable: the documented trust of AmazonSageMakerProvisioning-<domainAccountId> is
-    # SourceAccount = domain_account, the role's very NAME carries the domain account, and
-    # CloudTrail in the member account showed NO datazone AssumeRole ever - a cross-account
-    # service denial is invisible in the target account's trail, which is why three
-    # deployment failures were attributed before this one (the wizard-field ladder) and the
-    # teardown's "Failed to remove EMR EKS IAM roles" is this trust, not those fields. The
+    # SourceAccount = domain_account, the role's name carries the domain account, and
+    # CloudTrail in the member account showed no datazone AssumeRole ever (2026-08-22) - a
+    # cross-account service denial is invisible in the target account's trail, which is why
+    # three deployment failures were attributed before this one (the wizard-field ladder), and
+    # the teardown's "Failed to remove EMR EKS IAM roles" is this trust, not those fields. The
     # sample never caught it: single-account, the two values coincide there.
     condition {
       test     = "StringEquals"
@@ -63,7 +60,7 @@ data "aws_iam_policy_document" "manage_access_trust" {
       identifiers = ["datazone.amazonaws.com"]
     }
 
-    # Same guard, same v0.3.3 correction as the provisioning trust above.
+    # Same guard as the provisioning trust above.
     condition {
       test     = "StringEquals"
       variable = "aws:SourceAccount"

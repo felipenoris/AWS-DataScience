@@ -1,5 +1,5 @@
-# kms-key - a CMK with the two requirements Stage 2 step 7 authored and Stage 3 step 1.1a
-# carried over verbatim: rotation on, and a deletion window (no immediate delete).
+# kms-key - a CMK with rotation on and a deletion window, never an immediate delete (Stage 2
+# step 7).
 #
 # The default policy delegates to IAM in the caller's account - the bootstrap key's shape
 # (Stage 2 step 2.4): the account's IAM policies decide who may use the key, which today

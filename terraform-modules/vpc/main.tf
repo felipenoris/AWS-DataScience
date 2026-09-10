@@ -2,7 +2,7 @@
 # VPC-bearing account; only the CIDR and the endpoint lists differ (view 2). Free at rest,
 # layer [P]: everything in this module survives every make down.
 #
-# THE ADDRESS CUT IS AUTHORED HERE AND IS [P] - changing it later is a VPC rebuild (risks):
+# The address cut is authored here and is [P]; changing it later is a VPC rebuild (risks):
 #   private  a /18 per AZ  = cidrsubnet(cidr, 2, 0..1)   .0.0/18, .64.0/18
 #   isolated a /20 per AZ  = cidrsubnet(cidr, 4, 8..9)   .128.0/20, .144.0/20
 #   public   a /24 per AZ  = cidrsubnet(cidr, 8, 160..161) .160.0/24, .161.0/24
@@ -10,13 +10,9 @@
 # isolated is created empty on purpose (step 1.4) - subnets are free, re-cutting is not.
 
 locals {
-  # THE ONE PLACE A NAME IS BUILT (6c step 0.4). Every name and tag below reads this rather than
-  # re-deriving "awsds-<env>", so a second VPC in one account is one input away and there is no
-  # site left that could be missed (Lesson 14).
-  #
-  # This comment said "rather than re-deriving `${local.name_prefix}`" in v0.2.0 - the mechanical
-  # replacement that created the local hit the sentence describing it, and a comment that names
-  # the thing it is contrasting against is worth more than one that names itself.
+  # The one place a name is built (6c step 0.4). Every name and tag below reads this rather than
+  # re-deriving "awsds-<env>", so a second VPC in one account is one input away and no site is
+  # left that could be missed (Lesson 14).
   name_prefix = var.name_suffix == "" ? "awsds-${var.env}" : "awsds-${var.env}-${var.name_suffix}"
 
   private_cidrs  = [for i in range(2) : cidrsubnet(var.vpc_cidr, 2, i)]
@@ -36,7 +32,7 @@ resource "aws_vpc" "this" {
   }
 }
 
-# The DEFAULT security group, emptied: nothing may use it, so it holds no rules - anything
+# The default security group, emptied: nothing may use it, so it holds no rules - anything
 # that appears in it later was placed by hand and is a finding.
 resource "aws_default_security_group" "this" {
   vpc_id = aws_vpc.this.id
@@ -47,7 +43,7 @@ resource "aws_default_security_group" "this" {
 }
 
 # ------------------------------------------------------------------------------ subnets
-# Anchored on availability_zone_id - the ZONE id names the datacenter; the AZ NAME is a
+# Anchored on availability_zone_id - the zone id names the datacenter; the AZ name is a
 # per-account label (step 1.5, ./aws/AZs.py).
 
 resource "aws_subnet" "public" {
@@ -92,7 +88,7 @@ resource "aws_subnet" "isolated" {
 
 # --------------------------------------------------------------- IGW and route tables
 # One IGW (step 2.1); the public tier routes to it. The private tier's default route exists
-# ONLY under design A and is inserted by egress/ (steps 2.2, 7, 10) - never here. The
+# only under design A and is inserted by egress/ (steps 2.2, 7, 10) - never here. The
 # isolated tier never gets one: that is what makes it isolated (step 2.2).
 
 resource "aws_internet_gateway" "this" {
@@ -111,7 +107,7 @@ resource "aws_route_table" "public" {
   }
 }
 
-# THE ONE ROUTE THAT MAKES A VPC PUBLIC (6c step 1.3). count rather than a separate resource so
+# The one route that makes a VPC public (6c step 1.3). count rather than a separate resource, so
 # the address stays stable for a caller that later flips the flag either way.
 resource "aws_route" "public_internet" {
   count = var.public_internet_route ? 1 : 0
@@ -128,7 +124,7 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private route tables are PER AZ, so the documented one-NAT-per-AZ switch (step 7.1) is a
+# Private route tables are per AZ, so the documented one-NAT-per-AZ switch (step 7.1) is a
 # route change, not a re-plumbing.
 resource "aws_route_table" "private" {
   for_each = aws_subnet.private
@@ -164,7 +160,7 @@ resource "aws_route_table_association" "isolated" {
 
 # NACLs stay at the default allow, by decision (step 2.3): the control lives in security
 # groups, and a stateless deny is the fastest way to break a path nobody can then debug.
-# No aws_network_acl resource here, deliberately.
+# No aws_network_acl resource here.
 
 # ------------------------------------------------------------- baseline security groups
 # Referencing each other by ID rather than by CIDR where possible (step 2.4). The tier
@@ -215,7 +211,7 @@ resource "aws_security_group" "tier" {
 # One per VPC, CloudWatch Logs, 30 days (step 5, decision 3) - for debugging, not detection
 # (GuardDuty reads flow logs on its own). No CMK on the log group: a key is ~USD 1/key-month
 # per account (docs/PRICING.md) for a debugging log, and the stage's cost table carries no
-# such line - default encryption, deliberately.
+# such line, so the group uses default encryption.
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
   # checkov:skip=CKV_AWS_158:a CMK here is USD 1/key-month per account for a debugging log - unbudgeted, declined (step 5.1)

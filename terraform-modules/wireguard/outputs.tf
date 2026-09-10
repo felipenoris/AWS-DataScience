@@ -1,8 +1,7 @@
-# Outputs. NOTHING HERE IS AN ADDRESS OR A KEY a client config needs: the endpoint address is
+# Outputs. Nothing here is an address or a key a client config needs: the endpoint address is
 # the caller's [P] Elastic IP output and the server's public key is derived at enrollment from
-# the private half that lives in the caller's [P] secret (step 4.3). Both by design - this
-# module's contents are [D] and may be replaced, so anything a client pins must come from
-# somewhere that cannot be.
+# the private half that lives in the caller's [P] secret (step 4.3). This module's contents are
+# [D] and may be replaced, so anything a client pins comes from somewhere that cannot be.
 
 output "instance_id" {
   description = "The WireGuard host. Read cloud-init output through Session Manager (step 3); if SSM itself is what failed - verification (iii) - `aws ec2 get-console-output --instance-id <this> --latest` needs no endpoint at all."

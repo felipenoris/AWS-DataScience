@@ -1,37 +1,35 @@
-# sagemaker-denies - Stage 6 step 3's statements, WRITTEN ONCE FOR TWO DIFFERENT OBJECTS.
+# sagemaker-denies - Stage 6 step 3's statements, written once for two different objects.
 #
-# THIS MODULE EXISTS BECAUSE OF LESSON 33, and it is worth stating rather than leaving to be
-# re-derived: one intent enforced in two places diverges, and sharing the VALUES while
-# duplicating the STRUCTURE is what makes it look like it cannot. The intent here is enforced
-# in two places by construction, not by choice -
+# One intent enforced in two places diverges when the values are shared and the structure is
+# duplicated (Lesson 33). Here the intent reaches two places by construction, not by choice -
 #
-#   the six PERSONA permission sets   in terraform-live/identity/sso/, governing humans
-#   the project BOUNDARY              in terraform-modules/sagemaker-prereqs/, governing the
+#   the six persona permission sets   in terraform-live/identity/sso/, governing humans
+#   the project boundary              in terraform-modules/sagemaker-prereqs/, governing the
 #                                     roles the blueprint authors in each member account
 #
-# - because they are different objects, in different accounts, provisioned by different
-# services. What would have drifted is the STRUCTURE: the action lists, the operator on each
-# condition key, and which actions each key is legal on. So the structure lives here, as one
-# document, and both callers compose it through `source_policy_documents` - the idiom
-# policies-shared.tf already uses to reach six permission sets with one diff.
+# - different objects, in different accounts, provisioned by different services. What would
+# have drifted is the structure: the action lists, the operator on each condition key, and
+# which actions each key is legal on. So the structure lives here, as one document, and both
+# callers compose it through `source_policy_documents` - the idiom policies-shared.tf already
+# uses to reach six permission sets with one diff.
 #
-# WHY EVERY OPERATOR BELOW IS NULL-SAFE, spelled out because getting it wrong is silent and
-# expensive in the SAME direction each time (Lesson 5 - an intention is not a control):
+# Every operator below is null-safe, because getting it wrong is silent and fails in the same
+# direction each time (Lesson 5):
 #
-#   ForAnyValue:StringNotEquals   on a MISSING multivalued key evaluates FALSE, so the deny
+#   ForAnyValue:StringNotEquals   on a missing multivalued key evaluates FALSE, so the deny
 #                                 does not fire on a call that names no instance type. The
 #                                 mirror image - ForAllValues: - evaluates TRUE on a missing
 #                                 key and would deny every SageMaker call in the account.
-#   Null ... = "true"             fires exactly when the key is ABSENT: "the request said
+#   Null ... = "true"             fires exactly when the key is absent: "the request said
 #                                 nothing about a VPC" is the thing being refused.
-#   BoolIfExists ... = "false"    fires when the key is absent OR explicitly false, which is
+#   BoolIfExists ... = "false"    fires when the key is absent or explicitly false, which is
 #                                 how "must be present and true" is spelled. A plain Bool
 #                                 would let an omission through.
 #
-# AND WHY EACH STATEMENT NAMES ITS ACTIONS RATHER THAN sagemaker:*: a condition key that the
-# action does not carry is a key that is always absent, so a Null- or IfExists-shaped deny
-# over sagemaker:* would deny everything unconditionally while reading like a narrow control.
-# The lists below are the actions whose API carries the field the key reflects.
+# Each statement names its actions rather than sagemaker:*: a condition key that the action
+# does not carry is a key that is always absent, so a Null- or IfExists-shaped deny over
+# sagemaker:* would deny everything unconditionally while reading like a narrow control. The
+# lists below are the actions whose API carries the field the key reflects.
 
 locals {
   # The VpcConfig-carrying creates. CreateTransformJob is deliberately absent: batch transform
@@ -59,8 +57,8 @@ locals {
     "sagemaker:CreateAutoMLJobV2",
   ]
 
-  # VolumeKmsKeyId-carrying creates. CreateTransformJob DOES carry this one
-  # (TransformResources.VolumeKmsKeyId), which is why the two lists are not the same list.
+  # VolumeKmsKeyId-carrying creates. CreateTransformJob does carry this one
+  # (TransformResources.VolumeKmsKeyId), which is why the two lists differ.
   volume_kms_actions = [
     "sagemaker:CreateTrainingJob",
     "sagemaker:CreateProcessingJob",
@@ -75,7 +73,7 @@ data "aws_iam_policy_document" "this" {
 
   # ------------------------------------------------------------------ the VPC requirement
   #
-  # THE STATEMENT THE WHOLE NETWORK DESIGN RESTS ON. A VpcOnly domain constrains STUDIO - the
+  # The statement the whole network design rests on. A VpcOnly domain constrains Studio - the
   # notebook the person types in. It says nothing about the training or processing job that
   # notebook launches through the API, which carries its own network configuration and, left
   # unconstrained, runs in an AWS-managed network where no endpoint policy, no
@@ -96,28 +94,30 @@ data "aws_iam_policy_document" "this" {
 
   # -------------------------------------------------------------------- the cost ceiling
   #
-  # THE ONLY CONTROL THAT STOPS AN OVERSIZED JOB INSIDE ITS FIRST HOUR. D12's budget notifies
+  # The only control that stops an oversized job inside its first hour. D12's budget notifies
   # nobody by decision, so an ml.p4d parameter typed by mistake is discovered on a bill weeks
   # later. sagemaker:InstanceTypes covers CreateApp, CreateSpace, UpdateSpace and
-  # CreateTrainingJob (read 2026-08-16), which is why this one was scoped to sagemaker:* -
-  # every action that names an instance type is caught, and every action that does not is
-  # left alone by the ForAnyValue operator rather than by an action list that would go stale.
+  # CreateTrainingJob (read 2026-08-16), which is why this one is scoped to sagemaker:* - every
+  # action that names an instance type is caught, and every action that does not is left alone
+  # by the ForAnyValue operator rather than by an action list that would go stale.
   #
-  # THE SPACE PATH IS EXEMPT SINCE 2026-09-07 (the user's decision, v0.2.0): a JupyterLab or
-  # Code Editor space may be created or resized at ANY type. The remote-IDE server needs
-  # >= 8 GB, which the ml.t3.medium default does not have (6d step 7.1), and the user chose no
-  # ceiling on that path over a wider list. `not_actions` rather than an action list, so the
-  # reach stays what it was - every action that names an instance type, bounded by the KEY -
-  # minus the three that create or resize a space's app, and nothing goes stale when SageMaker
-  # adds a job action. A Deny with NotAction reads as "every action in every service", and the
-  # condition is what keeps it SageMaker-only: a request carrying no sagemaker:InstanceTypes is
-  # left alone exactly as before. SIMULATED BEFORE IT WAS TAGGED (simulate-custom-policy, ten
-  # cases, 6d log 2026-09-07): CreateTrainingJob/CreateProcessingJob at p4d/g5 explicitDeny,
-  # at ml.m5.large allowed; CreateSpace/UpdateSpace/CreateApp at p4d/g5 allowed; ListSpaces,
-  # DescribeDomain, s3:ListAllMyBuckets, glue:GetDatabases with no key allowed.
-  # WHAT THIS GIVES UP, named rather than implied: an ml.p4d Code Editor space bills USD 30+/h
-  # and D12's budget notifies nobody; the Tooling idle shutdown bounds an IDLE space and nothing
-  # bounds a busy one. Jobs, endpoints and notebook instances keep the list below.
+  # The space path is exempt (the user's decision, 2026-09-07): a JupyterLab or Code Editor
+  # space may be created or resized at any type. The remote-IDE server needs >= 8 GB, which the
+  # ml.t3.medium default does not have (6d step 7.1), and the user chose no ceiling on that path
+  # over a wider list. `not_actions` rather than an action list keeps the reach bounded by the
+  # key - every action that names an instance type - minus the three that create or resize a
+  # space's app, so nothing goes stale when SageMaker adds a job action. A Deny with NotAction
+  # reads as "every action in every service", and the condition is what keeps it SageMaker-only:
+  # a request carrying no sagemaker:InstanceTypes is left alone.
+  #
+  # Simulated with simulate-custom-policy, ten cases (6d log 2026-09-07):
+  # CreateTrainingJob/CreateProcessingJob at p4d/g5 explicitDeny, at ml.m5.large allowed;
+  # CreateSpace/UpdateSpace/CreateApp at p4d/g5 allowed; ListSpaces, DescribeDomain,
+  # s3:ListAllMyBuckets, glue:GetDatabases with no key allowed.
+  #
+  # What this gives up: an ml.p4d Code Editor space bills USD 30+/h and D12's budget notifies
+  # nobody; the Tooling idle shutdown bounds an idle space and nothing bounds a busy one. Jobs,
+  # endpoints and notebook instances keep the list below.
   statement {
     sid    = "DenySageMakerInstanceCeiling"
     effect = "Deny"
