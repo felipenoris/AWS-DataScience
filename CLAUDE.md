@@ -101,6 +101,38 @@ The folder `terraform-reference` is in `.gitignore` and contains an alternative 
   sessions are [`aws/AWS-CLI.md`](aws/AWS-CLI.md) "Signing in"'s, the roster's owner — so the answer is
   never *which profile do I log in with*: it is which identity to pick in the browser.
 
+## Writing style
+
+Applies to every text in the repository: Markdown, the comments in `.tf`, `.py`, `.sh`, `.tftpl` and
+the Makefile, and this file. The test for a sentence is whether the reader does something with it.
+Facts, identifiers, measurements and their dates, commands, quoted output and a log entry's provenance
+are never cut; the words around them are.
+
+1. **A heading names its subject**, in the file's own vocabulary: "Account tree", "The identities and the
+   role each plays in the battery". Not a label that needs the body to be understood ("The map"), and
+   not a rhetorical tail ("and why each one is the one it is").
+2. **No counts in headings or titles.** "The two identities", "Four rules for reading this picture",
+   "ONE MATCHER, TWO INPUTS" go stale the day an item is added, and the number is not the information.
+   Write "The identities", "Rules for reading this picture", "The DNS Firewall coverage matcher".
+3. **Every sentence has a subject, headings included.** "True now, and expected to change" becomes
+   "Readings a later stage changes".
+4. **Lead with the subject**, then its status: "The WireGuard Elastic IP is not allocated here; it is
+   transferred from Sandbox." Never a preamble that reveals the subject at its end ("WHAT IS NOT HERE,
+   AND THE ABSENCE IS THE STEP AFTER THIS ONE: the WireGuard Elastic IP").
+5. **No capitals for emphasis.** The plain sentence carries the same fact. Bold marks the one term a
+   reader scans for, never a whole sentence.
+6. **No revision artifacts in headings or prose.** Edit dates, "(revised 2026-08-17, by the user)",
+   "row four, inverted", "REWRITTEN 2026-09-06", "the list grew one entry at step 3" belong to git
+   history and the stage log. A date stays when it dates a measurement.
+7. **A code comment states what the code does and the constraint it obeys.** It does not narrate how the
+   file got here, argue that something is "expected rather than a finding", or cite a lesson in place of
+   the fact. A comment the reader of the code does not need is deleted.
+8. **Delete what carries no information**: rhetorical connectives ("and that is the point", "which is
+   the whole reason", "said out loud"), a second phrasing of the same fact, and a justification a
+   decision file already records. One short sentence beats a chain of clauses joined by dashes.
+9. **Shorter is the goal; a fact removed is a defect.** When a cut would drop a measurement, an
+   identifier or a verdict, keep the sentence.
+
 ## Upkeep — the files this project maintains
 
 | File | What it holds, and the rule |
