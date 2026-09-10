@@ -20,12 +20,12 @@
 # A dependency added without re-locking is not installed: the build runs `uv sync --frozen`, which
 # refuses a lock that does not match this file rather than resolving something nobody reviewed.
 #
-# THE PYTHON VERSION IS THE NEWEST, and that has one measured cost. Resolved 2026-09-10 against
-# CPython 3.14: torch, torchvision, keras, xgboost, mlflow, ray, langchain, autogluon, fastapi and
-# the data stack all have wheels; **TensorFlow does not** - its newest release (2.21.0) publishes
-# cp310 through cp313 and stops. So TensorFlow is absent from the list below, and the whole of it is
-# what brings it back: lower `requires-python` to `>=3.13`, pin the same version in the Dockerfile's
-# PYTHON_VERSION, add `tensorflow` here, re-lock. Nothing else in this file changes.
+# THE PYTHON VERSION IS 3.13, AND THE LIBRARIES CHOSE IT. Resolved 2026-09-10 against CPython 3.14
+# first: torch, torchvision, keras, xgboost, mlflow, ray, langchain, autogluon, fastapi and the data
+# stack all had wheels, and **TensorFlow had none past `cp313`** (2.21.0 publishes cp310-cp313 and
+# stops). The user's decision the same day was to keep the framework and move the interpreter, so
+# `requires-python` is `>=3.13` and the Dockerfile's PYTHON_VERSION matches it. Raising it again is
+# the same edit in reverse, and TensorFlow is the row to check first.
 #
 # WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - JupyterLab itself, its
 # extensions, the Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor
@@ -35,18 +35,19 @@
 # how the kernel starts.
 #
 # THE COST OF THIS LIST IS THE IMAGE, and it was measured from the lock rather than guessed
-# (2026-09-10, summing the linux x86_64 / cp314 wheels the lock names): **about 0.9 GiB** of wheels -
-# 0.70 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
-# none. The first resolution of this same list was **4.7 GiB**, and the difference is entirely the two
-# CPU choices at the end of this file. A space pulls the whole image before it starts and that pull
-# crosses an account boundary (INT-01), so trimming is editing lines here and re-locking - cheaper
-# than discovering the size in a build. The heavy rows now are catboost, ray, llvmlite and pyarrow.
+# (2026-09-10, summing the linux x86_64 / cp313 wheels the lock names): **about 1.5 GiB** of wheels -
+# 1.27 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
+# none. TensorFlow alone is 546 MiB of that. The first resolution of this list, before the two CPU
+# choices at the end of this file, was **4.7 GiB**. A space pulls the whole image before it starts and
+# that pull crosses an account boundary (INT-01), so trimming is editing lines here and re-locking -
+# cheaper than discovering the size in a build. The heavy rows are tensorflow, catboost, ray and
+# llvmlite.
 
 [project]
 name = "awsds-dev-env"
 version = "0.1.0"
 description = "The Python environment behind the dev-env image's own Jupyter kernel."
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 
 dependencies = [
     # The kernel. Without it there is no "Python (awsds)" entry in the Launcher.
@@ -73,7 +74,8 @@ dependencies = [
     "sagemaker",
     "sagemaker-studio",
 
-    # The ML frameworks. TensorFlow is missing on purpose - see the header.
+    # The ML frameworks.
+    "tensorflow",
     "torch",
     "torchvision",
     "keras",

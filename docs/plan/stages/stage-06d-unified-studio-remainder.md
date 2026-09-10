@@ -184,11 +184,12 @@ is the one the environment will have. A denied name is a decision to take, not a
   `images/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
   kernel (`awsds-python`, *Python (awsds dev-env)*). The list is seeded to the distribution's own
   library surface. Three measurements came out of writing it, all from `uv lock` on the laptop rather
-  than from a build: **TensorFlow has no wheel past `cp313`**, so it is absent while the interpreter
-  is 3.14; the default PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and
-  torchvision come from PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the
-  dependency is `xgboost-cpu`. The set went **4.7 GiB → about 0.9 GiB** of wheels on those two
-  changes. Nothing here is built yet — the rebuild is still owed, and it is the same one decision 8
+  than from a build: **TensorFlow has no wheel past `cp313`**, which is what set the interpreter —
+  the user kept the framework and moved the Python to **3.13** rather than the newest; the default
+  PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
+  PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the dependency is
+  `xgboost-cpu` — which is the same choice the distribution makes (`py-xgboost-cpu` in its own
+  list). The set is **about 1.5 GiB** of wheels, against 4.7 GiB before the two CPU changes. Nothing here is built yet — the rebuild is still owed, and it is the same one decision 8
   owes.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
   result: `pip`, `uv`, `conda`, `Pkg` (Julia) and R. Read against the compute plane's list
