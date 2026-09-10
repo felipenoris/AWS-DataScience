@@ -86,8 +86,8 @@ resource "aws_security_group" "probe" {
   }
 }
 
-# One rule per source VPC range - Sandbox for the Deliverables and, since 6c step 3.1 re-homed it,
-# for INT-09 as well.
+# One rule per range in `peer_cidrs`, which `probe_peer_cidrs()` derives from the peering matrix:
+# Sandbox (the Deliverables, and INT-09 since 6c step 3.1 re-homed it) and the hub VPC itself.
 resource "aws_vpc_security_group_ingress_rule" "listener" {
   for_each = toset(var.peer_cidrs)
 

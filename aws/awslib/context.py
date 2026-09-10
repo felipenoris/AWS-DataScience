@@ -59,8 +59,8 @@ def locate(script_file: str, levels_up: int = 1) -> Context:
             out_dir=candidate / "aws" / "output",
             standalone=False,
         )
-    # CloudShell: no repository. The report lands beside the script, never under a home
-    # directory, where a snapshot would be lost.
+    # CloudShell: no repository. The report lands beside the script - writing to a path relative
+    # to a home directory that is not the repository is how a snapshot gets lost.
     return Context(
         script_dir=script_dir,
         repo_root=script_dir,

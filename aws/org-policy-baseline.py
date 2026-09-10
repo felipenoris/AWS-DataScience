@@ -39,8 +39,8 @@
 #     (iii)).
 #   - The budget. 10 SCPs per node and 10 240 characters per document since May 2026, but
 #     RCPs are still 5 and 5 120, and 7.7 spends one more SCP slot on every OU it touches.
-#     Section 6 reads those numbers rather than trusting a remembered one (Lesson 6).
-#     Measured 2026-08-13: Service Quotas publishes none of them for `organizations`, only
+#     Section 6 goes looking for those numbers rather than trusting a remembered one (Lesson 6),
+#     and its first run, 2026-08-13, found that Service Quotas publishes none of them, only
 #     account counts - a finding about the API, not about the limits. The numbers above are
 #     AWS's own, from the announcement recorded in docs/REFERENCES.md.
 #

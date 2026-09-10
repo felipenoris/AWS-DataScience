@@ -98,7 +98,9 @@ CANARY_PROFILE = "awsds-policy-canary"
 #
 # 10.40.0.0/16 is unallocated. It was reserved for a `Staging` account this project never vended
 # - the quota refused it - and Stage 6b made Staging by renaming `Development`, which has held
-# 10.50.0.0/16 since Stage 3 and is peered to Production. Stage 6b step 4.1 says Stage 6c
+# 10.50.0.0/16 since Stage 3 and is peered to Production, so D20's "Staging is deliberately
+# unpeered" stopped being true of the account while staying true of the range - which is what the
+# NT-3 and NT-6 legends still cite it for. Stage 6b step 4.1 says Stage 6c
 # consumes the freed range; Stage 6c step 0.2 says 10.40.0.0/16 "is free and stays unallocated",
 # and D38's hub is built from 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The stage
 # that has to build it is the one that governs (Lesson 32).

@@ -8,7 +8,7 @@ output "instance_id" {
 }
 
 output "private_ip" {
-  description = "The address the spokes and the tunnel open tcp/3128 to. A peered spoke reaches it across the peering; a tunnel client reaches it un-masqueraded, which is what makes the access log per-device (step 4.7)."
+  description = "The address the spokes and the tunnel open TCP/3128 to. A peered spoke reaches it across the peering; a tunnel client reaches it un-masqueraded, which is what makes the access log per-device (step 4.7)."
   value       = aws_instance.this.private_ip
 }
 

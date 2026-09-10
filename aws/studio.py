@@ -64,8 +64,10 @@ INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1",)
 # destroyed and the domain is no longer shared into it, but its OU has not changed yet, so
 # `datazone:*` is not denied and it is not headless either. Without this list the two "nothing
 # here" notes below read `correct BEFORE this account's association` - green, while describing
-# the wrong side of the event. The tuple is empty; the state is not hypothetical, since any
-# member retired this way passes through it.
+# the wrong side of the event. Empty again since 2026-09-06: the one row it ever held was held
+# for the few hours between step 1.5 (the association removed) and step 3.4 (the OU moved), and
+# that account is a Workloads member now, denied `datazone:*` and carried by HEADLESS_PROFILES
+# below. The state is not hypothetical - any member retired this way passes through it.
 RETIRED_MEMBER_PROFILES: tuple[str, ...] = ()
 IDENTITY_PROFILE = "awsds-infra-identity"
 # Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment targets

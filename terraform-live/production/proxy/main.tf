@@ -270,9 +270,10 @@ resource "aws_ssm_association" "reconfigure" {
 
 # ------------------------------------------------------------------------------ the alarm
 #
-# The estate's only exit must not fail silently. When the tunnel dies one person notices
-# immediately; when this host dies every automated thing in four accounts loses the internet at
-# once, with no single obvious symptom.
+# The estate's only exit must not fail silently. Step 4.8 named no alarm, so this is added on the
+# WireGuard host's precedent rather than assumed, and for a stronger reason: when the tunnel dies
+# one person notices immediately; when this host dies every automated thing in four accounts
+# loses the internet at once, with no single obvious symptom.
 #
 # On the status checks and not on traffic, the same judgement the tunnel's alarm records: an alarm
 # on "no requests for N minutes" is red every night and every weekend, and an alarm that is red
@@ -302,7 +303,10 @@ resource "aws_cloudwatch_metric_alarm" "health" {
 # `proxy.awsds.internal` is the name the whole design is configured against. Every client in every
 # spoke is told `http_proxy=http://proxy.awsds.internal:3128`, NO_PROXY carries `.awsds.internal`
 # so that name is never sent to the proxy itself, and step 6.1's closing check is `curl -x
-# proxy.awsds.internal:3128 https://checkip.amazonaws.com`.
+# proxy.awsds.internal:3128 https://checkip.amazonaws.com`. Step 2.1 said this record is "written
+# by pass 4 from the host's private address" and pass 4 did not write it (found 2026-09-06 at
+# 5.7): the name was NXDOMAIN until 4.8 declared it here, so every one of those instructions
+# named a host that did not resolve.
 #
 # It is here and not in networking/ because the zone is [P] and belongs to production/foundation/,
 # while the address is a property of an instance this [D] slice may replace on a configuration

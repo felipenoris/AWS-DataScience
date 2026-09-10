@@ -90,9 +90,10 @@ DENY_SID = "DenyControlPlaneOffVpn"
 # up, every service holding an interface endpoint resolves to a private address through the
 # VPC resolver and the call presents that endpoint's id, which the list did not carry and
 # may never carry ([E], new on every make up - Lesson 3). It was widened to aws:SourceVpc,
-# which is [P] and subsumes the two gateway ids (AWS_STATE.md). The retired form is still
-# read here, so the narrower predecessor is named rather than lumped in with the
-# address-only defect.
+# which is [P] and subsumes the two gateway ids (AWS_STATE.md). This file went on grepping for
+# the retired key and reported the six correct sets as "present and wrong" for a week (Lesson 30,
+# a tool's failure written down as a property of the world). The retired form is still read here,
+# so the narrower predecessor is named rather than lumped in with the address-only defect.
 #
 # Both are matched quoted: "aws:SourceVpc" is a prefix of "aws:SourceVpce", so a bare
 # substring test cannot tell the current form from the retired one, which is the distinction
