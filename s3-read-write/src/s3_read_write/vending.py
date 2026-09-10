@@ -1,7 +1,7 @@
 """Credential vending for a SageMaker Unified Studio project's S3 storage.
 
-Why this module exists
-----------------------
+The identities, and the bridge between them
+-------------------------------------------
 
 Inside SageMaker Unified Studio (SMUS), the user never touches S3 with
 their own identity: every notebook and every file-browser action runs as
@@ -28,11 +28,11 @@ The flow this module implements:
 3. the laptop uses those credentials with plain boto3 S3 calls — the same
    identity Studio uses, so bucket policy and KMS behave identically.
 
-Two prerequisites live outside this code: the persona's IAM policy must
-allow the vending handshake (``s3:GetDataAccess`` plus the two discovery
-reads, on the Access Grants instance), and a grant for the persona role
-must exist on the project's location. Both are administered in the
-infrastructure repository, not here.
+Prerequisites outside this code: the persona's IAM policy must allow the
+vending handshake (``s3:GetDataAccess`` plus the two discovery reads, on
+the Access Grants instance), and a grant for the persona role must exist
+on the project's location. Both are administered in the infrastructure
+repository, not here.
 
 boto3 concepts used here
 ------------------------
@@ -70,16 +70,15 @@ def _account_id(session: boto3.Session) -> str:
     S3 Control operations require an explicit ``AccountId`` parameter.
     The Access Grants instance queried by this module is always the one in
     the caller's own account (the persona and the projects bucket live in
-    the same account), so the id is derived from the session instead of
-    being passed around — and never hard-coded.
+    the same account), so the id is derived from the session rather than
+    passed around or hard-coded.
 
-    The answer is memoised per session, and the reason is not speed: STS
-    is a **second network dependency on a different path** from the
-    s3control calls it serves. Measured 2026-08-23 in this estate — where
-    the VPC holds an interface endpoint for ``sts`` and none for
-    ``s3control`` — a laptop on the tunnel reaches the two through
-    different doors, so every avoidable STS call is one more chance to
-    fail somewhere the actual work does not depend on.
+    The answer is memoised per session because STS is a **second network
+    dependency on a different path** from the s3control calls it serves.
+    Measured 2026-08-23 in this estate, where the VPC holds an interface
+    endpoint for ``sts`` and none for ``s3control``: a laptop on the
+    tunnel reaches the two through different doors, so every avoidable STS
+    call is one more chance to fail where the work does not depend on it.
     """
     cached = _ACCOUNT_IDS.get(session)
     if cached is None:
@@ -91,10 +90,10 @@ def _account_id(session: boto3.Session) -> str:
 def list_caller_grants(session: boto3.Session, prefix: str | None = None) -> list[dict[str, Any]]:
     """List the S3 Access Grants available to the calling identity.
 
-    This is the discovery half of the flow: it answers "which project
-    prefixes can I ask credentials for?" without requiring the caller to
-    know domain ids or project ids in advance — useful because SMUS path
-    segments (``dzd-.../<project-id>/``) are machine-generated.
+    The discovery half of the flow: it answers "which project prefixes can
+    I ask credentials for?" without the caller knowing domain ids or
+    project ids in advance, which SMUS generates
+    (``dzd-.../<project-id>/``).
 
     Requires the ``s3:ListCallerAccessGrants`` permission on the account's
     Access Grants instance.
@@ -133,10 +132,10 @@ def vend_credentials(
 ) -> dict[str, Any]:
     """Ask S3 Access Grants for temporary credentials on an S3 prefix.
 
-    This is the vend itself (``GetDataAccess``). If a grant covering
-    ``target`` exists for the caller, the service assumes the location's
-    IAM role — for SMUS locations, the **project role** — and returns
-    short-lived credentials restricted to the granted prefix.
+    The vend itself (``GetDataAccess``). If a grant covering ``target``
+    exists for the caller, the service assumes the location's IAM role —
+    for SMUS locations, the **project role** — and returns short-lived
+    credentials restricted to the granted prefix.
 
     Requires the ``s3:GetDataAccess`` permission on the account's Access
     Grants instance, *and* a matching grant.
@@ -193,9 +192,9 @@ def scoped_session(
     prefix) and can be handed directly to the functions in
     :mod:`s3_read_write.s3`.
 
-    Note that the vended credentials are **not renewed** automatically:
-    after ``duration_seconds`` the session's calls start failing with
-    ``ExpiredToken`` — call this function again for a fresh one.
+    The vended credentials are **not renewed** automatically: after
+    ``duration_seconds`` the session's calls fail with ``ExpiredToken``.
+    Call this function again for a fresh one.
 
     Args:
         session: authenticated boto3 session (the SSO persona).

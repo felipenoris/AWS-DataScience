@@ -1,15 +1,14 @@
-# The state bucket and the key that encrypts it - Stage 2 step 2.1. NOTHING ELSE.
+# The state bucket and the key that encrypts it, and nothing else - Stage 2 step 2.1.
 #
-# WHY THIS SLICE CONSUMES NO MODULE (step 2.3). terraform-modules/s3-bucket and kms-key arrive
-# at step 7, and docs/plan/conventions.md requires modules to be consumed BY GIT TAG - which
-# cannot exist before the module does. Beyond the ordering: bootstrap is the slice that makes
-# every other slice possible, and giving it a dependency on the tree it bootstraps is how a
-# repository acquires a cycle nobody can unwind at 23:00. Plain resources, deliberately, and
-# they stay that way after step 7 exists.
+# This slice consumes no module (step 2.3). terraform-modules/s3-bucket and kms-key arrive at step
+# 7, and docs/plan/conventions.md requires modules to be consumed by git tag, which cannot exist
+# before the module does. Beyond the ordering, bootstrap is the slice that makes every other slice
+# possible, and a dependency on the tree it bootstraps is how a repository acquires a cycle nobody
+# can unwind at 23:00. Plain resources, and they stay that way after step 7 exists.
 #
-# LAYER [P] (D11). Nothing here is destroyed between sessions and `make down` cannot reach it -
-# the bucket holds its own state, so destroying it is a two-phase operation in reverse. That is
-# what prevent_destroy says out loud.
+# Layer [P] (D11). Nothing here is destroyed between sessions and `make down` cannot reach it: the
+# bucket holds its own state, so destroying it is a two-phase operation in reverse, which is what
+# prevent_destroy says.
 
 data "aws_caller_identity" "current" {}
 
@@ -17,14 +16,13 @@ data "aws_partition" "current" {}
 
 # ---------------------------------------------------------------------------- the state key
 #
-# WHICH KEY THIS IS (step 2.4), since conventions §6 puts "KMS keys" in foundation/: it is not
-# that key and it cannot be - foundation/ does not exist at bootstrap time, and identity/ and
-# data-governance/ have no foundation/ slice at all. This is the one-per-Terraform-managed-
-# account STATE key that docs/PRICING.md §2 already counts at ~USD 1.00/key-month. A
-# foundation/ key, where one exists, is the general-purpose key for that account's data and
-# logs, and it is an ADDITIONAL object: a key shared between state and data makes "who may read
-# the state" and "who may read the data" the same question (the D31/D36 argument, one level
-# down).
+# Which key this is (step 2.4), since conventions §6 puts "KMS keys" in foundation/: not that one,
+# and it cannot be - foundation/ does not exist at bootstrap time, and identity/ and
+# data-governance/ have no foundation/ slice at all. This is the one-per-Terraform-managed-account
+# state key that docs/PRICING.md §2 counts at ~USD 1.00/key-month. A foundation/ key, where one
+# exists, is that account's general-purpose key for data and logs, and an additional object: a key
+# shared between state and data makes "who may read the state" and "who may read the data" one
+# question (the D31/D36 argument, one level down).
 
 resource "aws_kms_key" "tfstate" {
   description = "Terraform state encryption - ${var.env}"
@@ -32,23 +30,23 @@ resource "aws_kms_key" "tfstate" {
   enable_key_rotation     = true
   deletion_window_in_days = 30
 
-  # THE KEY POLICY IS THE ONLY PLACE "WHO CAN READ THIS STATE" IS EXPRESSED, which is why it is
-  # written out rather than left to the service default (they are the same document; writing it
-  # makes it reviewable, and checkov requires it). It delegates to IAM instead of enumerating
-  # principals: the account's IAM policies decide, and today that means InfrastructureAccess.
+  # The key policy is the only place "who can read this state" is expressed, so it is written out
+  # rather than left to the identical service default: writing it makes it reviewable, and checkov
+  # requires it. It delegates to IAM instead of enumerating principals, so the account's IAM
+  # policies decide, and today that means InfrastructureAccess.
   #
-  # AND IT IS TWO PERMISSIONS, NOT ONE. S3 never decrypts on its own behalf: it calls kms:Decrypt
-  # through a forward access session carrying the CALLER's identity (measured 2026-08-16 - the
-  # CloudTrail event reads userIdentity = the SSO role, invokedBy = fas.s3.amazonaws.com). So
-  # reading a state file needs s3:GetObject AND kms:Decrypt on this key, and denying the second
-  # alone is enough to lock the state.
+  # Reading a state file needs two permissions, not one. S3 never decrypts on its own behalf: it
+  # calls kms:Decrypt through a forward access session carrying the caller's identity (measured
+  # 2026-08-16 - the CloudTrail event reads userIdentity = the SSO role, invokedBy =
+  # fas.s3.amazonaws.com). So it needs s3:GetObject and kms:Decrypt on this key, and denying the
+  # second alone locks the state.
   #
-  # Lesson 18 applies and is worth stating - the infrastructure user AUTHORS this policy, so it
-  # does not constrain them; what remains is the CloudTrail record of a kms:Decrypt. WHAT THAT
-  # RECORD IS, MEASURED RATHER THAN ASSUMED: who, when, and which key. Never the plaintext and
-  # never the ciphertext - GenerateDataKey's responseElements IS the data key, and KMS logs it as
-  # null by construction, with no setting that changes it. And not which OBJECT either, for the
-  # reason in the bucket_key_enabled comment below.
+  # Lesson 18 applies: the infrastructure user authors this policy, so it does not constrain them,
+  # and what remains is the CloudTrail record of a kms:Decrypt. That record carries who, when and
+  # which key - measured, not assumed. Never the plaintext and never the ciphertext:
+  # GenerateDataKey's responseElements is the data key, and KMS logs it as null by construction,
+  # with no setting that changes it. Not which object either, for the reason in the
+  # bucket_key_enabled comment below.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -74,8 +72,8 @@ resource "aws_kms_alias" "tfstate" {
 
 # ------------------------------------------------------------------------- the state bucket
 
-# THREE CHECKOV SUPPRESSIONS, DECIDED HERE RATHER THAN DISCOVERED AT THE KEYBOARD (step 6.5).
-# A state bucket trips all three by construction, and each reason is structural:
+# The checkov suppressions, decided here rather than discovered at the keyboard (step 6.5). A state
+# bucket trips each of them by construction, and each reason is structural:
 #
 #   CKV_AWS_18  server access logging would be a SECOND bucket in this account holding a
 #               record of every read of the state - the same secrets, one governance layer
@@ -88,9 +86,8 @@ resource "aws_kms_alias" "tfstate" {
 #               function in this account, and Stage 12 is where "who is told when state
 #               changes" becomes a question with an answer.
 #
-# The skips are INSIDE the resource because that is where checkov reads them - above the block
-# they are ordinary comments and the check fails anyway, which is how the first run of this
-# slice was measured.
+# The skips are inside the resource because that is where checkov reads them: above the block they
+# are ordinary comments and the check fails anyway, measured on this slice's first run.
 resource "aws_s3_bucket" "tfstate" {
   # checkov:skip=CKV_AWS_18:access logging = a second bucket with the same secrets (see above)
   # checkov:skip=CKV_AWS_144:replication is Stage 12, and it would copy state out of Region
@@ -127,21 +124,21 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
     # kms:GenerateDataKey call at USD 0.03/10k; with it, one call covers many objects. A state
     # file is written on every apply, so this is not theoretical.
     #
-    # THE PRICE IS AUDIT GRANULARITY, AND IT IS PAID IN CLOUDTRAIL. A bucket key derives the
-    # per-object keys, so the KMS calls carry the encryptionContext of the BUCKET
-    # ("aws:s3:arn": "arn:aws:s3:::awsds-<env>-tfstate") where an object key would have carried
+    # The price is audit granularity, paid in CloudTrail. A bucket key derives the per-object keys,
+    # so the KMS calls carry the bucket's encryptionContext ("aws:s3:arn":
+    # "arn:aws:s3:::awsds-<env>-tfstate") where an object key would have carried
     # "<bucket>/<account>/<slice>/terraform.tfstate" - measured 2026-08-16 on the first applies.
-    # Today one object lives here and nothing is lost. FROM STEP 4 ON, EVERY SLICE OF THIS
-    # ACCOUNT SHARES THIS BUCKET AND THIS KEY, and the trail then says "something in this bucket
-    # was decrypted", not "the foundation state was read". S3 data events would close the gap and
-    # are OFF by default; turning them on is Stage 11's, priced there, not here.
+    # Today one object lives here and nothing is lost. From step 4 on every slice of this account
+    # shares this bucket and this key, and the trail then says "something in this bucket was
+    # decrypted" rather than "the foundation state was read". S3 data events would close the gap
+    # and are off by default; turning them on is Stage 11's, priced there.
     #
-    # SO THIS IS A COST/AUDIT TRADE ACCEPTED AT LAB SCALE, and the one place it must be re-asked
-    # is D36's alarm on the production PKI state key (3.4). That alarm survives the coarsening
-    # for a reason worth naming: it is scoped to the KEY, which the event names in `resources`,
-    # and the PKI key encrypts exactly one state file - so there the key IS the object. What 3.4
-    # still has to measure, alongside verification (i), is whether a bucket key behaves that way
-    # for a per-slice kms_key_id override at all, rather than only for the bucket default.
+    # A cost/audit trade accepted at lab scale, to be re-asked at D36's alarm on the production PKI
+    # state key (3.4). That alarm survives the coarsening because it is scoped to the key, which
+    # the event names in `resources`, and the PKI key encrypts exactly one state file, so there the
+    # key is the object. What 3.4 must still measure, alongside verification (i), is whether a
+    # bucket key behaves that way for a per-slice kms_key_id override at all, rather than only for
+    # the bucket default.
     bucket_key_enabled = true
   }
 }
@@ -155,17 +152,17 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   restrict_public_buckets = true
 }
 
-# TLS-ONLY, WRITTEN RATHER THAN INHERITED. checkov demands it at step 6.5 anyway, and a policy
-# the linter adds for you is a policy nobody read. It denies the transport, not the principal:
-# the deny is on aws:SecureTransport = false, so it costs nothing and closes the one case where
-# a state file could cross a network in clear text.
+# TLS-only, written rather than inherited: checkov demands it at step 6.5 anyway, and a policy the
+# linter adds for you is a policy nobody read. It denies the transport, not the principal - the
+# deny is on aws:SecureTransport = false - so it costs nothing and closes the one case where a
+# state file could cross a network in clear text.
 resource "aws_s3_bucket_policy" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
   policy = data.aws_iam_policy_document.tfstate.json
 
-  # The public access block must be in place BEFORE a bucket policy is attached, or S3 can
-  # reject the policy as public-granting on a bucket that is not yet closed. Terraform cannot
-  # infer this from the arguments - both resources only reference the bucket.
+  # The public access block must be in place before a bucket policy is attached, or S3 can reject
+  # the policy as public-granting on a bucket that is not yet closed. Terraform cannot infer this
+  # from the arguments: both resources only reference the bucket.
   depends_on = [aws_s3_bucket_public_access_block.tfstate]
 }
 
@@ -194,9 +191,9 @@ data "aws_iam_policy_document" "tfstate" {
   }
 }
 
-# EVERY APPLY WRITES A VERSION, and a lifecycle rule added later does not reach what has
-# already accumulated - which is the whole reason this is here on day one rather than at
-# Stage 12. The retention is a cost choice (step 2, decision 3), not a compliance one.
+# Every apply writes a version, and a lifecycle rule added later does not reach what has already
+# accumulated, which is why this is here on day one rather than at Stage 12. The retention is a
+# cost choice (step 2, decision 3), not a compliance one.
 resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 

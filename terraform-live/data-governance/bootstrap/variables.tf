@@ -1,18 +1,18 @@
 # Inputs - Stage 2 step 2.
 #
-# THE FIRST TWO HAVE NO DEFAULT, AND THAT IS THE DESIGN. `region` may not be a literal in a
-# .tf file (docs/plan/architecture.md, region portability - step 9.1 scans for it), and `env`
-# may not be hardcoded either: step 3.3 requires that nothing in this slice is written as
-# *the* sandbox, because Stage 14 vends one Sandbox per business unit (D35). Both arrive from
-# the generated, untracked terraform.auto.tfvars:
+# `region` and `env` have no default, by design. `region` may not be a literal in a .tf file
+# (docs/plan/architecture.md, region portability - step 9.1 scans for it), and `env` may not be
+# hardcoded either: step 3.3 requires that nothing in this slice is written as *the* sandbox,
+# because Stage 14 vends one Sandbox per business unit (D35). Both arrive from the generated,
+# untracked terraform.auto.tfvars:
 #
 #   ./scripts/gen-tfvars.py sandbox bootstrap
 #
 # The values come from scripts/tfhygiene/backend.py - the same module that builds backend.hcl,
 # so the region in the backend and the region the provider uses cannot disagree.
 #
-# The remaining three ARE defaulted, because they are constants of this repository rather than
-# of this account: the project name, the owning group and the stage that paid for the resource.
+# The rest are defaulted, because they are constants of this repository rather than of this
+# account: the project name, the owning group and the stage that paid for the resource.
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -21,7 +21,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. NOT the Environment tag value, which is spelled differently for three of the six."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. Not the Environment tag value, which is spelled differently for three of the six."
   type        = string
   nullable    = false
 
@@ -32,7 +32,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary (sandbox|development|data|staging|production|org)."
+  description = "The Environment tag value - the third vocabulary (sandbox|development|data|staging|production|org)."
   type        = string
   nullable    = false
 
@@ -49,7 +49,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md). State buckets are the infrastructure group's, whoever created them."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md). State buckets are the infrastructure group's, whoever created them."
   type        = string
   default     = "sso-group-infrastructure"
 }
@@ -61,7 +61,7 @@ variable "cost_center" {
 }
 
 variable "state_noncurrent_version_days" {
-  description = "Days a noncurrent state version is kept. A COST choice, not a compliance one (step 2, decision 3): every apply writes a version, and a rule added later does not reach what already accumulated. 90 days is long enough to recover a state file somebody broke and forgot about."
+  description = "Days a noncurrent state version is kept. A cost choice, not a compliance one (step 2, decision 3): every apply writes a version, and a rule added later does not reach what already accumulated. 90 days is long enough to recover a state file somebody broke and forgot about."
   type        = number
   default     = 90
 }

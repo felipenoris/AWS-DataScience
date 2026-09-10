@@ -23,26 +23,25 @@
 #             sts:GetCallerIdentity and - only to name the account - organizations:
 #             DescribeAccount. This script never creates, updates or deletes anything.
 #
-# WHY IT DEFAULTS TO NO PROFILE, which is the opposite of every other script here.
+# It defaults to no profile, unlike every other script here, because there is no profile.
 # `aws/INDEX.md` asks for one named profile per script, with the reason that profile can
-# see what it sees. The reason here is that there is no profile, and that is deliberate
-# rather than missing: the organization-level analyzer lives in the **Audit** account
+# see what it sees. The organization-level analyzer lives in the **Audit** account
 # (Stage 1b step 8.2), and no project persona holds an assignment there - `docs/ORGANIZATION.md`
 # records that as permanent, for the same reason Log Archive has none. The only human who
 # reaches Audit is `AWS Control Tower Admin`, through Control Tower's own group, and D33/D34
 # keep that identity in the console. So the intended run is CloudShell **inside Audit**, and
 # the argument exists so the script does not have to be rewritten the day that changes.
 #
-# WHAT IT CANNOT SEE, stated because an empty section and a missing one look alike:
-#   - ANOTHER ACCOUNT. Access Analyzer is per-account: run from anywhere else this reports
+# What it cannot see, stated because an empty section and a missing one look alike:
+#   - Another account. Access Analyzer is per-account: run from anywhere else this reports
 #     that account's analyzers, not Audit's, and says so in section 1 rather than failing.
 #     The delegated-administrator *registration* is the other half and lives in
 #     ./aws/org-trusted-access-services.py, which reads it from the Identity account.
-#   - ANOTHER REGION. Analyzers are regional. This reads us-west-2 only.
-#   - THE ZONE OF TRUST IS NOT VISIBLE IN A FINDING. It is the analyzer's `type`, which is
-#     why section 5 checks it: an ACCOUNT analyzer in Audit runs, stays ACTIVE, reports
-#     nothing outside Audit, and looks exactly like a working organization analyzer
-#     (Lesson 13). NO FINDINGS IS NOT EVIDENCE EITHER WAY - see section 4.
+#   - Another Region. Analyzers are regional. This reads us-west-2 only.
+#   - The zone of trust, which no finding shows. It is the analyzer's `type`, which is why
+#     section 5 checks it: an ACCOUNT analyzer in Audit runs, stays ACTIVE, reports nothing
+#     outside Audit, and looks exactly like a working organization analyzer (Lesson 13).
+#     No findings is not evidence either way - see section 4.
 
 set -uo pipefail
 
@@ -55,11 +54,11 @@ SSO_SESSION="awsds"
 # is written into a tracked file (aws/INDEX.md, rule 1), so the check is on the name.
 EXPECTED_ACCOUNT_MATCH="Audit"
 
-# The intended runtime is CloudShell, which does NOT have this repository - the script is
+# The intended runtime is CloudShell, which does not have this repository - the script is
 # uploaded on its own (CloudShell: Actions -> Upload file). So the repository root is
 # located rather than assumed, and the report lands beside the script when there is no
-# repository to land in. Writing to `aws/output/cloudshell/` relative to a home directory that is not
-# the repo is how a snapshot ends up somewhere nobody looks.
+# repository to land in. Writing to `aws/output/cloudshell/` relative to a home directory
+# that is not the repo is how a snapshot ends up somewhere nobody looks.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$SCRIPT_DIR/../../CLAUDE.md" ]; then
   cd "$SCRIPT_DIR/../.."
@@ -329,11 +328,11 @@ fi
 # --------------------------------------------------------------------------------------
 h1 "5. CHECK: one analyzer, ORGANIZATION, ACTIVE"
 
-# A failed row is recorded in a FILE, not in a variable. The table below is built inside a
+# A failed row is recorded in a file, not in a variable. The table below is built inside a
 # `| tabulate` pipeline, and the left side of a pipe runs in a subshell - so a variable set
 # in there is lost by the time the verdict is printed, and the verdict would read OK while
 # the table above it reads !! DIFFERS. A verdict that cannot disagree with its own table is
-# Lesson 13 wearing a different hat.
+# no verdict (Lesson 13).
 FAILED_MARK="$TMP/check-failed"
 rm -f "$FAILED_MARK"
 

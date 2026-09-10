@@ -1,23 +1,24 @@
 """End-to-end demo: laptop -> project S3 path, via S3 Access Grants.
 
-What it does, in order (steps 4-6 WRITE one small object under the
-project's ``shared/`` scope, key ``s3-read-write-demo/hello.txt``, and
-read it back; nothing is deleted — this library exposes no delete helper
-by design, though the READWRITE-vended session itself does carry
-``s3:DeleteObject`` on the granted prefix, because Access Grants' WRITE
-level includes delete — a convention here, not a control):
+What it does, in order:
 
 1. builds the persona session from ``--profile``;
 2. discovers the caller's Access Grants (which project prefixes exist);
 3. vends a prefix-scoped project-role session for ``--target`` (or the
    first discovered grant) and prints the identity it received — expect
-   an ``assumed-role/datazone_usr_role_...`` ARN, which is the whole
-   point: the laptop is acting as the project role, not as the persona;
-4. writes the demo object;
+   an ``assumed-role/datazone_usr_role_...`` ARN: the laptop is acting as
+   the project role, not as the persona;
+4. writes one small object under the project's ``shared/`` scope, key
+   ``s3-read-write-demo/hello.txt``;
 5. lists the prefix;
 6. reads the object back and checks the content.
 
-Run it ON THE VPN, signed in as the data-scientist persona::
+Nothing is deleted: this library exposes no delete helper, though the
+READWRITE-vended session itself carries ``s3:DeleteObject`` on the granted
+prefix, because Access Grants' WRITE level includes delete. A convention
+here, not a control.
+
+Run it on the VPN, signed in as the data-scientist persona::
 
     uv run examples/demo.py --profile awsds-scientist-sandbox
 

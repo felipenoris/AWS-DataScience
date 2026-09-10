@@ -1,16 +1,15 @@
 """Read, write and list operations on the project's S3 prefix.
 
-These functions are deliberately ordinary S3 code: they expect a session
-that is *already* authorized for the paths being touched — normally the
+These functions are ordinary S3 code: they expect a session that is
+*already* authorized for the paths being touched — normally the
 prefix-scoped session returned by :func:`s3_read_write.vending.scoped_session`.
-Nothing here knows about SageMaker, Access Grants or the persona; keeping
-the authentication concern in :mod:`s3_read_write.vending` and the object
-operations here mirrors the reference project
-(`benes3 <https://github.com/felipenoris/benes3>`_), where "authentication
-lives in another module" is the organizing rule.
+Nothing here knows about SageMaker, Access Grants or the persona.
+Authentication lives in :mod:`s3_read_write.vending` and the object
+operations here, following the reference project
+(`benes3 <https://github.com/felipenoris/benes3>`_).
 
-S3 concepts worth keeping in mind
----------------------------------
+S3 concepts these functions assume
+----------------------------------
 
 * **Key and prefix**: S3 has no real directories — each file is an
   *object* under a string *key*; slashes are convention, and "listing a
@@ -22,15 +21,14 @@ S3 concepts worth keeping in mind
   ``put_object`` / ``get_object`` whenever the source or destination is a
   file on disk.
 * **Scope**: with credentials vended at ``Minimal``/``Default`` privilege,
-  calls outside the granted prefix fail with ``AccessDenied`` — that is
-  the feature working, not a bug in this module.
+  calls outside the granted prefix fail with ``AccessDenied``.
 
-There is deliberately no delete function: the task this library serves is
-read, write and list. That is an API-surface choice, not a control — a
-session vended with WRITE or READWRITE carries ``s3:DeleteObject`` on the
-granted prefix (Access Grants has no put-without-delete level) and plain
-boto3 can call it; the projects bucket is versioned, so such a delete is a
-recoverable delete marker.
+There is no delete function: the task this library serves is read, write
+and list. That is an API-surface choice, not a control. A session vended
+with WRITE or READWRITE carries ``s3:DeleteObject`` on the granted prefix
+(Access Grants has no put-without-delete level) and plain boto3 can call
+it; the projects bucket is versioned, so such a delete is a recoverable
+delete marker.
 """
 
 import os

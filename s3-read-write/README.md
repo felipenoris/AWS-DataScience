@@ -11,7 +11,7 @@ and no static persona grant on the projects bucket exists or is needed — the l
 the **project role**, scoped down to the project's prefix, for the lifetime of one vended
 session.
 
-## How it works
+## The vending path
 
 ```
 persona session (SSO, on VPN)                      Studio session
@@ -78,11 +78,10 @@ S3 Access Grants instance ──assumes──▶ datazone_usr_role_<project>_<en
    ```
 
    The grant is per project (each project has its own location), revocable with
-   `delete-access-grant`, and visible with `list-access-grants` — it is the single object that
-   opens the path, and deleting it closes the path without touching any policy. Note that
-   `READWRITE` is Access Grants' write level and **includes `s3:DeleteObject`** — the service
-   has no put-without-delete level, so the library's no-delete promise is only its own API
-   surface, never a control.
+   `delete-access-grant`, and visible with `list-access-grants`; deleting it closes the path
+   without touching any policy. `READWRITE` is Access Grants' write level and **includes
+   `s3:DeleteObject`** — the service has no put-without-delete level, so the library's
+   no-delete promise is its own API surface, never a control.
 3. **The VPN tunnel up** — the persona's `DenyControlPlaneOffVpn` covers the vending calls, so
    off-VPN the handshake itself is denied.
 
@@ -98,22 +97,20 @@ Each step distinguishes a different failure, in order:
 The demo prints the vended identity — expect `assumed-role/datazone_usr_role_...`. **First full
 run, 2026-08-23:** the identity came back as
 `assumed-role/datazone_usr_role_<project>_<env>/access-grants-<uuid>`, and the write/list/read-back
-cycle passed — which **answers the one unknown the strategy analysis left open**: SSE-KMS under
-the project CMK works through a vended, scope-reduced session, with nothing granted to the
-persona on either the bucket or the key.
+cycle passed. SSE-KMS under the project CMK works through a vended, scope-reduced session, with
+nothing granted to the persona on either the bucket or the key.
 
-**The tunnel question split in two rather than resolving once**, and the first run proved the
-first half by failing on it: `sts:GetCallerIdentity` — which this library calls to learn the
-account id `s3control` requires — takes the VPC's **`sts` interface endpoint**, so it presents a
-VPC key rather than the Elastic IP. `DenyControlPlaneOffVpn` listed only *gateway* endpoint ids
-at the time and denied it explicitly, **with the tunnel up**; the fix swapped that branch to
-`aws:SourceVpc`. `s3control`, by contrast, has no *interface* endpoint here — which does **not** put it on the
-IGW: it takes the **S3 gateway** endpoint, because `s3-control.<region>.amazonaws.com` resolves
-inside the ranges the `pl-s3` prefix-list route captures. **Both halves are now read in
-CloudTrail** (first full run): `GetDataAccess` carries the WireGuard host's private address with
-a **gateway** endpoint id, `GetCallerIdentity` the same address with the **STS interface**
-endpoint id. Two doors, one session, and neither is the Elastic IP — so only `sts` ever needed
-the fix, and a library that did not call STS would have run on the unchanged policy.
+**The two calls take two different doors.** `sts:GetCallerIdentity` — which this library calls to
+learn the account id `s3control` requires — takes the VPC's **`sts` interface endpoint**, so it
+presents a VPC key rather than the Elastic IP; `DenyControlPlaneOffVpn` listed only *gateway*
+endpoint ids and denied it explicitly **with the tunnel up**, and the fix swapped that branch to
+`aws:SourceVpc`. `s3control` has no *interface* endpoint here, which does not put it on the IGW: it
+takes the **S3 gateway** endpoint, because `s3-control.<region>.amazonaws.com` resolves inside the
+ranges the `pl-s3` prefix-list route captures. CloudTrail reads both halves on the first full run:
+`GetDataAccess` carries the WireGuard host's private address with a gateway endpoint id,
+`GetCallerIdentity` the same address with the STS interface endpoint id. Neither is the Elastic IP,
+so only `sts` needed the fix, and a library that did not call STS would have run on the unchanged
+policy.
 
 ## Usage
 
@@ -139,40 +136,38 @@ s3.upload_file(project, "local.csv", bucket, f"{prefix}local.csv")
 s3.download_file(project, bucket, f"{prefix}local.csv", "roundtrip.csv")
 ```
 
-**`grants[0]` stopped being a safe default on 2026-08-26.** Discovery now returns more than one
-grant for a data scientist in Sandbox — the per-group *sandbox lake* prefix
-(`s3://awsds-sandbox-lake/<sso-group>/*`, Stage 16) is listed **beside** the project-storage one, and
-the two vend **different identities** (the lake's dedicated access role versus the project role) into
-**different buckets** under different rules. Taking the first element silently picks whichever the
-service happens to list first — measured 2026-08-26: the lake grant came first, so code written when
-one grant existed would have started writing to a different bucket without a single line changing.
-**Pick the target by matching `grant_scope`**, never by position; `examples/demo.py --target` is the
-same rule on the command line.
+**`grants[0]` is not a safe default.** Discovery returns more than one grant for a data scientist in
+Sandbox — the per-group *sandbox lake* prefix (`s3://awsds-sandbox-lake/<sso-group>/*`, Stage 16) is
+listed beside the project-storage one, and the two vend **different identities** (the lake's
+dedicated access role versus the project role) into different buckets under different rules. Taking
+the first element picks whichever the service happens to list first: measured 2026-08-26, the lake
+grant came first, so code written when one grant existed would start writing to a different bucket
+with no line changed. **Pick the target by matching `grant_scope`**, never by position;
+`examples/demo.py --target` is the same rule on the command line.
 
 Conventions follow the reference project [`benes3`](https://github.com/felipenoris/benes3):
 every public function takes a pre-authenticated `boto3.Session` as its first parameter —
 authentication lives in `vending`, object operations in `s3`, and the seam between them is a
-plain session object. There is deliberately **no delete function** (the task is read, write,
-list — an API-surface choice, not a control; see the recipe note above) and no automatic
-credential renewal (vend again when the session expires).
+plain session object. There is **no delete function** (an API-surface choice, not a control;
+see the recipe note above) and no automatic credential renewal (vend again when the session
+expires).
 
-## Limits worth knowing
+## Limits
 
 - **Vended credentials are bearer tokens** for their lifetime (default 3600 s, min 900): once
   issued they work off-VPN too, the same accepted shape as the remote-IDE sessions (open
   question 14). Prefer short durations.
 - **Both member accounts, one object each.** Each copy of the policy names its **own** account's
   Access Grants instance, so nothing here is Sandbox-specific. Development's instance does not
-  exist until that account's first project is born — until then the policy is simply inert
-  there (an IAM policy may name a resource that does not exist).
+  exist until that account's first project is born — until then the policy is inert there (an
+  IAM policy may name a resource that does not exist).
 - **One grant = one project × one persona role.** The grain is the persona role (every data
-  scientist), which is this estate's declared entitlement grain — per-user attribution was
-  declined by design (`docs/GOVERNANCE.md`, "the grain rule"). Note what this collapses:
-  Access Grants never consults SMUS project **membership**, so once a project holds a grant,
-  every `DataScientistAccess` holder can reach that project's `shared/*` from a laptop,
-  member or not — strictly coarser than Studio's own membership gate. Accepting that on this
-  surface is part of the 2026-08-23 decision, not a consequence of the Stage 5 grain rule
-  (which was argued over the lake surfaces).
+  scientist), this estate's declared entitlement grain — per-user attribution was declined by
+  design (`docs/GOVERNANCE.md`, "the grain rule"). Access Grants never consults SMUS project
+  **membership**, so once a project holds a grant, every `DataScientistAccess` holder can reach
+  that project's `shared/*` from a laptop, member or not — coarser than Studio's own membership
+  gate. That is part of the 2026-08-23 decision, not a consequence of the Stage 5 grain rule,
+  which was argued over the lake surfaces.
 
 ## Development
 
