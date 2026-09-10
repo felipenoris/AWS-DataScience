@@ -274,8 +274,10 @@ verification (i), pulled forward because Stage 10's design now depends on it.
     *compute* control reaches the *orchestration* surface at all, and it is not in any plan file.
   - **THE PORTAL EMITS `compute: {}`.** The definition's compute block is **empty**, so the operator
     supplies no `VpcConfig`, so `sagemaker:VpcSubnets` is null, so the boundary denies. **Every default
-    notebook workflow in this estate is dead on arrival** until the compute block carries subnets — which
-    makes this 4.5's sharpest lint rule and a Stage 10 input, not a curiosity.
+    notebook workflow in this estate is dead on arrival** — which makes this 4.5's sharpest lint rule and
+    a Stage 10 input, not a curiosity. **The clause "until the compute block carries subnets" stood here
+    until 2026-09-10 and is FALSE**: `compute` has no subnet key, and the block below is the measurement
+    that says so. The lint rule survives the correction; the remedy in it does not.
   - **4.6's NETWORK SHAPE IS MEASURED RATHER THAN READ FROM A PAGE, AND IT HOLDS.** The workflow's own
     `NetworkConfiguration` carries **two subnets in two AZs** — `awsds-sandbox-private-usw2-az1` and
     `-usw2-az2`, this estate's own private tier — and one security group. **The distinction to carry into
@@ -318,6 +320,17 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   - **AND ONE THING THE SERVICE SAYS ON EVERY UPDATE**: `Warnings: ["ignored attributes:
     is_paused_upon_creation"]`. That half-settles the observation held back on 2026-09-09 — the
     definition's pause key is **ignored**, so it is not what produced the `scheduled__…` run id.
+  - **THE SCOPE IS THE WHOLE ESTATE, NOT THIS OBJECT.** The refusal is on the **project role** under the
+    **project boundary**, and every Sandbox project gets both from the same blueprint — so this is
+    **every SMUS workflow whose task is a notebook execution, in every project here**, reproducible by
+    re-authoring in the portal. **Other task types are unmeasured**: a query book or a visual ETL task may
+    never reach `CreateTrainingJob`, and nothing measured here licenses a claim about them. Everything
+    *else* on the surface works — authoring, versioning, triggering, logging, the workers' network and the
+    identity (4.1, 4.4, 4.6) — and **one act fails**: the notebook becoming a training job. The worker is
+    VPC-attached by the service; the job it submits is not, and no operator parameter could attach it.
+  - **PROVENANCE**: four runs, four definition versions, the pre-change S3 `VersionId` and the reading
+    that every run is two attempts are in the [log](../../log/log-stage-06d-unified-studio-remainder.md)'s
+    eighth sitting, read back from the API rather than transcribed.
   *The original step follows:*
 - **4.1 — [user reads, Claude records] Find what enables the surface** — the vendor pages narrow it
   (read 2026-09-07): the **`Workflows` blueprint creates a provisioned MWAA environment**, the shape D7
