@@ -719,6 +719,21 @@ SageMaker AI domain `Tooling` provisions in the member account: an image, an ima
 image config, then the domain's `CustomImages` (Stage 6 step 5.1; INT-01/INT-17 are the open ends and
 verification (vi) is where the working mechanism gets recorded).
 
+**Three of the four objects are Terraform's, and the fourth is the blueprint's** (measured 2026-09-10,
+Stage 6d step 2). `sandbox/dev-env/` holds the image, the version and one app image configuration per
+app type; `CustomImages` is a field of the domain's user settings, so making an image *selectable* is a
+hand step against an object `Tooling` owns, and `UpdateDomain` replaces `DefaultUserSettings` whole
+(Lesson 60). A **space** cannot name an image at all — `SpaceSettings.CodeEditorAppSettings` carries
+neither `CustomImages` nor `LifecycleConfigArns`. Two readings from the first registration: the version
+resolves the tag to a **digest** at creation, and the image's `RoleArn` is the principal that reads the
+repository across the account boundary. The recipe, per account and per release, is
+[`runbooks/dev-env.md`](plan/runbooks/dev-env.md).
+
+**What the app image configuration cannot carry is the proxy environment.**
+`ContainerEnvironmentVariables` caps each value at 256 characters against a generated `NO_PROXY` of
+about 2,300, so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4 both assumed does not exist. The
+delivery is 6d's decision due 8.
+
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
 activity-monitor extension idle shutdown reads — is [`images/README.md`](../images/README.md)'s and

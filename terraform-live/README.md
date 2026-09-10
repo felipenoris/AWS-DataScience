@@ -263,6 +263,14 @@ set: one design split by *which account is allowed to hold what*, D26's argument
 - **`production/registry/` `[P]`** — written under Stage 7 step 5 and applied a stage early, because Stage 6
   step 5.0 has nowhere to push the first `dev-env` image otherwise: the `base`/`dev-env` ECR pair,
   CodeArtifact, the slice's own key, and the consumer policies built from the D35 map.
+- **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
+  AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
+  per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
+  the one slice here whose only real input lives in another account, so it reads
+  `production/registry/`'s state rather than carrying an ECR URI. **What it does not hold is the
+  attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
+  so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
+  Stage 8 step 1's pipeline takes the slice over (INT-18).
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
 SMUS account association is **console-only — there is no public API** — so the blueprint configurations

@@ -372,6 +372,17 @@ DATA_LAKE = ["data-governance"]
 # consumer at Stage 6b step 2.4.
 REGISTRY_CONSUMERS = ["sandbox", "staging"]
 
+# The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
+# list so the emission below has the same shape as every other cross-account read in this tree.
+# Consumed by each member's dev-env/ slice (Stage 6d step 2.1), which reads the repository URL the
+# image version is built from and the repository ARNs its image role names. Both would otherwise be
+# account-id-bearing literals in a tracked file.
+#
+# It is not derivable from PROFILES: which account holds the registry is D14's option-preservation
+# decision, and the day a Shared Services account is vended this row moves while every consumer row
+# stays where it is.
+REGISTRY_HOME = ["production"]
+
 # The unified domain and its member accounts (Stage 6, D26/D35). SMUS_MEMBERS is a decision and
 # SMUS_ASSOCIATED is a measurement, so read this before editing either.
 #
@@ -756,6 +767,14 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
 
+    # Stage 6d step 2.1 - the member's dev-env/ slice, which registers an image that lives in the
+    # registry account: the repository URL its version is built from and the ARNs its image role
+    # names are read from production/registry/'s state, so neither is a literal here.
+    if slice_name == "dev-env":
+        values["registry"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in REGISTRY_HOME
+        }
+
     # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4).
     if account == "production" and slice_name == "registry":
         values["consumers"] = {
@@ -903,6 +922,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["consumers"].items()
         )
         out += f"consumers = {{\n{rows}}}\n"
+    if "registry" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["registry"].items()
+        )
+        out += f"registry = {{\n{rows}}}\n"
     if "vpn_homes" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '

@@ -148,6 +148,12 @@ RANKS = {
     #              because KMS validates a key policy's principals: a statement naming a role
     #              that does not exist yet is rejected, so the role has to precede it
     "lake": 48,
+    # Stage 6d step 2.1 - the registered house image. [P], so `up`/`down` refuse it and no target
+    # ever acts on the number; what the rank records is the dependency an executor respects by
+    # hand, and it is a cross-account one: the image version names a container in the registry
+    # account, so production/registry/ is applied first. Nothing in this account precedes it, which
+    # is why the number is merely the free slot below egress.
+    "dev-env": 49,
     # The proxy is [D] and its rank decides the session (Stage 6c step 0.3). `up` ascends and
     # `down` descends, so 41 puts it up before any egress/ (50, 51) and down after them, which
     # keeps a spoke's package path alive for the entire life of an [E] session. Under D38 there
@@ -435,6 +441,11 @@ SLICES = [
     # Stage 6b step 1.2, so the same slice elsewhere would have nothing to register a location
     # against.
     Slice("sandbox", "lake", PERSISTENT, "permanent per-group artifacts + their AG grants"),
+    # Stage 6d step 2 - the house image made selectable: the image, one immutable version and one
+    # app image configuration per app type, all metadata. The container it points at lives in the
+    # registry account and is pulled by the project role when a space starts, which is where the
+    # cost is.
+    Slice("sandbox", "dev-env", PERSISTENT, "the dev-env image, its version + 2 app configs"),
 ]
 
 

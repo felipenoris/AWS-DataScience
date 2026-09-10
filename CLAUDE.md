@@ -210,6 +210,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
+| Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a version bump, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
@@ -227,12 +228,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Step 9 and most of 3 and 8 done 2026-09-08; step 4 exercised
   2026-09-09/10; 7.1/7.2 read 2026-09-07. Decision due 6 was taken in full 2026-09-09 — five names in,
-  `api.github.com` and `raw.githubusercontent.com` refused — and the asset host read
-  (`openvsx.eclipsecontent.org`), so step 8 is closed but for its delivery, which belongs to 2.4:
-  neither proxy mechanism attaches to a space, only to the blueprint-provisioned domain. Owed: step 2
-  whole (the house image) and behind it 3.1's `uv`/Julia/R (Python and Rust work); 1.2/1.3, 3.4, 3.5,
-  3.7; step 5 beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision
-  due 4.
+  `api.github.com` and `raw.githubusercontent.com` refused. **2.1 and 2.2 applied 2026-09-10**:
+  `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env` v1 against `default-v0.1.1`,
+  `ImageVersionStatus CREATED`, the digest the same `sha256:6916fc13…` 9.5 pushed; the image role
+  `awsds-sandbox-sagemaker-image` is what SageMaker assumes to read the repository cross-account
+  (CloudTrail: `BatchGetImage`, session `SageMaker`), so the `RoleArn` is not decorative. **The proxy
+  variables do not fit**: `ContainerEnvironmentVariables` caps each value at 256 characters and
+  `NO_PROXY` is ~2,300, so both app image configs carry no environment and the delivery is an open
+  decision (LCC / Dockerfile `ENV` / a compressed `NO_PROXY`) — [`runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) §E, which
+  also carries the attach recipe. Owed: 2.3-2.5 (the attach is a hand `update-domain` on the
+  blueprint's domain, full-replace, unexercised); 3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5
+  beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
   sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →
