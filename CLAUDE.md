@@ -234,21 +234,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   3.7; step 5 beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision
   due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44).
-  Endpoint sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS
-  Firewall 63 → 10. `make hub-up` / `hub-down` start and stop the two hub hosts; a spoke `make up`
+  proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
+  sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →
+  10 at 6c, 14 since 6d 8.8. `make hub-up` / `hub-down` start and stop the two hub hosts; a spoke `make up`
   refuses while a hub host is stopped. Optional endpoint families: `make up ENV=<x> GROUPS=…`, empty by
   default. `./aws/proxy.py` PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `production/egress/` is a
   prerequisite of a build (the buildbox's SSM door). `10.40.0.0/16` stays unallocated.
 - **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map it is in
   (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
-  plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged; a
-  build host's control is the reviewed Dockerfile. The compute plane `sandbox-foundation` is an
-  allow-list (`docs/NETWORK.md` counts it, dated); `github.com` was removed 2026-09-09 by the user,
-  because source control is how code leaves a governed environment. Empty means opposite things: an empty allow-list refuses
-  everything, an empty deny-list permits everything; an `open` plane emits no `dstdeny_` ACL and an empty
-  allow-list plane emits nothing. The deny list stays empty. `DN-4` reads "no plane is `open` except the
-  ones a decision names" (`OPEN_BY_DECISION`). The parameter is data (30 min); the renderer is code (a
+  plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged; a build
+  host's control is the reviewed Dockerfile. The compute plane `sandbox-foundation` is an allow-list
+  (`docs/NETWORK.md` counts it, dated); `github.com` was removed 2026-09-09 by the user, because source
+  control is how code leaves a governed environment. Empty means opposite things: an empty allow-list
+  refuses everything, an empty deny-list permits everything; an `open` plane emits no `dstdeny_` ACL and an
+  empty allow-list plane emits nothing. The deny list stays empty. `DN-4` reads "no plane is `open` except
+  the ones a decision names" (`OPEN_BY_DECISION`). The parameter is data (30 min); the renderer is code (a
   new host). Unchanged: the three global denies, the absent default route, the 3128-only SG.
 - **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is
   invisible, an HTTP redirect is a new name, a bare entry matches exactly (`github.com` covers neither
