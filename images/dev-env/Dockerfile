@@ -78,7 +78,7 @@ USER root
 # Under design B the index is switched at build time, not here:
 # `--build-arg UV_DEFAULT_INDEX=<the CodeArtifact pypi URL>` and no line of pyproject.toml
 # changes. The lock's hashes stay valid; CodeArtifact serves the same artifacts.
-ARG PYTHON_VERSION=3.14
+ARG PYTHON_VERSION=3.13
 ARG UV_DEFAULT_INDEX=""
 
 ENV AWSDS_PYTHON_ENV=/opt/awsds/venv \

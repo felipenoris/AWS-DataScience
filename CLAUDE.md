@@ -229,8 +229,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 6d is in progress.** Steps 9, 3 and 8 mostly done 2026-09-08; step 4 exercised
   2026-09-09/10; 7.1/7.2 read 2026-09-07; decision 6 taken 2026-09-09. **Step 2 done 2026-09-10
   but for 2.4 and the rebuild**: `sandbox/dev-env/` (rank 49) registers
-  `awsds-sandbox-dev-env` v1 on `default-v0.1.1`, attached by a hand `update-domain`, and JupyterLab
-  and Code Editor both started on it — a SMUS space reads `DefaultUserSettings`. INT-01/INT-17
+  `awsds-sandbox-dev-env` v1 on `default-v0.1.1`, attached by hand, and JupyterLab and Code Editor
+  both started on it — a SMUS space reads `DefaultUserSettings`. INT-01/INT-17
   closed: the image role reads the repository **by tag** at registration, the project role **by
   digest** at start. **The app image config caps each env value at 256 characters** against a
   `NO_PROXY` of ~2,300, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`,
@@ -238,9 +238,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `./aws/devenv.py` reads the drift. **The image's Python is a second environment (2026-09-10)**:
   the distribution's env and default kernel untouched, uv builds `/opt/awsds/venv` on a uv-managed
   CPython from `python/pyproject.toml` + a committed `uv.lock`, own Launcher kernel; R stays
-  on conda. Locked, not built: no TensorFlow wheel past `cp313`; the default `torch`
-  drags 3.03 GiB of `nvidia-*` into a CPU image (hence the PyTorch CPU index and `xgboost-cpu`;
-  4.7 → ~0.9 GiB). `uv` and Julia work in a space (3.1). Owed: **the rebuild**; 2.4;
+  on conda. Locked, not built: no TensorFlow wheel past `cp313` set the interpreter at
+  **3.13**; the default `torch` drags 3.03 GiB of `nvidia-*` into a CPU image (hence the PyTorch CPU
+  index and `xgboost-cpu`); ~1.5 GiB of wheels. `uv` and Julia work in a space (3.1). Owed: **the rebuild**; 2.4;
   1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; and 7.3-7.9,
   which wait on decision 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
