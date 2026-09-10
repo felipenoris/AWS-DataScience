@@ -212,8 +212,8 @@ not a count. Applied 2026-08-18 as one key, and decision 2's final form is one d
 `awsds-data-logs` — from the Stage 3 `s3-bucket` module: versioning, SSE-KMS with the domain CMK,
 lifecycle rules, `prevent_destroy`, public access blocked.
 
-> **Every bucket created in this account is undeletable while the `Data` OU SCP is attached**, including
-> the ones created by mistake. `DenyLakeDeletionAndDeregistration` denies `s3:DeleteBucket`
+> Every bucket created in this account is undeletable while the **`Data` OU SCP** is attached,
+> including the ones created by mistake. `DenyLakeDeletionAndDeregistration` denies `s3:DeleteBucket`
 > unconditionally — no principal carve-out, `InfrastructureAccess` included. It was written for the lake
 > buckets and reaches all of them, so a `terraform destroy` of *anything* here stops at the first bucket,
 > with an `AccessDenied` naming the OU policy. The amendment procedure, when a bucket has to go: detach
@@ -418,7 +418,7 @@ Lesson 5 with a console page. Turn off the two default-IAM settings in
 every table. INT-03 flags this as version-dependent behaviour — do it before the first share, not after,
 so the share is granted into a model that is actually enforcing.
 
-> **The plan cannot prove this half, so the apply is two steps** — measured 2026-08-18 while authoring
+> The plan cannot prove this half, so the apply is **two steps** — measured 2026-08-18 while authoring
 > pass 1, in the pinned provider (`aws ~> 6.60`). Both default-permission blocks are Computed, so
 > omitting them plans as `after_unknown: true` — Terraform states no intention about them; and an
 > explicitly empty list is not expressible: `create_database_default_permissions = []` is refused
@@ -455,6 +455,7 @@ anywhere reporting an error. So:
 - read them again after the apply — verifying a setting only before the thing that overwrites it runs
   is Lesson 13's shape (step 7 repeats this read after the shares, so the value is bracketed by three
   readings in total). `./aws/datalake.py` `DL-5` is this reading, mechanised.
+
 #### 6. Implement D13 — make Lake Formation enforceable
 
 **6.1 — The grant model.** The environment accounts do not contain the lake buckets. The SageMaker
@@ -546,7 +547,7 @@ decision 5; per-account is the INT-11 fallback either way.
 Applied 2026-08-19 as four grants — two consumer accounts × two resource types — and two things about
 the form above were wrong, both found at the apply:
 
-- **every cross-account grant carries the grant option; it is not Production's special case.** A
+- **Every cross-account grant carries the grant option**, not only Production's. A
   cross-account grant lands on the **account**, and nothing inside it can use the share until that
   account's own data lake administrator passes it on — an administrator can only pass on what it
   received with the option, and AWS states it as an imperative. Omitting it fails mutely and *late*: the
@@ -554,7 +555,7 @@ the form above were wrong, both found at the apply:
   grant to a person fails, one pass away, in another account. It is not a delegation of the share — a
   resource shared *with* an account may be granted only to principals *in* that account. `GOVERNANCE.md`
   §Grants carries the corrected rule;
-- **the expression needed a `layer` gate, or the share included the drop-box.** The decided form
+- **The expression needed a `layer` gate**, or the share included the drop-box. The decided form
   (`classification ∈ {public, internal}` alone) matched the drop-box database, which carries
   `classification=internal` for decision 1's fail-open reason — the letterbox whose entire contract is
   *write, never read back*. No row would have travelled (the drop-box bucket is unregistered, so a query
@@ -625,8 +626,8 @@ by someone who does not answer for the grants is decoration.
 
 #### 8. Workgroup, resource links, the derived zone's prefixes
 
-**A prerequisite, established 2026-08-19 at 7.3: each consumer account needs its own data lake
-administrator before anything below resolves.** AWS requires at least one in the receiving account for a
+**Each consumer account needs its own data lake administrator** before anything below resolves
+(established 2026-08-19 at 7.3). AWS requires at least one in the receiving account for a
 shared resource to be visible there at all, and both accounts read `DataLakeAdmins: []` — their RAM held
 the shares while their catalogs were empty. So each `sandbox/data/` and `development/data/` opens with an
 `aws_lakeformation_data_lake_settings` of its own, carrying the same two hazards the producer side met:
@@ -649,13 +650,13 @@ Applied 2026-08-19 as `terraform-modules/consumer-data/` v0.1.0, one module call
 `sandbox/data/` and `development/data/`, both `[P]`, both at rank `data`. What follows describes what it
 builds.
 
-> **Two of the objects below no longer exist (2026-08-26/27).** The enforced workgroup
-> (`awsds-<env>-athena`) and the derived bucket (`awsds-<env>-derived`) were destroyed when the user
-> re-homed the derived zone onto the SMUS project path ([D19 revised](../decisions/D19-derived-zone.md),
-> executed as Stage 6 step 2.6); `consumer-data` v0.6.0 creates neither, and `DL-8`/`DL-9` are absence
-> checks now. The text stays as the record of what this stage built — it was true when it was applied,
-> and step 9's reasoning is what the revision was argued against. What survives of this slice: the
-> account data CMK, the `DataLakeSettings`, the two resource links and the four re-grants.
+> **The enforced workgroup and the derived bucket no longer exist.** `awsds-<env>-athena` and
+> `awsds-<env>-derived` were destroyed on 2026-08-26/27, when the user re-homed the derived zone onto the
+> SMUS project path ([D19 revised](../decisions/D19-derived-zone.md), executed as Stage 6 step 2.6);
+> `consumer-data` v0.6.0 creates neither, and `DL-8`/`DL-9` are absence checks now. The text below is the
+> record of what this stage built, and step 9's reasoning is what the revision was argued against. What
+> survives of this slice: the account data CMK, the `DataLakeSettings`, the two resource links and the
+> four re-grants.
 
 Then, per account: the **Athena workgroup** (`awsds-<env>-athena`) — result location local to the
 account, per-query scan limit (10 GiB applied, ≈ USD 0.05 at Athena's USD 5/TB), and
@@ -676,13 +677,13 @@ Applied shape: one bucket, three families — `results/` (the workgroup's enforc
 because an enforced workgroup has exactly one), `derived/${aws:userid}/` (per principal), `scratch/`.
 What makes them real is the `s3:PutObject` scoping on the permission set, which is 4c.
 
-**An enforced workgroup has one result location, and that is a ceiling on the whole design** (Stage 9's
+**An enforced workgroup has one result location**, a ceiling on the whole design (Stage 9's
 status row measured the same limit for Production): every holder of the persona set can read the results
 zone, so a materialised result is visible within the persona whatever the SQL path filtered. The system's
 real grain is `min(SQL grain, derived-zone grain)` — decision 6 consumes this sentence, and a per-user
 answer there requires 9.2's per-user read scoping to mean anything.
 
-**Prove each share here with the pandas pair, before Stage 6 builds anything on top:** the table reads
+**Prove each share here with the pandas pair**, before Stage 6 builds anything on top: the table reads
 through Athena over the link, and pointing pandas at the same table's S3 path fails. Run it in both
 accounts.
 
@@ -756,13 +757,11 @@ AWS Foundational Security Best Practices — and before this stage there were ba
 check. Turning it on here means its first report is about a lake, a catalog and a set of buckets that
 will still exist next month, rather than about scaffolding (principle 9, as amended).
 
-> The step was first written when "Security Hub" was one product configured per account. It is now
-> **two** products, and the org-wide mechanism the first version named — *"auto-enable for existing and
-> future accounts"* — is not a setting anyone can choose: auto-enable reaches new accounts only, so on
-> this organization, where every account already exists, it would have enabled Security Hub in zero of
-> them (read against the service 2026-08-20, before the step ran). The numbers 13.1-13.4 keep their
-> meanings (Stage 15's prerequisites row cites 13.2 by number); the lettered sub-steps carry the mechanism
-> that exists.
+> **"Security Hub" is two products, and auto-enable is not the org-wide mechanism.** Auto-enable reaches
+> new accounts only, so on this organization, where every account already exists, it would have enabled
+> Security Hub in zero of them (read against the service 2026-08-20, before the step ran). The numbers
+> 13.1-13.4 are stable identifiers — Stage 15's prerequisites row cites 13.2 by number — and the lettered
+> sub-steps carry the mechanism that exists.
 
 **Who runs every act below, and from where** — the same sentence Stage 15 step 1 carries, because it is
 the same two accounts: both hold **no CLI profile** (D33/D34), so every AWS act here is **[user]** as
@@ -801,7 +800,7 @@ appears in no policy of this organization (checked 2026-08-20), so nothing in th
 calls. The management account cannot be the delegated administrator; Audit is the same account that
 already holds `access-analyzer` and `config`.
 
-> **"Delegating *is* enabling" holds here too**, and it is documented for *this* service, not inherited
+> **"Delegating *is* enabling"** holds here too, documented for *this* service rather than inherited
 > from GuardDuty: designating the delegated administrator *"enables Security Hub CSPM in the current AWS
 > Region for the delegated administrator account"* (`docs/REFERENCES.md`). Two acts assert it, because
 > the central-configuration call in 13.1a separately *"[e]nables Security Hub CSPM in the delegated
@@ -839,8 +838,8 @@ explicitly. Either way the association is what enables Security Hub in the membe
 
 **13.1c — Management is designated self-managed.** Decided by the user 2026-08-20, before the step ran.
 Management is unrecorded by AWS Config (Stage 1d decision 8, taken 2026-08-14; `INV-13` — the
-organization aggregator lists eight accounts and Management is correctly not among them). A
-root-associated policy would otherwise reach it, and that is the wrong outcome:
+organization aggregator lists eight accounts and Management is correctly not among them).
+A root-associated policy would otherwise reach it, which is the wrong outcome:
 
 > **Enabling Security Hub CSPM does not record an account.** With CSPM alone, AWS requires that *"you
 > must manually enable AWS Config and turn on resource recording"*. So including Management under the
@@ -855,9 +854,9 @@ and it names *"Stage 5's Security Hub central configuration"* as the candidate. 
 fire. The only Security Hub path that creates a recorder is enabling the v2 product alongside CSPM,
 which manufactures a service-linked recorder in every account — and 13.0 refuses that, because the same
 act takes the recorder away from Control Tower in all eight governed accounts. One account's free
-recorder against eight accounts' recorder ownership is not a close trade, but it is a trade, and it was
-invisible while the two facts sat in different stages. Stage 1d decision 8 is corrected in place: its
-trigger now says this candidate was checked and does not fire.
+recorder against eight accounts' recorder ownership is a trade, and it was invisible while the two facts
+sat in different stages. Stage 1d decision 8 is corrected in place: its trigger now says this candidate
+was checked and does not fire.
 
 What this decision costs: Management is outside Security Hub until Stage 12 takes up the recorder
 question. That absence is recorded in `docs/AWS_STATE.md`. It is invisible to `DL-11`, which measures
@@ -869,7 +868,7 @@ gap.
 help on 2026-08-20, not written from memory. Account ids are not in this repository
 (`check-identifiers.py`); take them from the Organizations console at the keyboard.
 
-> **Collect all three ids while still in Management — the second leg cannot go back for them.** Audit is
+> **Collect all three ids while still in Management**: the second leg cannot go back for them. Audit is
 > a member account: it holds no Organizations view, and `list-roots` is refused there unless a
 > resource-based delegation grants it, which nothing in this organization does. Two of the three ids are
 > needed in Audit — the `RootId` and Management's own account id. So the first leg ends with them written
@@ -946,7 +945,7 @@ produces its largest finding count ever, and the useful act is deciding which co
 not-applicable rather than carrying a permanently red dashboard. A dashboard nobody believes is worth
 less than no dashboard. Record the disabled-control list in the log.
 
-> **Central configuration changes *how* this triage is performed, and 13.1b is what forces it.** A
+> **Central configuration changes how this triage is performed**, and 13.1b is what forces it. A
 > centrally managed account cannot run `BatchUpdateStandardsControlAssociations` or
 > `UpdateStandardsControl` — those are refused in the home Region for exactly the accounts a policy
 > governs. So disabling a control is not a console click in the account that reported it: it is an edit
@@ -1185,7 +1184,7 @@ Record every answer, including the ones that come out fine.
 - **The one silent, cross-stage failure lives at 5.4/7.3:** a reset `CROSS_ACCOUNT_VERSION` breaks every
   share days later with no error anywhere. The three-reading bracket is the control; `DL-5` keeps it
   checked from now on.
-- **Everything in this stage is `[P]`, and in Data Governance it is `[P]` twice over** — the OU SCP makes
+- **Everything in this stage is `[P]`**, and in Data Governance `[P]` twice over — the OU SCP makes
   buckets undeletable (1.2's callout), so a naming mistake is permanent in a way it is nowhere else.
 - **Two contracts are spelled, not enforced:** the maintenance role's exact name (3.2) and the drop-box
   statement principals (1.4). A typo in either fails closed, later, with an error naming a policy rather
