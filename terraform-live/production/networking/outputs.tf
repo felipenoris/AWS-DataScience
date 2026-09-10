@@ -60,20 +60,19 @@ output "tier_security_group_ids" {
   value       = module.vpc.tier_security_group_ids
 }
 
-# NO ZONE OUTPUTS, AND THE ABSENCE IS THE DESIGN (Stage 6c step 1.2). production/foundation/
-# owns the awsds.internal apex and awsds-pages.internal; this VPC is ASSOCIATED into zones it does not own,
-# which is the opposite direction (step 2.5) and produces nothing for a caller to read.
+# No zone outputs (Stage 6c step 1.2). production/foundation/ owns the awsds.internal apex and
+# awsds-pages.internal; this VPC is associated into zones it does not own (step 2.5), and an
+# association produces nothing for a caller to read.
 
 # ------------------------------------------------- Stage 6c step 4.1, the hub's [P] anchors
 #
-# The same output NAMES sandbox/foundation/ exports for the VPN, so that flipping VPN_HOMES at
-# 4.12 is a change of address and not a change of shape - identity/sso/ and
-# data-governance/data/ read a home's slice by key and must find the same keys here.
+# These carry the same output names sandbox/foundation/ exports for the VPN, so flipping
+# VPN_HOMES at 4.12 changes an address and not a shape: identity/sso/ and data-governance/data/
+# read a home's slice by key and must find the same keys here.
 #
-# ONE OF THAT SET IS MISSING ON PURPOSE UNTIL 4.6: `wireguard_eip_public_ip`. The address is
-# transferred from Sandbox rather than allocated (4.5), so the resource that backs that output
-# arrives with the `import {}` block of 4.6, not with this file. Declaring the output first
-# would mean allocating a second address, which is the fallback in the stage's risk table.
+# `wireguard_eip_public_ip` is backed by an allocation transferred from Sandbox (4.5) and imported
+# (4.6), never allocated here. Allocating one would produce a second address and a re-issue of
+# every .conf, the fallback in the stage's risk table.
 
 output "wireguard_security_group_id" {
   description = "The [P] WireGuard security group - production/vpn/ attaches it to the [D] host."

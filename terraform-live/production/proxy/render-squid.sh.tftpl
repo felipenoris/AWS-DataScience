@@ -2,19 +2,18 @@
 # /usr/local/sbin/awsds-render-squid - Stage 6c step 4.10. Read the [P] allow-lists out of SSM,
 # turn them into Squid ACLs, and reload the running proxy.
 #
-# WHY THIS SCRIPT EXISTS AT ALL, rather than the lists being baked into the user data: user data
-# runs at FIRST BOOT ONLY, and this is a [D] host. A list baked in would mean every allow-list
-# edit is a host replacement - a 30-second outage of the whole estate's internet to add one
-# domain. So the lists are [P] data (Lesson 4), and this script is the only thing that reads them.
+# The lists are not baked into the user data, because user data runs at first boot only and this is
+# a [D] host: a baked-in list would make every allow-list edit a host replacement, a 30-second
+# outage of the whole estate's internet to add one domain. The lists are [P] data (Lesson 4) and
+# this script is the only thing that reads them.
 #
-# IT IS RUN TWICE OVER ITS LIFE, both times by something that is not a person: once by the user
-# data at first boot, and then every ${reconfigure_schedule} by a State Manager association. That
-# is what makes a list change an `apply` and nothing else - no write API from the laptop, no ssh,
-# no host replacement.
+# It has two callers, both unattended: the user data at first boot, and a State Manager association
+# every ${reconfigure_schedule}. That is what makes a list change an `apply` and nothing else - no
+# write API from the laptop, no ssh, no host replacement.
 #
-# IT IS IDEMPOTENT AND IT IS SILENT WHEN NOTHING CHANGED, on purpose: the association runs on a
-# schedule whether or not anybody edited anything, and a reconfigure every half hour that logs a
-# line teaches its reader to ignore the log.
+# It is idempotent and silent when nothing changed: the association runs on a schedule whether or
+# not anybody edited anything, and a reconfigure every half hour that logs a line teaches its
+# reader to ignore the log.
 set -euo pipefail
 
 PARAM='${parameter_name}'
@@ -23,11 +22,11 @@ OUT=/etc/squid/conf.d/awsds-planes.conf
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 
-# THE FETCH IS THE ONE CALL THIS HOST MAKES TO AN AWS API, and its permission is one parameter by
-# name (see the role in main.tf). A failure here must NOT leave a half-written file: `set -e`
-# plus rendering to a temporary file and moving it into place is the whole of that guarantee -
-# a proxy that keeps its previous, working allow-list is correct behaviour when SSM is
-# unreachable, and a proxy that keeps HALF of one is not.
+# The fetch is the one call this host makes to an AWS API, and its permission is one parameter by
+# name (see the role in main.tf). A failure here must not leave a half-written file: `set -e` plus
+# rendering to a temporary file and moving it into place is the whole of that guarantee. A proxy
+# that keeps its previous, working allow-list is correct when SSM is unreachable; one that keeps
+# half of one is not.
 JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Parameter.Value' --output text)
 
 {
@@ -36,37 +35,35 @@ JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Paramet
   echo "# emits no ACL at all, so the backstop in squid.conf refuses that source by name."
   echo
 
-  # One block per plane, and the plane NAME becomes the ACL name - which is what makes an
-  # access.log line traceable back to a decision somebody wrote down. jq -r over the object's
-  # keys, sorted, so two renders of one parameter produce identical bytes and ./aws/proxy.py's
-  # diff means something.
+  # One block per plane, and the plane name becomes the ACL name, which makes an access.log line
+  # traceable back to a decision somebody wrote down. jq -r over the object's keys, sorted, so two
+  # renders of one parameter produce identical bytes and ./aws/proxy.py's diff means something.
   #
-  # THE HYPHEN IS REPLACED BECAUSE THE PLANE KEYS CARRY ONE AND SQUID'S ACL NAMES ARE A
-  # SYNTAX THIS REPOSITORY CANNOT TEST FROM A LAPTOP. `sandbox-foundation` is the peering
-  # matrix's spelling, `src_sandbox_foundation` is the ACL - normalising costs one gsub and
-  # removes an assumption about a parser nobody here can run (Lesson 30). Without it the
-  # failure would not even be loud: `squid -k parse` would refuse the file and this script
-  # would correctly revert, leaving a proxy that allows NOTHING and an association that
-  # reports a failure somebody has to go and read.
-  # TWO MODES SINCE 2026-09-07, AND THE ORDER INSIDE A BLOCK IS THE WHOLE OF THE SECOND ONE.
+  # The hyphen is replaced because the plane keys carry one and Squid's ACL-name syntax cannot be
+  # tested from a laptop here. `sandbox-foundation` is the peering matrix's spelling,
+  # `src_sandbox_foundation` is the ACL; normalising costs one gsub and removes an assumption about
+  # a parser nobody here can run (Lesson 30). Without it the failure would not even be loud:
+  # `squid -k parse` would refuse the file and this script would revert, leaving a proxy that allows
+  # nothing and an association that reports a failure somebody has to go and read.
+  #
+  # Two modes, and the order inside a block is the whole of the second one:
   #
   #   allowlist  one src acl, one dst acl, one `allow src dst`. Anything not on the list falls
-  #              through to squid.conf's final `deny all` and is refused BY NAME. This is the
-  #              compute's shape, and the objectives' "restriction on the SageMaker-managed
-  #              compute".
+  #              through to squid.conf's final `deny all` and is refused by name. This is the
+  #              compute's shape, the objectives' "restriction on the SageMaker-managed compute".
   #   open       one src acl, then - only if the deny list has content - a `deny src dstdeny`
-  #              ABOVE a bare `allow src`. The deny must come first or it is unreachable, which
-  #              is the same top-to-bottom rule the global denies in squid.conf rely on. This is
-  #              the client's shape, and the objectives' "all internet access will be MONITORED":
-  #              the control is the access log, not the list.
+  #              above a bare `allow src`. The deny must come first or it is unreachable, the same
+  #              top-to-bottom rule the global denies in squid.conf rely on. This is the client's
+  #              shape, the objectives' "all internet access will be monitored": the control is the
+  #              access log, not the list.
   #
-  # AN `open` PLANE WITH AN EMPTY DENY LIST STILL EMITS A BLOCK - a bare `allow src` - which is why
-  # the `select` below tests the MODE and not the length of a list. Under the old expression an
-  # empty list meant "emit nothing", and that is correct for `allowlist` (silence = refuse) and
-  # exactly backwards for `open` (silence would refuse a plane that is meant to be permitted).
-  # An `allowlist` plane with an empty list is still skipped, and squid.conf's backstop refuses it.
+  # An `open` plane with an empty deny list still emits a block, a bare `allow src`, which is why
+  # the `select` below tests the mode and not the length of a list. An empty list meaning "emit
+  # nothing" is correct for `allowlist` (silence = refuse) and backwards for `open` (silence would
+  # refuse a plane that is meant to be permitted). An `allowlist` plane with an empty list is
+  # skipped, and squid.conf's backstop refuses it.
   #
-  # `to_private`, the port guards and CONNECT are in squid.conf ABOVE this include, so "open" is
+  # `to_private`, the port guards and CONNECT are in squid.conf above this include, so "open" is
   # open to the internet and never to the estate.
   echo "$JSON" | jq -r '
     to_entries
@@ -87,31 +84,30 @@ JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Paramet
   '
 } > "$TMP"
 
-# CHANGED-ONLY RELOAD. `squid -k reconfigure` is cheap but not free - it re-parses, re-resolves
-# and briefly pauses - and this runs every half hour forever.
+# Changed-only reload. `squid -k reconfigure` is cheap but not free - it re-parses, re-resolves and
+# briefly pauses - and this runs every half hour forever.
 if [ -f "$OUT" ] && cmp -s "$TMP" "$OUT"; then
   exit 0
 fi
 
-# KEEP THE PREVIOUS FILE BEFORE OVERWRITING IT. The first version of this script deleted the new
-# file on a parse failure and called that "reverting", which it was not: the old allow-list was
-# already gone, so a malformed entry would have left the proxy with NO list - every source
-# refused at the next reload. A rollback that has nothing to roll back to is not a rollback.
+# Keep the previous file before overwriting it. Deleting the new file on a parse failure is not a
+# revert: the old allow-list is already gone by then, so a malformed entry would leave the proxy
+# with no list and every source refused at the next reload.
 if [ -f "$OUT" ]; then
   cp -p "$OUT" "$OUT.prev"
 fi
 install -m 0644 "$TMP" "$OUT"
 
-# PARSE BEFORE RELOADING. `squid -k parse` validates the whole configuration and exits non-zero
-# on a bad ACL - so a malformed allow-list entry is caught HERE, with the file replaced but the
-# RUNNING process untouched, rather than by a reload that kills the proxy and takes the estate's
-# internet with it. On failure the previous file goes back and the exit is non-zero, which is
-# what State Manager reports as a failed association.
-# THE ERROR IS PRINTED, NOT SWALLOWED - and the first version of this line swallowed it
-# (`>/dev/null 2>&1`), which cost a diagnosis on the very first boot: the log said only "does not
-# parse - reverting", and finding out WHY needed a hand-run of `squid -k parse` on the host
-# through SSM. Squid names the offending ACL and the offending entry; that is exactly the sentence
-# a person needs, and State Manager surfaces stderr in the association's own failure report.
+# Parse before reloading. `squid -k parse` validates the whole configuration and exits non-zero on
+# a bad ACL, so a malformed allow-list entry is caught here, with the file replaced but the running
+# process untouched, rather than by a reload that kills the proxy and takes the estate's internet
+# with it. On failure the previous file goes back and the exit is non-zero, which State Manager
+# reports as a failed association.
+#
+# The error is printed rather than swallowed: Squid names the offending ACL and the offending
+# entry, which is the sentence a person needs, and State Manager surfaces stderr in the
+# association's own failure report. Swallowing it leaves only "does not parse - reverting" and a
+# hand-run of `squid -k parse` on the host through SSM.
 if ! squid -k parse > /tmp/awsds-squid-parse.out 2>&1; then
   echo "awsds-render-squid: the rendered allow-list does not parse - reverting. Squid said:" >&2
   grep -iE "error|fatal" /tmp/awsds-squid-parse.out >&2 || tail -5 /tmp/awsds-squid-parse.out >&2
@@ -124,6 +120,6 @@ if ! squid -k parse > /tmp/awsds-squid-parse.out 2>&1; then
 fi
 rm -f "$OUT.prev"
 
-# `squid -k reconfigure` on a RUNNING proxy; at first boot squid is not up yet and the user data
+# `squid -k reconfigure` on a running proxy. At first boot squid is not up yet and the user data
 # starts it immediately after, so a failure here is tolerated exactly once and never silently.
 squid -k reconfigure 2>/dev/null || true

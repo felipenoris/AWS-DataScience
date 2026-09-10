@@ -1,24 +1,22 @@
-# production/proxy/ - THE ESTATE'S SINGLE INTERNET EXIT (Stage 6c step 4.8, D38).
+# production/proxy/ - the estate's single internet exit (Stage 6c step 4.8, D38).
 #
-# WHAT THIS REPLACES: three NAT gateways, one per account, each 0.045/h plus per-GB processing
-# plus its own Elastic IP - and, more to the point, three exits nobody could enumerate. This is
-# one exit, on one host, with one allow-list and one access log.
+# It replaces three NAT gateways, one per account, each 0.045/h plus per-GB processing plus its own
+# Elastic IP, and three exits nobody could enumerate. This is one exit, on one host, with one
+# allow-list and one access log.
 #
-# WHY AN EXPLICIT PROXY AND NOT A SHARED NAT, which is the design everyone draws first: peering
-# shares an ADDRESS, never a PATH (Lesson 44). A spoke cannot route its default through a peered
-# VPC's gateway - AWS does not forward peered traffic to an internet gateway, a NAT gateway or a
-# VPC endpoint, and it says so four times in its own guide. So the hop has to be at the
-# APPLICATION layer: the client opens a TCP connection to this host and asks it, by name, to
-# fetch something. That constraint is also what enforces the isolation for free - a spoke with no
-# default route cannot accidentally reach anything.
+# An explicit proxy rather than a shared NAT, because peering shares an address, never a path
+# (Lesson 44): a spoke cannot route its default through a peered VPC's gateway, since AWS does not
+# forward peered traffic to an internet gateway, a NAT gateway or a VPC endpoint. The hop is
+# therefore at the application layer - the client opens a TCP connection to this host and asks it,
+# by name, to fetch something - and a spoke with no default route reaches nothing by accident.
 #
-# WHY IT IS A SECOND HOST AND NOT A SECOND SERVICE ON THE WIREGUARD ONE: that host receives
-# untrusted UDP from the open internet and this one parses untrusted internet RESPONSES.
-# Separating them keeps a compromise of either off the other, and the price is one t3.nano.
+# A second host rather than a second service on the WireGuard one: that host receives untrusted UDP
+# from the open internet and this one parses untrusted internet responses. Separating them keeps a
+# compromise of either off the other, for one more t3.nano.
 #
-# WHAT IT IS NOT: a TLS-terminating inspector. It relays CONNECT, so it sees the host NAME and
-# the byte counts and never the content. That is deliberate - an interception proxy needs a CA
-# that every client trusts, which is a far larger commitment than this stage is making.
+# It is not a TLS-terminating inspector. It relays CONNECT, so it sees the host name and the byte
+# counts and never the content; an interception proxy would need a CA that every client trusts,
+# a far larger commitment than this stage is making.
 
 data "aws_partition" "current" {}
 
@@ -82,10 +80,10 @@ locals {
 
 # ------------------------------------------------------------------------------- the role
 #
-# THREE PERMISSIONS AND NOT ONE MORE. Session Manager (the shell - there is no port 22 here
-# either), ONE SSM parameter by name, and ONE log group with no delete.
+# Three permissions and no more: Session Manager (the shell - there is no port 22 here either),
+# one SSM parameter by name, and one log group with no delete.
 #
-# THE BOUNDARY IS null AND IT IS A DECISION, not an omission - the iam-role module makes it
+# permissions_boundary is null by decision, not by omission; the iam-role module makes it
 # unforgettable by requiring the argument. This is an EC2 service role authored by the identity
 # that authors boundaries (Lesson 18).
 module "role" {
@@ -109,17 +107,17 @@ module "role" {
     ]
   })
 
-  # AmazonSSMManagedInstanceCore is Session Manager AND State Manager: the association of step
-  # 4.10 reaches this host over the agent's OUTBOUND channel, so a scheduled re-render needs no
-  # inbound rule and no write API from anybody's laptop.
+  # AmazonSSMManagedInstanceCore covers Session Manager and State Manager: step 4.10's association
+  # reaches this host over the agent's outbound channel, so a scheduled re-render needs no inbound
+  # rule and no write API from anybody's laptop.
   managed_policy_arns = [
     "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore",
   ]
 
   inline_policies = {
-    # ONE PARAMETER, BY NAME. `ssm:GetParameter` on a PREFIX would let this host read every
-    # parameter the account will ever hold - and the managed policy above already carries a
-    # prefix grant for the agent's own parameters, which is exactly why this one is narrow.
+    # One parameter, by name. `ssm:GetParameter` on a prefix would let this host read every
+    # parameter the account will ever hold, and the managed policy above already carries a prefix
+    # grant for the agent's own parameters.
     "read-allowlist" = jsonencode({
       Version = "2012-10-17"
       Statement = [
@@ -132,11 +130,11 @@ module "role" {
       ]
     })
 
-    # THE ACCESS LOG, WRITE-ONLY AND SCOPED TO ONE GROUP (step 4.11, Lesson 18: the author of
-    # the allow-list must not own its record). No logs:CreateLogGroup - networking/ owns that
-    # group because networking/ owns its retention and its key, and an agent allowed to create
-    # it would recreate it WITHOUT either after a manual delete. No delete of any kind: this
-    # principal appends to the record of its own behaviour and can never edit it.
+    # The access log, write-only and scoped to one group (step 4.11, Lesson 18: the author of the
+    # allow-list must not own its record). No logs:CreateLogGroup - networking/ owns that group,
+    # its retention and its key, and an agent allowed to create it would recreate it without either
+    # after a manual delete. No delete of any kind: this principal appends to the record of its own
+    # behaviour and can never edit it.
     "ship-access-log" = jsonencode({
       Version = "2012-10-17"
       Statement = [
@@ -164,7 +162,7 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host proxy whose alarm is on the free basic status checks - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the shape is the measured baseline of docs/PRICING.md 3
-  # checkov:skip=CKV_AWS_88:A PUBLIC ADDRESS IS WHAT THIS HOST IS FOR - it is the estate's internet exit, and the [P] Elastic IP below is the address every VPN-only condition re-keys onto at 4.12. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
+  # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit, and the [P] Elastic IP below is the address every VPN-only condition re-keys onto at 4.12. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type
 
@@ -172,31 +170,29 @@ resource "aws_instance" "this" {
   vpc_security_group_ids = [data.terraform_remote_state.networking.outputs.proxy_security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.this.name
 
-  # No auto-assigned address: the [P] Elastic IP below is THE address, and a second one would be
-  # a second thing to reason about in every condition that names it.
+  # No auto-assigned address: the [P] Elastic IP below is the address, and a second one would be a
+  # second thing to reason about in every condition that names it.
   associate_public_ip_address = false
 
   user_data = local.user_data
-  # THE USER DATA CARRIES THE WHOLE SQUID CONFIGURATION, so a change to it must produce a NEW
-  # HOST: user data runs at first boot only, and the provider's default edits the attribute in
-  # place, which would leave a proxy whose running configuration silently disagrees with the code
-  # that describes it. WHAT THIS DOES NOT COVER, and it is the point of step 4.10: the ALLOW-LISTS
-  # are not in here. They live in SSM and reach the running host through the association below,
-  # so editing one is an apply of networking/ and never a replacement of this instance.
+  # The user data carries the whole Squid configuration, so a change to it must produce a new host:
+  # user data runs at first boot only, and the provider's default edits the attribute in place,
+  # leaving a proxy whose running configuration disagrees with the code that describes it. The
+  # allow-lists are not in here (step 4.10): they live in SSM and reach the running host through
+  # the association below, so editing one is an apply of networking/ and not a replacement of this
+  # instance.
   user_data_replace_on_change = true
 
-  # SOURCE/DESTINATION CHECKING STAYS ON, and the contrast with the WireGuard host next door is
-  # worth one line: that host FORWARDS for somebody else, so both legs carry foreign addresses.
-  # This one TERMINATES the client's connection and opens its own - every packet it sends wears
-  # its own address, which is the whole difference between a proxy and a router.
+  # Source/destination checking stays on. The WireGuard host next door forwards for somebody else,
+  # so both its legs carry foreign addresses; this one terminates the client's connection and opens
+  # its own, and every packet it sends wears its own address.
 
   metadata_options {
     http_endpoint = "enabled"
-    # IMDSv2 REQUIRED. This host is internet-facing, holds a role credential, and - uniquely in
-    # this estate - FETCHES URLS ON BEHALF OF OTHERS. That last part is why the metadata service
-    # is also denied as a DESTINATION in squid.conf's `to_private` line: a client must not be
-    # able to ask the proxy to fetch 169.254.169.254 and hand back this role's credentials.
-    # Two independent guards on one hole, deliberately (Lesson 20's good direction).
+    # IMDSv2 required. This host is internet-facing, holds a role credential, and fetches URLs on
+    # behalf of others, which is why the metadata service is also denied as a destination in
+    # squid.conf's `to_private` line: a client must not be able to ask the proxy to fetch
+    # 169.254.169.254 and hand back this role's credentials. Two independent guards on one hole.
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
@@ -207,18 +203,18 @@ resource "aws_instance" "this" {
     volume_type = "gp3"
   }
 
-  # THE NAME TAG IS A CONTRACT: scripts/slices.py stops and starts this host by
-  # `awsds-<env>-proxy`, the State Manager association below TARGETS it by this tag, and
+  # The Name tag is a contract: scripts/slices.py stops and starts this host by
+  # `awsds-<env>-proxy`, the State Manager association below targets it by this tag, and
   # ./aws/proxy.py measures it by the same string.
   tags = {
     Name = "awsds-${var.env}-proxy"
   }
 
   # The same read-back trap the WireGuard host hit on its first apply (2026-08-17): with the [P]
-  # address associated below, the refresh reports this attribute from the instance's CURRENT
-  # public address and the next plan wants to replace the instance on
-  # `associate_public_ip_address = true -> false # forces replacement`. The argument stays as
-  # false because it is load-bearing at LAUNCH; only the read-back is ignored.
+  # address associated below, the refresh reports this attribute from the instance's current public
+  # address and the next plan wants to replace the instance on
+  # `associate_public_ip_address = true -> false # forces replacement`. The argument stays false
+  # because it is load-bearing at launch; only the read-back is ignored.
   lifecycle {
     ignore_changes = [associate_public_ip_address]
   }
@@ -231,20 +227,20 @@ resource "aws_eip_association" "this" {
 
 # ------------------------------------------------------- the reload path (step 4.10)
 #
-# THE ALLOW-LISTS ARE [P] DATA AND THIS IS HOW THEY REACH A RUNNING HOST. Without it, editing one
-# domain would mean replacing the instance - a 30-second outage of the whole estate's internet -
-# or a person with a write API and a shell, which is the thing this design does not want to need.
+# The allow-lists are [P] data, and this is how they reach a running host. Without it, editing one
+# domain would mean replacing the instance - a 30-second outage of the whole estate's internet - or
+# a person with a write API and a shell.
 #
-# AWS-RunShellScript RATHER THAN A DOCUMENT OF OUR OWN: the command is one absolute path, the
+# AWS-RunShellScript rather than a document of our own: the command is one absolute path, the
 # script it runs is version-controlled in the user data, and an SSM document would be a second
 # place for the same instruction to live (Lesson 14). The association reaches the host over the
-# agent's OUTBOUND channel, so no security-group rule and no inbound path exists for it.
+# agent's outbound channel, so it needs no security-group rule and no inbound path.
 #
-# WHAT MAKES ITS SILENCE READABLE - and an association that runs every half hour forever is
-# otherwise the definition of an unread signal: the script exits 0 without touching anything when
-# the rendered file is byte-identical, non-zero when the list does not parse, and ./aws/proxy.py
-# (step 7.3) diffs what is RUNNING against what is committed. The association reports its own
-# failures; the instrument is what catches a success that changed nothing it should have.
+# What makes its silence readable, since it runs every half hour forever: the script exits 0
+# without touching anything when the rendered file is byte-identical, non-zero when the list does
+# not parse, and ./aws/proxy.py (step 7.3) diffs what is running against what is committed. The
+# association reports its own failures; the instrument catches a success that changed nothing it
+# should have.
 resource "aws_ssm_association" "reconfigure" {
   name             = "AWS-RunShellScript"
   association_name = "awsds-${var.env}-proxy-reconfigure"
@@ -260,33 +256,27 @@ resource "aws_ssm_association" "reconfigure" {
 
   schedule_expression = var.reconfigure_schedule
 
-  # DO NOT RUN AT CREATION - and the first version of this line said the opposite, for a reason
-  # that sounded good and was measured wrong on the very first apply (2026-09-06).
+  # Do not run at creation (measured 2026-09-06). The association is created seconds after
+  # `RunInstances`, and the user data spends its first ~50 seconds in `dnf install`, so an
+  # immediate run lands on a host that has not written `/usr/local/sbin/awsds-render-squid` yet and
+  # dies with **exit 127, no such file**. That is guaranteed on a fresh host rather than
+  # diagnostic, and it leaves a `Failed` association in the console as a working proxy's permanent
+  # first impression.
   #
-  # THE ARGUMENT THAT FAILED: "the first boot already rendered the list, so an immediate run is a
-  # no-op, and a no-op that FAILS is the reading that says the association is misconfigured."
-  # WHAT ACTUALLY HAPPENS: the association is created seconds after `RunInstances`, and the user
-  # data spends its first ~50 seconds in `dnf install`. So the immediate run lands on a host that
-  # has not written `/usr/local/sbin/awsds-render-squid` yet and dies with **exit 127, no such
-  # file**. On a fresh host that is not a diagnostic, it is guaranteed - and it leaves a `Failed`
-  # association sitting in the console as the permanent first impression of a working proxy.
-  #
-  # The first render belongs to the USER DATA, which owns the boot; this association owns the
-  # ONGOING reconciliation. Splitting them that way is also what makes the association's first
-  # scheduled run a real test rather than a race.
+  # The first render belongs to the user data, which owns the boot; this association owns the
+  # ongoing reconciliation, and its first scheduled run is then a real test rather than a race.
   apply_only_at_cron_interval = true
 }
 
 # ------------------------------------------------------------------------------ the alarm
 #
-# THE ONLY EXIT THE ESTATE HAS MUST NOT FAIL SILENTLY, and step 4.8 did not name an alarm - this
-# is added rather than assumed, on the WireGuard host's precedent and for a stronger reason: when
-# the tunnel dies one person notices immediately, and when this host dies every automated thing
-# in four accounts loses the internet at once with no single obvious symptom.
+# The estate's only exit must not fail silently. When the tunnel dies one person notices
+# immediately; when this host dies every automated thing in four accounts loses the internet at
+# once, with no single obvious symptom.
 #
-# ON THE STATUS CHECKS AND NOT ON TRAFFIC, the same judgement the tunnel's alarm records: an
-# alarm on "no requests for N minutes" is red every night and every weekend, and an alarm that is
-# red when nothing is wrong teaches its reader to ignore it.
+# On the status checks and not on traffic, the same judgement the tunnel's alarm records: an alarm
+# on "no requests for N minutes" is red every night and every weekend, and an alarm that is red
+# when nothing is wrong teaches its reader to ignore it.
 resource "aws_cloudwatch_metric_alarm" "health" {
   alarm_name          = "awsds-${var.env}-proxy-status-check"
   alarm_description   = "The estate's single internet exit is failing its EC2 status checks (Stage 6c step 4.8)."
@@ -297,10 +287,9 @@ resource "aws_cloudwatch_metric_alarm" "health" {
   evaluation_periods  = 3
   threshold           = 0
   comparison_operator = "GreaterThanThreshold"
-  # A stopped host produces NO datapoints, and `missing` must not read as healthy - `breaching`
-  # is what makes "somebody stopped the proxy and forgot" visible. It is also why this alarm has
-  # no action wired: D12 left the budget notifying nobody, and an alarm with no destination is
-  # honest about that rather than pretending.
+  # A stopped host produces no datapoints, and `missing` must not read as healthy: `breaching` is
+  # what makes "somebody stopped the proxy and forgot" visible. This alarm has no action wired,
+  # since D12 left the budget notifying nobody.
   treat_missing_data = "breaching"
 
   dimensions = {
@@ -310,24 +299,21 @@ resource "aws_cloudwatch_metric_alarm" "health" {
 
 # ------------------------------------------------- the name (6c step 2.1, written here at 4.8)
 #
-# `proxy.awsds.internal`, AND IT IS THE ONE NAME THE WHOLE DESIGN IS CONFIGURED AGAINST. Every
-# client in every spoke is told `http_proxy=http://proxy.awsds.internal:3128`, NO_PROXY carries
-# `.awsds.internal` so that name is never sent to the proxy itself, and step 6.1's closing check
-# is `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com`. Step 2.1 says this record
-# is *"written by pass 4 from the host's private address"* - and pass 4 did not write it (found
-# 2026-09-06 at 5.7). Until now the name has been NXDOMAIN, so every one of those instructions
-# named a host that did not resolve.
+# `proxy.awsds.internal` is the name the whole design is configured against. Every client in every
+# spoke is told `http_proxy=http://proxy.awsds.internal:3128`, NO_PROXY carries `.awsds.internal`
+# so that name is never sent to the proxy itself, and step 6.1's closing check is `curl -x
+# proxy.awsds.internal:3128 https://checkip.amazonaws.com`.
 #
-# WHY IT IS HERE AND NOT IN networking/. The zone is [P] and belongs to production/foundation/;
-# the ADDRESS is a property of an instance this [D] slice may replace on a configuration change,
-# and a [P] slice must not take a dependency on a [D] value (Lesson 4 in the other direction).
-# `make down` stops this host rather than destroying it, so the ENI and its private address
-# survive a down/up cycle and the record does not churn.
+# It is here and not in networking/ because the zone is [P] and belongs to production/foundation/,
+# while the address is a property of an instance this [D] slice may replace on a configuration
+# change, and a [P] slice must not take a dependency on a [D] value (Lesson 4). `make down` stops
+# this host rather than destroying it, so the ENI and its private address survive a down/up cycle
+# and the record does not churn.
 #
-# PRIVATE, NOT THE ELASTIC IP, and here that is load-bearing rather than tidy: a spoke reaches
-# 3128 over a PEERING, and a peering carries the private address only. Pointing this name at the
-# Elastic IP would send every spoke's proxy traffic at a public address it has no route to - a
-# timeout with no message, from a name that resolves perfectly.
+# The record carries the private address, not the Elastic IP: a spoke reaches 3128 over a peering,
+# and a peering carries the private address only. Pointing this name at the Elastic IP would send
+# every spoke's proxy traffic at a public address it has no route to - a timeout with no message,
+# from a name that resolves perfectly.
 data "terraform_remote_state" "foundation" {
   backend = "s3"
 

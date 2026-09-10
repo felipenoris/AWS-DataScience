@@ -1,22 +1,19 @@
 # production/networking/peerings.tf - Stage 6c step 3.4, the hub's side of the matrix.
 #
-# THE HUB IS THE ACCEPTER OF EVERY PEERING IN THE ESTATE BUT ONE, which is what makes it a hub:
-# four rows of the matrix end here, and the fifth (Sandbox to VPC-SharedServices) is the one
-# INT-09 rides. The peerings themselves are created by their REQUESTERS - within this account by
-# a single resource with auto_accept, across an account by the requester/accepter pair. What is
-# here is the half a peering does not work without and that is easiest to forget: THE RETURN
-# ROUTES.
+# The hub accepts every peering in the estate but one: four rows of the matrix end here, and the
+# fifth (Sandbox to VPC-SharedServices) is the one INT-09 rides. The peerings themselves are
+# created by their requesters - within this account by a single resource with auto_accept, across
+# an account by the requester/accepter pair. What this file adds is the return routes.
 #
-# AN ATTACHMENT WITH NO ROUTE IS THE DEFECT THIS FILE EXISTS AGAINST. The reference
-# implementation this project keeps as a comparison has exactly it - a peering in `active` state
-# that carries no traffic, because one side's route table was never told. It looks correct in
-# every console view that shows peerings and in none that shows routes, which is why 3.7's NT-11
-# checks both sides rather than the connection.
+# An attachment with no route is the defect it exists against, and the reference implementation
+# kept for comparison has exactly it: a peering in `active` state carrying no traffic, because one
+# side's route table was never told. It looks correct in every console view that shows peerings and
+# in none that shows routes, so 3.7's NT-11 checks both sides rather than the connection.
 #
-# SUBNET-SCOPED, AND FROM EVERY TIER THAT ORIGINATES TRAFFIC. The private tables are where a
-# workload answers from; the PUBLIC table is here too because the proxy and the VPN host live in
-# that tier (pass 4) and their replies have to find the way back. The isolated table gets
-# nothing - that is what makes it isolated.
+# The routes are subnet-scoped and written into every tier that originates traffic. The private
+# tables are where a workload answers from; the public table is here because the proxy and the VPN
+# host live in that tier (pass 4) and their replies have to find the way back. The isolated table
+# gets nothing.
 
 locals {
   # The rows this slice accepts and that live in the same account. The cross-account rows need a
@@ -33,11 +30,10 @@ data "aws_vpc" "requester" {
   }
 }
 
-# The peering is READ, never re-declared: its requester owns it, and a second resource for the
-# same connection is two Terraform states claiming one object. status-code carries both values
-# on purpose - `pending-acceptance` on a first apply, `active` afterwards - so the lookup is
-# idempotent and a MISSING peering fails the plan loudly rather than resolving to nothing
-# (Lesson 13: the two outcomes stay distinguishable).
+# The peering is read, never re-declared: its requester owns it, and a second resource for the same
+# connection is two Terraform states claiming one object. status-code admits `pending-acceptance`
+# and `provisioning` beside `active`, so the lookup is idempotent across a first apply, and a
+# missing peering fails the plan loudly instead of resolving to nothing (Lesson 13).
 data "aws_vpc_peering_connection" "accepted" {
   for_each = { for pr in local.local_accepted : pr.key => pr }
 
@@ -105,18 +101,18 @@ resource "aws_route" "return" {
   vpc_peering_connection_id = data.aws_vpc_peering_connection.accepted[each.value.peering_key].id
 }
 
-# ------------------------------------------------- the CROSS-ACCOUNT accepters (step 3.4)
+# ------------------------------------------------- the cross-account accepters (step 3.4)
 #
-# A PROVIDER CANNOT BE ITERATED, which is why these are written once per peer instead of
-# for_each'd over the matrix like everything above. `peers.tf` carries the same constraint and
-# the same shape; this file joins Stage 14's edit list by construction, exactly as that one does.
+# A provider cannot be iterated, so these are written once per peer instead of for_each'd over the
+# matrix like everything above. `peers.tf` carries the same constraint and the same shape, and this
+# file joins Stage 14's edit list by construction.
 #
-# ACCEPTANCE IS PRODUCTION'S OWN ACT, and that is the account boundary doing its job: a spoke can
-# REQUEST reach into the hub and cannot grant itself any. The requester half sits in the spoke's
-# own slice and leaves the connection `pending-acceptance` until this applies.
+# Acceptance is Production's own act: a spoke can request reach into the hub and cannot grant
+# itself any. The requester half sits in the spoke's own slice and leaves the connection
+# `pending-acceptance` until this applies.
 #
-# THE RETURN ROUTES REFERENCE THE ACCEPTER'S ID, not the data source's - which is what orders
-# every route after acceptance, as AWS requires for a route to a peering.
+# The return routes reference the accepter's id rather than the data source's, which orders every
+# route after acceptance, as AWS requires for a route to a peering.
 
 data "aws_vpc" "sandbox" {
   provider = aws.sandbox
@@ -172,8 +168,8 @@ resource "aws_vpc_peering_connection_accepter" "from_spoke" {
   }
 }
 
-# The spokes' PRIVATE subnets are the only destinations: a spoke originates from its private
-# tier, and nothing in the hub ever initiates toward a spoke's public or isolated one.
+# The spokes' private subnets are the only destinations: a spoke originates from its private tier,
+# and nothing in the hub ever initiates toward a spoke's public or isolated one.
 data "aws_subnets" "sandbox_private" {
   provider = aws.sandbox
 
@@ -200,11 +196,10 @@ data "aws_subnets" "staging_private" {
   }
 }
 
-# ONE BLOCK PER PEER, AND THE PROVIDER IS WHY. A subnet in another account cannot be read with
-# this account's credentials - the first version of this file used a single for_each over both
-# id sets with the default provider and the plan said `no matching EC2 Subnet found`, which is
-# AWS answering truthfully about ITS OWN account. Providers cannot be iterated, so the split is
-# the same one `peers.tf` documents, arriving one layer down.
+# One block per peer, because a subnet in another account cannot be read with this account's
+# credentials: a single for_each over both id sets with the default provider plans as `no matching
+# EC2 Subnet found`. Providers cannot be iterated, so this is the split `peers.tf` documents,
+# arriving one layer down.
 data "aws_subnet" "sandbox_private" {
   provider = aws.sandbox
   for_each = toset(data.aws_subnets.sandbox_private.ids)

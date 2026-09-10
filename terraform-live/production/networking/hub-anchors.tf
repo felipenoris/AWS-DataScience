@@ -31,7 +31,7 @@ locals {
 # on, ./aws/networking.py section 9 and ./aws/vpn.py VP-3 must show it as the only world-open rule in
 # the measured estate. Until then Sandbox's `awsds-sandbox-vpn` group stands beside it, because
 # destroying that slice earlier would strand the host still holding the address; the discriminator is
-# the group NAME, so two groups named `awsds-<env>-vpn` in two accounts is the cut-over and any other
+# the group name, so two groups named `awsds-<env>-vpn` in two accounts is the cut-over and any other
 # world-open rule is the finding.
 #
 # No port 22: the host's preinstalled SSM agent reaches the SSM endpoints outbound and Session
@@ -39,8 +39,8 @@ locals {
 # carries dies with the buildbox's move (5.8). A rule description carries no apostrophe:
 # AuthorizeSecurityGroupIngress rejects the whole call with InvalidParameterValue (measured, Stage 3).
 resource "aws_security_group" "wireguard" {
-  # checkov:skip=CKV2_AWS_5:attached by production/vpn/ - A DIFFERENT SLICE BY DESIGN (the [P]/[D] split this file opens with). The check cannot see across two state files
-  # checkov:skip=CKV_AWS_382:egress is unrestricted BY DESIGN - this instance forwards every tunnel client's traffic at the proxy, so an egress allow-list here would duplicate Squid's and diverge from it. The perimeter is the proxy's allow-list and the SCP/RCP pair
+  # checkov:skip=CKV2_AWS_5:attached by production/vpn/, a different slice - the [P]/[D] split this file opens with. The check cannot see across two state files
+  # checkov:skip=CKV_AWS_382:egress is unrestricted by design - this instance forwards every tunnel client's traffic at the proxy, so an egress allow-list here would duplicate Squid's and diverge from it. The perimeter is the proxy's allow-list and the SCP/RCP pair
   name        = "awsds-${var.env}-vpn"
   description = "WireGuard tunnel endpoint - the only human path into the private network (D4, D38, Stage 6c step 4.1)"
   vpc_id      = module.vpc.vpc_id
@@ -68,24 +68,21 @@ resource "aws_security_group" "wireguard" {
 
 # ----------------------------------------------------------- the proxy security group
 #
-# THE CLIENT LIST IS THE PEERING MATRIX, AND THAT SHARING IS DELIBERATE RATHER THAN LAZY
-# (Lesson 51 - two intents sharing one list stay identical until they must differ). Under D38 a
-# peering to this hub EXISTS IN ORDER TO REACH THE PROXY: three of the four rows in PEERINGS say
-# so in their own comment. So "which ranges may open a TCP connection to Squid" and "which
-# ranges are peered to this VPC" are one question at the reachability layer, and deriving the
-# second from the first is what stops a spoke being peered and then silently left off the group.
+# The client list is derived from the peering matrix (Lesson 51). Under D38 a peering to this hub
+# exists in order to reach the proxy, so "which ranges may open a TCP connection to Squid" and
+# "which ranges are peered to this VPC" are one question at the reachability layer; deriving the
+# second from the first is what stops a spoke being peered and then left off the group.
 #
-# WHERE THE TWO INTENTS DO DIVERGE IS THE LAYER ABOVE, and it is the allow-list, not this group
-# (4.9): the Workloads range is admitted here and reaches NOTHING, because its allow-list is
-# empty by default. Reachability and policy are two spellings on purpose - a source that cannot
-# open a socket produces a timeout nobody can debug, while a source that opens one and is
-# refused by name produces a 403 with the name in it.
+# The two intents diverge one layer above, in the allow-list rather than in this group (4.9): the
+# Workloads range is admitted here and reaches nothing, because its allow-list is empty by
+# default. A source that cannot open a socket produces a timeout nobody can debug; a source that
+# opens one and is refused by name produces a 403 carrying that name.
 #
-# 3128 AND NOT 80/443: an explicit proxy is a distinct listener, which is the whole of D38's
-# "peering shares an address, never a path" (Lesson 44). Nothing here is a transparent intercept.
+# Port 3128 and not 80/443: an explicit proxy is a distinct listener, so nothing here is a
+# transparent intercept (D38, Lesson 44).
 resource "aws_security_group" "proxy" {
-  # checkov:skip=CKV2_AWS_5:attached by production/proxy/ - A DIFFERENT SLICE BY DESIGN, the same [P]/[D] split as the group above
-  # checkov:skip=CKV_AWS_382:this host IS the estate's egress point - restricting its egress would be restricting the internet itself, and the control that does that is the allow-list rendered from the SSM parameter below
+  # checkov:skip=CKV2_AWS_5:attached by production/proxy/, a different slice - the same [P]/[D] split as the group above
+  # checkov:skip=CKV_AWS_382:this host is the estate's egress point - restricting its egress would be restricting the internet itself, and the control that does that is the allow-list rendered from the SSM parameter below
   name        = "awsds-${var.env}-proxy"
   description = "Squid explicit forward proxy - the single internet exit of this estate (D38, Stage 6c step 4.8)"
   vpc_id      = module.vpc.vpc_id
@@ -113,16 +110,16 @@ resource "aws_security_group" "proxy" {
 
 # ------------------------------------------------------------------ the proxy address
 #
-# ~USD 3.65/month, measured (docs/PRICING.md 3), billed from THIS apply rather than from the
-# host's first boot - an Elastic IP is charged whether or not it is associated. That is the
-# price of [P], and it buys the thing 4.12 depends on: the address the control-plane deny
-# re-keys onto has to be knowable and stable BEFORE the host that wears it exists, because the
-# union-then-trim of that step is written against it.
+# ~USD 3.65/month, measured (docs/PRICING.md 3), billed from this apply rather than from the host's
+# first boot: an Elastic IP is charged whether or not it is associated. That is the price of [P],
+# and it buys what 4.12 depends on - the address the control-plane deny re-keys onto has to be
+# knowable and stable before the host that wears it exists, because the union-then-trim of that
+# step is written against it.
 #
-# It is also why ./aws/vpn.py VP-2's "orphan allocation" reading is a NOTE and not a FAIL
-# between here and 4.8: an unassociated allocation is the expected state of this stretch.
+# Between this apply and 4.8 the allocation is unassociated, which is why ./aws/vpn.py VP-2 reads
+# "orphan allocation" as a NOTE and not a FAIL.
 resource "aws_eip" "proxy" {
-  # checkov:skip=CKV2_AWS_19:the association is DELIBERATELY in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/proxy/ where the instance does. The check cannot see across two state files
+  # checkov:skip=CKV2_AWS_19:the association is deliberately in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/proxy/ where the instance does. The check cannot see across two state files
   domain = "vpc"
 
   tags = merge(local.hub_anchor_tags, {
@@ -130,28 +127,27 @@ resource "aws_eip" "proxy" {
   })
 }
 
-# ---------------------------------------------------------- the WireGuard address, IMPORTED
+# -------------------------------------------------------- the WireGuard address, imported
 #
-# NOT ALLOCATED - TRANSFERRED, and that is the whole reason this stage can move the tunnel
+# The address is transferred from Sandbox, not allocated, which is what lets the tunnel move
 # between two AWS accounts without a single client editing a `.conf` file. `52.89.212.1` is the
 # address every device pins as `Endpoint =`, and it is the same address it was in Sandbox.
 #
-# THE ALLOCATION ID DID **NOT** SURVIVE THE TRANSFER - measured 2026-09-06, and this closes the
-# stage's verification 1, which AWS does not document either way:
+# The allocation id did not survive the transfer (measured 2026-09-06, the stage's verification 1;
+# AWS documents it neither way):
 #
 #   in Sandbox     eipalloc-04397bfae0295333d
 #   in Production  eipalloc-07edec7a52dc0820a
 #
-# So an id is a per-account fact about an address, not a property of it. Anything that had
-# pinned the OLD id would now be pointing at nothing - which is why `[P]` outputs in this
-# repository are read through remote state and never pasted, and why the import block below had
-# to be written from a READING rather than from the plan's prose (Lesson 38).
+# An id is a per-account fact about an address, not a property of it. Anything pinning the old id
+# would now point at nothing, so `[P]` outputs in this repository are read through remote state and
+# never pasted, and the import block below was written from a reading rather than from the plan's
+# prose (Lesson 38).
 #
-# THE TAGS ARRIVED EMPTY. A transfer resets them, so the first apply after the import re-applies
-# the whole project tag set - a `~ tags` on a resource nobody edited is the expected reading
-# here exactly once.
+# A transfer resets the tags, so the first apply after the import re-applies the whole project tag
+# set: a `~ tags` on a resource nobody edited is the expected reading here exactly once.
 resource "aws_eip" "wireguard" {
-  # checkov:skip=CKV2_AWS_19:the association is DELIBERATELY in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/vpn/ where the instance does. The check cannot see across two state files
+  # checkov:skip=CKV2_AWS_19:the association is deliberately in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/vpn/ where the instance does. The check cannot see across two state files
   domain = "vpc"
 
   tags = merge(local.hub_anchor_tags, {
@@ -159,10 +155,10 @@ resource "aws_eip" "wireguard" {
   })
 }
 
-# THE IMPORT BLOCK IS ONE-SHOT AND IS DELETED ONCE IT HAS RUN - that is the lifecycle of an
-# `import {}`, not an oversight when it disappears from a later diff. It is a block rather than
-# a `terraform import` command line so that the act is in the DIFF, reviewable, and so that the
-# plan can be read before anything touches state.
+# The import block is one-shot and is deleted once it has run; its disappearance from a later diff
+# is the lifecycle of an `import {}`, not an oversight. It is a block rather than a `terraform
+# import` command line so the act sits in the diff and the plan can be read before anything touches
+# state.
 import {
   to = aws_eip.wireguard
   id = "eipalloc-07edec7a52dc0820a"
@@ -170,25 +166,24 @@ import {
 
 # ------------------------------------------------------------- the WireGuard host key
 #
-# THE CONTAINER IS TERRAFORM'S, THE VALUE NEVER IS (decision 4, third design review): no
-# aws_secretsmanager_secret_version exists anywhere in this repository. The user copies the
-# value in by hand at 4.3 - get-secret-value in Sandbox, put-secret-value here - and the [D]
-# host reads it at first boot with its own role, so the key crosses neither state nor plan.
+# The container is Terraform's, the value never is (decision 4, third design review): no
+# aws_secretsmanager_secret_version exists anywhere in this repository. The user copies the value
+# in by hand at 4.3 - get-secret-value in Sandbox, put-secret-value here - and the [D] host reads
+# it at first boot with its own role, so the key crosses neither state nor plan.
 #
-# AND THE VALUE IS THE OLD ONE, COPIED, NEVER A NEW ONE GENERATED. The host's private key is
-# what makes every client's `PublicKey =` line still valid; minting a fresh key here would be
-# a silent re-issue of every peer's configuration on top of an account move. That is why 4.3
-# is a [user] step in a stage whose applies are Claude's: the one act in pass 4 that cannot be
-# undone by re-running anything.
+# The value copied in is the old key, never a freshly generated one. The host's private key is what
+# keeps every client's `PublicKey =` line valid, so minting a new one here would silently re-issue
+# every peer's configuration on top of an account move. 4.3 is therefore a [user] step in a stage
+# whose applies are Claude's: the one act in pass 4 that re-running nothing can undo.
 resource "aws_secretsmanager_secret" "wireguard_host_key" {
-  # checkov:skip=CKV2_AWS_57:automatic rotation is FORBIDDEN here by design, not missing - a rotation Lambda would replace the key without touching a single client config, which is the keys runbook's one rule violated by machine. Rotation is procedure C. ./aws/vpn.py VP-9 fails if RotationEnabled ever reads true
+  # checkov:skip=CKV2_AWS_57:automatic rotation is forbidden here, not missing - a rotation Lambda would replace the key without touching a single client config, the one rule in the keys runbook that a machine must not violate. Rotation is procedure C. ./aws/vpn.py VP-9 fails if RotationEnabled ever reads true
   # checkov:skip=CKV_AWS_149:the aws/secretsmanager managed key, deliberately - it delegates to IAM exactly as the Sandbox container it replaces does, and the containment here is the resource policy's explicit deny below, which a CMK would not sharpen
   name        = "awsds-${var.env}-vpn-host-key"
   description = "WireGuard host private key - value copied in by the user at Stage 6c step 4.3, never written by Terraform; read once per first boot by the [D] host's role. Rotation is manual and coordinated: docs/plan/runbooks/vpn.md, part K."
 
-  # The undelete path, and the reason a routine destroy of this resource is never routine: the
-  # NAME is unavailable until the window closes, so a slice rebuild that recreated the container
-  # would fail on the name it just released.
+  # The undelete path, and the reason destroying this resource is never routine: the name is
+  # unavailable until the window closes, so a slice rebuild that recreated the container would fail
+  # on the name it just released.
   recovery_window_in_days = 30
 
   tags = merge(local.hub_anchor_tags, {
@@ -196,17 +191,16 @@ resource "aws_secretsmanager_secret" "wireguard_host_key" {
   })
 }
 
-# The containment rides on the OBJECT, not on six permission sets (Lesson 14's good direction):
-# one deny here reaches every principal this account will ever hold. Scoped to the VALUE read
-# alone, deliberately - denying secretsmanager:* would put the container's own management behind
-# a deny only its author could lift, an availability trap with no confidentiality gain, since
-# GetSecretValue IS the secret. Lesson 18 stands: this policy cannot constrain
-# InfrastructureAccess, which authors it, and does not try to - Infrastructure is the enrollment
-# writer of 4.3 and the recovery reader, carved out by name.
+# The containment rides on the object rather than on six permission sets (Lesson 14): one deny here
+# reaches every principal this account will ever hold. It is scoped to the value read alone, since
+# denying secretsmanager:* would put the container's own management behind a deny only its author
+# could lift, an availability trap with no confidentiality gain - GetSecretValue is the secret. This
+# policy cannot constrain InfrastructureAccess, which authors it (Lesson 18), and does not try to:
+# Infrastructure is the enrollment writer of 4.3 and the recovery reader, carved out by name.
 #
-# The instance-role ARN is a NAME CONTRACT with the wireguard module (its iam.tf names the role
-# awsds-<env>-vpn): the foundation cannot read a [D] slice's outputs, so the name is the seam.
-# The SSO pattern is 1c decision 7's - the suffix is minted per account, an exact ARN breaks on
+# The instance-role ARN is a name contract with the wireguard module, whose iam.tf names the role
+# awsds-<env>-vpn: the foundation cannot read a [D] slice's outputs, so the name is the seam. The
+# SSO pattern is 1c decision 7's - the suffix is minted per account, and an exact ARN breaks on
 # re-provision.
 resource "aws_secretsmanager_secret_policy" "wireguard_host_key" {
   secret_arn = aws_secretsmanager_secret.wireguard_host_key.arn
@@ -235,71 +229,63 @@ resource "aws_secretsmanager_secret_policy" "wireguard_host_key" {
 
 # ------------------------------------------------------------- the proxy's allow-lists
 #
-# THE CONFIGURATION IS [P] DATA, NOT [D] DISK STATE (Lesson 4 - state living only inside an [E]
-# or [D] resource is the recurring failure mode). Squid's allow-lists are the estate's egress
-# policy; a copy of them that exists only in /etc/squid on an instance dies with the instance.
-# So they live in this parameter, are rendered at boot, and reach a RUNNING host through 4.10's
-# State Manager association - which is what lets a list change be an apply rather than a host
+# The configuration is [P] data, not [D] disk state (Lesson 4). Squid's allow-lists are the
+# estate's egress policy, and a copy of them that exists only in /etc/squid on an instance dies
+# with the instance. They live in this parameter, are rendered at boot, and reach a running host
+# through 4.10's State Manager association, so a list change is an apply rather than a host
 # replacement or a 30-second estate-wide outage.
 #
-# ONE PLANE PER SOURCE, AND THE PLANES ARE DERIVED FROM THE PEERING MATRIX rather than listed
-# (Lesson 14): a spoke that gets peered gets a plane, so no spoke can be admitted by the
-# security group above and then forgotten here. The step 4.9 prose enumerates four planes -
-# tunnel, Sandbox, SharedServices, Workloads - and OMITS STAGING, which is a peered spoke with
-# a runtime of its own; deriving rather than transcribing is what surfaces that.
+# One plane per source, and the planes are derived from the peering matrix rather than listed
+# (Lesson 14): a spoke that gets peered gets a plane, so no spoke can be admitted by the security
+# group above and then forgotten here. The step 4.9 prose enumerates the tunnel, Sandbox,
+# SharedServices and Workloads planes and omits Staging, a peered spoke with a runtime of its own;
+# deriving rather than transcribing is what surfaces that.
 #
-# EMPTY IS THE SAFE DEFAULT AND THE HONEST ONE. Squid's last line is `http_access deny all`, so
-# an empty allow-list denies everything by name rather than by timeout. 4.9 fills these; until
-# it does, this parameter says exactly what the estate has decided so far, which is nothing.
-# ---------------------------------------------------------------- 4.9, THE TWO FILTERS
+# Squid's last line is `http_access deny all`, so an empty allow-list denies everything by name
+# rather than by timeout.
+# ---------------------------------------------------------------- 4.9, the two filters
 #
-# THE OBJECTIVES ASK FOR TWO DIFFERENT FILTERS AND THIS IS WHERE BOTH NOW LIVE. Until D38 they
-# sat in two places and one of them has stopped working: a per-VPC DNS firewall inspects the
-# names a client RESOLVES, and an explicit-proxy client resolves nothing - it hands Squid a name
-# and Squid resolves it. So the DNS firewall can no longer see a laptop's browsing at all, and
-# both filters move here, as SOURCE-SCOPED lists.
+# The objectives ask for two different filters and both live here. Until D38 they sat in two
+# places and one of them stopped working: a per-VPC DNS firewall inspects the names a client
+# resolves, and an explicit-proxy client resolves nothing - it hands Squid a name and Squid
+# resolves it. The DNS firewall can no longer see a laptop's browsing at all, so both filters are
+# here, as source-scoped lists.
 #
-# THE TRANSLATION IS NOT A COPY, and this is the part that would be wrong if it had been treated
-# as one. Route 53 DNS Firewall and Squid `dstdomain` spell subdomains DIFFERENTLY:
+# The translation is not a copy. Route 53 DNS Firewall and Squid `dstdomain` spell subdomains
+# differently:
 #
-#   DNS Firewall   `example.com` is the APEX ONLY; `*.example.com` is subdomains and NOT the apex
-#   Squid          `example.com` is that EXACT host; `.example.com` is the domain AND every
+#   DNS Firewall   `example.com` is the apex only; `*.example.com` is subdomains and not the apex
+#   Squid          `example.com` is that exact host; `.example.com` is the domain and every
 #                  subdomain of it
 #
-# So a DNS-firewall pair (`amazonaws.com`, `*.amazonaws.com`) collapses to ONE Squid entry
+# So a DNS-firewall pair (`amazonaws.com`, `*.amazonaws.com`) collapses to one Squid entry
 # (`.amazonaws.com`), and a lone DNS-firewall apex stays a lone Squid host. Transcribing the
-# asterisks would have produced entries matching nothing, and the symptom would have been a
-# refusal that looks exactly like a missing entry.
+# asterisks would produce entries matching nothing, and the symptom would be a refusal that looks
+# exactly like a missing entry.
 #
-# THE WILDCARD IS GONE. The DNS firewall's list opens with a literal `"*"` - it was the
-# permissive baseline of an earlier stage, and every entry after it is decoration while it
-# stands. It is not carried across: this list is the first time the estate's egress is actually
-# enumerated.
+# The DNS firewall's list opens with a literal `"*"`, the permissive baseline of an earlier stage,
+# and every entry after it is decoration while it stands. It is not carried across.
 locals {
-  # (i) THE CLIENT PLANE'S DENY LIST, AND IT REPLACED AN ALLOW-LIST THAT WAS THE WRONG SHAPE
-  # (2026-09-07). What stood here was twenty-three AWS console, portal and sign-in families, seeded
-  # from the SMUS network-isolation guide exactly as step 4.9 said to - and the result was a client
-  # that could open the AWS console and nothing else on the internet. `objectives.md` asks for the
-  # opposite: the client's internet is **monitored**, not restricted, and the restriction belongs to
-  # the SageMaker compute. The full argument is on `proxy_allowlist` below, where the mode is set.
+  # (i) The client plane's deny list. `objectives.md` asks for the client's internet to be
+  # **monitored**, not restricted; the restriction belongs to the SageMaker compute. The argument
+  # is on `proxy_allowlist` below, where the mode is set.
   #
-  # EMPTY, BY DECISION (the user, 2026-09-07): everything permitted, everything logged, and this
-  # list filled when a written policy exists to fill it from. **Empty is not "no control"** - the
-  # control for this plane is the access log, which is what the objectives' word *monitored* names,
-  # and it is already carrying a per-device address (`10.90.0.2`, measured at step 6.1).
+  # Empty by decision (the user, 2026-09-07): everything permitted, everything logged, and this
+  # list filled when a written policy exists to fill it from. The control for this plane is the
+  # access log, which is what the objectives' word *monitored* names, and it already carries a
+  # per-device address (`10.90.0.2`, measured at step 6.1).
   #
-  # WHAT AN ENTRY HERE WILL MEAN when the list is filled: a name this estate's people may not
-  # reach. It obeys the same `dstdomain` rules as the allow-lists - `.x` covers `x` and every
-  # subdomain, and `x` beside `.x` in one acl is **FATAL** - so the plan-time collision check below
-  # reads this list too.
+  # An entry here names a destination this estate's people may not reach. It obeys the same
+  # `dstdomain` rules as the allow-lists - `.x` covers `x` and every subdomain, and `x` beside `.x`
+  # in one acl is fatal - so the plan-time collision check below reads this list too.
   #
-  # THE THREE GLOBAL DENIES STILL APPLY and are not repeated here: private destinations (the L7
-  # bridge control), unsafe ports, and CONNECT to anything but 443. "Open" means open to the
-  # internet, never open to the estate.
+  # The global denies still apply and are not repeated here: private destinations (the L7 bridge
+  # control), unsafe ports, and CONNECT to anything but 443. "Open" means open to the internet,
+  # never open to the estate.
   proxy_deny_tunnel = []
 
-  # (ii) SAGEMAKER'S STRICTER LIST - what a NOTEBOOK/VSCode may reach. Today's DNS Firewall allow-list
-  # moved across, minus the wildcard and minus every portal family above: a notebook does not
+  # (ii) SageMaker's stricter list - what a notebook or Code Editor may reach. The DNS Firewall
+  # allow-list moved across, minus the wildcard and minus every portal family: a notebook does not
   # open the console, and a name it cannot reach is a name a job cannot post data to.
   proxy_allow_sandbox = [
     ".amazonaws.com",
@@ -326,146 +312,118 @@ locals {
     "index.crates.io",
     "static.crates.io",
     "static.rust-lang.org",
-    # SOURCE CONTROL IS DELIBERATELY ABSENT - `github.com` REMOVED 2026-09-09 BY THE USER (6d 8.6).
-    # It was on this plane and it worked: 3.1 measured a clone from a JupyterLab space on 2026-09-08.
-    # It comes off because a name is not judged by whether it works but by whether an INTERACTIVE
-    # COMPUTE plane should reach it, and source control is the path by which code - and whatever a
-    # notebook has put beside it - leaves a governed environment. `objectives.md` names data-leakage
-    # protection as a requirement of its own; this is that requirement costing something.
-    # `api.github.com` and `raw.githubusercontent.com` were refused for the same reason in the same
-    # sitting, though they were the IDE's own startup traffic rather than anyone's clone - measured
-    # 2026-09-09: both fire in bursts where the gallery is not touched at all.
+    # Source control is deliberately absent: `github.com` was removed by the user 2026-09-09 (6d
+    # 8.6), and it worked while it stood - 3.1 measured a clone from a JupyterLab space 2026-09-08.
+    # A name is judged by whether an interactive compute plane should reach it, and source control
+    # is the path by which code, and whatever a notebook has put beside it, leaves a governed
+    # environment; `objectives.md` names data-leakage protection as a requirement of its own.
+    # `api.github.com` and `raw.githubusercontent.com` came off for the same reason, though they
+    # are the IDE's own startup traffic rather than anyone's clone - measured 2026-09-09, both
+    # firing in bursts where the gallery is not touched at all.
     #
-    # WHAT THIS COSTS, so nobody re-adds it as a bug fix: `git clone`, `fetch` and `push` from a
-    # Sandbox space now fail. The BUILD plane is unaffected - `production-foundation` is `open`, so
-    # the buildbox and the future pipeline still reach GitHub, which is where a build belongs.
+    # What this costs, so nobody re-adds it as a bug fix: `git clone`, `fetch` and `push` from a
+    # Sandbox space fail. The build plane is unaffected - `production-foundation` is `open`, so the
+    # buildbox and the future pipeline still reach GitHub, which is where a build belongs.
     #
-    # THE IDE's OWN HOSTS, allowed as one block 2026-09-09 (6d 8.6). Each was read as a `403` in
-    # `/awsds/prod/proxy` after 8.4 put the proxy in the process, each fires at STARTUP without
-    # anyone asking for anything, and none has a VPC endpoint - which is the test that separates an
-    # allow-list entry from a bypass-list one (an endpoint-backed name allow-listed here would work
-    # while arriving without `aws:SourceVpce`). Note the domain families: three names, three
-    # different ones, and none of them `.amazonaws.com`.
+    # The IDE's own hosts, allowed as one block 2026-09-09 (6d 8.6). Each was read as a `403` in
+    # `/awsds/prod/proxy` after 8.4 put the proxy in the process, each fires at startup without
+    # anyone asking for anything, and none has a VPC endpoint - the test that separates an
+    # allow-list entry from a bypass-list one, since an endpoint-backed name allow-listed here would
+    # work while arriving without `aws:SourceVpce`. Each sits in a different domain family, and none
+    # of them is `.amazonaws.com`.
     "idetoolkits.amazonwebservices.com",
     "ide-toolkits.app-composer.aws.dev",
-    # REGIONAL, so it is INTERPOLATED - and the form is `${var.region}`, not
-    # `${data.aws_region.current.region}`, because TWO readers parse this list and only one of them
-    # is Terraform. `check-tf-conventions` caught the literal (a hard-coded region is a portability
-    # defect that reads as data); `aws/dns-allowlist.py` then caught the wrong interpolation, because
-    # it resolves `${var.region}` and REPORTS anything else as unresolved rather than guessing.
-    # Terraform accepts both and says `No changes` either way, so the instrument is the only thing
-    # that can tell these two apart. It is the only regional entry on this plane.
+    # Regional, so it is interpolated, and the form is `${var.region}` rather than
+    # `${data.aws_region.current.region}` because two readers parse this list and only one of them
+    # is Terraform. `check-tf-conventions` catches the literal, a portability defect that reads as
+    # data; `aws/dns-allowlist.py` catches the wrong interpolation, because it resolves
+    # `${var.region}` and reports anything else as unresolved rather than guessing. Terraform
+    # accepts both and says `No changes` either way, so only the instrument tells them apart. It is
+    # the only regional entry on this plane.
     "sagemaker-unified-studio-mcp.${var.region}.api.aws",
-    # VSCode Extension Gallery - TWO NAMES, AND THE SECOND WAS MEASURED 2026-09-09 (6d 8.6).
-    # `open-vsx.org` serves the API and the manifest; `openvsx.eclipsecontent.org` serves the
-    # `.vsix` BYTES. The install goes to the first, is redirected to the second, and Squid matches
-    # the hostname the client REQUESTED - so a redirect is a new request with a new name, and the
-    # first entry alone authorised the question while refusing the answer. Read from
-    # `/awsds/prod/proxy` exactly as the comment above it predicted: `open-vsx.org:443 200
-    # TCP_TUNNEL` followed by `openvsx.eclipsecontent.org:443 403 TCP_DENIED`, the same shape as
-    # `public.ecr.aws`'s CloudFront distribution at 6c 5.8. The tunnel plane, which is `open`,
-    # reached the second host with a 200 in the same minutes - the negative control that says the
-    # name is refused by THIS LIST and by nothing else.
+    # The VS Code extension gallery needs both names (measured 2026-09-09, 6d 8.6). `open-vsx.org`
+    # serves the API and the manifest; `openvsx.eclipsecontent.org` serves the `.vsix` bytes. The
+    # install goes to the first, is redirected to the second, and Squid matches the hostname the
+    # client requested, so a redirect is a new request with a new name and the first entry alone
+    # authorised the question while refusing the answer. Read from `/awsds/prod/proxy`:
+    # `open-vsx.org:443 200 TCP_TUNNEL` followed by `openvsx.eclipsecontent.org:443 403
+    # TCP_DENIED`, the same shape as `public.ecr.aws`'s CloudFront distribution at 6c 5.8. The
+    # tunnel plane, which is `open`, reached the second host with a 200 in the same minutes - the
+    # negative control that says the name is refused by this list and by nothing else.
     #
-    # BOTH ARE BARE NAMES ON PURPOSE. `dstdomain` matches a bare entry exactly, so neither covers a
-    # subdomain, and that is the property being bought: `eclipsecontent.org` is a namespace, and a
-    # namespace entry would authorise every host anyone puts under it.
+    # Both are bare names. `dstdomain` matches a bare entry exactly, so neither covers a subdomain:
+    # `eclipsecontent.org` is a namespace, and a namespace entry would authorise every host anyone
+    # puts under it.
     "open-vsx.org",
     "openvsx.eclipsecontent.org",
   ]
 
-  # (iii) THE BUILD PLANE'S DENY LIST, AND IT REPLACED AN ALLOW-LIST THAT WAS ANSWERING THE WRONG
-  # QUESTION (2026-09-08, the user, amending D38 section 6; 6d step 9).
+  # (iii) The build plane's deny list (2026-09-08, the user, amending D38 section 6; 6d step 9).
+  # `production-foundation` is `open`: a build host runs a Dockerfile that is in git and reviewed,
+  # so its control is that review rather than a list of hostnames, and the restriction
+  # `objectives.md` places on the SageMaker-managed compute does not reach it.
   #
-  # WHAT STOOD HERE was `proxy_allow_shared`: the notebook list minus `.amazonaws.com`, plus one
-  # CloudFront distribution read out of the access log after a `docker pull` failed. It worked.
-  # The reason it is gone is not that it broke - it is that a build host is not the thing the
-  # objectives restrict. `objectives.md` puts the restriction on the SageMaker-MANAGED COMPUTE:
-  # an interactive surface, where a person can fetch whatever they like and the network is the
-  # only thing standing between the lake and a package index. A build host is the opposite shape.
-  # It runs a Dockerfile that is in git, reviewed, and promoted as an artifact - it is the thing
-  # that BUILDS the restricted environment, and today it stands in for the CI/CD pipeline that
-  # will replace it. Its control is the review of the build definition, not a list of hostnames.
+  # `open` is not "no control". Three things bound this plane and none of them are in this list:
+  # the global denies above every plane (private destinations, so the proxy cannot become an L7
+  # bridge into the estate; unsafe ports; CONNECT to anything but 443); the security group, which
+  # admits this source to 3128 and nothing else; and the absence of a default route in
+  # SharedServices, which leaves the proxy the only way out. What changes is which public names are
+  # reachable through that one door, and every one of them is still written to the access log.
   #
-  # AND THE LIST WAS A TREADMILL, WHICH IS THE PRACTICAL HALF. Every base image, every package
-  # source, every HTTP redirect a registry makes is a name somebody has to read out of
-  # `/awsds/prod/proxy` and add here. `d5l0dvt14r5h8.cloudfront.net` was exactly that, and the
-  # comment that carried it said so: *"REVISION TRIGGER, and it is a WHEN rather than an IF"*. A
-  # control whose maintenance cost is a refusal nobody can predict, guarding a host whose real
-  # control is elsewhere, is a control that will be widened in a hurry by whoever is blocked.
+  # `sandbox-foundation` stays an allow-list: a name a build host may fetch is not thereby
+  # reachable from a notebook.
   #
-  # `open` IS NOT "NO CONTROL", AND THE DIFFERENCE IS THE SAME ONE THE TUNNEL PLANE MAKES. Three
-  # things still bound this plane and none of them are in this list: the three global denies
-  # above every plane (PRIVATE DESTINATIONS - so the proxy cannot become an L7 bridge into the
-  # estate - unsafe ports, and CONNECT to anything but 443); the security group, which admits
-  # this source to 3128 and nothing else; and the absence of a default route in SharedServices,
-  # which means the proxy is the ONLY way out. What changes is which public NAMES are reachable
-  # through that one door, and every one of them is still written to the access log.
+  # The plane is a CIDR, not a host (Lesson 29), which is the sentence to re-read before adding
+  # anything to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC - the buildbox today, the
+  # GitLab runners when Stage 7 puts them there - and anything else that lands in it inherits
+  # `open` too. A host that should not have the open internet belongs in a VPC with its own plane.
   #
-  # WHAT THIS DOES NOT WIDEN: `sandbox-foundation` stays an allow-list. That is the whole reason
-  # the planes are source-scoped - a name a build host may fetch is not thereby reachable from a
-  # notebook, and this edit is the first time that split earns its keep in the permissive
-  # direction rather than the restrictive one.
-  #
-  # THE PLANE IS A CIDR, NOT A HOST, and that is the sentence to re-read before adding anything
-  # to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC: the buildbox today, the GitLab
-  # runners when Stage 7 puts them there. That is the intent - the CI/CD tooling is exactly what
-  # this decision is about - but it is inherited by ANYTHING that lands in that VPC, including
-  # something put there for an unrelated reason (Lesson 29). A host that should not have the
-  # open internet does not belong in SharedServices; it belongs in a VPC with its own plane.
-  #
-  # EMPTY, LIKE THE TUNNEL'S, AND FOR THE SAME REASON: everything permitted, everything logged,
-  # and this list filled when there is a written policy to fill it from. An entry here would be a
-  # name a BUILD may not fetch - a compromised package host, say - and it obeys the same
-  # `dstdomain` rules as the allow-lists, so the collision gate below reads it too.
+  # Empty, like the tunnel's: everything permitted, everything logged, and this list filled when
+  # there is a written policy to fill it from. An entry here would be a name a build may not fetch,
+  # a compromised package host say, and it obeys the same `dstdomain` rules as the allow-lists, so
+  # the collision gate below reads it too.
   proxy_deny_shared = []
 
-  # THE PLANES, BY THE KEY THE MATRIX GENERATES. A key here that is not a plane below is a typo
-  # that would otherwise be silently dropped by the merge - the precondition on the resource is
-  # what turns it into a plan-time failure.
-  # THE TUNNEL IS ABSENT FROM THIS MAP SINCE 2026-09-07, and its absence is the correction: this
-  # map holds ALLOW-lists, and the client plane no longer has one. Its deny list is
-  # `proxy_deny_tunnel` above, and `proxy_allowlist` is where the two are given their modes.
+  # The allow-list planes, keyed as the peering matrix generates them. A key here that is not a
+  # plane below is a typo the merge would silently drop; the precondition on the resource turns it
+  # into a plan-time failure. The tunnel is absent because this map holds allow-lists and the client
+  # plane has none - its deny list is `proxy_deny_tunnel` above, and `proxy_allowlist` is where
+  # every plane is given its mode.
   proxy_allow_by_plane = {
     "sandbox-foundation" = local.proxy_allow_sandbox
-    # EMPTY, AND EMPTY IS A DECISION RATHER THAN AN OMISSION. `production-workloads` is the
-    # production runtime: everything it needs is an AWS API reached through an endpoint or the
-    # proxy's own AWS entry, and nothing has yet named a public dependency for it. Staging is the
-    # plane step 4.9 forgot entirely (it enumerated four sources and Staging is a fifth) - it is
-    # here, empty, so that adding to it is an edit rather than a discovery.
+    # Empty by decision. `production-workloads` is the production runtime: everything it needs is
+    # an AWS API reached through an endpoint or the proxy's own AWS entry, and nothing has yet
+    # named a public dependency for it. Staging is the plane step 4.9 omitted; it is here, empty,
+    # so that adding to it is an edit rather than a discovery.
     "production-workloads" = []
     "staging-foundation"   = []
   }
 
-  # THE PLANES THAT ARE `open`, AND MEMBERSHIP OF THIS MAP IS WHAT DECIDES THE MODE. A peering
-  # plane appears in exactly one of the two maps: in `proxy_allow_by_plane` it is an allow-list,
-  # here it is `open` and its list is a DENY list. Two maps rather than one map of objects
-  # because the mode then cannot be set independently of the KIND of list the plane carries -
-  # the failure the tunnel's own restructure was written to prevent, where a plane could say
-  # `open` and carry an allow-list, and the render script would emit a block that means the
-  # opposite of what it reads like. The preconditions below fail a plane that is in both maps
-  # and a plane that is in neither is simply an allow-list with nothing on it, which is the
-  # safe default rather than the permissive one.
-  # `tunnel` IS NOT HERE for the same reason it is not in the allow map: it is authored inline
+  # The planes that are `open`. Membership of this map decides the mode: a peering plane appears in
+  # exactly one of the two maps, an allow-list in `proxy_allow_by_plane` and a deny list here. Two
+  # maps rather than one map of objects, so the mode cannot be set independently of the kind of
+  # list the plane carries - otherwise a plane could say `open` and carry an allow-list, and the
+  # render script would emit a block meaning the opposite of what it reads like. The preconditions
+  # below fail a plane that is in both maps; a plane in neither is an allow-list with nothing on
+  # it, which refuses everything.
+  # `tunnel` is not here for the same reason it is not in the allow map: it is authored inline
   # below, because its source is a variable rather than a peering row.
   proxy_deny_by_plane = {
     "production-foundation" = local.proxy_deny_shared
   }
 
-  # EVERY PLANE CARRIES A `mode`, AND THE TUNNEL'S IS THE ONE THAT IS NOT `allowlist`
-  # (restructured 2026-09-07, correcting a requirements defect - see the block above the tunnel
-  # entry). Two values, and the render script branches on exactly this field:
+  # Every plane carries a `mode`, and the render script branches on exactly this field:
   #
   #   allowlist   the plane may reach the names in `allow` and nothing else. `deny` is unused.
-  #               This is a RESTRICTION, and it is what the objectives ask for on the compute.
-  #   open        the plane may reach anything EXCEPT the names in `deny`. `allow` is unused.
-  #               This is MONITORING - the control is the access log, not the list - and it is
-  #               what the objectives ask for on the client.
+  #               A restriction, which is what the objectives ask for on the compute.
+  #   open        the plane may reach anything except the names in `deny`. `allow` is unused.
+  #               Monitoring - the control is the access log, not the list - which is what the
+  #               objectives ask for on the client.
   #
-  # BOTH KEYS ARE ALWAYS PRESENT, one of them empty, so no parser downstream has to handle a
+  # Both keys are always present, one of them empty, so no parser downstream has to handle a
   # missing field: `./aws/proxy.py` PX-3 and `./aws/dns-allowlist.py` both read this document, and
   # a shape that is sometimes one thing and sometimes another is how those two drift apart.
-  # THE UNION THE COLLISION GATE READS - both kinds, keyed by plane, because a `deny` entry is
+  # The collision gate reads the union of both kinds, keyed by plane, because a `deny` entry is
   # rendered into the same `dstdomain` syntax and carries the same fatal pair.
   proxy_collision_lists = {
     for plane, cfg in local.proxy_allowlist : plane => concat(cfg.allow, cfg.deny)
@@ -473,30 +431,22 @@ locals {
 
   proxy_allowlist = merge(
     {
-      # THE CLIENT PLANE IS `open`, AND THE ALLOW-LIST IT USED TO CARRY WAS A REQUIREMENTS DEFECT
-      # (found by the user 2026-09-07, on the first browser that tried to use the proxy).
-      # `objectives.md` is explicit in two places, and they agree:
+      # The client plane is `open`. `objectives.md` is explicit in two places, and they agree:
       #
-      #   "all internet access will be MONITORED - there will be an HTTP/HTTPS proxy between the
+      #   "all internet access will be monitored - there will be an HTTP/HTTPS proxy between the
       #    VPN-connected client and the cloud's internet egress. Once on the VPN, the user can
       #    therefore use the browser to reach the internet"
-      #   "the restriction is on the SageMaker-MANAGED COMPUTE, never on the user's (client's)
+      #   "the restriction is on the SageMaker-managed compute, never on the user's (client's)
       #    machine"
       #
-      # What stood here was a 23-name allow-list of AWS console and portal families, which made the
-      # CLIENT's internet stricter than the COMPUTE's - the exact inversion of the requirement.
-      # It came from step 4.9's paraphrase, *"the institutional web filter - what a person on a
-      # company laptop may reach"*, plus a `squid.conf` that is default-deny: "filter" was
-      # implemented as an allow-list. **An institutional web filter is a DENY-list over an open
-      # default** - it blocks categories, it does not enumerate the web - and `CLAUDE.md` says the
-      # objectives are "the specification a stage is measured against, so it is summarised
-      # nowhere". The paraphrase became the specification, which is what that rule exists to stop.
+      # An institutional web filter is a **deny-list over an open default**: it blocks categories,
+      # it does not enumerate the web (the user, 2026-09-07).
       #
-      # THE DENY LIST IS EMPTY BY DECISION (the user, 2026-09-07): everything permitted, everything
-      # logged, and the list filled when there is a written policy to fill it from. Empty here does
-      # NOT mean "no control" - it means the control is the access log in `/awsds/prod/proxy`,
-      # which is what "monitored" names. The three global denies above every plane still apply to
-      # this one: private destinations, unsafe ports, and CONNECT to anything but 443.
+      # The deny list is empty by decision (the user, 2026-09-07): everything permitted, everything
+      # logged, and the list filled when there is a written policy to fill it from. The control for
+      # this plane is the access log in `/awsds/prod/proxy`, which is what "monitored" names. The
+      # global denies above every plane still apply here: private destinations, unsafe ports, and
+      # CONNECT to anything but 443.
       tunnel = {
         sources = [var.wireguard_peer_cidr]
         mode    = "open"
@@ -505,14 +455,13 @@ locals {
       }
     },
     {
-      # EVERY SPOKE CARRYING COMPUTE STAYS `allowlist`, and that is the objectives' other half:
-      # the restriction belongs to the compute. `sandbox-foundation` is SageMaker's list - D5 as
-      # amended by D38 calls it "the length of that compute's source-scoped allow-list on the
-      # proxy", which is design A's short one rather than design B's empty one.
-      # THE WORD WAS "EVERY" UNTIL 2026-09-08, and the exception is `production-foundation`: a
-      # BUILD plane, not a compute one, `open` by the user's decision (see `proxy_deny_shared`
-      # above and D38 section 6). The mode is no longer hard-coded here - it comes from which of
-      # the two maps the plane is in, so this branch cannot silently contradict them.
+      # A spoke carrying compute stays `allowlist`, the objectives' other half: the restriction
+      # belongs to the compute. `sandbox-foundation` is SageMaker's list - D5 as amended by D38
+      # calls it "the length of that compute's source-scoped allow-list on the proxy", design A's
+      # short list rather than design B's empty one. `production-foundation` is the exception, a
+      # build plane rather than a compute one, `open` by the user's decision (see
+      # `proxy_deny_shared` above and D38 section 6). The mode is not hard-coded here: it comes
+      # from which of the two maps the plane is in, so this branch cannot contradict them.
       for p in var.peerings : "${p.peer_account}-${p.peer_slice}" => {
         sources = [p.peer_cidr]
         mode    = contains(keys(local.proxy_deny_by_plane), "${p.peer_account}-${p.peer_slice}") ? "open" : "allowlist"
@@ -524,69 +473,60 @@ locals {
 }
 
 resource "aws_ssm_parameter" "proxy_allowlist" {
-  # checkov:skip=CKV_AWS_337:a String parameter, not a SecureString, so there is no KMS key to name - an egress ALLOW-LIST is a published control, not a credential, and its whole value is that ./aws/proxy.py (7.3) can diff running against committed without a decrypt permission
+  # checkov:skip=CKV_AWS_337:a String parameter, not a SecureString, so there is no KMS key to name - an egress allow-list is a published control, not a credential, and its whole value is that ./aws/proxy.py (7.3) can diff running against committed without a decrypt permission
   # checkov:skip=CKV2_AWS_34:same reading - SecureString would encrypt a document whose contents are in this repository in plain text
-  # `/datascience/` AND NOT `/awsds/`, AND THE RULE IS OLDER THAN THIS FILE (conventions "One
-  # service refuses this prefix outright", measured at Stage 2's Validation 2026-08-16).
-  # Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitive, and
-  # `awsds` begins with `aws` - so `/awsds/...` fails PutParameter with
-  # `AccessDeniedException: No access to reserved parameter name`, a message that reads like a
-  # policy problem and is a naming one. This apply hit it anyway, because step 4.10 named the
-  # parameter without naming the constraint: the note is repeated HERE, at the only site in the
-  # repository that writes an SSM parameter, so the next one does not have to rediscover it.
+  # `/datascience/` and not `/awsds/` (conventions, "One service refuses this prefix outright",
+  # measured at Stage 2's Validation 2026-08-16). Parameter Store reserves every name beginning
+  # with `aws` or `ssm`, case-insensitive, and `awsds` begins with `aws`, so `/awsds/...` fails
+  # PutParameter with `AccessDeniedException: No access to reserved parameter name` - a message
+  # that reads like a policy problem and is a naming one. The note is repeated here, at the only
+  # site in the repository that writes an SSM parameter.
   name        = "/datascience/${var.env}/proxy/allowlist"
   description = "Squid source-scoped allow-lists, one plane per peered spoke plus the tunnel (Stage 6c steps 4.9/4.10). Rendered at boot and by a State Manager association; never edited on the host."
   type        = "String"
 
-  # Standard tier: free, and capped at 4 KB. An allow-list that outgrows that is the signal to
-  # split per plane rather than to pay for Advanced (USD 0.05/parameter-month) - a per-plane
-  # parameter is also what a per-plane review would want. ./aws/proxy.py reports the margin.
+  # Standard tier: free, and capped at 4 KB. An allow-list that outgrows that is split per plane
+  # rather than moved to Advanced (USD 0.05/parameter-month). ./aws/proxy.py reports the margin.
   tier = "Standard"
 
   value = jsonencode(local.proxy_allowlist)
 
   lifecycle {
-    # A PLANE AUTHORED FOR A SPOKE THAT IS NOT PEERED IS A TYPO THE MERGE WOULD SWALLOW. The
-    # planes come from `var.peerings`; the LISTS are authored by hand and keyed by the same
-    # string. Misspell one - `staging` for `staging-foundation` - and the merge simply never
-    # looks it up: the parameter applies clean, the spoke gets an empty list, and the symptom is
-    # a refusal that reads exactly like a name nobody added. This turns it into a plan failure.
+    # A plane authored for a spoke that is not peered is a typo the merge would swallow. The planes
+    # come from `var.peerings`; the lists are authored by hand and keyed by the same string.
+    # Misspell one - `staging` for `staging-foundation` - and the merge never looks it up: the
+    # parameter applies clean, the spoke gets an empty list, and the symptom is a refusal that reads
+    # exactly like a name nobody added. This turns it into a plan failure.
     precondition {
       condition     = length(setsubtract(setunion(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)), keys(local.proxy_allowlist))) == 0
       error_message = "a plane map names a plane that no peering generates: ${join(", ", setsubtract(setunion(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)), keys(local.proxy_allowlist)))}. The plane keys are `tunnel` plus one `<peer_account>-<peer_slice>` per row of PEERINGS."
     }
 
-    # A PLANE IN BOTH MAPS IS A MODE NOBODY CHOSE. `mode` is decided by membership of
-    # `proxy_deny_by_plane`, so a plane listed in both would be `open` AND carry an allow-list -
-    # the render script would emit the deny block and drop the allow list in silence, which is
-    # the permissive half of the pair. There is no reading of "both" that is what the author
-    # meant, so it fails here rather than being resolved by precedence.
+    # A plane in both maps is a mode nobody chose. `mode` is decided by membership of
+    # `proxy_deny_by_plane`, so a plane listed in both would be `open` and carry an allow-list: the
+    # render script would emit the deny block and drop the allow list in silence, the permissive
+    # half of the pair. It fails here rather than being resolved by precedence.
     precondition {
       condition     = length(setintersection(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane))) == 0
       error_message = "a plane is in BOTH proxy_allow_by_plane and proxy_deny_by_plane: ${join(", ", setintersection(keys(local.proxy_allow_by_plane), keys(local.proxy_deny_by_plane)))}. A plane is an allow-list or it is `open`; membership of the deny map is what decides."
     }
 
-    # THE 4 KB STANDARD-TIER CEILING, CHECKED AT PLAN TIME RATHER THAN MET AT APPLY TIME. Past it
-    # the answer is a parameter per plane (which a per-plane review would want anyway), never
-    # Advanced tier at USD 0.05/parameter-month for a list of domain names. 3800 leaves room for
-    # the entries added between one reading of this line and the next.
-    # THE APEX-PLUS-WILDCARD COLLISION, CAUGHT AT PLAN TIME (added 2026-09-06, after it took the
-    # proxy's first boot down to an empty allow-list). Squid's `dstdomain` treats `x` beside `.x`
-    # in ONE acl as **FATAL** - and the trap is that the list this was translated from, a Route 53
-    # DNS Firewall allow-list, REQUIRED both forms to mean what `.x` means here. So every future
-    # entry copied from that side carries the defect in, and the failure is invisible from this
-    # repository: the render script reverts, the proxy keeps an EMPTY list, and every source is
-    # refused by name.
+    # The apex-plus-wildcard collision, caught at plan time (2026-09-06, after it took the proxy's
+    # first boot down to an empty allow-list). Squid's `dstdomain` treats `x` beside `.x` in one acl
+    # as **FATAL**, and the list this was translated from - a Route 53 DNS Firewall allow-list -
+    # required both forms to mean what `.x` means here. Every entry copied from that side carries
+    # the defect in, and the failure is invisible from this repository: the render script reverts,
+    # the proxy keeps an empty list, and every source is refused by name.
     #
-    # A DEEPER name under a wildcard (`a.b.example.com` under `.example.com`) is only a WARNING and
-    # is deliberately NOT failed here - it is redundant rather than wrong, and a gate that refuses
-    # both would refuse a list that works.
+    # A deeper name under a wildcard (`a.b.example.com` under `.example.com`) is only a warning and
+    # is not failed here: it is redundant rather than wrong, and a gate that refused both would
+    # refuse a list that works.
     #
-    # IT READS BOTH LIST KINDS SINCE 2026-09-07. `deny` renders into a `dstdomain` acl exactly as
-    # `allow` does, so an apex beside its own wildcard is just as fatal there - and a deny list is
-    # the one somebody will paste names into in a hurry, from a blocklist written for a different
-    # syntax. `local.proxy_collision_lists` is the union, so neither kind can be added later
-    # without this gate seeing it.
+    # It reads both list kinds. `deny` renders into a `dstdomain` acl exactly as `allow` does, so an
+    # apex beside its own wildcard is just as fatal there, and a deny list is the one somebody will
+    # paste names into in a hurry from a blocklist written for a different syntax.
+    # `local.proxy_collision_lists` is the union, so neither kind can be added later without this
+    # gate seeing it.
     precondition {
       condition = length(flatten([
         for plane, names in local.proxy_collision_lists : [
@@ -597,15 +537,18 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
       error_message = "a plane lists a domain AND its own wildcard, which Squid refuses with `FATAL: Bungled`: ${join(", ", flatten([for plane, names in local.proxy_collision_lists : [for d in names : "${plane}:${d} beside .${d}" if !startswith(d, ".") && contains(names, ".${d}")]]))}. Keep the dotted form only - `.x` matches the apex as well."
     }
 
-    # EVERY PLANE'S MODE IS ONE OF TWO WORDS, AND AN UNKNOWN ONE MUST NOT REACH THE HOST. The
-    # render script branches on this string; a typo would match neither branch, emit no block at
-    # all for that plane, and the symptom would be a source that is admitted by the security group
-    # and refused by name - reachable and mute, which is the failure this estate keeps meeting.
+    # An unknown `mode` must not reach the host. The render script branches on this string; a typo
+    # would match neither branch and emit no block at all for that plane, leaving a source that is
+    # admitted by the security group and refused by name - reachable and mute.
     precondition {
       condition     = alltrue([for cfg in values(local.proxy_allowlist) : contains(["allowlist", "open"], cfg.mode)])
       error_message = "every plane's `mode` must be `allowlist` (may reach only `allow`) or `open` (may reach anything but `deny`)."
     }
 
+    # The 4 KB Standard-tier ceiling, checked at plan time rather than met at apply time. Past it
+    # the answer is a parameter per plane, which a per-plane review would want anyway, never
+    # Advanced tier at USD 0.05/parameter-month for a list of domain names. 3800 leaves room for
+    # the entries added between one reading of this line and the next.
     precondition {
       condition     = length(jsonencode(local.proxy_allowlist)) < 3800
       error_message = "the rendered allow-list is ${length(jsonencode(local.proxy_allowlist))} bytes, against Parameter Store's 4 KB Standard-tier ceiling. Split it per plane rather than paying for Advanced."
@@ -619,15 +562,14 @@ resource "aws_ssm_parameter" "proxy_allowlist" {
 
 # --------------------------------------------------------- the proxy's access log, and its key
 #
-# [P] AND NOT IN THE PROXY SLICE, WHICH IS THE WHOLE POINT (Stage 6c step 4.11). This log is the
-# estate's record of what left it - Stage 11's egress evidence - and evidence that dies with the
-# host it describes is not evidence. The [D] slice writes into this group; it does not own it,
-# and `make down` does not take it.
+# [P] and not in the proxy slice (Stage 6c step 4.11). This log is the estate's record of what left
+# it, Stage 11's egress evidence, and evidence that dies with the host it describes is not
+# evidence. The [D] slice writes into this group, does not own it, and `make down` does not take
+# it.
 #
-# A CMK HERE, WHERE THE FLOW LOGS AND THE HANDSHAKE LOG BOTH DECLINED ONE, and the difference is
-# the one their own comments draw: those are DEBUGGING logs, and this is an audit trail. The
-# rate is measured, not estimated (docs/PRICING.md; Lesson 6) - ~USD 1.00/key-month, which the
-# stage's cost table now carries as its one line that is neither an address nor a gateway.
+# A CMK here, where the flow logs and the handshake log both declined one: those are debugging
+# logs, and this is an audit trail. The rate is measured, not estimated (docs/PRICING.md; Lesson
+# 6) - ~USD 1.00/key-month.
 module "proxy_log_key" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/kms-key?ref=kms-key-v0.1.0"
@@ -635,10 +577,10 @@ module "proxy_log_key" {
   alias_name  = "awsds-${var.env}-proxy-log"
   description = "Squid access log - the estate's egress evidence (Stage 6c step 4.11, read by Stage 11)"
 
-  # CloudWatch Logs encrypts and decrypts on this account's behalf, so the service principal
-  # needs the key - scoped by `kms:EncryptionContext:aws:logs:arn` to THIS log group and no
-  # other, which is the condition AWS's own documentation specifies and the reason the grant is
-  # not "logs may use this key for anything in the account".
+  # CloudWatch Logs encrypts and decrypts on this account's behalf, so the service principal needs
+  # the key, scoped by `kms:EncryptionContext:aws:logs:arn` to this log group and no other. That is
+  # the condition AWS's documentation specifies, and it is what keeps the grant from reading "logs
+  # may use this key for anything in the account".
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -671,14 +613,13 @@ module "proxy_log_key" {
   })
 }
 
-# RETENTION IS 365 DAYS AND STEP 4.11 DID NOT NAME ONE - said here rather than left implicit.
-# Every other log group in this repository is 30 days by decision, because every other one is a
-# DIAGNOSTIC. This is the answer to "what left the estate, from which device, and when", which is
-# a question asked after the fact and rarely within a month. Storage is USD 0.03/GB-month and a
-# handful of people browsing produce megabytes, so the retention is chosen against the question
-# rather than against the bill - but Stage 11 is where it is reviewed against a real volume.
+# Retention is 365 days, where every other log group in this repository is 30 days: the others are
+# diagnostics, and this one answers "what left the estate, from which device, and when", a question
+# asked after the fact and rarely within a month. Storage is USD 0.03/GB-month and a handful of
+# people browsing produce megabytes, so the retention is chosen against the question rather than
+# against the bill. Stage 11 reviews it against a real volume.
 resource "aws_cloudwatch_log_group" "proxy_access" {
-  # checkov:skip=CKV_AWS_338:365 days IS the deliberate value - see the paragraph above; the one-year default this check wants is what is written
+  # checkov:skip=CKV_AWS_338:365 days is the deliberate value - see the paragraph above; the one-year default this check wants is what is written
   name              = "/awsds/${var.env}/proxy"
   retention_in_days = 365
   kms_key_id        = module.proxy_log_key.key_arn
