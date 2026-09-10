@@ -1,28 +1,24 @@
-# production/networking/hub-anchors.tf - Stage 6c step 4.1 (2026-09-06). The [P] half of the
-# cut-over, applied BEFORE anything moves, so the blackout of pass 4 contains only the two
-# irreversible-looking acts (the address transfer and the host builds) and none of the
-# preparation.
+# hub-anchors.tf - the [P] half of the 6c step 4.1 cut-over, applied before anything moves, so
+# pass 4's blackout contains only the address transfer and the host builds.
 #
-# THIS FILE IS sandbox/foundation/vpn-anchors.tf's ARGUMENT, RE-MADE IN A NEW ACCOUNT, PLUS A
-# SECOND HOST. That argument in one sentence: a reference is only worth writing if what it
-# names outlives the thing that uses it - so the addresses, the security groups and the key's
-# custody are [P] and created here, while the instances that consume them are [D] in
-# production/vpn/ and production/proxy/ and may be replaced whenever the SSM-resolved AMI moves.
+# It re-makes sandbox/foundation/vpn-anchors.tf's argument in a new account, plus a second host: a
+# reference is worth writing only if what it names outlives the thing that uses it. The addresses,
+# the security groups and the key's custody are [P] and created here; the instances that consume
+# them are [D] in production/vpn/ and production/proxy/ and may be replaced whenever the
+# SSM-resolved AMI moves.
 #
-# WHAT IS NOT HERE, AND THE ABSENCE IS THE STEP AFTER THIS ONE: the WireGuard Elastic IP. It is
-# not allocated - it is TRANSFERRED from Sandbox (4.5) and imported (4.6), which is what keeps
-# every client's `Endpoint =` line unchanged. Allocating one here would produce a second address
-# and a re-issue of every .conf, which is the fallback in the stage's risk table and not the plan.
+# The WireGuard Elastic IP is not allocated here. It is transferred from Sandbox (4.5) and imported
+# (4.6), which keeps every client's `Endpoint =` line unchanged; allocating one would produce a
+# second address and a re-issue of every .conf, the fallback in the stage's risk table.
 #
-# WHY TWO HOSTS AND NOT ONE (D38): the WireGuard host receives untrusted UDP from the internet
-# and the Squid host parses untrusted internet responses. Separating them keeps a compromise of
-# either off the other, and it costs one more t3.nano.
+# Two hosts and not one (D38): the WireGuard host receives untrusted UDP from the internet and the
+# Squid host parses untrusted internet responses. Separating them keeps a compromise of either off
+# the other, for one more t3.nano.
 
-# The CostCenter override, per resource and for sandbox/foundation/vpn-anchors.tf's reason: the
-# slice's provider default_tags say `stage-03`, which is true of the VPC this file sits beside
-# and false of everything below it. The convention is CostCenter = the stage that CREATED the
-# resource, and a slice-level default cannot tell two stages apart inside one slice. The other
-# four mandatory tags still arrive from default_tags, unrepeated (Lesson 14).
+# CostCenter is overridden per resource, for sandbox/foundation/vpn-anchors.tf's reason: the slice's
+# provider default_tags say `stage-03`, true of the VPC this file sits beside and false of everything
+# below it, and a slice-level default cannot tell two stages apart inside one slice. The other four
+# mandatory tags arrive from default_tags, unrepeated (Lesson 14).
 locals {
   hub_anchor_tags = {
     CostCenter = "stage-06c"
@@ -31,22 +27,17 @@ locals {
 
 # ------------------------------------------------------- the WireGuard security group
 #
-# THE ESTATE'S ONE WORLD-OPEN RULE, MOVING ACCOUNTS. Exactly one port, open to the world, and
-# nothing else - from 4.13 on, ./aws/networking.py section 9 and ./aws/vpn.py VP-3 must show
-# this as the only world-open rule in the whole measured estate.
+# The estate's one world-open rule: exactly one port, open to the world, and nothing else. From 4.13
+# on, ./aws/networking.py section 9 and ./aws/vpn.py VP-3 must show it as the only world-open rule in
+# the measured estate. Until then Sandbox's `awsds-sandbox-vpn` group stands beside it, because
+# destroying that slice earlier would strand the host still holding the address; the discriminator is
+# the group NAME, so two groups named `awsds-<env>-vpn` in two accounts is the cut-over and any other
+# world-open rule is the finding.
 #
-# BETWEEN THIS APPLY AND 4.13 THERE ARE TWO, AND THAT IS EXPECTED RATHER THAN A FINDING
-# (Lesson 50 - a check written to a stage's FINAL expectation is red for every pass until the
-# stage ends). Sandbox's `awsds-sandbox-vpn` group stands until its slice is destroyed at 4.13,
-# because destroying it earlier would strand the host that still holds the address. The
-# discriminator is the group NAME: two groups named `awsds-<env>-vpn` in two different accounts
-# is the cut-over; any OTHER world-open rule, in either account, is the finding.
-#
-# NO PORT 22, EVER - the host's preinstalled SSM agent reaches the SSM endpoints outbound and
-# Session Manager is the shell. NO `vpc_nat_cidrs` RULE EITHER: the isolated-tier NAT job that
-# Sandbox's copy of this group carries dies with the buildbox's move (5.8), so it is not
-# reproduced here. A rule description carries no apostrophe - AuthorizeSecurityGroupIngress
-# rejects the whole call with InvalidParameterValue, measured in Stage 3.
+# No port 22: the host's preinstalled SSM agent reaches the SSM endpoints outbound and Session
+# Manager is the shell. No `vpc_nat_cidrs` rule either, since the isolated-tier NAT job Sandbox's copy
+# carries dies with the buildbox's move (5.8). A rule description carries no apostrophe:
+# AuthorizeSecurityGroupIngress rejects the whole call with InvalidParameterValue (measured, Stage 3).
 resource "aws_security_group" "wireguard" {
   # checkov:skip=CKV2_AWS_5:attached by production/vpn/ - A DIFFERENT SLICE BY DESIGN (the [P]/[D] split this file opens with). The check cannot see across two state files
   # checkov:skip=CKV_AWS_382:egress is unrestricted BY DESIGN - this instance forwards every tunnel client's traffic at the proxy, so an egress allow-list here would duplicate Squid's and diverge from it. The perimeter is the proxy's allow-list and the SCP/RCP pair

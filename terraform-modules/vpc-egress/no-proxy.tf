@@ -1,25 +1,18 @@
-# NO_PROXY, GENERATED FROM THIS VPC'S OWN ENDPOINT LIST (6c step 5.6, 2026-09-06).
+# NO_PROXY, generated from this VPC's own endpoint list (6c step 5.6).
 #
-# WHY IT IS NOT A BLANKET `.us-west-2.amazonaws.com`, which is what every tutorial writes. That
-# suffix tells a client "reach every AWS service directly". Under design B there is no default
-# route, so a service WITHOUT an endpoint then has no path at all: the call leaves the SDK, finds
-# no route, and ends as a socket timeout with no message - a network failure is the ABSENCE of a
-# response, which is the failure mode Lesson 42 separates from a denial. Generated per VPC, the
-# same call instead reaches the proxy and comes back as a **403 naming the host**, which is a
-# finding a person can act on. The list therefore holds every name this VPC's own endpoints answer
-# for - LONGER than the endpoint list, since 2026-09-09 - and it shrinks and grows with them in the
-# same apply.
+# Not a blanket `.us-west-2.amazonaws.com`. That suffix tells a client to reach every AWS service
+# directly, and under design B there is no default route, so a service without an endpoint has no
+# path at all: the call leaves the SDK, finds no route, and ends as a socket timeout with no message
+# (Lesson 42 - a network failure is the absence of a response). Generated per VPC, the same call
+# reaches the proxy and comes back as a 403 naming the host, which a person can act on.
 #
-# WHY THE NAMES ARE READ FROM THE ENDPOINT AND NOT FROM THE SERVICE (rewritten 2026-09-09, 6d step
-# 8.8). Two readings answer "what does this endpoint respond to", and they do not return the same
-# thing:
+# The names come from the ENDPOINT, not from the service, because the two readings differ:
 #
-#   data.aws_vpc_endpoint_service.private_dns_name   ONE name - the service's canonical spelling
-#   aws_vpc_endpoint.dns_entry[*].dns_name           EVERY name the endpoint actually answers for
+#   data.aws_vpc_endpoint_service.private_dns_name   one name - the service's canonical spelling
+#   aws_vpc_endpoint.dns_entry[*].dns_name           every name the endpoint answers for
 #
-# This module used the first from 6c step 5.6 until now, so the bypass list carried exactly one name
-# per endpoint while the resolver served several. Measured in Sandbox 2026-09-09: 16 of 18 interface
-# endpoints answer for at least one name the generated list did not carry.
+# Measured in Sandbox 2026-09-09: 16 of 18 interface endpoints answer for at least one name the
+# service reading does not carry.
 #
 #   datazone          datazone.<region>.amazonaws.com     + datazone.<region>.api.aws
 #   logs              logs.<region>.amazonaws.com         + logs.<region>.api.aws
@@ -29,51 +22,30 @@
 #   sagemaker.studio  *.studio.<region>.sagemaker.aws     + studio.sagemaker.<region>.app.aws (idem)
 #   twelve more       <service>.<region>.amazonaws.com    + an `.api.aws` twin
 #
-# WHAT A MISSING ENTRY COSTS, AND THE LOUD CASE WAS LUCK OF THE DOMAIN FAMILY. A name absent from
-# this list goes to Squid, and what happens there is decided by the plane's allow-list, never by
-# anything in this file:
+# A name missing from this list goes to Squid, and the plane's allow-list decides what happens:
 #
-#   `.api.aws`, `.app.aws`, `.on.aws`   on no compute plane  -> 403. Visible, and it names the host.
-#   `.amazonaws.com`                    IS on the plane      -> 200. The call leaves through the
+#   `.api.aws`, `.app.aws`, `.on.aws`   on no compute plane  -> 403, visible, naming the host
+#   `.amazonaws.com`                    is on the plane      -> 200. The call leaves through the
 #                                       hub's IGW as a PUBLIC call and arrives carrying neither
-#                                       aws:SourceVpc nor aws:SourceVpce.
+#                                       aws:SourceVpc nor aws:SourceVpce
 #
-# `streaming-logs.<region>.amazonaws.com` is the second row and it is not hypothetical: a different
-# LABEL under a family this list already carries, so no suffix rule covers it and no 403 would ever
-# have reported it. That is the same fail-open the gateway pair below is written against, one level
-# down - not a service left out, but a NAME of a service that was put in.
+# So the loud case was luck of the domain family. `streaming-logs.<region>.amazonaws.com` is the
+# second row: a different label under a family this list already carries, which no suffix rule covers
+# and no 403 would report. The symptom that found the defect was the first row - 11 refusals of
+# `datazone.<region>.api.aws` in the proxy log, for a service holding an interface endpoint in that
+# very VPC, which broke DataZone inside a Studio space (2026-09-08).
 #
-# The symptom that found the defect was the first row: `datazone.<region>.api.aws` refused 11 times
-# in the proxy's log, for a service holding an interface endpoint in that very VPC, which broke
-# DataZone inside a Studio space (2026-09-08). A hand-patch adding that one name to the space's
-# `http.noProxy` removed exactly that refusal and left the other five - the cause reproduced rather
-# than the symptom relieved.
+# `dns_entry` is an attribute of a resource this module creates, so its value is known only after
+# apply. Nothing consumes it during an apply - the three egress slices publish it as an output, read
+# by hand and by production/buildbox's user-data through terraform_remote_state - so the cost is a
+# first plan printing (known after apply).
 #
-# THIRD INSTANCE OF ONE CAUSE, which is why the repair is a different READING and not another entry.
-# The fixed half below already carries two hand-patches of this shape: the gateway pair, which has no
-# private DNS at all, and the `dualstack` spellings, added after a build host failed its first boot.
-# The pattern is Lesson 40's neighbour - THE ROSTER YIELDS FEWER NAMES THAN THE RESOLVER SERVES - and
-# reading the endpoint is what stops it recurring, because a name AWS adds to an endpoint that
-# already exists now arrives on the next apply instead of on the next outage.
-#
-# WHAT THE CHANGE COSTS. `dns_entry` is an attribute of a resource this module creates, so the value
-# is known only after apply where the data source was a plan-time reading requiring no endpoint to
-# exist. Nothing consumes it DURING an apply - the three egress slices publish it as an output, read
-# by hand and by production/buildbox's user-data through terraform_remote_state - so the whole cost
-# is that a first plan prints (known after apply). The data source is gone: keeping it beside this
-# would be two readings of one fact, which is Lesson 33 in a file that already argues against it.
-# THE SERVICE READING IS BACK, AND IT IS NO LONGER THE OUTPUT'S SOURCE (v0.11.1, 2026-09-09). It
-# survives for one job: the DNS Firewall coverage guard below has to be able to fail at PLAN time,
-# and `dns_entry` cannot do that on a VPC whose endpoints do not exist yet.
-#
-# MEASURED, not reasoned (staging/egress, torn down, 2026-09-09): with the guard reading `dns_entry`
-# alone, `terraform plan` on an empty state printed `20 to add` and `no_proxy = (known after apply)`
-# and RAISED NOTHING - the whole condition was unknown, so Terraform deferred it to apply. v0.11.0
-# had quietly turned 6c step 5.7's plan-time failure into a mid-apply one, which is Lesson 39 exactly:
-# the strict validator arrives one act late. This data source is what buys the act back.
-#
-# It is a plan-time READING, one call per declared service, free and requiring no endpoint to exist
-# (Lesson 38 - an identifier read out of prose is a claim, not a reading).
+# The service reading survives for one job: the DNS Firewall coverage guard below has to fail at PLAN
+# time, and `dns_entry` cannot do that on a VPC whose endpoints do not exist yet. Measured
+# (staging/egress, torn down, 2026-09-09): with the guard reading `dns_entry` alone, `terraform plan`
+# on an empty state printed `20 to add` and `no_proxy = (known after apply)` and raised nothing - the
+# condition was unknown, so Terraform deferred it to apply (Lesson 39: the strict validator arrives
+# one act late). One plan-time call per declared service, free, requiring no endpoint to exist.
 data "aws_vpc_endpoint_service" "this" {
   for_each = local.service_names
 
@@ -81,22 +53,20 @@ data "aws_vpc_endpoint_service" "this" {
 }
 
 locals {
-  # EVERY NAME, MINUS THE ENDPOINT-SPECIFIC ONES. `dns_entry` carries two kinds of name and only one
+  # Every name, minus the endpoint-specific ones. `dns_entry` carries two kinds of name and only one
   # of them is a service name (measured 2026-09-09, sagemaker.studio, eight entries):
   #
-  #   vpce-0ade...-k08f855k.studio.<region>.vpce.sagemaker.aws              the ENDPOINT, regional
-  #   vpce-0ade...-k08f855k-us-west-2b.studio.<region>.vpce.sagemaker.aws   the ENDPOINT, zonal
+  #   vpce-0ade...-k08f855k.studio.<region>.vpce.sagemaker.aws              the endpoint, regional
+  #   vpce-0ade...-k08f855k-us-west-2b.studio.<region>.vpce.sagemaker.aws   the endpoint, zonal
   #   studio.<region>.sagemaker.aws                                         what a client dials
   #
-  # The first kind is excluded for two reasons, and the second is the one that matters here. Nothing
-  # in this estate dials it - `private_dns_enabled` is true on every endpoint this module creates, so
-  # clients use the service name - and it embeds the endpoint ID, which is `[E]`. Including it would
-  # make NO_PROXY change on every up/down cycle, and "the [P] outputs are byte-identical on the
-  # second `up`" is the property D11's proof rests on.
+  # Nothing in this estate dials the first kind (`private_dns_enabled` is true on every endpoint this
+  # module creates, so clients use the service name), and it embeds the endpoint id, which is `[E]`.
+  # Including it would make NO_PROXY change on every up/down cycle, and D11's proof rests on the [P]
+  # outputs being byte-identical on the second `up`.
   #
-  # FILTERED ON THE `vpce-` PREFIX RATHER THAN ON A `.vpce.amazonaws.com` SUFFIX, and the difference
-  # is measured rather than stylistic: sagemaker.studio's endpoint-specific names end in
-  # `.vpce.sagemaker.aws`, so a suffix filter would have let four of them through.
+  # Filtered on the `vpce-` prefix, not on a `.vpce.amazonaws.com` suffix: sagemaker.studio's
+  # endpoint-specific names end in `.vpce.sagemaker.aws`, so a suffix filter would let four through.
   endpoint_dns_names = distinct(flatten([
     for k, ep in aws_vpc_endpoint.interface : [
       for entry in ep.dns_entry : entry.dns_name
@@ -104,13 +74,18 @@ locals {
     ]
   ]))
 
-  # THE ONE TRANSFORMATION, AND IT IS NOW A FORK RATHER THAN A DELETION. `*.` cannot survive into
-  # NO_PROXY - entries there match as SUFFIXES ONLY, never as prefixes and never as a CIDR block, so
-  # `*.dkr.ecr...` written literally matches nothing in any client that matters, and this file's own
-  # precondition refuses it.
-  #
-  # BOTH SPELLINGS FOR A WILDCARD NAME (decided 2026-09-09, 6d step 8.8), because the clients
-  # disagree exactly here and no single form is right under all of them:
+  # The declared half, for the guard alone and never for NO_PROXY: one name per service, where the
+  # resolver serves several.
+  declared_private_dns_names = [
+    for s, svc in data.aws_vpc_endpoint_service.this :
+    svc.private_dns_name
+    if svc.private_dns_name != ""
+  ]
+
+  # A wildcard name is forked into both spellings, never deleted. `*.` cannot survive into NO_PROXY -
+  # entries there match as suffixes only, so `*.dkr.ecr...` written literally matches nothing, and
+  # this file's own precondition refuses it. Both spellings, because the clients disagree here and no
+  # single form is right under all of them (6d step 8.8):
   #
   #   requests / botocore      hostname.endswith(entry)              bare covers the subtree AND the
   #                                                                  apex; dot-prefixed, subtree only
@@ -118,23 +93,11 @@ locals {
   #   curl                     skips a leading dot, exact-or-suffix   either form covers both
   #   a strict suffix matcher  the mirror image of the first row
   #
-  # So the bare form is the one that can miss a subdomain and the dot form is the one that can miss
-  # the apex, and which failure you get depends on the client rather than on the name. Carrying both
-  # is correct under every matcher above and costs one array entry per wildcard name - four in
-  # Sandbox. It is the choice 6d step 8.4 made for the two internal zones, for the same reason;
-  # Lesson 53 is why it is not settled by transcribing one syntax into the other.
-  #
-  # `trimprefix` rather than `replace` on purpose: it touches only a LEADING `*`, so a name that
-  # carried the sequence elsewhere would survive intact.
-  # THE DECLARED HALF, for the guard alone - NEVER for NO_PROXY. This is what the output read until
-  # 8.8, and shipping it into the bypass list is the defect this version removes: one name per
-  # service, where the resolver serves several.
-  declared_private_dns_names = [
-    for s, svc in data.aws_vpc_endpoint_service.this :
-    svc.private_dns_name
-    if svc.private_dns_name != ""
-  ]
-
+  # The bare form can miss a subdomain, the dot form can miss the apex, and which failure you get
+  # depends on the client. Carrying both is correct under every matcher and costs one array entry per
+  # wildcard name, four in Sandbox - the choice 6d step 8.4 made for the two internal zones (Lesson
+  # 53: one syntax is not settled by transcribing the other). `trimprefix` rather than `replace`
+  # touches only a leading `*`, so a name carrying the sequence elsewhere survives intact.
   no_proxy_endpoint_entries = distinct(flatten([
     for name in local.endpoint_dns_names :
     startswith(name, "*.")
@@ -142,17 +105,15 @@ locals {
     : [name]
   ]))
 
-  # THE FIXED HALF - six entries no endpoint list can produce, and the first two are the ones that
-  # would hurt.
+  # The fixed half - entries no endpoint list can produce.
   #
-  # S3 AND DYNAMODB ARE HERE BECAUSE A GATEWAY ENDPOINT HAS NO PRIVATE DNS AT ALL. Measured
-  # 2026-09-06: `com.amazonaws.<region>.s3` returns a `PrivateDnsName` for its **Interface** shape
-  # and `None` for its **Gateway** shape, because a gateway works by ROUTING - the public name
-  # resolves to a public address and a prefix-list route carries it to the endpoint - and never by
-  # resolution. So the loop above cannot emit them, and leaving them out is not a missing
-  # convenience: an S3 call would then go to Squid, leave through the hub's IGW as a PUBLIC call,
-  # and arrive at S3 carrying neither `aws:SourceVpc` nor `aws:SourceVpce`. Every bucket policy and
-  # every gateway-endpoint allow-list in this estate is keyed on exactly those two. The data
+  # S3 and DynamoDB are here because a gateway endpoint has no private DNS at all. Measured
+  # 2026-09-06: `com.amazonaws.<region>.s3` returns a `PrivateDnsName` for its Interface shape and
+  # `None` for its Gateway shape, because a gateway works by routing (the public name resolves to a
+  # public address and a prefix-list route carries it to the endpoint), never by resolution. So the
+  # loop above cannot emit them, and without them an S3 call goes to Squid, leaves through the hub's
+  # IGW as a public call, and arrives at S3 carrying neither `aws:SourceVpc` nor `aws:SourceVpce` -
+  # the two keys every bucket policy and gateway-endpoint allow-list here is written on. The data
   # perimeter would fail open, quietly, for the one service that carries the data.
   #
   # The link-local pair is the instance metadata service and the ECS/Fargate task-role credential
@@ -160,24 +121,22 @@ locals {
   # instance. `localhost`/`127.0.0.1` are the same argument for anything a container talks to
   # in-process.
   #
-  # The two internal zones are named in full because they are SIBLINGS, not parent and child:
-  # `awsds.internal` does not cover `awsds-pages.internal` (a different label, not a subdomain),
-  # and a suffix that covered both would have to be `.internal`. The old family - `sandbox.internal`,
-  # `prod.internal`, `pages.internal` - is deliberately absent; 6c step 2.6 retires it, and an entry
-  # here would be the thing that kept it alive.
-  # AND THE DUALSTACK SPELLINGS, ADDED 2026-09-06 AFTER A BUILD HOST FAILED ITS FIRST BOOT ON
-  # EXACTLY THIS. `s3.dualstack.<region>.amazonaws.com` is a DIFFERENT NAME, not a label under the
-  # one above: `al2023-repos-<region>-xxxx.s3.dualstack.<region>.amazonaws.com` does not end in
-  # `.s3.<region>.amazonaws.com`, so a bypass list carrying only the first form sends the AL2023
-  # repositories at the proxy - which refuses them with a 403, because a build host's plane
-  # deliberately excludes `.amazonaws.com`. `dnf` then reports `Failed to download metadata`, which
-  # reads as a broken mirror. Measured on the host: the dualstack name returns 200 direct (16.15.35.255,
-  # through the gateway) and 000 through the proxy.
+  # The two internal zones are named in full because they are siblings, not parent and child:
+  # `awsds.internal` does not cover `awsds-pages.internal` (a different label, not a subdomain), and
+  # a suffix covering both would have to be `.internal`. The old family - `sandbox.internal`,
+  # `prod.internal`, `pages.internal` - is absent: 6c step 2.6 retires it, and an entry here would
+  # keep it alive.
   #
-  # THE GATEWAY CARRIES IT, which is what makes the bypass correct rather than merely quieter: a
-  # prefix-list route is keyed on the ADDRESS, and both spellings resolve into S3's IPv4 ranges. The
-  # dualstack name also has AAAA records; nothing in this estate has IPv6, so the client picks IPv4
-  # and the route applies.
+  # The dualstack spellings are different names, not labels under the ones above:
+  # `al2023-repos-<region>-xxxx.s3.dualstack.<region>.amazonaws.com` does not end in
+  # `.s3.<region>.amazonaws.com`, so a list carrying only the first form sends the AL2023
+  # repositories at the proxy, which refuses them with a 403 because a build host's plane excludes
+  # `.amazonaws.com`; `dnf` then reports `Failed to download metadata`, which reads as a broken
+  # mirror. Measured on the host that failed its first boot on this (2026-09-06): the dualstack name
+  # returns 200 direct (16.15.35.255, through the gateway) and 000 through the proxy. The gateway
+  # carries it, which is what makes the bypass correct rather than merely quieter: a prefix-list
+  # route is keyed on the address, and both spellings resolve into S3's IPv4 ranges. The dualstack
+  # name also has AAAA records; nothing here has IPv6, so the client picks IPv4 and the route applies.
   no_proxy_fixed = [
     "s3.${data.aws_region.current.region}.amazonaws.com",
     "s3.dualstack.${data.aws_region.current.region}.amazonaws.com",
@@ -195,61 +154,51 @@ locals {
 
   # ------------------------------------------------- the same reading, put to a second question
   #
-  # THE NAMES AS AWS GIVES THEM, wildcard and all - `no_proxy_endpoint_entries` above has already
-  # forked each wildcard into NO_PROXY's two spellings, and the DNS Firewall's syntax is neither of
-  # them. Kept as its own local rather than re-derived from that one, so neither question can quietly
-  # answer with the other's spelling (Lesson 53: two systems expressing one intent in the same-looking
-  # syntax are not translatable by transcription, and they agree on the easy cases). The two questions
-  # share the READING and never the spelling, which is the only arrangement in which they cannot drift.
+  # Which of this VPC's endpoints the DNS Firewall would make unreachable (6c step 5.7). That step
+  # shrinks the allow-list from sixty-odd names to four families, and an interface endpoint whose
+  # private DNS name falls outside them is then paid for hourly and cannot be resolved: the catch-all
+  # returns NXDOMAIN and the tool reports "no such host", which reads as a network fault rather than
+  # a policy decision. `sagemaker.studio` answers on `*.studio.<region>.sagemaker.aws`, a TLD neither
+  # `*.amazonaws.com` nor `*.api.aws` covers, so the obvious short list orphans an endpoint in both
+  # Interactive slices.
   #
-  # IT READS `endpoint_dns_names` SINCE 2026-09-09, AND THAT IS THE OTHER HALF OF 8.8's DEFECT rather
-  # than tidiness. This check and NO_PROXY are one intent asked twice - *is every name this VPC pays
-  # for usable in it* - so leaving the check on the service's single canonical name would have left
-  # the blind spot in the guard after removing it from the output, which is the worse of the two
-  # places to keep it (Lesson 51). What it found the moment it was widened, in both firewalled VPCs:
-  # `studio.sagemaker.<region>.app.aws` and `dkr-ecr.<region>.on.aws` - two endpoints this VPC pays
-  # for hourly, answering on families the allow-list did not carry, hence NXDOMAIN. Both families
-  # were added the same day by the user's decision; the argument is verbatim the one that put
-  # `sagemaker.aws` there, and the two calling slices carry it.
-  # WHICH OF THIS VPC'S ENDPOINTS THE DNS FIREWALL WOULD MAKE UNREACHABLE (6c step 5.7).
+  # The names are used here as AWS gives them, wildcard and all, kept as their own local rather than
+  # re-derived from `no_proxy_endpoint_entries`, which has already forked each wildcard into
+  # NO_PROXY's two spellings. The two questions share the reading and never the spelling, the only
+  # arrangement in which they cannot drift (Lesson 53).
   #
-  # THE FAILURE THIS EXISTS TO CATCH, because 5.7 is the step that creates the opportunity: the
-  # allow-list shrinks from sixty-odd names to four families, and an interface endpoint whose
-  # private DNS name falls outside those families is then paid for hourly and **cannot be
-  # resolved** - the catch-all returns NXDOMAIN and the tool reports "no such host", which reads
-  # as a network fault rather than as a policy decision. It is not hypothetical: `sagemaker.studio`
-  # answers on `*.studio.<region>.sagemaker.aws`, a TLD neither `*.amazonaws.com` nor `*.api.aws`
-  # covers, so the obvious short list orphans an endpoint in both Interactive slices.
+  # This check and NO_PROXY are one intent asked twice - is every name this VPC pays for usable in it
+  # - so the check reads `endpoint_dns_names` too; leaving it on the service's single canonical name
+  # would keep the blind spot in the guard after removing it from the output (Lesson 51). Widening it
+  # found, in both firewalled VPCs, `studio.sagemaker.<region>.app.aws` and `dkr-ecr.<region>.on.aws`:
+  # two endpoints paid for hourly, answering on families the allow-list did not carry, hence NXDOMAIN.
+  # Both families were added the same day by the user's decision, and the two calling slices carry
+  # the argument.
   #
-  # MATCHING IS THE FIREWALL'S, NOT NO_PROXY'S: an entry matches a name EXACTLY, and `*.x` matches
-  # every nesting level beneath `x` and never `x` itself. A service whose own name is wildcarded
-  # (`*.dkr.ecr...`) is only genuinely covered by a WILDCARD entry - an exact entry would match the
-  # base and none of the names actually queried - so that case is required to find one.
-  # THE TRAILING DOT IS STRIPPED ON THE ALLOW-LIST SIDE, AND FORGETTING IT MADE THIS PRECONDITION
-  # FIRE ON A CORRECT LIST (v0.10.1, 2026-09-06). `EXC-04`'s repair one file over writes every entry
-  # as an FQDN - `amazonaws.com.` - because that is how Route 53 canonicalises them; the names this
-  # compares them against come from `describe-vpc-endpoint-services`, which returns them WITHOUT
-  # one. Two controls landed in the same sitting and the second read the first's output as a
-  # mismatch, naming ten endpoints as uncovered when all ten were covered. Normalised here rather
-  # than by dropping the dots, because the dots are what makes the plan converge at all.
+  # Matching here is the firewall's, not NO_PROXY's: an entry matches a name exactly, and `*.x`
+  # matches every nesting level beneath `x` and never `x` itself. A service whose own name is
+  # wildcarded (`*.dkr.ecr...`) is genuinely covered only by a wildcard entry, since an exact entry
+  # would match the base and none of the names actually queried.
+  #
+  # The trailing dot is stripped on the allow-list side: `EXC-04`'s repair one file over writes every
+  # entry as an FQDN, `amazonaws.com.`, because that is how Route 53 canonicalises them, while
+  # `describe-vpc-endpoint-services` returns names without one. Without this the precondition fired on
+  # a correct list, naming ten covered endpoints as uncovered (v0.10.1, 2026-09-06). Normalised here
+  # rather than by dropping the dots, which are what makes the plan converge.
   dns_firewall_allow_normalised = [for e in var.dns_firewall_allow_domains : trimsuffix(e, ".")]
 
-  # TWO READINGS OF ONE QUESTION, AND THEY DIFFER IN *WHEN* THEY CAN ANSWER, never in what they ask
-  # (v0.11.1, 2026-09-09). This is the arrangement the measurement above forced:
+  # The coverage matcher, run over two readings of one question. They differ in WHEN they can answer,
+  # never in what they ask:
   #
-  #   declared   the service's canonical name, from the data source. ONE per declared service, and
-  #              known at PLAN time whether or not the endpoint exists. Narrower, and always early.
+  #   declared   the service's canonical name, from the data source. One per declared service, known
+  #              at plan time whether or not the endpoint exists. Narrower, and always early.
   #   served     every name the endpoint answers for, from `dns_entry`. Known at plan on a VPC that
   #              is already up; (known after apply) on one being raised. Complete, and sometimes late.
   #
-  # Neither replaces the other. Dropping `declared` puts the whole guard behind an apply on every new
-  # VPC - the defect this file has just been repaired for, in its own guard. Dropping `served` puts
-  # the 8.8 blind spot back. They are two preconditions on the resource below, each naming its own
-  # reading, so a failure says which half found it.
-  #
-  # ONE MATCHER, TWO INPUTS. The comparison is written once and mapped over both lists rather than
-  # copied - two copies of a rule stay identical until the day one of them is edited (Lesson 33, and
-  # Lesson 51 for the half that bites).
+  # Neither replaces the other: dropping `declared` puts the whole guard behind an apply on every new
+  # VPC, dropping `served` puts the blind spot back. They are two preconditions on the resource below,
+  # each naming its own reading, so a failure says which half found it. The comparison is written once
+  # and mapped over both lists rather than copied (Lesson 33, and Lesson 51 for the half that bites).
   dns_firewall_uncovered = {
     for reading, names in {
       declared = local.declared_private_dns_names
@@ -267,7 +216,7 @@ locals {
 }
 
 output "no_proxy_entries" {
-  description = "This VPC's NO_PROXY as a list - one entry per interface endpoint plus the fixed eight. Consumed by whatever configures a client in THIS VPC (the buildbox's docker daemon and SSM agent, a runner, a Studio app image configuration), through terraform_remote_state so the list cannot be transcribed (Lesson 3)."
+  description = "This VPC's NO_PROXY as a list: every name its interface endpoints answer for, plus the fixed entries. Consumed by whatever configures a client in THIS VPC (the buildbox's docker daemon and SSM agent, a runner, a Studio app image configuration), through terraform_remote_state so the list cannot be transcribed (Lesson 3)."
   value       = local.no_proxy_entries
 }
 
@@ -275,11 +224,10 @@ output "no_proxy" {
   description = "The same list comma-joined - the literal value of the NO_PROXY / no_proxy environment variable."
   value       = join(",", local.no_proxy_entries)
 
-  # THREE ASSERTIONS FOR THE THREE WAYS THIS VARIABLE FAILS SILENTLY. None of them errors at the
-  # client: a malformed entry simply never matches, the call goes to the proxy, and the symptom
-  # surfaces as a 403 for a service that should never have been proxied - or, for S3, as a data
-  # perimeter that stopped applying. Checked here, where the list is built, rather than in a script
-  # that would have to be run.
+  # The ways this variable fails silently. None errors at the client: a malformed entry never
+  # matches, the call goes to the proxy, and the symptom surfaces as a 403 for a service that should
+  # never have been proxied - or, for S3, as a data perimeter that stopped applying. Checked here,
+  # where the list is built, rather than in a script somebody would have to run.
   precondition {
     condition     = length([for e in local.no_proxy_entries : e if strcontains(e, "*")]) == 0
     error_message = "NO_PROXY carries a wildcard: entries match as suffixes only, so a `*` matches nothing. Strip it."
