@@ -227,7 +227,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Steps 9, 3 and 8 mostly done 2026-09-08; step 4 exercised
-  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision 6 taken 2026-09-09. **Step 2 done 2026-09-10
+  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision 6 2026-09-09. **Step 2 done 2026-09-10
   but for 2.4 and the rebuild**: `sandbox/dev-env/` (rank 49) registers
   `awsds-sandbox-dev-env` v1 on `default-v0.1.1`, attached by hand, and JupyterLab and Code Editor
   both started on it — a SMUS space reads `DefaultUserSettings`. INT-01/INT-17
