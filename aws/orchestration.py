@@ -24,8 +24,9 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# The subject spans accounts, so this script is multi-profile: the workflow is authored in
-# Development's project (D21), runs in Production (D17), and the provisioned-MWAA burn
+# The subject spans accounts, so this script is multi-profile: the workflow is authored in a
+# Sandbox project - Development held that seat under D21 until Stage 6b - runs in Production
+# (D17), and the provisioned-MWAA burn
 # reading (OR-6) is only meaningful measured in every account, since the OnDemand Workflows
 # blueprint would create a fee-bearing environment in a member account rather than in
 # Production. Section 1 prints the caller ARN of every profile.

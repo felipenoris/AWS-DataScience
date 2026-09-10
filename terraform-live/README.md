@@ -95,15 +95,17 @@ would be. What stands right now is the `[P]` half alone: the `[E]` slices are de
 account data CMK (`alias/awsds-data-data`), the five `awsds-data-*` buckets under it, the Glue databases
 and the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers,
 the Lake Formation settings/registrations/LF-Tags, the governance manager's grants, and `shares.tf` — the
-cross-account grants that are how Sandbox and Development reach the lake at all.
+cross-account grants that are how a consumer reaches the lake at all - Sandbox alone since 6b step
+2.4 destroyed `development/data/`.
 
 **The consumer side is `sandbox/data/` and `development/data/`** (pass 4, 2026-08-19; the second was
 **destroyed** at Stage 6b step 2.4, so `sandbox/data/` is the only caller left). They are the tree's first
 slices that are **one module applied twice** — `terraform-modules/consumer-data/` — so the design lives
 once and each slice says only which account. Each holds the account's own `DataLakeSettings`, its
 `alias/awsds-<env>-data` CMK (one data CMK per account, the 2026-08-19 revision that withdrew the
-`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox and held empty in
-Development — D19 revised: the derived bucket and the enforced workgroup **left the module at
+`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox, and the copy in the
+account Stage 6b renamed to Staging stands empty under its original `awsds-dev-data` alias — D19 revised:
+the derived bucket and the enforced workgroup **left the module at
 `consumer-data-v0.6.0`**, the derived zone being the SMUS project path now), the two resource links to the
 lake, and the local re-grants without which a held share cannot be used by anybody. All `[P]`.
 

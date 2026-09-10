@@ -1,5 +1,5 @@
 # Inputs. Everything that differs between one member account and the next, and nothing else:
-# the design lives here so that Sandbox and Development cannot drift (Lesson 14), and each
+# the design lives here so that one member account cannot drift from the next (Lesson 14), and each
 # caller says which account, never what.
 
 variable "env" {
