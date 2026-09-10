@@ -88,37 +88,38 @@ nearly free to loosen while it is prose:
   (1c step 7), because with many sandboxes the pressure to let a unit "just create its own domain" is what
   that deny exists to resist, and INT-12's one-domain-per-account fallback gets more expensive with every
   unit.
-- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, a **KMS key per job in that account** (the enumeration and its running total live in `docs/plan/cost-model.md`'s per-unit paragraph, which is the one copy — it went from two to three on 2026-08-21, when Stage 6 gave every Interactive account a project CMK) —
-  and the term that dominates, **one set of interface VPC endpoints**. `docs/plan/institutional-delta.md`
-  already names per-account endpoints as the largest hourly cost multiplied by account count; under this
-  decision, centralized endpoints shared by RAM stop being the institutional answer and become the arithmetic
-  one. Also **one account slot per unit** against the organization quota (D34's headroom item).
+- **Cost (`docs/plan/cost-model.md`).** A business unit costs **one** account, one Config recorder, a **KMS
+  key per job in that account** (the enumeration and its running total live in `docs/plan/cost-model.md`'s
+  per-unit paragraph; it went from two to three on 2026-08-21, when Stage 6 gave every Interactive account a
+  project CMK) and the term that dominates, **one set of interface VPC endpoints**.
+  `docs/plan/institutional-delta.md` names per-account endpoints as the largest hourly cost multiplied by
+  account count; under this decision, centralized endpoints shared by RAM stop being the institutional answer
+  and become the arithmetic one. Also **one account slot per unit** against the organization quota (D34's
+  headroom item).
 
-**What is already future-proof, stated so it is not re-solved.** SCPs attach to the **OU**, so a new Sandbox
-inherits its whole policy set by being placed correctly — that is D23 paying off, and since 2026-08-09
-"correctly" has a name: the **`Sandboxes` OU** nested under `Interactive`, which holds the multiplied class
-and deliberately carries no policy set of its own (D23). The cost of that nesting is one line in Stage 2: the
-organization's OU depth is now 2, so the `for_each` below has to recurse. D34's "the floor is
-discovered, the grants are enumerated" rule means a new account is picked up by the organization-wide
-policies on the next apply. And Lake Formation cross-account **v3** (1d step 11) can grant to an OU or to a
-list, so the mechanical ceiling on N consumers is already lifted.
+**What is already future-proof.** SCPs attach to the **OU**, so a new Sandbox inherits its whole policy set
+by being placed correctly — D23 paying off, and since 2026-08-09 "correctly" has a name: the **`Sandboxes`
+OU** nested under `Interactive`, which holds the multiplied class and carries no policy set of its own (D23).
+The cost of that nesting is one line in Stage 2: the organization's OU depth is now 2, so the `for_each`
+below has to recurse. D34's "the floor is discovered, the grants are enumerated" rule means a new account is
+picked up by the organization-wide policies on the next apply. Lake Formation cross-account **v3** (1d step
+11) can grant to an OU or to a list, so the mechanical ceiling on N consumers is already lifted.
 
-**One precision on that last one, because "grant to the OU" is the wrong lesson to take from it.** v3 removes
-the *mechanical* limit; it does not answer the *governance* question. Granting to the Interactive OU gives
-every business unit the same data, which is very likely not what a per-unit split is for. The per-unit grant
-shape — LF-Tags per unit, or per-account grants driven by the subscription workflow — is a decision that
-arrives with the **second** business unit and belongs to the governance manager, not to this file.
+**"Grant to the OU" is the wrong lesson to take from that last one.** v3 removes the *mechanical* limit; it
+does not answer the *governance* question. Granting to the Interactive OU gives every business unit the same
+data, which is likely not what a per-unit split is for. The per-unit grant shape — LF-Tags per unit, or
+per-account grants driven by the subscription workflow — is a decision that arrives with the **second**
+business unit and belongs to the governance manager, not to this file.
 
-**What this does not change.** The Interactive OU's policy set (D23) — Sandboxes and Development still share
+**What this does not change.** The Interactive OU's policy set (D23): Sandboxes and Development still share
 one, which is what putting them in one OU asserts. The graduation-is-a-rewrite property (D21), now doing
-double duty as the cardinality boundary. And the promotion chain's single
-destination.
+double duty as the cardinality boundary. And the promotion chain's single destination.
 
-**Revision trigger:** a business unit needing its own **Development** — which would move an account off the
+**Revision trigger:** a business unit needing its own **Development**, which would move an account off the
 structural side of the table and break the "the chain is untouched by N" property this decision rests on;
 **or** a unit needing a *policy* different from the Interactive OU's set, at which point the question is an OU
-and not an account (D23); **or** a request for a per-unit Staging or Production, which is a different
-decision entirely.
+and not an account (D23); **or** a request for a per-unit Staging or Production, a different decision
+entirely.
 
 ---
 

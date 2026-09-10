@@ -194,8 +194,9 @@ If experimentation shows the two accounts are barely distinguishable in practice
   and the widest human access. That is an argument about *where an apply runs*, unaffected by anything
   above.
 - **The objection that does not survive** is that removing the account removes the visible graduation act.
-  The account boundary never *enforced* the rewrite; it prompted it, and a prompt is not a control (Lesson
-  5). What carries the act is an immutable tag on a reviewed repository, which is in GitLab either way.
+  The account boundary never *enforced* the rewrite; it prompted it, and a prompt is not a control
+  (Lesson 5). What carries the act is an immutable tag on a reviewed repository, which is in GitLab either
+  way.
 
 ### What would close this
 

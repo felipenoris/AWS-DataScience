@@ -36,7 +36,7 @@ That is Lesson 3 and Lesson 11 applied here: D30 was adopted in the same pass th
 
 1. **The `Policy Canary` battery (D29) is the primary defence.** A bad policy is far cheaper to catch before attachment than to repair after it.
 2. **Stage 1a step 5 requires the break-glass path to be built and fired once *before* any policy is attached.** That ordering was already deliberate; it is now the thing standing between a mistake and a locked organization.
-3. **Stage 1c step 7's "with the detach command written down and the Management account already open before the first attach"** is the procedure, not belt-and-braces.
+3. **Stage 1c step 7's "with the detach command written down and the Management account already open before the first attach"** is the procedure.
 
 **The revision trigger did not fire.** D30's recorded triggers were "a second person gains access" and "the role is assumed for anything other than repairing a policy". Neither happened; what happened was a review finding the decision undeliverable as scoped. A trigger written only about *operating* the thing cannot catch a defect in *building* it.
 
