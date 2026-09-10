@@ -1344,10 +1344,41 @@ names allowed and the names refused, one day later, in one window.
 - **Idle shutdown was observed, unasked — step 5.1's first half.** Both apps were deleted by
   `AWSServiceRoleForAmazonSageMakerNotebooks`, the JupyterLab space's at 20:40:30 and `editor`'s at
   20:47:20, `FailureReason` null. The Code Editor app had run 63 minutes.
-- **The volume, and it is one host.** 76 requests moved ~101 MiB, of which
-  **`aws-language-servers.us-east-1.amazonaws.com` alone is 54.98 MiB in two requests** — the largest
-  single item at every app start, through a `t3.micro` proxy. `files.pythonhosted.org` is 38.4 MiB in 51.
+- **The volume, and it is one host.** The post-restart container moved **98.1 MiB in 76 requests**, of
+  which **`aws-language-servers.us-east-1.amazonaws.com` alone is 52.4 MiB in two** — the largest single
+  item at every app start, through a `t3.micro` proxy. `files.pythonhosted.org` is 36.7 MiB in 51.
+  *(Corrected the same sitting: the first figures were the log's raw byte counts read as MiB. The field
+  is `%<st` — bytes from the upstream server — and it is bytes.)*
 - **And two `t4g.nano` probes are running** in Sandbox since 21:27Z — `awsds-sandbox-probe-perimeter` and
   `awsds-sandbox-probe-peering`, the `[E]` Stage 3 slices — doing nothing but `ssm` and `time.aws.com`
   lookups every twenty minutes. The `time.aws.com` `BLOCK`s in `/awsds/sandbox/dns-firewall` are theirs
   (chrony), which attributes a block that had none.
+
+### [Claude, at the user's request] The log-reading itself became a runbook
+
+Four sittings have now diagnosed something by reading a log group, and each rediscovered the same
+mechanics. [`log-debugging.md`](../plan/runbooks/log-debugging.md) is that, written from the commands
+Stages 4, 5, 6a, 6c and 6d actually ran rather than from what the APIs offer: the map, the three
+commands, then one section per **kind of event** — the Squid access log, the resolver query log,
+CloudTrail, flow logs, the VPN host, Studio.
+
+**Writing it required two readings, and both produced something.**
+
+- **The inventory was measured, not listed from the code.** `describe-log-groups` in both accounts turned
+  up **three families this estate did not create**: `datazone-<id>-dev`, one per DataZone project, whose
+  retention the service picks — **3, 30 and 731 days in one account on one day**; `/aws/sagemaker/studio`
+  and `/aws/mwaa-serverless/<domain>/<workflow>`, both retention `None`, which is **never expires**.
+  Lesson 17 in a place nobody had looked: a service that sets itself up creates objects nobody chose, and
+  731 days of retention is a cost line nobody priced. **And one of them is a finding for another step**:
+  an MWAA Serverless workflow log group exists in Sandbox, so **step 4.1's surface has already been
+  exercised** by somebody — the step should read that group before assuming it must be enabled.
+- **The two record formats were read off live records rather than described from memory.** Squid's is
+  *declared* — `logformat awsds` in `squid.conf.tftpl` — and says `%<st`, bytes from upstream. The
+  resolver's is JSON, and its `firewall_rule_action` field is **absent** on an allowed query rather than
+  set to `ALLOW`, which is a thing to know before writing a filter that looks for one.
+
+**And reading the format corrected this entry.** The byte figures above were first written as MiB from
+the log's raw counts — `aws-language-servers` as *54.98 MiB* — with no division. The post-restart
+container moved **98.1 MiB in 76 requests**, of which that host is **52.4 MiB**. Corrected in place, and
+the trap is in the runbook's §8 with its date, because the error is invisible: it produces a number of
+plausible size in the right column.
