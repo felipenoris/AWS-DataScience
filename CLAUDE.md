@@ -227,18 +227,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Step 9 and most of 3 and 8 done 2026-09-08; step 4 exercised
-  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision due 6 taken in full 2026-09-09. **2.1/2.2 applied
-  2026-09-10**: `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env` v1 against
-  `default-v0.1.1`, `CREATED`, digest `sha256:6916fc13…` — 9.5's own. SageMaker assumes the image role
-  to read the repository cross-account, so the `RoleArn` is not decorative. **`ContainerEnvironmentVariables` caps each value at 256 characters** against a
-  `NO_PROXY` of ~2,300, so the app image configs carry no environment: **decision 8 (the user) put the
-  six variables in `images/dev-env/Dockerfile` as `ENV`**, the bypass list a dated literal (50 entries,
-  sha256 `856bc57bb…`) beside its refresh command, plus the apt and sudoers files. The image is now
-  shaped by one VPC's endpoint list, and `./aws/devenv.py` (`DE-1`..`DE-4`) reads the divergence.
-  **Attached 2026-09-10** (hand `update-domain`, both app settings, v1): only the two entries moved,
-  `DefaultSpaceSettings` holds none — 2.3 is the portal reading. Owed: **the rebuild**; 2.3-2.5;
-  3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed
-  unasked; step 6; and 7.3-7.9, which wait on decision due 4.
+  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision due 6 taken 2026-09-09. **Step 2 done 2026-09-10
+  but for 2.4 and the rebuild**: `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`
+  v1 on `default-v0.1.1`, attached by a hand `update-domain` (only the two entries moved), and
+  JupyterLab and Code Editor both started on it — a SMUS space reads `DefaultUserSettings`,
+  `DefaultSpaceSettings` empty as the control. INT-01/INT-17 closed: the image role reads the
+  repository **by tag** at registration, the project role **by digest** at start.
+  **`ContainerEnvironmentVariables` caps each value at 256 characters** against a `NO_PROXY` of
+  ~2,300, so the app image configs carry no environment: **decision 8 put the six variables in
+  `images/dev-env/Dockerfile` as `ENV`**, the list a dated literal (50 entries, sha256 `856bc57bb…`)
+  beside its refresh command, plus the apt and sudoers files; the image is shaped by one VPC's
+  endpoint list and `./aws/devenv.py` reads the divergence. Owed: **the rebuild**; 2.4; 3.1's
+  `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed unasked; step 6; and
+  7.3-7.9, which wait on decision due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
   sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →

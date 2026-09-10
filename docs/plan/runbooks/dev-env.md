@@ -178,12 +178,13 @@ omitted version resolves to — the latest, by the vendor's description — is u
 version named is a version reviewed, and §B's bump then reaches a space only when somebody moves this
 number.
 
-**Which settings block governs a SMUS space is unmeasured**, and this attach is the experiment.
-`DefaultSpaceSettings.JupyterLabAppSettings` carries a `CustomImages` field of its own; on this domain
-it is **absent** (read 2026-09-10, after the attach, so it is the control rather than a leftover), and
-`DefaultSpaceSettings` has no `CodeEditorAppSettings` at all. If the picker offers the image, the
-user-settings block is what a SMUS space reads. If it does not, that block is the next thing to try —
-not a defect in the registration.
+**A SMUS space reads the user-settings block, measured 2026-09-10.** The experiment had its control:
+`DefaultSpaceSettings` carried no `CustomImages` and no `CodeEditorAppSettings` at all, read after the
+attach. The picker offered the image and **both a JupyterLab and a Code Editor space started on it**,
+so the domain's `DefaultUserSettings` is the attachment point and `DefaultSpaceSettings` is the fallback
+nobody needs. One image serves both app types here, which the Dockerfile does not promise — it is
+JupyterLab-shaped by the vendor's rule — so treat it as a reading about this image rather than a
+property of BYOI.
 
 ### 7. Selecting it, and reading the attachment back
 
@@ -302,7 +303,7 @@ which is the guard rather than a problem.
 | Do the configurations exist, and do they carry an environment? | `aws sagemaker describe-app-image-config --app-image-config-name awsds-sandbox-dev-env-jupyterlab` | the app type binding; today an empty `ContainerConfig` is the expected reading (§E) |
 | Does the domain offer the image? | `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | the attachment, which no Terraform state records |
 | Did the registration read the repository across the boundary? | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=BatchGetImage --profile awsds-infra-prod` | the image role as `AWSAccount`/`…:SageMaker` on `awsds-prod-ecr-dev-env` (§C5) |
-| Did a **space** pull it? | the same lookup, in the window a space started | the project role rather than the image role — a different principal, and Stage 6d step 2.5's own reading |
+| Did a **space** pull it? | the same lookup, in the window a space started | the project role rather than the image role, and **by digest** rather than by tag — measured 2026-09-10, both app types |
 | Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py` | the repository's two copies, name by name; an image older than the Dockerfile is the gap it cannot see (§E) |
 
 ## F. Failures, and what each one is
