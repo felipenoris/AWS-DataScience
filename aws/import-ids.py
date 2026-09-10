@@ -1,8 +1,8 @@
 #!/usr/bin/env -S uv run --quiet
-# import-ids.py - the exact strings `terraform import` takes, for every object Stage 2
-# step 5 brings into state. The import manifest.
+# import-ids.py - the exact strings `terraform import` takes, for every object Stage 2 step 5
+# brings into state. The import manifest.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -18,44 +18,41 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 the manifest was produced | 1 a call failed
 #
-# WHY THIS IS A SCRIPT OF ITS OWN, AND NOT A SECTION IN list-identities.py. That file answers
-# "who can reach what" and is read by a person, who tolerates a stale line and notices a wrong
-# one. THIS file is a RENDERING whose only consumer is a shell. Its failure mode is different
-# in kind: a wrong id does not read oddly, it imports the wrong object - or, more often,
-# imports nothing under an address the configuration does not use, leaving `terraform plan`
-# proposing to CREATE a policy that already exists while an orphan sits in state. That is the
-# dangerous outcome Stage 2's Risks name, and it is worth a file that does one job.
+# It is a script of its own rather than a section in list-identities.py, because its failure mode is
+# different in kind. That file answers "who can reach what" for a person, who tolerates a stale line
+# and notices a wrong one; this one is a rendering whose only consumer is a shell. A wrong id does
+# not read oddly - it imports the wrong object, or more often imports nothing under an address the
+# configuration does not use, leaving `terraform plan` proposing to create a policy that already
+# exists while an orphan sits in state. Stage 2's Risks name that outcome.
 #
-# THE DIVISION OF LABOUR, WHICH IS THE DISCIPLINE OF SECTION 5. This script is authoritative
-# about the RIGHT-HAND SIDE - the id. It is NOT authoritative about the left-hand side, the
-# Terraform address: that belongs to the configuration, and only the configuration knows
-# whether a resource is `aws_organizations_policy.baseline` or
-# `aws_organizations_policy.this["awsds-org-scp-baseline"]`. So every line carries a SUGGESTED
-# address that must be checked against the code, and the section says so rather than implying
-# a copy-paste is safe.
+# The division of labour is section 5's discipline. This script is authoritative about the
+# right-hand side, the id. It is not authoritative about the left-hand side, the Terraform address:
+# that belongs to the configuration, the only thing that knows whether a resource is
+# `aws_organizations_policy.baseline` or `aws_organizations_policy.this["awsds-org-scp-baseline"]`.
+# Every line carries a suggested address, to be checked against the code.
 #
-# THE ONE THAT GOES WRONG, stated where it will be read: AN IMPORT INTO A `for_each` RESOURCE.
-# The address is `...this["<key>"]` and the key has to be exactly what the configuration
-# COMPUTES, not what reads naturally. A wrong key does not error. Import ONE, run `plan`, and
-# only then import the rest.
+# An import into a `for_each` resource is the one that goes wrong. The address is
+# `...this["<key>"]`, and the key has to be exactly what the configuration computes rather than what
+# reads naturally. A wrong key does not error. Import one, run `plan`, and only then import the
+# rest.
 #
-# WHAT IT DELIBERATELY REFUSES TO EMIT, in section 4 - because the expensive mistake here is
-# importing something that must stay outside Terraform, and an operator working from a
-# complete-looking list will import all of it:
+# What section 4 refuses to emit, because the expensive mistake here is importing something that
+# must stay outside Terraform and an operator working from a complete-looking list will import all
+# of it:
 #   - Control Tower's `aws-guardrails-*` policies. Managing them from Terraform puts Terraform
 #     and Control Tower in a fight over the same object: landing-zone drift (Stage 2 step 5.4).
 #   - Control Tower's permission sets, `AWSAdministratorAccess` first among them. A permission
 #     set provisioned into Management cannot even be altered from Identity - measured
-#     2026-08-12, Stage 1b step 5.1 - and the deny is anchored on the SET, so it covers that
+#     2026-08-12, Stage 1b step 5.1 - and the deny is anchored on the set, so it covers that
 #     set's assignments in every account.
-#   - The Account Factory DIRECT assignments (D32). They are a permanent property of a vended
+#   - The Account Factory direct assignments (D32). They are a permanent property of a vended
 #     account, not something to model.
-# These are LISTED, with the reason, rather than filtered silently: a manifest that quietly
-# omits things is one nobody can tell apart from a manifest that missed them.
+# They are listed with the reason rather than filtered silently: a manifest that quietly omits
+# things is one nobody can tell apart from a manifest that missed them.
 #
-# IDENTITY. `awsds-infra-identity`, which is both the Identity Center delegated administrator
-# (D10) and an account whose Organizations reads already answer (Stage 1c verification (x)).
-# One profile reaches both planes, which is why this is one script.
+# The profile is `awsds-infra-identity`, both the Identity Center delegated administrator (D10) and
+# an account whose Organizations reads already answer (Stage 1c verification (x)). One profile
+# reaches both planes, which is why this is one script.
 
 from __future__ import annotations
 
@@ -76,23 +73,18 @@ POLICY_TYPES = [
     "DECLARATIVE_POLICY_EC2",
 ]
 
-# The account NAME as Organizations reports it -> the terraform-live/ FOLDER, which is the
-# for_each key terraform-live/identity/sso/ computes for an assignment (Stage 2 step 5.3).
+# The account name as Organizations reports it -> the terraform-live/ folder, which is the for_each
+# key terraform-live/identity/sso/ computes for an assignment (Stage 2 step 5.3). The key is the
+# AWS name, the value is the folder.
 #
-# THIS SCRIPT FOLLOWS AND THE SLICE OWNS. The same five rows are locals.accounts there, and
-# that file is the authority: it is what the apply reads. They are repeated here rather than
-# parsed out of HCL because the alternative is a regex over a .tf file, which fails silently
-# on a reformat - and a wrong key is precisely the failure step 5.5a(iii) is about: it does not
-# error, it plans a create beside an orphan.
+# The slice owns these rows and this script follows them: the same rows are locals.accounts there,
+# and that file is what the apply reads. They are repeated here rather than parsed out of HCL
+# because a regex over a .tf file fails silently on a reformat, and a wrong key is the failure step
+# 5.5a(iii) is about - it does not error, it plans a create beside an orphan.
 #
-# AN ACCOUNT MISSING FROM THIS TABLE IS NOT AN ERROR. Management, Audit, Log Archive and Policy
-# Canary hold no assignment this repository manages, and an unmapped name emits
-# <UNMAPPED:...> so the line is unrunnable rather than plausible.
-#
-# THE VALUE IS THE FOLDER AND THE KEY IS THE AWS NAME. They disagreed for one day - step 3.2
-# renamed the account while the folder was still terraform-live/development/ - and step 4.6
-# closed the seam on 2026-09-06 by renaming the folder, the sso/ assignment key and this row
-# together, behind `moved {}` blocks so no assignment was destroyed on the way.
+# An account missing from this table is not an error. Management, Audit, Log Archive and Policy
+# Canary hold no assignment this repository manages, and an unmapped name emits <UNMAPPED:...> so
+# the line is unrunnable rather than plausible.
 ACCOUNT_FOLDER_BY_NAME = {
     "Sandbox Account 1": "sandbox",
     "Staging Account": "staging",
@@ -183,9 +175,9 @@ def main(argv: list) -> int:
             queue.append((nid, npath))
 
     # The `Data` OU and its single account. <ACCOUNT_ID_DATA> feeds awsds-org-scp-ou-data.json;
-    # <ORG_PATH_DATA> feeds awsds-org-scp-BASELINE.json (the DenyDataZoneDomainOutsideDataOu
-    # condition). Stage 2 step 5.5a(ii): derive from the OU, never by account NAME (1d step 9
-    # recorded why a name lookup returns None here).
+    # <ORG_PATH_DATA> feeds awsds-org-scp-baseline.json (the DenyDataZoneDomainOutsideDataOu
+    # condition). Stage 2 step 5.5a(ii): derive from the OU, never by account name - a name
+    # lookup returns None here (Stage 1d step 9).
     ou_id_data = next((nid for _k, name, nid, _p in nodes if name == "Data"), "")
     org_path_data = next((p for _k, name, _nid, p in nodes if name == "Data"), "")
     account_id_data = ""
@@ -205,10 +197,10 @@ def main(argv: list) -> int:
         account_id_data = ids[0] if ids else ""
         n_data_accts = len(ids)
 
-    # The roster, read for ONE purpose: turning an account id into the terraform-live/ FOLDER
+    # The roster, read for one purpose: turning an account id into the terraform-live/ folder
     # the sso/ slice keys its assignments on (section 5d). Names are the only handle the API
     # offers, and they are not the names anybody would guess - Control Tower vended every
-    # account with an ` Account` suffix, and Stage 1d step 9 already paid for that once.
+    # account with an ` Account` suffix (Stage 1d step 9).
     acct_names = {}
     res = cli.run(
         "organizations",
@@ -314,7 +306,7 @@ def main(argv: list) -> int:
             )
             psname = res.text or "(unnamed)"
             # "Ours" is exactly the set Stage 2 imports: InfrastructureAccess and nothing
-            # else. The other six persona sets are WRITTEN in step 5, never imported (Stage
+            # else. The other six persona sets are written in step 5, never imported (Stage
             # 1b step 3.9), and Control Tower's are landing-zone drift if touched.
             ours = "yes" if psname == "InfrastructureAccess" else "no"
             psets.append((psarn, psname, ours))
@@ -713,10 +705,10 @@ the command that needed it and every later error then names the wrong account
                 base = marn.rsplit("/", 1)[-1]
                 imp(
                     f"{psname} - managed policy {base}",
-                    # A SINGLETON, NOT A for_each - the configuration declares exactly one
+                    # A singleton rather than a for_each: the configuration declares exactly one
                     # (terraform-live/identity/sso/infrastructure-access.tf). This set carries
-                    # one managed policy and it is AdministratorAccess, the one named exception
-                    # in the IAM rules; a for_each here would suggest the list is open.
+                    # one managed policy, AdministratorAccess, the one named exception in the
+                    # IAM rules; a for_each here would suggest the list is open.
                     "aws_ssoadmin_managed_policy_attachment.infrastructure_admin",
                     f"{marn},{psarn},{instance_arn}",
                 )

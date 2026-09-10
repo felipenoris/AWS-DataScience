@@ -6,7 +6,7 @@
 # side across the Interactive accounts (D17's identical-runtime claim), and the recent
 # AssumeRole events per deploy role - the record INT-08 exists for.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -19,16 +19,15 @@
 #             DescribeRepositories, DescribeImages, sagemaker:ListImages,
 #             ListImageVersions, cloudtrail:LookupEvents, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything, and it never assumes a role:
-#             reading WHO assumed one is CloudTrail's job, and this file only looks it up.
+#             reading who assumed one is CloudTrail's job, and this file only looks it up.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject is
-# trust BETWEEN accounts: the runner lives in Production while its roles live in Staging and
-# the Interactive accounts (INT-08, INT-18), and D17's claim - the same runtime registered
-# everywhere - is only readable with the Interactive accounts side by side. Section 1 pays
-# the rule back with the caller ARN of every profile.
+# It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is trust between
+# accounts. The runner lives in Production while its roles live in Staging and the Interactive
+# accounts (INT-08, INT-18), and D17's claim - the same runtime registered everywhere - is readable
+# only with the Interactive accounts side by side. Section 1 names the caller ARN of every profile.
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
 #     awsds-deploy-devenv-sandbox, awsds-deploy-devenv-dev (step 4.2, INT-18)
@@ -36,12 +35,12 @@
 #   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, stated because an empty listing and a missing account look alike:
 #   - GitLab's side of the stage - the three .gitlab-ci.yml files, protected tags, which
 #     runner a job scheduled onto - lives behind gitlab.awsds.internal; no AWS API reads it.
 #   - The behavioural proofs (a broken version dying in Staging, the blocked vulnerable
 #     dependency, the by-hand parity of 3.8) are the stage's own (Lesson 20).
-#   - Whether a registration SURVIVES a blueprint reconciliation (INT-17's open half) is a
+#   - Whether a registration survives a blueprint reconciliation (INT-17's open half) is a
 #     diff of two runs of this file, not one run.
 
 from __future__ import annotations
@@ -62,12 +61,9 @@ ROLE_BY_PROFILE = {
     "awsds-infra-prod": "awsds-deploy-prod",
     "awsds-infra-sandbox-1": "awsds-deploy-devenv-sandbox",
 }
-# THE `awsds-infra-dev` ROW WENT ON 2026-09-06 AND WAS NOT RETARGETED (Stage 6b). It named a
-# dev-env REGISTRATION home - the second one, beside Sandbox. The account behind it is now
-# Staging, a DEPLOY TARGET, and D28's rule is that those stay headless: it already appears one
-# row up as `awsds-deploy-staging`, which is a different role for a different job. Interactive
-# compute exists in Sandbox only since the 2026-09-05 re-scope, so this map has one dev-env
-# home by design rather than by attrition.
+# Interactive compute exists in Sandbox only, so the map holds one dev-env registration home.
+# Staging is a deploy target and stays headless (D28); it appears one row up as
+# `awsds-deploy-staging`, a different role for a different job.
 # The two roles CloudTrail is asked about, in the account each lives in (INT-08).
 PROMOTION_PROFILES = ("awsds-infra-staging", "awsds-infra-prod")
 
@@ -465,7 +461,7 @@ def main(argv: list) -> int:
         elif state == "present":
             checks.ok("CI-2", f"{role}", f"boundary {btail}")
 
-    # CI-3: every trust policy admits ONLY the deploy runner's role, only sts:AssumeRole -
+    # CI-3: every trust policy admits only the deploy runner's role, only sts:AssumeRole -
     # an enumerated principal, never a wildcard account (conventions 6; INT-08/INT-18).
     if trust_bad:
         for role, what in sorted(set(trust_bad)):
@@ -547,7 +543,7 @@ def main(argv: list) -> int:
             "Stage 8 step 1.6.",
         )
 
-    # CI-7: the misuse-alarm rules exist and are ENABLED in both promotion accounts (4.6).
+    # CI-7: the misuse-alarm rules exist and are enabled in both promotion accounts (4.6).
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue

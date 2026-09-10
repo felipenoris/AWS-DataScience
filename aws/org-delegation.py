@@ -1,14 +1,14 @@
 #!/usr/bin/env -S uv run --quiet
-# org-delegation.py - can the Identity account manage the ORGANIZATION'S POLICIES, and
-# exactly which of them? The standing instrument for INT-20.
+# org-delegation.py - can the Identity account manage the organization's policies, and exactly
+# which of them? The standing instrument for INT-20.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/org-delegation.py                 # awsds-infra-identity
 #             python3 aws/org-delegation.py -         # no --profile: CloudShell on
-#                                                     # MANAGEMENT, as CT Admin (no uv
+#                                                     # Management, as CT Admin (no uv
 #                                                     # there; bring the aws/ folder)
 #   writes:   aws/output/org-delegation.txt   (untracked - see .gitignore)
 #   reads:    organizations:DescribeResourcePolicy, DescribeOrganization, ListRoots,
@@ -16,38 +16,33 @@
 #             sts:GetCallerIdentity. It never creates, updates or deletes anything.
 #   exits:    0 the report was produced | 1 a call failed unexpectedly | 2 a check FAILED
 #
-# WHY THIS EXISTS. Permission sets reach the Identity account through the IAM Identity
-# Center delegated administrator, which Stage 1b step 1 proved. SCPs, RCPs, tag policies and
-# declarative policies DO NOT: they are AWS Organizations objects, and reaching them needs a
-# second, different mechanism - a RESOURCE-BASED DELEGATION POLICY on the organization
-# (organizations:PutResourcePolicy), written from Management. Nothing before Stage 2 step 5.1
-# creates it, and INT-20 records the plausible failure as "the delegation works and still
-# cannot touch a root attachment". Since Stage 1c put SIX OF THE TEN DOCUMENTS ON THE ROOT,
-# that outcome costs most of terraform-live/identity/org-policies/ rather than a corner of
-# it - which is why Stage 2 answers this before writing a line of that slice.
+# Permission sets reach the Identity account through the IAM Identity Center delegated
+# administrator (Stage 1b step 1). SCPs, RCPs, tag policies and declarative policies do not: they
+# are AWS Organizations objects, and reaching them needs a resource-based delegation policy on the
+# organization (organizations:PutResourcePolicy), written from Management. Nothing before Stage 2
+# step 5.1 creates it, and INT-20 records the plausible failure as "the delegation works and still
+# cannot touch a root attachment" - which, with six of Stage 1c's ten documents on the root, costs
+# most of terraform-live/identity/org-policies/ rather than a corner of it. Stage 2 answers this
+# before writing a line of that slice.
 #
-# THE TRAP THIS SCRIPT IS BUILT AROUND, and it is the reason section 4 exists as a warning
-# rather than as a result. ORGANIZATIONS *READS* ALREADY ANSWER FROM THE IDENTITY ACCOUNT
-# WITHOUT ANY POLICY DELEGATION - measured 2026-08-12/13 (Stage 1c verification (x)), because
-# a delegated administrator for ANY service may read the organization. So `describe-policy`
-# succeeding here proves nothing about the policy delegation: it returns the same answer
-# before and after step 5.1, which is Lesson 13 exactly. THE ONLY DECISIVE READ IS THE
-# DELEGATION DOCUMENT ITSELF, and the only decisive test is a WRITE - which this script
-# deliberately does not perform. That line is the same one aws/probes/ draws: a measurement
-# that changes a policy is a human act on Management.
+# Organizations reads already answer from the Identity account with no policy delegation at all,
+# measured 2026-08-12/13 (Stage 1c verification (x)): a delegated administrator for any service may
+# read the organization. So `describe-policy` succeeding here proves nothing about the policy
+# delegation - it returns the same answer before and after step 5.1 (Lesson 13). The only decisive
+# read is the delegation document itself, and the only decisive test is a write, which this script
+# does not perform; aws/probes/ draws the same line, and a measurement that changes a policy is a
+# human act on Management. Section 4 is a warning rather than a result for that reason.
 #
-# So what this script decides is SCOPE, by reading: does a delegation exist, does it name
-# this account, which policy TYPES does it admit, and - the half that fails silently - does
-# its Resource list reach the ROOT, the NESTED OUs, and the POLICY-type ARNs at all (DEL-9:
-# a target-only list denies every write). AWS documents that naming a single OU "excludes
-# child OUs and accounts under child OUs", and this organization is two levels deep (D23:
-# `Sandboxes` under `Interactive`).
+# What it decides is scope, by reading: does a delegation exist, does it name this account, which
+# policy types does it admit, and - the half that fails silently - does its Resource list reach the
+# root, the nested OUs, and the policy-type ARNs at all (DEL-9: a target-only list denies every
+# write). AWS documents that naming a single OU "excludes child OUs and accounts under child OUs",
+# and this organization is two levels deep (D23: `Sandboxes` under `Interactive`).
 #
-# IDENTITY. Default profile is `awsds-infra-identity` - the account the delegation is FOR,
-# which is the only place the answer means anything. The `-` fallback is CloudShell on
-# Management as `AWS Control Tower Admin`, and it answers a different question: it shows the
-# document from the side that wrote it, and it always succeeds, so a green run there says
-# nothing about whether Identity can use it. Prefer the profile.
+# The default profile is `awsds-infra-identity`, the account the delegation is for and the only
+# place the answer means anything. The `-` fallback is CloudShell on Management as `AWS Control
+# Tower Admin`: it shows the document from the side that wrote it and always succeeds, so a green
+# run there says nothing about whether Identity can use it. Prefer the profile.
 
 from __future__ import annotations
 
@@ -71,9 +66,9 @@ POLICY_TYPES = [
 
 
 def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
-    """Reading the document is the instrument (Lesson 22). What is checked is SCOPE, in the
-    three places it fails silently: the policy TYPES it admits, whether the Resource list
-    reaches the ROOT, and whether it reaches OUs AT ANY DEPTH rather than one named OU."""
+    """Reading the document is the instrument (Lesson 22). What is checked is scope, in the three
+    places it fails silently: the policy types it admits, whether the Resource list reaches the
+    root, and whether it reaches OUs at any depth rather than one named OU."""
     stmts = doc.get("Statement", [])
     if isinstance(stmts, dict):
         stmts = [stmts]
@@ -112,7 +107,7 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
                 return True
         return False
 
-    # The write half Stage 2 step 5.1 requires, and the two that must be ABSENT.
+    # The write half Stage 2 step 5.1 requires, and the two that must be absent.
     write = [
         "organizations:CreatePolicy",
         "organizations:UpdatePolicy",
@@ -132,12 +127,11 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
         "organizations:ListPoliciesForTarget",
         "organizations:ListTargetsForPolicy",
         "organizations:ListTagsForResource",
-        # Added 2026-08-15 with Stage 2 step 5.1's correction, so DEL-4 covers what 5.1
-        # now names. DescribePolicy is the load-bearing one - the provider calls it on
-        # every refresh of an aws_organizations_policy, so without it 5.5's import
-        # succeeds and the next plan fails. DescribeResourcePolicy is for THIS script:
-        # if it were ever denied, DEL-1 would report "denied" and every check below it
-        # would go vacuous.
+        # DEL-4 covers what step 5.1 names. DescribePolicy is the load-bearing one: the
+        # provider calls it on every refresh of an aws_organizations_policy, so without it
+        # 5.5's import succeeds and the next plan fails. DescribeResourcePolicy is for this
+        # script - denied, it would make DEL-1 report "denied" and every check below it go
+        # vacuous.
         "organizations:DescribeOrganizationalUnit",
         "organizations:DescribeAccount",
         "organizations:DescribePolicy",
@@ -146,9 +140,8 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
         "organizations:ListAccountsForParent",
     ]
 
-    # DEL-9 (added 2026-08-15). Create/Update/DeletePolicy authorize against the POLICY ARN
-    # and Attach/DetachPolicy against target AND policy, so a target-only Resource list
-    # denies every write. Shape:
+    # DEL-9. Create/Update/DeletePolicy authorize against the policy ARN and Attach/DetachPolicy
+    # against target and policy, so a target-only Resource list denies every write. Shape:
     # arn:aws:organizations::<mgmt>:policy/o-<org>/<policy_type>/<id-or-*>; a bare "*" or a
     # policy/o-<org>/* entry covers every type.
     required_policy_types = [
@@ -199,13 +192,11 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
                 for v in (vals if isinstance(vals, list) else [vals])
             }
         ),
-        # DEL-8's operator half (added 2026-08-15, after step 5.0's write). The value list
-        # alone cannot tell a working delegation from one that refuses every write: without
-        # IfExists, any call whose request context omits organizations:PolicyType fails the
-        # condition and is DENIED. That arrives at the keyboard as "every write refused" -
-        # which is exactly what a delegation unable to reach a root attachment looks like,
-        # the one thing step 5.0 exists to distinguish. The check that cannot separate them
-        # is Lesson 13.
+        # DEL-8's operator half. The value list alone cannot tell a working delegation from
+        # one that refuses every write: without IfExists, any call whose request context omits
+        # organizations:PolicyType fails the condition and is denied. That arrives at the
+        # keyboard as "every write refused", which is also what a delegation unable to reach a
+        # root attachment looks like - the one thing step 5.0 exists to distinguish (Lesson 13).
         "policy_type_operators": sorted(
             {
                 op
@@ -218,21 +209,20 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
         "n_statements": len(stmts),
     }
     # Any/Value-set prefixes are irrelevant here; what matters is the IfExists suffix.
-    # Operators are ANDed inside a Condition block, so ONE strict operator on this key
-    # denies the call regardless of what its siblings say.
+    # Operators are ANDed inside a Condition block, so one strict operator on this key
+    # denies the call whatever its siblings say.
     out["policy_type_operators_strict"] = [
         op for op in out["policy_type_operators"] if not op.lower().endswith("ifexists")
     ]
 
-    # DEL-10 (added 2026-08-15, Stage 2 step 5.1a). The delegation's Principal is the
-    # ACCOUNT - a resource policy has no narrower principal to write - so every principal
-    # in Identity that also holds organizations:* identity-side is reached, and Control
-    # Tower put one there nobody chose (AWSOrganizationsFullAccess -> AWSControlTowerAdmins,
-    # open question 11). 5.1a narrows the two WRITE statements with a Condition on
-    # aws:PrincipalArn matching the InfrastructureAccess role pattern; the navigation
-    # statement stays uncondiitoned by design (it grants nothing the account does not
-    # already hold as a delegated administrator of another service). Without this check
-    # the condition is an intention rather than a control (Lesson 5).
+    # DEL-10 (Stage 2 step 5.1a). The delegation's Principal is the account - a resource policy
+    # has no narrower principal to write - so every principal in Identity that also holds
+    # organizations:* identity-side is reached, and Control Tower put one there nobody chose
+    # (AWSOrganizationsFullAccess -> AWSControlTowerAdmins, open question 11). Step 5.1a narrows
+    # the two write statements with a Condition on aws:PrincipalArn matching the
+    # InfrastructureAccess role pattern; the navigation statement stays unconditioned, granting
+    # nothing the account does not already hold as a delegated administrator of another service.
+    # Without this check the condition is an intention rather than a control (Lesson 5).
     sso_pattern = "AWSReservedSSO_InfrastructureAccess_"
     tag_actions = {"organizations:TagResource", "organizations:UntagResource"}
 
@@ -293,11 +283,11 @@ def main(argv: list) -> int:
     # --------------------------------------------------------------- the delegation document
     note("reading the organization resource policy...")
 
-    # The ONE call whose failure is the answer. Three outcomes have to stay distinguishable:
+    # The one call whose failure is the answer. Three outcomes have to stay distinguishable:
     #   - a document                       -> a delegation exists; sections 3 and 5 read it
-    #   - ResourcePolicyNotFoundException  -> no delegation. Step 5.1 has not run. NOT a
-    #     denial
-    #   - AccessDenied / anything else     -> the read itself was refused, a THIRD state
+    #   - ResourcePolicyNotFoundException  -> no delegation. Step 5.1 has not run, and this is
+    #     not a denial
+    #   - AccessDenied / anything else     -> the read itself was refused, a third state
     # Collapsing the last two is the mistake this script exists to make impossible.
     res = cli.call(
         "organizations",
@@ -606,8 +596,8 @@ def main(argv: list) -> int:
                 "DEL-6's answer into scope. (Added 2026-08-15; Stage 2 step 5.1.)",
             )
 
-        # DEL-10 - the 5.1a narrowing. EXPECTED TO FAIL between 5.1's attach and 5.1a's
-        # console paste: the failing answer is the true state, not a broken script.
+        # DEL-10 - the 5.1a narrowing. It fails between 5.1's attach and 5.1a's console paste,
+        # and the failing answer is the true state there.
         if not dec["write_stmts_missing_principal_arn"]:
             checks.ok(
                 "DEL-10",
