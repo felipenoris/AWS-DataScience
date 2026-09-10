@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **Unchanged by the 2026-09-05 re-scope, and deliberately so (user).** The hub puts two internet-facing hosts in Production, which is a widening of exposure this stage would watch; pulling it forward was offered and declined, so the deviation stays argued in `institutional-delta.md` rather than closed early. Two things do change: the accounts it enables over are **one Interactive account plus the renamed Staging**, and its verification that waited on "the Staging vend" is unblocked by [6b](stage-06b-development-becomes-staging.md) instead; and **the estate now has two internet-facing hosts rather than one**, both in Production, so the exposure this stage watches is the WireGuard host *and* the Squid proxy — whose access log is separately Stage 11's evidence, and is not a substitute for a detector. — *earlier:* not started — **created 2026-08-18 by splitting Stage 4's pass 4 out whole**, hours after that pass had been prepared against the current documentation, so it arrives already revised: the preparation's findings (the protection plans arrive ON, decision 1's collision with `DenyGuardDutyTampering`, verification (i)'s first half answered NO by documentation, the measured SNS statements behind step 4's do-not-reuse rule) are all in the steps below rather than waiting to be discovered. **The step numbers 0-6 map onto Stage 4's retired 10.0-10.6 one for one** (10.2a became decision 3 plus step 2a); the stage log for the split sitting is [Stage 4's](../../log/log-stage-04-vpn.md). Pre-instrumented by `./aws/guardduty.py` (`GD-1`–`GD-3`), carved out of `./aws/vpn.py` the same day — `VP-8` is retired, not renumbered |
-| **Prerequisites** | **None that block.** Stage 4 built the thing this stage watches — the one internet-facing host — and everything below could have run the day that host booted; running it *here* instead is a **deliberate deferral, not a dependency**, recorded in [`institutional-delta.md`](../institutional-delta.md) (an institution enables detection with, or before, its first exposed resource — principle 9's own argument, and this stage is the plan overruling its own principle with its eyes open). What the deferral buys and costs is in "Why this stage is where it is" below. **This stage gates others rather than being gated:** [Stage 11](stage-11-dlp.md) step 4 (the paid features against a real bill) needs this stage plus about a month of billing behind it, and [Stage 5](stage-05-data-foundation.md) step 13.2's "Security Hub ingests GuardDuty findings" ingests nothing until this stage runs |
+| **Status** | not started. The hub puts two internet-facing hosts in Production, a widening of the exposure this stage watches; **pulling this stage forward was offered and declined (the user)**, so the deviation stays argued in `institutional-delta.md` rather than closed early. The accounts it enables over are **one Interactive account plus the renamed Staging**, and its verification that waited on "the Staging vend" is unblocked by [6b](stage-06b-development-becomes-staging.md) instead. The two internet-facing hosts are the WireGuard host *and* the Squid proxy — whose access log is separately Stage 11's evidence, and is not a substitute for a detector. **The step numbers 0-6 map onto Stage 4's retired 10.0-10.6 one for one** (10.2a became decision 3 plus step 2a); the log for the sitting that split them out is [Stage 4's](../../log/log-stage-04-vpn.md). Pre-instrumented by `./aws/guardduty.py` (`GD-1`–`GD-3`), carved out of `./aws/vpn.py` — `VP-8` is retired, not renumbered |
+| **Prerequisites** | **None that block.** Stage 4 built the thing this stage watches — the one internet-facing host — and everything below could have run the day that host booted; running it *here* instead is a **deliberate deferral, not a dependency**, recorded in [`institutional-delta.md`](../institutional-delta.md) (an institution enables detection with, or before, its first exposed resource — principle 9's own argument, and this stage is the plan overruling its own principle with its eyes open). What the deferral buys and costs is in "The position of this stage" below. **This stage gates others rather than being gated:** [Stage 11](stage-11-dlp.md) step 4 (the paid features against a real bill) needs this stage plus about a month of billing behind it, and [Stage 5](stage-05-data-foundation.md) step 13.2's "Security Hub ingests GuardDuty findings" ingests nothing until this stage runs |
 | **Consumes** | [D12](../decisions/D12-budget-ceiling.md), [D16](../decisions/D16-break-glass.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | — (no `INT-nn` row; the delegation lands in `INV-09`, step 6) |
 
@@ -17,7 +17,7 @@ account present and future, held to **foundational detection only** (every optio
 switched off until [Stage 11](stage-11-dlp.md) step 4 decides the paid ones against a real bill), and its
 findings routed to a human for the first time in the project.
 
-## Why this stage is where it is, and what the position costs
+## The position of this stage, and what it costs
 
 GuardDuty was Stage 4 step 10 — principle 9's own scheduling: enable detection with the first thing worth
 detecting, which was the WireGuard host, the project's only internet-facing resource. **The move to
@@ -132,16 +132,16 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   `aws-controltower-SecurityNotifications`; `GRSNSTOPICPOLICY` denies `AddPermission`, `CreateTopic`,
   `DeleteTopic`, `RemovePermission` and `SetTopicAttributes` on all three `aws-controltower-*`
   notification topics; `CTSNSPV1` is a deny-all-but-a-short-list over
-  `aws-controltower-CentralizedLoggingNotifications*`. **Both halves of the reuse fail** — the
-  subscription *and* the topic-policy edit an EventBridge target needs — so reuse is not a shortcut that
-  half works, it is refused twice. A topic this project names has no statement over it at all.
+  `aws-controltower-CentralizedLoggingNotifications*`. **Both halves of the reuse fail**: the
+  subscription, and the topic-policy edit an EventBridge target needs. A topic this project names has no
+  statement over it at all.
   **A related absence to leave related, not conflated**: the WireGuard health alarm
   (`terraform-modules/wireguard/observability.tf`) carries **no SNS action** — deferred to Stage 12, and
   its comment names this step's topic only as the project's first notification of anything. The alarm
   lives in the VPN home and this topic in Audit, so wiring them is a cross-account question for Stage 12,
   not a to-do of this step; record here only that the topic now exists.
 
-- **5 — Read the SCP interaction, settled here because it is free here and costly later**:
+- **5 — Read the SCP interaction**:
   `awsds-org-scp-baseline` denies `guardduty:UpdateDetector` on the organization root, Audit included —
   org-wide administration through `UpdateOrganizationConfiguration`/`UpdateMemberDetectors` is not
   denied, and enabling the base service needs neither, so **steps 1 and 2 are not blocked**; step 3's
@@ -248,7 +248,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | ~~Does auto-enable `ALL` reach **Management itself**?~~ **Answered NO by the documentation (2026-08-18, while this was still Stage 4 verification (v))** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — the `Staging` vend or Stage 14's first unit, whichever lands first (existing members were already documented as covered) | 2, 2a |
+| i | Does auto-enable `ALL` reach **Management itself**? **Answered no by the documentation, 2026-08-18** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — the `Staging` vend or Stage 14's first unit, whichever lands first (existing members were already documented as covered) | 2, 2a |
 | ii | What does `get-detector` actually return in a freshly enabled account — which features, with which statuses? The documentation says "all but Runtime Monitoring"; this is the reading that turns that into a measurement, and it is also where AI Protection's feature name comes from | 0, 2 |
 | iii | How does the **SUSPENDED `Sandbox`** in the roster surface under auto-enable `ALL` — an error, a skipped row, or a member entry? The documentation says `ALL` includes "accounts that may have been suspended", and the standing rule (resolve accounts by exact vended name, filter on `ACTIVE`) exists because that account is a trap for instruments; record what the Accounts table shows for it | 2 |
 | iv | Does the `Security` OU's Region ceiling interact with the delegation at all — the enablement is `us-west-2` by design, but record whether any console surface tries another Region and is refused (the ceiling's `NotAction` list does not exempt GuardDuty, by decision 10 of Stage 1d) | 1, 2 |

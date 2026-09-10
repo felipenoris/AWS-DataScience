@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-reviewed 2026-09-07 against 6c as built**, five corrections written into their steps: the SSM trio is already in `production/egress/` (1.7), the proxy has no TLS listener so no leaf is issued for it (2.4), the buildbox is `production/buildbox/` (6, 6.5), 6c 5.9's **measured** pull-through fallback ranks first (5.2), and the runner's `NO_PROXY` is generated (6.2). **Re-scoped and re-reviewed 2026-09-05** against [6b](stage-06b-development-becomes-staging.md)/[6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md), rewritten in the action-checklist format, and corrected against the vendor documentation (the list is "What the documentation changed in this plan"). The structural changes: everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16 under its new name); the names move to the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call; the **buildbox is retired into the build runner**; one GitLab group `awsds/` is the shared namespace; and INT-09's clone is exercised from **Sandbox**, the only Interactive account left. **Pass 0 is already applied** — step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
+| **Status** | not started. Everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16 under its new name); the names are in the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call; the **buildbox is retired into the build runner**; one GitLab group `awsds/` is the shared namespace. There is no Development account ([6b](stage-06b-development-becomes-staging.md)), so INT-09's clone is exercised from **Sandbox**, the only Interactive account left. **Pass 0 is applied**: step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) passes 1-4 — met 2026-09-06**: `VPC-SharedServices` exists under its new name, `awsds.internal` resolves in it, the Sandbox↔SharedServices peering carries routes both ways, and the proxy answers on `proxy.awsds.internal:3128`. **[6d](stage-06d-unified-studio-remainder.md)** for one deliverable only — the INT-09 clone needs a live Sandbox project. **`production/registry/` exists**: step 5.a was applied at 6a, so this stage starts with the two ECR repositories and CodeArtifact already there and **`production/pki/` not yet written** |
 | **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | [INT-09](../integrations.md) (the `git clone` from a **Sandbox** project over the SharedServices peering), [INT-13](../integrations.md) (CodeConnections against a private GitLab — expected to fail; the manual `git remote add` is the accepted path), [INT-19](../integrations.md) (the CA root on **four** client surfaces — the fourth is GitLab itself), **[INT-21](../integrations.md)** first exercised by something that is not a Studio app. **Supplies** [INT-02](../integrations.md)'s provider half — already applied at 6a. INT-08 is **not** here: the deploy roles are Stage 8's |
@@ -56,16 +56,16 @@ flowchart LR
 
 ## What the documentation changed in this plan
 
-Read before executing. Each row is a correction to what the pre-2026-09-05 draft assumed.
+Read before executing.
 
 | Was assumed | What the documentation says | Where it lands |
 |---|---|---|
 | `external_url "https://…"` just serves the leaf | **Let's Encrypt is on by default** whenever `external_url` is HTTPS and no certificate is configured, and GitLab **retries the renewal on every `reconfigure`**. On a `.internal` name with no route to the ACME server that is a failing reconfigure, every time | 1.3 |
-| The CA root goes on three client surfaces | There is a **fourth**, and it is GitLab: roots are dropped in **`/etc/gitlab/trusted-certs/`** and picked up by `reconfigure`. The leaf pair is **hostname-named** — `/etc/gitlab/ssl/gitlab.awsds.internal.{crt,key}`, 644/600 | 1.3, 2.5 |
+| The CA root goes on three client surfaces | GitLab is a **fourth** surface: roots are dropped in **`/etc/gitlab/trusted-certs/`** and picked up by `reconfigure`. The leaf pair is **hostname-named** — `/etc/gitlab/ssl/gitlab.awsds.internal.{crt,key}`, 644/600 | 1.3, 2.5 |
 | GitLab inherits the proxy from the instance | Omnibus takes it **per component**: `gitlab_rails['env']`, `gitaly['env']`, `gitlab_workhorse['env']`, `gitlab_pages['env']`. `no_proxy` accepts wildcards and **must carry no port** — a port there breaks DNS resolution for repository mirroring | 1.3, 7.1 |
 | The runner inherits it too | GitLab Runner needs its own **systemd drop-in** (`/etc/systemd/system/gitlab-runner.service.d/http-proxy.conf`), the docker daemon needs a second one, and the build container is handed the values through `config.toml`'s `environment` — **in both cases**, `HTTP_PROXY` and `http_proxy`, because tools disagree. `NO_PROXY` wildcards work only as **suffixes**: no prefixes, **no CIDR** | 6.2, and 6c 5.6 |
-| The pull-through cache is primed "while the NAT is up" | ECR documents that the **first** pull *"may require a route to the internet"* and its own remedy is a public subnet with an internet gateway — **a route, which design B removes; a proxy is not one.** Unauthenticated upstream pulls are *"initiated by AWS IP addresses"*, so the requirement is conditional, not universal: it is **measured**, and a failure makes this the **first named candidate** for D38's NAT contingency — behind the fallback 6c 5.9 **measured** on 2026-09-06: pull the public image through the proxy and push it into ECR (re-read 2026-09-07, the page still says exactly this) | 5.2, decision 3, verification vii |
-| "No repository creation template forces immutability" | **Repository creation templates exist** and can set tag immutability, encryption, policies and lifecycle on repositories ECR creates for the cache. The rule is therefore *do not write a template that turns immutability on for the cache prefix* — and the caution that *"tag immutability … will prevent Amazon ECR from updating images using the same tag"* stands | 5.2 |
+| The pull-through cache is primed "while the NAT is up" | ECR documents that the **first** pull *"may require a route to the internet"* and its own remedy is a public subnet with an internet gateway — a route, which design B removes; a proxy is not one. Unauthenticated upstream pulls are *"initiated by AWS IP addresses"*, so the requirement is conditional: it is **measured**, and a failure makes this the **first named candidate** for D38's NAT contingency, behind the fallback 6c 5.9 **measured** on 2026-09-06 — pull the public image through the proxy and push it into ECR | 5.2, decision 3, verification vii |
+| "No repository creation template forces immutability" | **Repository creation templates exist** and can set tag immutability, encryption, policies and lifecycle on repositories ECR creates for the cache. The rule is *do not write a template that turns immutability on for the cache prefix*; the caution that *"tag immutability … will prevent Amazon ECR from updating images using the same tag"* stands | 5.2 |
 | CodeArtifact needs client egress for `public:pypi` | The **service** fetches from the external connection; a client with no internet still resolves a package that has never been cached. **One external connection per repository**, which is why `pypi` and `crates` are two repositories rather than one | 5.3 |
 | Pages needs its own address | For a **wildcard** Pages domain behind the Omnibus nginx proxy, **no secondary IP is required** — a second address is only for custom domains. Pages **access control is a Free-tier feature** | 4.1 |
 
@@ -85,7 +85,7 @@ the IdC delegated administrator, D10).
 ## Step numbers are identifiers, not an order
 
 Numbers are **stable addresses cited from other files** and do not change. The sequence is four passes;
-pass 0 is behind us.
+pass 0 is applied.
 
 | Pass | Steps | What | Slice · layer | Applied as |
 |---|---|---|---|---|
@@ -110,9 +110,9 @@ project). **Pass 4 proves everything before it.**
 **Action:** put GitLab CE Omnibus on a `t4g.large` in `VPC-SharedServices`' private tier, its bulky state
 in S3, its secrets in Secrets Manager, reached by name over the VPN. **Why:** the objectives require source
 control reachable only through the intranet, and D8/D14 fix the how and the where. **Explanation:** the
-instance is `[D]` — stopped between sessions, ~USD 4/month of EBS, because rebuilding real state from backup
-every session is the fragile path (conventions §5.1 rule 2). Everything that must survive a rebuild lives
-in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
+instance is `[D]` — stopped between sessions, ~USD 4/month of EBS — because rebuilding real state from
+backup every session is the fragile path (conventions §5.1 rule 2). Everything that must survive a rebuild
+lives in `[P]` slices.
 
 - **1.1 — [Claude] Create GitLab's `[P]` anchors in `production/foundation/`**, exported for `tooling/`:
   the object-storage bucket `awsds-prod-gitlab-objects` (one bucket, virtual buckets by prefix — the
@@ -130,7 +130,7 @@ in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
   peering) and from **Sandbox's private-subnet CIDR** (INT-09) — never `10.90.0.0/24`: 6c 4.7 masquerades
   everything but proxy-bound traffic, so a tunnel client reaches this VPC as the WireGuard host's address.
 - **1.3 — [Claude] Render `gitlab.rb` from a Terraform template** delivered by user data — configuration is
-  code, not console. Six blocks, and the first two are the ones the documentation changed:
+  code, not console. Six blocks:
   1. `external_url "https://gitlab.awsds.internal"` **with `letsencrypt['enable'] = false`** — Let's Encrypt
      is on by default whenever `external_url` is HTTPS, and it retries on *every* reconfigure. The leaf pair
      is hostname-named: `/etc/gitlab/ssl/gitlab.awsds.internal.crt` (644) and `.key` (600).
@@ -154,8 +154,8 @@ in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
 - **1.5 — [Claude] Write the restore-or-generate flow into user data**: on boot, if 1.1's secret holds a
   value, install it as `/etc/gitlab/gitlab-secrets.json` **before** `gitlab-ctl reconfigure`; if not (first
   boot only), reconfigure and push the generated file with `put-secret-value`. GitLab excludes this file
-  from its own backups by design and a backup restored without it cannot decrypt the database — this flow is
-  what makes 8.2 honest. `gitlab.rb` needs no such treatment: it is a rendered template in this repository.
+  from its own backups by design, and a backup restored without it cannot decrypt the database.
+  `gitlab.rb` needs no such treatment: it is a rendered template in this repository.
 - **1.6 — [Claude] Add the machinery rows in the same commit**: `("production", "tooling")` `[D]` and
   `("production", "runners")` `[E]` in `scripts/tfhygiene/layers.py`, with `runners` ranked **above**
   `tooling` so `make down ENV=prod` destroys the runner before stopping GitLab. A slice with no row fails
@@ -171,11 +171,11 @@ in `[P]` slices, which is Stage 4's Elastic IP pattern applied to GitLab.
 
 ### 2. Issue TLS from the internal CA — `production/pki/` (D36, D15, INT-19)
 
-**Action:** generate the root, issue three leaves, and put the root on every client surface. **Why:** ACM
+**Action:** generate the root, issue the leaves, and put the root on every client surface. **Why:** ACM
 cannot issue for `.internal` names and Private CA is over budget (D15), so the trust chain is ours; a missed
 surface fails as an opaque TLS error at `git clone` time rather than as an access denial. **Explanation:**
-the whole CA is one pass, and the surface count is **four**, not three — the documentation added GitLab
-itself, which needs the root in `/etc/gitlab/trusted-certs/` to trust its own Pages and webhook targets.
+the whole CA is one pass. The fourth trust surface is GitLab itself, which needs the root in
+`/etc/gitlab/trusted-certs/` to trust its own Pages and webhook targets.
 
 - **2.1 — [Claude] Write `production/pki/`**: the root CA through the `tls` provider — its own slice, its
   own state file, its own KMS key, and **the private key never an output** (D36 states the state-file
@@ -191,37 +191,34 @@ itself, which needs the root in `/etc/gitlab/trusted-certs/` to trust its own Pa
 - **2.4 — [Claude] Issue two leaves** (same pass, amending `pki/`): `gitlab.awsds.internal` and
   `*.awsds-pages.internal`. **`proxy.awsds.internal` gets one only if the proxy ever gains a TLS
   listener** — Squid listens on plain `3128` today (6c 4.8), so nothing would validate it. **≤ 398 days**
-  each (D15 note 5). `tooling/`
-  reads the first two through `terraform_remote_state`; the re-issue date goes into the log, and
-  `./aws/supplychain.py` `SC-8` watches the expiry.
+  each (D15 note 5). `tooling/` reads the first two through `terraform_remote_state`; the re-issue date
+  goes into the log, and `./aws/supplychain.py` `SC-8` watches the expiry.
 - **2.5 — [user] Trust the root on all four surfaces**: the laptop (macOS keychain, plus `git`, `curl` and
   Python, which each have their own CA-bundle opinion — Claude drafts the exact commands); the `dev-env`
   image (2.6); the runner (step 6's user data); and **GitLab itself** — `/etc/gitlab/trusted-certs/*.crt`
   followed by `gitlab-ctl reconfigure`, which rehashes them into the embedded bundle. The four-surface
   proof is this stage's INT-19 deliverable.
 - **2.6 — [user] Rebuild and repush the images with the root**: the images 6a step 5.0 built carry an
-  **empty CA-install layer** (the copy plus `update-ca-certificates` with no source), and this is where it
-  gets filled from 2.3's one source. **It is both images, because the layer lives in `base`** — `dev-env`
-  is `FROM base`, and duplicating it in the descendant is one intent enforced in two places (Lesson 33).
-  Drop the PEM into `images/base/ca-certificates/` with a `.crt` extension and build with
+  **empty CA-install layer** (the copy plus `update-ca-certificates` with no source), filled here from
+  2.3's one source. It is both images, because the layer lives in `base` and `dev-env` is `FROM base`
+  (Lesson 33). Drop the PEM into `images/base/ca-certificates/` with a `.crt` extension and build with
   **`--build-arg CA_ROOTS_EXPECTED=1`**, so a forgotten file fails the build instead of shipping a
   trusting-nothing image. Use BuildKit's registry cache or the unchanged Julia/R/Rust layers re-upload.
   **The tag is `default-v0.2.0`** in both repositories ([`docs/SMUS.md`](../../SMUS.md) owns the convention;
   a hand build carries no `-<short-sha>` suffix, a pipeline build does). **Record the new digest beside the
   old one** — SMUS spaces select an image by version, so 6a step 5.1's registration is repointed at it.
-  **Where this now runs: the build runner of step 6, not the laptop and not the buildbox** — which is why
-  2.6 sits in pass 1 as a *write-up* and executes in pass 3. If Stage 8 has already landed, it is that
-  pipeline's first run and this becomes a reading. **It gates the INT-09 clone**: a notebook that does not
-  trust the root fails `git clone` with the opaque error INT-19 exists to prevent.
-  **What the OS layer does not cover, and this step must close:** Python does not read the OS trust store —
-  `certifi` ships its own bundle, and `git`, `curl` and conda each have their own.
+  It runs on the build runner of step 6, so 2.6 is written up in pass 1 and executes in pass 3. If Stage 8
+  has already landed, it is that pipeline's first run and this becomes a reading. **It gates the INT-09
+  clone**: a notebook that does not trust the root fails `git clone` with the opaque error INT-19 exists to
+  prevent. The OS layer does not cover Python, which does not read the OS trust store — `certifi` ships its
+  own bundle, and `git`, `curl` and conda each have their own.
 
 ### 3. Make Identity Center the only sign-in, and read the edition answer (D20, Lesson 12)
 
 **Action:** wire SAML, mirror the personas as GitLab groups, create the shared namespace, and verify which
 approval-gate features this CE instance actually has. **Why:** no local accounts is the identity model
-(principle 2's human half), and **two Stage 8 gates hang on the edition answer**, so it is read now rather
-than assumed while Stage 8 is written. **Explanation:** SAML *login* is Free; **Group Sync, protected
+(principle 2's human half), and **two Stage 8 gates hang on the edition answer**.
+**Explanation:** SAML *login* is Free; **Group Sync, protected
 environments and deployment approvals are Premium** — memberships are maintained by hand and the CE gate
 shape is `when: manual` under `rules:` on a protected tag.
 
@@ -256,14 +253,14 @@ shape is `when: manual` under `rules:` on a protected tag.
   writable by `data-scientists` with its **release tag protected** so only `dev-env-stewards` can push it —
   the CE shape of Stage 8 step 1's gate.
 
-### 4. Publish docs on GitLab Pages — the second apex, the wildcard, the leaf (D36)
+### 4. Publish docs on GitLab Pages (D36)
 
 **Action:** enable Pages on `*.awsds-pages.internal`, VPN-only. **Why:** the objectives require docs over
 the intranet, and Pages serves **user-supplied content** — it must live on a domain distinct from the GitLab
 host, or a published page could read the GitLab session cookie. **Explanation:** the zone and its
 associations already exist (6c pass 2); this step adds the configuration on top of 1.4's record and 2.4's
-leaf. The documentation settles two things that were open: a **wildcard** domain behind the Omnibus nginx
-proxy needs **no secondary IP**, and access control is a **Free-tier** feature.
+leaf. A **wildcard** domain behind the Omnibus nginx proxy needs **no secondary IP**, and access control is
+a **Free-tier** feature.
 
 - **4.1 — [Claude] Add the Pages block to `gitlab.rb`**: `pages_external_url
   "https://awsds-pages.internal"`, `pages_nginx['enable'] = true`, the wildcard leaf and key as
@@ -278,8 +275,8 @@ proxy needs **no secondary IP**, and access control is a **Free-tier** feature.
 
 **Action:** add the pull-through cache and the per-application repositories to the applied slice. **Why:**
 under design B this is how public images reach a private build at all, and no application image exists until
-Stage 8. **Explanation:** 5.a is already applied (6a, `14 added`) — this is a second apply of one folder, not
-a second folder. Everything is `[P]` and free at rest except stored bytes.
+Stage 8. **Explanation:** 5.a is already applied (6a, `14 added`), so this is a second apply of one folder.
+Everything is `[P]` and free at rest except stored bytes.
 
 - **5.1 — [Claude] Record what 5.a already built, and do not re-author it**: `awsds-prod-ecr-base` and
   `awsds-prod-ecr-dev-env` (tag immutability on, basic scan-on-push, an untagged-expiry lifecycle policy),
@@ -289,13 +286,12 @@ a second folder. Everything is `[P]` and free at rest except stored bytes.
 - **5.2 — [Claude reads, user decides] Create the pull-through cache rules — and measure the first pull
   before believing it works.** Rules for the credential-free upstreams (ECR Public, `registry.k8s.io`, Quay;
   Docker Hub would need an `ecr-pullthroughcache/…` Secrets Manager secret — its documented prefix, an
-  exception to the `awsds-` convention — and is added only when a build needs it). **Three documented traps,
-  written here so nobody rediscovers them:**
+  exception to the `awsds-` convention — and is added only when a build needs it). **The documented traps:**
   - **Immutability must not reach the cache repositories.** An immutable tag blocks the cache update.
     Repository creation templates *can* set immutability, so the rule is *do not write one that does* for
     the cache prefix; our own repositories set it per-repository, which does not collide.
   - **The first pull may need a route to the internet, and this estate has none.** AWS's own remedy is a
-    public subnet with an internet gateway and a route from the private tier — exactly what D38 removed. The
+    public subnet with an internet gateway and a route from the private tier, which D38 removed. The
     upstreams above need no authentication and their pulls are *"initiated by AWS IP addresses"*, so the
     requirement may not bite; **the reading is the deliverable** (verification vii). If it does bite, the
     fallbacks in order are: (a) **pull the public image through the proxy and push it into ECR** — measured
@@ -313,8 +309,8 @@ a second folder. Everything is `[P]` and free at rest except stored bytes.
 - **5.4 — [Claude] Re-cut the consumer map to what the estate now is**: the D35 map in
   `scripts/tfhygiene/backend.py` enumerated *"every unit's Sandbox plus Development"*. Development is gone,
   so the Interactive consumer set is **N Sandboxes, N = 1**. Staging and Production consume the
-  **application** repositories through Stage 8's own grant, never through this map — keeping the two lists
-  apart is what stops a deployment target acquiring a pull on the dev-env image.
+  **application** repositories through Stage 8's own grant, never through this map: keeping the two lists
+  apart stops a deployment target acquiring a pull on the dev-env image.
 - **5.5 — [Claude⚡] Apply `registry/` (5.b) and the amended `egress/`** as `awsds-infra-prod`. The
   cross-account pull proof is 6d's (INT-01); `./aws/supplychain.py` §§5-7 keep the mechanical half readable.
 
@@ -326,8 +322,7 @@ can fetch, so OIDC federation is structurally unavailable and the instance profi
 credential (principle 2); the runner is `[E]` because it holds nothing worth keeping. **Explanation:** this
 host is also the **buildbox's successor** — the same `amd64` shape, in a VPC that has a proxy instead of a
 route through the VPN host, pushing with its instance profile rather than a hand-carried ECR token. The
-buildbox moved to `production/buildbox/` at 6c 5.8, with two new refusals of its own; this step is where its
-job lands and that slice retires.
+buildbox moved to `production/buildbox/` at 6c 5.8; this step is where its job lands and that slice retires.
 
 - **6.1 — [Claude] Write `production/runners/`**: instance `Name` tag **`awsds-prod-runner`** (the script's
   contract), **`amd64`** — the images are `amd64` and the laptop is not, which was the buildbox's whole
@@ -346,8 +341,8 @@ job lands and that slice retires.
      (`HTTP_PROXY` and `http_proxy`), since tools disagree on which they read.
   4. **The build itself** — BuildKit `--build-arg http_proxy=…` for `FROM` and package steps.
 
-  `NO_PROXY` is 6c step 5.6's per-VPC list — **generated by `vpc-egress`'s output, never written by
-  hand; the buildbox's four callers are the template** — and is **suffixes and literals only**: GitLab documents that
+  `NO_PROXY` is 6c step 5.6's per-VPC list, **generated by `vpc-egress`'s output, never written by hand**,
+  and is **suffixes and literals only**: GitLab documents that
   wildcards work as suffixes, never prefixes, and that **CIDR notation does not work** — so `10.0.0.0/8`
   in that variable is silently ignored, and the intranet names are listed as suffixes instead
   (`.awsds.internal`, `.awsds-pages.internal`, `169.254.169.254`, `169.254.170.2`, `localhost`,
@@ -362,8 +357,8 @@ job lands and that slice retires.
 - **6.5 — [Claude⚡] Retire the buildbox in the same sitting**: destroy `production/buildbox/` if it is up
   (`[E]`), then delete the slice, its `layers.py` row (rank 55), `scripts/buildbox.py` and
   [`docs/plan/runbooks/buildbox.md`](../runbooks/buildbox.md) — replaced by a §R "the build runner" section
-  pointing at this step; `conventions.md` §6 and `terraform-live/README.md` lose their rows. A runbook for a host that no longer exists is the stale path that still succeeds
-  (Lesson 35).
+  pointing at this step; `conventions.md` §6 and `terraform-live/README.md` lose their rows. A runbook for a
+  host that no longer exists is the stale path that still succeeds (Lesson 35).
 
 ### 7. Settle mirroring, and read INT-13
 
@@ -403,8 +398,8 @@ rehearsal happens now, while the instance holds throwaway content.
   change; anything else is state that leaked into the wrong layer.
 - **8.4 — [Claude] Extend the two instruments in the same sitting**: `./aws/supplychain.py` gains
   **`SC-9`** (the GitLab host, the runner and every build container carry a proxy configuration whose target
-  is the address `production/networking/` exports — a host with no proxy is a host with no internet, and it
-  fails at build time rather than at boot) and **`SC-10`** (each pull-through cache rule has at least one
+  is the address `production/networking/` exports; a missing one fails at build time rather than at boot)
+  and **`SC-10`** (each pull-through cache rule has at least one
   cached repository, which is 5.2's first-pull reading made durable). `./aws/proxy.py` `PX-3` already diffs
   the running allow-list against the committed one; this stage adds the SharedServices source block to it.
 
@@ -426,8 +421,7 @@ and 8.4's two new checks. The behavioural proofs are the stage's own (Lesson 20)
   present, and an unlisted host returns a **403 naming the host** rather than a timeout.
 - **The TLS quadruple (INT-19):** Pages and GitLab answer over HTTPS with certificates that validate against
   the internal CA on **all four surfaces** — laptop browser/git, a `dev-env` notebook, the runner's job log,
-  and GitLab's own `reconfigure` output. "It works in my browser" tests only the surface where somebody
-  clicked through a warning.
+  and GitLab's own `reconfigure` output.
 - **The identity pair:** an Identity Center user signs in through SAML with no local account created by
   hand; the kept `root` account still signs in locally.
 - **The lifecycle and the restore:** 8.1's cycle with the boot time recorded; 8.2's restore proving a
@@ -462,30 +456,28 @@ Measured (`docs/PRICING.md`), `us-west-2`:
 | **A NAT gateway in this VPC, only if 5.2 forces it** | 0.045/h + 0.005/h for the address | contingency |
 | Enhanced scanning (deferred, decision 2) | 0.09/image + 0.01/re-scan | Stage 11's |
 
-**The internal ALB is gone from this table.** Decision 1 was settled by D15's revision: with no public
-certificate there is nothing for an ALB to terminate, Omnibus's nginx serves the internal leaves including
-the Pages wildcard, and the primary private IP survives stop/start so the records hold. It stays the
-documented alternative if instance-side TLS proves awkward, and it would land in `production/egress/`.
+There is no internal ALB in this table. With no public certificate there is nothing for one to terminate
+(D15), Omnibus's nginx serves the internal leaves including the Pages wildcard, and the primary private IP
+survives stop/start so the records hold. It stays the documented alternative if instance-side TLS proves
+awkward, and it would land in `production/egress/`.
 
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage and written into
-`docs/log/log-stage-07-gitlab-runners-ecr.md` (Lesson 16). Recommendations stated so the keyboard is not the
-decision-maker.
+`docs/log/log-stage-07-gitlab-runners-ecr.md` (Lesson 16), with a recommendation stated.
 
 1. **TLS termination: nginx on the instance, or an internal ALB** (steps 1-2) — recommended and effectively
    settled: **nginx on the instance**, for the reasons in the Cost note above.
 2. **ECR scanning: basic or enhanced** (5.1) — recommended: **basic scan-on-push** (free), which feeds
    `DescribeImageScanFindings`, the API Stage 8's gate reads. Enhanced (Inspector) is measured at USD
    0.09/image + 0.01/re-scan and is decided at **Stage 11 step 4** against a real bill.
-   **The deferral must not be read as eventual full coverage.** Inspector's supported languages for ECR
+   The deferral is not eventual full coverage. Inspector's supported languages for ECR
    images are C#, Go, Java, JavaScript, PHP, Python, Ruby and Rust — **Julia and R are on no AWS service's
    list**. What Stage 11 can buy is Rust, Python beyond the OS packages and continuous re-scanning; what it
    cannot buy at any price is the two ecosystems the `dev-env` image exists to deliver. 6a step 5.0's two
    images scanned to **identical** severity counts, so everything `dev-env` adds over `base` produced zero
    findings. The Julia/R residual is **accepted rather than deferred**, with the Dev Env Steward's review of
-   a pinned text manifest as its named control — the `institutional-delta.md` row is where that acceptance
-   lives, and this decision must not be closed in a way that contradicts it.
+   a pinned text manifest as its named control; the acceptance lives in `institutional-delta.md`.
 3. **The pull-through cache, after 5.2's reading** — recommended: keep the credential-free three if the
    first pull succeeds through the proxy or from the hub's public tier; if it needs a route, prefer fallback
    (a) — measured at 6c 5.8 — or (b) over standing up this estate's first NAT gateway.
@@ -519,16 +511,14 @@ Record every answer, including the ones that come out fine.
 - **Losing `gitlab-secrets.json` loses every backup at once** — the file is excluded from backups by
   design, and a restore without it cannot decrypt the database. The control is 1.5's flow plus 8.2's
   rehearsal, run before the instance holds anything real.
-- **The pull-through cache may need a route this estate does not have** (5.2). Named, with three fallbacks
-  ranked, so the discovery is a step rather than a surprise — and so that standing up a NAT gateway stays a
-  decision with a cost row, not a reflex.
+- **The pull-through cache may need a route this estate does not have** (5.2). The fallbacks are ranked in
+  that step, so standing up a NAT gateway stays a decision with a cost row.
 - **A proxy variable missing from one of four layers** (6.2) fails a build in a way that looks like a
   network fault. `SC-9` is the instrument; the 403-naming-the-host behaviour is what makes the failure
   readable.
 - **The edition limit reaches a load-bearing control, not a convenience** (Lesson 12): in CE the gate is
-  *who can push a protected tag*, not *who approves this release*. Read in 3.3, recorded — not discovered
-  while writing Stage 8.
-- **A missed CA surface fails as an opaque TLS error**, and there are now four (INT-19). The one-source rule
+  *who can push a protected tag*, not *who approves this release*. Read in 3.3 and recorded.
+- **A missed CA surface fails as an opaque TLS error**, and there are four (INT-19). The one-source rule
   (2.3) and the four-surface deliverable are the controls.
 - **The supply chain shares Production's blast radius** (D14, accepted) — and since 6c it shares the account
   with the estate's two internet-facing hosts. The compensations are Stage 8's scoped deploy roles and

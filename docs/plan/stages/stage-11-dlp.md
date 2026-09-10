@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-scoped and re-reviewed 2026-09-05**. (1) **The egress-control leg is now monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress; this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over, and 3.1's answer must be retaken for the third egress shape: *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. (2) **Two Interactive accounts become one** — Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half. (3) **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. (4) **The per-VPC DNS firewall's job changed** — it no longer filters the internet (an explicit-proxy client never resolves one) and now closes the recursive resolver as an exfiltration channel, which is a detection feed this stage reads. (5) **INT-16's closing choice landed here on 2026-09-07 as a recorded acceptance** (6c step 6.6, fallback (ii), the user's): step 3.4 re-takes it with named inputs, 5.2 gains the compensating detective rule, 6.1 reads the ledger row instead of deferring it. (6) **6c's decision due 4 landed here as (c) on 2026-09-08**: the proxy access log's export to a home its author cannot reach is decided with 5.1's delivery, once for every such log. — *earlier:* not started — **revised 2026-08-17 into the action-checklist format** (executor markers, action-first steps), against the official documentation and the Price List API, and pre-instrumented by `./aws/dlp.py`. Corrections folded in: **internal-access analysis was measured at USD 9.00 per resource-month, charged at setup and then on the first of each month** — so step 2.1's analyzer became an enumerated-ARN, read-then-delete instrument rather than a standing monitor, and its KMS claim was narrowed (**KMS keys are not an internal-access resource type**: the derived CMK is verified by reading its key policy, not by the analyzer); **Macie's auto-enable covers *new* accounts only** — existing accounts are added one by one by the administrator, the inverse of GuardDuty's `ALL` that Stage 4 recorded; the Macie job's **discovery-results repository prompt** is answered as a decision, not at the keyboard (Lesson 16); GuardDuty's two deferred features are named by their **API feature names** (`S3_DATA_EVENTS`, `EBS_MALWARE_PROTECTION`), both prices are measured (USD 0.80/1M events, 0.03/GB), and step 4 is written against the collision `POLICIES.md` documents — with `./aws/vpn.py`'s `VP-8` expectation flipped in the same sitting (that check moved to `./aws/guardduty.py` `GD-3` at the 2026-08-18 split — 4.4 now flips `GD-3`); **the step 5 trails are data-event-only** (the org trail already carries the management copy) with advanced selectors on a monitored-bucket *map*, and the alarms ride **EventBridge rules + the `MatchedEvents` metric** — data events are matched by ordinary `ENABLED` rules once a trail logs them (read 2026-08-17) — never CloudWatch Logs ingestion; **the first member-account trail fires the revision trigger `POLICIES.md` names**, so the CloudTrail-tampering statement is decided here; the presigned-URL correction stands (*use* is detectable as `AuthenticationMethod=QueryString`; *creation* is not detectable); the Athena-inversion alarm became **conditional on Stage 5 decision 4's outcome**; archive **rules** stay forbidden (INV-10) — an accepted external finding is archived individually; and the stale addresses were repointed (open question 6's narrowed answer, Stage 6 step 3.2's recorded residual, Stage 6 step 6's D5 verdict). **Revised again later the same day: the NFS requirement was withdrawn and D24 with it — the EFS residual leaves 2.1.2, 6.1 and the threat-model deliverable** |
-| **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; ~~and, since 2026-08-19, Stage 9's producer path having written real rows into `curated`~~ — **lifted 2026-08-20: `sample_trades` holds 12 synthetic rows** (Stage 5's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide — Stage 4 step 10 until the 2026-08-18 split) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
+| **Status** | not started. **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over. **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
+| **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
 
@@ -18,8 +18,7 @@ list as a map keyed by consumer (Stage 5's rule), so unit 2 is a row, not a rewr
 **Objective:** the data-specific detection layer, built on top of a working environment rather than before
 it — and the honest ledger of what has no control at all.
 
-**The client plane's egress control is this stage's to MONITOR, not to build** (widened 2026-08-25 by the
-objectives clarification, narrowed 2026-09-05 by D38). A VPN-connected client's *whole* internet runs
+**The client plane's egress control is this stage's to monitor, not to build.** A VPN-connected client's *whole* internet runs
 through the cloud's single egress behind an institutional **HTTP/HTTPS proxy**, and **[6c](stage-06c-networking-hub.md)
 builds it** — open question 23 is closed. What arrives here is a **Squid access log** in CloudWatch,
 exported to Log Archive so the author of the allow-list does not own its record (Lesson 18), carrying time,
@@ -31,9 +30,9 @@ it belongs to is unchanged: VPN-only access + endpoint DLP on institution laptop
 
 **What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1;
 the detective services moved to the stage that first gave each one something to observe (principle 9):
-Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 15** (Stage 4 step 10 until the
-2026-08-18 split), **Security Hub to Stage 5 step 13**. What remains is genuinely data-specific — plus step 2.1, where the analyzer switched on
-in 1b is finally *collected on*: a service that emits findings nobody reads is Lesson 5 wearing a dashboard.
+Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 15**, **Security Hub to Stage 5
+step 13**. What remains is genuinely data-specific — plus step 2.1, where the analyzer switched on
+in 1b is finally *collected on*: a service that emits findings nobody reads is Lesson 5.
 
 ## What this stage builds, and in which accounts
 
@@ -116,25 +115,22 @@ discount, not a measurement window).
   `awsds-prod-derived` exists** (Stage 9's `consumer-data` call; the pre-declared scope of
   `GOVERNANCE.md` §Derived zone), and `awsds-prod-outputs` joins when decision 3 adds it.
 - **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
-  (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box) ~~plus the
-  derived buckets~~ (**REMOVED 2026-08-26 — D19 revised: no `awsds-<env>-derived` exists; the derived
-  zone is the projects bucket, next clause**) **plus `awsds-sandbox-lake`**
-  (on decision 3's map since 2026-08-26 — Stage 16's permanent per-group store, the highest-value
+  (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box)
+  **plus `awsds-sandbox-lake`**
+  (on decision 3's map — Stage 16's permanent per-group store, the highest-value
   discovery target precisely because nothing in it expires) **plus each
-  `awsds-<env>-smus-projects`** (added 2026-08-26 by Stage 6 step 2.4's reading; **since the same
-  evening's D19 revision it IS the derived zone**, so this is D19 practice (iv)'s carrier, not an
-  extra — see the callout after this step); **sampling
+  `awsds-<env>-smus-projects`**, which **is** the derived zone since the D19 revision, so this is D19
+  practice (iv)'s carrier rather than an extra (see the callout after this step); **sampling
   depth** per decision 1 (the cost lever: GB inspected × USD 1.00); **managed data identifiers** = the
   recommended default set, no custom identifiers; job type **one-time** — re-run deliberately, never
   scheduled. **The wizard's discovery-results repository prompt is decision 2** — answer it from the log,
   not at the keyboard.
 
-> **THE PROJECTS BUCKET JOINED THIS SCOPE ON 2026-08-26, FROM A STAGE 6 READING — AND BY THE SAME
-> EVENING IT WAS THE DERIVED ZONE ITSELF** (D19 revised: `awsds-<env>-derived` removed, the SMUS project
-> path kept as the one designed destination). The Tooling blueprint gives each project an **enforced**
-> Athena workgroup whose output location is `<domain-id>/<project-id>/dev/sys/athena/` **inside this
-> bucket**, so query results computed over governed lake data land here. Two properties make it harder
-> for discovery than the removed zone was, and both are measured rather than feared:
+> **The projects bucket is the derived zone itself** (D19 revised: `awsds-<env>-derived` removed, the
+> SMUS project path kept as the one designed destination). The Tooling blueprint gives each project an
+> **enforced** Athena workgroup whose output location is `<domain-id>/<project-id>/dev/sys/athena/`
+> **inside this bucket**, so query results computed over governed lake data land here. Two measured
+> properties make it harder for discovery than the removed zone was:
 >
 > - **Nothing expires.** Versioning, a 90-day noncurrent expiry, MPU abort — and no rule on current
 >   objects. The removed zone shed at 30 days; this one accumulates (open question 25).
@@ -181,7 +177,7 @@ people is Lesson 5 with a `WHERE` clause.
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
   `./aws/dlp.py` (`DP-3`).
-> **What pass 4 measured, and it constrains everything in this step (2026-08-19).** The `restricted`
+> **What pass 4 measured on 2026-08-19 constrains this whole step.** The `restricted`
 > column does not cross the account line **at all** under the default share: read as its own
 > `InfrastructureAccess`, `curated.sample_trades` shows six columns in Data Governance and **five** in
 > both consumer accounts — `counterparty` is filtered by the share's `classification ∈ {public,
@@ -204,7 +200,7 @@ people is Lesson 5 with a `WHERE` clause.
   fails (Stage 5's negative, re-run — the filter tightened the entitlement, not the perimeter). Record
   both.
 
-  > **THE ROW HALF NEEDS ROWS, AND THAT IS A DEPENDENCY, NOT A DETAIL (2026-08-19).** Stage 5 applied
+  > **The row half needs rows, which is a dependency** (2026-08-19). Stage 5 applied
   > `curated.sample_trades` **empty** — created through the Glue API's Iceberg path, deliberately with no
   > Athena DDL in that account (its 4.1). A row filter over an empty table returns nothing whether it is
   > working or absent, which is Lesson 13 exactly. **So this proof depends on Stage 9's producer path
@@ -213,7 +209,7 @@ people is Lesson 5 with a `WHERE` clause.
   > states on an empty table. If Stage 9's write has not run when this stage does, the row filter is
   > authored and its proof is deferred **in writing**, never quietly recorded as passed.
   >
-  > **LIFTED 2026-08-20: the table holds 12 synthetic rows** (Stage 5's log, that date — the user's
+  > **The table holds 12 synthetic rows since 2026-08-20** (Stage 5's log, that date — the user's
   > decision, taken before 4e closed the in-account Athena path; the attempt also surfaced and fixed
   > the registration role's missing write ceiling, Lesson 34). Four distinct `counterparty` values over
   > five instruments and six trade dates, so the row filter has real variety to discriminate on. The
@@ -253,12 +249,12 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
   org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
   + ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the two
-  registered lake buckets and **every derived zone that exists at run time — since 2026-08-26 that is
-  `awsds-<env>-smus-projects`, not `awsds-<env>-derived`** ([D19 revised](../decisions/D19-derived-zone.md):
+  registered lake buckets and **every derived zone that exists at run time, which is
+  `awsds-<env>-smus-projects` and not `awsds-<env>-derived`** ([D19 revised](../decisions/D19-derived-zone.md):
   the Interactive derived buckets were destroyed, and neither deployment target has a named results home
   until Stage 9 re-decides), plus `awsds-sandbox-lake` if item 3's map keeps it. At USD 9 per
-  resource-month the recommended minimum is **five resources, USD 45 for the month** — the same total the
-  old sentence quoted, arrived at from a different list. No new principals arrive:
+  resource-month the recommended minimum is **five resources, USD 45 for the month**. No new principals
+  arrive:
   `AWSServiceRoleForAccessAnalyzer` exists org-wide since 1b (Lesson 17, checked not assumed).
 - **2.1.4 — [Claude] Amend the instruments in the same sitting**: `audit-iam-analyser.sh` expects the
   second analyzer (type `ORGANIZATION_INTERNAL_ACCESS`) while it lives; restate **INV-10** in
@@ -318,17 +314,17 @@ control at all. A threat model that lists a control nobody implemented is worse 
   control after the apply is mandatory (Lesson 13), and the off-tunnel refusal's wording goes into the
   log; **(e)** whether the institution's answer has moved closer — a managed device or a posture check
   (the device-trust row of `institutional-delta.md`) makes (i) the observation and the endpoint the
-  control; **(f)** *(added 2026-09-08, 6c pass 8)* how many of (a)'s off-proxy sessions were the lab's own
-  **split-tunnel** profile — under it a portal session arrives from the laptop's own address, so 5.2's rule
+  control; **(f)** how many of (a)'s off-proxy sessions were the lab's own
+  **split-tunnel** profile (6c pass 8) — under it a portal session arrives from the laptop's own address, so 5.2's rule
   fires on the lab's own sessions unless the portal is opened in the proxied Chrome; the arming test of
   5.2 (quiet with the tunnel up) is taken under the **monitored** profile, and a session count that is
-  all the lab's own is no evidence against (i). **Either outcome goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled column
-  with the date, the inputs and the verdict**; acceptance re-taken is still acceptance, dated twice.
+  all the lab's own is no evidence against (i). **Either outcome goes into `docs/plan/threat-model.md`'s
+  accepted-rather-than-controlled column with the date, the inputs and the verdict.**
   Recommended: **(i)** unless (b) changed the picture — it costs nothing, it was measured viable on
   2026-08-22, and it closes the one surface where an unmanaged laptop reaches governed data; acceptance
   stays defensible only while 5.2's rule stays quiet.
 
-### 4. GuardDuty's two paid features — decided against a real bill, unblocked deliberately
+### 4. GuardDuty's two paid features, decided against a real bill
 
 **Action:** enable **S3 Protection** (`S3_DATA_EVENTS`) and **Malware Protection for EC2**
 (`EBS_MALWARE_PROTECTION`) org-wide, working around this project's own SCP where it blocks Audit's
@@ -359,7 +355,7 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
   the probes have run**, and the sitting is not closed before the re-attach.
 - **4.4 — [Claude] Flip the instruments in the same sitting**: `./aws/guardduty.py` `GD-3` currently
   fails on **any** optional plan reading `ENABLED` (it is driven by the API's own feature list, not a
-  constant — the 2026-08-18 split's design; `VP-8` is retired) — after this step the two features of
+  constant; `VP-8` is retired) — after this step the two features of
   decision 4 must read `ENABLED` everywhere, so `GD-3` learns the pair as the sanctioned exception, and
   `./aws/dlp.py` `DP-6` takes over the standing read. Re-run both;
   **[user]** record 4.1-4.3 and the battery outcome in the stage log.
@@ -393,11 +389,10 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/`,
   `staging/data/`, `production/data/` after Stage 9): **advanced event selectors only** —
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
-  decision 3 map: lake + drop-box in Data Governance; ~~the derived bucket in each consumer account~~
-  — removed 2026-08-26, D19 revised;
-  **`awsds-sandbox-lake` in Sandbox** since 2026-08-26 — its reads are the exfiltration signal for the
-  one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** since the
-  same date — **the derived zone itself since D19's same-evening revision**, and the only monitored
+  decision 3 map: lake + drop-box in Data Governance;
+  **`awsds-sandbox-lake` in Sandbox** — its reads are the exfiltration signal for the
+  one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** — the
+  derived zone itself since the D19 revision, and the only monitored
   bucket whose contents never expire, orphaned project prefixes included) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
   cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
@@ -467,9 +462,9 @@ residuals, not against fear. **Explanation:** a reading, recorded in the threat 
 
 - **6.1 — [Claude] Walk the threat model's residual column** — the remote-IDE
   channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
-  (Stage 9's stated limit), **and the portal's off-VPN user ingress (INT-16 — entered this ledger as a RECORDED ACCEPTANCE on
-  2026-09-07, 6c step 6.6 fallback (ii); step 3.4 re-takes the choice with its inputs and 5.2 monitors
-  it — read the row as 3.4 left it)** — and ask which, if any, an agent would actually close, at what cost, with what
+  (Stage 9's stated limit), **and the portal's off-VPN user ingress** (INT-16 — a recorded acceptance
+  since 2026-09-07, 6c step 6.6 fallback (ii); step 3.4 re-takes the choice and 5.2 monitors it, so read
+  the row as 3.4 left it) — and ask which, if any, an agent would actually close, at what cost, with what
   new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
   `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
   lineage first, D19 practice v).
@@ -527,8 +522,7 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage and written into
-`docs/log/log-stage-11-dlp.md` (Lesson 16). Recommendations stated so the keyboard is not the
-decision-maker.
+`docs/log/log-stage-11-dlp.md` (Lesson 16), with a recommendation stated.
 
 1. **Macie mechanism and sampling depth** (1.2, 1.3) — one-time scoped jobs versus automated discovery.
    Recommended: **one-time jobs on the decision 3 map, automated discovery off** — a standing sampler is a
@@ -538,15 +532,15 @@ decision-maker.
    (the durable part) live in Security Hub and the threat model; record the 90-day acceptance.
 3. **The monitored-resource map** (1.3, 2.1.3, 5.1) — which buckets Macie scans, the analyzer monitors
    and the trails select. Recommended: lake (`raw`, `curated`, drop-box) + **every derived zone that
-   exists at run time, which since 2026-08-26 means `awsds-<env>-smus-projects`**
+   exists at run time, which means `awsds-<env>-smus-projects`**
    ([D19 revised](../decisions/D19-derived-zone.md): `awsds-<env>-derived` was destroyed and the SMUS
    project path took its place) — the derived zone's Macie and data-event scope is pre-declared
    ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, practice (iv) of six), consumed here rather than
    re-decided. **Production's and Staging's join the map the day Stage 9 decides where their results
    land, which is no longer automatic**: neither account has SMUS, so neither inherits the new zone;
-   **`awsds-sandbox-lake` is on the map since 2026-08-26** (Stage 16, added in the sitting that created
-   that stage, Lesson 34 — the permanent per-group store names this scope as one of its compensations,
-   and for 2.1.3's analyzer it is one more enumerated bucket ARN at the same per-resource price);
+   **`awsds-sandbox-lake` is on the map** (Stage 16, Lesson 34 — the permanent per-group store names this
+   scope as one of its compensations, and for 2.1.3's analyzer it is one more enumerated bucket ARN at the
+   same per-resource price);
    **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data** — the one
    genuinely open addition. One map, one variable, consumed by all three (Lesson 14).
 4. **The step 4 unblock path** (4.3) — Stage 15 settled the carve-out question (no administration role

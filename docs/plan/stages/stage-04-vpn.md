@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **SUPERSEDED IN PART 2026-09-05 by [6c](stage-06c-networking-hub.md):** the technology and every control here stand, and the **home moves** — the host leaves Sandbox for `VPC-Networking` in Production, its Elastic IP is *transferred* (so no client's `Endpoint` changes), the host-key secret's value is copied by hand, its NAT-instance job ends, and it gains a forwarding rule that drops every tunnel packet not bound for an RFC1918 address. The VPN-only conditions re-key onto the **proxy's** address, because a laptop's internet — AWS control plane included — now crosses the institutional proxy (D4 and D38 amended). — *earlier:* **DONE 2026-08-18 — closed by the GuardDuty split; every remaining item below the fold is history, kept because the revision trail is the file's own record.** 1.3's rank and `dormant()` body are merged (2026-08-16, PR #9). Earlier the same day, **revised into the action-checklist format** (executor markers, action-first steps), with corrections against the documentation and the repository: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py` — the earlier "after `egress`" inverted both consequences it claimed — and `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body; step 7's handshake log is **generated on the host** — WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 10.2's "existing members need the explicit add" was stale — auto-enable **`ALL` covers existing accounts and the delegated administrator itself**; 5.1's full tunnel gains **`::/0`**, closing an IPv6 bypass that would read as a lockout. `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16 — Lesson 23's residual, the no-NAT path itself, stays verification (i)). **Reviewed once more after Stage 3 closed (2026-08-16, post-teardown) — five corrections from what execution taught, each folded into its step:** the host key pair moves out of the instance into the git-ignored `.tfvars` (decision 4 — the SSM-resolved AMI re-plans as a **replacement** whenever the parameter moves, and an instrument's user data must carry `user_data_replace_on_change = true`, so a key living only in the host is Lesson 4 in a `[D]` resource); the module gains **`zone_index`** (`t4g.nano` capacity was measured absent in one AZ); Validation 2 **copies its "before" aside** — `aws/output/` regenerates in place, the rule Stage 3's validation recorded; 8.1's remote-state **profile arrives from the generated tfvars, never a literal** (pass 2's rule); the tunnel-pair deliverable **reuses `production/probes/`** — on disk, registered at rank 60 — instead of building a new probe. **Second design review (2026-08-16, in chat): the peers/key split** — the roster `peers.auto.tfvars` is **tracked**, public halves only, held to shape by `./scripts/check-tfvars-shape.py`; the private key rides `host-key.auto.tfvars` alone. **Decision 4's cost corrected**: the key lands in the **user data**, while state stores the provider's SHA-1 of `user_data` — neither leak nor backup (confirm at first apply). The key procedures gained a runbook, `docs/plan/runbooks/vpn-keys.md` (since 2026-08-19, Part K of [`vpn.md`](../runbooks/vpn.md)). **Third design review (2026-08-16, in chat): decision 4 revised — the host private key leaves the tfvars/user-data path for a `[P]` Secrets Manager secret**, `awsds-<env>-vpn-host-key` (step 2.2a: container in `foundation/` with a resource-policy deny, value put by the user, fetched by the instance at first boot with its own role — Stage 7's container-not-value idiom arriving early). The user data now carries a pointer, `DescribeInstanceAttribute` stops revealing the key, every read of the value is a CloudTrail management event, and `host-key.auto.tfvars` is gone from the design — the tracked roster and its shape gate stay. Prices named in decision 4: USD 0.40/month, a retry-until-route fetch at first boot, rotation via a deliberate `-replace` (runbook §3), automatic rotation forbidden forever. `./aws/vpn.py` gained `VP-9` (the secret, its deny Sid, rotation off); verification (viii) added **Passes 1-3 are DONE (2026-08-16/18): host, anchors, peers, tunnel, the control-plane deny on the six persona sets, both validations, the behavioural deliverables, and the server-side MTU. Pass 4 (GuardDuty) was prepared 2026-08-18 against the current documentation — and then LEFT THE STAGE the same day, whole, for [Stage 15](stage-15-guardduty.md), on the user's direction: step 10 and its sub-steps, decisions 3 and 5, verifications (v) and (ix), the GuardDuty cost and risk rows, and the `VP-8` instrument (now `./aws/guardduty.py`, `GD-1`–`GD-3`; the `VP-8` id is retired, not renumbered). The split breaks principle 9's coupling — detection with the first exposed resource — deliberately; the trade is argued in the institutional-delta row it added, and the exposed host running unwatched until Stage 15 is this stage's remaining named risk, not a pending item. WITH THE SPLIT, NOTHING OF THIS STAGE'S SCOPE REMAINS OPEN: verifications i-viii are all answered or moved (iv and vi struck 2026-08-18 from the 2026-08-17 readings), the residuals all have owners elsewhere (the `Staging` assignment at the vend, INT-16's portal half at Stage 6 step 1, the key-fetch retry loop found effectively unexercisable). The stage closes with the split; the close-out log entry is the user's.** **ONE THING THIS FILE NOW DESCRIBES IN THE PAST TENSE (2026-08-20):** step 1.1's `t4g.nano` on the AL2023 **arm64** AMI is what was built and is left standing as that record — the module has since moved to **x86_64** on the user's direction (`wireguard-v0.3.0`; D4 amended, `docs/plan/runbooks/vpn.md` §S6), so `instance_type` admits `t3.*`. Nothing else in the stage moves with it: the AMI is the only architecture-bearing line, and the user data names none. **Read §S6 before the module, not this step.** |
+| **Status** | **Superseded in part 2026-09-05 by [6c](stage-06c-networking-hub.md):** the technology and every control here stand, and the **home moves** — the host leaves Sandbox for `VPC-Networking` in Production, its Elastic IP is *transferred* (so no client's `Endpoint` changes), the host-key secret's value is copied by hand, its NAT-instance job ends, and it gains a forwarding rule that drops every tunnel packet not bound for an RFC1918 address. The VPN-only conditions re-key onto the **proxy's** address, because a laptop's internet — AWS control plane included — now crosses the institutional proxy (D4 and D38 amended). **Done 2026-08-18, closed by the GuardDuty split.** Passes 1-3 applied 2026-08-16/18: host, anchors, peers, tunnel, the control-plane deny on the six persona sets, both validations, the behavioural deliverables, and the server-side MTU. **Pass 4 (GuardDuty) left the stage whole for [Stage 15](stage-15-guardduty.md) on 2026-08-18**, on the user's direction: step 10 and its sub-steps, decisions 3 and 5, verifications (v) and (ix), the GuardDuty cost and risk rows, and the `VP-8` instrument (now `./aws/guardduty.py`, `GD-1`–`GD-3`; the `VP-8` id is retired, not renumbered). The split breaks principle 9's coupling — detection with the first exposed resource — and the trade is argued in the institutional-delta row it added; **the exposed host running unwatched until Stage 15 is this stage's remaining named risk**, not a pending item. **Nothing of this stage's scope remains open**: verifications i-viii are answered or moved (iv and vi struck 2026-08-18 from the 2026-08-17 readings), and the residuals have owners elsewhere — the `Staging` assignment at the vend, INT-16's portal half at Stage 6 step 1, the key-fetch retry loop found effectively unexercisable. Facts the reviews of 2026-08-16 folded into their steps: the `vpn/` row ranks **between `foundation` and `egress`** in `scripts/tfhygiene/layers.py`; `scripts/slices.py`'s `dormant()` hook is a stub that **aborts** the moment a `[D]` row exists, so 1.3 owes it its body (merged 2026-08-16, PR #9); step 7's handshake log is **generated on the host**, because WireGuard writes no log file; verification (ii) is **answered by the EC2 documentation** (an Elastic IP stays associated across stop/start); 5.1's full tunnel carries **`::/0`**, closing an IPv6 bypass that would read as a lockout; `wireguard-tools`, `amazon-cloudwatch-agent` and `iptables-nft` were **measured present** in the AL2023 core repository for `us-west-2` (read from the repo bucket itself, 2026-08-16), the no-NAT path itself staying verification (i); the module gained **`zone_index`** (`t4g.nano` capacity was measured absent in one AZ); Validation 2 **copies its "before" aside**, because `aws/output/` regenerates in place; 8.1's remote-state **profile arrives from the generated tfvars, never a literal**; and the tunnel-pair deliverable **reuses `production/probes/`**, on disk at rank 60, instead of building a new probe. **The peers/key split:** the roster `peers.auto.tfvars` is **tracked**, public halves only, held to shape by `./scripts/check-tfvars-shape.py`, and the host private key lives in a `[P]` Secrets Manager secret, `awsds-<env>-vpn-host-key` (step 2.2a — container in `foundation/` with a resource-policy deny, value put by the user, fetched by the instance at first boot with its own role). The user data carries a pointer, so `DescribeInstanceAttribute` reveals no key and every read of the value is a CloudTrail management event. Decision 4's prices: USD 0.40/month, a retry-until-route fetch at first boot, rotation via a deliberate `-replace` (runbook §3), automatic rotation forbidden forever. `./aws/vpn.py` gained `VP-9` (the secret, its deny Sid, rotation off) and verification (viii) with it; the key procedures are Part K of [`vpn.md`](../runbooks/vpn.md). **One thing this file describes in the past tense (2026-08-20):** step 1.1's `t4g.nano` on the AL2023 **arm64** AMI is what was built and is left standing as that record — the module has since moved to **x86_64** on the user's direction (`wireguard-v0.3.0`; D4 amended, `docs/plan/runbooks/vpn.md` §S6), so `instance_type` admits `t3.*`. Nothing else moves with it: the AMI is the only architecture-bearing line, and the user data names none. **Read §S6 before the module, not this step.** |
 | **Prerequisites** | Stage 3 — specifically `sandbox/foundation/` (the public subnet, the S3 gateway endpoint **and the 9.3 allow-list**, which this stage is the first to exercise) and the Sandbox↔Production peering (Stage 3 step 6). **Stage 3 is DONE (2026-08-16)** — all three passes applied and measured, so nothing below waits on it any longer. Two of its readings reach into this stage: the 9.3 allow-list is proven for the AL2023 **metadata** path (`dnf makecache` succeeded from a tier with no default route, and a bucket the policy does not name was denied 200/403), but **not for a package download and not for the CloudWatch agent's own bucket** — which is exactly what verification (i) below still asks. The Sandbox↔Production peering is exercised and reachable in the intended direction only. **The network is torn down** (`make down`, USD 0.0000/h) and step 1 does not need it back: everything the host consumes is `[P]` in `sandbox/foundation/` — the public subnet, the IGW and the S3 gateway endpoint — which is why `vpn/` ranks **before** `egress` rather than after, and why verification (iii) can ask whether Session Manager reaches the host with no interface endpoint in the account at all. D4 is decided: self-managed WireGuard |
 | **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D6](../decisions/D06-dlp-approach.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D26](../decisions/D26-unified-studio.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | [INT-16](../integrations.md) — **provisionally here; ANSWERED at Stage 6 step 1.7 on 2026-08-22, and the answer is NEGATIVE: this stage's deny does not reach the portal.** The API/console half is answered here in full — and re-proven there, by a console contrast taken inside the portal's own sitting; the portal half was re-read at Stage 6 step 1, because the Unified Studio domain does not exist before that (see the deliverables) |
+| **Proves** | [INT-16](../integrations.md) — **provisionally here; answered at Stage 6 step 1.7 on 2026-08-22, and the answer is negative: this stage's deny does not reach the portal.** The API/console half is answered here in full — and re-proven there, by a console contrast taken inside the portal's own sitting; the portal half was re-read at Stage 6 step 1, because the Unified Studio domain does not exist before that (see the deliverables) |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
@@ -42,7 +42,7 @@ addressable.*
 and it arrives owing two debts, both paid in 1.3: the row in `scripts/tfhygiene/layers.py`, and the body
 of `scripts/slices.py`'s `dormant()` hook, today a stub that aborts on any declared `[D]` row.
 
-## The three roles the VPN plays — the frame every deliverable is read against
+## The roles the VPN plays
 
 One tunnel, three different guarantees, each held by a different mechanism. INT-16 can only lose the third:
 
@@ -67,15 +67,14 @@ flowchart LR
     WG -.-> PORTAL
 ```
 
-**INT-16 came back negative on 2026-08-22, and this paragraph is what that turned out to mean.** A
-negative INT-16 is not an argument against the VPN — roles 1 and 2 stand, and role 2 was re-proven the
-same day by a console call refused *in an identity-based policy* in the very sitting the portal opened
-— it is an instruction to restate the objective with precision ("through the VPN" holds for the private
-network and the control plane, not the portal), which is exactly fallback (ii) of that row — **overtaken
+**INT-16 came back negative on 2026-08-22.** Roles 1 and 2 stand — role 2 was re-proven the same day by a
+console call refused *in an identity-based policy*, in the sitting the portal opened — so the negative
+reading is an instruction to restate the objective with precision: "through the VPN" holds for the private
+network and the control plane, not the portal. That was fallback (ii) of INT-16's row, **overtaken
 2026-08-25 by the objectives clarification**: client access to the cloud infrastructure, the portal
-included, is now *stated* as VPN-only, so the precise restatement is no longer (ii)'s acceptance;
-INT-16's revised row and `README.md` item 3 carry the current form (acceptance would record a deviation
-from a stated objective), and the choice is still open and the user's.
+included, is now *stated* as VPN-only, so accepting the restatement would record a deviation from a stated
+objective. INT-16's revised row and `README.md` item 3 carry the current form; the choice is open and the
+user's.
 
 ## Who executes each action
 
@@ -106,10 +105,9 @@ reserved). The sequence worked in was **three passes**, and the fourth left the 
 | ~~**4**~~ | ~~10~~ | ~~GuardDuty org-wide~~ **moved whole to [Stage 15](stage-15-guardduty.md) (2026-08-18)** | — | — |
 
 Pass 3 runs only after pass 2 has proven the tunnel: the deny pins every persona to an IP that must
-demonstrably exist and route first. The retired pass 4 was independent of the other three — which is
-part of why it could leave: nothing in passes 1-3 consumes it, and Stage 15's Prerequisites row records
-that the coupling it did have (detection arriving with the first exposed host, principle 9) was broken
-deliberately, not overlooked.
+demonstrably exist and route first. The retired pass 4 was independent of the other three — nothing in
+passes 1-3 consumes it, and Stage 15's Prerequisites row records that the coupling it did have (detection
+arriving with the first exposed host, principle 9) was broken deliberately.
 
 ---
 
@@ -125,9 +123,8 @@ Terraform itself still **replaces** it: the SSM-resolved AMI moves with every AL
 `ami` forces replacement, and the user data is an instrument, so it carries
 `user_data_replace_on_change = true` (the Stage 3 probes' finding: user data runs at first boot only, and
 the provider default edits the attribute in place — an old reading dressed as a new one). So a rebuild is
-made **invisible rather than prevented**: everything that must survive one lives in `[P]` (step 2) —
-the address, the group, and since the third review the host key itself, in 2.2a's secret container
-(4.3, decision 4).
+made **invisible rather than prevented**: everything that must survive one lives in `[P]` (step 2) — the
+address, the group, and the host key itself, in 2.2a's secret container (4.3, decision 4).
 
 - **1.1 — [Claude] Write `terraform-modules/wireguard/`**: a `t4g.nano` (D4) on the AL2023 ARM AMI,
   resolved through the SSM public parameter `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64`
@@ -143,7 +140,7 @@ the address, the group, and since the third review the host key itself, in 2.2a'
   `terraform_remote_state`; the peer list (4.1) from the **tracked roster** `peers.auto.tfvars`; the
   peer CIDR from the generated `terraform.auto.tfvars` (Stage 3 decision 1). **The host key itself is
   not an input**: the instance fetches it from 2.2a's secret at first boot, with its own role
-  (decision 4, third review) — the module's `iam.tf` grants `GetSecretValue` on exactly that ARN.
+  (decision 4) — the module's `iam.tf` grants `GetSecretValue` on exactly that ARN.
 - **1.2 — [Claude] Configure NAT in the user data — not optional**: `dnf install wireguard-tools iptables-nft`
   (both measured in the AL2023 core repo, 2026-08-16), IP forwarding on, masquerade on the primary
   interface. VPC peering does no edge-to-edge routing and forwards only packets whose source and
@@ -152,20 +149,17 @@ the address, the group, and since the third review the host key itself, in 2.2a'
   **security groups admit the WireGuard instance's SG** (cross-account SG references
   work across a same-region peering), **never the client CIDR** — a rule against `10.90.0.0/24` never
   matches, and the symptom is a clone that hangs.
-- **1.3 — [Claude] Register the slice in the D11 machinery, in the same commit that creates it** — three
-  edits, the first two corrections to this step's earlier wording. **TWO OF THE THREE ARE ALREADY IN
-  (2026-08-16): the `"vpn": 40` rank and the `dormant()` body.** The `("sandbox", "vpn")` ROW is
-  deliberately NOT — it was added, `./scripts/slices.py check` failed on it exactly as it should
-  ("a stale row makes the table stop being evidence"), and it was withdrawn to land with the slice as
-  this step says. The rank went in early because the ORDER is what was got wrong once and is worth
-  fixing before anything consumes it:
+- **1.3 — [Claude] Register the slice in the D11 machinery, in the same commit that creates it.** **Two of
+  the three edits are already in (2026-08-16): the `"vpn": 40` rank and the `dormant()` body.** The
+  `("sandbox", "vpn")` row is deliberately not: it was added, `./scripts/slices.py check` failed on it
+  exactly as it should ("a stale row makes the table stop being evidence"), and it was withdrawn to land
+  with the slice.
   - Add `"vpn"` to `RANKS` in `scripts/tfhygiene/layers.py` at a rank **between `foundation` (20) and
     `egress` (50)**, plus the `("sandbox", "vpn")` row — layer `[D]`, `usd_per_hour` copied from the
-    measured `docs/PRICING.md` t4g.nano row (Lesson 6). The earlier "rank after `egress`" inverted both
-    consequences it claimed: `up` ascends rank and `down` descends it, so a rank *below* `egress` is what
-    starts the VPN **before** the `[E]` slices exist and stops it **after** they are gone — the order that
-    matters once 8.3 lands, because from then on every API call must exit through the EIP, so the tunnel
-    is the first thing up and the last thing down.
+    measured `docs/PRICING.md` t4g.nano row (Lesson 6). `up` ascends rank and `down` descends it, so a rank
+    *below* `egress` starts the VPN **before** the `[E]` slices exist and stops it **after** they are gone
+    — the order that matters once 8.3 lands, because from then on every API call must exit through the EIP,
+    so the tunnel is the first thing up and the last thing down.
   - Write the body of `dormant()` in `scripts/slices.py` — today a stub that **aborts** the moment a `[D]`
     row is declared: stop/start the instances by the `awsds-<env>-vpn` Name tag, never destroy, and print
     what was (and was not) done (Lesson 13).
@@ -203,7 +197,7 @@ this is what makes a rebuild invisible to every client config.
   cross-slice and cross-account from Stage 7 (1.2's rule): an SG that survives every lifecycle is
   the only kind worth referencing. Export its ID. Its contents are step 3.
 - **2.2a — [Claude] Create the host-key secret container in `foundation/`, beside the address**
-  (decision 4, third review) — `awsds-<env>-vpn-host-key`, an `aws_secretsmanager_secret` with **no
+  (decision 4) — `awsds-<env>-vpn-host-key`, an `aws_secretsmanager_secret` with **no
   value resource** (Stage 7's `awsds-prod-gitlab-secrets` idiom, arriving one stage early): the value
   is written by the user at enrollment (4.3) and read by the host at first boot, so it never crosses
   Terraform — no state copy, no plan copy. With it, its resource policy, Sid
@@ -211,7 +205,7 @@ this is what makes a rebuild invisible to every client config.
   `secretsmanager:GetSecretValue` to every principal whose `aws:PrincipalArn` is neither the instance
   role (`awsds-<env>-vpn` — a name contract with the module's `iam.tf`, since `foundation/` cannot
   read a `[D]` slice's outputs) nor `AWSReservedSSO_InfrastructureAccess_*` (1c decision 7's pattern —
-  the suffix is minted per account). Scoped to the value read alone, deliberately: denying
+  the suffix is minted per account). Scoped to the value read alone: denying
   `secretsmanager:*` would put the container's own management behind a deny only its author could
   lift — an availability trap with no confidentiality gain, since the 30-day
   `recovery_window_in_days` already answers deletion (runbook §1). Why `[P]`: the value must outlive
@@ -249,27 +243,23 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   ```
 
   `<device>-private.key` lands `600` at creation and 44 bytes; `<device>-public.key` lands `644` and
-  keeps `wg pubkey`'s newline. Both are caught by `.gitignore`'s `*.key`, which is the net under the
-  practice rather than the practice. **On a phone or tablet, run nothing**: the WireGuard app generates
-  the pair inside the device and shows the *public key* on screen — the private half then has no
-  existence outside the handset at all, which is stronger than any command here can be.
+  keeps `wg pubkey`'s newline. Both are caught by `.gitignore`'s `*.key`, the net under the practice.
+  **On a phone or tablet, run nothing**: the WireGuard app generates the pair inside the device and shows
+  the *public key* on screen, so the private half has no existence outside the handset at all.
   **[Claude]** Write the public halves into the **tracked** roster `peers.auto.tfvars`, one named entry
-  per person and device — the shape `./scripts/check-tfvars-shape.py` enforces (second design review: a
-  WireGuard private key is indistinguishable from a public one by format, so the gate checks structure,
-  never content).
-  **Enrol at least two devices.** The reason is in the keys runbook §5 and it is not tidiness: after
-  step 8.3, a single-device estate whose one device must be revoked leaves **break-glass as the only
-  way back**, because you are off-VPN by definition and the console-from-the-EIP path needs the device
-  you no longer have. A second device keeps that corner theoretical. It is also one instance
-  replacement instead of two — the roster rides the user data (4.2).
+  per person and device — the shape `./scripts/check-tfvars-shape.py` enforces: a WireGuard private key is
+  indistinguishable from a public one by format, so the gate checks structure, never content.
+  **Enrol at least two devices** (keys runbook §5). After step 8.3, a single-device estate whose one
+  device must be revoked leaves **break-glass as the only way back**, because you are off-VPN by
+  definition and the console-from-the-EIP path needs the device you no longer have. It is also one
+  instance replacement instead of two — the roster rides the user data (4.2).
 - **4.2 — Consume the peer CIDR, `10.90.0.0/24` — it is not chosen here** (Stage 3 decision 1,
   2026-08-16): it sits in the allocation table in `scripts/tfhygiene/backend.py` and reaches the slice
   through the generated `terraform.auto.tfvars`, like every other address literal. With NAT (1.2) nothing
   inside AWS ever sees the range; its one job is not colliding with a home or café LAN — that collision
-  is a tunnel that comes up and routes nothing, diagnosed by nobody at 23:00.
-- **4.3 — [user] Generate the HOST's key pair the same way, once — and enrol the private half into
-  2.2a's secret, from the laptop** (it never transits the chat, and since the third review it never
-  touches a tfvars either):
+  is a tunnel that comes up and routes nothing.
+- **4.3 — [user] Generate the host's key pair the same way, once — and enrol the private half into
+  2.2a's secret, from the laptop** (it never transits the chat and never touches a tfvars):
 
   ```bash
   (umask 077 && wg genkey | tr -d '\n' > host-private.key) && wg pubkey < host-private.key > host-public.key
@@ -301,8 +291,8 @@ device must be deleting one entry — D4 accepted "no Identity Center integratio
   "a rebuild changes nothing" actually rests on: every client config pins the server's public key as
   well as its endpoint address, and both now outlive the instance — the address as a `[P]`
   allocation, the key in a `[P]` secret; a key generated on first boot instead would break all of
-  them at the first AMI drift — Lesson 4, in a `[D]` resource this time. What the design still
-  costs, named so it is a choice (decision 4, third review): the fetched key lands in `wg0.conf` on
+  them at the first AMI drift — Lesson 4, in a `[D]` resource this time. What the design costs
+  (decision 4): the fetched key lands in `wg0.conf` on
   the host's EBS (`[D]` keeps it across stop/start) and the container bills USD 0.40/month — while
   the user data carries only the ARN, `DescribeInstanceAttribute` yields a pointer, state keeps that
   script **in full and in plaintext — with no key in it** (measured at 1.4; the SHA-1 this line
@@ -317,10 +307,10 @@ tunnel routing only the VPC CIDRs would leave every API call on the laptop's own
 would then deny the user everything, tunnel up or not. The two steps stand or fall together.
 **Explanation:** laptop acts, pass 2; the template itself is step 9's deliverable.
 
-- **5.1 — [user] Set `AllowedIPs = 0.0.0.0/0, ::/0` — both families.** The `::/0` is a correction of this
-  revision: on a dual-stack network, AWS traffic over IPv6 carries an IPv6 source address, fails step 8's
-  `NotIpAddress`, and reads as a lockout *with the tunnel up*; routing `::/0` into the IPv4-only tunnel
-  closes the bypass. `Endpoint = <the step 2 EIP>:51820`, `PersistentKeepalive = 25`.
+- **5.1 — [user] Set `AllowedIPs = 0.0.0.0/0, ::/0` — both families.** On a dual-stack network, AWS
+  traffic over IPv6 carries an IPv6 source address, fails step 8's `NotIpAddress`, and reads as a lockout
+  *with the tunnel up*; routing `::/0` into the IPv4-only tunnel closes the bypass.
+  `Endpoint = <the step 2 EIP>:51820`, `PersistentKeepalive = 25`.
 - **5.2 — [user] Point `DNS` at the VPC resolver** — `.2` of the VPN home's VPC CIDR (`10.20.0.2` today) —
   so private hosted zones and interface-endpoint names resolve on the laptop (Stage 3, view 3). GitLab in
   Production resolves through the associated zone and routes through the Stage 3 peering, NATed by 1.2.
@@ -345,10 +335,9 @@ must not fail silently, and the handshake log is the diagnostic for "tunnel up, 
 **Explanation:** ~USD 0.10/month for the alarm, cents for the log; retention 30 days, matching Stage 3's
 flow-log decision.
 
-- **7.1 — [Claude] Generate the handshake log in the user data** — a correction of this revision:
-  WireGuard's kernel module writes **no log file**, so there is nothing to tail until the host creates
-  it. A systemd timer appends `wg show all latest-handshakes` to a local file, once a minute; the agent
-  tails that file.
+- **7.1 — [Claude] Generate the handshake log in the user data.** WireGuard's kernel module writes **no
+  log file**, so there is nothing to tail until the host creates it. A systemd timer appends
+  `wg show all latest-handshakes` to a local file, once a minute; the agent tails that file.
 - **7.2 — [Claude] Install the CloudWatch agent from the AL2023 repo** (`dnf install
   amazon-cloudwatch-agent` — measured present, so the same 9.3 family as 1.2; the
   `amazoncloudwatch-agent-<region>` bucket stays in the Stage 3 table as the documented alternative
@@ -384,32 +373,28 @@ persona to an IP that must demonstrably exist and route first.
   that can change — composed into the **six persona sets'** `source_policy_documents`
   (`DataScientistAccess`, `DataScientistStagingAccess`, `DataScientistProdAccess`,
   `DeploymentManagerAccess`, `GovernanceManagerAccess`, `DevEnvStewardAccess`) and **not** into
-  `InfrastructureAccess`. One diff reaches all six; an earlier version named three sets and left three
-  uncovered by omission — Lesson 14 in permission sets. Watch the quota: a permission set's inline policy
+  `InfrastructureAccess`. One diff reaches all six; naming a subset leaves the rest uncovered by omission
+  (Lesson 14, in permission sets). Watch the quota: a permission set's inline policy
   holds at most **10,240 non-whitespace bytes**, and the overflow fails at **provisioning**, not in
   `plan` (verification (vii)).
-- **8.3 — [Claude⚡] Apply `identity/sso/`** — **DONE 2026-08-17**: `0 to add, 6 to change, 0 to destroy`,
-  applied from the saved plan file, `VP-7` read back from the API as `pass` on all six, re-plan
-  `No changes` at `-detailed-exitcode 0`. **The control-plane pair ran the same day, all five
-  exercisable sets, wording read** (log entry ten). **The `InfrastructureAccess` half was then DECLINED —
-  open question 17 (option a, 2026-08-17), and the reason is a deadlock this step's own Risks row
-  predicted**: the VPN host is a `[D]` instance, stopped between sessions by design, and starting it
-  needs `ec2:StartInstances` as the infrastructure user — which the deny would only permit from the
-  address of the host that is stopped. Break-glass as the routine way back in un-makes break-glass, so
-  the recovery path stays off-VPN, `VP-7` now **fails** if the seventh set ever carries the Sid, and the
-  institutional shape of the trade is in `institutional-delta.md`. — profile `awsds-infra-identity` —
-  **six sets only.
-  `InfrastructureAccess` gains the statement in a separate, deliberate diff, only after the deliverable
-  pair below is recorded** — and **that diff is a CREATE, not an edit** (measured 2026-08-17 while
-  reading 8.2's plan for its negative control): the seventh set has **no inline policy at all**, carrying
+- **8.3 — [Claude⚡] Apply `identity/sso/`** — profile `awsds-infra-identity`, **six sets only**. **Done
+  2026-08-17**: `0 to add, 6 to change, 0 to destroy`, applied from the saved plan file, `VP-7` read back
+  from the API as `pass` on all six, re-plan `No changes` at `-detailed-exitcode 0`. **The control-plane
+  pair ran the same day, all five exercisable sets, wording read** (log entry ten). **The
+  `InfrastructureAccess` half was then declined — open question 17 (option a, 2026-08-17)**, on the
+  deadlock this step's own Risks row predicted: the VPN host is a `[D]` instance, stopped between sessions
+  by design, and starting it needs `ec2:StartInstances` as the infrastructure user — which the deny would
+  only permit from the address of the host that is stopped. Break-glass as the routine way back in
+  un-makes break-glass, so the recovery path stays off-VPN, `VP-7` now **fails** if the seventh set ever
+  carries the Sid, and the institutional shape of the trade is in `institutional-delta.md`. Had it gone
+  ahead, **that diff would have been a create, not an edit** (measured 2026-08-17 while reading 8.2's plan
+  for its negative control): the seventh set has **no inline policy at all**, carrying
   `AWSAdministratorAccess` as an `aws_ssoadmin_managed_policy_attachment` and nothing else, which
-  `./aws/vpn.py` §5 prints as `(no inline policy)`. Same effect, different failure modes — a policy that
-  does not exist cannot be *partially* applied, so the act is atomic in a way an edit would not be, but
-  it is also the first time that set's authorization stops being a single attachment. Getting this wrong
-  on the six costs a data-scientist session; on
-  `InfrastructureAccess` it costs every Terraform apply in the organization, with break-glass (D16) as
-  the only way back — and note what the statement pins: a single Elastic IP, which is exactly why that IP
-  is `[P]` (step 2). **[user]** Record both applies, and what the pair showed, in the stage log.
+  `./aws/vpn.py` §5 prints as `(no inline policy)` — same effect, different failure modes, since a policy
+  that does not exist cannot be *partially* applied. Getting this wrong on the six costs a data-scientist
+  session; on `InfrastructureAccess` it costs every Terraform apply in the organization, with break-glass
+  (D16) as the only way back — and the statement pins a single Elastic IP, which is why that IP is `[P]`
+  (step 2). **[user]** Record both applies, and what the pair showed, in the stage log.
 - **8.4 — Know what the deny is pinned to since D26.** The classic-Studio deny on
   `sagemaker:CreatePresignedDomainUrl` now protects nothing that exists — keep it as belt-and-braces (it
   is free, and the `Workloads` SCP denies the action anyway). The surface that matters is the **Unified
@@ -442,9 +427,8 @@ the measured `Security`-OU SNS statements) travelled with it, already folded int
 **The number 10 stays reserved here** — `docs/plan/cost-model.md`, Stage 1b step 8 and Stage 11 all cite
 "Stage 4 step 10" in prose that predates the split, and a reader following one of those lands on this
 tombstone rather than on a renumbered stranger. **What the split cost this stage:** principle 9's
-coupling — detection arriving with the first exposed resource — is deliberately broken, and the
-[`institutional-delta.md`](../institutional-delta.md) row the split added is where that trade is argued,
-not here.
+coupling — detection arriving with the first exposed resource — is deliberately broken, and
+[`institutional-delta.md`](../institutional-delta.md) is where that trade is argued.
 
 ---
 
@@ -503,7 +487,7 @@ Measured rows in `docs/PRICING.md` (Lesson 6):
 | Item | Cost | Layer |
 |---|---|---|
 | Elastic IP | ~USD 3.65/month | `[P]` — already in the cost-model floor |
-| Host-key secret (Secrets Manager) | USD 0.40/month + 0.05/10k reads | `[P]` — decision 4, third review |
+| Host-key secret (Secrets Manager) | USD 0.40/month + 0.05/10k reads | `[P]` — decision 4 |
 | WireGuard EBS (8 GB) | ~USD 0.65/month | `[D]` idle cost |
 | `t4g.nano` while up | ~USD 0.0042/h | `[D]` |
 | Full-tunnel data transfer out | ~USD 0.09/GB | usage — connect for lab sessions |
@@ -522,16 +506,15 @@ whoever is at the keyboard (Lesson 16).
    handshake log kept for diagnosis rather than alarmed on.
 3. ~~**Findings routing** (10.4)~~ — moved to [Stage 15](stage-15-guardduty.md) with step 10; it is that
    stage's decision 2.
-4. **Where the WireGuard host key lives** (2.2a, 4.3) — **revised at the third design review
-   (2026-08-16): a `[P]` Secrets Manager secret, read by the instance at first boot.** The pair is
-   still generated on the laptop, never by Terraform and never on the host — the second review's
-   reasoning stands: a key generated on first boot lives only inside an instance that the
+4. **Where the WireGuard host key lives** (2.2a, 4.3) — **a `[P]` Secrets Manager secret, read by the
+   instance at first boot** (2026-08-16). The pair is generated on the laptop, never by Terraform and
+   never on the host: a key generated on first boot lives only inside an instance that the
    SSM-resolved AMI and `user_data_replace_on_change` destroy on schedule, breaking every client
-   config silently (Lesson 4). What changed is **custody**: the private half is enrolled into
+   config silently (Lesson 4). **Custody**: the private half is enrolled into
    `awsds-<env>-vpn-host-key` (2.2a — Stage 7's container-not-value idiom arriving one stage early:
    the container is Terraform's, the value never is), the user data carries only the secret's ARN,
-   and the instance fetches the value with its own role. Over the second review's git-ignored
-   `.tfvars` + user-data injection, this buys: the key leaves the user data —
+   and the instance fetches the value with its own role. Over a git-ignored
+   `.tfvars` plus user-data injection, this buys: the key leaves the user data —
    `ec2:DescribeInstanceAttribute` now yields a pointer, closing the exposure the stage log recorded
    as "wider than the decision named", in the account that will host Stage 6's notebook execution
    roles; custody stops being an untracked laptop file; **every read of the value is a CloudTrail
@@ -566,7 +549,7 @@ Record every answer, including the ones that come out fine.
 | i | ~~Does the host finish its user data through the S3 gateway endpoint alone?~~ **Answered YES at 1.4 (2026-08-17), and the number is the answer: 35 seconds.** `dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent` ran between the `(1)` say-lines at `04:41:47Z` and `04:42:22Z`, and the boot reached `END` at `04:42:27Z` — no NAT in the path, the gateway endpoint's prefix-list route winning over the internet gateway. Stage 3's 9.3 allow-list is **complete for AL2023 core and the CloudWatch agent**; Stage 3 verification (iii) is answered with it. The failure mode this was budgeted against — a hang, not an error — never appeared. Residual: step 7 exercises the agent's *shipping* path, which is a different allow-list entry | 1.4, 7 |
 | ii | ~~Does the EIP association survive a stop/start?~~ **Answered by the EC2 documentation (2026-08-16):** the Elastic IP belongs to the network interface, which **persists across stop/start** — the address stays associated (and bills while stopped), so "re-associate on start" is unnecessary code. Residual: the `make down`/`make up` diff of `./aws/vpn.py` (`VP-2`) confirms it on this instance | 2.1 |
 | iii | ~~Does SSM reach the host with no `ssm*` interface endpoints anywhere in the account?~~ **The endpoint half is answered YES at 1.4 (2026-08-17)**: the agent registered `Online` (v3.3.4624.0) and an `AWS-RunShellScript` invocation returned `Success` — the same `ssmmessages` channel `start-session` uses, over the public path, with no interface endpoint in the account. **What is not yet answered is the laptop half**: `start-session` needs the `session-manager-plugin`, which is not in this project's toolset — that is step 3's, and it is a local install rather than a network question | 3, answered at 1.4 |
-| iv | ~~Does every service-on-behalf flow survive the deny with the tunnel up?~~ **Answered YES at the control-plane pair (2026-08-17): nothing broke because of `DenyControlPlaneOffVpn`.** Exercised as the Data Scientist User, tunnel up, over the surfaces that set actually holds — CloudWatch log groups, Logs Insights (a query ran and returned), the Glue catalog, Athena workgroups (`primary`, clean). **Three things did break, and all three were attributed from the wording alone** — Validation 3's whole ask — **with none of them this control**: the console had opened in `us-east-2` and met the Region ceiling, the denial naming `Interactive`'s document rather than the nested OU's own, which is [D37](../decisions/D37-nested-ou-inheritance.md)'s inheritance finding arriving five days later through a completely different path — and it leaves one line for the client instructions, **the console has to be on `us-west-2`** or a reader files this as a VPN fault; `cloudwatch:GetMetricData` failed `because no identity-based policy allows`, and the measurement behind it is that **no persona set holds any `cloudwatch:` action at all** — left ungranted by decision until Stage 6 puts a real job in front of it, because granting against a console symptom rather than against a requirement is the wrong order; and `logs:GetLogGroupFields` in Logs Insights, **a defect in a grant rather than in a control**, fixed in the same sitting and **twice** — three actions derived from AWS's own console-permission list first, then `CloudWatchLogsReadOnlyAccess` after `logs:DescribeFieldIndexes` failed too and showed that enumerating a console surface's calls is a race that cannot be won. **Residual, and it is about the instrument:** Logs Insights writes its own error text — neither canonical IAM wording — so an action chosen for a wording-based pair must be chosen *for producing the canonical wording*, a criterion nobody had written down and which `logs:DescribeLogGroups` satisfied by luck as much as by judgement. **AMENDED 2026-08-19 — the YES above is correct and INCOMPLETE, and the gap is the surface the pair never touched.** The control-plane pair exercised CloudWatch, Logs Insights, Glue and Athena; **it made no DIRECT S3 call**, and that is the one surface `DenyControlPlaneOffVpn` breaks. Stage 5 pass 4d measured it in both consumers, from two different provisioned roles: tunnel traffic to S3 leaves through the `[P]` **gateway endpoint** and arrives carrying the WireGuard host's *private* address plus a `vpcEndpointId` — never the Elastic IP this statement pins — so **every direct S3 call a persona makes from inside the perimeter is explicitly denied**, including downloading the person's own Athena result and the D18/D25 drop-box write. CloudTrail has the split verbatim: S3 as `10.20.160.254` + the Sandbox S3 endpoint, the same session's Glue call as `52.89.212.1` with none. **What made the incomplete answer look complete**: every surface the pair *did* test exits by the internet gateway, so the pair was a clean pass over a homogeneous sample of a split population. **Lesson 33**; the fix — `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, not the consumers' — was **applied and proven 2026-08-20** (Stage 5 pass 4d): read back on both provisioned roles, `VP-7` passing both halves, and behaviourally confirmed by the same `ListBuckets` that diagnosed it moving from *explicit deny* to the **implicit** one, beside a contrast pair on `GetBucketLocation`. **So this row's YES is now complete rather than incomplete** — the missing surface was tested and the control corrected. `docs/AWS_STATE.md` §C carries the state; the residual methodological point stands and is the reusable half: **a control-plane pair that samples only surfaces sharing one egress path is a clean pass over a homogeneous sample of a split population** — a future pair must include at least one gateway-endpoint destination deliberately | 8 |
+| iv | ~~Does every service-on-behalf flow survive the deny with the tunnel up?~~ **Answered YES at the control-plane pair (2026-08-17): nothing broke because of `DenyControlPlaneOffVpn`.** Exercised as the Data Scientist User, tunnel up, over the surfaces that set actually holds — CloudWatch log groups, Logs Insights (a query ran and returned), the Glue catalog, Athena workgroups (`primary`, clean). **Three things did break, and all three were attributed from the wording alone** — Validation 3's whole ask — **with none of them this control**: the console had opened in `us-east-2` and met the Region ceiling, the denial naming `Interactive`'s document rather than the nested OU's own, which is [D37](../decisions/D37-nested-ou-inheritance.md)'s inheritance finding arriving five days later through a completely different path — and it leaves one line for the client instructions, **the console has to be on `us-west-2`** or a reader files this as a VPN fault; `cloudwatch:GetMetricData` failed `because no identity-based policy allows`, and the measurement behind it is that **no persona set holds any `cloudwatch:` action at all** — left ungranted by decision until Stage 6 puts a real job in front of it, because granting against a console symptom rather than against a requirement is the wrong order; and `logs:GetLogGroupFields` in Logs Insights, **a defect in a grant rather than in a control**, fixed in the same sitting and **twice** — three actions derived from AWS's own console-permission list first, then `CloudWatchLogsReadOnlyAccess` after `logs:DescribeFieldIndexes` failed too and showed that enumerating a console surface's calls is a race that cannot be won. **Residual, and it is about the instrument:** Logs Insights writes its own error text — neither canonical IAM wording — so an action chosen for a wording-based pair must be chosen *for producing the canonical wording*, a criterion nobody had written down and which `logs:DescribeLogGroups` satisfied by luck as much as by judgement. **Amended 2026-08-19 — the YES above is correct and incomplete, and the gap is the surface the pair never touched.** The control-plane pair exercised CloudWatch, Logs Insights, Glue and Athena; **it made no DIRECT S3 call**, and that is the one surface `DenyControlPlaneOffVpn` breaks. Stage 5 pass 4d measured it in both consumers, from two different provisioned roles: tunnel traffic to S3 leaves through the `[P]` **gateway endpoint** and arrives carrying the WireGuard host's *private* address plus a `vpcEndpointId` — never the Elastic IP this statement pins — so **every direct S3 call a persona makes from inside the perimeter is explicitly denied**, including downloading the person's own Athena result and the D18/D25 drop-box write. CloudTrail has the split verbatim: S3 as `10.20.160.254` + the Sandbox S3 endpoint, the same session's Glue call as `52.89.212.1` with none. **What made the incomplete answer look complete**: every surface the pair *did* test exits by the internet gateway, so the pair was a clean pass over a homogeneous sample of a split population. **Lesson 33**; the fix — `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** endpoints, not the consumers' — was **applied and proven 2026-08-20** (Stage 5 pass 4d): read back on both provisioned roles, `VP-7` passing both halves, and behaviourally confirmed by the same `ListBuckets` that diagnosed it moving from *explicit deny* to the **implicit** one, beside a contrast pair on `GetBucketLocation`. **So this row's YES is now complete rather than incomplete** — the missing surface was tested and the control corrected. `docs/AWS_STATE.md` §C carries the state; the residual methodological point stands and is the reusable half: **a control-plane pair that samples only surfaces sharing one egress path is a clean pass over a homogeneous sample of a split population** — a future pair must include at least one gateway-endpoint destination deliberately | 8 |
 | v | ~~Does auto-enable `ALL` reach Management; does a later vend arrive covered?~~ — **moved to [Stage 15](stage-15-guardduty.md) with step 10 (2026-08-18); it is that stage's verification (i)**, carrying its answered first half (NO, by documentation) and its open residual (the vend) unchanged | — |
 | vi | ~~With the tunnel down, does an IdC sign-in complete at all?~~ **Answered YES (2026-08-17), read rather than reasoned** — `aws sso login --sso-session awsds-scientist` completed off-VPN. The deny governs the *role*; entering Identity Center is an OIDC flow against the authorization endpoint, not an IAM call the permission set's inline policy evaluates. **What makes it recordable is the chain, and all three links were measured the same day:** the portal sign-in works off-VPN, `sso:GetRoleCredentials` works off-VPN, and **using the credential is denied**. So signing in from anywhere is not an entitlement: what the portal yields off-VPN is **reconnaissance** — which accounts exist, which roles are held — and nothing actionable. Recorded in that shape deliberately, because "you can still log in from any network" reads as a hole until it is paired with what the login buys. **It is context for INT-16 and not INT-16**: that row asks whether a permission-set condition gates the **Unified Studio portal**, which does not exist until Stage 6 — what this reading says about it is that the general mechanism is not gated, the direction 8.4 already predicted | 8, deliverables |
 | vii | ~~Do all six composed inline policies stay under the **10,240 non-whitespace-byte** permission-set quota?~~ **Answered YES at 8.2 (2026-08-17), from the plan's own output diff, with room to spare.** The fragment costs **+304 bytes** in every set, and the worst case is `DeploymentManagerAccess` at **4867** — under half the threshold. The others: `DataScientistStagingAccess` 3851, `DevEnvStewardAccess` 3961, `DataScientistProdAccess` 4369, `GovernanceManagerAccess` 4537, `DataScientistAccess` 4653. The conservative side of the comparison is already built in: this is the **rendered** document, which the first apply measured as about a quarter larger than the compacted form Identity Center stores | 8.2 |

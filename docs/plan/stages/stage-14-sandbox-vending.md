@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **BLOCKED ON THE ACCOUNT QUOTA (2026-09-05)** and re-scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — which is one of the three shapes this stage listed, taken early and deliberately (Lesson 34's shape, said out loud). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. — *earlier:* not started — the first stage that is about *scale* rather than about a new capability |
+| **Status** | not started, **blocked on the account quota** (2026-09-05) and scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
 | **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5 for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
@@ -16,7 +16,7 @@
 > This stage takes D34's rung 2 (`aws_servicecatalog_provisioned_product`) because a non-Factory account
 > was assumed unenrolled. **That assumption is false and the choice is unchanged for now** — the stage is
 > blocked on the quota, and the provisioned product is what makes the console's *Update account* flow work
-> — but the alternative is to be weighed when this stage is written, not rediscovered then.*
+> — but the alternative is to be weighed when this stage is written.
 
 ---
 
@@ -26,8 +26,8 @@ and its domain association, and nothing about it is typed twice. The OU is what 
 governed on arrival: the `Interactive` policy set inherits down into it, so `ManagedOrganizationalUnit` in
 step 2 points at `Sandboxes` and the account needs no policy attachment of its own.
 
-> **And neither does the OU — that is [D37](../decisions/D37-nested-ou-inheritance.md), settled 2026-08-13
-> and measured in Stage 1c 7.6/7.7.**
+> **The OU needs no attachment either** ([D37](../decisions/D37-nested-ou-inheritance.md), measured in
+> Stage 1c 7.6/7.7).
 > **Nothing is attached or enabled on `Sandboxes` — no SCP, no RCP, no tag policy, no Control Tower
 > control — unless it is a configuration that *differs* from `Interactive`'s.** The OU is a registered
 > target and would accept one; it is declined so that sameness is expressed by inheriting rather than by
@@ -43,13 +43,13 @@ of pipelines, one deploy role pair, one approval gate, however many units exist.
 entirely upstream of the graduation boundary, which is the cheapest place for it to be, and it is why this
 stage can be built without reopening Stages 8 to 10.
 
-**Why this is a late stage and not an early one.** Automating a thing that has been built once by hand is
+**Why this stage is late.** Automating a thing that has been built once by hand is
 engineering; automating a thing that has never been built is speculation. Every slice this stage
 parameterises — `foundation/`, `egress/`, the identity assignment, the domain association — exists and
-has been applied by Stages 3 to 6. **What this stage adds is not new infrastructure, it is the substitution
-of a name for a hardcoded account.**
+has been applied by Stages 3 to 6. **What this stage adds is the substitution of a name for a hardcoded
+account.**
 
-**The central question this stage was holding is CLOSED, and it was closed without N** (2026-09-05,
+**The central question this stage was holding is closed, and without N** (2026-09-05,
 [D38](../decisions/D38-single-egress-hub.md)). Stage 4 landed the tunnel in *the* Sandbox account, which put
 the VPN on the multiplied side and made it a per-unit problem. **6c moved it**: the tunnel and the estate's
 only egress now terminate in **`VPC-Networking`, a hub in Production**, and every spoke peers to it. That is
@@ -128,13 +128,13 @@ the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
    with `aws s3control get-public-access-block`, and **record it in the vend log** — the carve-out makes the
    baseline recoverable, not automatic, and a unit that silently differs from the others is exactly what
    this stage exists to prevent.
-4. **Domain association (D26, INT-12) — the one act in this stage that no merge request can perform, and
-   it is six parts in a fixed order.** Nothing creates a domain — the root deny on `datazone:CreateDomain`
-   stands (exercised in both directions on 2026-08-21, so it is now known to fire rather than merely
+4. **Domain association (D26, INT-12) — the one act in this stage that no merge request can perform, in a
+   fixed order.** Nothing creates a domain — the root deny on `datazone:CreateDomain`
+   stands (exercised in both directions on 2026-08-21, so it is known to fire rather than merely
    attached), and this stage is where the pressure to break it will first be felt. **INT-12 owns the
    mechanics** — console-only, a RAM share the domain initiates — and they are not restated here.
-   **The *"7-day invitation window"* this sentence used to add was retired on 2026-08-21 by running the
-   act once: the share is organization-scoped and AUTO-ACCEPTS, so there is no invitation and no clock.** What this step owes is the sentence INT-12 cannot carry: **a stage whose whole
+   **Measured 2026-08-21: the share is organization-scoped and auto-accepts, so there is no invitation and
+   no clock.** What this step owes is the sentence INT-12 cannot carry: **a stage whose whole
    promise is "one input and one merge request" contains a console act, and the parts either side of it
    are two different applies of the same slice.**
 
@@ -152,12 +152,10 @@ the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
       (Lesson 16) — the two toggles it offers are `AWS Organization-only RAM share` and `IAM users can
       access APIs only`, and the second is the no-portal choice this design requires.
 
-      > **BOTH HALVES OF THE SENTENCE THIS REPLACES WERE WRONG, AND THE FIRST HALF WAS ALREADY KNOWN.**
-      > It said *"from the domain's **admin portal**"* — the `dzd-*.sagemaker.<region>.on.aws` surface,
-      > which is not where this lives; Stage 6 step 1.3 was corrected on that exact point on 2026-08-21,
-      > **before** it was executed, and this copy never heard. **Lesson 35**: the correction landed at one
-      > end and the stale path stayed alive at the other, where nothing reads it until someone follows it.
-      > The second half — *"accept it in the new account's console"* — was retired by the measurement.
+      > **The association does not live in the domain's admin portal** — the
+      > `dzd-*.sagemaker.<region>.on.aws` surface. Stage 6 step 1.3 was corrected on that exact point on
+      > 2026-08-21, **before** it was executed, and this copy never heard: the correction landed at one end
+      > while the stale path stayed alive at the other (**Lesson 35**).
    3. **The `backend.SMUS_ASSOCIATED` row** — the *measurement* table. **Add it only after the
       association is confirmed BY A CALL, never by a console label**: `aws datazone
       list-environment-blueprint-configurations --domain-identifier <dzd-…>` run as the new unit's own
@@ -193,8 +191,8 @@ the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
    subscription workflow like any other access — a vending flow that also grants data access is a flow that
    grants data access by default.
 
-   **But the *plumbing* is the module's, and the distinction matters because the failure looks identical
-   from the outside (written down 2026-08-19, from Stage 5 pass 3).** Five mechanical facts the
+   **But the *plumbing* is the module's**, and the distinction matters because the failure looks identical
+   from the outside (Stage 5 pass 3, 2026-08-19). The mechanical facts the
    `sandbox-unit` module carries, none of which is an entitlement:
    - **the unit's account needs a `DataLakeSettings` of its own** — a data lake administrator, or a share
      granted to it stays invisible in its catalog no matter how correct the grant is. An account with no
@@ -212,14 +210,13 @@ the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
      applied 2026-08-19** (Stage 5 pass 4; v0.2.0 since the same-day revision). `sandbox-unit` composes a
      *call* to it with one changed input,
      not a copy of it: the settings, the `alias/awsds-<env>-data` CMK (**no derived zone or workgroup since `consumer-data-v0.6.0`, 2026-08-26** — D19 revised),
-     the resource links and the local re-grants all come with it. **The re-grant is a pair** — `DESCRIBE`
+     the resource links and the local re-grants all come with it. **The re-grant is a pair**: `DESCRIBE`
      on each resource link *and* the permission on the target — and a vend that lands only the second half
      produces a unit whose scientists see no database at all;
    - **and two machinery edits, neither of them a policy edit.** The unit joins `DATA_CONSUMERS` in
-     `scripts/tfhygiene/backend.py` — which emits the `lake` map to its own `data/` slice. **The second
-     emission this sentence used to name is GONE (2026-08-26, D19 revised)**: `data_consumers` to
-     `identity/sso/` left with the persona's Athena/derived statements, so a new unit no longer re-plans
-     `identity/sso/` at all — one fewer coupling than this step was written against. If a future set
+     `scripts/tfhygiene/backend.py` — which emits the `lake` map to its own `data/` slice. **There is no
+     second emission** (D19 revised): `data_consumers` to `identity/sso/` left with the persona's
+     Athena/derived statements, so a new unit no longer re-plans `identity/sso/` at all. If a future set
      ever enumerates per-consumer resources again, the 4c rule returns with it: enumeration from state,
      never a wildcard.
 6. **The teardown half, which is what makes a unit disposable.** `make down ENV=<bu>` must work against a
@@ -229,9 +226,8 @@ the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
    built by hand and is being adopted; the proof is a *second* one, created from nothing but a name, whose
    `terraform plan` on every shared slice comes back empty afterwards.
 
-**The mechanical half this stage does not have, and should get before the first vend:** every other stage
-since 2 is pre-instrumented and this one is not, which matters more here than elsewhere because a vend's
-failure mode is *an account that is 90 % configured*. **`./aws/vending.py`** is the missing script, and its
+**The mechanical half this stage does not have, and should get before the first vend:** a vend's failure
+mode is *an account that is 90 % configured*. **`./aws/vending.py`** is the missing script, and its
 checks are the same list eight `aws/` scripts already run, parameterised by unit: `VN-1` the account is in
 `Sandboxes` with no policy attachment of its own (D37); `VN-2` its CIDR is inside `10.16.0.0/13` and
 overlaps nothing in `backend.CIDRS`; `VN-3` **both** peerings exist with routes on both sides (`NT-11`'s
