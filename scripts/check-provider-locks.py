@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --quiet
-# check-provider-locks.py - the ninth gate, added 2026-08-21 by the Stage 6 plan review.
+# check-provider-locks.py - Stage 2 step 6.3. Lock files and version constraints across the tree.
 #
 #   run:      ./scripts/check-provider-locks.py
 #   reads:    terraform-live/*/*/versions.tf and their .terraform.lock.hcl. No AWS session,
@@ -7,37 +7,35 @@
 #             caches under there are not the tracked file.
 #   exit:     0 clean | 1 at least one violation
 #
-# WHY THIS EXISTS, AND IT IS A GAP THAT WAS OPEN FOR FOUR MONTHS. Stage 2 step 6.3 requires
-# every committed lock file to carry THREE platforms - the laptop is darwin_arm64 and the
-# Stage 7-8 runners are Linux, on both architectures (D8 puts GitLab on Graviton), and Stage 8
-# step 6.2's GitHub Actions job is linux_amd64. The requirement was held by attention alone,
-# and attention had already missed three slices: the Stage 5 `data/` ones each carried a
-# single h1: hash until the 2026-08-21 review measured them. The tree's only lock-adjacent
-# check before this one was check-bootstrap-parity.py, which covers five slices of twenty-four.
+# Stage 2 step 6.3 requires every committed lock file to carry three platforms: the laptop is
+# darwin_arm64 and the Stage 7-8 runners are Linux on both architectures (D8 puts GitLab on
+# Graviton), while Stage 8 step 6.2's GitHub Actions job is linux_amd64. The requirement was
+# held by attention alone, which had already missed three slices: the Stage 5 `data/` ones each
+# carried a single h1: hash until the 2026-08-21 review measured them.
 #
-# WHAT GOES WRONG WHEN A PLATFORM IS MISSING, stated precisely because the two failure modes
-# read nothing alike and only one of them is loud:
+# What goes wrong when a platform is missing, in two failure modes that read nothing alike and
+# of which only one is loud:
 #
-#   cache-backed init   (TF_PLUGIN_CACHE_DIR, which this repository MANDATES - see
-#                       terraform-live/README.md and the pre-commit note) FAILS OUTRIGHT.
+#   cache-backed init   (TF_PLUGIN_CACHE_DIR, which this repository mandates - see
+#                       terraform-live/README.md and the pre-commit note) fails outright.
 #                       Terraform has a directory, not a zip, so it can only compute an h1:
 #                       hash, and there is no h1: for that platform to match. The error talks
 #                       about checksums and reads like a supply-chain attack.
-#   registry-backed init verifies against the 16 zh: hashes the registry signs, then APPENDS
-#                       the missing h1: - so the job succeeds and silently rewrites a file
+#   registry-backed init verifies against the 16 zh: hashes the registry signs, then appends
+#                       the missing h1:, so the job succeeds and silently rewrites a file
 #                       that is committed. In CI that is a dirty worktree, or a `git diff
 #                       --exit-code` failure two steps later that names the wrong cause.
 #
-# WHAT IT CANNOT SEE, AND THE HONESTY MATTERS (Lesson 13). A lock file records the hashes and
-# NOT the platform names they belong to. So checks 2 and 3 below compare COUNTS and SETS: they
-# can prove that a slice has fewer platforms than the tree's convention, or fewer than a
-# sibling locked at the same version, and they can never prove that the three present are the
-# three that were asked for. Only re-running the command in the fix message decides that.
+# What it cannot see (Lesson 13): a lock file records the hashes and not the platform names they
+# belong to. Checks 2 and 3 below compare counts and sets. They can prove that a slice has fewer
+# platforms than the tree's convention, or fewer than a sibling locked at the same version, and
+# they can never prove that the three present are the three that were asked for. Only re-running
+# the command in the fix message decides that.
 #
-# WHAT IT DELIBERATELY DOES NOT FAIL ON: the locked VERSION differing between slices. Stage 6
-# left the four new slices at aws 6.61.0 against the tree's 6.60.0, both inside `~> 6.60`, and
-# recorded the acceptance - a slice initialised today gets today's patch, which is what a lock
-# file is for. The census is printed instead, so the split is visible without being a gate.
+# What it does not fail on: the locked version differing between slices. Stage 6 left the four
+# new slices at aws 6.61.0 against the tree's 6.60.0, both inside `~> 6.60`, and recorded the
+# acceptance; a slice initialised today gets today's patch, which is what a lock file is for.
+# The census is printed instead, so the split is visible without being a gate.
 
 from __future__ import annotations
 
@@ -52,8 +50,8 @@ LIVE = Path("terraform-live")
 # Step 6.3's list, as a constant so the count below and the fix message cannot disagree.
 LOCK_PLATFORMS = ("darwin_arm64", "linux_amd64", "linux_arm64")
 
-# The slice whose versions.tf every other slice is compared against. It is an ordinary slice,
-# not a special one: what matters is that there is exactly one reference and that it is named.
+# The slice whose versions.tf every other slice is compared against. An ordinary slice: what
+# matters is that there is one reference and that it is named.
 REFERENCE = ("sandbox", "foundation")
 
 PROVIDER_RE = re.compile(r'^provider "([^"]+)" \{(.*?)^\}', re.S | re.M)
@@ -179,9 +177,9 @@ def main(argv: list) -> int:
                     f"{aws.group(1) if aws else '(absent)'} differs from "
                     f"{REFERENCE[0]}/{REFERENCE[1]}'s {ref_aws.group(1)}"
                 )
-            # A SECOND PROVIDER IS EXPLICITLY ALLOWED and is not compared: Stage 6's three
-            # awscc-declaring slices are the reason this check exists in this shape rather
-            # than as a byte-comparison of versions.tf (terraform-live/README.md says which).
+            # A second provider is allowed and is not compared: Stage 6's three
+            # awscc-declaring slices are why this check compares two constraints rather than
+            # byte-comparing versions.tf (terraform-live/README.md says which).
 
     # ------------------------------------------------------- the census, reported not gated
     print("\n== locked versions across the tree (reported, never failed) ==")

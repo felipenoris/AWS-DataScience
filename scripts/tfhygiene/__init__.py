@@ -1,4 +1,4 @@
-"""Hygiene over the TERRAFORM trees - convention greps, policy JSON, backend literals.
+"""Hygiene over the Terraform trees: convention greps, policy JSON, backend literals.
 
 The library behind ``check-tf-conventions.py``, ``check-iam-wildcards.py``,
 ``gen-backend-hcl.py``, ``gen-tfvars.py``, ``check-ou-coverage.py`` (its authored-map half)
@@ -14,7 +14,6 @@ and ``check-index.py``:
                  way to, written from one table so they cannot disagree
     attachments  the authored per-OU attachment map, loaded and shape-checked
 
-Deliberately independent: no AWS session, no subprocess, nothing imported from ``awslib``
-or ``repohygiene``. Everything here reads files it is given and returns data; exit codes
-and report text belong to the scripts.
+No AWS session, no subprocess, nothing imported from ``awslib`` or ``repohygiene``. Everything
+here reads files it is given and returns data; exit codes and report text belong to the scripts.
 """

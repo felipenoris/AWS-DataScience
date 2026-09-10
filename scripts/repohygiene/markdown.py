@@ -6,16 +6,15 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
-# A relative markdown link target: `](path.md` up to the closing paren, no fragment, no
-# whitespace - the same shape the shell grepped with ']\([^)#[:space:]]+\.md'.
+# A relative markdown link target: `](path.md` up to the closing paren, no fragment, no whitespace.
 _MD_LINK = re.compile(r"\]\(([^)#\s]+\.md)")
 
 # Stable-ID references. D-numbers are 1-2 digits; INT rows are always two.
 _D_REF = re.compile(r"\bD([0-9]{1,2})\b")
 _INT_REF = re.compile(r"\bINT-[0-9]{2}\b")
 
-# Spans that MENTION notation rather than using it: backticked code and double-quoted
-# strings are stripped before the stale-reference scan.
+# Spans that mention notation rather than using it: backticked code and double-quoted strings are
+# stripped before the stale-reference scan.
 _CODE_SPAN = re.compile(r"`[^`]*`")
 _QUOTED_SPAN = re.compile(r'"[^"]*"')
 
@@ -43,7 +42,7 @@ def int_references(text: str) -> set:
 
 
 def strip_mention_spans(line: str) -> str:
-    """Remove backticked and double-quoted spans - mentions, not uses, of old notation."""
+    """Remove backticked and double-quoted spans: mentions, not uses, of old notation."""
     return _QUOTED_SPAN.sub("", _CODE_SPAN.sub("", line))
 
 

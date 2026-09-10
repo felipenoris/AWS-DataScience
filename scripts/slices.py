@@ -10,37 +10,28 @@
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
 #
-# THE MAKEFILE CALLS THIS AND OWNS NONE OF IT, the same division step 9 established: `make`
+# The Makefile calls this and owns none of it, the same division step 9 established: `make`
 # names the bundles, scripts do the work, and Stage 8 moves them into a pipeline by adding a
 # .gitlab-ci.yml line rather than by rewriting anything.
 #
-# THIS FILE WAS WRITTEN WHILE EVERY SLICE ON DISK WAS STILL [P] and both targets were honest
-# no-ops - step 8.6's argument applied to the whole target, since a hook added later is a hook
-# that was missing from the first teardown that needed it. Both customers have since arrived
-# and each corrected something: Stage 3's `egress/` was the first [E] slice (and showed that
-# `status` counted a child module as one resource), Stage 4's `vpn/` is the first [D] one (and
-# showed that nothing refused a [D] slice, refusal 5 below).
-#
-# THE FIVE REFUSALS - 8.3's four, and the one Stage 4's first [D] row exposed:
+# The refusals - 8.3's four, and the one Stage 4's first [D] row exposed:
 #
 #   1. never touch a [P] slice          layers.is_refused, per slice, reason printed
-#   2. `down` with no ENV must fail     argparse `required=True` AND the Makefile guard - two
+#   2. `down` with no ENV must fail     argparse `required=True` and the Makefile guard - two
 #                                       independent guards, because this is the one whose
 #                                       failure mode is "destroy everything"
 #   3. production/pki/ never destroyed  layers.NEVER_DESTROY (D36), independent of its layer
 #   4. bootstrap/ unreachable, both     layers.NEVER_ANY_TARGET_SLICE_NAMES - it holds its own
 #      targets                          state (step 2.2)
-#   5. a [D] slice is never destroyed   layers.is_refused on the LAYER (2026-08-16). Nothing
-#      and never applied from here      said this while nothing was [D], so a [D] row would
-#                                       have joined the list `down` destroys - against D11,
-#                                       against conventions 5.1, and against the line two
-#                                       paragraphs up in this very header
+#   5. a [D] slice is never destroyed   layers.is_refused on the layer. Nothing said this while
+#      and never applied from here      nothing was [D], so a [D] row would have joined the
+#                                       list `down` destroys - against D11 and conventions 5.1
 #
-# HOW IT AUTHENTICATES, and it is not a detail: AWS_PROFILE is set ON EACH COMMAND, from
-# backend.PROFILES, and no credential is ever exported into this process's environment. A
-# borrowed session outlives the command that needed it and every later error names the wrong
-# account (Lesson 25). --dry-run prints the exact commands and runs none of them, which is also
-# how the Validation reads the plan instead of trusting the target list.
+# How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES, and no
+# credential is ever exported into this process's environment. A borrowed session outlives the
+# command that needed it and every later error names the wrong account (Lesson 25). --dry-run
+# prints the exact commands and runs none of them, which is also how the Validation reads the
+# plan instead of trusting the target list.
 
 from __future__ import annotations
 
@@ -55,7 +46,7 @@ from tfhygiene import backend, layers
 
 LIVE = Path("terraform-live")
 BOLD, RESET = "\033[1m", "\033[0m"
-RED = "\033[31m"  # step 7.2's refusal - the one line in this file that must not be skimmed
+RED = "\033[31m"  # step 7.2's refusal
 
 
 def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bool = False):
@@ -72,7 +63,7 @@ def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bo
 
 
 def prepare(sl: layers.Slice, dry: bool) -> bool:
-    """The two generated files and `init`. Both generators read ONE table (step 2.6)."""
+    """The two generated files and `init`. Both generators read one table (step 2.6)."""
     for gen in ("gen-tfvars.py", "gen-backend-hcl.py"):
         res = run([f"./scripts/{gen}", sl.account, sl.name], dry=dry, capture=True)
         if res is not None and res.returncode != 0:
@@ -88,18 +79,15 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
 
 # ------------------------------------------------------------------ the two dormant hooks
 #
-# [D] IS "STOP, NEVER DESTROY" (D11). The first row is Stage 4's WireGuard `vpn/` and the
+# [D] is "stop, never destroy" (D11). The first row is Stage 4's WireGuard `vpn/` and the
 # second will be Stage 7's GitLab EC2 with its EBS volume - conventions 5.1 names exactly
 # those two; everything else stateful is [P] by rule 2, since "stateful" is what makes a
-# slice [D] *or* [P].
-# These two functions exist so that the stage which
-# creates the first [D] slice adds a body here instead of discovering that `make down` never
-# had a place to put one - and they print what they did NOT do, because a hook that is silent
+# slice [D] *or* [P]. The hooks print what they did not do, because a hook that is silent
 # when empty is indistinguishable from a hook that ran (Lesson 13).
 
 
 def instance_name(env: str, slice_name: str) -> str:
-    """The Name tag a [D] slice's host carries - DERIVED from the row, never written twice.
+    """The Name tag a [D] slice's host carries - derived from the row, never written twice.
 
     `sandbox`+`vpn` is `awsds-sandbox-vpn`, which is the contract Stage 4 step 1.1 writes into
     the module and `./aws/vpn.py` reads back; Stage 7's row becomes `awsds-prod-gitlab` without
@@ -111,11 +99,11 @@ def instance_name(env: str, slice_name: str) -> str:
 def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
     """[(instance id, power state)] for one [D] slice, found by Name tag - or None.
 
-    None means NOTHING WAS READ, and the caller is the one that can tell the two causes
-    apart because it passed `dry` itself: under --dry-run the command was printed and not
-    run, otherwise the call failed and the error is already on stderr. What must never
-    happen is a caller reading None as "nothing is running" (Lesson 13) - `status` reports
-    UNREADABLE for exactly that reason, and its total is a floor rather than a measurement.
+    None means nothing was read, and the caller can tell the two causes apart because it
+    passed `dry` itself: under --dry-run the command was printed and not run, otherwise the
+    call failed and the error is already on stderr. A caller must never read None as
+    "nothing is running" (Lesson 13) - `status` reports UNREADABLE for that reason, and its
+    total is a floor rather than a measurement.
     """
     res = run(
         [
@@ -149,15 +137,15 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
 
 # ----------------------------------------------------------- the hub (6c steps 7.1 and 7.2)
 #
-# THE HUB IS ONE ACCOUNT'S PAIR OF [D] HOSTS AND EVERY OTHER ACCOUNT'S SESSION DEPENDS ON THEM.
+# The hub is one account's pair of [D] hosts, and every other account's session depends on them.
 # D38 gives the estate one way in (the WireGuard host) and one way out (the Squid proxy), both in
-# `production/networking`'s VPC. `make up` / `make down` act on ONE env and have no concept of
-# that, so two things follow and both are here rather than in a runbook (Lesson 5):
+# `production/networking`'s VPC. `make up` / `make down` act on one env and have no concept of
+# that, so two things follow, and both are here rather than in a runbook (Lesson 5):
 #
-#   7.1  a Sandbox session must be able to start the two hub hosts WITHOUT starting GitLab or
+#   7.1  a Sandbox session must be able to start the two hub hosts without starting GitLab or
 #        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
-#   7.2  a spoke's `make up` must REFUSE while either hub host is down, naming it. Left alone a
-#        stopped hub is a BLACKHOLE rather than an error: the apply succeeds, and every symptom
+#   7.2  a spoke's `make up` must refuse while either hub host is down, naming it. Left alone a
+#        stopped hub is a blackhole rather than an error: the apply succeeds, and every symptom
 #        afterwards is a timeout that looks like a broken mirror or a broken package index. That
 #        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide.
 HUB_ENV = "production"
@@ -167,12 +155,11 @@ HUB_SLICES = ("vpn", "proxy")
 def hub_state(dry: bool) -> list:
     """[(name, id, power state)] for the two hub hosts, or [] when nothing could be read.
 
-    A DIRECT `describe-instances` RATHER THAN `./aws/vpn.py`, and the step named that instrument
-    (7.2 says "reads the hub hosts' state through ./aws/vpn.py"). It is the right instrument for
-    the QUESTION and the wrong one for this MOMENT: `vpn.py` writes a full nine-check report and
-    is what a person runs to find out why the tunnel is unhappy, whereas this needs one boolean
-    before an apply and must not turn `make up` into a report generator. The two agree because
-    both find the host by the same Name tag, which is the contract `instance_name()` owns.
+    A direct `describe-instances` rather than `./aws/vpn.py`, which step 7.2 names ("reads the
+    hub hosts' state through ./aws/vpn.py"). `vpn.py` writes a full report and is what a person
+    runs to find out why the tunnel is unhappy; this needs one boolean before an apply and must
+    not turn `make up` into a report generator. The two agree because both find the host by the
+    same Name tag, which is the contract `instance_name()` owns.
     """
     out = []
     for name in HUB_SLICES:
@@ -188,14 +175,13 @@ def hub_state(dry: bool) -> list:
 
 
 def refuse_if_hub_down(env: str, dry: bool) -> bool:
-    """True to proceed. Applies to SPOKES only - the hub's own env starts it as part of `up`.
+    """True to proceed. Applies to spokes only - the hub's own env starts it as part of `up`.
 
-    UNREADABLE IS NOT A REFUSAL, and that asymmetry is deliberate: a spoke operator may hold no
+    UNREADABLE is not a refusal, and the asymmetry is deliberate: a spoke operator may hold no
     session on Production at all (the profiles are per account), so a failed read here would make
     a legitimate `make up ENV=sandbox` impossible for the person it is meant to protect. A read
-    that FAILS is reported and waved through; a read that SUCCEEDS and says `stopped` is what
-    stops the apply. Lesson 13 in its uncomfortable direction - the two nothings are told apart,
-    and only one of them is a finding.
+    that fails is reported and waved through; a read that succeeds and says `stopped` stops the
+    apply. The two nothings are told apart, and only one of them is a finding (Lesson 13).
     """
     if env == HUB_ENV:
         return True
@@ -222,20 +208,18 @@ def refuse_if_hub_down(env: str, dry: bool) -> bool:
 
 
 def dormant(env: str, action: str, dry: bool, only: list | None = None) -> None:
-    """[D] is stop/start and NEVER destroy (D11). Stage 4 step 1.3 gave this hook its body.
+    """[D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body.
 
-    THE INSTANCES ARE FOUND BY NAME TAG, NOT BY STATE FILE (instance_name above). Two
-    consequences are worth naming. It keeps working when the slice's state is empty - it finds
-    nothing and says which of the two nothings it found. And IT CANNOT DESTROY: the only
-    mutating calls below are start-instances and stop-instances, so the refusal that matters
-    most for a [D] slice is structural rather than a check that could be forgotten - which is
-    the older half of refusal 5, the other half being that `down` no longer hands the slice to
+    The instances are found by Name tag, not by state file (instance_name above), with two
+    consequences. It keeps working when the slice's state is empty: it finds nothing and says
+    which of the two nothings it found. And it cannot destroy - the only mutating calls below
+    are start-instances and stop-instances - so half of refusal 5 is structural rather than a
+    check that could be forgotten; the other half is that `down` does not hand the slice to
     `terraform destroy` at all (layers.py).
 
-    EVERY OUTCOME IS PRINTED, including the ones that did nothing (Lesson 13). "No instance
-    tagged X" and "already stopped" are different findings - the first means the slice was
-    never applied or its host is gone, the second means the hook had nothing left to do - and
-    a hook that reported both as silence would be indistinguishable from one that ran.
+    Every outcome is printed, including the ones that did nothing (Lesson 13). "No instance
+    tagged X" and "already stopped" are different findings: the first means the slice was
+    never applied or its host is gone, the second means the hook had nothing left to do.
     """
     declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
     if only is not None:
@@ -326,14 +310,14 @@ def cmd_list(args) -> int:
 def cmd_envs(args) -> int:
     """The values ENV accepts, and what each one would actually act on.
 
-    THE LIST IS READ FROM THE TABLE up AND down VALIDATE AGAINST, never typed into the
-    Makefile. An account-folder list written out a second time is a list that goes stale on
-    the first vend, in the copy nobody re-reads (Lesson 33) - and this one would go stale
-    silently, because `make help` is not a thing any check reads.
+    The list is read from the table `up` and `down` validate against, never typed into the
+    Makefile. An account-folder list written out a second time goes stale on the first vend,
+    in the copy nobody re-reads (Lesson 33), and this one would go stale silently, because no
+    check reads `make help`.
 
-    IT PRINTS THE [D]/[E] COUNTS BESIDE EACH NAME, because the name on its own answers the
+    It prints the [D]/[E] counts beside each name, because the name on its own answers the
     wrong question. Three of the five folders hold nothing but [P] slices today, so `make
-    down ENV=identity` is a target that CORRECTLY does nothing - and an operator who cannot
+    down ENV=identity` is a target that correctly does nothing, and an operator who cannot
     tell that from a target that silently did nothing is reading the shape Lesson 13 warns
     about. The counts say which one they are about to get, before they type it.
     """
@@ -378,7 +362,7 @@ def cmd_check(args) -> int:
                 f"{sl.path}: account folder '{sl.account}' has no profile in backend.PROFILES, "
                 "so up/down cannot reach it."
             )
-        # The rank is READ from layers.RANKS rather than stored per row, so it cannot
+        # The rank is read from layers.RANKS rather than stored per row, so it cannot
         # disagree with itself; what a check can still catch is a name that has no rank at
         # all, which raises rather than defaulting to the end of the order.
         if sl.name not in layers.RANKS:
@@ -410,7 +394,7 @@ def cmd_updown(args) -> int:
 
     take, skipped = layers.actionable(args.env, action)
 
-    # `--only` (step 7.1) NARROWS, IT NEVER WIDENS: a slice this env refuses stays refused, and
+    # `--only` (step 7.1) narrows and never widens: a slice this env refuses stays refused, and
     # the reason is still printed. A closed list rather than a filter that silently matches
     # nothing - an unknown name here would produce a run that does nothing and reports success,
     # which is the shape `optional_service_groups` was given a validation block for.
@@ -438,20 +422,19 @@ def cmd_updown(args) -> int:
     if action == "down":
         print("\n  studio apps (step 8.6):")
         if not take:
-            # THE HOOK NEEDS AN SSO SESSION AND THIS `down` DOES NOT. Running it anyway would
+            # The hook needs an SSO session and this `down` does not. Running it anyway would
             # make a no-op `make down` fail on credentials, which is a target that reports a
             # problem it does not have. It rides on the session the destroy already needs.
             print("    skipped - nothing to destroy in this env, so this run opens no session")
         elif studio_apps(args.env, args.dry_run) != 0:
             return 1
 
-    # THE [D] HOOK RUNS ON THE SIDE OF THE [E] LOOP ITS RANK SAYS IT SHOULD, and until
-    # 2026-08-16 it ran before the loop on BOTH actions - which contradicted the rank it was
-    # written to honour. Stage 4 step 1.3 put `vpn` at 40, below `egress` at 50, for one
-    # reason stated in words: "the tunnel is the first thing up and the last thing down",
-    # because from step 8.3 onwards every AWS API call has to exit through its Elastic IP.
-    # Stopping the host and only then destroying two slices over the AWS API is the exact
-    # order that becomes a self-inflicted lockout the day InfrastructureAccess joins the deny.
+    # The [D] hook runs on the side of the [E] loop its rank says it should. Stage 4 step 1.3
+    # put `vpn` at 40, below `egress` at 50, for one reason stated in words: "the tunnel is the
+    # first thing up and the last thing down", because from step 8.3 onwards every AWS API call
+    # has to exit through its Elastic IP. Stopping the host and only then destroying two slices
+    # over the AWS API is the order that becomes a self-inflicted lockout the day
+    # InfrastructureAccess joins the deny.
     #
     # A rank is not an intention (Lesson 5): it decides the order inside the [E] loop, and it
     # has to decide which side of that loop the hook sits on too.
@@ -459,8 +442,8 @@ def cmd_updown(args) -> int:
         print("\n  dormant [D] (step 8.2):")
         dormant(args.env, action, args.dry_run, only=only)
 
-    # THE HUB CHECK GOES BEFORE THE [D] HOOK AND BEFORE THE FIRST APPLY (step 7.2), because a
-    # refusal after either would leave the env half-raised - which is worse than not starting.
+    # The hub check goes before the [D] hook and before the first apply (step 7.2), because a
+    # refusal after either would leave the env half-raised, which is worse than not starting.
     if action == "up" and not refuse_if_hub_down(args.env, args.dry_run):
         return 1
 
@@ -482,8 +465,8 @@ def cmd_updown(args) -> int:
             cmd.append("-auto-approve")
         res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
         if res is not None and res.returncode != 0:
-            # THE HOST IS LEFT RUNNING ON PURPOSE when a destroy fails: the operator now has
-            # something to fix over the very tunnel this hook would otherwise have closed.
+            # The host is left running on purpose when a destroy fails: the operator has
+            # something to fix over the tunnel this hook would otherwise have closed.
             print(
                 "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the",
                 file=sys.stderr,
@@ -500,26 +483,24 @@ def cmd_updown(args) -> int:
 
 
 def managed_resources(module: dict) -> int:
-    """Deployed resources in a state tree, RECURSIVELY and managed-only.
+    """Deployed resources in a state tree, recursively and managed-only.
 
-    Corrected 2026-08-16, on the first status reading of a real [E] slice. The previous
-    count added `len(child_modules)` - one per module rather than one per resource - and
-    counted data sources as deployed, so a sandbox/egress/ holding a NAT, an EIP, two
-    routes and twelve endpoints reported "2 resource(s)": one remote-state data source
-    plus the single module. The burn was right (it comes from the layers.py table, not
-    from this number) but the line that reports what is RUNNING understated it by an
-    order of magnitude, which is the half of the output a reader actually acts on.
+    Counting `len(child_modules)` counts one per module rather than one per resource: a
+    sandbox/egress/ holding a NAT, an EIP, two routes and twelve endpoints reported
+    "2 resource(s)", one remote-state data source plus the single module (measured
+    2026-08-16). The burn is unaffected, since it comes from the layers.py table, but the
+    line that reports what is running was understated by an order of magnitude.
 
-    Managed-only is the other half of the fix: a data source is something the slice READS,
-    never something it created, so a state holding nothing else is `down` - and `up` is
-    derived from this count.
+    Managed-only is the other half: a data source is something the slice reads, never
+    something it created, so a state holding nothing else is `down` - and `up` is derived
+    from this count.
     """
     n = sum(1 for r in module.get("resources", []) if r.get("mode") == "managed")
     return n + sum(managed_resources(c) for c in module.get("child_modules", []))
 
 
 def cmd_status(args) -> int:
-    """What is up, and the burn - rates from a STATIC table, never a live pricing call (8.4)."""
+    """What is up, and the burn - rates from a static table, never a live pricing call (8.4)."""
     envs = [args.env] if args.env else layers.environments()
     metered = [
         s for e in envs for s in layers.for_env(e) if s.layer in (layers.DORMANT, layers.EPHEMERAL)
@@ -527,8 +508,8 @@ def cmd_status(args) -> int:
 
     print(f"{BOLD}status{RESET}  env(s): {', '.join(envs)}")
     if not metered:
-        # NOT "0.00 USD/h". "Nothing is declared" and "everything is down" are different
-        # answers and a status command that prints one for the other is Lesson 13 (see 8.4).
+        # Not "0.00 USD/h". "Nothing is declared" and "everything is down" are different
+        # answers, and a status command that prints one for the other is Lesson 13 (see 8.4).
         print("\n  no [D] or [E] slice is DECLARED in this repository, so there is nothing")
         print("  hourly to be up. This is Stage 2: every slice on disk is [P]. The first")
         print("  metered slice is Stage 3's egress/, and it declares its own usd_per_hour")
@@ -538,13 +519,12 @@ def cmd_status(args) -> int:
 
     total, unreadable = 0.0, 0
     for sl in metered:
-        # A [D] SLICE IS NOT MEASURED BY ITS STATE FILE, and this is the second thing Stage 4's
-        # first [D] row exposed. `terraform show` reports the instance as present whether it is
-        # running or stopped - which is the whole point of [D] - so counting resources would
-        # add 0.0042/h to the burn forever and the 0.0000/h reading Stage 3 closed on could
-        # never come back. What is metered by the hour here is the POWER STATE, so it is read
-        # from EC2 by the same Name tag the dormant hook uses, and no `terraform init` is
-        # needed to answer it.
+        # A [D] slice is not measured by its state file. `terraform show` reports the instance
+        # as present whether it is running or stopped, which is what [D] means, so counting
+        # resources would add 0.0042/h to the burn forever and the 0.0000/h reading Stage 3
+        # closed on could never come back. What is metered by the hour here is the power state,
+        # so it is read from EC2 by the same Name tag the dormant hook uses, and no
+        # `terraform init` is needed to answer it.
         if sl.layer == layers.DORMANT:
             found = instance_states(sl.account, sl.name, args.dry_run)
             if found is None:
@@ -588,10 +568,9 @@ def cmd_status(args) -> int:
 
     print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3, static)")
     if any(s.layer == layers.DORMANT for s in metered):
-        # 0.0000/h IS NOT "FREE" ONCE A [D] SLICE EXISTS, and the two are easy to confuse
-        # after Stage 3, where the number meant exactly that. A stopped host keeps its EBS
-        # volume and its [P] Elastic IP, both billed monthly - so the hourly total is silent
-        # about them by construction, and saying so is cheaper than the reader assuming.
+        # 0.0000/h is not "free" once a [D] slice exists. A stopped host keeps its EBS volume
+        # and its [P] Elastic IP, both billed monthly, so the hourly total is silent about them
+        # by construction.
         print("  a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
         print("  monthly rather than hourly - the floor lines of docs/plan/cost-model.md.")
     if unreadable:
@@ -617,7 +596,7 @@ def main(argv: list) -> int:
 
     for action in ("up", "down"):
         p = sub.add_parser(action)
-        # REFUSAL 2, first of its two guards: no default, no "all". `make down` with no ENV
+        # Refusal 2, first of its two guards: no default, no "all". `make down` with no ENV
         # must fail rather than mean everything.
         p.add_argument("--env", required=True)
         p.add_argument("--auto-approve", action="store_true")

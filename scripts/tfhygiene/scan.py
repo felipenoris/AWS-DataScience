@@ -6,10 +6,10 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
-# A FULL-LINE comment. These files carry their reasoning in prose, and a check that forbade
-# naming us-west-2 in an explanation would buy vagueness and no safety - so full-line
-# comments are skipped. An inline trailing comment on a CODE line is still read: the way to
-# write about the region beside code is to give the prose its own line.
+# A full-line comment. These files carry their reasoning in prose, and a check that forbade naming
+# us-west-2 in an explanation would buy vagueness and no safety, so full-line comments are skipped.
+# An inline trailing comment on a code line is still read: prose about the region beside code goes
+# on its own line.
 _FULL_LINE_COMMENT = re.compile(r"^\s*(#|//)")
 
 
@@ -18,7 +18,7 @@ def collect_files(targets: list[str], suffixes: tuple[str, ...] = (".tf",)) -> l
 
     Pruned as a *directory*, not filtered by substring, so a vendored module whose path
     merely contains the string is not excluded by accident. A target that is itself a file
-    is taken as-is (that is how the checks are pointed at fixtures to test themselves).
+    is taken as-is, which is how the checks are pointed at fixtures to test themselves.
     """
     files: list[Path] = []
     for t in targets:
@@ -39,13 +39,11 @@ def collect_files(targets: list[str], suffixes: tuple[str, ...] = (".tf",)) -> l
 
 
 def scan_code_lines(files: list[Path], pattern: str) -> Iterator[tuple[Path, int, str]]:
-    """``(file, line-number, line)`` for every NON-comment line matching ``pattern``.
+    """``(file, line-number, line)`` for every non-comment line matching ``pattern``.
 
-    Line numbers restart per file - the shell version's ``close ARGV if eof`` scar, which
-    Python's per-file loop makes structural rather than remembered. A pattern that does not
-    compile raises here, before anything is scanned: a scanner that fails quietly reports
-    the same "none" on a clean tree and on a broken regex (Lesson 13), so the failure is
-    loud and immediate instead.
+    Line numbers restart per file. A pattern that does not compile raises here, before
+    anything is scanned: a scanner that fails quietly reports the same "none" on a clean tree
+    and on a broken regex (Lesson 13).
     """
     rx = re.compile(pattern)
     for path in files:

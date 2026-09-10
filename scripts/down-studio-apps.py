@@ -6,35 +6,29 @@
 #   ./scripts/down-studio-apps.py <env> --spaces     also delete the spaces (see the warning)
 #   exit: 0 nothing left running | 1 could not look, or a delete failed | 2 usage
 #
-# WRITTEN AS A STUB AT STAGE 2 STEP 8.6 AND GIVEN ITS BODY AT STAGE 6 STEP 8.2. The stub
-# detected its own obsolescence - no domain, exit 0; a domain, exit 1 naming who owed the body
-# - and Stage 6 created the first domain, so this is the debt being paid rather than a new
-# script.
+# A Studio app is metered by the hour (~USD 0.050/h for an ml.t3.medium JupyterLab,
+# docs/PRICING.md 8) and it is created from the portal, by a person, through a blueprint, so
+# `terraform destroy` does not reach it. Terraform owns none of it: conventions 6 and Stage 6
+# step 8.3 put the DataZone domain, the project profiles, the sagemaker/ prerequisites and the
+# per-project SageMaker AI domains in [P], and destroying any of them would orphan home storage
+# and churn every id. That leaves the running apps as the only [E] piece, and this script is the
+# whole of `make down`'s reach into it.
 #
-# WHY THIS IS A SCRIPT AND NOT `terraform destroy`. A Studio app is metered by the HOUR
-# (~USD 0.050/h for an ml.t3.medium JupyterLab, docs/PRICING.md 8) and it is created FROM THE
-# PORTAL, by a person, through a blueprint. Terraform owns none of it: conventions 6 and
-# Stage 6 step 8.3 put the DataZone domain, the project profiles, the sagemaker/ prerequisites
-# and the per-project SageMaker AI domains in [P] - destroying any of them would orphan home
-# storage and churn every id - and leave exactly one thing in [E]: THE RUNNING APPS. This
-# script is the whole of `make down`'s reach into that.
+# The domain id is discovered, never pasted (conventions 6). The Tooling blueprint chose it; a
+# paste would copy a value nobody in this repository owns (Lesson 3), and it would go stale the
+# first time a project is recreated.
 #
-# THE DOMAIN ID IS DISCOVERED, NEVER PASTED (conventions 6, in as many words). The Tooling
-# blueprint chose it; a paste would be a copy of a value nobody in this repository owns
-# (Lesson 3), and it would go stale the first time a project is recreated.
+# Deleting a space is opt-in and deleting an app is not, because they are on different D11
+# layers: Stage 6 step 8.3 puts only the running apps in [E]. A space is a home directory plus
+# an EBS volume; the volume bills monthly rather than hourly, it survives the app, and it holds
+# whatever the person had not committed yet. Project home directories are scratch by policy
+# (notebooks live in git, data in S3), and that policy is a thing users are told rather than a
+# thing this script enforces on a Friday evening. --spaces exists because step 8.2 names the
+# enclosing spaces; the default does not use it.
 #
-# WHY DELETING A SPACE IS OPT-IN AND DELETING AN APP IS NOT. They are on different D11 layers,
-# and Stage 6 step 8.3 says which is which: only the running APPS are [E]. A space is a home
-# directory plus an EBS volume - the volume bills monthly rather than hourly, it survives the
-# app, and it holds whatever the person had not committed yet. Project home directories are
-# scratch BY POLICY (notebooks live in git, data in S3), and that policy is a thing users are
-# told rather than a thing this script enforces on a Friday evening. --spaces exists because
-# step 8.2 names the enclosing spaces; the default does not use it.
-#
-# WHAT IT WRITES: sagemaker:DeleteApp, and with --spaces sagemaker:DeleteSpace. Nothing else.
-# Every call goes through the account's OWN SSO profile, passed per command in the environment
-# (Lesson 25 - a borrowed session outlives the command that needed it and every later error
-# names the wrong account).
+# What it writes: sagemaker:DeleteApp, and with --spaces sagemaker:DeleteSpace. Nothing else.
+# Every call goes through the account's own SSO profile, passed per command in the environment
+# (Lesson 25).
 
 from __future__ import annotations
 
@@ -47,12 +41,12 @@ from pathlib import Path
 
 from tfhygiene import backend
 
-# App statuses that are BILLING or on their way to it. `Deleted` and `Failed` are neither, and
+# App statuses that are billing or on their way to it. `Deleted` and `Failed` are neither, and
 # `Deleting` is already on the right path - re-issuing DeleteApp against it just errors.
 LIVE_APP_STATUSES = {"InService", "Pending"}
 
 # How long to wait for the apps to actually go away before deleting spaces. DeleteSpace is
-# refused while a space still has an app, so with --spaces the wait is not politeness.
+# refused while a space still has an app, so --spaces has to wait for it.
 DELETE_POLL_SECONDS = 10
 DELETE_TIMEOUT_SECONDS = 600
 
@@ -70,10 +64,9 @@ def aws(profile: str, *args: str) -> tuple[int, str, str]:
 def fail_to_look(env: str, profile: str, what: str, stderr: str) -> int:
     """A hook that cannot look must not report an empty result.
 
-    Lesson 13, and Lesson 24 behind it: the defence against the benign failure (an expired
-    token) is what hides the serious one (a domain full of running apps). `make down` reads
-    this return code, so an unreadable account stops the teardown instead of passing through
-    it.
+    The defence against the benign failure (an expired token) is what hides the serious one
+    (a domain full of running apps) - Lesson 24, and Lesson 13. `make down` reads this return
+    code, so an unreadable account stops the teardown instead of passing through it.
     """
     print(f"    could not {what} in {env} ({profile}) - this is NOT evidence that")
     print("    no app is running. Log in first:  aws sso login --sso-session awsds")
@@ -100,11 +93,11 @@ def list_live_apps(profile: str, domain_id: str) -> list:
 
 
 def delete_app(profile: str, app: dict) -> tuple[int, str]:
-    """DeleteApp needs the app's OWNER, and an app has exactly one of two kinds.
+    """DeleteApp needs the app's owner, and an app has one of two kinds.
 
-    SMUS provisions SPACE-owned apps (a project space, shared or private); the classic
-    Studio flow makes USER-PROFILE-owned ones. Passing the wrong one is a ValidationException,
-    so the owner is read off the app rather than assumed - this account may hold both if
+    SMUS provisions space-owned apps (a project space, shared or private); the classic
+    Studio flow makes user-profile-owned ones. Passing the wrong one is a ValidationException,
+    so the owner is read off the app rather than assumed: this account may hold both if
     anything predates Stage 6.
     """
     owner = (
@@ -232,9 +225,9 @@ def main(argv: list) -> int:
         print("    the network under an app that is still billing.")
         return 1
 
-    # THE DELETE IS ASYNCHRONOUS AND THE HOUR KEEPS BILLING UNTIL IT FINISHES, so a report
-    # that says "deleted" while the app is still Deleting would be the same sentence for two
-    # different states (Lesson 13). Wait, and say which one actually happened.
+    # The delete is asynchronous and the hour keeps billing until it finishes, so a report
+    # saying "deleted" while the app is still Deleting would be one sentence for two different
+    # states (Lesson 13). Wait, and say which one happened.
     if touched and not dry and not with_spaces:
         for domain_id in sorted(set(touched)):
             if wait_for_apps_gone(profile, domain_id):

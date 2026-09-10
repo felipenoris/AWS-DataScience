@@ -6,33 +6,32 @@
 #   reads:    *.json and *.tf. No AWS session, no side effect, nothing written.
 #   exit:     0 clean | 1 an unauthorised wildcard, or a stale whitelist entry
 #
-# WHAT IT GUARDS, and this one is a control rather than a convention. `arn:aws:iam::*:role/X`
-# means "any principal called X, in ANY account". A condition written to name one role
-# therefore names a role that anybody who can create a role can mint - and the design leans on
-# exactly that kind of condition twice over, in the per-function carve-outs of D26 and D27. It
-# is invisible in a terraform plan and free to catch in a script.
+# What it guards is a control, not a convention. `arn:aws:iam::*:role/X` means "any principal
+# called X, in any account", so a condition written to name one role names a role that anybody
+# who can create a role can mint. The design leans on exactly that kind of condition in the
+# per-function carve-outs of D26 and D27. It is invisible in a terraform plan and free to catch
+# in a script.
 #
-# THE ONE EXCEPTION IS WHITELISTED BY Sid, AND THE WHITELIST IS PART OF THE CHECK.
-# `DenyAccountBpaChangeExceptInfrastructure` in awsds-org-scp-baseline.json MUST carry a
+# The one exception is whitelisted by Sid, and the whitelist is part of the check.
+# `DenyAccountBpaChangeExceptInfrastructure` in awsds-org-scp-baseline.json must carry a
 # wildcard account: it carves the InfrastructureAccess Identity Center role out of the
-# account-level BPA deny, and its whole purpose is to reach accounts that do not exist yet -
-# the role's ARN suffix is minted per account (1c decision 7). Everything else fails.
+# account-level BPA deny, and it has to reach accounts that do not exist yet, where the role's
+# ARN suffix is minted per account (1c decision 7). Everything else fails.
 #
-# A CHECK RELAXED TO FIT ITS ONE EXCEPTION HAS STOPPED BEING A CHECK, so the exception is
-# bound to the statement rather than to a line or a file, and it is verified in BOTH
-# directions: an unauthorised wildcard fails, and a whitelist entry whose Sid is no longer in
-# the document ALSO fails. A permanently-satisfied exemption for a statement somebody deleted
-# is how the next wildcard gets waved through under a name nobody re-read.
+# The exception is bound to the statement rather than to a line or a file, and it is verified in
+# both directions: an unauthorised wildcard fails, and so does a whitelist entry whose Sid is no
+# longer in the document. A permanently-satisfied exemption for a statement somebody deleted is
+# how the next wildcard gets waved through under a name nobody re-read.
 #
-# THE TWO FILE CLASSES ARE JUDGED DIFFERENTLY, on purpose:
+# The file classes are judged differently:
 #
-#   - A JSON POLICY DOCUMENT is parsed and walked statement by statement, so the whitelist can
+#   - A JSON policy document is parsed and walked statement by statement, so the whitelist can
 #     be a Sid at all. A JSON file that is not a policy document (the tag policy, the
 #     declarative policy, attachments.json) is scanned as text, with no exception available.
-#   - A .tf FILE is scanned as text and has NO exception. Nothing written in this stage needs
+#   - A .tf file is scanned as text and has no exception. Nothing written in this stage needs
 #     one: a permissions boundary is account-local, so it names its own account through
-#     data.aws_caller_identity rather than a wildcard. If a future stage believes it needs one,
-#     the argument belongs in this file - as a second named entry - and not around it.
+#     data.aws_caller_identity rather than a wildcard. A future stage that needs one adds a
+#     second named entry here.
 
 from __future__ import annotations
 
@@ -45,7 +44,7 @@ from pathlib import Path
 from tfhygiene.policydoc import is_policy_document, statement_texts
 from tfhygiene.scan import collect_files
 
-# (document basename, Sid) -> why. Both halves are checked: the pair must be FOUND, and
+# (document basename, Sid) -> why. Both halves are checked: the pair must be found, and
 # nothing outside it may match.
 WHITELIST = {
     (
@@ -114,9 +113,8 @@ def main(argv: list) -> int:
 
     # The other direction. A whitelisted Sid that no longer matches is an exemption nobody can
     # retire, sitting in the check for the next wildcard to arrive under the same name.
-    # Judged only when the document was actually in scope: run against some other path - which
-    # is how this check is itself tested - the entry is neither satisfied nor stale, it was
-    # not read.
+    # Judged only when the document was in scope: run against some other path, which is how this
+    # check is tested, the entry is neither satisfied nor stale because it was not read.
     for key, _why in WHITELIST.items():
         if key in allowed_seen:
             continue

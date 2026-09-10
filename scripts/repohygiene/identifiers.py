@@ -1,20 +1,16 @@
-"""Identifier hygiene over the repository's TRACKED files - account ids and e-mail addresses.
+"""Identifier hygiene over the repository's tracked files: account ids and e-mail addresses.
 
 The library behind ``scripts/check-identifiers.py``. The rule it mechanises is older than it:
 `CLAUDE.md` says a stage log carries "no account ids", and `aws/INDEX.md` rule 1 says never to
-copy an account id or an e-mail address out of a snapshot into a tracked file. Both were
-enforced by attention alone until 2026-08-17, and attention had already missed four files -
-Lesson 14's exact shape, a condition that must hold in N places by hand.
+copy an account id or an e-mail address out of a snapshot into a tracked file. Attention alone
+enforced both until 2026-08-17, by which point four files had already broken them (Lesson 14).
 
-WHAT COUNTS AS A HIT, and why the boundary is the interesting part. An account id in an ARN is
-delimited by `:`; in prose by a space, a backtick or a paren. A 12-digit run *inside* a token -
-`abc_123456789012_def` in a base64 blob, a hash, a lock-file digest - is not an identifier, and
-the encoded authorization failure messages the logs record verbatim are full of them. So the
-scan requires the run to be bounded by something outside ``[0-9A-Za-z_-]`` on both sides. That
-is what "standalone" means here, and it is the difference between a check people keep and one
-they learn to skip.
+An account id in an ARN is delimited by `:`; in prose by a space, a backtick or a paren. A 12-digit
+run *inside* a token - `abc_123456789012_def` in a base64 blob, a hash, a lock-file digest - is not
+an identifier, and the encoded authorization failure messages the logs record verbatim are full of
+them. So a hit requires the run to be bounded by something outside ``[0-9A-Za-z_-]`` on both sides.
 
-TRACKED FILES ONLY, because the rule is about what reaches git. ``aws/output/`` and ``secrets/``
+Tracked files only, because the rule is about what reaches git. ``aws/output/`` and ``secrets/``
 hold these identifiers legitimately and are both ignored, so ``git ls-files`` excludes them
 without needing a rule of its own.
 """
@@ -26,18 +22,18 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
-# Twelve digits bounded by a non-identifier character. See the module docstring for why the
-# boundary class carries `_` and `-`: without them every base64 blob in docs/log/ is a hit.
+# Twelve digits bounded by a non-identifier character. The boundary class carries `_` and `-`:
+# without them every base64 blob in docs/log/ is a hit.
 ACCOUNT_ID = re.compile(r"(?<![0-9A-Za-z_-])[0-9]{12}(?![0-9A-Za-z_-])")
 
 EMAIL = re.compile(r"[0-9A-Za-z._%+-]+@[0-9A-Za-z.-]+\.[A-Za-z]{2,}")
 
-# THE ALLOWANCES ARE THREE LITERALS AND THEY ARE LISTED, NOT PATTERNED. An allowlist wide
-# enough to be convenient is one that reports clean on a real leak (Lesson 13), so each entry
-# here is a string somebody can read and disagree with.
+# The allowances are literals, listed rather than patterned. An allowlist wide enough to be
+# convenient is one that reports clean on a real leak (Lesson 13), so each entry here is a string
+# somebody can read and disagree with.
 #
 #   000000000000     the probe battery's placeholder account id (aws/probes/probes.py, and the
-#                    runbook row that quotes it) - a dummy chosen BECAUSE it is not an account.
+#                    runbook row that quotes it), chosen because it is not an account.
 #   git@github.com   the SSH remote inside `source = "git::git@github.com:..."` in every
 #                    terraform-live slice. A host, not a person.
 #   example.*        RFC 2606 reserved domains, the only e-mail form documentation may carry.
@@ -79,7 +75,7 @@ def _allowed(hit: str) -> bool:
 def findings(paths, root: Path) -> Iterator[tuple[Path, int, str, str]]:
     """``(path, line-number, kind, hit)`` for every identifier that is not allowed.
 
-    ``kind`` is ``"account id"`` or ``"e-mail"`` - the message says which convention to apply,
+    ``kind`` is ``"account id"`` or ``"e-mail"``. The message says which convention to apply,
     because the two have different replacements: an id becomes the account's name, an e-mail
     inside an ARN becomes that user's role name.
     """
