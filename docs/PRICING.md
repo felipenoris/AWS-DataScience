@@ -1,17 +1,15 @@
 # Pricing
 
-Prices for region `sa-east-1`.
-
-`us-west-2` is shown alongside it in every table, because that is the region the project actually deploys
-in (`CLAUDE.md`) and the region all the estimates in `docs/plan/cost-model.md` were written for. Having both
-columns is what makes the São Paulo premium a measurement instead of an impression.
+Prices for region `sa-east-1`, with `us-west-2` alongside in every table: `us-west-2` is the region the
+project deploys in (`CLAUDE.md`) and the region the estimates in `docs/plan/cost-model.md` were written
+for, so the São Paulo premium is a measurement.
 
 ---
 
 ## 0. Method
 
-**Every number in this file was read from the AWS Price List bulk API, not estimated and not copied from a
-pricing page.** The endpoint is public and needs no credentials:
+Every number in this file was read from the AWS Price List bulk API. The endpoint is public and needs no
+credentials:
 
 ```bash
 curl -s 'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/sa-east-1/index.json' | jq '.products, .terms.OnDemand'
@@ -23,42 +21,41 @@ at `offers/v1.0/aws/<service>/current/region_index.json` — which is also how t
 was found.
 
 Read on **2026-08-08**. The individual offer files carry their own publication dates (MWAA 2026-04-20,
-VPC 2026-07-24, S3 2026-08-07), so a rate can be a few months old without being stale — AWS republishes an
-offer file only when something in it changes. **The EMR Serverless and DNS Firewall rows were read on
-2026-08-16** (offer files `ElasticMapReduce` 2026-07-17, `AmazonRoute53`), when the Stage 6 revision made
+VPC 2026-07-24, S3 2026-08-07); AWS republishes an offer file only when something in it changes, so a rate
+can be a few months old without being stale. The EMR Serverless and DNS Firewall rows were read on
+**2026-08-16** (offer files `ElasticMapReduce` 2026-07-17, `AmazonRoute53`), when the Stage 6 revision made
 both services load-bearing: EMR Serverless is the VPC-capable replacement for the Athena Spark default the
-stage disables, and DNS Firewall was egress design A's allowlist mechanism — since 6c step 5.7 it closes the
-**resolver channel** only (ten names), the internet filter having moved to the proxy's source-scoped lists.
+stage disables, and DNS Firewall was egress design A's allowlist mechanism. Since 6c step 5.7 DNS Firewall
+closes the **resolver channel** only (ten names); the internet filter moved to the proxy's source-scoped
+lists.
 
-**The three `t3` rows added on 2026-08-21 came through a different door, and it is named rather
-than glossed** (`t3.xlarge`/`t3.2xlarge` in §8 and §3, for Stage 6's build host (`production/buildbox/` since 6c step 5.8)): the
-`AmazonEC2` bulk offer file for one region is hundreds of megabytes, so those were read with
-**`aws pricing get-products`** — the Price List *Query* API, same catalogue, filtered server-side
-on `instanceType`/`location`/`operatingSystem=Linux`/`tenancy=Shared`/`preInstalledSw=NA`/
-`capacitystatus=Used`. It needs credentials where the bulk endpoint does not, which is the only
-difference that matters to a reader repeating it. The numbers are still measured, not estimated,
-and the `1.62` ratio they land on is the same one every other `t3` row in this file carries.
+The three `t3` rows read on 2026-08-21 came through a different door (`t3.xlarge`/`t3.2xlarge` in §8 and
+§3, for Stage 6's build host, `production/buildbox/` since 6c step 5.8): the `AmazonEC2` bulk offer file
+for one region is hundreds of megabytes, so those were read with **`aws pricing get-products`** — the
+Price List *Query* API, same catalogue, filtered server-side on `instanceType`/`location`/
+`operatingSystem=Linux`/`tenancy=Shared`/`preInstalledSw=NA`/`capacitystatus=Used`. It needs credentials
+where the bulk endpoint does not. The `1.62` ratio they land on is the one every other `t3` row here
+carries.
 
-**What these prices are:** on-demand, list, pre-tax, in USD. They exclude the AWS Free Tier, any private
-pricing, and Brazilian taxes, which are added on the invoice for accounts billed through AWS Brazil and
-are not part of any figure below. Monthly figures use **730 hours** unless stated otherwise.
+The prices are on-demand, list, pre-tax, in USD. They exclude the AWS Free Tier, any private pricing, and
+Brazilian taxes, which are added on the invoice for accounts billed through AWS Brazil. Monthly figures use
+**730 hours** unless stated otherwise.
 
-**Ratio column:** `sa-east-1 ÷ us-west-2`. It is worth reading as its own signal — the premium is not
-uniform, and the services where it is **1.00** (KMS, Config, CloudTrail, Security Hub, Network Firewall,
-Private CA, Lambda, public IPv4, VPC peering) are as interesting as the ones where it is 2x.
+The **ratio** column is `sa-east-1 ÷ us-west-2`. The premium is not uniform: it is **1.00** for KMS,
+Config, CloudTrail, Security Hub, Network Firewall, Private CA, Lambda, public IPv4 and VPC peering, and 2x
+for others.
 
 ---
 
 ## 1. MWAA and the D7 alternatives
 
-This is the table the file was created for. D7 builds **two** orchestrators in Stage 10 and compares them:
-**(A)** MWAA, **(B)** EventBridge + Step Functions + Lambda/Fargate.
+D7 builds **two** orchestrators in Stage 10 and compares them: **(A)** MWAA, **(B)** EventBridge + Step
+Functions + Lambda/Fargate.
 
 ### 1.1 MWAA environment fee
 
-Charged **per hour the environment exists**, at one-second resolution, whether or not a DAG runs. This is
-the single most important fact about MWAA's cost model: it is not per execution, and an idle environment
-costs the same as a busy one.
+Charged **per hour the environment exists**, at one-second resolution, whether or not a DAG runs. It is not
+per execution: an idle environment costs the same as a busy one.
 
 | Environment class | `sa-east-1` USD/h | `us-west-2` USD/h | Ratio | `sa-east-1` /month (730 h) | `us-west-2` /month |
 |---|---|---|---|---|---|
@@ -69,12 +66,12 @@ costs the same as a busy one.
 | `mw1.xlarge` | 3.404348 | 1.98 | 1.72 | 2 485.17 | 1 445.40 |
 | `mw1.2xlarge` | 6.808696 | 3.96 | 1.72 | 4 970.35 | 2 890.80 |
 
-The `~USD 350/month` that `docs/GENERAL_PLAN.md` used to quote is `0.49 × 730 = 357.70` — `mw1.small` in
-`us-west-2`. At 744 hours (a 31-day month) the same environment is USD 364.56, which is where the "USD 360"
-figure comes from. The ratio is a flat **1.72** across every class.
+The `~USD 350/month` quoted in `docs/GENERAL_PLAN.md` is `0.49 × 730 = 357.70` — `mw1.small` in
+`us-west-2`. At 744 hours (a 31-day month) the same environment is USD 364.56, the source of the "USD 360"
+figure. The ratio is a flat **1.72** across every class.
 
-**The unit of billing is the *environment*** — the AWS resource created by `CreateEnvironment`
-(`AWS::MWAA::Environment`). Not the account, not the user, not the DAG. The figures above are for **one**
+The unit of billing is the **environment** — the AWS resource created by `CreateEnvironment`
+(`AWS::MWAA::Environment`), not the account, the user or the DAG. The figures above are for one
 environment, in one account, in one Region, for one month.
 
 | Does it multiply the fee? | | |
@@ -88,21 +85,19 @@ environment, in one account, in one Region, for one month.
 | **Extra schedulers / web servers** | **Yes** | Billed per hour while configured, not per use. Quota: 5 web servers per environment |
 | **Metadata database storage** | **Yes** | Per GB-month, per environment |
 
-The base environment fee includes **1 worker, 2 schedulers and 2 web servers** — read off AWS's own worked
+The base environment fee includes **1 worker, 2 schedulers and 2 web servers** — read off AWS's worked
 example on the pricing page (Airflow 2.8.1); the composition can differ by Airflow version, so confirm it
-for the version actually deployed. Everything beyond that is a separate hourly line. So volume reaches the
-bill through **concurrency**, not through quantity: 200 DAGs staggered through the day fit in the included
-worker; five DAGs that all fire at 03:00 scale workers out and cost money. The environment scales back down
-to `MinWorkers` (default 1) when the queue drains — the environment fee does not.
+for the version deployed. Everything beyond that is a separate hourly line. Volume reaches the bill through
+**concurrency**, not quantity: 200 DAGs staggered through the day fit in the included worker; five DAGs
+that all fire at 03:00 scale workers out. The environment scales back down to `MinWorkers` (default 1) when
+the queue drains; the environment fee does not.
 
-**Consequence for the promotion chain (D20, D21).** Because the multiplier is the environment, giving
-Development, Staging and Production each its own Airflow means **three** environments:
-3 × USD 357.70 = **USD 1 073/month** in `us-west-2`, or USD 1 845 in `sa-east-1`. This plan does not do
-that — D17 keeps interactive and orchestration compute out of the deployment targets and `docs/plan/conventions.md` §6 places
-`orchestration/` only under `production/` — but the architectural choice has a four-figure number attached,
-and it is worth knowing before someone reasonably proposes "let's test the DAG in Staging first". The cheap
-answer to that is an `[E]` environment for an hour, not a second standing one. **MWAA Serverless removes
-the question entirely:** with no environment fee, there is nothing to multiply — see §1.3.
+Consequence for the promotion chain (D20, D21): giving Development, Staging and Production each its own
+Airflow means three environments, 3 × USD 357.70 = **USD 1 073/month** in `us-west-2`, or USD 1 845 in
+`sa-east-1`. This plan does not do that — D17 keeps interactive and orchestration compute out of the
+deployment targets, and `docs/plan/conventions.md` §6 places `orchestration/` only under `production/`. The
+cheap answer to "let's test the DAG in Staging first" is an `[E]` environment for an hour, not a second
+standing one. MWAA Serverless has no environment fee, so nothing multiplies (§1.3).
 
 ### 1.2 MWAA add-ons
 
@@ -125,14 +120,13 @@ minimum.
 |---|---|---|---|
 | Managed task (USD per task-hour) | 0.104 | 0.088 | 1.18 |
 
-This is the variant D7 tries first: it is Airflow with the cost shape of alternative B, and it is also the
-one place in this file where the São Paulo premium nearly disappears (1.18x instead of 1.72x). Available in
-both `us-west-2` and `sa-east-1`. Terraform: **`awscc_mwaaserverless_workflow`** (Cloud Control, from
+D7 tries this variant first: Airflow with the cost shape of alternative B, and the one place in this file
+where the São Paulo premium nearly disappears (1.18x against 1.72x). Available in both `us-west-2` and
+`sa-east-1`. Terraform: **`awscc_mwaaserverless_workflow`** (Cloud Control, from
 `AWS::MWAAServerless::Workflow`); the classic `aws` provider has no Serverless resource yet (D28,
 INT-14 of the plan).
 
-**What you give up for that price**, and what you gain — this is not the same product with a different
-invoice:
+What the price gives up, and what it gains:
 
 | | MWAA Serverless | MWAA provisioned |
 |---|---|---|
@@ -144,11 +138,10 @@ invoice:
 | Startup | Each task provisions compute first | Warm, when worker capacity exists |
 | Networking | Tasks can run in your VPC | Environment lives in your VPC |
 
-The row that matters most to *this* project is not the price: **one execution role per workflow** is a
-least-privilege property that provisioned MWAA cannot offer, since there every task inherits the same
-environment role. Against the data-perimeter design in `docs/plan/architecture.md` §4.2, that is an argument for
-Serverless independent of cost. The row that argues the other way is the missing Airflow UI, which is a
-real loss for a data scientist debugging a DAG.
+**One execution role per workflow** is a least-privilege property provisioned MWAA cannot offer, where
+every task inherits the same environment role. Against the data-perimeter design in
+`docs/plan/architecture.md` §4.2 that argues for Serverless independent of cost. The missing Airflow UI
+argues the other way, and is a real loss for a data scientist debugging a DAG.
 
 ### 1.4 Alternative B — the unit prices
 
@@ -167,8 +160,8 @@ real loss for a data scientist debugging a DAG.
 | Fargate ARM — vCPU (USD/h) | 0.0557 | 0.03238 | 1.72 |
 | Fargate ARM — memory (USD/GB-h) | 0.00612 | 0.00356 | 1.72 |
 
-**Lambda has no São Paulo premium at all.** Fargate has the full 1.72x. So under design B the region
-choice barely matters for the orchestration and matters entirely for the container steps.
+Lambda has no São Paulo premium; Fargate has the full 1.72x. Under design B the region choice barely
+matters for the orchestration and matters entirely for the container steps.
 
 ### 1.5 Worked comparison — one nightly workflow
 
@@ -182,11 +175,10 @@ containers on ARM Fargate at 1 vCPU / 2 GB; ~12 Step Functions state transitions
 | **A** — MWAA `mw1.micro`, environment left up | **≈ 364.00** + task compute | **≈ 211.70** + task compute |
 | **A** — MWAA `mw1.micro`, `[E]`, 8 h per comparison run | **≈ 3.99** per run | **≈ 2.32** per run |
 
-The gap between the last two rows is the whole argument of the `[P]`/`[D]`/`[E]` model in one line: the
-same environment costs USD 364 or USD 4 depending only on whether anyone remembers to destroy it. And the
-gap between the first two rows is small enough that the D7 comparison will be decided by operational fit —
-DAG portability, retry semantics, how a failure is observed — not by price. That is a better basis for a
-decision than the USD 350 figure was.
+The last two rows carry the `[P]`/`[D]`/`[E]` argument: the same environment costs USD 364 or USD 4
+depending only on whether anyone destroys it. The first two rows are close enough that the D7 comparison
+will be decided by operational fit — DAG portability, retry semantics, how a failure is observed — not by
+price.
 
 ---
 
@@ -199,22 +191,20 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (**`production/pki/` has never existed**; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), **all three applied 2026-08-21**; the encryption rule's one copy is `docs/GOVERNANCE.md` §Encryption) — **plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, which is the first key in this estate created for a LOG.** Every other log group here declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it is not a debugging log but the record of what left the estate, and its own comment draws that distinction rather than leaving it to be inferred. **Authored 2026-09-06, NOT YET APPLIED** — the count below moves to 14 on the apply that builds the proxy | 1.00 USD/key-mo | 1.00 USD/key-mo | 13.00 | 13.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (`production/pki/` does not exist; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. Not yet applied: the count moves to 14 on the apply that builds the proxy | 1.00 USD/key-mo | 1.00 USD/key-mo | 13.00 | 13.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 
-**The KMS row's unit is a key VERSION, not a key, and that is a rule rather than a rate** — read from
-AWS's KMS pricing and key-rotation pages (`docs/REFERENCES.md`), never from the bulk API, so §0's "every
-number came from the Price List API" stays exactly true: the *rate* above is the API's, this paragraph is
-the documentation's. A rotation-enabled CMK bills **1 version in its first year, 2 after its first
-rotation, 3 after its second, and is capped there**. Every CMK in this design sets
-`enable_key_rotation = true` with no `rotation_period_in_days`, i.e. the 365-day default — measured live
-2026-08-21, `True 365` on every key. **So the count cell above is a YEAR-ONE figure**: the Stage 2
-bootstrap keys (created 2026-08-15) reach 2 versions around 2027-08 and 3 around 2028-08, and the same
-clock starts for each later key on its own creation date. The multi-year consequence belongs to
-`docs/plan/cost-model.md`'s Floor row, which already defers a full recompute to Stage 12 step 5. **The
-levers, named without choosing between them:** fewer keys; rotation disabled on a *named* key — which is
-not free, because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a
-policy edit that turns that policy custom (Stage 5 step 13.3); or D12's ceiling revised.
+The KMS row's unit is a key **version**, not a key — read from AWS's KMS pricing and key-rotation pages
+(`docs/REFERENCES.md`), not from the bulk API: the rate above is the API's, this paragraph is the
+documentation's. A rotation-enabled CMK bills **1 version in its first year, 2 after its first rotation,
+3 after its second, and is capped there**. Every CMK in this design sets `enable_key_rotation = true` with
+no `rotation_period_in_days`, the 365-day default — measured live 2026-08-21, `True 365` on every key. The
+count cell above is therefore a year-one figure: the Stage 2 bootstrap keys (created 2026-08-15) reach
+2 versions around 2027-08 and 3 around 2028-08, and the same clock starts for each later key on its own
+creation date. The multi-year consequence belongs to `docs/plan/cost-model.md`'s Floor row, which defers a
+full recompute to Stage 12 step 5. The levers: fewer keys; rotation disabled on a named key — not free,
+because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a policy edit
+that turns that policy custom (Stage 5 step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
 | Route 53 **private** hosted zones (**5 at N=1 since 6c** — the `awsds.internal` apex, its `sandbox.`/`staging.`/`prod.` children and `awsds-pages.internal`; **6 today**, `sandbox.internal` standing until 6c step 6.5; `prod.internal`/`pages.internal` destroyed 2026-09-07. Before 6c: 3) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | **3.00 today, 2.50 steady** | idem |
@@ -238,29 +228,25 @@ The low end of each range is the first thirty days, while GuardDuty is inside it
 is an ordinary month with GuardDuty billing, Config at the top of its range and Security Hub at the top of
 its.
 
-**And one correction from a real bill, 2026-08-14 (Stage 1d step 10) — the first row here to move from
-list-rate arithmetic to what was actually charged.** The Config row projected USD 2.50-5.00/month and the
-organization is billing **~USD 0.5**. The error was not in the rate, which is right, but in the *shape*: the
-projection treated configuration items as a rate per account per month, and they are an event per change.
-Nine accounts recording once, at enrollment, cost USD 2.20 in a single day and then almost nothing. **What
-this row is really sensitive to is churn, so it will move with the build-out and not with the account
-count** — which is why the range is kept beside the measurement rather than replaced by it, and why
-Stage 12 step 5 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady state. **The related trap,
-priced in §4 and worth naming here:** `recordingFrequency: DAILY` is *not* the cheaper mode at this change
-rate — USD 0.012 per item-day against USD 0.003 per change puts the break-even at four changes per resource
-per day.
+A correction from a real bill, 2026-08-14 (Stage 1d step 10): the Config row projected USD 2.50-5.00/month
+and the organization is billing **~USD 0.5**. The rate was right and the shape was wrong — the projection
+treated configuration items as a rate per account per month, and they are an event per change. Nine
+accounts recording once, at enrollment, cost USD 2.20 in a single day and then almost nothing. The row is
+sensitive to churn, so it moves with the build-out and not with the account count; the range stays beside
+the measurement, and Stage 12 step 5 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady
+state. `recordingFrequency: DAILY` is not the cheaper mode at this change rate (priced in §4): USD 0.012
+per item-day against USD 0.003 per change puts the break-even at four changes per resource per day.
 
-**Two corrections applied on 2026-08-08, in opposite directions.** The "Staging, Development, Data
-Governance at rest" row charged a Config recorder and a KMS key for those accounts a second time —
-the Config row already covers every governed account — so ~USD 3 came out. The KMS row said "(3)" and
-predated D20-D22; there is one customer-managed key per Terraform-managed account plus the D31 data
-keys, so ~USD 3 went back in.
+Two corrections on 2026-08-08. The "Staging, Development, Data Governance at rest" row double-counted a
+Config recorder and a KMS key for those accounts — the Config row already covers every governed account —
+so ~USD 3 came out. The KMS row predated D20-D22: there is one customer-managed key per Terraform-managed
+account plus the D31 data keys, so ~USD 3 went back in.
 
-**And a third correction, on the same date: the `us-west-2` floor was restated from ~USD 24-30 to
-~USD 25-34.** The earlier figure was carried over rather than summed; adding this table's own `us-west-2`
-column row by row gives 25.25 at the low end and 33.75 at the high end. The `sa-east-1` column was already
-consistent with its own rows, which is why only one side moved. The number to trust in the end is still the
-one Stage 12 step 5 measures against the real bill — this is arithmetic over list rates, not an invoice.
+A third correction the same date restated the `us-west-2` floor from ~USD 24-30 to ~USD 25-34: the earlier
+figure was carried over rather than summed, and adding this table's `us-west-2` column row by row gives
+25.25 at the low end and 33.75 at the high end. The `sa-east-1` column was already consistent with its own
+rows. These are list rates, not an invoice; the number to trust is the one Stage 12 step 5 measures against
+the real bill.
 
 ---
 
@@ -271,7 +257,7 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | NAT Gateway (1) | 0.093 + 0.093/GB | 0.045 + 0.045/GB | 2.07 |
 | Interface VPC endpoint (each, per AZ) | 0.021 + 0.01/GB | 0.010 + 0.01/GB | 2.10 |
 | — *(until 6c)* Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
-| — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, which is the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). It is required by B's own premise, **never by `VpcOnly`** (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
+| — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). B's own premise requires it; `VpcOnly` does not (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
 | — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
@@ -288,25 +274,25 @@ one Stage 12 step 5 measures against the real bill — this is arithmetic over l
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour, as built (6c, 2026-09-07, `us-west-2`)**: 18 endpoints 0.180 + one `ml.t3.medium` app
-0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, and **no per-GB NAT charge** — an EC2
-proxy bills nothing per gigabyte. *The comparison 6c closed, kept as the record:* **Typical Sandbox hour**
-(its endpoints + one Studio app + WireGuard, plus the NAT under design A):
-design A `sa-east-1` **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**
-(both were up one endpoint — `datazone`, Stage 6 step 4.2 — from 2026-08-21; **design A came back down on
-2026-08-25** when it was removed, by exactly one endpoint at the rate above. **Design B keeps it**: with no
-NAT there is no other path to DataZone, so B's figures do not move).
+**Typical Sandbox hour, as built** (6c, 2026-09-07, `us-west-2`): 18 endpoints 0.180 + one `ml.t3.medium`
+app 0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, with no per-GB NAT charge —
+an EC2 proxy bills nothing per gigabyte. The comparison 6c closed, kept as the record — typical Sandbox
+hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
+**≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
+(`datazone`, Stage 6 step 4.2) from 2026-08-21; design A came back down on 2026-08-25 when it was removed,
+by exactly one endpoint at the rate above. Design B keeps it: with no NAT there is no other path to
+DataZone, so B's figures do not move.
 
-**Full-stack hour** (a design-A Sandbox + GitLab + its ALB + Production's NAT **and its endpoints**):
+**Full-stack hour** (a design-A Sandbox + GitLab + its ALB + Production's NAT and its endpoints):
 `sa-east-1` **≈ 0.91/h**, `us-west-2` **≈ 0.47/h**.
 
-**Both figures rose on 2026-08-08** — from 0.37/0.19 and 0.79/0.41 — for two reasons recorded in
+Both figures rose on 2026-08-08, from 0.37/0.19 and 0.79/0.41, for two reasons recorded in
 `docs/plan/cost-model.md`: the endpoint list was missing `athena`, `glue` and `lakeformation`, without which
-D13's access path has no route at all under design B; and Production's *endpoints* were never counted in a
+D13's access path has no route at all under design B; and Production's endpoints were never counted in a
 full-stack hour, only its NAT.
 
-Note that `docs/plan/cost-model.md` quotes NAT at USD 0.050/h in `us-west-2`; the measured gateway rate is
-**0.045**, plus 0.005 for its public IPv4 — which is where the round 0.050 comes from.
+`docs/plan/cost-model.md` quotes NAT at USD 0.050/h in `us-west-2`; the measured gateway rate is **0.045**,
+plus 0.005 for its public IPv4.
 
 ---
 
@@ -338,7 +324,7 @@ São Paulo as in Oregon.
 | S3 Intelligent-Tiering, Archive Instant Access | 0.0083 | — | |
 | S3 PUT/COPY/POST/LIST (USD per 1 000) | 0.007 | 0.005 | 1.40 |
 | S3 GET and all others (USD per 10 000) | 0.0056 | 0.004 | 1.40 |
-| S3 Access Grants requests (USD per 1 000) — `GetDataAccess`, `ListCallerAccessGrants` and every other non-delete AG call; deletes are 0.00. **The public pages say nothing** (pricing page, user guide, FAQ — all read 2026-08-23); the Price List offer file is where the meter is written | 0.03 | 0.03 | **1.00** |
+| S3 Access Grants requests (USD per 1 000) — `GetDataAccess`, `ListCallerAccessGrants` and every other non-delete AG call; deletes are 0.00. The public pages say nothing (pricing page, user guide, FAQ — all read 2026-08-23); the Price List offer file is where the meter is written | 0.03 | 0.03 | **1.00** |
 | **Glue** ETL (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Flex ETL (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
@@ -378,31 +364,34 @@ per-region entries — one price everywhere the service exists):
 | Compute units (metadata generation, data quality) | 1.776 | per compute unit |
 | AI recommendations — input / output | 0.015 / 0.075 | per 1 000 tokens |
 
-At lab scale the domain itself is **cents per month** — a single user cannot produce 100k metadata
-requests by hand, and the metadata for a lake this size is megabytes. **The cost of Unified Studio is not
-the domain; it is what the blueprints provision.** Two consequences the plan records as decisions rather
-than discoveries:
+At lab scale the domain itself is **cents per month**: a single user cannot produce 100k metadata requests
+by hand, and the metadata for a lake this size is megabytes. The cost of Unified Studio is what the
+blueprints provision, not the domain:
 
 - Of the two Lakehouse-named blueprints only the Glue/Athena one is enabled — `LakeHouseDatabase` (API
   name `DataLake`), Stage 6 decision 4. `LakehouseCatalog` (Redshift Managed Storage) and the separate
   `RedshiftServerless` blueprint provision a query path whose per-RPU minimum would put a second, larger
-  bill on top of Athena's — excluded by decision, not omission (`docs/SMUS.md` carries the category
-  table).
+  bill on top of Athena's; both are excluded by decision (`docs/SMUS.md` carries the category table).
 - The per-project SageMaker AI apps (provisioned by the **Tooling** blueprint — read 2026-08-16; D26
-  wrote "ML experience", a name the blueprint list does not carry) bill exactly like the Studio apps in §8
-  (`ml.t3.medium` at 0.081/0.050 USD/h) — the domain adds nothing to the hourly rate.
+  wrote "ML experience", a name the blueprint list does not carry) bill like the Studio apps in §8
+  (`ml.t3.medium` at 0.081/0.050 USD/h); the domain adds nothing to the hourly rate.
 
-### Amazon Bedrock — the `AmazonBedrock*` blueprints (Stage 6 decision 5: six in category 1, `KnowledgeBase` in 2)
+### Amazon Bedrock — the `AmazonBedrock*` blueprints (Stage 6 decision 5)
 
-**Named for the console's `AmazonBedrockGenerativeAI` until 2026-08-21**, when the roster reading found that grouping has no API identifier: the domain publishes `AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as seven separate blueprints. The rates below are unaffected — they are the model's, not the blueprint's — but **`AmazonBedrockKnowledgeBase` is NOT among the six**: it adds a shape this section does not price — a knowledge base stands up a vector store, which bills while it exists rather than per token — and it was moved to **category 2** on 2026-08-21 for exactly that reason, with a trigger that names the measurement. Price it when the trigger fires (Lesson 6), not at the first invoice. So category 1 carries **six** `AmazonBedrock*` blueprints, not seven.
+The console's `AmazonBedrockGenerativeAI` grouping has no API identifier: the domain publishes
+`AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as
+seven separate blueprints. The rates below are the model's, not the blueprint's, so they are unaffected.
+**`AmazonBedrockKnowledgeBase` is not among the six** in category 1: a knowledge base stands up a vector
+store, which bills while it exists rather than per token, so it moved to **category 2** on 2026-08-21 with
+a trigger that names the measurement. Price it when the trigger fires (Lesson 6).
 
 **Read 2026-08-21** from `AmazonBedrock/current/{us-west-2,sa-east-1}/index.json`, both published
-`2026-08-20`. The row was **owed before the Stage 6 step 1.4 apply** — the upkeep rule asks for one per
-new service referenced, and decision 5 put this blueprint in category 1 with the cell empty.
+`2026-08-20`. The row was owed before the Stage 6 step 1.4 apply: the upkeep rule asks for one per new
+service referenced, and decision 5 put this blueprint in category 1 with the cell empty.
 
-**The billing shape is what matters more than any single rate: per use, token-metered, no standing
-resource.** Enabling the blueprint costs nothing; a project that never opens a chat app costs nothing.
-That is why it sits in category 1 beside `DataLake` rather than in category 2 beside MLflow.
+The billing shape is per use, token-metered, with no standing resource. Enabling the blueprint costs
+nothing; a project that never opens a chat app costs nothing, which puts it in category 1 beside
+`DataLake` rather than category 2 beside MLflow.
 
 On-demand, in-region, per **1 000 tokens** (`us-west-2`):
 
@@ -415,25 +404,24 @@ On-demand, in-region, per **1 000 tokens** (`us-west-2`):
 | Claude 3 Haiku | 0.00025 | — |
 | Claude 3 Sonnet | 0.0030 | — |
 
-**Two gaps in that table are readings, not omissions** (Lesson 6 — a cell without a number means *not
+Two gaps in that table are readings, not omissions (Lesson 6 — a cell without a number means *not
 measured*, never *free*):
 
-- **The `us-west-2` offer file carries no `output-tokens` usagetype for any Claude model** — only
-  `input-tokens`. Every current Claude model is reached through a **cross-region inference profile**, and
-  those SKUs are published under the profile's home region rather than under `us-west-2`. So the two
-  Claude rows above are the legacy in-region SKUs and are **not** what a SMUS chat app would actually
-  bill; price the specific model against the inference profile before anyone leans on it.
-- **Batch, Flex and Priority tiers exist for the Nova family** (roughly ×0.5, ×0.5 and ×1.75 of the
-  on-demand rate respectively) and are not in the table because nothing in this design selects one.
+- The `us-west-2` offer file carries no `output-tokens` usagetype for any Claude model, only
+  `input-tokens`. Every current Claude model is reached through a **cross-region inference profile**,
+  whose SKUs are published under the profile's home region rather than under `us-west-2`. The two Claude
+  rows above are the legacy in-region SKUs, not what a SMUS chat app would bill; price the specific model
+  against the inference profile before leaning on it.
+- Batch, Flex and Priority tiers exist for the Nova family (roughly ×0.5, ×0.5 and ×1.75 of the on-demand
+  rate respectively) and are not in the table because nothing in this design selects one.
 
-**And a `sa-east-1` finding for §9, which is why the file is read in both regions:** the São Paulo offer
-carries **no Claude and no Nova model at all** — its catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS
-and friends. The Ratio column is therefore not "a premium"; it is **absent**, and a move would be a change
-of *model*, not of price. That is a larger fact than any rate above.
+A `sa-east-1` finding for §9: the São Paulo offer carries **no Claude and no Nova model at all** — its
+catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS and others. The Ratio column is absent rather than a
+premium, and a move would be a change of *model*, not of price.
 
-**What this does not price:** provisioned throughput (model units by the hour — the one Bedrock shape that
-*is* standing, and the one D12 would notice), model customisation, Knowledge Bases (which bill their own
-vector store), and Guardrails. None is reachable from the blueprint as enabled.
+Not priced here: provisioned throughput (model units by the hour, the one standing Bedrock shape and the
+one D12 would notice), model customisation, Knowledge Bases (which bill their own vector store), and
+Guardrails. None is reachable from the blueprint as enabled.
 
 ---
 
@@ -479,9 +467,9 @@ vector store), and Guardrails. None is reachable from the blueprint as enabled.
 | Route 53 Resolver DNS Firewall, first 1B queries (USD per million) | 0.60 | — | |
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
 
-**6c decision due 4's inputs — the proxy access log's road to Log Archive, `us-west-2`, measured 2026-09-08**
-(the bulk API's `AmazonKinesisFirehose`, `AmazonCloudWatch`, `AWSEvents` and `AWSLambda` offer files; the
-volume from the group's `IncomingBytes` metric):
+6c decision due 4's inputs — the proxy access log's road to Log Archive, `us-west-2`, **measured
+2026-09-08** (the bulk API's `AmazonKinesisFirehose`, `AmazonCloudWatch`, `AWSEvents` and `AWSLambda`
+offer files; the volume from the group's `IncomingBytes` metric):
 
 | Item | USD, `us-west-2` |
 |---|---|
@@ -492,37 +480,34 @@ volume from the group's `IncomingBytes` metric):
 | Lambda requests (per million) · duration (per GB-second, tier 1) | 0.20 · 0.0000166667 |
 
 At 15 MB/month every mechanism costs under a cent: even Firehose's 5 KB rounding (~40× the bytes) is
-~USD 0.02, and a daily export is a handful of S3 PUTs. **The money does not decide this one.**
+~USD 0.02, and a daily export is a handful of S3 PUTs. The money does not decide this one.
 
-**A metric emitted by a CloudWatch Logs metric filter is a custom metric, at USD 0.30/metric-month.** That
-is three times the alarm beside it, and it is avoidable: custom metrics are metered only for the hours in
-which datapoints are actually published, so a metric filter created **without a default value** publishes
-nothing in a quiet month and costs nothing. This is why the break-glass filter (Stage 1a step 5) leaves the
-default value empty and the alarm treats missing data as `notBreaching`, rather than emitting a `0` every
-minute for the reassurance of a continuous line.
+A metric emitted by a CloudWatch Logs metric filter is a custom metric, at USD 0.30/metric-month — three
+times the alarm beside it, and avoidable: custom metrics are metered only for the hours in which
+datapoints are published, so a metric filter created **without a default value** publishes nothing in a
+quiet month and costs nothing. The break-glass filter (Stage 1a step 5) therefore leaves the default value
+empty, and its alarm treats missing data as `notBreaching`.
 
-**SNS SMS is the one row in this file that could not be measured, and it is recorded as a gap rather than
-guessed (Lesson 6).** The `AmazonSNS` offer file carries an `SMS` delivery-attempt SKU priced at
-`0.0000000000` — that is the *attempt*, not the message; the per-message price is per destination country
-and, in several countries, per carrier, and AWS publishes it only on the AWS End User Messaging SMS pricing
-page and its downloadable CSV, not in the bulk API (checked `AmazonSNS`, `AmazonPinpoint` and
-`AWSEndUserMessaging3pFees` on 2026-08-09 — the last two carry only WhatsApp rows for `BR`). Two facts that
-make the gap tolerable here: the only SMS this environment sends is the break-glass alarm (Stage 1a step 5),
-so the volume is single-digit messages per year, and **Brazil supports short codes but neither long codes nor
-sender IDs**, so there is no origination identity to buy and no registration to file — AWS sends over its
-shared short-code pool on a best-effort basis. The one thing to check before relying on the channel is the
-**SMS sandbox**: a new account can only send to *verified* destination numbers, which is a one-time console
-step and not a cost.
+SNS SMS could not be measured, and is recorded as a gap rather than guessed (Lesson 6). The `AmazonSNS`
+offer file carries an `SMS` delivery-attempt SKU priced at `0.0000000000`, which is the *attempt*, not the
+message; the per-message price is per destination country and, in several countries, per carrier, and AWS
+publishes it only on the AWS End User Messaging SMS pricing page and its downloadable CSV, not in the bulk
+API (checked `AmazonSNS`, `AmazonPinpoint` and `AWSEndUserMessaging3pFees` on 2026-08-09 — the last two
+carry only WhatsApp rows for `BR`). The gap is tolerable here: the only SMS this environment sends is the
+break-glass alarm (Stage 1a step 5), so the volume is single-digit messages per year, and **Brazil
+supports short codes but neither long codes nor sender IDs**, so there is no origination identity to buy
+and no registration to file — AWS sends over its shared short-code pool on a best-effort basis. Check the
+**SMS sandbox** before relying on the channel: a new account can only send to verified destination
+numbers, a one-time console step and not a cost.
 
-**Macie is the one to watch in São Paulo: 2.25x, the largest premium in this file.** The plan already says
-to scope Macie to a sampled prefix rather than the whole lake (`docs/plan/cost-model.md`); in `sa-east-1` that instruction is
+Macie is the one to watch in São Paulo: 2.25x, the largest premium in this file. The plan scopes Macie to
+a sampled prefix rather than the whole lake (`docs/plan/cost-model.md`); in `sa-east-1` that instruction is
 worth more than twice as much.
 
-**The Access Analyzer internal-access rate is the measurement that redesigned a step (2026-08-17,
-Lesson 6):** at USD 9.00 per monitored resource per month — identical in both Regions, and charged at
-setup rather than prorated — six resources would exceed the entire D12 ceiling, which is why Stage 11
-step 2.1 runs the analyzer as an enumerated-ARN, create-read-delete instrument instead of a standing
-monitor.
+The Access Analyzer internal-access rate redesigned a step (2026-08-17, Lesson 6): at USD 9.00 per
+monitored resource per month — identical in both Regions, and charged at setup rather than prorated — six
+resources would exceed the entire D12 ceiling, so Stage 11 step 2.1 runs the analyzer as an
+enumerated-ARN, create-read-delete instrument instead of a standing monitor.
 
 ---
 
@@ -554,33 +539,32 @@ monitor.
 | Transfer São Paulo → Oregon (USD/GB) | 0.16 | — | |
 | Transfer Oregon → São Paulo (USD/GB) | — | 0.02 | |
 
-**Note on data transfer out.** Two offer files disagree. The `AWSDataTransfer` offer — the current,
-unified one, and the source of the table above — gives `sa-east-1` 0.150 USD/GB for the first 10 TB. The
-older per-service `AmazonEC2` offer still carries a São Paulo tier of 0.25 USD/GB. The `us-west-2` figure
-of 0.090 matches what `docs/plan/architecture.md` §4.3 already assumed, which is a point in favour of the unified
-offer being the live one, but this is the one row in this file to verify against a real invoice before
-relying on it. The first 100 GB/month out of AWS is free organization-wide and is not modelled here.
+Data transfer out: two offer files disagree. The `AWSDataTransfer` offer — the current, unified one, and
+the source of the table above — gives `sa-east-1` 0.150 USD/GB for the first 10 TB. The older per-service
+`AmazonEC2` offer still carries a São Paulo tier of 0.25 USD/GB. The `us-west-2` figure of 0.090 matches
+what `docs/plan/architecture.md` §4.3 assumed, a point in favour of the unified offer being the live one,
+but verify this row against a real invoice before relying on it. The first 100 GB/month out of AWS is free
+organization-wide and is not modelled here.
 
-**The three rows added on 2026-09-05 exist to give two rejections a number** (Lesson 7 — a rejected-on-cost
-option goes stale in the direction that flatters the rejection). **Transit Gateway**: the hub-and-spoke
-this estate builds is five attachments, so 5 × 0.05 × 730 ≈ **USD 182/month standing**, before a byte —
-against VPC peering's zero per hour and a per-GB charge that only applies across an AZ. **A Route 53
-Resolver outbound endpoint** — the shape open question 23 priced for moving the client plane's resolution
-without moving the client — is two ENIs, ≈ **USD 182/month standing**; D38 takes the free shape instead
-(the client resolves in a VPC that carries no compute-plane endpoint). Both figures are from the
-`AmazonVPC` and `AmazonRoute53` offer files for `us-west-2`, read 2026-09-05.
+Three rows give two rejections a number (Lesson 7). **Transit Gateway**: the hub-and-spoke this estate
+builds is five attachments, so 5 × 0.05 × 730 ≈ **USD 182/month standing**, before a byte — against VPC
+peering's zero per hour and a per-GB charge that only applies across an AZ. **A Route 53 Resolver outbound
+endpoint** — the shape open question 23 priced for moving the client plane's resolution without moving the
+client — is two ENIs, ≈ **USD 182/month standing**; D38 takes the free shape instead (the client resolves
+in a VPC that carries no compute-plane endpoint). Both figures are from the `AmazonVPC` and
+`AmazonRoute53` offer files for `us-west-2`, read 2026-09-05.
 
-**RE-MEASURED 2026-09-06 at [6c](plan/stages/stage-06c-networking-hub.md) step 7.4, against offer files
-republished 2026-08-31, and the `us-west-2` numbers held exactly** — 0.05 per attachment-hour, 0.02 per GB,
-0.125 per Resolver ENI-hour. **One `sa-east-1` figure did not, and it was wrong in the direction that
-flattered the rejection** ([Lesson 7](plan/lessons.md)): the Transit Gateway attachment is **0.09/h in São
+Re-measured **2026-09-06** at [6c](plan/stages/stage-06c-networking-hub.md) step 7.4, against offer files
+republished 2026-08-31: the `us-west-2` numbers held exactly — 0.05 per attachment-hour, 0.02 per GB,
+0.125 per Resolver ENI-hour. One `sa-east-1` figure did not, and it was wrong in the direction that
+flattered the rejection ([Lesson 7](plan/lessons.md)): the Transit Gateway attachment is **0.09/h in São
 Paulo, not 0.05**, so the hub-and-spoke this estate does not build would be ≈ **USD 328/month** there
-rather than 182. Corrected above. The Resolver ENI is genuinely 0.125 in both regions, which is one of the
-few rows in this file with a ratio of exactly 1.00 and no rounding behind it.
+rather than 182. Corrected above. The Resolver ENI is 0.125 in both regions, a ratio of exactly 1.00 with
+no rounding behind it.
 
 Interface VPC endpoints at 0.021 USD/h are the sharpest single difference for this project's operating
-model: the plan already calls them "the largest hourly item" and keeps the list minimal and single-AZ, and
-in São Paulo that discipline is worth exactly twice as much.
+model: the plan calls them "the largest hourly item" and keeps the list minimal and single-AZ, and in São
+Paulo that discipline is worth exactly twice as much.
 
 ---
 
@@ -618,39 +602,37 @@ in São Paulo that discipline is worth exactly twice as much.
 `t4g` (Graviton) is ~20% cheaper than `t3` for the same memory in both regions, which is the sizing
 argument D8 makes for GitLab, and it holds in São Paulo unchanged.
 
-**The six burstable rows above are the same-memory pairs, measured 2026-08-20** (offer file
-`AmazonEC2`, published `2026-08-20T22:12:05Z`, read from the bulk endpoint of §0 for both regions in
-one sitting) — added when the WireGuard host moved off Graviton onto amd64 at the user's direction,
-which is the one place in this project where that ~20% is *paid* rather than saved. The premium is
-**+23.8% in `us-west-2`** and **+25.4% in `sa-east-1`**, and it is flat across the three sizes:
-`0.0052 / 0.0042`, `0.0104 / 0.0084`, `0.0416 / 0.0336`. In the money that matters here — a `[D]`
-host billed only while a lab session runs — the baseline `t3.nano` costs **+0.0010 USD/h** over the
-`t4g.nano` it replaced, and the `t3.medium` currently selected costs **+0.0080 USD/h** over
-`t4g.medium`. **Nothing about D8's GitLab sizing changes**: that argument is about an 8 GiB
-always-on host, where the same ~20% is ~13 USD/month.
+The six burstable rows above are the same-memory pairs, **measured 2026-08-20** (offer file `AmazonEC2`,
+published `2026-08-20T22:12:05Z`, read from the bulk endpoint of §0 for both regions in one sitting), for
+the WireGuard host's move off Graviton onto amd64 — the one place in this project where that ~20% is
+*paid* rather than saved. The premium is **+23.8% in `us-west-2`** and **+25.4% in `sa-east-1`**, flat
+across the three sizes: `0.0052 / 0.0042`, `0.0104 / 0.0084`, `0.0416 / 0.0336`. For a `[D]` host billed
+only while a lab session runs, the baseline `t3.nano` costs **+0.0010 USD/h** over the `t4g.nano` it
+replaced, and the `t3.medium` currently selected costs **+0.0080 USD/h** over `t4g.medium`. D8's GitLab
+sizing is unaffected: that argument is about an 8 GiB always-on host, where the same ~20% is
+~13 USD/month.
 
-**The three SageMaker serving rows were measured 2026-08-16 for Stage 10 step 5, and the shape matters
-more than the rate:** batch transform bills only while the job runs and Serverless Inference scales to
-zero between requests — the two D11-compatible serving shapes — while a hosting **endpoint bills every
-hour it exists** (0.23 × 730 ≈ **USD 168/month** for one `ml.m5.xlarge`), the model-serving analogue of
-§1.1's environment fee and what rules a standing endpoint out under D12. Serverless Inference's
-documented limit, recorded with its price: it supports **no VPC configuration**, so it sits outside the
-network perimeter (Stage 10 decision 4 names batch transform for exactly this pair of reasons).
+The three SageMaker serving rows were **measured 2026-08-16** for Stage 10 step 5, and the shape matters
+more than the rate: batch transform bills only while the job runs and Serverless Inference scales to zero
+between requests — the two D11-compatible serving shapes — while a hosting **endpoint bills every hour it
+exists** (0.23 × 730 ≈ **USD 168/month** for one `ml.m5.xlarge`), the model-serving analogue of §1.1's
+environment fee and what rules a standing endpoint out under D12. Serverless Inference supports **no VPC
+configuration**, so it sits outside the network perimeter (Stage 10 decision 4 names batch transform for
+both reasons).
 
 ---
 
-## 9. What moving to São Paulo would actually change
+## 9. What moving to São Paulo changes
 
-**One thing that is not a price at all: `AWS CodeArtifact does not exist in sa-east-1`.** It is offered in
-thirteen Regions — `us-east-1`, `us-east-2`, `us-west-2`, `ap-south-1`, `ap-southeast-1`,
-`ap-southeast-2`, `ap-northeast-1`, `eu-central-1`, `eu-west-1`, `eu-west-2`, `eu-west-3`, `eu-south-1`,
-`eu-north-1` — and São Paulo is not among them. The Region check recorded in `docs/plan/architecture.md` §4.1 on
-2026-08-07 missed this, and it matters twice: **D14** puts CodeArtifact in the supply chain, and **egress
-design B (D5)** depends on it as the *only* package path when there is no NAT. In São Paulo, design B as
-written is not buildable; it would need a self-hosted proxy (devpi, a Cargo mirror such as panamax) or
-design A only.
+**AWS CodeArtifact does not exist in `sa-east-1`.** It is offered in thirteen Regions — `us-east-1`,
+`us-east-2`, `us-west-2`, `ap-south-1`, `ap-southeast-1`, `ap-southeast-2`, `ap-northeast-1`,
+`eu-central-1`, `eu-west-1`, `eu-west-2`, `eu-west-3`, `eu-south-1`, `eu-north-1` — and São Paulo is not
+among them. The Region check recorded in `docs/plan/architecture.md` §4.1 on 2026-08-07 missed this, and
+it matters twice: **D14** puts CodeArtifact in the supply chain, and **egress design B (D5)** depends on
+it as the only package path when there is no NAT. In São Paulo, design B as written is not buildable; it
+would need a self-hosted proxy (devpi, a Cargo mirror such as panamax) or design A only.
 
-**And the numbers:**
+The numbers:
 
 | Figure | `sa-east-1` | `us-west-2` | Ratio |
 |---|---|---|---|
@@ -660,18 +642,19 @@ design A only.
 | **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |
 | Against the D12 ceiling of USD 50 | **breaches it** at anything above a light month | **~USD 7** at the top of the range | |
 
-So the answer to "could this project run in São Paulo?" changed on 2026-08-08, and not in São Paulo's
-favour: **technically yes except for CodeArtifact, but it no longer fits under the USD 50 ceiling once the
-data-plane endpoints are counted.** Interface endpoints carry the sharpest premium in this file (2.10x) and
-the correction added three of them to every account, so São Paulo absorbed the change roughly twice over.
-The first overrun there would be a session that leaves a design-A Sandbox `egress/` up for a full day:
-24 h × 0.345 = **USD 8.28** in `sa-east-1` against 24 h × 0.160 = USD 3.84 in `us-west-2` (0.345/0.170 and USD 8.28/4.08 while `datazone` was on the list, 2026-08-21 to 08-25 — the ratio is what this paragraph turns on, and it does not move).
+Could this project run in São Paulo? Technically yes except for CodeArtifact, but since 2026-08-08 it no
+longer fits under the USD 50 ceiling once the data-plane endpoints are counted. Interface endpoints carry
+the sharpest premium in this file (2.10x) and the correction added three of them to every account, so São
+Paulo absorbed the change roughly twice over. The first overrun there would be a session that leaves a
+design-A Sandbox `egress/` up for a full day: 24 h × 0.345 = **USD 8.28** in `sa-east-1` against
+24 h × 0.160 = USD 3.84 in `us-west-2` (0.345/0.170 and USD 8.28/4.08 while `datazone` was on the list,
+2026-08-21 to 08-25; the ratio does not move).
 
 ---
 
 ## 10. Free, or not separately metered
 
-Worth stating explicitly, because their absence from the tables above is a fact and not an omission:
+Their absence from the tables above is a fact, not an omission:
 
 AWS Organizations, AWS Control Tower itself (you pay for what it provisions — Config, CloudTrail, S3 — not
 for the service), IAM and IAM Identity Center — including **centralized root access management**, both
@@ -683,12 +666,12 @@ shared resource)**, **AWS CloudFormation** (stacks managing AWS-namespace resour
 third-party resource-type handler operations bill; it is the deploy mechanism of every SMUS project
 environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
-storage bill), the first 30 days of GuardDuty per account, and — **read 2026-08-20, and it is a second,
-separate window rather than the same one** — the first 30 days of **Security Hub CSPM** per account, from
-that account's first enablement. The two windows open at different stages (Security Hub at Stage 5 step 13,
-GuardDuty at Stage 15), so "the first thirty days" is never one date for the whole floor. **What neither
-trial covers is the AWS Config cost underneath**: Security Hub's checks run as Config rules, and each
-control's compliance-state change writes an `AWS::Config::ResourceCompliance` item from day one.
+storage bill), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
+window — the first 30 days of **Security Hub CSPM** per account, from that account's first enablement.
+The two windows open at different stages (Security Hub at Stage 5 step 13, GuardDuty at Stage 15), so "the
+first thirty days" is never one date for the whole floor. Neither trial covers the AWS Config cost
+underneath: Security Hub's checks run as Config rules, and each control's compliance-state change writes
+an `AWS::Config::ResourceCompliance` item from day one.
 
 ---
 
