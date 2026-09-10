@@ -215,8 +215,8 @@ class Slice:
 # Every slice on disk today. The [P] rows are free or nearly free at rest: five state
 # buckets and their keys (KMS is priced per key-month, docs/PRICING.md 2, so it is a floor
 # line and not an hourly one), two Identity Center / Organizations slices whose objects cost
-# nothing at all, and the foundation networks. The [E] rows carry `usd_per_hour`, which is
-# what `make status` reports.
+# nothing at all, and the foundation networks. The [D] and [E] rows carry `usd_per_hour`, and
+# `make status` meters both - the two [D] hosts bill while every [E] slice is down.
 #
 # usd_per_hour is copied from docs/PRICING.md 3, measured us-west-2 rates (Lesson 6), and
 # is the at-rest-while-up figure - per-GB processing is traffic, not time, and stays in the

@@ -95,7 +95,7 @@ output "proxy_eip_allocation_id" {
 }
 
 output "proxy_security_group_id" {
-  description = "The [P] proxy security group. Admits tcp/3128 from every peered spoke and the tunnel; the policy that decides what those sources may reach is the allow-list, not this group."
+  description = "The [P] proxy security group. Admits TCP/3128 from every peered spoke and the tunnel; the policy that decides what those sources may reach is the allow-list, not this group."
   value       = aws_security_group.proxy.id
 }
 

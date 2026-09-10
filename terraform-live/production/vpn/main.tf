@@ -119,6 +119,14 @@ resource "aws_route" "tunnel_return" {
 # `vpn.awsds.internal`. The apex zone is production/foundation/'s and carries the shared names only
 # - gitlab, proxy, vpn - so this record and the proxy's are the tunnel's half of that set.
 #
+# Step 2.1 said this record and the proxy's are "written by pass 4 from the two hosts' private
+# addresses", and pass 4 did not write them: the zone was created at 2.1 and no record was ever
+# declared, so both names were NXDOMAIN from the zone's creation until 4.7 and 4.8 declared them
+# here. Found 2026-09-06 while 5.7 was re-cutting the firewall lists to include `.awsds.internal`,
+# a family whose only content was, at that moment, nothing. Step 6.1 asks a client to reach
+# `proxy.awsds.internal:3128` by name, and that reading was unrunnable with nothing saying so - an
+# obligation recorded only at the deferring end (Lesson 34).
+#
 # The record is [D] and lives with the host: the zone is [P], while the address is a property of an
 # instance this slice may replace, so the record is declared beside the thing that owns the value.
 # `make down` stops this host rather than destroying it, so both the ENI and its private address

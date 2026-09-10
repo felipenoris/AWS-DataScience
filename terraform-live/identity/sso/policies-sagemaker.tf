@@ -27,7 +27,7 @@ module "sagemaker_denies" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-denies?ref=sagemaker-denies-v0.2.0"
 
   # allowed_instance_types is not passed: the module owns the list, and the project boundary in
-  # the two Interactive accounts omits it for the same reason.
+  # Sandbox - the one Interactive account with a sagemaker/ slice - omits it for the same reason.
 }
 
 # ---------------------------------------------------------------- open question 14, scoped

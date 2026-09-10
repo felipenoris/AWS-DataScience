@@ -33,13 +33,11 @@ The boundary is the control plane, not the account (the refinement D14 makes for
 service hosted in an account they can never administer — GitLab in Production over the VPN, the SageMaker
 Unified Studio portal hosted in Data Governance. Using the service is not signing in to the account.
 
-**Cardinality cuts across all three groups** ([D35](plan/decisions/D35-sandbox-cardinality.md)). Every
-account is structural — exactly one, forever — except `Sandbox`, which is one per business unit; N is 1
-today. The chain reads N Sandboxes → one Staging → one Production, so the cardinality boundary is D21's
-graduation boundary: experimentation multiplies, the engineering chain after it does not, and N leaves the
-promotion chain untouched. That decides where vending is automated: the structural accounts keep the
-console flow (D34); the Sandbox gets [Stage 14](plan/stages/stage-14-sandbox-vending.md). A stage writing
-"*the* Sandbox account" is writing a singleton assumption that has to be paid for later.
+**Cardinality cuts across all three groups** ([D35](plan/decisions/D35-sandbox-cardinality.md)): every
+account is structural — exactly one, forever — except `Sandbox`, which is one per business unit. The
+[Sandbox section](#sandbox-account) carries what follows from that, including where vending is
+automated. A stage writing "*the* Sandbox account" is writing a singleton assumption that has to be paid
+for later.
 
 In the table, `What it is` says what the account is for and `Policy set the OU carries` says what the OU
 constrains: two different questions, which is how an account can be high blast radius and carry a light

@@ -513,13 +513,15 @@ VPC_SLICES = {"foundation", "networking", "workloads"}
 # rather than authored in any slice - an address literal in a .tf file is a copy of this table
 # that nothing keeps in step (Lesson 14).
 #
-# The target admits both sources: Sandbox to `VPC-SharedServices` is the peering the Deliverables
-# measure and, since 6c step 3.1 re-homed it, INT-09 as well; Staging reaches `VPC-Networking` for
-# the proxy and nothing else. One target host exercises both sources, so the second costs one
-# instance rather than a second target.
+# The target has one source since 6c step 3.1. `production/probes` sits in `VPC-SharedServices`
+# (10.30) and `probe_peer_cidrs("production")` admits `10.20.0.0/16` and `10.31.0.0/16` - Sandbox,
+# which is both the peering the Deliverables measure and INT-09 since 3.1 re-homed it, and the hub
+# itself. Staging peers only with `VPC-Networking`, so it neither reaches this host nor is admitted
+# by it; `staging/probes` was written when it did, and its header says so.
 #
-# The hand-kept `PROBE_PEERS` table was deleted at 6c step 6.3, and it arrived as a timeout
-# rather than as a diff: the Sandbox peering probe could not reach the proxy at all, because
+# The hand-kept `PROBE_PEERS` table was deleted at 6c step 6.3, and the reading that forced it
+# arrived as a timeout rather than as a diff: the Sandbox peering probe could not reach the proxy
+# at all, because
 # pass 3 added `sandbox/foundation <-> production/networking` to `PEERINGS` and nothing added
 # `10.31.0.0/16` to the second table. One intent - which VPCs does this account reach - in two
 # tables, and only one of them moved (Lesson 33). A hand-kept table keyed by slice would have

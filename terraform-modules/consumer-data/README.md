@@ -8,22 +8,22 @@ pinning the module **by git tag** — and by every further business unit's Sandb
 passes 1. **The design lives here once; a slice says which account, never what.** That is why this
 index is in the module and not in the slices: two copies of one design drift on the first divergence.
 
-> **The derived zone and the enforced workgroup are gone** (2026-08-26,
+> **`v0.6.0` removed the derived zone and the enforced workgroup** (2026-08-26,
 > [D19 revised](../../docs/plan/decisions/D19-derived-zone.md)): the zone is re-homed onto the SMUS
 > project path (`awsds-<env>-smus-projects`, `terraform-modules/sagemaker-prereqs/`'s bucket), and the
 > persona's direct Athena path left `identity/sso/` in the same revision. The struck sections below are
-> the record of what the module built up to `consumer-data-v0.5.0`; `git log` and the tags carry the
+> the record of what the module built from `v0.1.0` to `v0.5.0`; `git log` and the tags carry the
 > code. `DL-8`/`DL-9` measure the **absence** of what they used to verify.
 
 What lands in **each** consumer account when this module applies:
 
 | Object | Name |
 |---|---|
-| the account's data CMK | `alias/awsds-<env>-data` — with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today: the sandbox lake's access role, in Sandbox alone; the copy in Staging is held empty) |
+| the account's data CMK | `alias/awsds-<env>-data` — since `v0.6.0` with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today: the sandbox lake's access role, in Sandbox alone; the copy in Staging is held empty) |
 | the account's own Lake Formation seat | `aws_lakeformation_data_lake_settings` — admins, `parameters`, the cleared create-defaults |
 | the shared lake, made addressable | 2 resource links (`raw`, `curated`) + 4 re-grants |
-| ~~the derived zone~~ | ~~`awsds-<env>-derived`~~ — **removed 2026-08-26** |
-| ~~the enforced query path~~ | ~~workgroup `awsds-<env>-athena`~~ — **removed 2026-08-26**; the query surface is the SMUS project workgroup |
+| ~~the derived zone~~ | ~~`awsds-<env>-derived`~~ — **removed at `v0.6.0`, 2026-08-26** |
+| ~~the enforced query path~~ | ~~workgroup `awsds-<env>-athena`~~ — **removed at `v0.6.0`, 2026-08-26**; the query surface is the SMUS project workgroup |
 
 ## The apply is two steps here as well, per account
 
@@ -102,7 +102,7 @@ these buckets under that key would put Production's job role over this account's
 | `Sid` | What it allows, and to whom |
 |---|---|
 | `EnableKeyAdministrationInThisAccount` | The account root, **administration only** — `Create*`, `Delete*`, `Put*`, `Describe*`, `Get*`, `List*`, `Enable*`/`Disable*`, `Revoke*`, `Tag`/`Untag`, `ScheduleKeyDeletion`, `CancelKeyDeletion`, `Update*` — and **no cryptographic action**: no `Encrypt`, `Decrypt`, `GenerateDataKey*`, `ReEncrypt*`. The module's default (and the lake key's first statement) grants root `kms:*`, which delegates *use* to whatever IAM policy happens to exist; that would leave D31 with nothing to enforce. The anti-lockout guarantee is intact and Terraform can still create, tag, re-policy and schedule deletion. What it does not close ([Lesson 18](../../docs/plan/lessons.md)): the administrator can call `kms:PutKeyPolicy`, so widening becomes an **edit with a diff** rather than a side effect of some other grant |
-| ~~`AllowDataScientistUseViaS3`~~ | **Removed 2026-08-26, and the removal is a tightening**: the statement granted the persona `Decrypt`/`GenerateDataKey` via S3 because the derived zone encrypted here and the persona read it (D31). With the zone re-homed onto the SMUS project path, the only bucket left under this key is the sandbox lake — reached **only** through vended, prefix-scoped access-role credentials — so keeping the statement would have granted a KMS-layer path around that vending door. Stage 5 step 9.3's "second element of `Principal`" extension point died unconsumed with it: a project role never needed this key |
+| ~~`AllowDataScientistUseViaS3`~~ | **Removed at `v0.6.0` (2026-08-26), and the removal is a tightening**: the statement granted the persona `Decrypt`/`GenerateDataKey` via S3 because the derived zone encrypted here and the persona read it (D31). With the zone re-homed onto the SMUS project path, the only bucket left under this key is the sandbox lake — reached **only** through vended, prefix-scoped access-role credentials — so keeping the statement would have granted a KMS-layer path around that vending door. Stage 5 step 9.3's "second element of `Principal`" extension point died unconsumed with it: a project role never needed this key |
 | *(caller-supplied)* `var.additional_data_key_policy_statements` | **The extension point above, delivered 2026-08-26 by the first caller that needed one.** KMS holds **one** policy per key, so a second reader can only arrive through the module; the input is `any`, defaults **empty**, and is `concat`ed after the two statements above. **Structure in the module, values in the slice** — the split `vpc-egress-v0.3.0` made for the DNS allow-list. The shape that arrived is a second **statement**, not the predicted second `Principal` element, because the new reader is not a human persona. **Anything passed here is a widening of D31 and belongs in the calling slice's own row.** Today exactly one caller passes anything: `sandbox/data/` adds `AllowSandboxLakeAccessRoleViaS3` — `awsds-sandbox-lake-access` with `Decrypt`/`GenerateDataKey`/`DescribeKey` under the same `kms:ViaService` pin, for [Stage 16](../../docs/plan/stages/stage-16-sandbox-lake.md)'s bucket. `development/data/` passes nothing and its plan across the bump must read **`No changes`** — that empty plan is the proof the default protected it |
 
 ## ~~`buckets.tf` — the derived zone~~ · ~~`athena.tf` — the enforced workgroup~~

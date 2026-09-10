@@ -291,9 +291,10 @@ data "aws_iam_policy_document" "data_scientist" {
 # environment a person can write to has stopped being evidence of what the pipeline actually
 # does.
 #
-# Assigned since Stage 6b step 4.6 (2026-09-06): locals.tf's `data-scientist-staging@staging` row
-# swapped this set in for `DataScientistAccess` when `Development` was renamed. It was written
-# before there was an account to assign it to, which is why six sets are written in code at all.
+# Assigned since Stage 6b (2026-09-06): step 2.1 swapped this set in for `DataScientistAccess` on
+# that account and 4.6 re-keyed the assignment's address, both recorded on locals.tf's
+# `data-scientist-staging@staging` row. It was written before there was an account to assign it
+# to, which is why six sets are written in code at all.
 #
 # Nothing is owed to this set. Stage 9 step 5.2 verifies it by reading - no Athena,
 # DenyEveryWrite intact, nothing added. The only thing still coming to this document is the

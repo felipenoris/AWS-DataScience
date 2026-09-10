@@ -53,7 +53,7 @@ variable "eip_allocation_id" {
 }
 
 variable "peer_cidr" {
-  description = "The client range, from the allocation table through the generated tfvars (step 4.2, Stage 3 decision 1). The host takes .1 of it. Nothing inside AWS ever sees this range - the instance SNATs (see the user data) - so its one job is not colliding with a home or cafe lan."
+  description = "The client range, from the allocation table through the generated tfvars (step 4.2, Stage 3 decision 1). The host takes .1 of it. Nothing inside AWS ever sees this range - the instance SNATs (see the user data) - so its one job is not colliding with a home or cafe LAN."
   type        = string
   nullable    = false
 
@@ -113,7 +113,7 @@ variable "peer_cidr_v6" {
 }
 
 variable "peers" {
-  description = "One entry per person per device, keyed by a name that reads in `wg show` output (e.g. \"felipe-laptop\"). Revoking a device is deleting one entry, which is the price D4 accepted when it turned down Identity Center integration - so the shape has to make that a one-line diff. A map and not A list, deliberately: `host` is authored per peer rather than derived from position, so removing an entry cannot renumber everybody else's tunnel address and silently invalidate their client configs."
+  description = "One entry per person per device, keyed by a name that reads in `wg show` output (e.g. \"felipe-laptop\"). Revoking a device is deleting one entry, which is the price D4 accepted when it turned down Identity Center integration - so the shape has to make that a one-line diff. A map and not a list, deliberately: `host` is authored per peer rather than derived from position, so removing an entry cannot renumber everybody else's tunnel address and silently invalidate their client configs."
   type = map(object({
     public_key = string
     host       = number
@@ -177,7 +177,7 @@ variable "no_masquerade_cidrs" {
 }
 
 variable "mtu" {
-  description = "The tunnel's MTU on the server side, and it governs one direction only: the size of what this host injects into the tunnel, which is the download direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. Why 1280 and not A larger 'correct' value: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits between paths; the floor trades against nobody. What it does not fix: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
+  description = "The tunnel's MTU on the server side, and it governs one direction only: the size of what this host injects into the tunnel, which is the download direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. Why 1280 and not a larger 'correct' value: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits between paths; the floor trades against nobody. What it does not fix: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
   type        = number
   default     = 1280
 

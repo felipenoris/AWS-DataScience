@@ -37,7 +37,7 @@ variable "endpoint_subnet_id" {
 }
 
 variable "endpoint_security_group_id" {
-  description = "foundation/'s endpoint SG (step 2.4) - tcp/443 from the VPC CIDR, attached to every interface endpoint here."
+  description = "foundation/'s endpoint SG (step 2.4) - TCP/443 from the VPC CIDR, attached to every interface endpoint here."
   type        = string
   nullable    = false
 }
@@ -122,7 +122,7 @@ variable "firewall_domain_redirection_action" {
 }
 
 variable "dns_firewall_allow_domains" {
-  description = "The allow-list, declared by the caller. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Since v0.4.0 the ALLOW rule trusts the redirection chain, so an entry is the name A tool queries and never a CNAME target - listing a hop is a widening, not a safety net."
+  description = "The allow-list, declared by the caller. Empty by default, and an empty list means the firewall creates no ALLOW rule at all - every lookup in the VPC returns NXDOMAIN. Since v0.4.0 the ALLOW rule trusts the redirection chain, so an entry is the name a tool queries and never a CNAME target - listing a hop is a widening, not a safety net."
   type        = list(string)
 
   # Empty by design, and the default is the policy. The list is not a property of the mechanism,

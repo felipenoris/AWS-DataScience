@@ -19,9 +19,9 @@
 #             ssm:GetParameter. This script never creates, updates or deletes anything.
 #
 # The lists read here are the proxy's, not the Route 53 Resolver DNS Firewall lists in the two
-# Interactive `egress/` slices: since D38 removed the last default route those carry only AWS's own
-# namespaces and this estate's private zones, and the egress policy lives whole in the proxy's
-# source-scoped allow-lists. Pointing this instrument at the resolver's lists would be Lesson 31 in
+# Interactive `egress/` slices: 6c step 5.1 removed the last default route (D38) and step 5.7 cut
+# those lists from sixty-three entries to ten - AWS's own namespaces and this estate's private
+# zones - leaving the egress policy whole in the proxy's source-scoped allow-lists. Pointing this instrument at the resolver's lists would be Lesson 31 in
 # the other direction - a check reading `pass` about a thing that stopped deciding anything.
 #
 # How the proxy's lists differ from the resolver's, before a row here is read against an old report:
@@ -31,8 +31,8 @@
 #      splits them because the resolver could only ever hold one filter.
 #   2. Squid matches the hostname that was requested and never evaluates a CNAME chain, so EXC-05's
 #      failure mode - a listed name blocked because a hop was not listed, with the log blaming the
-#      queried name - has no place to occur. `TRUST_REDIRECTION_DOMAIN` is a setting on a list
-#      that carries no CDN-fronted name.
+#      queried name - has no place to occur. `TRUST_REDIRECTION_DOMAIN`, the `vpc-egress-v0.4.0`
+#      repair, is now a setting on a list that carries no CDN-fronted name.
 #   3. The syntax is the other one. Route 53 needs `x` and `*.x` as two entries; Squid's `.x` covers
 #      both, and listing the apex beside it is fatal - `ERROR: '.x' is a subdomain of 'x'`, then
 #      `FATAL: Bungled`, a proxy that refuses to start. DN-2 decides it (Lesson 53).

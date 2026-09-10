@@ -62,8 +62,9 @@ OUT_NAME = "declarative-ec2.txt"
 #
 # name | the aws ec2 sub-command | the --query that isolates the value | expected (API spelling)
 #
-# The expected column is the document translated into what the API answers: change the
-# document and this list changes with it, where a reviewer will see the translation.
+# The expected column is the document translated into what the API answers. Nothing derives it,
+# so changing the document means changing this list with it - deliberately, because that is
+# where a reviewer sees the translation.
 ATTRS = [
     (
         "image_block_public_access",
