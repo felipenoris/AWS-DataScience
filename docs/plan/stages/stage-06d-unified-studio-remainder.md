@@ -169,6 +169,27 @@ is the one the environment will have. A denied name is a decision to take, not a
   `Pkg` (Julia) and R were **not run**, and the reading belongs in the **house** image, where Julia and R
   are image-delivered, so the step stands narrowed to those ecosystems. The sitting is
   [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md), 2026-09-08.
+- **3.1 closed for `uv` and Julia, 2026-09-10, in a space on the house image.** `uv` is
+  `/opt/conda/bin/uv` 0.12.5 (the base's, `images/base` section 3): `uv init` + `uv add pandas`
+  resolved and installed **5 packages in 1.56 s** once the six variables were exported — and failed
+  before that, which is the same reading 3.1 took on the stock image in another form. Julia 1.12.7
+  from the baked depot added `InterestRates` with its four dependencies and precompiled them in 4 s,
+  so `julia/packages.txt`'s shared depot serves a user's own `Pkg.add` as designed (the home depot is
+  first in the search path, the shared one second). **R was not run**, and the decision below moved
+  the ground under it: `r/conda-packages.txt` stays as it is (the user keeps conda for R), while the
+  Python half became an environment of its own.
+- **The image's Python layer was rewritten the same day, on the user's decision.** No package of ours
+  goes into the distribution's environment any more and its default kernel is untouched: uv builds a
+  **second, independent** environment under `/opt/awsds` on a uv-managed CPython, from
+  `images/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
+  kernel (`awsds-python`, *Python (awsds dev-env)*). The list is seeded to the distribution's own
+  library surface. Three measurements came out of writing it, all from `uv lock` on the laptop rather
+  than from a build: **TensorFlow has no wheel past `cp313`**, so it is absent while the interpreter
+  is 3.14; the default PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and
+  torchvision come from PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the
+  dependency is `xgboost-cpu`. The set went **4.7 GiB → about 0.9 GiB** of wheels on those two
+  changes. Nothing here is built yet — the rebuild is still owed, and it is the same one decision 8
+  owes.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
   result: `pip`, `uv`, `conda`, `Pkg` (Julia) and R. Read against the compute plane's list
   (`hub-anchors.tf`, `proxy_allow_sandbox`) before running, so a refusal is expected rather than

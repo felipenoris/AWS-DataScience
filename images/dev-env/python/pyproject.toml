@@ -1,0 +1,114 @@
+# The dev-env image's own Python environment - the one the "Python (awsds)" kernel runs.
+#
+# It is NOT the SageMaker Distribution's environment and never touches it. The base image's
+# interpreter, its packages and its default kernel are left exactly as the distribution ships them
+# (the user's decision, 2026-09-10): a space's Launcher offers two Python kernels, the distribution's
+# and this one, and only this one is ours to curate. The environment is built by uv, from this file,
+# on a uv-managed CPython under /opt/awsds - so nothing here is installed by conda.
+#
+# WHY A pyproject.toml AND NOT A requirements.txt. `uv sync` writes uv.lock beside this file: the
+# exact resolution, every package and every hash, for every platform the lock covers. That lock is
+# committed and is what the build installs, so two builds of one commit are the same environment -
+# which a requirements.txt of loose constraints cannot promise. It is also the shape the rest of this
+# repository already uses for its own tooling (the root pyproject.toml + uv.lock).
+#
+# HOW TO CHANGE THE PACKAGE SET, and it is two steps, never one:
+#
+#   1. edit `dependencies` below
+#   2. `uv lock --directory images/dev-env/python` and commit BOTH files
+#
+# A dependency added without re-locking is not installed: the build runs `uv sync --frozen`, which
+# refuses a lock that does not match this file rather than resolving something nobody reviewed.
+#
+# THE PYTHON VERSION IS THE NEWEST, and that has one measured cost. Resolved 2026-09-10 against
+# CPython 3.14: torch, torchvision, keras, xgboost, mlflow, ray, langchain, autogluon, fastapi and
+# the data stack all have wheels; **TensorFlow does not** - its newest release (2.21.0) publishes
+# cp310 through cp313 and stops. So TensorFlow is absent from the list below, and the whole of it is
+# what brings it back: lower `requires-python` to `>=3.13`, pin the same version in the Dockerfile's
+# PYTHON_VERSION, add `tensorflow` here, re-lock. Nothing else in this file changes.
+#
+# WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - JupyterLab itself, its
+# extensions, the Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor
+# extensions - belongs to the base environment, which runs the UI this kernel talks to. Installing a
+# second copy here would buy nothing and would make two JupyterLab versions answer the same question.
+# `ipykernel` is the one server-facing package this environment needs, and it is not optional: it is
+# how the kernel starts.
+#
+# THE COST OF THIS LIST IS THE IMAGE, and it was measured from the lock rather than guessed
+# (2026-09-10, summing the linux x86_64 / cp314 wheels the lock names): **about 0.9 GiB** of wheels -
+# 0.70 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
+# none. The first resolution of this same list was **4.7 GiB**, and the difference is entirely the two
+# CPU choices at the end of this file. A space pulls the whole image before it starts and that pull
+# crosses an account boundary (INT-01), so trimming is editing lines here and re-locking - cheaper
+# than discovering the size in a build. The heavy rows now are catboost, ray, llvmlite and pyarrow.
+
+[project]
+name = "awsds-dev-env"
+version = "0.1.0"
+description = "The Python environment behind the dev-env image's own Jupyter kernel."
+requires-python = ">=3.14"
+
+dependencies = [
+    # The kernel. Without it there is no "Python (awsds)" entry in the Launcher.
+    "ipykernel",
+    "ipywidgets",
+
+    # The data stack the distribution carries.
+    "numpy",
+    "pandas",
+    "scipy",
+    "pyarrow",
+    "scikit-learn",
+
+    # Plotting, as the distribution has it.
+    "matplotlib",
+    "seaborn",
+    "altair",
+
+    # AWS, in a notebook rather than in the server: boto3 for the plain API, s3fs for the
+    # pandas/pyarrow path, and the SageMaker SDKs - `sagemaker-studio` is the SMUS library that
+    # resolves a project's connections (docs/REFERENCES.md, the S3 Access Grants rows).
+    "boto3",
+    "s3fs",
+    "sagemaker",
+    "sagemaker-studio",
+
+    # The ML frameworks. TensorFlow is missing on purpose - see the header.
+    "torch",
+    "torchvision",
+    "keras",
+    # xgboost-cpu, not xgboost: the PyPI wheel of the latter depends on nvidia-nccl (241 MiB,
+    # measured 2026-09-10) for GPU training this image cannot do. Same import name.
+    "xgboost-cpu",
+    "mlflow",
+    "ray",
+    "autogluon",
+
+    # LangChain, with the two integrations the distribution names.
+    "langchain",
+    "langchain-openai",
+    "langchain-aws",
+
+    # The web and database odds the distribution ships, kept because a notebook does use them.
+    "fastapi",
+    "uvicorn",
+    "pyhive",
+]
+
+# torch and torchvision come from PyTorch's CPU index, not from PyPI's default wheel.
+#
+# Measured 2026-09-10: the default wheel depends on the CUDA runtime, and locking it pulled 17
+# `nvidia-*` packages, 3.03 GiB of them, into an image whose base is `sagemaker-distribution:<v>-cpu`
+# and whose spaces run `ml.t3`/`ml.m5`. That is a GPU stack nothing here can use.
+#
+# The flavour axis is where a GPU build belongs (docs/SMUS.md, the tag rule): a `gpu-` image
+# descends from the `-gpu` distribution and would point these two rows at the CUDA index instead.
+# `explicit = true` keeps every other package on PyPI - only the two named below are taken from here.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
