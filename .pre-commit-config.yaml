@@ -15,6 +15,11 @@ repos:
       - id: trailing-whitespace
       - id: check-merge-conflict
       - id: check-added-large-files
+        # The one file over 500 KB that belongs in git: images/dev-env/python/uv.lock, ~900 KB of
+        # resolved hashes for 363 packages. It is the reproducibility of the image's Python
+        # environment - the thing `uv sync --frozen` refuses to build without - so it is admitted by
+        # name rather than by raising the limit for everything.
+        exclude: ^images/dev-env/python/uv\.lock$
       # D36 puts the internal CA's root private key inside a Terraform state file. State is
       # gitignored (6.2), but this is the cheap second net for a key that arrives some other
       # way - a scratch .pem, a copied output, a paste into a .tf.

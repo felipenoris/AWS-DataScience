@@ -58,13 +58,62 @@ USER root
 
 # ------------------------------------------------------------------------------ 1. Python
 #
-# On top of the distribution's stack, never re-stating it - python/requirements.txt says why
-# it is empty today. `--requirement` on an all-comment file is a no-op, which is the point:
-# the seam exists before it has content.
-COPY python/requirements.txt /tmp/awsds-requirements.txt
+# A second Python, complete and separate, with its own kernel in the Launcher. The
+# distribution's environment is left exactly as it ships (the user's decision, 2026-09-10): no
+# package of ours goes into it, its `python3` kernelspec is not touched, and nothing of ours
+# joins PATH ahead of its interpreter. A space therefore offers two Python kernels, and only
+# the second one is ours to curate.
+#
+# uv owns this environment end to end: it installs the interpreter (a managed CPython under
+# /opt/awsds/python, not conda's) and resolves the packages from python/pyproject.toml through
+# the committed python/uv.lock. `--frozen` is what makes the lock load-bearing - it refuses a
+# lock that disagrees with the pyproject rather than resolving something nobody reviewed, so a
+# dependency added without `uv lock` fails the build instead of arriving unreviewed.
+#
+# UV_PYTHON_DOWNLOADS is `never` in the base image, by decision, so that a user's `uv run`
+# cannot silently pull an interpreter that is not the distribution's. This one command lifts
+# it - the base's own comment names that escape hatch - and the download happens at build time,
+# on the build plane, never in a space.
+#
+# Under design B the index is switched at build time, not here:
+# `--build-arg UV_DEFAULT_INDEX=<the CodeArtifact pypi URL>` and no line of pyproject.toml
+# changes. The lock's hashes stay valid; CodeArtifact serves the same artifacts.
+ARG PYTHON_VERSION=3.14
+ARG UV_DEFAULT_INDEX=""
+
+ENV AWSDS_PYTHON_ENV=/opt/awsds/venv \
+    AWSDS_PYTHON_HOME=/opt/awsds/python
+
+COPY python/pyproject.toml python/uv.lock /opt/awsds/python-project/
+
 RUN set -eu; \
-    pip install --no-cache-dir --requirement /tmp/awsds-requirements.txt; \
-    rm -f /tmp/awsds-requirements.txt
+    command -v uv >/dev/null 2>&1 \
+      || { echo "FATAL: no uv on PATH. The base image installs it (images/base section 3)." >&2; exit 1; }; \
+    echo "== uv $(uv --version), asking for CPython ${PYTHON_VERSION}"; \
+    export UV_PYTHON_DOWNLOADS=automatic; \
+    export UV_PYTHON_INSTALL_DIR="${AWSDS_PYTHON_HOME}"; \
+    export UV_PROJECT_ENVIRONMENT="${AWSDS_PYTHON_ENV}"; \
+    if [ -n "${UV_DEFAULT_INDEX}" ]; then export UV_DEFAULT_INDEX; else unset UV_DEFAULT_INDEX; fi; \
+    uv python install "${PYTHON_VERSION}"; \
+    cd /opt/awsds/python-project; \
+    uv sync --frozen --no-dev --python "${PYTHON_VERSION}"; \
+    "${AWSDS_PYTHON_ENV}/bin/python" -m ipykernel install \
+      --prefix=/opt/conda --name awsds-python --display-name "Python (awsds dev-env)"; \
+    spec=/opt/conda/share/jupyter/kernels/awsds-python/kernel.json; \
+    test -f "${spec}" \
+      || { echo "FATAL: ipykernel wrote no kernelspec where the distribution's jupyter reads." >&2; exit 1; }; \
+    grep -q "${AWSDS_PYTHON_ENV}/bin/python" "${spec}" \
+      || { echo "FATAL: the kernelspec names an interpreter other than this environment's:" >&2; \
+           cat "${spec}" >&2; exit 1; }; \
+    if grep -rq "${AWSDS_PYTHON_ENV}" /opt/conda/share/jupyter/kernels --exclude-dir=awsds-python; then \
+      echo "FATAL: a kernelspec that is not ours now names this environment." >&2; \
+      echo "  The distribution's kernels are left as they ship - read section 1's comment." >&2; \
+      exit 1; \
+    fi; \
+    echo "== kernels the distribution's jupyter will offer:"; \
+    ls /opt/conda/share/jupyter/kernels; \
+    "${AWSDS_PYTHON_ENV}/bin/python" -c 'import sys; print("== awsds python", sys.version)'; \
+    chmod -R a+rX /opt/awsds /opt/conda/share/jupyter/kernels/awsds-python
 
 # --------------------------------------------------------------------------------- 2. Julia
 #
@@ -116,6 +165,10 @@ RUN set -eu; \
     done; \
     ls -d /opt/conda/share/jupyter/kernels/julia-* >/dev/null 2>&1 \
       || { echo "FATAL: IJulia installed no kernelspec the shared prefix can see." >&2; exit 1; }; \
+    grep -q "${JULIA_PROJECT}" /opt/conda/share/jupyter/kernels/julia-*/kernel.json \
+      || { echo "FATAL: the Julia kernelspec does not name the project this build resolved." >&2; \
+           echo "  A kernel on the default environment would ignore julia/packages.txt." >&2; \
+           cat /opt/conda/share/jupyter/kernels/julia-*/kernel.json >&2; exit 1; }; \
     rm -f /tmp/awsds-julia-packages.txt; \
     chmod -R a+rX "${JULIA_SHARED_DEPOT}" "${JULIA_ROOT}" /opt/conda/share/jupyter/kernels
 
@@ -176,7 +229,8 @@ RUN set -eu; \
 # step 1.2's smoke test has an in-image equivalent to assert against.
 RUN set -eu; \
     { echo "base image      : ${BASE_IMAGE}:${BASE_TAG}"; \
-      echo "python          : $(python --version 2>&1)"; \
+      echo "python (base)   : $(python --version 2>&1)"; \
+      echo "python (awsds)  : $(${AWSDS_PYTHON_ENV}/bin/python --version 2>&1) at ${AWSDS_PYTHON_ENV}"; \
       echo "uv              : $(uv --version)"; \
       echo "julia           : $(julia --version)"; \
       echo "R               : $(/opt/conda/envs/r/bin/R --version | head -1)"; \

@@ -125,16 +125,22 @@ flavour comes first and the trigger that turns a flavour into a repository of it
 
 ## The editable surface
 
-It is not the `Dockerfile`s. The package sets are plain text files, because the data scientist owns them
-(`docs/ORGANIZATION.md`, *Dev Env Steward*) and a merge request against a list is reviewable in a way one
-against a `RUN` line is not:
+It is not the `Dockerfile`s. The package sets are files a person edits, because the data scientist owns
+them (`docs/ORGANIZATION.md`, *Dev Env Steward*) and a merge request against a list is reviewable in a
+way one against a `RUN` line is not:
 
 | File | Ecosystem | CodeArtifact covers it? |
 |---|---|---|
-| [`dev-env/python/requirements.txt`](dev-env/python/requirements.txt) | Python, **on top of** the distribution's stack | Yes (`pypi`) — so this file is the *ad-hoc* path's backstop, not its only one |
+| [`dev-env/python/pyproject.toml`](dev-env/python/pyproject.toml) + its `uv.lock` | Python, in **an environment of its own** — not the distribution's | Yes (`pypi`) — so this file is the *ad-hoc* path's backstop, not its only one |
 | [`dev-env/julia/packages.txt`](dev-env/julia/packages.txt) | Julia | **No** — under design B this image is the only path |
 | [`dev-env/r/conda-packages.txt`](dev-env/r/conda-packages.txt) | R (conda-forge) | **No** — same |
 | — | Rust | Yes (`crates`) — the toolchain is baked, the crates are not |
+
+**The Python row is edited in two steps, never one** (2026-09-10): change `dependencies` in the
+`pyproject.toml`, then `uv lock --directory images/dev-env/python`, and commit both files. The build
+runs `uv sync --frozen`, which refuses a lock that disagrees with the project rather than resolving
+something nobody reviewed — so a package added without re-locking fails the build instead of arriving
+unreviewed. The lock is also what makes two builds of one commit the same environment.
 
 **For two of those rows the merge request review is the only control there is.** Measured 2026-08-22,
 when Stage 6a step 5.0 pushed the first images: ECR's scan read `base` and `dev-env` to identical

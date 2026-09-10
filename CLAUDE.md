@@ -226,20 +226,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
   Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
-- **Stage 6d is in progress.** Step 9 and most of 3 and 8 done 2026-09-08; step 4 exercised
-  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision due 6 taken 2026-09-09. **Step 2 done 2026-09-10
-  but for 2.4 and the rebuild**: `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`
-  v1 on `default-v0.1.1`, attached by a hand `update-domain` (only the two entries moved), and
-  JupyterLab and Code Editor both started on it — a SMUS space reads `DefaultUserSettings`,
-  `DefaultSpaceSettings` empty as the control. INT-01/INT-17 closed: the image role reads the
-  repository **by tag** at registration, the project role **by digest** at start.
-  **`ContainerEnvironmentVariables` caps each value at 256 characters** against a `NO_PROXY` of
-  ~2,300, so the app image configs carry no environment: **decision 8 put the six variables in
-  `images/dev-env/Dockerfile` as `ENV`**, the list a dated literal (50 entries, sha256 `856bc57bb…`)
-  beside its refresh command, plus the apt and sudoers files; the image is shaped by one VPC's
-  endpoint list and `./aws/devenv.py` reads the divergence. Owed: **the rebuild**; 2.4; 3.1's
-  `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed unasked; step 6; and
-  7.3-7.9, which wait on decision due 4.
+- **Stage 6d is in progress.** Steps 9, 3 and 8 mostly done 2026-09-08; step 4 exercised
+  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision 6 taken 2026-09-09. **Step 2 done 2026-09-10
+  but for 2.4 and the rebuild**: `sandbox/dev-env/` (rank 49) registers
+  `awsds-sandbox-dev-env` v1 on `default-v0.1.1`, attached by a hand `update-domain`, and JupyterLab
+  and Code Editor both started on it — a SMUS space reads `DefaultUserSettings`. INT-01/INT-17
+  closed: the image role reads the repository **by tag** at registration, the project role **by
+  digest** at start. **The app image config caps each env value at 256 characters** against a
+  `NO_PROXY` of ~2,300, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`,
+  the list a dated literal (50 entries, sha256 `856bc57bb…`) with its refresh command;
+  `./aws/devenv.py` reads the drift. **The image's Python is a second environment (2026-09-10)**:
+  the distribution's env and default kernel untouched, uv builds `/opt/awsds/venv` on a uv-managed
+  CPython from `python/pyproject.toml` + a committed `uv.lock`, own Launcher kernel; R stays
+  on conda. Locked, not built: no TensorFlow wheel past `cp313`; the default `torch`
+  drags 3.03 GiB of `nvidia-*` into a CPU image (hence the PyTorch CPU index and `xgboost-cpu`;
+  4.7 → ~0.9 GiB). `uv` and Julia work in a space (3.1). Owed: **the rebuild**; 2.4;
+  1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; and 7.3-7.9,
+  which wait on decision 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
   sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →
@@ -263,10 +266,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   refusal over https reads `000` at the client. A missing plane name can fail without a `403`: the
   second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
   `ENOTFOUND` comes from a compute VPC.
-- **9.5/9.6 closed 2026-09-08**: `default-v0.1.1` pushed to both repositories, 196 requests, 4.67 GiB,
-  plane matched by CIDR. `conda.anaconda.org` (155 requests, 368 MiB) was on no allow-list, so the old
-  list would have refused the build a minute after the pull. A rebuild is the same recipe and not
-  byte-reproducible.
+- **9.5/9.6 closed 2026-09-08**: `default-v0.1.1` pushed to both repositories, 196 requests,
+  4.67 GiB, plane matched by CIDR. `conda.anaconda.org` (155 requests) was on no allow-list, so the
+  old list would have refused the build. A rebuild is the same recipe and not byte-reproducible.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: 8 of 29 names are not derivable and a
   gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named in both spellings. 8.8 fixed
   2026-09-09 (`vpc-egress-v0.11.1`, applied on `sandbox/egress`, 28 → 50 entries): `no-proxy.tf` reads
@@ -277,15 +279,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   three `egress/` slices are `[E]` and down; they take v0.11.1 on their next `make up`. The first
   question about a `403` is whether the name has an endpoint. `streaming-logs` has never appeared in the
   proxy log: that entry is unexercised.
-- **Inside a space** (6d steps 3 and 8): the proxy works with the variables exported by hand; `sudo`
-  strips them (`apt` needs `-o Acquire::http::Proxy`); the VS Code server never had them. The Code Editor
-  client honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting. `open-vsx.org` serves
-  the API (`200`, on the plane); `openvsx.eclipsecontent.org` serves the `.vsix` bytes (`403`, not on the
-  plane). Repair: deliver the environment to the `codeeditorserver` supervisord program and add that
-  name. `alpine-arm64` is the registry's detection when no platform is named, a second defect for
-  target-platform-specific extensions. A space started while `sandbox/egress` is down hangs at "IDE
-  configuration in progress". `conda` and CRAN are not on the compute plane (3.1); Portal Query Editors
-  has no endpoint in any VPC (3.6).
+- **Inside a space** (6d steps 3 and 8): on an image built before 2026-09-10 the variables are
+  exported by hand and `sudo` strips them (`apt` needs `-o Acquire::http::Proxy`); the Code Editor
+  client honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting, so the repair is the
+  environment on the `codeeditorserver` supervisord program. `open-vsx.org` serves the API,
+  `openvsx.eclipsecontent.org` the `.vsix` bytes; `alpine-arm64` is the registry's detection when no
+  platform is named. A space started while `sandbox/egress` is down hangs at "IDE configuration in
+  progress". `conda` and CRAN are not on the compute plane (3.1); Portal Query Editors has no endpoint
+  in any VPC (3.6).
 - **6d step 4, MWAA Serverless** (measured 2026-09-09/10). One workflow, `READY`, `manual_only`; every
   run is two attempts, so read the task's `DurationInSeconds`, never the run's. The surface needs
   nothing: 6a's eleven configurations unchanged, no `Workflows` blueprint. It runs as the project role
