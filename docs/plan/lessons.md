@@ -1280,6 +1280,26 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     **Before swapping the source of a value, list what else reads it and ask when each of those
     needs an answer.**
 
+60. **A full-replace update API turns every field you did not pass into a deletion — and the object's
+    creator may have injected state that no field of that API can restore.** Stage 6d, 2026-09-10.
+    `mwaa-serverless update-workflow` was called with three of its eight fields, to change one line of a
+    workflow's definition. It **dropped the `NetworkConfiguration`** — the two subnets and the security
+    group that had put the workers in the private tier since the day the workflow was made — and
+    replaced the logging configuration with a service default, orphaning a log group. Both were
+    recoverable by re-passing them; a third loss was not. The workflow had been created **by the
+    portal**, which injects the domain and project into the worker's environment, and the API update
+    severed that: the next run died on `Project ID not found in environment`, with no field in
+    `update-workflow` to put it back. It had to be re-expressed inside the definition instead.
+    **The tell was an ABSENCE and it needed a negative control to read**: the task failed in seven
+    seconds with **no event in CloudTrail at all**, where the same failure a fortnight earlier appears
+    twice — and the trail was proven current by finding the operator's *own* calls in the same window.
+    A failure that reaches no API is a failure *before* the API, which is where a dropped network
+    configuration lives.
+    **Two habits follow.** Read the whole input skeleton before calling any `update-*`, and pass every
+    field the object currently has — `--generate-cli-skeleton` beside a `get-*` is the diff. And treat
+    an object authored by a console or a portal as **jointly owned**: the API is not the same surface,
+    and the part you cannot see is the part it will not give back.
+
 ---
 
 ## What AWS does that its documentation does not say

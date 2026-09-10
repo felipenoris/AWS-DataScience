@@ -290,6 +290,35 @@ verification (i), pulled forward because Stage 10's design now depends on it.
     exercises a dependency, which is what a promotion lint is mostly about), 4.3's run of the definition
     through D28's lint, and 4.5's rules — now including *reject an empty `compute`*.
   *The original step follows:*
+- **THE `compute: {}` FIX WAS APPLIED AND THE WORKFLOW RE-RUN THREE TIMES, 2026-09-10 (authorized in
+  chat). THE FIX IS CORRECT AND COMPLETE, AND THE WORKFLOW STILL CANNOT RUN.** With
+  `instance_type: ml.m5.large` and `volume_size_in_gb: 30`, the third run reached `CreateTrainingJob`
+  and was refused **by the same boundary, with the same wording, on the same role**. The fix satisfies
+  the only one of the boundary's five conditions the definition can express.
+  - **FOUR OF THE FIVE ARE NOT EXPRESSIBLE ANYWHERE IN A WORKFLOW DEFINITION.** `compute` accepts
+    `instance_type`, `volume_size_in_gb` and `image_details` — nothing else. Two independent sources,
+    and the decisive one is the code: `SageMakerNotebookOperator` delegates to
+    `SageMakerNotebookHook.start_notebook_execution()`, whose whole contract is `domain_id`,
+    `project_id`, `domain_region`, `input_config`, `output_config`, `compute`, `termination_condition`,
+    `tags`, `execution_name`, `waiter_*`. **No `VpcConfig`, no `NetworkIsolation`, no `VolumeKmsKey`, no
+    `InterContainerTrafficEncryption` — the operator has nowhere to put them.** So `VpcSubnets` stays
+    null and the other three stay unset whatever the YAML says.
+  - **WHICH MEANS THE REFUSAL IS ATTRIBUTABLE TO NO SINGLE STATEMENT (Lesson 20, in its pure form).**
+    With the ceiling satisfied, **four** denies match the same call simultaneously —
+    `DenySageMakerJobsOffVpc`, `…WithoutNetworkIsolation`, `…WithoutInterContainerEncryption`,
+    `…WithoutVolumeEncryption` — and AWS names the **policy**, never the statement. Separating them
+    would need four contrast probes against a boundary nobody wants to amend four times.
+  - **SO THIS IS A DECISION, NOT A DEFECT**, and it is the user's: (a) amend the boundary for this path
+    — scope the four denies so the `AmazonMWAAServerless` session is out of them, which is a real
+    widening of D13's compute perimeter; (b) **do not use the portal's notebook operator** — orchestrate
+    from Stage 10's own DAGs with an operator this repository controls, which can pass a full
+    `VpcConfig`, and treat *Workflows → notebook task* as a portal feature this estate does not offer;
+    or (c) record the loss. **Recommended: (b)** — it keeps the boundary intact, and Stage 10 was
+    already going to author its own DAGs.
+  - **AND ONE THING THE SERVICE SAYS ON EVERY UPDATE**: `Warnings: ["ignored attributes:
+    is_paused_upon_creation"]`. That half-settles the observation held back on 2026-09-09 — the
+    definition's pause key is **ignored**, so it is not what produced the `scheduled__…` run id.
+  *The original step follows:*
 - **4.1 — [user reads, Claude records] Find what enables the surface** — the vendor pages narrow it
   (read 2026-09-07): the **`Workflows` blueprint creates a provisioned MWAA environment**, the shape D7
   amended away, so enabling it is the *wrong* act; the user guide says SMUS *"supports serverless
