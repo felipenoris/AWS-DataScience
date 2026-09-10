@@ -1,7 +1,7 @@
 # Decisions — index
 
-D1-D38, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both of
-which keep their files, because the record of what was tried is the point. Read this table first; open a decision file only when you need its
+D1-D38, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both
+keeping their files. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
 | # | Decision | In one line | Stages |
@@ -10,7 +10,7 @@ reasoning, its consequences or its revision trigger.
 | [D2](D02-control-tower.md) | Control Tower vs. plain Organizations | Control Tower rather than plain Organizations; AWS Config is the price of it. | — |
 | [D3](D03-terraform-state.md) | Terraform state location | Terraform state in a per-account S3 bucket with native S3 locking; no DynamoDB, nothing in Management. | S2 |
 | [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on the smallest burstable instance, layer `[D]`; Client VPN documented as the managed alternative. Amended 2026-08-20: **amd64 `t3.nano`**, not the `t4g.nano` decided. | S4 |
-| [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs for the SageMaker COMPUTE (re-scoped 2026-08-25: never the client's machine), behind a switch and compared: (A) NAT plus a small allowlist, (B) internet fully blocked — either way behind the institution's single egress + HTTP/HTTPS proxy. | S3, S6, S8, S11 |
+| [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs for the SageMaker **compute** (re-scoped 2026-08-25: never the client's machine), behind a switch and compared: (A) NAT plus a small allowlist, (B) internet fully blocked — either way behind the institution's single egress + HTTP/HTTPS proxy. | S3, S6, S8, S11 |
 | [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, IAM Access Analyzer checks the others instead of adding to them — and since 2026-08-25 the egress-control leg is two planes: D5 on the compute, VPN + single proxied egress (+ endpoint DLP on institution laptops) on the client. | S1b, S11, S12 |
 | [D7](D07-orchestration.md) | Workflow orchestration in production | Two orchestrators built and compared: (A) MWAA Serverless, (B) EventBridge Scheduler + Step Functions. | S10 |
 | [D8](D08-gitlab-hosting.md) | GitLab hosting | GitLab CE self-managed on EC2 in Production, layer `[D]` — stopped between sessions, not destroyed. | S7, S8 |
@@ -18,7 +18,7 @@ reasoning, its consequences or its revision trigger.
 | [D10](D10-identity-center-delegation.md) | Identity Center administration | Identity Center administration delegated to a dedicated Identity account, so Terraform never holds Management credentials. | S1b, S2 |
 | [D11](D11-lab-lifecycle.md) | Lifecycle of the lab | Resources are ephemeral, accounts are not: pay nothing while idle, in three layers. | S1b, S2 |
 | [D12](D12-budget-ceiling.md) | Budget ceiling | USD 50/month ceiling; it is what rules out always-on GitLab and forces stop/start. | S1a, S1b, S6, S7 |
-| [D13](D13-lake-formation-enforcement.md) | How Lake Formation is actually enforced | Execution roles get NO direct S3 access to Lake Formation-registered prefixes, or every filter is decoration. | S5, S6, S11 |
+| [D13](D13-lake-formation-enforcement.md) | How Lake Formation is actually enforced | Execution roles get no direct S3 access to Lake Formation-registered prefixes, or every filter is decoration. | S5, S6, S11 |
 | [D14](D14-supply-chain-account.md) | Where GitLab, Runners, ECR and CodeArtifact live | GitLab, Runners, ECR and CodeArtifact live in Production, not next to the people the gate gates. | S1a, S1b, S3, S6, S7, S8, S9 |
 | [D15](D15-tls-internal.md) | TLS and naming for internal endpoints | **Revised 2026-08-09 into two phases.** Before Stage 13: private hosted zones (`*.internal`) plus an **internal CA** whose root is distributed to the laptop, the `dev-env` image and the runners (INT-19); no registered domain, no public zone, no split-horizon. At Stage 13: the public domain and public ACM, for the tier that is actually public. **The domain name is needed from the user at Stage 13, not before.** | S1b, S3, S7, S13 |
 | [D16](D16-break-glass.md) | Break-glass access | Break-glass is the Management account root and nothing else; every compensating control is detective. | S1a, S1b, S1c, S1d, S4 |
@@ -26,7 +26,7 @@ reasoning, its consequences or its revision trigger.
 | [D18](D18-data-scientist-access.md) | Data scientist access outside the Interactive OU | Outside the Interactive OU the data scientist gets the data plane, no compute, no control plane; writes only to enumerated prefixes. | S1b, S3, S5, S9 |
 | [D19](D19-derived-zone.md) | The derived zone — what Lake Formation does *not* do (extends D13) | The copy is not prevented; the destination is managed and the perimeter contains it. **Re-homed 2026-08-26**: the destination is the SMUS project path, the read-control CMK is the project CMK, `awsds-<env>-derived` removed. | S1b, S5, S11 |
 | [D20](D20-staging-account.md) | The Staging account | A Staging account in a `Workloads` OU: a deployment target with sampled data, no domain, no registry of its own. | S1a, S1b, S3, S7, S8, S9, S10 |
-| [D21](D21-development-account.md) | The Development account, and where experimentation ends — **SUPERSEDED 2026-09-05 by its own larger branch: the account becomes `Staging` and the chain is Sandbox → Staging → Production** | A Development account: Sandbox becomes pure experimentation and the promotion chain starts in Development. **Re-examined 2026-08-13 and held**, and it is now **two** questions: whether Development needs an *interactive* surface turns on one named test — is there anything a person must do next to Development's data that they cannot do next to Sandbox's? — **askable since 2026-08-19** (Stage 5's grants are applied and identical in both consumers; the answer waits on pass 4d's first behavioural queries, noted in the file); whether Development should be the chain's *origin* turns on who carries the code convergence, and that half is **settled inside the file**: the funnel is a GitLab group, not an account, so `Sandbox → Staging` is defensible even with N > 1 provided a shared repository namespace exists first. | S1a, S1b, S3, S6, S8, S10 |
+| [D21](D21-development-account.md) | The Development account, and where experimentation ends — **superseded 2026-09-05 by its own larger branch: the account becomes `Staging` and the chain is Sandbox → Staging → Production** | A Development account: Sandbox becomes pure experimentation and the promotion chain starts in Development. **Re-examined 2026-08-13 and held**, as two questions: whether Development needs an *interactive* surface turns on one named test — is there anything a person must do next to Development's data that they cannot do next to Sandbox's? — **askable since 2026-08-19** (Stage 5's grants are applied and identical in both consumers; the answer waits on pass 4d's first behavioural queries, noted in the file); whether Development should be the chain's *origin* turns on who carries the code convergence, and that half is **settled inside the file**: the funnel is a GitLab group, not an account, so `Sandbox → Staging` is defensible even with N > 1 provided a shared repository namespace exists first. | S1a, S1b, S3, S6, S8, S10 |
 | [D22](D22-data-governance-account.md) | The Data Governance account — state separated from compute | The governed lake moves to a dedicated Data Governance account; every environment reaches it through Lake Formation shares. | S1a, S1b, S3, S5, S9, S11 |
 | [D23](D23-ou-structure.md) | OU structure — the account is the isolation boundary, the OU is the… | Six OUs plus one nested (`Identity` split out of `Security`, `Sandboxes` under `Interactive`, both by execution on 2026-08-09); the account isolates, the OU attaches policy. | S1a, S1c, S1d, S2, S14 |
 | [D24](D24-shared-filesystem.md) | Where the shared filesystem lives, now that there are two Studio do… | **Withdrawn (2026-08-17)** — the NFS requirement left `objectives.md`; no shared filesystem anywhere, the exchange is S3 and git. | — |
@@ -47,9 +47,9 @@ reasoning, its consequences or its revision trigger.
 
 ---
 
-**All of them are settled.** **Amended 2026-09-05** by the 6b/6c re-scope, each in place with a dated
+**Amended 2026-09-05** by the 6b/6c re-scope, each in place with a dated
 line: D4, D5, D6, D7, D9, D11, D12, D14, D15, D17, D18, D19, D20, D22, D23, D26, D35, D36 — plus D21
-superseded and D38 written. **D38 amended again on 2026-09-08** (§6): the BUILD plane is `open`, not an
+superseded and D38 written. **D38 amended again on 2026-09-08** (§6): the build plane is `open`, not an
 allow-list — the restriction belongs to the compute, and a build host's control is the reviewed Dockerfile.
 A decision is normally revisited only through its own *revision trigger*;
 when one is revisited — for whatever reason — edit its file in place and add a line to

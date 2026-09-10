@@ -1,9 +1,9 @@
 # D14 — Where GitLab, Runners, ECR and CodeArtifact live
 
 **Status:** Decided (2026-08-07): **the Production account**. **Revised 2026-08-09** — the decision stands,
-its cost basis does not: see *What changed on 2026-08-09*.
+its cost basis does not: see *The rejection's cost basis*.
 
-**AMENDED 2026-09-05:** the placement stands and **widens** — Production now also carries the estate's network platform, as three VPCs: `VPC-SharedServices` (GitLab, Pages, runners, the build host), `VPC-Networking` (the only internet gateway, the proxy, the VPN endpoint) and `VPC-Workloads` (the production runtime). This is a quota-forced compromise, not a pattern: a VPC is not an isolation boundary (Lesson 2), and [D38](D38-single-egress-hub.md) carries the trigger that moves the first two into a `shared` platform account when a slot frees. What the split buys back immediately is trigger (c)'s substance — an Interactive account no longer reaches the runtime VPC.
+**Amended 2026-09-05:** the placement stands and widens — Production now also carries the estate's network platform, as three VPCs: `VPC-SharedServices` (GitLab, Pages, runners, the build host), `VPC-Networking` (the only internet gateway, the proxy, the VPN endpoint) and `VPC-Workloads` (the production runtime). This is a quota-forced compromise, not a pattern: a VPC is not an isolation boundary (Lesson 2), and [D38](D38-single-egress-hub.md) carries the trigger that moves the first two into a `shared` platform account when a slot frees. What the split buys back immediately is trigger (c)'s substance — an Interactive account no longer reaches the runtime VPC.
 
 **In one line:** GitLab, Runners, ECR and CodeArtifact live in Production, not next to the people the gate gates.
 
@@ -19,9 +19,9 @@ These four are the software supply chain. In the Sandbox account they would sit 
 
 ---
 
-## What changed on 2026-08-09 — the rejection's cost basis
+## The rejection's cost basis
 
-**The decision is unchanged. What is rewritten here is *why* the alternative stays rejected**, because the
+The decision is unchanged; why the alternative stays rejected is rewritten here, because the
 original reason has gone stale in the direction that flatters it (Lesson 7). The sentence above —
 "costs no extra account" — carried two distinct claims that have since separated:
 
@@ -36,10 +36,10 @@ original reason has gone stale in the direction that flatters it (Lesson 7). The
   `Staging` already deferred for it (Stage 1a) — are the two live reasons. **Neither is a security
   argument**, and this decision should not be quoted as if it were one.
 
-## What the rejection actually costs, stated in full
+## What the rejection costs
 
-The original text names one consequence — no boundary between build and runtime. There are three more,
-and they are recorded here so the price is visible when the revision trigger fires:
+The original text names one consequence — no boundary between build and runtime. The rest are
+recorded here so the price is visible when the revision trigger fires:
 
 1. **The trust hierarchy is inverted.** The supply chain is the highest-privilege system in the
    organization: it deploys into Development, Staging *and* Production. Housing it inside one of its own
@@ -52,15 +52,15 @@ and they are recorded here so the price is visible when the revision trigger fir
    written around an exception, and `Staging` — which needs no exception — inherits the looser set.
 3. **Production is reachable from the Interactive accounts, and would otherwise not be.**
    [Stage 3 step 6](../stages/stage-03-networking.md) states that the Sandbox↔Production and
-   Development↔Production peerings exist **for one reason: reaching GitLab**. In a separate account both
+   Development↔Production peerings exist for one reason: reaching GitLab. In a separate account both
    peerings point at that account instead and **Production accepts none** — a verifiable property of the
    perimeter rather than an intention (Lesson 5). This is the single largest thing the rejection buys away.
 
-Also note the framing trap this decision sits next to (Lesson 10): ECR and CodeArtifact are a **registry**,
+The framing trap this decision sits next to (Lesson 10): ECR and CodeArtifact are a **registry**,
 consumed by every account. Their placement follows the supply chain here for the reason above, not because
 they belong to a runtime.
 
-**How much of the loss is real in this lab, honestly.** One human is administrator on every account, so the
+**How much of the loss is real in this lab.** One human is administrator on every account, so the
 account boundary separates the *software*, not the operator — the inverse of Lesson 2. The property this
 project actually has to demonstrate — *the people the approval gate gates cannot modify the gate* — is
 already obtained by moving the chain out of `Sandbox`, which is what this decision does. What a separate
