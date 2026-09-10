@@ -19,7 +19,7 @@ What lands in **each** consumer account when this module applies:
 
 | Object | Name |
 |---|---|
-| the account's data CMK | `alias/awsds-<env>-data` — with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today: the sandbox lake's access role, in Sandbox alone; Development's key is held empty) |
+| the account's data CMK | `alias/awsds-<env>-data` — with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today: the sandbox lake's access role, in Sandbox alone; the copy in Staging is held empty) |
 | the account's own Lake Formation seat | `aws_lakeformation_data_lake_settings` — admins, `parameters`, the cleared create-defaults |
 | the shared lake, made addressable | 2 resource links (`raw`, `curated`) + 4 re-grants |
 | ~~the derived zone~~ | ~~`awsds-<env>-derived`~~ — **removed 2026-08-26** |
