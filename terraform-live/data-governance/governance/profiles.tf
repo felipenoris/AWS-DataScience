@@ -1,23 +1,21 @@
-# THE TWO PROJECT PROFILES (Stage 6 step 1.5) - the pass 2c apply.
+# The project profiles (Stage 6 step 1.5) - the pass 2c apply.
 #
-# WHY THEY WAIT. A project profile is a bundle of ENVIRONMENT CONFIGURATIONS, and each one
-# names (blueprint, account, Region). The blueprint has to be CONFIGURED in that account first
-# - which needs the account association, which is console-only and has no public API (step
-# 1.3). So `profiles_enabled` is false until every member in SMUS_MEMBERS appears in
-# SMUS_ASSOCIATED, and this file creates nothing before then. The alternative - creating them
-# eagerly and letting the API refuse - would fail in the middle of an apply that had already
-# created a domain.
+# They wait on the account association. A project profile is a bundle of environment
+# configurations, each naming (blueprint, account, Region), and the blueprint has to be
+# configured in that account first - which needs the account association, console-only with no
+# public API (step 1.3). `profiles_enabled` is false until every member in SMUS_MEMBERS appears
+# in SMUS_ASSOCIATED, and this file creates nothing before then. Creating them eagerly and
+# letting the API refuse would fail in the middle of an apply that had already created a domain.
 #
-# WHAT A PROFILE FIXES, AND WHY THAT IS THE CONTROL SURFACE: the blueprint set (which
-# capabilities a project born of it can EVER exercise), the account and Region it provisions
-# into, and the Tooling parameters with their Editable flags. Two of those are the levers this
-# design actually pulls - which account, and which parameters the creator can no longer change.
+# A profile fixes the blueprint set (which capabilities a project born of it can ever exercise),
+# the account and Region it provisions into, and the Tooling parameters with their Editable
+# flags. The levers this design pulls are the account and the parameters the creator can no
+# longer change.
 #
-# deployment_mode = ON_CREATE for Tooling, ON_DEMAND for the rest. Tooling is what provisions
-# the working environment at all, so a project without it is not a project; the other ten
-# are capabilities a project member enables when they need them, which keeps a new project from
-# standing up an EMR Serverless application nobody asked for. Both are per-environment-
-# configuration, which is the grain the API takes.
+# deployment_mode = ON_CREATE for Tooling, ON_DEMAND for the rest. Tooling provisions the working
+# environment, so a project without it is not a project; the others are capabilities a project
+# member enables when needed, which keeps a new project from standing up an EMR Serverless
+# application nobody asked for. Both are per-environment-configuration, the grain the API takes.
 
 resource "awscc_datazone_project_profile" "this" {
   for_each = var.profiles_enabled ? local.project_profiles : {}

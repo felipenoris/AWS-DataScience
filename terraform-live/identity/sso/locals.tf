@@ -1,6 +1,6 @@
 # The authored halves - Stage 2 steps 5.2 and 5.3.
 #
-# D34's rule, on the side of the seam where it says ENUMERATED: an account acquires a
+# D34's rule, on the side of the seam where it says enumerated: an account acquires a
 # permission set because somebody wrote its name down here, never because it appeared in the
 # organization. A `for_each` over a human-authored map is still enumeration
 # (docs/plan/conventions.md); a `for_each` over a data source is the failure mode.
@@ -8,37 +8,36 @@
 locals {
   # ----------------------------------------------------------------- the instance and store
   #
-  # `one()` rather than `[0]`, and the difference is a diagnosis: an empty list returns null
-  # here and a MULTI-element list raises immediately, where an index would have silently taken
-  # the first of several instances. The null case is caught by the precondition on every
-  # permission set, which names the Region rather than a list index.
+  # `one()` rather than `[0]`: an empty list returns null here and a multi-element list raises
+  # immediately, where an index would have silently taken the first of several instances. The
+  # null case is caught by the precondition on every permission set, which names the Region
+  # rather than a list index.
   instance_arn      = one(data.aws_ssoadmin_instances.this.arns)
   identity_store_id = one(data.aws_ssoadmin_instances.this.identity_store_ids)
 
   # -------------------------------------------------------------------------- the accounts
   #
-  # THE NAMES ARE EXACT AND THEY ARE NOT THE NAMES ANYBODY WOULD GUESS. Measured 2026-08-16:
-  # Control Tower vended every account with an ` Account` suffix, and Stage 1d step 9 already
-  # paid for this once - a lookup for `Log Archive` returns nothing, because the account is
-  # `Log Archive Account`. Written out rather than composed from a token, so the trap is
-  # visible instead of hidden in a format string.
+  # The names are exact, and they are not the names anybody would guess. Measured 2026-08-16:
+  # Control Tower vended every account with an ` Account` suffix, and Stage 1d step 9 paid for
+  # this once - a lookup for `Log Archive` returns nothing, because the account is `Log Archive
+  # Account`. Written out rather than composed from a token, so the trap is visible instead of
+  # hidden in a format string.
   #
-  # AND THERE IS A LIVE COLLISION IN THE ROSTER. A SUSPENDED account called plain `Sandbox`
-  # still appears in list-accounts. `Sandbox Account 1` is the vended one (D35, N=1); a map
-  # keyed on `Sandbox` would resolve to a closed account and the assignment would fail in a
-  # way that reads like a permissions problem. account_ids below therefore filters on ACTIVE,
-  # which is a second line of defence rather than the primary one - the primary one is that
-  # the name is written out in full.
+  # The roster carries a live collision: a SUSPENDED account called plain `Sandbox` still
+  # appears in list-accounts. `Sandbox Account 1` is the vended one (D35, N=1); a map keyed on
+  # `Sandbox` would resolve to a closed account and the assignment would fail in a way that
+  # reads like a permissions problem. account_ids below filters on ACTIVE as a second line of
+  # defence; the primary one is that the name is written out in full.
   #
-  # NO `staging` ENTRY: the account is unvended (step 3.2, held on the account cap), so every
-  # Staging cell of 1b step 3.1 is skipped here exactly as it was skipped there. The SET for
+  # No `staging` entry: the account is unvended (step 3.2, held on the account cap), so every
+  # Staging cell of 1b step 3.1 is skipped here exactly as it was skipped there. The set for
   # Staging is still created - see permission-sets.tf - because a set costs nothing and having
   # it reviewed now is the point of writing it in code.
   #
-  # THE KEY IS THE ACCOUNT FOLDER OF terraform-live/, NOT A SLUG INVENTED HERE. That
-  # vocabulary already exists - scripts/tfhygiene/backend.py's ENV_TOKENS is keyed on it, and
-  # every path in this repository is `terraform-live/<key>/...`. Using it means the for_each
-  # key of an assignment IS the folder whose infrastructure the assignment grants, and
+  # The key is the account folder of terraform-live/, not a slug invented here. That vocabulary
+  # already exists - scripts/tfhygiene/backend.py's ENV_TOKENS is keyed on it, and every path
+  # in this repository is `terraform-live/<key>/...`. Using it means the for_each key of an
+  # assignment is the folder whose infrastructure the assignment grants, and
   # ./aws/import-ids.py can emit an import address that matches this configuration instead of
   # guessing at one (step 5.5a(iii): the wrong key does not error, it plans a create beside an
   # orphan).
@@ -63,43 +62,41 @@ locals {
 
   # ------------------------------------------------------------------------ the entitlements
   #
-  # THE TABLE OF 1b STEP 3.1, TRANSCRIBED. That step is the design of record for all seven
-  # sets and this file does not restate it - what is here is the ASSIGNMENT half, one row per
-  # (set, account) pair, written out one by one because an account silently acquiring
-  # DataScientistAccess on the next apply is the failure this design exists to prevent.
+  # The table of 1b step 3.1, transcribed. That step is the design of record for all seven
+  # sets and this file does not restate it; what is here is the assignment half, one row per
+  # (set, account) pair, written out one by one so that no account silently acquires
+  # DataScientistAccess on the next apply.
   #
-  # THE KEY IS AUTHORED TEXT AND CARRIES NO ID. That is what makes it stable: adding an
+  # The key is authored text and carries no id, which is what makes it stable: adding an
   # account or a set appends a key and touches no existing one, so no attachment is destroyed
-  # and re-created (the concern verification (v) raises for the other slice, and it applies
-  # here for the same reason - a re-created assignment is a moment in which somebody cannot
-  # sign in).
+  # and re-created. A re-created assignment is a moment in which somebody cannot sign in
+  # (verification (v) raises the same concern for the other slice).
   #
-  # WHAT IS DELIBERATELY ABSENT, because absence has to be readable (1b step 3.7):
+  # Absent by design, because absence has to be readable (1b step 3.7):
   #   - sso-group-data-scientists on Data Governance      - the lake is read through the Lake
   #                                                         Formation share, never in place
   #   - sso-group-deployment-managers on Data Governance  - a release approver has no business
   #                                                         in the account that grants access
   #   - sso-group-dev-env-stewards on Staging, Data Governance, Identity, Audit, Log Archive,
   #     Policy Canary                                     - it judges a container image
-  #   - EVERY persona on Identity, Audit, Log Archive, Policy Canary, and Management
+  #   - every persona on Identity, Audit, Log Archive, Policy Canary, and Management
   #
-  # THE LAST LINE OF THAT LIST WENT ON 2026-09-06. It read "every Staging cell - the account is
-  # unvended", and the account exists now: Stage 6b renamed `Development` into it, because the
-  # quota refused the vend. Staging carries exactly two personas - DataScientistStagingAccess
-  # (D18, read-only) and DeploymentManagerAccess - and the steward's absence above is still an
-  # absence, for its own reason rather than for the vend's.
+  # Staging exists since Stage 6b renamed `Development` into it (2026-09-06), the quota having
+  # refused the vend. It carries exactly two personas - DataScientistStagingAccess (D18,
+  # read-only) and DeploymentManagerAccess - and the steward's absence above is an absence for
+  # its own reason.
   assignments = {
-    # DataScientistAccess - Sandbox ONLY since Stage 6b step 2.1. D21 said "one set, two
+    # DataScientistAccess - Sandbox only since Stage 6b step 2.1. D21 said "one set, two
     # accounts, policy-identical because they share an OU"; the accounts no longer share an OU
     # and are no longer policy-identical, which is why the row below is a different set.
     "data-scientist@sandbox" = { set = "data_scientist", group = "data_scientists", account = "sandbox" }
-    # SWAPPED BY STAGE 6b STEP 2.1 and RE-KEYED BY STEP 4.6 (both 2026-09-06). The two halves
-    # were deliberately separate: 2.1 changed which permission set the account gets, 4.6 changes
-    # the ADDRESS - and an address change is a destroy-and-create unless a moved {} block says
-    # otherwise, which is what moved.tf carries. D18: Staging is read-only and nothing else.
+    # Swapped by Stage 6b step 2.1 and re-keyed by step 4.6 (both 2026-09-06). The two halves
+    # were separate: 2.1 changed which permission set the account gets, 4.6 changed the address,
+    # and an address change is a destroy-and-create unless a moved {} block says otherwise -
+    # moved.tf carries it. D18: Staging is read-only and nothing else.
     "data-scientist-staging@staging" = { set = "data_scientist_staging", group = "data_scientists", account = "staging" }
 
-    # DataScientistProdAccess - Production only (D18). A different SHAPE, not a weaker copy.
+    # DataScientistProdAccess - Production only (D18). A different shape, not a weaker copy.
     "data-scientist-prod@production" = { set = "data_scientist_prod", group = "data_scientists", account = "production" }
 
     # DeploymentManagerAccess (D31) - diagnosis, not reading. Nothing on Data Governance.
@@ -107,30 +104,29 @@ locals {
     "deployment-manager@staging"    = { set = "deployment_manager", group = "deployment_managers", account = "staging" }
     "deployment-manager@production" = { set = "deployment_manager", group = "deployment_managers", account = "production" }
 
-    # GovernanceManagerAccess - Data Governance ONLY, and it is the mirror image of the row
-    # above: the one account the deployment manager cannot enter is the only one this one can.
+    # GovernanceManagerAccess - Data Governance only, the mirror image of the row above: the
+    # one account the deployment manager cannot enter is the only one this one can.
     "governance-manager@data-governance" = { set = "governance_manager", group = "governance_managers", account = "data-governance" }
 
     # DevEnvStewardAccess - Production, plus Sandbox and Development. The set is read-only
     # everywhere by construction, so "read-only on Sandbox and Development" is a property of
     # the policy rather than of the assignment (1b 3.3: one set object is one policy, however
     # many accounts it reaches).
-    # REMOVED FROM THIS ACCOUNT BY STAGE 6b STEP 2.1 (2026-09-06) - and not because "a Workload
-    # account has no image steward", which the estate contradicts: Production is a Workload
-    # account and holds the seat. The reason is D14's - the steward curates IMAGES, the registry
-    # is ECR in Production, and Staging has no registry to steward. The SET survives; two
-    # assignments are what leave.
+    # Stage 6b step 2.1 (2026-09-06) removed it from this account. The reason is D14's, not "a
+    # Workload account has no image steward" - Production is a Workload account and holds the
+    # seat. The steward curates images, the registry is ECR in Production, and Staging has no
+    # registry to steward. The set survives; two assignments are what leave.
     "dev-env-steward@production" = { set = "dev_env_steward", group = "dev_env_stewards", account = "production" }
     "dev-env-steward@sandbox"    = { set = "dev_env_steward", group = "dev_env_stewards", account = "sandbox" }
   }
 
   # ------------------------------------------------------------------- the six written sets
   #
-  # THE NAME IS THE ONE THING HERE THAT CANNOT BE CHANGED CASUALLY. `<Persona>Access`, and
+  # The name is the one thing here that cannot be changed casually: `<Persona>Access`, and
   # never within four characters of a Control Tower set - 1b step 3.2 renamed this project's
-  # administrator set for exactly that reason, and the argument was that an assignment made
-  # against the wrong one still WORKS, so nothing reports it. Changing a name here destroys
-  # and re-creates the set, which is a window in which nobody holds it.
+  # administrator set for that reason, because an assignment made against the wrong one still
+  # works and nothing reports it. Changing a name here destroys and re-creates the set, which
+  # is a window in which nobody holds it.
   persona_sets = {
     data_scientist = {
       name        = "DataScientistAccess"
@@ -158,8 +154,8 @@ locals {
     }
   }
 
-  # The two indirections the assignment map resolves through. Written here so a row stays a row
-  # of names and the wiring is in one place.
+  # The two indirections the assignment map resolves through, so a row stays a row of names and
+  # the wiring is in one place.
   permission_set_arns = { for k, v in aws_ssoadmin_permission_set.persona : k => v.arn }
 
   group_ids = {
@@ -172,33 +168,31 @@ locals {
   # ------------------------------------------------------- the addresses the control plane is
   #                                                          pinned to - Stage 4 step 8.1
   #
-  # ONE /32 PER VPN HOME, READ FROM THAT HOME'S foundation/ STATE, NEVER PASTED. The address is
-  # a [P] allocation precisely so a client config is written once and an instance rebuild
-  # changes nothing (step 2.1); pasting it here would make this file the second place it lives,
-  # and the copy would be the one nobody updates.
+  # One /32 per VPN home, read from that home's foundation/ state and never pasted. The address
+  # is a [P] allocation so a client config is written once and an instance rebuild changes
+  # nothing (step 2.1); pasting it here would make this file the second place it lives.
   #
-  # `/32` IS NOT DECORATION. An IAM `IpAddress`/`NotIpAddress` condition takes CIDR notation;
-  # the output is a bare address, so the mask is added here rather than in the policy document,
-  # where a reader would have to check whether it was already there.
+  # `/32` is required: an IAM `IpAddress`/`NotIpAddress` condition takes CIDR notation and the
+  # output is a bare address, so the mask is added here rather than in the policy document.
   #
-  # `sort()` FOR A STABLE DIFF. A map iterates in key order already, but the list feeds a policy
-  # JSON whose textual value is what `terraform plan` compares - and once N > 1 the day a home
-  # is added is a day nobody should also be reading a reordering.
-  # `distinct()` ARRIVED 2026-09-06 AND THE REASON IS NOT TIDINESS. Until 6c step 4.12 one home
-  # meant one address, so a duplicate could not occur. The union of that step has TWO homes
-  # sharing ONE address - the Elastic IP was TRANSFERRED between accounts rather than
-  # reallocated, so `sandbox/foundation` and `production/networking` both answer `52.89.212.1` -
-  # and without this the policy document carries the same /32 twice. Harmless to IAM, and
-  # exactly the kind of noise a later reader has to stop and explain.
-  # THE PROXY'S ADDRESS JOINED THIS LIST AT 6c step 4.12 (2026-09-06), AND UNDER D38 IT IS THE ONE
-  # THAT ACTUALLY MATTERS. A VPN client is a private-network client now: its whole internet crosses
-  # an explicit Squid proxy in the hub, so a persona's control-plane call leaves the estate from
-  # the PROXY's Elastic IP and never from the tunnel endpoint's. The WireGuard address stays
+  # `sort()` for a stable diff. A map iterates in key order already, but the list feeds a policy
+  # JSON whose textual value is what `terraform plan` compares, and once N > 1 the day a home
+  # is added should not also be a reordering.
+  #
+  # `distinct()` because 6c step 4.12 made two homes share one address: the Elastic IP was
+  # transferred between accounts rather than reallocated, so `sandbox/foundation` and
+  # `production/networking` both answer `52.89.212.1`. Without it the policy document carries
+  # the same /32 twice.
+  #
+  # The proxy's address joined this list at 6c step 4.12 (2026-09-06), and under D38 it is the
+  # one that matters. A VPN client is a private-network client: its whole internet crosses an
+  # explicit Squid proxy in the hub, so a persona's control-plane call leaves the estate from
+  # the proxy's Elastic IP and never from the tunnel endpoint's. The WireGuard address stays
   # because the tunnel host still originates traffic of its own, and because pass 4's rule is
   # union first and trim after the readings - a single cut-over apply here is one typo away from
   # denying six personas every call from every network.
   #
-  # `try(..., null)` AND NOT A DIRECT READ: a VPN home is not required to hold a proxy - Sandbox
+  # `try(..., null)` and not a direct read: a VPN home is not required to hold a proxy - Sandbox
   # exports no such output and is still a home while the union stands - so a missing output is a
   # legitimate shape rather than an error. `compact()` drops the nulls that produces.
   vpn_egress_cidrs = sort(distinct(compact(flatten([
@@ -208,32 +202,33 @@ locals {
     ]
   ]))))
 
-  # THE SAME HOMES, BY THE VPC THEY EXIT THROUGH - and this local replaced a list of GATEWAY
-  # ENDPOINT ids on 2026-08-23, because that list was the right fix measured one case short.
+  # The same homes, by the VPC they exit through. This local replaced a list of gateway endpoint
+  # ids on 2026-08-23, that list having been one case short.
   #
-  # THE 4d HALF, WHICH STANDS: tunnel traffic SPLITS BY DESTINATION. S3 and DynamoDB leave
+  # The 4d half, which stands: tunnel traffic splits by destination. S3 and DynamoDB leave
   # through the home's [P] gateway endpoints - prefix-list routes beating the IGW default - and
-  # arrive carrying the host's PRIVATE address plus a vpce id, never the Elastic IP. So the
+  # arrive carrying the host's private address plus a vpce id, never the Elastic IP. So the
   # aws:SourceIp pin alone explicitly denied every direct S3 call a persona made from inside
   # the perimeter (Lesson 33; stage 5 log, 4d).
   #
-  # THE HALF IT MISSED, MEASURED 2026-08-23 WITH A NEGATIVE CONTROL: while `egress/` is up, the
+  # The half it missed, measured 2026-08-23 with a negative control: while `egress/` is up, the
   # laptop's DNS goes to the VPC resolver (the client config's own `DNS = 10.20.0.2`) and every
-  # service holding an INTERFACE endpoint resolves to a PRIVATE address - `dig sts.us-west-2
+  # service holding an interface endpoint resolves to a private address - `dig sts.us-west-2
   # .amazonaws.com` answered 10.20.12.229, while `dig s3.us-west-2.amazonaws.com` answered
-  # public addresses, the gateway doing no private DNS. Those calls therefore present the
-  # INTERFACE endpoint's id, which this list did not carry and MAY NOT carry: interface
-  # endpoints are [E], with new ids on every `make up` (Lesson 3). The persona was explicitly
-  # denied `sts:GetCallerIdentity` with the tunnel up and `curl checkip` reading the EIP -
-  # two true readings of two different paths.
+  # public addresses, the gateway doing no private DNS. Those calls present the interface
+  # endpoint's id, which this list did not carry and may not carry: interface endpoints are
+  # [E], with new ids on every `make up` (Lesson 3). The persona was explicitly denied
+  # `sts:GetCallerIdentity` with the tunnel up and `curl checkip` reading the EIP - two true
+  # readings of two different paths.
   #
-  # SO THE ANCHOR IS THE VPC, WHICH IS WHAT LESSON 3 PRESCRIBES ("anchor on the [P] gateway
-  # endpoint, OR on aws:SourceVpc"). It is [P], it survives every `make up`, and it SUBSUMES
-  # the gateway ids this local used to hold - a request through any endpoint in that VPC
-  # carries both keys, so nothing that passed before stops passing. What it widens is exactly
-  # the intent of the control: the persona works from inside the perimeter. It does not admit
+  # The anchor is therefore the VPC, which is what Lesson 3 prescribes ("anchor on the [P]
+  # gateway endpoint, OR on aws:SourceVpc"). It is [P], it survives every `make up`, and it
+  # subsumes the gateway ids this local used to hold - a request through any endpoint in that
+  # VPC carries both keys, so nothing that passed before stops passing. What it widens is the
+  # intent of the control: the persona works from inside the perimeter. It does not admit
   # in-VPC workloads wearing this identity - a persona role is reachable only through the IdC
   # sign-in, never by an instance profile.
+  #
   # `distinct()` here for the mirror reason: two homes cannot share a VPC today, but the guard
   # costs nothing and the two locals should fail the same way if they ever can.
   vpn_egress_vpc_ids = sort(distinct([
@@ -243,13 +238,8 @@ locals {
 
   # ------------------------------------------------- the lake's consumer-side ARNs - pass 4c
   #
-  # ENUMERATED FROM STATE, NEVER COMPOSED FROM A NAMING CONVENTION - the whole point of 4c's
-  # sequencing (policies-data-scientists.tf carries the argument). `sort()` for the same
-  # reason as above: these lists feed policy JSON whose textual value is what a plan compares,
-  # and the day a consumer is added must not also be a reordering.
-  # athena_workgroup_arns and derived_bucket_arns LEFT 2026-08-26 with the six statements that
-  # consumed them (D19 revised - the derived zone re-homed onto the SMUS project path). The
-  # consumer_data remote-state read left data.tf with them.
+  # Enumerated from state, never composed from a naming convention - the whole point of 4c's
+  # sequencing (policies-data-scientists.tf carries the argument).
 
   # The lake singleton's three values (D22; the variable validates length == 1). `one()` with
   # the same diagnosis as instance_arn above: null on empty, loud on many.

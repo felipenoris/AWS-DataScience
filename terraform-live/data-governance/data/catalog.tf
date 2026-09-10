@@ -1,7 +1,7 @@
 # The catalog (steps 3.1, 4.1, 4.2) - three databases, the sample Iceberg table, and its
-# maintenance owner. EVERY DATABASE depends_on THE SETTINGS TRIO: the IAM-fallback defaults
-# act at creation time, so a database created before 5.2 lands is born deferring to IAM and
-# clearing the default later does not reach it (the measured 2026-08-18 finding).
+# maintenance owner. Every database depends_on the settings trio: the IAM-fallback defaults act
+# at creation time, so a database created before 5.2 lands is born deferring to IAM, and clearing
+# the default later does not reach it (measured 2026-08-18).
 
 # --------------------------------------------------------------------- the three databases
 #
@@ -31,11 +31,10 @@ resource "aws_glue_catalog_database" "dropbox" {
 # ------------------------------------------------- the tag assignments (5.1, GOVERNANCE.md)
 #
 # Inheritance does the rest: a database's tags flow to its tables and their columns unless
-# overridden below. The asymmetry between raw and curated is decision 1's, verbatim:
-# raw (and dropbox, same rationale - user-supplied arrivals) carry classification=internal,
-# the FAIL-OPEN default the user chose; curated carries NO classification at the database -
-# an untagged table there matches no TBAC expression and is invisible, fail-closed by
-# absence.
+# overridden below. The asymmetry between raw and curated is decision 1's: raw and dropbox, both
+# user-supplied arrivals, carry classification=internal, the fail-open default the user chose;
+# curated carries no classification at the database, so an untagged table there matches no TBAC
+# expression and is invisible, fail-closed by absence.
 
 resource "aws_lakeformation_resource_lf_tags" "raw_db" {
   database { name = aws_glue_catalog_database.raw.name }
@@ -115,24 +114,22 @@ resource "aws_glue_catalog_table" "sample_trades" {
       name = "price"
       type = "double"
     }
-    # The deliberately restricted column (4.1, revised 2026-08-17): the share deliverable
-    # must prove entitlement SCOPED BY THE SCHEME - this column absent from a default
-    # consumer read - not merely that the share works.
+    # The restricted column (4.1): the share deliverable must prove entitlement scoped by the
+    # scheme - this column absent from a default consumer read - and not merely that the share
+    # works.
     columns {
       name = "counterparty"
       type = "string"
     }
   }
 
-  # THE COLUMN MIRROR IS THE ENGINE'S FROM THE FIRST COMMIT ON (2026-08-20; stage 5 log,
-  # the review entry). The first INSERT stamped iceberg.field.{id,current,optional} onto
-  # every column of the live table - the Glue columns are Iceberg's mirror of its own
-  # metadata, re-stamped at each commit - and without this block every later plan wants to
-  # strip them: permanent drift burying real diffs, and an apply the next engine commit
-  # would undo (Lesson 23: a managed service owns its artifacts' packing - bind to the
-  # schema's source of truth, the metadata JSON, never to the mirror). Terraform keeps the
-  # table's existence, location and format; schema EVOLUTION goes through the engine, which
-  # is how an Iceberg table changes anyway.
+  # The column mirror belongs to the engine from the first commit on (measured 2026-08-20; stage
+  # 5 log, the review entry). The first INSERT stamped iceberg.field.{id,current,optional} onto
+  # every column of the live table - the Glue columns are Iceberg's mirror of its own metadata,
+  # re-stamped at each commit - and without this block every later plan wants to strip them:
+  # permanent drift burying real diffs, and an apply the next engine commit would undo (Lesson
+  # 23). Terraform keeps the table's existence, location and format; schema evolution goes
+  # through the engine.
   lifecycle {
     ignore_changes = [storage_descriptor[0].columns]
   }
@@ -170,14 +167,14 @@ resource "aws_lakeformation_resource_lf_tags" "sample_trades_restricted_column" 
 
 # --------------------------------------------------- the maintenance owner (4.2, decision 4)
 #
-# Glue automatic compaction under the maintenance role - the role IS the D27 carve-out
-# principal, but NO SCP ACTION NAMES A TABLE-OPTIMIZER RUN: the carve-out covers crawler and
-# column-statistics starts only, and DenyUserCompute names no optimizer action either. This runs because nothing
-# denies it, not because something exempts it - recorded as a third non-coverage in
-# POLICIES.md's Data OU section. No scheduler in a no-compute account. Config is
-# free at rest; runs are metered (USD 0.44/DPU-h, docs/PRICING.md 5). The consequence
-# accepted with the decision - athena:StartQueryExecution joining DenyUserCompute - is an
-# SCP act (battery phase 4b), not this slice's.
+# Glue automatic compaction under the maintenance role. The role is the D27 carve-out principal,
+# but no SCP action names a table-optimizer run: the carve-out covers crawler and
+# column-statistics starts only, and DenyUserCompute names no optimizer action either. This runs
+# because nothing denies it, not because something exempts it - recorded as a third non-coverage
+# in POLICIES.md's Data OU section. No scheduler in a no-compute account. Config is free at rest;
+# runs are metered (USD 0.44/DPU-h, docs/PRICING.md 5). The consequence accepted with the
+# decision - athena:StartQueryExecution joining DenyUserCompute - is an SCP act (battery phase
+# 4b), not this slice's.
 
 resource "aws_glue_catalog_table_optimizer" "sample_trades_compaction" {
   catalog_id    = data.aws_caller_identity.current.account_id

@@ -5,10 +5,10 @@
 # scripts/tfhygiene/backend.py: `region` may not be a literal in a .tf file, and the two env
 # vocabularies are a property of the account folder rather than of this slice.
 #
-# NOTHING HERE IS AN ACCOUNT ID OR A GROUP GUID, and that is the point of the file. Accounts
-# are named in locals.tf and resolved through the Organizations API; groups are named in
-# data.tf and resolved through the identity store. aws/INDEX.md rule 1 on one side,
-# docs/plan/conventions.md's "resolve a group by display name" on the other.
+# Nothing here is an account id or a group GUID. Accounts are named in locals.tf and resolved
+# through the Organizations API; groups are named in data.tf and resolved through the identity
+# store. aws/INDEX.md rule 1 on one side, docs/plan/conventions.md's "resolve a group by display
+# name" on the other.
 
 variable "region" {
   description = "AWS region for this slice - also the Region the Identity Center instance lives in. No default: see the note above."
@@ -16,17 +16,16 @@ variable "region" {
   nullable    = false
 }
 
-# DECLARED AND NOT REFERENCED, ON PURPOSE. The <env> name token builds RESOURCE NAMES, and
-# nothing in the identity plane is named after an environment - the six sets are named after
-# personas and the assignments after accounts. It is declared anyway because
-# terraform.auto.tfvars is written from ONE table for every slice (scripts/tfhygiene/backend.py,
-# step 2.6), so the value arrives whether this slice wants it or not; dropping the variable
-# turns every plan into a "value for undeclared variable" warning, which is how a real warning
-# stops being read. The validation below is what it is actually for: it fails loudly if the
-# generated file was built for a different account folder.
+# Declared and not referenced. The <env> name token builds resource names, and nothing in the
+# identity plane is named after an environment: the six sets are named after personas and the
+# assignments after accounts. It is declared because terraform.auto.tfvars is written from one
+# table for every slice (scripts/tfhygiene/backend.py, step 2.6), so the value arrives whether
+# this slice wants it or not, and dropping the variable turns every plan into a "value for
+# undeclared variable" warning. The validation below fails loudly if the generated file was
+# built for a different account folder.
 # tflint-ignore: terraform_unused_declarations
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md. `org` for the identity plane."
+  description = "The <env> name token of docs/plan/conventions.md. `org` for the identity plane."
   type        = string
   nullable    = false
 
@@ -49,25 +48,24 @@ variable "environment_tag" {
 
 # The VPN homes whose Elastic IP the control plane is pinned to - Stage 4 step 8.1.
 #
-# A MAP, NOT A STRING, AND THAT IS THE DESIGN RATHER THAN GENEROSITY. D35 vends one Sandbox per
-# business unit and the tunnel lives on exactly that multiplied side (Stage 4's forward
-# constraint), so the deny names a LIST of addresses from day one: adding unit 2 appends a row
-# to VPN_HOMES in scripts/tfhygiene/backend.py and changes no policy document. INT-05 gives the
-# same reason from the other end.
+# A map rather than a string, by design. D35 vends one Sandbox per business unit and the tunnel
+# lives on exactly that multiplied side (Stage 4's forward constraint), so the deny names a list
+# of addresses from day one: adding unit 2 appends a row to VPN_HOMES in
+# scripts/tfhygiene/backend.py and changes no policy document. INT-05 gives the same reason from
+# the other end.
 #
-# WHY THE PROFILE RIDES IN THE VALUE. Each row becomes a terraform_remote_state read of that
-# account's foundation/ slice - the repository's first read that CROSSES an account boundary,
-# so the data source needs a profile the way a same-account read does not. Pass 2's rule is
-# that a profile literal never sits in a .tf file, so it arrives here instead; `env` is the
-# name token the state bucket is built from, which is a third vocabulary this slice may not
-# derive (backend.py's own table).
+# The profile rides in the value because each row becomes a terraform_remote_state read of that
+# account's foundation/ slice, a read that crosses an account boundary, so the data source needs
+# a profile the way a same-account read does not. Pass 2's rule is that a profile literal never
+# sits in a .tf file, so it arrives here instead; `env` is the name token the state bucket is
+# built from, a third vocabulary this slice may not derive (backend.py's own table).
 #
-# WHAT AN EMPTY MAP WOULD MEAN, and why data.tf refuses it rather than tolerating it: no homes
-# means no addresses means a `NotIpAddress` over an empty list, which IAM reads as "matches
-# nothing" - the deny would fire on EVERY call from EVERY network and lock all six personas out
-# of everything. An empty allow-list is the one input shape whose failure is total.
+# An empty map is refused rather than tolerated: no homes means no addresses means a
+# `NotIpAddress` over an empty list, which IAM reads as "matches nothing" - the deny would fire
+# on every call from every network and lock all six personas out of everything. An empty
+# allow-list is the one input shape whose failure is total.
 variable "vpn_homes" {
-  description = "Account folder -> { profile, env, slice } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for that SLICE's Elastic IP. The slice field arrived at Stage 6c step 0.5: the tunnel moves into VPC-Networking, whose EIP lives in production/networking/ rather than in a foundation/, so the slice stopped being derivable from the account."
+  description = "Account folder -> { profile, env, slice } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for that slice's Elastic IP. The slice field arrived at Stage 6c step 0.5: the tunnel moves into VPC-Networking, whose EIP lives in production/networking/ rather than in a foundation/, so the slice stopped being derivable from the account."
   type = map(object({
     profile = string
     env     = string
@@ -81,9 +79,9 @@ variable "vpn_homes" {
   }
 }
 
-# The account that OWNS the lake - Stage 5 pass 4c, the same one-element table the consumer
+# The account that owns the lake - Stage 5 pass 4c, the same one-element table the consumer
 # slices take (backend.py DATA_LAKE). Read for the drop-box bucket ARN, its write prefix and
-# the lake data-key ARN: the drop-box write is CROSS-ACCOUNT, so the bucket policy's grant is
+# the lake data-key ARN: the drop-box write is cross-account, so the bucket policy's grant is
 # only half of the permission and the identity half has to name real ARNs - the key ARN
 # carries the account id, which may live in state but never in a tracked file.
 variable "lake" {
@@ -129,15 +127,14 @@ variable "inline_policy_max_bytes" {
     The size a set's inline policy may not exceed, enforced as a plan-time precondition rather
     than discovered at provisioning (step 5.2, "count before writing").
 
-    TWO LIMITS EXIST AND THIS IS THE SMALLER ONE, ON PURPOSE. The Identity Center API accepts
-    an inline policy up to 32768 characters, but a permission set BECOMES AN IAM ROLE in every
-    account it is provisioned into, and an inline role policy is capped far lower. The
-    expensive failure is the second one: it lands per account, at provisioning time, in an
-    account nobody is looking at - the same quiet shape decision 4 avoids for the boundary. So
-    the plan fails here instead, and a set that genuinely needs more becomes a customer-managed
-    policy, which lands back on decision 4.
+    Two limits exist and this is the smaller one. The Identity Center API accepts an inline
+    policy up to 32768 characters, but a permission set becomes an IAM role in every account it
+    is provisioned into, and an inline role policy is capped far lower. The expensive failure is
+    the second: it lands per account, at provisioning time, in an account nobody is looking at -
+    the quiet shape decision 4 avoids for the boundary. The plan fails here instead, and a set
+    that genuinely needs more becomes a customer-managed policy, which lands back on decision 4.
 
-    IT IS MEASURED AGAINST THE RENDERED DOCUMENT, NOT AGAINST WHAT AWS STORES, and the first
+    It is measured against the rendered document, not against what AWS stores, and the first
     apply showed those are not the same number: 3547-4563 characters rendered here against
     2414-3148 read back with `get-inline-policy-for-permission-set` - Identity Center keeps a
     compacted form, about a quarter smaller. The rendered figure is the one the API receives,
@@ -148,9 +145,9 @@ variable "inline_policy_max_bytes" {
   default     = 10240
 }
 
-# GENERATED INTO THE TFVARS, NEVER TYPED (Lesson 14). The object it names is created by each
+# Generated into the tfvars, never typed (Lesson 14). The object it names is created by each
 # member account's foundation/ slice, under this exact name - a reference that does not resolve
-# in an account fails PROVISIONING there, not planning here, so the two sides read one constant:
+# in an account fails provisioning there, not planning here, so the two sides read one constant:
 # scripts/tfhygiene/backend.py's PERSONA_VENDING_POLICY_NAME.
 variable "persona_vending_policy_name" {
   description = "Name of the customer-managed policy carrying the persona's S3 Access Grants vending handshake."

@@ -1,20 +1,18 @@
-# The catalog-maintenance role and its crawlers (step 3; D27) - the bounded set that
-# produces catalog metadata, under one role, and the ONE principal the Data OU SCP's
-# carve-out names.
+# The catalog-maintenance role and its crawlers (step 3; D27) - the bounded set that produces
+# catalog metadata, under one role, and the principal the Data OU SCP's carve-out names.
 
 # ------------------------------------------------------------------------- the role (3.2)
 #
-# THE NAME IS A CONTRACT, NOT A PREFERENCE: DenyCatalogMaintenanceRunsExceptMaintenanceRole
-# (1c step 7.6) denies glue:StartCrawler, its schedule sibling and the column-statistics runs
-# to every principal whose ARN is not exactly awsds-data-catalog-maintenance in this account
-# (the table-optimizer actions are NOT in that list - POLICIES.md's Data OU non-coverage
-# note). Under any other name the crawlers never run, failing closed with an error that
-# names the OU policy, not the typo. ./aws/datalake.py DL-4 reads both the name and the trust.
+# The name is a contract: DenyCatalogMaintenanceRunsExceptMaintenanceRole (1c step 7.6) denies
+# glue:StartCrawler, its schedule sibling and the column-statistics runs to every principal whose
+# ARN is not exactly awsds-data-catalog-maintenance in this account (the table-optimizer actions
+# are not in that list - POLICIES.md's Data OU non-coverage note). Under any other name the
+# crawlers never run, failing closed with an error that names the OU policy, not the typo.
+# ./aws/datalake.py DL-4 reads both the name and the trust.
 #
-# Trust: glue.amazonaws.com AND NOTHING ELSE - the role is not assumable interactively
-# (D27); aws:SourceAccount pins the confused deputy. Its own protection is Stage 2's
-# DenyIamPrincipalMutation on every persona set - verified by reading at 3.5, not rebuilt
-# here.
+# Trust: glue.amazonaws.com and nothing else - the role is not assumable interactively (D27);
+# aws:SourceAccount pins the confused deputy. Its own protection is Stage 2's
+# DenyIamPrincipalMutation on every persona set - verified by reading at 3.5, not rebuilt here.
 
 module "catalog_maintenance_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
@@ -40,10 +38,9 @@ module "catalog_maintenance_role" {
     ]
   })
 
-  # Bespoke, never AWSGlueServiceRole (the conventions' IAM rules; D31's shape): each
-  # statement names the job it exists for. The role DOES read data - a crawler samples
-  # object contents to infer schema - which is D27's honest statement, scoped to exactly
-  # the two crawled prefixes plus the compaction target.
+  # Bespoke, never AWSGlueServiceRole (the conventions' IAM rules; D31's shape): each statement
+  # names the job it exists for. The role does read data - a crawler samples object contents to
+  # infer schema (D27) - scoped to the two crawled prefixes plus the compaction target.
   inline_policies = {
     catalog-maintenance = jsonencode({
       Version = "2012-10-17"
@@ -105,7 +102,7 @@ module "catalog_maintenance_role" {
         {
           # Measured at the first apply (2026-08-18): CreateCrawler with a security
           # configuration attached fails `not authorized to perform
-          # glue:GetSecurityConfiguration` - the role must be able to READ the configuration
+          # glue:GetSecurityConfiguration` - the role must be able to read the configuration
           # it runs under. Resource "*" because Glue security configurations have no ARN to
           # scope to; the account holds exactly one, created above.
           Sid      = "ReadOwnSecurityConfiguration"
@@ -132,13 +129,13 @@ module "catalog_maintenance_role" {
 
 # ------------------------------------- the role's own Lake Formation permissions (3.2, 4.2)
 #
-# With the IAM-fallback defaults emptied (5.2), catalog writes are governed by LF grants -
-# including the maintenance role's own. OPERATIONAL grants, same-account, named-resource by
-# design (TBAC is the CONSUMER method; this is machinery): each lands in the AWS_STATE.md
-# grant register at apply. A crawler-created table grants its creator ALL automatically, so
-# CREATE_TABLE is the whole crawler need; the optimizer needs the four verbs on the one
-# table it compacts; DATA_LOCATION_ACCESS covers creating tables that point into the
-# registered raw prefix (the drop-box is unregistered - no location grant exists to need).
+# With the IAM-fallback defaults emptied (5.2), catalog writes are governed by LF grants,
+# including the maintenance role's own. Operational grants, same-account, named-resource by
+# design (TBAC is the consumer method; this is machinery): each lands in the AWS_STATE.md grant
+# register at apply. A crawler-created table grants its creator ALL automatically, so CREATE_TABLE
+# is the whole crawler need; the optimizer needs the four verbs on the one table it compacts;
+# DATA_LOCATION_ACCESS covers creating tables that point into the registered raw prefix (the
+# drop-box is unregistered, so no location grant exists to need).
 
 resource "aws_lakeformation_permissions" "maintenance_create_raw" {
   principal   = module.catalog_maintenance_role.role_arn
@@ -171,30 +168,23 @@ resource "aws_lakeformation_permissions" "maintenance_compact_sample" {
   }
 }
 
-# ------------------------------------------- the crawlers' encryption (added 2026-08-18)
+# ------------------------------------------------------------- the crawlers' encryption
 #
-# WHY THIS EXISTS AT ALL: it was not in the stage text - the commit gate found it
-# (checkov CKV_AWS_195, "Glue component has a security configuration"), and the finding is
-# real rather than a default worth skipping. D27's own honest sentence is that a crawler
-# SAMPLES OBJECT CONTENTS to infer schema, so what it writes to CloudWatch sits closer to
-# data than to metadata - and everything else touching this lake encrypts under the
-# account data CMK. Leaving the logs under the AWS-managed key would be the one place the posture
-# differs, for no reason anybody chose.
+# The commit gate found this (checkov CKV_AWS_195, "Glue component has a security
+# configuration"). A crawler samples object contents to infer schema (D27), so what it writes to
+# CloudWatch sits closer to data than to metadata, and everything else touching this lake
+# encrypts under the account data CMK.
 #
-# WHAT IT COVERS, AND WHY ALL THREE MODES NAME THE KEY: for a CRAWLER only
-# `cloudwatch_encryption` has a subject today - `s3_encryption` governs data a JOB writes
-# (crawlers write to the catalog, not to S3) and bookmarks are a job concept, and
-# `DenyUserCompute` denies Glue jobs in this account outright. The first draft therefore
-# declared the other two DISABLED, and the gate was right to refuse it (CKV_AWS_99): a
-# configuration that names the lake key for one mode and "off" for two is a statement about
-# what happens to exist rather than about this lake, and it becomes a hole the day the
-# configuration is attached to something that writes. Naming the key in all three says the
-# whole thing once - the two without a subject cost nothing and cannot go stale.
+# All three modes name the key, though for a crawler only `cloudwatch_encryption` has a subject
+# today: `s3_encryption` governs data a job writes (crawlers write to the catalog, not to S3),
+# bookmarks are a job concept, and `DenyUserCompute` denies Glue jobs in this account outright.
+# Declaring the other two DISABLED is refused by the gate (CKV_AWS_99), and it would be a
+# statement about what happens to exist rather than about this lake - a hole the day the
+# configuration is attached to something that writes. The two without a subject cost nothing.
 #
-# ITS ONE VISIBLE SIDE EFFECT: with a security configuration attached, Glue writes to
-# /aws-glue/crawlers-role/<config>-<role> instead of /aws-glue/crawlers. The role's log
-# statement is scoped to /aws-glue/* and covers both - deliberately, so this does not become
-# a second thing to remember.
+# Side effect: with a security configuration attached, Glue writes to
+# /aws-glue/crawlers-role/<config>-<role> instead of /aws-glue/crawlers. The role's log statement
+# is scoped to /aws-glue/* and covers both.
 
 resource "aws_glue_security_configuration" "catalog_maintenance" {
   name = "awsds-${var.env}-catalog-maintenance"
@@ -219,23 +209,21 @@ resource "aws_glue_security_configuration" "catalog_maintenance" {
 
 # ----------------------------------------------------------------------- the crawlers (3.6)
 #
-# Only where schema arrives from outside: the raw zone and the drop-box. NEVER on an Iceberg
-# table (catalog-native; a crawler would fight the table's own metadata) and NEVER on a
-# standing schedule (DPU-hour with a 10-minute minimum; cron-always out-costs the storage it
-# catalogs) - both are DL-3's checks. The trigger today is ON-DEMAND, before a pickup;
-# whether a compute-free event shape exists (S3 -> EventBridge -> Glue workflow, landing on
-# the 3.4 service-guard side) is verification (iv), answered while executing, and the
-# fallback costs only ordering.
+# Only where schema arrives from outside: the raw zone and the drop-box. Never on an Iceberg
+# table (catalog-native; a crawler would fight the table's own metadata) and never on a standing
+# schedule (DPU-hour with a 10-minute minimum; cron-always out-costs the storage it catalogs) -
+# both are DL-3's checks. The trigger is on-demand, before a pickup; whether a compute-free event
+# shape exists (S3 -> EventBridge -> Glue workflow, landing on the 3.4 service-guard side) is
+# verification (iv), answered while executing, and the fallback costs only ordering.
 #
-# 4D MEASURED THE WORD THIS PARAGRAPH LEANED ON (2026-08-19/20; stage 5 log): "ON-DEMAND"
-# HAS NO DEMANDER. The Data OU SCP admits StartCrawler only from the maintenance role or a
-# service principal, the role's trust admits glue.amazonaws.com alone, and Schedule is null -
-# so no person and no other service's role can demand a run, and the Glue scheduler never
-# will (Lesson 22: closed by reading, after InfrastructureAccess measured the SCP deny).
-# The no-cron choice above STANDS on its cost argument, DL-3 still checks it; what is open
-# is the demander - open question 19, whose live candidate is exactly the event shape
-# verification (iv) names, to be measured against the SCP's service guard rather than
-# assumed to land on its allow side.
+# On-demand has no demander (measured 2026-08-19/20; stage 5 log, pass 4d). The Data OU SCP
+# admits StartCrawler only from the maintenance role or a service principal, the role's trust
+# admits glue.amazonaws.com alone, and Schedule is null - so no person and no other service's
+# role can demand a run, and the Glue scheduler never will (Lesson 22: closed by reading, after
+# InfrastructureAccess measured the SCP deny). The no-cron choice stands on its cost argument and
+# DL-3 still checks it; the demander is open question 19, whose live candidate is the event shape
+# verification (iv) names, to be measured against the SCP's service guard rather than assumed to
+# land on its allow side.
 
 resource "aws_glue_crawler" "raw" {
   name          = "awsds-${var.env}-raw"

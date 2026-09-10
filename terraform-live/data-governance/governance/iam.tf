@@ -1,31 +1,30 @@
-# THE DOMAIN'S OWN ROLES (Stage 6 step 1.2).
-#
-# TWO, NOT THREE - and the third is named here so its absence reads as a decision. The SMUS
-# role family in the live partition (measured 2026-08-21, `iam list-policies --scope AWS`) is:
+# The domain's own roles (Stage 6 step 1.2). The role this slice does not create is named below
+# so its absence reads as a decision. The SMUS role family in the live partition (measured
+# 2026-08-21, `iam list-policies --scope AWS`) is:
 #
 #   SageMakerStudioDomainExecutionRolePolicy   the domain execution role - what the portal and
 #                                              the catalog act as inside this account
 #   SageMakerStudioDomainServiceRolePolicy     the service role - what DataZone itself uses
-#   SageMakerStudioQueryExecutionRolePolicy    an ATHENA FEDERATION role: glue:GetConnection,
+#   SageMakerStudioQueryExecutionRolePolicy    an Athena federation role: glue:GetConnection,
 #                                              the Athena spill bucket, lambda:InvokeFunction
 #                                              for a federated catalog. Nothing in this design
 #                                              federates a query, so creating it would be a
 #                                              principal nobody chose (Lesson 17). It arrives
 #                                              the day a federated connection does.
 #
-# THE TRUST CONDITION IS THE CONFUSED-DEPUTY PAIR, and aws:SourceAccount is the half that
-# matters: without it, a DataZone domain in ANY account could ask the service to assume these
-# roles. The ArnLike on aws:SourceArn is deliberately absent from the EXECUTION role's trust:
-# the role has to exist BEFORE the domain (aws_datazone_domain takes its ARN as an argument),
-# so an ARN naming the domain id would make the two circular. The 0.0 reading of 2026-08-20
-# confirms nothing else in the organization interferes: the RCP's
-# EnforceOrgIdentitiesOnRoleAssumption carries BoolIfExists aws:PrincipalIsAWSService=false,
-# which excludes the service, and the Data OU document names no iam:, datazone: or sts: action.
+# The trust condition is the confused-deputy pair, and aws:SourceAccount is the half that
+# matters: without it, a DataZone domain in any account could ask the service to assume these
+# roles. The ArnLike on aws:SourceArn is absent from the execution role's trust because the role
+# has to exist before the domain (aws_datazone_domain takes its ARN as an argument), so an ARN
+# naming the domain id would make the two circular. The 0.0 reading of 2026-08-20 confirms
+# nothing else in the organization interferes: the RCP's EnforceOrgIdentitiesOnRoleAssumption
+# carries BoolIfExists aws:PrincipalIsAWSService=false, which excludes the service, and the Data
+# OU document names no iam:, datazone: or sts: action.
 #
-# sts:TagSession IS REQUIRED, not optional: DataZone assumes the execution role with session
-# tags carrying the DataZone user id and project - the same tags Stage 6 step 3.2's
-# remote-session deny reads on the other side (aws:PrincipalTag/datazone:userId). Omit it and
-# the assume fails at sign-in, in a way that reads like an Identity Center problem.
+# sts:TagSession is required: DataZone assumes the execution role with session tags carrying the
+# DataZone user id and project - the same tags Stage 6 step 3.2's remote-session deny reads on
+# the other side (aws:PrincipalTag/datazone:userId). Omit it and the assume fails at sign-in, in
+# a way that reads like an Identity Center problem.
 
 data "aws_iam_policy_document" "domain_execution_trust" {
   statement {

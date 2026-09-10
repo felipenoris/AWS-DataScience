@@ -1,10 +1,9 @@
 # What this slice reports - Stage 2 step 5.
 #
-# NOTHING HERE PRINTS AN ACCOUNT ID, A GROUP GUID OR AN E-MAIL ADDRESS, and that is a rule
-# rather than an accident: an output is echoed to the terminal on every apply and pasted into
-# logs and chat windows afterwards (aws/INDEX.md rule 1). The slice HOLDS all three - the
-# organization roster is in its state - and reports none of them. Where a count would do, it is
-# a count.
+# Nothing here prints an account id, a group GUID or an e-mail address: an output is echoed to
+# the terminal on every apply and pasted into logs and chat windows afterwards (aws/INDEX.md
+# rule 1). The slice holds all three - the organization roster is in its state - and reports
+# none of them. Where a count will do, it is a count.
 #
 # A permission set ARN is not in that class: `arn:aws:sso:::permissionSet/ssoins-…/ps-…` names
 # the Identity Center instance and the set, and carries no account.
@@ -24,10 +23,10 @@ output "inline_policy_bytes" {
     The rendered size of each written set's inline policy, against the ceiling in
     var.inline_policy_max_bytes.
 
-    IT IS AN OUTPUT RATHER THAN A COMMENT BECAUSE THE NUMBER MOVES. Three of these sets are
-    long enumerated denies (1b step 3.5) and every stage from 5 onwards adds grants to them;
-    the precondition on each inline policy is what FAILS, and this is what lets somebody see
-    the margin shrinking before it does. Step 5.2's "count before writing", made repeatable.
+    An output rather than a comment because the number moves. Three of these sets are long
+    enumerated denies (1b step 3.5) and every stage from 5 onwards adds grants to them; the
+    precondition on each inline policy is what fails, and this lets somebody see the margin
+    shrinking before it does. Step 5.2's "count before writing", made repeatable.
   EOT
   value       = { for k, v in local.inline_policies : k => length(v) }
 }

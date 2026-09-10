@@ -1,39 +1,37 @@
 # The three approver sets - Stage 2 step 5.2, from the design of record in Stage 1b step 3.5
 # (D31 for the first, D22/D26 for the second, D14/INT-19 for the third).
 #
-# ALL THREE ARE APPROVERS, AND AN APPROVER WHO CAN ALREADY READ EVERYTHING IS NOT EXERCISING A
-# CONTROL WHEN THEY APPROVE. That sentence is 1b step 3.5's, and it is why these three sets are
-# the ones whose DENIALS are the substance: what each may not reach is what makes its approval
-# mean something. The denials need no resource to exist, so unlike the allows they are complete
-# here rather than owed to a later stage (see the header of policies-data-scientists.tf for
-# the line this slice draws).
+# An approver who can already read everything is not exercising a control when they approve (1b
+# step 3.5). These are the sets whose denials are the substance: what each may not reach is what
+# makes its approval mean something. The denials need no resource to exist, so unlike the allows
+# they are complete here rather than owed to a later stage (the header of
+# policies-data-scientists.tf draws the line this slice takes).
 #
-# NONE OF THE THREE APPROVAL GATES IS AN AWS PERMISSION. The deployment approval and the
-# dev-env approval both live in GitLab (Stage 8), driven by GitLab group membership; the
-# governance approval is a DataZone subscription decision. These sets exist for the work that
-# happens BEFORE the click - diagnosing a failed promotion, judging an image, seeing who is
-# asking for what - which is exactly why reaching the data itself would defeat them.
+# None of the three approval gates is an AWS permission. The deployment approval and the dev-env
+# approval both live in GitLab (Stage 8), driven by GitLab group membership; the governance
+# approval is a DataZone subscription decision. These sets exist for the work that happens before
+# the click - diagnosing a failed promotion, judging an image, seeing who is asking for what -
+# which is why reaching the data itself would defeat them.
 
 # ============================================================================================
-# DeploymentManagerAccess - Sandbox, Development, Production (D31). NOTHING on Data Governance
+# DeploymentManagerAccess - Sandbox, Development, Production (D31). Nothing on Data Governance
 # ============================================================================================
 #
-# WHAT THIS SET REPLACED, because the replacement is the decision. It used to be the AWS-managed
-# `ReadOnlyAccess`, which on the lifecycle accounts reaches the D19 derived zone - where the
-# output of a query over `restricted` data lives and, by D19's own classification rule, IS
-# `restricted` - and reaches athena:GetQueryResults, which returns other people's query output.
+# This set replaced the AWS-managed `ReadOnlyAccess`, which on the lifecycle accounts reaches
+# the D19 derived zone - where the output of a query over `restricted` data lives and, by D19's
+# own classification rule, is `restricted` - and reaches athena:GetQueryResults, which returns
+# other people's query output.
 #
-# ONE PRECISION WORTH CARRYING, because it is why the old arrangement looked harmless:
-# ReadOnlyAccess grants no athena:StartQueryExecution and no kms:Decrypt, so it could never
-# ORIGINATE a read of the lake and could not decrypt an SSE-KMS object at all. The exposure was
-# being prevented by ENCRYPTION rather than by design - which stops being true the first time a
-# bucket is created without a CMK. That is Lesson 5 from the other side: what looked like a
-# control was a side effect.
+# The old arrangement looked harmless because ReadOnlyAccess grants no
+# athena:StartQueryExecution and no kms:Decrypt, so it could never originate a read of the lake
+# and could not decrypt an SSE-KMS object at all. The exposure was being prevented by encryption
+# rather than by design, which stops being true the first time a bucket is created without a
+# CMK: what looked like a control was a side effect (Lesson 5).
 #
-# THE JOB IS DIAGNOSIS, NOT READING: why did this promotion fail, and should it be released.
+# The job is diagnosis, not reading: why did this promotion fail, and should it be released.
 #
-# STILL OWED: Stage 8 s3:GetObject on ENUMERATED build-artifact and test-report prefixes -
-# never a bucket wildcard, which is the shape that produced D31 in the first place.
+# Still owed: Stage 8 s3:GetObject on enumerated build-artifact and test-report prefixes, never
+# a bucket wildcard, which is the shape that produced D31 in the first place.
 
 data "aws_iam_policy_document" "deployment_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
@@ -43,9 +41,9 @@ data "aws_iam_policy_document" "deployment_manager" {
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 
-  # THE CLOUDWATCH LOGS GRANT IS NOT HERE ANY MORE (2026-08-17). It is the AWS managed policy
-  # CloudWatchLogsReadOnlyAccess, attached in permission-sets.tf, where the whole argument for
-  # that choice is written once instead of four times.
+  # The CloudWatch Logs grant is the AWS managed policy CloudWatchLogsReadOnlyAccess, attached
+  # in permission-sets.tf, where the argument for that choice is written once instead of four
+  # times.
 
   statement {
     sid    = "ReadSageMakerJobAndRegistryStatus"
@@ -92,7 +90,7 @@ data "aws_iam_policy_document" "deployment_manager" {
 
   # D7's two orchestration designs both land here: the native one is Step Functions plus
   # EventBridge Scheduler, and "did the schedule fire and did the machine finish" is the first
-  # question of any failed promotion. EXECUTION STATUS, never execution.
+  # question of any failed promotion. Execution status, never execution.
   statement {
     sid    = "ReadOrchestrationExecutionStatus"
     effect = "Allow"
@@ -113,14 +111,14 @@ data "aws_iam_policy_document" "deployment_manager" {
   }
 
   # ---------------------------------------------------------------------------------------
-  # THE FOUR DENIALS D31 NAMES, AND EACH CLOSES A DIFFERENT ROUTE TO THE SAME PLACE.
+  # The four denials D31 names, each closing a different route to the same place:
   #
-  #   athena:*                   both ORIGINATING a query over the lake and reading somebody
+  #   athena:*                   both originating a query over the lake and reading somebody
   #                              else's results. The whole service, because GetQueryResults is
   #                              reachable with nothing but a query execution id.
   #   kms:Decrypt                a CMK's key policy is where "who may read the copy" lives
   #                              (D31; since D19's 2026-08-26 revision the derived zone is the
-  #                              SMUS project path under the PROJECT CMK - this deny is the
+  #                              SMUS project path under the project CMK - this deny is the
   #                              approver-side half that survives the re-homing, and it makes
   #                              the control apply to a principal who might otherwise be
   #                              handed s3:GetObject later).
@@ -183,18 +181,18 @@ data "aws_iam_policy_document" "deployment_manager" {
 }
 
 # ============================================================================================
-# GovernanceManagerAccess - Data Governance ONLY
+# GovernanceManagerAccess - Data Governance only
 # ============================================================================================
 #
-# THE CATALOG, NEVER THE ROWS. The governance manager approves WHO MAY READ DATA, so their own
-# reach has to stop at the catalog - otherwise the approval is being made by somebody who
-# already has what they are approving.
+# The catalog, never the rows. The governance manager approves who may read data, so their own
+# reach has to stop at the catalog; otherwise the approval is made by somebody who already has
+# what they are approving.
 #
-# IT IS THE MIRROR IMAGE OF THE SET ABOVE (1b step 3.7): the one account the deployment manager
+# It is the mirror image of the set above (1b step 3.7): the one account the deployment manager
 # cannot enter is the only one this persona can.
 #
-# STILL OWED: Stage 5/6 the DataZone domain ARN, so the approval actions below can be scoped to
-# THIS organization's domain rather than to any domain in the account.
+# Still owed: Stage 5/6 the DataZone domain ARN, so the approval actions below can be scoped to
+# this organization's domain rather than to any domain in the account.
 
 data "aws_iam_policy_document" "governance_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
@@ -224,26 +222,25 @@ data "aws_iam_policy_document" "governance_manager" {
     resources = ["*"]
   }
 
-  # LF-TAG AND PERMISSION ADMINISTRATION - this is the persona's actual work (D13). Note what
-  # is NOT in the list: lakeformation:GetDataAccess, the call that vends credentials for the
-  # underlying objects. It is denied below rather than merely omitted, because it is the one
-  # action in this service that turns an administrator of access into a reader of data.
+  # LF-tag and permission administration - the persona's actual work (D13). Not in the list:
+  # lakeformation:GetDataAccess, the call that vends credentials for the underlying objects. It
+  # is denied below rather than merely omitted, because it is the one action in this service
+  # that turns an administrator of access into a reader of data.
   #
-  # THIS STATEMENT ON ITS OWN GRANTS THE PERSONA NOTHING, AND THAT IS NOT A FIGURE OF SPEECH
-  # (recorded 2026-08-19, Stage 5 pass 2). Lake Formation runs its OWN authorization layer on
-  # top of IAM: holding lakeformation:AddLFTagsToResource here permits the API CALL, while
-  # whether the call succeeds is decided by an LF permission - ASSOCIATE on the tag - granted
-  # in a different account, by a different slice, in a different stage
-  # (terraform-live/data-governance/data/governance.tf, step 6). The persona's real reach is
-  # the INTERSECTION of the two, and this file is only ever one of the halves.
+  # This statement on its own grants the persona nothing (recorded 2026-08-19, Stage 5 pass 2).
+  # Lake Formation runs its own authorization layer on top of IAM: holding
+  # lakeformation:AddLFTagsToResource here permits the API call, while whether the call succeeds
+  # is decided by an LF permission - ASSOCIATE on the tag - granted in a different account, by a
+  # different slice, in a different stage (terraform-live/data-governance/data/governance.tf,
+  # step 6). The persona's real reach is the intersection of the two, and this file is only ever
+  # one of the halves.
   #
-  # WHY THAT IS WORTH A COMMENT RATHER THAN ASSUMED KNOWLEDGE: the natural unit to read is a
-  # slice, and the slice is never the authorization unit. Before pass 2 landed, this list read
-  # exactly as it reads now and the persona could not tag a single dataset - the failure being
-  # an empty result or an access error at the moment of use, with nothing here to suggest why.
-  # The same trap runs in reverse: revoking the LF grant leaves this list untouched and still
-  # describing a capability that no longer exists. Verify the PAIR, never one side
-  # (docs/plan/lessons.md, the two-authorization-systems lesson).
+  # The natural unit to read is a slice, and the slice is never the authorization unit. Before
+  # pass 2 landed, this list read exactly as it reads now and the persona could not tag a single
+  # dataset - the failure being an empty result or an access error at the moment of use, with
+  # nothing here to suggest why. The trap runs in reverse too: revoking the LF grant leaves this
+  # list untouched and still describing a capability that no longer exists. Verify the pair,
+  # never one side (docs/plan/lessons.md, the two-authorization-systems lesson).
   statement {
     sid    = "AdministerLakeFormation"
     effect = "Allow"
@@ -272,7 +269,7 @@ data "aws_iam_policy_document" "governance_manager" {
     resources = ["*"]
   }
 
-  # DOMAIN OWNERSHIP, READ AS THE APPROVAL VERBS RATHER THAN AS datazone:*. A subscription
+  # Domain ownership, read as the approval verbs rather than as datazone:*. A subscription
   # request is the DataZone shape of "may I read this", and accepting or rejecting one is the
   # governance manager's decision. Everything else in the service is read.
   statement {
@@ -314,25 +311,25 @@ data "aws_iam_policy_document" "governance_manager" {
   }
 
   # ---------------------------------------------------------------------------------------
-  # THE THREE ROUTES FROM THE CATALOG TO THE ROWS, CLOSED BY NAME. Each is a different service
-  # and each would be enough on its own:
+  # The routes from the catalog to the rows, closed by name. Each is a different service and
+  # each would be enough on its own:
   #
   #   lakeformation:GetDataAccess  vends temporary credentials for the underlying S3 objects.
-  #                                The set ADMINISTERS this mechanism; using it is the thing it
+  #                                The set administers this mechanism; using it is the thing it
   #                                must not do.
-  #   s3:Get*                      the direct route, and it is denied whole rather than
-  #                                prefix-scoped: the lake prefixes do not exist yet (Stage 5),
-  #                                and a governance manager has no legitimate object read to
-  #                                lose. A prefix-scoped deny written today would be a guess
-  #                                that fails open.
+  #   s3:Get*                      the direct route, denied whole rather than prefix-scoped:
+  #                                the lake prefixes do not exist yet (Stage 5), and a
+  #                                governance manager has no legitimate object read to lose. A
+  #                                prefix-scoped deny written today would be a guess that fails
+  #                                open.
   #   athena:*                     the query route. 1b step 3.5 says "no Athena workgroup" -
   #                                written here as the service, because a workgroup that
   #                                appears later would otherwise be reachable without anyone
   #                                revisiting this file.
   #
-  # kms:Decrypt is deliberately NOT a fourth: with s3:Get* and GetDataAccess closed there is no
-  # object to decrypt, and a fourth lock on the same door is a denial nothing will ever
-  # exercise (Lesson 20 - when several policies deny the same call, only one is proven).
+  # kms:Decrypt is not a fourth: with s3:Get* and GetDataAccess closed there is no object to
+  # decrypt, and a fourth lock on the same door is a denial nothing will ever exercise (Lesson
+  # 20 - when several policies deny the same call, only one is proven).
   statement {
     sid    = "DenyReadingTheRows"
     effect = "Deny"
@@ -351,17 +348,16 @@ data "aws_iam_policy_document" "governance_manager" {
 # DevEnvStewardAccess - Production, Sandbox and Development
 # ============================================================================================
 #
-# THE ARTIFACT, NEVER THE DATA. The steward approves the `dev-env` image - the runtime every
+# The artifact, never the data. The steward approves the `dev-env` image - the runtime every
 # notebook and every project app runs on (INT-19) - and the approval itself happens in GitLab,
-# consuming no AWS permission. What the set is for is JUDGING the artifact: what is in the
-# image, what the scanner found, and what is actually registered as a SageMaker image.
+# consuming no AWS permission. The set is for judging the artifact: what is in the image, what
+# the scanner found, and what is actually registered as a SageMaker image.
 #
-# ONE SET, THREE ACCOUNTS, AND IT IS READ-ONLY IN ALL OF THEM (1b step 3.3). "Production plus
-# read-only on Sandbox and Development" describes the assignment table; the policy itself
-# writes nothing anywhere, so the distinction is carried by the content rather than by the
-# assignment.
+# One set, three accounts, read-only in all of them (1b step 3.3). "Production plus read-only on
+# Sandbox and Development" describes the assignment table; the policy itself writes nothing
+# anywhere, so the distinction is carried by the content rather than by the assignment.
 #
-# STILL OWED: Stage 7 the ECR repository ARNs, so the metadata reads below can be scoped to the
+# Still owed: Stage 7 the ECR repository ARNs, so the metadata reads below can be scoped to the
 # dev-env repository rather than to every repository in the account.
 
 data "aws_iam_policy_document" "dev_env_steward" {
@@ -404,9 +400,9 @@ data "aws_iam_policy_document" "dev_env_steward" {
     resources = ["*"]
   }
 
-  # WHAT IS ACTUALLY REGISTERED, which is a different question from what is in the registry: an
-  # approved image only matters if the image/app_image_config pair pointing at it is the one
-  # Studio hands out. Narrow on purpose - this set does not read jobs, endpoints or pipelines.
+  # What is actually registered, a different question from what is in the registry: an approved
+  # image only matters if the image/app_image_config pair pointing at it is the one Studio hands
+  # out. Narrow by design - this set does not read jobs, endpoints or pipelines.
   statement {
     sid    = "ReadSageMakerImageRegistration"
     effect = "Allow"
@@ -424,9 +420,9 @@ data "aws_iam_policy_document" "dev_env_steward" {
   }
 
   # ---------------------------------------------------------------------------------------
-  # THE FIVE ACTIONS THAT WOULD TURN THE GATE INTO THEATRE (1b step 3.5, by name). The pipeline
-  # holds all five and runs only AFTER the approval - so a steward who also held them could
-  # ship an image nobody reviewed, including their own.
+  # The five actions that would turn the gate into theatre (1b step 3.5, by name). The pipeline
+  # holds all five and runs only after the approval, so a steward who also held them could ship
+  # an image nobody reviewed, including their own.
   statement {
     sid    = "DenyShippingTheArtifactItApproves"
     effect = "Deny"
@@ -449,7 +445,7 @@ data "aws_iam_policy_document" "dev_env_steward" {
     resources = ["*"]
   }
 
-  # APPROVING A RUNTIME NEVER REQUIRES READING DATA - the same triple as the governance manager,
+  # Approving a runtime never requires reading data - the same triple as the governance manager,
   # for a different reason: there the persona administers access, here the persona has no
   # relationship with the data at all. It is the narrowest of the three approver sets, because
   # what it judges is a container image and not an environment.

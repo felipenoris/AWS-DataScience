@@ -1,28 +1,23 @@
-# ------------------------------------------------- Stage 6c step 3.4: the peering to the hub
+# ------------------------------------------------ the peering to the hub (Stage 6c step 3.4)
 #
-# CROSS-ACCOUNT, SO IT IS A REQUESTER AND AN ACCEPTER AND TWO APPLIES. `auto_accept` cannot work
-# across an account boundary, and that is the boundary doing its job: acceptance is Production's
-# own act. This file is the requester half only - the connection sits in `pending-acceptance`
-# until `production/networking/` accepts it, and the routes below reference the ACCEPTER's id,
-# which is what orders every route after acceptance (AWS requires it).
+# Cross-account, so it is a requester, an accepter and two applies: `auto_accept` cannot work
+# across an account boundary, and acceptance is Production's own act. This file is the requester
+# half only - the connection sits in `pending-acceptance` until `production/networking/` accepts
+# it, and the routes below reference the accepter's id, which AWS requires before any route.
 #
-# WHAT THIS BUYS AND WHAT IT DOES NOT. It buys an ADDRESS in VPC-Networking, where the explicit
-# proxy runs. It does not buy an internet path: peering shares an address and never a path
-# (Lesson 44), so this VPC still reaches the internet only as a CLIENT of that proxy, whose ACL
-# decides what it may fetch. That is D38's whole argument, and the reason no NAT gateway exists.
+# What it buys is an address in VPC-Networking, where the explicit proxy runs. It does not buy an
+# internet path: peering shares an address and never a path (Lesson 44), so this VPC reaches the
+# internet only as a client of that proxy, whose ACL decides what it may fetch (D38).
 #
-# THE ROUTES ARE THE ACCEPTER'S JOB TO MIRROR. A peering with routes on one side only is `active`
-# in every console view that shows peerings and dead in every one that shows routes - the defect
-# 3.7's NT-11 exists to catch.
+# The accepter mirrors the routes. A peering with routes on one side only reads `active` in every
+# console view that shows peerings and dead in every one that shows routes - the defect NT-11
+# (step 3.7) exists to catch.
 
-# SCOPED TO THE HUB ROW, AND THE FILTER IS NOT COSMETIC. Sandbox requests TWO cross-account
-# peerings - this one to VPC-Networking, and the INT-09 one to VPC-SharedServices that Stage 3
-# built and `peering.tf` still owns by hand. Selecting on `!same_account` alone matched both and
-# `one()` raised, which is the error catching the thing a wider filter would have BUILT: a second
-# Terraform resource for a peering that already exists, in a different file, in the same state.
-#
-# THE INT-09 ROW STAYS IN peering.tf FOR NOW, and folding it in is a `moved {}` block rather than
-# a rewrite - the connection is live and INT-09 rides it. That commit is its own.
+# Scoped to the hub row. The filter names the peer slice because one account can request more
+# than one cross-account peering - Sandbox requests this one to VPC-Networking and the INT-09 one
+# to VPC-SharedServices, which `peering.tf` owns there by hand. On `!same_account` alone both
+# match and `one()` raises, instead of a second Terraform resource for a peering that already
+# exists in another file in the same state.
 locals {
   hub_peerings = [
     for pr in var.peerings : pr
@@ -57,14 +52,9 @@ resource "aws_vpc_peering_connection" "to_hub" {
   }
 }
 
-# THE FORWARD ROUTES, AND LEAVING THEM OUT FOR ONE COMMIT WAS THE DEFECT THIS FILE'S OWN HEADER
-# NAMES. Between the connection applying and these landing, the peering read `active` in every
-# console view that shows peerings and carried nothing - which is precisely what 3.7's NT-11
-# exists to catch, arriving as a self-inflicted example.
-#
-# THE HUB'S PRIVATE AND PUBLIC TIERS, subnet-scoped. Public because the proxy and the WireGuard
-# host live there (pass 4); private because that is where anything else in the hub would answer.
-# The hub's ISOLATED tier is never a destination - that is what makes it isolated.
+# The forward routes, scoped to the hub's private and public subnets. Public because the proxy
+# and the WireGuard host live there (pass 4); private because that is where anything else in the
+# hub would answer. The hub's isolated tier is never a destination.
 data "aws_subnets" "hub_reachable" {
   provider = aws.hub
 

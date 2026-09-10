@@ -14,26 +14,24 @@
 #             sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything in AWS.
 #
-# WHY THE TEMPLATES CARRY PLACEHOLDERS AND NOT THE REAL IDS. Two independent reasons, and
-# either one alone would be enough:
+# The templates carry placeholders and not the real ids, for two independent reasons:
 #   - The same organization id appears in awsds-org-scp-perimeter.json, in the tag and RCP
 #     documents of step 7.8, and inside the OU path of the datazone carve-out. A value that
 #     has to be typed correctly in four places will eventually be wrong in one of them, and
-#     the direction it fails in is silent - a deny that never fires (Lesson 14). Generated
-#     once, it cannot drift.
+#     it fails silently - a deny that never fires (Lesson 14). Generated once, it cannot
+#     drift.
 #   - At Stage 2 these documents move into Terraform, where the id comes from
 #     `data.aws_organizations_organization.this.id` rather than from a literal. A template
 #     with a placeholder is already that shape; a file with the id baked in would have to be
 #     un-baked, which is an edit nobody remembers is pending.
 # The rendered output lands in aws/output/, which is untracked, so no identifier enters a
-# tracked file (aws/INDEX.md rule 1) - and the file there is what gets pasted into the
-# console, byte for byte, so that Stage 2 step 5.5's import compares a document against
-# itself instead of against a re-typing.
+# tracked file (aws/INDEX.md rule 1). The file there is what gets pasted into the console,
+# byte for byte, so that Stage 2 step 5.5's import compares a document against itself instead
+# of against a re-typing.
 #
-# WHAT IT CHECKS BESIDES SUBSTITUTING, because both failures are found at the END of the
-# evening otherwise: that no placeholder survived (an unsubstituted <...> is a policy that
-# attaches and denies nothing, or refuses to attach at all), that the JSON parses, and how
-# many characters each document spends against the per-node budget.
+# Besides substituting, it checks that no placeholder survived (an unsubstituted <...> is a
+# policy that attaches and denies nothing, or refuses to attach at all), that the JSON parses,
+# and how many characters each document spends against the per-node budget.
 
 from __future__ import annotations
 
@@ -53,9 +51,8 @@ OUT_DIR = "aws/output/rendered-policies"
 # The documented limits, since Service Quotas publishes none of them for `organizations`
 # (Stage 1c step 7.0 step 5, measured): SCPs are 10 per node and 10 240 characters per
 # document since the May 2026 increase; RCPs were not part of it and are still 5 and 5 120.
-# This script checks every document against the TIGHTER number on purpose - the same folder
-# holds 7.8's RCP, one file among several, and a limit that is right for most of them is the
-# kind that is discovered by the one it was wrong for.
+# This script checks every document against the tighter number: the same folder holds 7.8's
+# RCP, one file among several.
 LIMIT = 5120
 
 SURVIVOR_RE = re.compile(r"<[A-Z_]+>")
@@ -102,9 +99,9 @@ def main(argv: list) -> int:
     if not root_id:
         die("could not read the root id")
 
-    # The Data OU, by NAME - the one lookup that would otherwise be a hand-copied id. If the
+    # The Data OU, by name - the one lookup that would otherwise be a hand-copied id. If the
     # OU is ever renamed this fails loudly here rather than producing a carve-out that
-    # matches nothing, which is the failure direction that does not announce itself.
+    # matches nothing.
     ou_id_data = text_of(
         "organizations",
         "list-organizational-units-for-parent",
@@ -118,19 +115,18 @@ def main(argv: list) -> int:
     if not ou_id_data:
         die(f"no OU named 'Data' directly under {root_id} - has it been renamed or nested?")
 
-    # aws:PrincipalOrgPaths is the full path WITH a trailing slash, and `Data` sits directly
+    # aws:PrincipalOrgPaths is the full path with a trailing slash, and `Data` sits directly
     # under the root, so this is the whole path. A nested OU would need one more segment -
     # and `*` in place of the final slash only if the carve-out is meant to reach children.
     org_path_data = f"{org_id}/{root_id}/{ou_id_data}/"
 
-    # The Data Governance account id, resolved by OU MEMBERSHIP rather than pasted. The Data
+    # The Data Governance account id, resolved by OU membership rather than pasted. The Data
     # OU document (step 7.6) carves the catalog-maintenance role out of its crawler deny
-    # (D27), and an ARN condition may not name a wildcard account
-    # (docs/plan/conventions.md) - so the id has to come from somewhere, and the only source
-    # that cannot go stale is the organization itself. Exactly one account is expected:
-    # `Data` holds Data Governance alone, and every account in this design except `Sandbox`
-    # is structural (D35). Two accounts here is not a rendering problem to route around, it
-    # is a change to the account map, so it stops.
+    # (D27), and an ARN condition may not name a wildcard account (docs/plan/conventions.md),
+    # so the id comes from the organization itself, the one source that cannot go stale.
+    # Exactly one account is expected: `Data` holds Data Governance alone, and every account
+    # in this design except `Sandbox` is structural (D35). Two accounts here is a change to
+    # the account map, so it stops.
     acct_ids = text_of(
         "organizations",
         "list-accounts-for-parent",
@@ -153,9 +149,9 @@ def main(argv: list) -> int:
     note(f"root   : {root_id}")
     note(f"Data OU: {ou_id_data}")
     note(f"path   : {org_path_data}")
-    # Masked on purpose: this line is read off a terminal that gets pasted into docs/log/,
-    # and an account id is one of the three things `CLAUDE.md` keeps out of tracked files.
-    # The full id is in the rendered document under aws/output/, which is untracked.
+    # Masked: this line is read off a terminal that gets pasted into docs/log/, and an account
+    # id is one of the three things `CLAUDE.md` keeps out of tracked files. The full id is in
+    # the rendered document under aws/output/, which is untracked.
     note(f"Data ac: ...{account_id_data[-4:]}")
     note("")
 
