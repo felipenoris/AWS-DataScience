@@ -6,6 +6,20 @@
 # and this one, and only this one is ours to curate. The environment is built by uv, from this file,
 # on a uv-managed CPython under /opt/awsds - so nothing here is installed by conda.
 #
+# SHARING THE DISTRIBUTION'S PACKAGES WAS CONSIDERED AND REFUSED (2026-09-10, the user). A venv
+# inherits site-packages from the interpreter that created it, and this one's interpreter is not the
+# distribution's, so `--system-site-packages` inherits nothing. Reaching across by hand - a `.pth` or
+# PYTHONPATH pointing at /opt/conda/lib/python3.12/site-packages - imports fine until two trees hold
+# the same package: the distribution's pandas is compiled against the distribution's numpy, and with
+# ours first on the path it loads ours and fails as `numpy.dtype size changed` or as a segfault, in a
+# notebook, at runtime. Pinning this environment to the distribution's exact Python version makes the
+# extension modules loadable and does not fix that; it only gives up the independent version, at
+# which point the distribution's own interpreter would do the same job with correct precedence.
+#
+# So the two environments do not share, and the price is paid in disk: whatever is listed below
+# exists twice in the image. The lever on that price is this list, not the mechanism - `uv sync`
+# installs everything named here regardless of what any other environment holds.
+#
 # WHY A pyproject.toml AND NOT A requirements.txt. `uv sync` writes uv.lock beside this file: the
 # exact resolution, every package and every hash, for every platform the lock covers. That lock is
 # committed and is what the build installs, so two builds of one commit are the same environment -
