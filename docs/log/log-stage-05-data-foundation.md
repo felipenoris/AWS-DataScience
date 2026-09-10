@@ -1619,7 +1619,7 @@ grant and its revert, then 4e (the `athena:StartQueryExecution` amendment, last,
 phase 4b) and pass 6 (Security Hub). What this sitting closed is the carve-out pair alone — the one 4d
 proof that needed no persona.
 
-## 2026-08-19 — Pass 4d, group A in Sandbox: five proofs land, and the drop-box write is broken by a deny nobody connected to the gateway endpoint
+## 2026-08-19 — Pass 4d, group A in Sandbox: the proofs, and the drop-box write denied
 
 *Provenance. **Every command and every output below is the user's**, run from the laptop with the
 tunnel up and pasted verbatim, with **one mechanical substitution, named here and made nowhere else:
@@ -1666,27 +1666,24 @@ AWS_PROFILE=awsds-scientist-sandbox aws athena get-query-results --query-executi
 trade_id        trade_date      instrument      quantity        price
 ```
 
-**Four readings, and each closes something different.** The identity is the control the rest depend
-on — `DataScientistAccess`, not an infrastructure role. `glue:GetTable` through the **resource link**
-returns **five** columns against the lake's six: **verification (x)'s persona half is answered**, and
-it agrees with the account-level reading taken as `InfrastructureAccess` on 2026-08-19 — the
-`classification` gate filters `counterparty` at the account boundary and the persona inherits that,
-rather than being filtered a second time.
+The identity is the control the rest depend on — `DataScientistAccess`, not an infrastructure role.
+`glue:GetTable` through the **resource link** returns five columns against the lake's six:
+verification (x)'s persona half is answered, and it agrees with the account-level reading taken as
+`InfrastructureAccess` on 2026-08-19 — the `classification` gate filters `counterparty` at the account
+boundary and the persona inherits that.
 
-**The query is the entry that matters.** `SUCCEEDED`, `Reason: null`, `Scanned: 0` (the table is
-empty, as applied), and `ResultSetMetadata.ColumnInfo` carries the **same five names** — so the
-column filter holds at the **engine**, not only in the catalog, which the metadata read alone could
-not say. This is **verification (ii) closed in full**: version-4 cross-account credential vending
-through `sts:SetContext` works, and **INT-11's vending half — untested since the RCP was written —
-is exercised for the first time**. The output landed at
+The query returned `SUCCEEDED`, `Reason: null`, `Scanned: 0` (the table is empty, as applied), and
+`ResultSetMetadata.ColumnInfo` carries the same five names, so the column filter holds at the
+**engine** and not only in the catalog. This closes **verification (ii)** in full: version-4
+cross-account credential vending through `sts:SetContext` works, and INT-11's vending half —
+untested since the RCP was written — is exercised for the first time. The output landed at
 `s3://awsds-sandbox-derived/results/<id>.csv`: D19 practice (i) holding, the result inside the zone
 that carries the account's CMK, the 30-day lifecycle and Stage 11's future Macie scope.
 
-**And the shape of it is the D13 argument made visible**: the persona read a governed table while
-holding no `s3:GetObject` anywhere on the lake — A5 below is the same session failing to reach the
-bytes.
+The persona read a governed table while holding no `s3:GetObject` anywhere on the lake — A5 below is
+the same session failing to reach the bytes.
 
-### A4 — the workgroup boundary, and the stage file predicted the wrong half
+### A4 — the workgroup boundary
 
 ```
 AWS_PROFILE=awsds-scientist-sandbox aws athena start-query-execution --work-group awsds-sandbox-athena --query-string "SELECT 1" --result-configuration OutputLocation=s3://awsds-sandbox-derived/scratch/hijack/ --query QueryExecutionId --output text
@@ -1698,17 +1695,17 @@ AWS_PROFILE=awsds-scientist-sandbox aws athena get-query-execution --query-execu
 s3://awsds-sandbox-derived/results/021ea6de-160c-4bf8-b52a-1d43a98092a4.csv
 ```
 
-**The client asked for `scratch/hijack/` and got `results/`.** `EnforceWorkGroupConfiguration`
-**overrides** the client's result location rather than refusing the query — so the deliverable's own
-wording, *"a query whose client asks for a result location outside the derived prefix **fails**"*, is
-**wrong about the mechanism and right about the control**, and is corrected in the stage file in this
-sitting. The discriminating reading is the `OutputLocation` of the resulting execution, never an error
-code (Lesson 13 again): the hijack target was chosen inside a prefix the persona **can** write, so a
-failure of enforcement would have shown up as a successful write in the wrong place rather than as a
-permission error that two causes could explain.
+The client asked for `scratch/hijack/` and got `results/`. `EnforceWorkGroupConfiguration` **overrides**
+the client's result location rather than refusing the query, so the deliverable's wording — *"a query
+whose client asks for a result location outside the derived prefix **fails**"* — is wrong about the
+mechanism and right about the control, and is corrected in the stage file in this sitting. The
+discriminating reading is the `OutputLocation` of the resulting execution, never an error code
+(Lesson 13): the hijack target was chosen inside a prefix the persona can write, so a failure of
+enforcement would have shown up as a successful write in the wrong place rather than as a permission
+error that two causes could explain.
 
-**The second half — the unenforced `primary` workgroup, which the design leaves alone deliberately
-(`athena.tf`, Lesson 5) and denies from the identity plane instead:**
+The `primary` workgroup is unenforced; the design leaves it alone (`athena.tf`, Lesson 5) and denies it
+from the identity plane:
 
 ```
 ✗ AWS_PROFILE=awsds-scientist-sandbox aws athena start-query-execution --work-group primary --query-string "SELECT 1" --result-configuration OutputLocation=s3://awsds-sandbox-derived/scratch/
@@ -1716,14 +1713,12 @@ permission error that two causes could explain.
 aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartQueryExecution operation: You are not authorized to perform: athena:StartQueryExecution on the resource. After your AWS administrator or you have updated your permissions, please try again.
 ```
 
-**Athena's own message names no policy and no mechanism** — *"You are not authorized to perform:
-athena:StartQueryExecution on the resource"* — so this reading proves the denial and **not** what
-produced it. What produces it is written in the policy rather than in the message: the run family is
-scoped to an enumeration of two workgroup ARNs, `primary` is absent from it, and the absence is the
-control (`athena.tf`'s own note). Recorded as a **weaker reading than the S3 ones below**, which do
-distinguish their mechanism, rather than written up as if the two were the same kind of evidence.
+Athena's message names no policy and no mechanism, so this reading proves the denial and not what
+produced it. The run family is scoped to an enumeration of two workgroup ARNs, `primary` is absent from
+it, and the absence is the control (`athena.tf`'s own note). Recorded as a weaker reading than the S3
+ones below, which do distinguish their mechanism.
 
-### A5 — the D13 bypass is refused, but not by the deny the plan expected
+### A5 — the D13 bypass refused
 
 ```
 ✗ AWS_PROFILE=awsds-scientist-sandbox aws s3 ls s3://awsds-data-curated/
@@ -1735,14 +1730,13 @@ aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 op
 aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" with an explicit deny in an identity-based policy
 ```
 
-**The bypass is closed — and the wording says it was closed by something nobody predicted.** The
-prediction, written into this sitting's plan, was the *implicit* deny of D13: the persona holds no
-`s3:GetObject` on the lake and never will, so *"no resource-based policy allows"* was the expected
-sentence. What came back is **`with an explicit deny in an identity-based policy`**, which means a
-`Deny` statement inside `DataScientistAccess` itself matched. The next block says which one, and why
-it matters far more than this proof does.
+The bypass is closed. The prediction, written into this sitting's plan, was the *implicit* deny of
+D13: the persona holds no `s3:GetObject` on the lake and never will, so *"no resource-based policy
+allows"* was the expected sentence. What came back is **`with an explicit deny in an identity-based
+policy`**, so a `Deny` statement inside `DataScientistAccess` itself matched. The next block says which
+one.
 
-### A6 — the drop-box write, which is supposed to work, does not
+### A6 — the drop-box write
 
 ```
 ✗ AWS_PROFILE=awsds-scientist-sandbox aws s3api put-object --bucket awsds-data-dropbox --key incoming/2026/08/19/probe-sandbox.txt --body /tmp/dropbox-probe.txt
@@ -1758,68 +1752,62 @@ aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operat
 aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-dropbox" with an explicit deny in an identity-based policy
 ```
 
-**`PutObject` was DENIED, and it is the one call in this sitting that was supposed to succeed.** The
-drop-box write is pass 4c's own deliverable — the identity half whose absence 6.2's correction
-explains, applied on 2026-08-19 as `WriteIngestionDropBox`. It is present, it is correct, and it is
-**overridden by an explicit `Deny` in the same document**, because an explicit deny beats every allow.
-The read-back and the list are denied too, which is the designed asymmetry — but the asymmetry is not
-what this measured, since all three verbs failed for the same reason.
+`PutObject` was denied, and it is the one call in this sitting that was supposed to succeed. The
+drop-box write is pass 4c's deliverable — the identity half whose absence 6.2's correction explains,
+applied on 2026-08-19 as `WriteIngestionDropBox`. It is present and correct, and **overridden by an
+explicit `Deny` in the same document**. The read-back and the list are denied too, which is the
+designed asymmetry, but all three verbs failed for the same reason, so this reading does not measure
+it.
 
-### The diagnosis: `DenyControlPlaneOffVpn` fires on S3 *because* the tunnel works as designed
+### The diagnosis: `DenyControlPlaneOffVpn` fires on S3
 
-`DataScientistAccess` composes exactly five `Deny` statements, and four of them cannot match these
-calls: `DenyIamPrincipalMutation` (iam only), `DenyMakingStorageOrImagesPublic` (no `PutObject`, no
+`DataScientistAccess` composes five `Deny` statements, and four of them cannot match these calls:
+`DenyIamPrincipalMutation` (iam only), `DenyMakingStorageOrImagesPublic` (no `PutObject`, no
 `ListBucket`), `DenyInternetFacingCompute` (ec2 only), and `DenyTerraformStateAccess`, whose ARNs are
 `awsds-*-tfstate` and `awsds-*-tfstate/*` — a pattern neither `awsds-data-curated` nor
-`awsds-data-dropbox` matches, since the wildcard still requires the name to *end* in `-tfstate`. **The
-fifth is `DenyControlPlaneOffVpn`: `Action *` on `Resource *`, denying whenever
-`NotIpAddress aws:SourceIp` ∉ the VPN Elastic IPs AND `aws:ViaAWSService` is false.**
+`awsds-data-dropbox` matches, since the wildcard still requires the name to *end* in `-tfstate`. The
+fifth is **`DenyControlPlaneOffVpn`**: `Action *` on `Resource *`, denying whenever
+`NotIpAddress aws:SourceIp` ∉ the VPN Elastic IPs AND `aws:ViaAWSService` is false.
 
-**The condition is met by S3 and not by Glue or Athena, and the reason is the split this project
-already measured and wrote down one entry ago.** The public subnet's route table carries the two `[P]`
-gateway endpoints, so tunnel traffic **splits by destination**: an S3 call leaves through the gateway
-endpoint, every other API through the internet gateway wearing the Elastic IP. A request arriving at
-S3 through a VPC endpoint does not present the Elastic IP in `aws:SourceIp` — the key is either absent
-or carries a private address, and **either way a negated operator makes the deny fire**. *(Measured
-later the same day: it is the second — present, carrying the host's private address. The controls
-entry below.)* Glue and
-Athena, on the same session and in the same minutes, arrive as `aws:SourceIp` = the Elastic IP and the
-deny stays quiet. A2, A3 and A7 are therefore not just other proofs: **they are the control that
-isolates this one to the S3 path** rather than to a broken session, an expired token or a lost tunnel.
+The condition is met by S3 and not by Glue or Athena. The public subnet's route table carries the two
+`[P]` gateway endpoints, so tunnel traffic **splits by destination**: an S3 call leaves through the
+gateway endpoint, every other API through the internet gateway wearing the Elastic IP. A request
+arriving at S3 through a VPC endpoint does not present the Elastic IP in `aws:SourceIp` — the key is
+either absent or carries a private address, and either way a negated operator makes the deny fire.
+*(Measured later the same day: it is the second — present, carrying the host's private address; the
+controls entry below.)* Glue and Athena, on the same session and in the same minutes, arrive as
+`aws:SourceIp` = the Elastic IP and the deny stays quiet. A2, A3 and A7 are the control that isolates
+this one to the S3 path rather than to a broken session, an expired token or a lost tunnel.
 
-**Why A3 wrote to `results/` anyway**, and it is the second half of the same mechanism: Athena stages
-the result with the caller's credentials through a **forward access session**, where
-`aws:ViaAWSService` is `true` — so the statement's own carve-out excludes it. Service-mediated S3
-works; the persona's *own* S3 call does not.
+A3 wrote to `results/` anyway because Athena stages the result with the caller's credentials through a
+**forward access session**, where `aws:ViaAWSService` is `true`, so the statement's carve-out excludes
+it. Service-mediated S3 works; the persona's own S3 call does not.
 
-**This is the two halves of the design disagreeing about a split only one of them knows about.** The
-bucket policy's `DenyOutsideTrustedNetworks` carries **three** branches — `aws:SourceVpce`,
-`aws:SourceIp`, `aws:PrincipalAccount` — precisely because traffic can arrive either way. The identity
-policy's twin carries **one**, `aws:SourceIp`, and the comment above it argues the split-tunnel case
-(step 5's `0.0.0.0/0` route) without ever reaching the gateway-endpoint case. The resource half was
-written against the measured topology; the identity half was written against the intended one.
+The two halves of the design disagree about that split. The bucket policy's `DenyOutsideTrustedNetworks`
+carries three branches — `aws:SourceVpce`, `aws:SourceIp`, `aws:PrincipalAccount` — because traffic can
+arrive either way. The identity policy's twin carries one, `aws:SourceIp`, and the comment above it
+argues the split-tunnel case (step 5's `0.0.0.0/0` route) without reaching the gateway-endpoint case.
+The resource half was written against the measured topology; the identity half against the intended
+one.
 
-**What it costs, stated at its real width rather than at the width of the failing command.** Every
-direct S3 call a persona makes from the tunnel is explicitly denied, which reaches past the drop-box:
-the derived zone's own three prefix families — `results/`, `derived/$${aws:userid}/`, `scratch/` — are
-granted by four statements of `DataScientistAccess` applied at 4c, and **a person cannot download
-their own query result with `aws s3 cp`** under the same mechanism. That prediction is untested and is
-the first thing group B should measure, because it separates "the deny is about the lake" from "the
-deny is about S3".
+Every direct S3 call a persona makes from the tunnel is explicitly denied, which reaches past the
+drop-box: the derived zone's own three prefix families — `results/`, `derived/$${aws:userid}/`,
+`scratch/` — are granted by four statements of `DataScientistAccess` applied at 4c, and a person cannot
+download their own query result with `aws s3 cp` under the same mechanism. That prediction is untested
+and is the first thing group B should measure, because it separates "the deny is about the lake" from
+"the deny is about S3".
 
-**It is a real defect and it is not a hole in the perimeter** — the failure is closed, not open, and
-nothing reached data it should not. What it breaks is a designed path (D18/D25's ingestion) and,
-probably, the usability of the derived zone. **The fix is not this sitting's**: the shape is a third
-condition on `DenyControlPlaneOffVpn` mirroring the bucket policy's `aws:SourceVpce` branch, and
-`identity/sso/` already reads the consumer states that hold those endpoint ids — ***and the consumer
-states are the wrong ones**: the controls entry below measures that every tunnel call, in either
-consumer, leaves through the **VPN home's** endpoint. Read that before implementing this sentence* —
-but amending a
-statement that binds **six** permission sets in every governed account is a deliberate change with its
-own review, and Stage 4's own warning about it (getting this wrong on a persona costs a session) is
-the reason it is written down here rather than applied.
+The defect closes a path rather than opening one: nothing reached data it should not. What it breaks is
+a designed path (D18/D25's ingestion) and, probably, the usability of the derived zone. The fix is not
+this sitting's. Its shape is a third condition on `DenyControlPlaneOffVpn` mirroring the bucket policy's
+`aws:SourceVpce` branch, and `identity/sso/` already reads the consumer states that hold those endpoint
+ids — *and the consumer states are the wrong ones: the controls entry below measures that every tunnel
+call, in either consumer, leaves through the **VPN home's** endpoint. Read that before implementing this
+sentence.* The statement binds six permission sets in every governed account, so the amendment carries
+its own review; Stage 4's warning about it (getting this wrong on a persona costs a session) is why it
+is written down here rather than applied.
 
-### A7 — the crawler's negative half, and the second thing the plan predicted wrongly
+### A7 — the crawler's negative half
 
 ```
 ✗ AWS_PROFILE=awsds-scientist-sandbox aws glue start-crawler --name awsds-data-raw
@@ -1827,42 +1815,40 @@ the reason it is written down here rather than applied.
 aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartCrawler operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: glue:StartCrawler on resource: arn:aws:glue:us-west-2:<Sandbox Account 1>:crawler/awsds-data-raw because no identity-based policy allows the glue:StartCrawler action
 ```
 
-**The deliverable says this call is "denied naming the OU policy". It is not, and could not be.** The
-`glue:StartCrawler` deny is `DenyCatalogMaintenanceRunsExceptMaintenanceRole` in
-`awsds-org-scp-ou-data`, attached to the **Data** OU; Sandbox and Development sit under
-**`Interactive`**, whose only statement is `DenyClassicNotebookInstances`. So no SCP is in the path at
-all, and what refuses the call is the **absence of any `glue:Start*` allow** in the persona's own
-document — *"because no identity-based policy allows"*, the implicit form. Corrected in the stage file
-in this sitting. The D27 carve-out remains **unexercised in both directions** by this reading: it was
-never the mechanism here.
+The deliverable says this call is "denied naming the OU policy"; it is not. The `glue:StartCrawler` deny
+is `DenyCatalogMaintenanceRunsExceptMaintenanceRole` in `awsds-org-scp-ou-data`, attached to the **Data**
+OU; Sandbox and Development sit under `Interactive`, whose only statement is
+`DenyClassicNotebookInstances`. No SCP is in the path, and what refuses the call is the absence of any
+`glue:Start*` allow in the persona's own document — *"because no identity-based policy allows"*, the
+implicit form. Corrected in the stage file in this sitting. The D27 carve-out remains unexercised in
+both directions: it was never the mechanism here.
 
-**Two things fall out of it that are worth more than the proof itself.** The resource ARN in the
-message is `arn:aws:glue:us-west-2:<Sandbox Account 1>:crawler/awsds-data-raw` — a crawler that does
-**not exist**, since both crawlers live in Data Governance — and IAM still answered with an
-authorization decision rather than `EntityNotFoundException`. That is **Lesson 21's fork resolved in
-the good direction for this action**: `glue:StartCrawler` authorizes before it validates, so the
-reading is real and not an artefact. And the *wording* is the control for the diagnosis above: the
-same session, the same minute, produces an **implicit** deny from Glue and an **explicit identity**
-deny from S3. Only the network path differs.
+The resource ARN in the message is `arn:aws:glue:us-west-2:<Sandbox Account 1>:crawler/awsds-data-raw`,
+a crawler that does **not exist** — both crawlers live in Data Governance — and IAM still answered with
+an authorization decision rather than `EntityNotFoundException`. Lesson 21's fork resolves in the good
+direction for this action: `glue:StartCrawler` authorizes before it validates, so the reading is real
+and not an artefact. The wording is the control for the diagnosis above: the same session, the same
+minute, produces an **implicit** deny from Glue and an **explicit identity** deny from S3. Only the
+network path differs.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-**Group B — every proof above repeated in Development** — is untouched, and Lesson 31 is exactly why
-it is not optional: the two consumers have their own `DataLakeSettings`, their own CMK, their own
-derived bucket and their own re-grants, and a check written in one account keeps reporting `pass`
-about that one. It gains one probe this sitting did not have: **the persona reading its own derived
-bucket**, which decides how wide the `DenyControlPlaneOffVpn` finding is.
+Group B — every proof above repeated in Development — is untouched, and Lesson 31 is why it is not
+optional: the two consumers have their own `DataLakeSettings`, their own CMK, their own derived bucket
+and their own re-grants, and a check written in one account keeps reporting `pass` about that one. It
+gains one probe this sitting did not have: **the persona reading its own derived bucket**, which decides
+how wide the `DenyControlPlaneOffVpn` finding is.
 
 Then the three acts that need authorization and were deliberately not run: the maintenance pair's
 **positive** half (`StartCrawler` as `awsds-data-catalog-maintenance`, still never run since pass 1),
-the **explicit `restricted` grant and its revert** (four writes across two accounts), and **4e** — the
+the explicit `restricted` grant and its revert (four writes across two accounts), and **4e** — the
 `athena:StartQueryExecution` amendment, last, through battery phase 4b. One decision is now sequenced
-rather than open: **whether `sample_trades` ever gets rows**, since after 4e nothing in Data Governance
-can run a query, and every verification of this stage reads column lists rather than rows.
+rather than open: whether `sample_trades` ever gets rows, since after 4e nothing in Data Governance can
+run a query, and every verification of this stage reads column lists rather than rows.
 
 ---
 
-## 2026-08-19 — Group A re-run by Claude's hand: every reading reproduces, and the finding's width is settled — the persona cannot read its own derived zone
+## 2026-08-19 — Group A re-run by Claude's hand: the readings reproduce, and the finding's width is settled
 
 *Provenance. **This entry is Claude's, and so are the commands in it** — run at the user's request in
 this sitting, from the same laptop and the same tunnel, to re-validate the entry above. **The
@@ -1880,16 +1866,16 @@ Everything else is verbatim.*
 same one; `sts:GetCallerIdentity` returned `AWSReservedSSO_DataScientistAccess_37932702010107f8`, the
 same provisioned role. Neither is decoration: without both, every denial below has two explanations.
 
-### Nine read-only readings, all identical to the entry above
+### The read-only readings, all identical to the entry above
 
 `glue:GetTables` through the link (`sample_trades`), the five-column list, `s3 ls` and `get-object` on
 `awsds-data-curated`, `get-object` and `list-objects-v2` on `awsds-data-dropbox` — same wording, down
-to which action the message names. And **A3's and A4's original execution ids still answer**, so those
-two were re-read rather than re-derived: `SUCCEEDED`, `Reason: null`, `Scanned: 0`, output at
+to which action the message names. A3's and A4's original execution ids still answer, so those two were
+re-read rather than re-derived: `SUCCEEDED`, `Reason: null`, `Scanned: 0`, output at
 `results/19893d80-….csv`, `ColumnInfo` five long, and the hijacked query still recorded as having
 written to `results/021ea6de-….csv`.
 
-### The measurement that was missing, and it settles the width
+### The measurement that was missing
 
 ```
 B0.1  the PERSONA lists its OWN derived bucket
@@ -1901,60 +1887,58 @@ B0.2  the PERSONA downloads its own query result
 download failed: s3://awsds-sandbox-derived/results/19893d80-17d4-45dd-b5b7-398e8de15032.csv to - An error occurred (403) when calling the HeadObject operation: Forbidden
 ```
 
-**The prediction the entry above left untested is now measured, and it holds.** `awsds-sandbox-derived`
+The prediction the entry above left untested is now measured, and it holds. `awsds-sandbox-derived`
 carries no network perimeter of its own — only `DenyStalePresignedUrls` beside the module's TLS deny —
-and `UseDerivedZoneBuckets` grants this persona `s3:ListBucket` on exactly that ARN. **So a `Deny` is
+and `UseDerivedZoneBuckets` grants this persona `s3:ListBucket` on exactly that ARN. A `Deny` is
 overriding an explicit `Allow`, and the only statement in the document able to do that is
-`DenyControlPlaneOffVpn`.** The finding is therefore **not about the lake's buckets: it is about the S3
-path**, and its cost has a shape a user would feel — *the scientist runs the query and cannot fetch the
-CSV*. Athena writes the result (forward access session, `aws:ViaAWSService` true, the statement's own
-carve-out); the person reading it does not.
+**`DenyControlPlaneOffVpn`**. The finding is about the **S3 path** rather than about the lake's buckets:
+the scientist runs the query and cannot fetch the CSV. Athena writes the result (forward access session,
+`aws:ViaAWSService` true, the statement's carve-out); the person reading it does not.
 
-**B0.2's `403 Forbidden` is the weaker of the two and is recorded as such**: `aws s3 cp` issues a
+B0.2's `403 Forbidden` is the weaker of the two and is recorded as such: `aws s3 cp` issues a
 `HeadObject` first, and HeadObject returns no body, so the mechanism is invisible in it. The wording
 that carries the finding is B0.1's.
 
-### The five writes, re-run on explicit authorization
+### The writes, re-run on explicit authorization
 
-The three that create nothing came back **word for word** as the entry above: Athena's unnamed refusal
-on `primary`, `s3:PutObject` on the drop-box key *with an explicit deny in an identity-based policy*,
-and `glue:StartCrawler` *because no identity-based policy allows* — the latter again naming a crawler
-ARN in an account that has none, `glue:StartCrawler` authorizing before it validates.
+The three that create nothing came back word for word as the entry above: Athena's unnamed refusal on
+`primary`, `s3:PutObject` on the drop-box key *with an explicit deny in an identity-based policy*, and
+`glue:StartCrawler` *because no identity-based policy allows* — the latter again naming a crawler ARN in
+an account that has none, `glue:StartCrawler` authorizing before it validates.
 
-The two that create something were re-run as **fresh executions rather than re-reads**, which is the
-point of running them at all:
+The two that create something were re-run as fresh executions rather than re-reads:
 
 | | |
 |---|---|
 | `ca9c2014-c92c-48f2-8973-5ea81ab323f5` | `SUCCEEDED`, `Reason: null`, `Scanned: 0`, `results/ca9c2014-….csv`, `ColumnInfo` = the same five names |
 | `63d8b373-24c3-4a84-bc83-f30b59ce863f` | asked for `scratch/hijack/`, **wrote to `results/63d8b373-….csv`** |
 
-So `EnforceWorkGroupConfiguration` overrode the client's location a **second** time, in an execution
-that shares nothing with the first. Cost of the re-run: two more CSVs under the derived zone's 30-day
+`EnforceWorkGroupConfiguration` overrode the client's location a second time, in an execution that
+shares nothing with the first. Cost of the re-run: two more CSVs under the derived zone's 30-day
 lifecycle. The drop-box gained nothing — the `PutObject` was denied — so there is no probe object
 anywhere to clean up, in either account.
 
-### The two controls that were NOT taken, and what they need
+### The controls that were not taken
 
-- **`InfrastructureAccess` listing the same bucket through the same endpoint.** This is the clean
-  control: step 8.3 applied `DenyControlPlaneOffVpn` to the six personas **only**, so if that role
-  succeeds where the persona fails, the deny is isolated to the persona fragment rather than to the
-  bucket, the endpoint or the network. It was attempted and returned
-  `Error loading SSO Token: Token for awsds does not exist` — the browser is signed into the access
-  portal as the persona, which is Stage 4's own finding about consecutive sign-ins.
+- **`InfrastructureAccess` listing the same bucket through the same endpoint.** Step 8.3 applied
+  `DenyControlPlaneOffVpn` to the six personas only, so if that role succeeds where the persona fails,
+  the deny is isolated to the persona fragment rather than to the bucket, the endpoint or the network.
+  It was attempted and returned `Error loading SSO Token: Token for awsds does not exist` — the browser
+  is signed into the access portal as the persona, which is Stage 4's finding about consecutive
+  sign-ins.
 - **CloudTrail's `vpcEndpointId` and `sourceIPAddress`, on a denied S3 management event beside the
   Glue one.** That would measure the split directly instead of inferring it. Same blocker: the persona
   holds no `cloudtrail:LookupEvents`.
 
-**So the diagnosis today rests on three measurements and one reading** — the Glue-implicit /
-S3-explicit pair in one session, the derived-bucket denial over an explicit allow, and the
-reproduction above, against an elimination over the document's five `Deny` statements. That is enough
-to act on and not enough to call it measured; the two controls above are what would close the gap, and
-both are one `aws sso login --sso-session awsds` away.
+The diagnosis today rests on three measurements and one reading — the Glue-implicit / S3-explicit pair
+in one session, the derived-bucket denial over an explicit allow, and the reproduction above — against
+an elimination over the document's five `Deny` statements. That is enough to act on and not enough to
+call it measured; the two controls above would close the gap, and both are one
+`aws sso login --sso-session awsds` away.
 
 ---
 
-## 2026-08-19 — Pass 4d group B, in Development: every reading mirrors Sandbox, and the second role is what makes the finding a property of the DOCUMENT
+## 2026-08-19 — Pass 4d group B, in Development: the readings mirror Sandbox, and the finding is a property of the document
 
 *Provenance. **This entry is Claude's, and so are the commands** — run at the user's request, from the
 same laptop and the same tunnel, immediately after the group-A re-run above. The read-only calls ran
@@ -1965,12 +1949,12 @@ in the entry above, so no raw value entered a file. Everything else is verbatim.
 
 ### Why this was repeated rather than assumed
 
-Lesson 31, and it is not a formality here: the two consumers hold **their own** `DataLakeSettings`,
-their own account CMK, their own derived bucket, their own resource links and their own four
-re-grants. Nothing measured in Sandbox is evidence about Development, and this project has already
-been bitten once by a check that kept reporting `pass` about the account it was written in.
+Lesson 31: the two consumers hold their own `DataLakeSettings`, their own account CMK, their own
+derived bucket, their own resource links and their own four re-grants. Nothing measured in Sandbox is
+evidence about Development, and this project has already been bitten once by a check that kept
+reporting `pass` about the account it was written in.
 
-### The ten readings
+### The readings
 
 | | Development | against Sandbox |
 |---|---|---|
@@ -1985,48 +1969,47 @@ been bitten once by a check that kept reporting `pass` about the account it was 
 | `PutObject` on the drop-box | *explicit deny in an identity-based policy* | same |
 | `glue:StartCrawler` | *because no identity-based policy allows*, naming a crawler ARN in an account that has none | same |
 
-### What the repetition bought, and it is one line of the table
+### What the repetition bought
 
-**The provisioned role is a different one** — `93e51218b5f8bf66` here against `37932702010107f8` in
-Sandbox. One permission set, two accounts, **two distinct IAM roles**, and both fail identically. That
+The provisioned role is a different one — `93e51218b5f8bf66` here against `37932702010107f8` in
+Sandbox. One permission set, two accounts, two distinct IAM roles, and both fail identically. That
 moves `DenyControlPlaneOffVpn`'s defect from *"something is wrong in Sandbox"* to **a property of the
 document**: it reaches every account the set is provisioned into, and it will reach `Staging` at its
-vend and every Sandbox unit D35 adds, with nobody having done anything. The same is true of the two
-proofs that *worked*: the workgroup enforcement and the column filter hold in both, from two different
-roles, which is what the pass needed and could not get from one account.
+vend and every Sandbox unit D35 adds. The same is true of the two proofs that worked: the workgroup
+enforcement and the column filter hold in both, from two different roles, which is what the pass needed
+and could not get from one account.
 
-**`s3 ls` on `awsds-dev-derived` is the row that matters most.** The derived-zone consequence measured
-in Sandbox reproduces here: the persona cannot list its own zone, in either consumer. The finding is
-systemic across the consumer side rather than an accident of one account.
+`s3 ls` on `awsds-dev-derived` carries the derived-zone consequence measured in Sandbox: the persona
+cannot list its own zone, in either consumer. The finding is systemic across the consumer side rather
+than an accident of one account.
 
-### Two verification rows close
+### The verification rows that close
 
-- **(ii)** — version-4 cross-account credential vending through `sts:SetContext` now answered **in both
-  consumers**, each with its own `DataLakeSettings` and its own re-grants. The RCP leaves it untouched.
+- **(ii)** — version-4 cross-account credential vending through `sts:SetContext` now answered in both
+  consumers, each with its own `DataLakeSettings` and its own re-grants. The RCP leaves it untouched.
 - **(x)**'s exclusion half — the column filter holds at the **engine** in both accounts, read from
-  `ResultSetMetadata.ColumnInfo` rather than from the catalog alone. **The explicit-grant half is still
-  owed** and is one of the two authorized acts below.
+  `ResultSetMetadata.ColumnInfo` rather than from the catalog alone. The explicit-grant half is still
+  owed and is one of the two authorized acts below.
 
 ### Cost, and what was left behind
 
-Two more CSVs under `s3://awsds-dev-derived/results/`, on the zone's 30-day lifecycle. **The drop-box
-gained no object in either account** — the write is denied on both sides — so there is nothing to
-clean up anywhere, and `incoming/2026/08/19/` does not exist.
+Two more CSVs under `s3://awsds-dev-derived/results/`, on the zone's 30-day lifecycle. The drop-box
+gained no object in either account — the write is denied on both sides — so there is nothing to clean
+up anywhere, and `incoming/2026/08/19/` does not exist.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-**4d's two authorized acts remain, and both need an identity this sitting did not use**: the
-maintenance pair's positive half (`StartCrawler` as `awsds-data-catalog-maintenance`, still never run
-since pass 1) and the **explicit `restricted` grant with its revert** (four writes across two
-accounts). Then **4e**, last, through battery phase 4b. And the two controls the entry above names as
-not taken — `InfrastructureAccess` on the derived bucket, and CloudTrail's `vpcEndpointId` — which are
-what would turn the `DenyControlPlaneOffVpn` diagnosis from deduced into measured. **The persona
-session has now done everything it can do**, so the identity switch those controls need costs nothing
-that was still needed.
+4d's two authorized acts remain, and both need an identity this sitting did not use: the maintenance
+pair's positive half (`StartCrawler` as `awsds-data-catalog-maintenance`, still never run since pass 1)
+and the explicit `restricted` grant with its revert (four writes across two accounts). Then **4e**,
+last, through battery phase 4b. And the two controls the entry above names as not taken —
+`InfrastructureAccess` on the derived bucket, and CloudTrail's `vpcEndpointId` — which would turn the
+`DenyControlPlaneOffVpn` diagnosis from deduced into measured. The persona session has done everything
+it can do, so the identity switch those controls need costs nothing that was still needed.
 
 ---
 
-## 2026-08-19 — The two controls, taken as the infrastructure user: the split is measured, and the proposed fix was aimed at the wrong endpoint list
+## 2026-08-19 — The controls taken as the infrastructure user: the split measured, and the fix aimed at the wrong endpoint list
 
 *Provenance. **This entry is Claude's, and so are the commands.** Every call is read-only and ran under
 the standing rule — including the two `s3api` calls fired **deliberately, so that CloudTrail would have
@@ -2034,42 +2017,40 @@ something to show**: the persona's denied call is an S3 *data* event and the tra
 events only, so the path had to be re-created by a call of the right kind rather than looked up.
 Identifiers were masked at capture. Everything else is verbatim.*
 
-### Why the identity changed, and what the change cost
+### Why the identity changed
 
-Nothing that was still needed. The entry above closed with the persona session having done everything
-it could do, and both controls need either `cloudtrail:LookupEvents` or a role the deny does not bind.
-The user signed in as **the infrastructure user, `InfrastructureAccess`, in `Sandbox 1` and
-`Development`**.
+The persona session had done everything it could do, and both controls need either
+`cloudtrail:LookupEvents` or a role the deny does not bind. The user signed in as the infrastructure
+user, `InfrastructureAccess`, in `Sandbox 1` and `Development`.
 
-**The tunnel was confirmed up before anything else ran** — `curl checkip` returned `52.89.212.1`.
-Without that check the control would have varied identity **and** route at once, and a success would
-have proven nothing about which of the two mattered.
+The tunnel was confirmed up before anything else ran — `curl checkip` returned `52.89.212.1`. Without
+that check the control would have varied identity and route at once, and a success would have proven
+nothing about which of the two mattered.
 
-### Control 1 — the isolation holds, and the listing costs the finding its abstraction
+### Control 1 — the isolation holds
 
 `aws s3 ls` on `s3://awsds-sandbox-derived/` and on `s3://awsds-dev-derived/`, same tunnel, same
-endpoint, `InfrastructureAccess`: **both list without error.** The bucket policy, the account CMK, the
+endpoint, `InfrastructureAccess`: both list without error. The bucket policy, the account CMK, the
 gateway endpoint and the network are exonerated in one reading, and step 8.3 is why — it applied
-`DenyControlPlaneOffVpn` to the six personas **only**.
+`DenyControlPlaneOffVpn` to the six personas only.
 
-**What the listing returned matters more than that it returned.** The objects are there:
+The objects are there:
 
 | bucket | contents | written by |
 |---|---|---|
 | `awsds-sandbox-derived/results/` | 4 CSVs + 4 `.metadata` | group A (21:42, 21:45) and the re-run (22:20), local time |
 | `awsds-dev-derived/results/` | 2 CSVs + 2 `.metadata` | group B (22:38) |
 
-Every one is the output of a query **the persona itself ran**. The scientist submits the query, Athena
-writes the answer into the scientist's own bucket, and the scientist cannot fetch it. That is the
-defect stated the way a person meets it, rather than as a denied API call.
+Every one is the output of a query the persona itself ran. The scientist submits the query, Athena
+writes the answer into the scientist's own bucket, and the scientist cannot fetch it.
 
-### Control 2 — the instrument had to change before it could answer
+### Control 2 — the instrument had to change
 
 `cloudtrail lookup-events` over the persona's window returned the two denied `StartCrawler` calls and
-**no denied S3 call at all**. That is not a gap in the trail: `aws s3 ls s3://bucket/` issues
+no denied S3 call at all. That is not a gap in the trail: `aws s3 ls s3://bucket/` issues
 `ListObjectsV2`, an S3 **data** event, and the Control Tower trail records management events only. The
 control as the entry above named it — *"a denied S3 management event beside the Glue one"* — could not
-be taken, **because the persona never made one**. The instrument was fine; the event did not exist.
+be taken, because the persona never made one. The instrument was fine; the event did not exist.
 
 So the path was measured with a call of the right kind, over the same tunnel:
 
@@ -2084,56 +2065,52 @@ its NAT. `vpce-0cc3e139c1167ca83` is **Sandbox's** S3 gateway endpoint, read bac
 `describe-vpc-endpoints`. And `local.vpn_egress_cidrs` is built from one thing only: one `/32` per VPN
 home, from that home's `wireguard_eip_public_ip`.
 
-**Three rows, three different claims closed.** An S3 call from the tunnel presents a private address
-and an endpoint id, so `NotIpAddress aws:SourceIp` is **true** and the deny fires. The same session's
-Glue call presents the Elastic IP, so the deny stays quiet and what was seen was the implicit deny —
-the two are minutes apart on one tunnel and differ only in destination. And Athena's staging write is
-recorded with the **service** as its origin under the persona's `sessionIssuer`, which is
-`aws:ViaAWSService` being true, measured rather than argued.
+Each row closes a different claim. An S3 call from the tunnel presents a private address and an
+endpoint id, so `NotIpAddress aws:SourceIp` is true and the deny fires. The same session's Glue call
+presents the Elastic IP, so the deny stays quiet and what was seen was the implicit deny — the two are
+minutes apart on one tunnel and differ only in destination. Athena's staging write is recorded with the
+**service** as its origin under the persona's `sessionIssuer`, which is `aws:ViaAWSService` being true,
+measured rather than argued.
 
 ### What this changes in the diagnosis above
 
-**The mechanism is precise where it was a disjunction.** The entry above said the key "is either
-absent or carries a private address, and either way a negated operator makes the deny fire". It is the
-second. The conclusion was right and half the reasoning covered a case that does not occur.
+The mechanism is precise where it was a disjunction. The entry above said the key "is either absent or
+carries a private address, and either way a negated operator makes the deny fire". It is the second.
 
-**The elimination was re-done rather than carried forward**, by reading the documents instead of the
-earlier entry: of the six `Deny` statements `DataScientistAccess` composes,
-`DenyTerraformStateAccess` requires a name *ending* in `-tfstate`, `DenyMakingStorageOrImagesPublic`
-carries a closed action list holding neither `ListBucket` nor `GetObject`, and
-`DenyIamPrincipalMutation`, `DenyInternetFacingCompute` and `DenyLakeFormationAdministration` are
-other services. Only `DenyControlPlaneOffVpn` — `Action *` on `Resource *` — can reach the call.
-**Proved by exhaustion over the file, not remembered from the entry that first proposed it.**
+The elimination was re-done by reading the documents instead of the earlier entry: of the six `Deny`
+statements `DataScientistAccess` composes, `DenyTerraformStateAccess` requires a name *ending* in
+`-tfstate`, `DenyMakingStorageOrImagesPublic` carries a closed action list holding neither `ListBucket`
+nor `GetObject`, and `DenyIamPrincipalMutation`, `DenyInternetFacingCompute` and
+`DenyLakeFormationAdministration` are other services. Only `DenyControlPlaneOffVpn` — `Action *` on
+`Resource *` — can reach the call.
 
-**The sharpest evidence in this pass is not a measurement.** `permission-sets.tf` already carries a
-`precondition` over `vpn_egress_cidrs` whose error message predicts this pass's exact symptom —
-*"DenyControlPlaneOffVpn would apply cleanly and deny every call from every network for all six
-personas"*. It was written against the list coming back **malformed**. Nothing in it considers the
-list being well-formed and the key being irrelevant on the route the traffic takes. **The failure was
-foreseen; the way it would arrive was not**, and a guard was built for the half that did not happen.
+`permission-sets.tf` already carries a `precondition` over `vpn_egress_cidrs` whose error message
+predicts this pass's symptom — *"DenyControlPlaneOffVpn would apply cleanly and deny every call from
+every network for all six personas"*. It was written against the list coming back malformed, and
+nothing in it considers the list being well-formed and the key being irrelevant on the route the
+traffic takes. The failure was foreseen; the way it would arrive was not.
 
 ### The second finding: the fix was aimed at the wrong list
 
 The entry above proposed the amendment and said `identity/sso/` "already reads the consumer states
-that hold those endpoint ids". **The consumer endpoints are the wrong ones.**
+that hold those endpoint ids". The consumer endpoints are the wrong ones.
 
-`vpn_homes` holds exactly one row, `sandbox`. Every persona call over the tunnel — in *either*
-consumer — leaves through **Sandbox's** endpoint, because that is where the host is. Development's own
+`vpn_homes` holds one row, `sandbox`. Every persona call over the tunnel — in *either* consumer —
+leaves through **Sandbox's** endpoint, because that is where the host is. Development's own
 `vpce-0a222aef0c577abbb` is not on that path and will not be until Stage 6 puts compute inside
 Development's VPC.
 
-**The same axis error is already in the lake's bucket policy, and there it is working by luck.**
-`local.consumer_vpce_ids` is built as *each consumer's own* endpoint. The branch that actually carries
-a Development persona's reach to `awsds-data-curated` is Sandbox's endpoint id — **in that list
-because Sandbox is a consumer, not because it is the VPN home**. The right value is in the right list
-for the wrong reason, and it stops being true the day the host moves, a second home is added, or a
-consumer appears that is not a VPN home.
+The same axis error is in the lake's bucket policy, where it works by luck. `local.consumer_vpce_ids`
+is built as *each consumer's own* endpoint. The branch that carries a Development persona's reach to
+`awsds-data-curated` is Sandbox's endpoint id — in that list because Sandbox is a consumer, not because
+it is the VPN home. The right value is in the right list for the wrong reason, and it stops being true
+the day the host moves, a second home is added, or a consumer appears that is not a VPN home.
 
 Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together: a list built
 along "who consumes the lake" is being asked "what is on the network path", and today the two
 intersect.
 
-### The fix, now shaped by measurement rather than by symmetry with the bucket policy
+### The fix
 
 A third condition on `DenyControlPlaneOffVpn`, its values from the **VPN homes'**
 `s3_gateway_endpoint_id` — an output every `foundation/` already exports, out of the `vpn_home` remote
@@ -2147,30 +2124,28 @@ condition {
 }
 ```
 
-**`IfExists` is what holds the polarity.** On the internet-gateway path the key is absent, the
-condition passes, and the deny still closes every off-VPN call — which is the statement's whole
-purpose. On the endpoint path with a matching id the condition is false and the deny stands down.
+**`IfExists`** holds the polarity. On the internet-gateway path the key is absent, the condition
+passes, and the deny still closes every off-VPN call. On the endpoint path with a matching id the
+condition is false and the deny stands down.
 
-**Two consequences stated rather than discovered.** It widens the carve-out to anything able to reach
-Sandbox's S3 gateway endpoint — the host today, Sandbox compute after Stage 6. That is inside the
-perimeter and it is still a choice. And **it covers S3 and nothing else**: the DynamoDB gateway
-endpoint has the identical property and any interface endpoint presents `aws:SourceVpce` too, so the
-local is plural by design rather than by accident.
+Two consequences: it widens the carve-out to anything able to reach Sandbox's S3 gateway endpoint — the
+host today, Sandbox compute after Stage 6 — which is inside the perimeter and still a choice; and it
+covers S3 and nothing else, since the DynamoDB gateway endpoint has the identical property and any
+interface endpoint presents `aws:SourceVpce` too, so the local is plural by design.
 
-**It is still not this sitting's change.** The statement binds six permission sets in every governed
+It is still not this sitting's change: the statement binds six permission sets in every governed
 account, and nothing measured here softens Stage 4's warning that getting it wrong costs a session.
 
-### What the amendment does not promise, and this is the part to carry forward
+### What the amendment does not promise
 
-**That the drop-box write starts working.** The explicit deny masked whatever sits under it, and by
-Lesson 28 reach is an intersection: `AllowInteractiveWriterPutOnly` on the drop-box bucket is the
-other half, and no call has yet got past the identity half to exercise it.
+It does not promise that the drop-box write starts working. The explicit deny masked whatever sits
+under it, and by Lesson 28 reach is an intersection: `AllowInteractiveWriterPutOnly` on the drop-box
+bucket is the other half, and no call has yet got past the identity half to exercise it.
 
-**And D13's own mechanism stays unmeasured.** The argument is that an execution role holds *no* S3
-grant on a registered prefix — an **implicit** deny — and every attempt so far has been intercepted by
-an explicit one. Both become measurable only after the amendment lands. **This is the pass's one
-genuine regression in evidence**: a proof the stage counted on is not merely deferred, it was
-overwritten by a louder failure.
+D13's own mechanism stays unmeasured. The argument is that an execution role holds *no* S3 grant on a
+registered prefix — an **implicit** deny — and every attempt so far has been intercepted by an explicit
+one. Both become measurable only after the amendment lands, so a proof the stage counted on was
+overwritten by a louder failure rather than merely deferred.
 
 ### Still owed, unchanged by this sitting
 
@@ -2180,7 +2155,7 @@ with its revert — then **4e**, last, through battery phase 4b.
 
 ---
 
-## 2026-08-19 — 4d's two authorized acts: the maintenance pair's positive half has no principal at all, and the restricted grant closes its half with a control beside it
+## 2026-08-19 — 4d's authorized acts: the maintenance pair's positive half has no principal, and the restricted grant closes its half
 
 *Provenance. **This entry is Claude's, and so are the commands.** The readings ran under the standing
 rule; **the three write calls — one `StartCrawler` that was denied, one `grant-permissions` and its
@@ -2188,15 +2163,14 @@ rule; **the three write calls — one `StartCrawler` that was denied, one `grant
 sitting**, and the stage file names both. Identifiers were masked at capture. Everything else is
 verbatim.*
 
-### The reconnaissance came first, and it is what turned act 1 into a finding
+### The reconnaissance
 
 Neither act was attempted before its baseline was read, and in act 1's case the baseline is the whole
-result. Four readings, all before any write: the maintenance role's **trust policy**, the two
-crawlers' configuration, the SCP statement the stage names, and the blast radius of a crawl that might
-succeed (`s3://awsds-data-raw` empty, `raw` holding zero tables — so a run would have catalogued
-nothing).
+result. Four readings, all before any write: the maintenance role's **trust policy**, the two crawlers'
+configuration, the SCP statement the stage names, and the blast radius of a crawl that might succeed
+(`s3://awsds-data-raw` empty, `raw` holding zero tables — so a run would have catalogued nothing).
 
-### Act 1, the negative half — and D27's carve-out is exercised for the first time
+### Act 1, the negative half — D27's carve-out exercised for the first time
 
 `glue:StartCrawler` on `awsds-data-raw`, as **`InfrastructureAccess` in `Data Governance`**, an account
 in the **`Data`** OU:
@@ -2212,17 +2186,17 @@ with an explicit deny in a service control policy: <the awsds-org-scp-ou-data po
 `get-crawler` in the same session returned `READY`, so the session was alive and Glue reachable — the
 control that separates a deny from a broken session.
 
-**This is the first time `DenyCatalogMaintenanceRunsExceptMaintenanceRole` has ever fired.** Stage 1c
-recorded it among the statements *attached but unexercised*; group A then found that the **persona**
-half could not exercise it either, because the personas sit in `Interactive` and are refused earlier by
-the absence of any `glue:Start*` allow. `InfrastructureAccess` in the `Data` OU is the principal that
-reaches the statement, and the wording — *service control policy*, not identity-based — is what proves
-which layer answered.
+This is the first time `DenyCatalogMaintenanceRunsExceptMaintenanceRole` has fired. Stage 1c recorded
+it among the statements *attached but unexercised*; group A then found that the persona half could not
+exercise it either, because the personas sit in `Interactive` and are refused earlier by the absence of
+any `glue:Start*` allow. `InfrastructureAccess` in the `Data` OU is the principal that reaches the
+statement, and the wording — *service control policy*, not identity-based — proves which layer
+answered.
 
-### Act 1's real result: the positive half cannot be produced by any principal that exists
+### Act 1's result: no principal that exists can produce the positive half
 
-The stage asks for "the raw crawler runs as `awsds-data-catalog-maintenance`". **It cannot, and the
-reason is three readings that close on each other:**
+The stage asks for "the raw crawler runs as `awsds-data-catalog-maintenance`". It cannot, and three
+readings close on each other:
 
 | reading | what it says |
 |---|---|
@@ -2235,29 +2209,28 @@ crawl, after `StartCrawler` has already been authorized against somebody else. A
 SCP would accept is Glue's own scheduler, reaching the API as a service principal — which needs a
 `Schedule`, and neither crawler has one.
 
-**Nothing in this estate can start these crawlers.** That is **Lesson 22** in its exact shape — a
-control whose principal the harness cannot produce is verified by reading rather than by attempting —
-and the positive half is therefore closed by the table above, not by a run.
+Nothing in this estate can start these crawlers. **Lesson 22** in its exact shape — a control whose
+principal the harness cannot produce is verified by reading rather than by attempting — so the positive
+half is closed by the table above, not by a run.
 
-### What that costs, and it is not confined to a deliverable
+### What that costs
 
-**D18/D25's ingestion path is `persona PutObject → crawler catalogues → data appears`, and both halves
-are now broken, for unrelated reasons.** The write is refused by `DenyControlPlaneOffVpn` (the entries
-above); the catalogue step has no invocation path at all. **The two are independent: amending the VPN
-statement does not make a crawler run**, and adding a schedule does not make the drop-box writable.
-Anyone reading only one of these entries would fix half of a path and believe it whole.
+D18/D25's ingestion path is `persona PutObject → crawler catalogues → data appears`, and both halves
+are broken for unrelated reasons. The write is refused by `DenyControlPlaneOffVpn` (the entries above);
+the catalogue step has no invocation path at all. The two are independent: amending the VPN statement
+does not make a crawler run, and adding a schedule does not make the drop-box writable.
 
-### It is not a defect in the SCP or in the trust policy — it is a decision nobody took
+### The missing schedule is a decision nobody took
 
 Both documents are coherent with a design in which crawlers run **on a schedule** and no person ever
-triggers one; that is a reasonable reading of D27, and it is arguably the stronger control. What is
-missing is the schedule itself. Pass 1 created the two crawlers deliberately **never-run**, and nothing
-since has said when they should run — so **`Schedule` is an open design decision surfaced by this
-attempt**: whether it exists at all, at what frequency, and whether the drop-box's cadence differs from
-`raw`'s, given that the drop-box is an ingestion path and `raw` is a zone. Recorded here rather than
-answered, because it is the stage's call and not this sitting's. *(Refined in the review entry below:
-half of it **was** decided — `maintenance.tf` rejects a standing schedule on cost, `DL-3` checks the
-rejection, and the chosen trigger was "on-demand". The untaken half is the DEMANDER.)*
+triggers one; that is a reasonable reading of D27, and arguably the stronger control. What is missing
+is the schedule itself. Pass 1 created the two crawlers never-run, and nothing since has said when they
+should run, so `Schedule` is an open design decision surfaced by this attempt: whether it exists at
+all, at what frequency, and whether the drop-box's cadence differs from `raw`'s, given that the drop-box
+is an ingestion path and `raw` is a zone. Recorded here rather than answered: it is the stage's call.
+*(Refined in the review entry below: half of it was decided — `maintenance.tf` rejects a standing
+schedule on cost, `DL-3` checks the rejection, and the chosen trigger was "on-demand". The untaken half
+is the demander.)*
 
 ### Act 2 — the explicit `restricted` grant, with a live control beside it
 
@@ -2271,34 +2244,32 @@ Granted in Data Governance, mirroring the shape of the four grants already there
 | **after the grant** | **6 — `counterparty` present** | **5** | 6 |
 | after the revoke | 5 | 5 | 6 |
 
-**Granting in one account rather than two is what makes this a measurement instead of an
-observation.** Development was read in the same minute, through the same tunnel, as the same kind of
-principal, and did not move. Time, catalog caching, a stale session and a coincidental propagation are
-all excluded by that column — none of which a two-account grant could have excluded. The stage
-budgeted four writes here; two were enough, and the two that were dropped were the ones that would have
-destroyed the control.
+Granting in one account rather than two is what makes this a measurement. Development was read in the
+same minute, through the same tunnel, as the same kind of principal, and did not move. Time, catalog
+caching, a stale session and a coincidental propagation are all excluded by that column — none of which
+a two-account grant could have excluded. The stage budgeted four writes here; two were enough, and the
+two that were dropped would have destroyed the control.
 
-**This closes the classification pair's second half and verification (x)'s explicit-grant half.** The
+This closes the classification pair's second half and verification (x)'s explicit-grant half. The
 absent half was measured at the **account/administrator** grain (the share's `classification` gate
 filtering `counterparty` at the boundary), and this is measured at the same grain, so the pair is
 symmetric.
 
-**The limit, stated rather than left implicit:** this is not measured at the **persona** grain. A
-persona seeing `counterparty` would need a second grant, inside the consumer account, from that
-account's own administrator to the persona — `consumer-data`'s re-grants scope the persona to
-`classification IN (public, internal)` and were not touched. What is proven is that the boundary gate
-opens and closes on the explicit grant; what is not proven is the consumer-side re-grant on top of it.
+The limit: this is not measured at the **persona** grain. A persona seeing `counterparty` would need a
+second grant, inside the consumer account, from that account's own administrator to the persona —
+`consumer-data`'s re-grants scope the persona to `classification IN (public, internal)` and were not
+touched. What is proven is that the boundary gate opens and closes on the explicit grant; what is not
+proven is the consumer-side re-grant on top of it.
 
 ### The state left behind: none
 
-The revoke was verified three ways rather than assumed: the two column lists back at five, the
-`LFTagPolicy` grant count back at **4** (2 `DATABASE`, 2 `TABLE`), and **zero** permissions anywhere
-carrying `restricted` in an expression. `./aws/datalake.py` then read **0 check(s) FAILED**. The
-`FAILED` lines against persona profiles in its header are absent SSO sessions, not lake findings —
-Lesson 25's neighbourhood, and worth naming so a later reader does not chase them.
+The revoke was verified three ways: the two column lists back at five, the `LFTagPolicy` grant count
+back at 4 (2 `DATABASE`, 2 `TABLE`), and zero permissions anywhere carrying `restricted` in an
+expression. `./aws/datalake.py` then read `0 check(s) FAILED`. The `FAILED` lines against persona
+profiles in its header are absent SSO sessions, not lake findings (Lesson 25's neighbourhood).
 
-**The grant register in `docs/AWS_STATE.md` is unchanged and correctly so**: 13 rows / 24 triples
-describe the applied state, and the applied state is what it was before this entry.
+The grant register in `docs/AWS_STATE.md` is unchanged: 13 rows / 24 triples describe the applied
+state, and the applied state is what it was before this entry.
 
 ### What 4d still owes
 
@@ -2308,7 +2279,7 @@ with its reason.
 
 ---
 
-## 2026-08-20 — The sample rows: the one-way door was walled shut all along, and unbricking it delivers Stage 9's write ceiling early
+## 2026-08-20 — The sample rows: the one-way door was walled shut, and unbricking it delivers Stage 9's write ceiling early
 
 *Provenance. **This entry is Claude's, and so are the commands.** The readings ran under the standing
 rule. The writes ran on two authorizations, each given by name in this sitting: the **INSERT** by the
@@ -2317,14 +2288,14 @@ recommendation with both stated costs in view — and the **Terraform apply** by
 "autorizo o apply das mudanças", given after the finding was reported and with the diff described.
 Identifiers were masked at capture. Everything else is verbatim.*
 
-### The decision, and what neither branch knew
+### The decision
 
 The stage's 4.1 callout posed the one-way door: load rows through Athena in this account *before*
 4.3's amendment closes that path, or leave the table empty and let Stage 9's producer write the first
-real rows. The recommendation was the second; the user took the first. **Both options, as posed,
-described a door that was not there** — and that is the finding, not a detail of it.
+real rows. The recommendation was the second; the user took the first. Both options, as posed,
+described a door that was not there.
 
-### The attempt (2026-08-19, 23:35 local): DENIED, and the principal in the error is nobody at the keyboard
+### The attempt (2026-08-19, 23:35 local): denied at the vending ceiling
 
 A 12-row `INSERT INTO curated.sample_trades` through the `primary` workgroup, as
 `InfrastructureAccess` in `Data Governance`. Athena accepted it and failed it in 1.3 s:
@@ -2339,11 +2310,11 @@ The denied principal is a **vended session of `awsds-data-lf-registration`** —
 session Lake Formation mints for Athena to touch a registered location. The caller's own permissions
 never entered into it: the write died at the vending ceiling.
 
-**Nothing was left behind, verified rather than assumed**: the table's `metadata_location` still read
-the original `00000-…` (no Iceberg commit), the table prefix held only the creation-time metadata
-JSON, and `athena-results/` in the artifacts bucket was empty.
+Nothing was left behind, verified rather than assumed: the table's `metadata_location` still read the
+original `00000-…` (no Iceberg commit), the table prefix held only the creation-time metadata JSON, and
+`athena-results/` in the artifacts bucket was empty.
 
-### The reconnaissance: three files, three spellings, and the mechanism side was right again
+### The reconnaissance
 
 | where | what it said |
 |---|---|
@@ -2356,13 +2327,13 @@ The key policy was checked and exonerated: `EnableIamPolicyDelegationInThisAccou
 root `kms:*`, so IAM delegation works inside Data Governance and the missing half was **IAM-side
 only** — one statement, one file, one account.
 
-**This is Lesson 34, and the user's choice is what made it cheap.** Nothing had ever exercised the
-governed write, so all three spellings survived (Lesson 20's mirror — an unexercised allow-path is
-exactly as unmeasured as an unexercised deny). Left alone, the wall stood until Stage 9's 2.4 — a
-cross-account Glue job, with the share, the job role and two keys all on the suspect list when it
-failed. The rows-now decision hit it with one account, one role, one key.
+This is **Lesson 34**, and the user's choice made it cheap. Nothing had ever exercised the governed
+write, so all three spellings survived (Lesson 20's mirror — an unexercised allow-path is as unmeasured
+as an unexercised deny). Left alone, the wall stood until Stage 9's 2.4 — a cross-account Glue job,
+with the share, the job role and two keys all on the suspect list when it failed. The rows-now decision
+hit it with one account, one role, one key.
 
-### The fix: a second inline policy, because the ceiling is not a grant
+### The fix: a second inline policy
 
 Authored in `data-governance/data/lakeformation.tf` as **pure addition** —
 `registered-locations-write`, beside the read policy rather than inside it, so the diff adds, the
@@ -2372,27 +2343,26 @@ revert deletes one thing, and each policy's name stays true:
   registered prefixes;
 - `KmsGenerateDataKey` — the exact action the denial named.
 
-`s3:DeleteObject` is the one action **reasoned rather than measured**, and the code says so: engine
+`s3:DeleteObject` is the one action reasoned rather than measured, and the code says so: engine
 failure-path cleanup and Iceberg maintenance delete data files, and a put-only ceiling strands every
 failed commit where no engine can remove it. The role's description now says "reads and writes". The
-comment carries the history and the frame that matters: **this policy is the vending ceiling for every
-governed access to the two locations, from any account** — widening it widens a ceiling, and the LF
-grants stay the per-principal gate underneath. The slice README gained the two Sid rows in the same
-sitting, and the read row's "write arrives at Stage 9" sentence is preserved struck-through with its
-correction.
+comment carries the frame: this policy is the **vending ceiling** for every governed access to the two
+locations, from any account — widening it widens a ceiling, and the LF grants stay the per-principal
+gate underneath. The slice README gained the two Sid rows in the same sitting, and the read row's
+"write arrives at Stage 9" sentence is preserved struck-through with its correction.
 
 ### The apply, inside the standing discipline
 
-`terraform plan`: **`1 to add, 1 to change, 0 to destroy`** — the add the new policy, the change read
-in full and confirmed to be the role's **description string alone**. Applied from the saved plan file;
-re-plan **`No changes`**. Then the read-backs the slice's own rule demands after any apply:
-`GetDataLakeSettings` returned one admin, `CROSS_ACCOUNT_VERSION: 4`, `SET_CONTEXT: TRUE`, both
-default-permission lists `[]` — **the DL-5/INT-11 hazard did not fire** — and the role listed both
-policies with the write statements exactly as authored.
+`terraform plan`: `1 to add, 1 to change, 0 to destroy` — the add the new policy, the change read in
+full and confirmed to be the role's description string alone. Applied from the saved plan file; re-plan
+`No changes`. Then the read-backs the slice's own rule demands after any apply: `GetDataLakeSettings`
+returned one admin, `CROSS_ACCOUNT_VERSION: 4`, `SET_CONTEXT: TRUE`, both default-permission lists `[]`
+— the DL-5/INT-11 hazard did not fire — and the role listed both policies with the write statements
+exactly as authored.
 
 ### The load, and its verification chain
 
-The identical 12-row INSERT, re-run: **`SUCCEEDED`, 1 947 ms.** Then, each reading a different claim:
+The identical 12-row INSERT, re-run: `SUCCEEDED`, 1 947 ms. Each reading answers a different claim:
 
 | reading | result |
 |---|---|
@@ -2408,8 +2378,8 @@ to discriminate on.
 ### What this settles, and where it was written
 
 - **Stage 5 item 3 / 4.1**: corrected in place — the premise was false, the decision and outcome are
-  recorded, and the one-way door **now exists for real**: 4e closes in-account Athena while the write
-  ceiling stays, because Stage 9's engine sits in Production and never calls Athena here.
+  recorded, and the one-way door now exists: 4e closes in-account Athena while the write ceiling stays,
+  because Stage 9's engine sits in Production and never calls Athena here.
 - **Stage 9 §2**: a dated callout where the amendment would have been owed — 2.4 rides this same role,
   nothing there needs to touch the policy now, and a future `AWSLF` denial on these actions means the
   ceiling *regressed*, not that it was never built.
@@ -2427,11 +2397,11 @@ said "the count query's CSV")*; the failed execution id and the two successful o
 
 ### Still owed
 
-**4e**, unchanged and now honest — there is finally an in-account Athena door to close — then pass 6.
+**4e**, unchanged — there is now an in-account Athena door to close — then pass 6.
 
 ---
 
-## 2026-08-20 — The sitting reviewed: three log corrections, a drift the INSERT left behind, the 4d amendments authored but not applied, and the session's command reference
+## 2026-08-20 — The sitting reviewed: the log corrections, the drift the INSERT left behind, and the 4d amendments authored but not applied
 
 *Provenance. **This entry is Claude's, at the user's request** — a review sitting. **No AWS write ran**:
 every `aws` call was a read, and the Terraform work is AUTHORING plus read-only `plan`s — nothing was
@@ -2440,70 +2410,68 @@ sitting and the previous one were re-issued after a local harness permission-cla
 transient errors of its own; no AWS call was affected, and a repeated invocation in this record is that,
 not a retry against AWS.*
 
-### The audit: the log against the session, three corrections
+### The audit: the log against the session
 
 - **"The eight readings" → "The ten readings"** (group B's section header). The table under it has ten
   rows and the index already said ten; the header was the copy that drifted.
 - **Entry 23's leftover line said "the count query's CSV"; the listing says three objects** — the count
   query's CSV *and its `.metadata`*, plus the successful INSERT's own `.metadata`. Corrected in place
-  with the correction marked. The miss is the usual one: the line was written from intent, the listing
-  was taken afterwards.
-- **Entry 22's "a decision nobody took" was half wrong, and the code knew better.** `maintenance.tf`'s
-  own comment — re-read this sitting — rejects a standing schedule **on cost** (DPU-hour, 10-minute
-  billed minimum, cron-always out-costing the storage it catalogs), has `DL-3` check that rejection,
-  and names the chosen trigger: *"on-demand, before a pickup"*. What 4d actually measured is narrower
-  and sharper: **on-demand has no demander.** Entry 22 carries a pointer; open question 19, the stage
-  bullet and `AWS_STATE.md` are refined — and the question's live candidate was **already in the
-  stage** as verification (iv)'s event shape (S3 → EventBridge → Glue workflow), now to be measured
-  against the SCP's service guard rather than assumed past it.
+  with the correction marked. The line was written from intent, the listing taken afterwards.
+- **Entry 22's "a decision nobody took" was half wrong.** `maintenance.tf`'s comment — re-read this
+  sitting — rejects a standing schedule on cost (DPU-hour, 10-minute billed minimum, cron-always
+  out-costing the storage it catalogs), has `DL-3` check that rejection, and names the chosen trigger:
+  *"on-demand, before a pickup"*. What 4d measured is narrower: **on-demand has no demander.** Entry 22
+  carries a pointer; open question 19, the stage bullet and `AWS_STATE.md` are refined — and the
+  question's live candidate was already in the stage as verification (iv)'s event shape (S3 →
+  EventBridge → Glue workflow), now to be measured against the SCP's service guard rather than assumed
+  past it.
 
-### A finding the review itself produced: the INSERT left Terraform drift on the sample table
+### The INSERT left Terraform drift on the sample table
 
-The first lake-slice `plan` of this sitting read `1 to change` — **not** the authored change:
+The first lake-slice `plan` of this sitting read `1 to change`, and not the authored change:
 `aws_glue_catalog_table.sample_trades`. The first Iceberg commit stamped
-`iceberg.field.{id,current,optional}` onto every column of the **live** table — the Glue columns are
-the engine's mirror of its own metadata, re-stamped at each commit — and Terraform, whose config
-declares bare columns, wanted to **strip them**: permanent drift, dirtying every future plan, and an
-apply the next commit would undo. **Lesson 23 exactly** (a managed service owns its artifacts'
-packing). Authored: `lifecycle { ignore_changes = [storage_descriptor[0].columns] }` with the argument
-in the comment — Terraform keeps the table's existence, location and format; schema *evolution* goes
-through the engine, which is how an Iceberg table changes anyway. The slice then plans **`No
-changes`**.
+`iceberg.field.{id,current,optional}` onto every column of the live table — the Glue columns are the
+engine's mirror of its own metadata, re-stamped at each commit — and Terraform, whose config declares
+bare columns, wanted to strip them: permanent drift, dirtying every future plan, and an apply the next
+commit would undo (**Lesson 23**). Authored:
+`lifecycle { ignore_changes = [storage_descriptor[0].columns] }` with the argument in the comment —
+Terraform keeps the table's existence, location and format; schema *evolution* goes through the engine.
+The slice then plans `No changes`.
 
-### The 4d amendments: AUTHORED, planned, and deliberately not applied
+### The 4d amendments: authored, planned, not applied
 
 **`identity/sso/` — the third condition on `DenyControlPlaneOffVpn`** (`policies-shared.tf`, values in
-`locals.tf`): `StringNotEqualsIfExists aws:SourceVpce` over the **VPN homes'** gateway endpoints — both
-of each home's, S3 and DynamoDB, one mechanism (any service with a gateway endpoint on the home's route
+`locals.tf`): `StringNotEqualsIfExists aws:SourceVpce` over the VPN homes' gateway endpoints — both of
+each home's, S3 and DynamoDB, one mechanism (any service with a gateway endpoint on the home's route
 table takes that path). `IfExists` holds the polarity: off-VPN traffic carries no vpce key, the test
-passes, the deny still fires. The comment block now argues **three** ANDed conditions and carries the
-measured history. Beside it, **a second plan-time guard** in `permission-sets.tf` — the existing one
+passes, the deny still fires. The comment block now argues three ANDed conditions and carries the
+measured history. Beside it, a second plan-time guard in `permission-sets.tf`: the existing one
 predicted the right symptom for the wrong cause (a malformed address list), and the new one guards the
-measured cause, naming its own asymmetry: a bad vpce entry is not a lockout but a silent **regression**
-to the 4d defect.
+measured cause, naming its own asymmetry — a bad vpce entry is not a lockout but a silent regression to
+the 4d defect.
 
-The plan, read in full before being left unapplied: **`0 to add, 6 to change, 0 to destroy`** — the six
-persona inline policies and nothing else, each gaining exactly the one condition with the two Sandbox
-endpoint ids; both preconditions passed; the saved plan file sits in the session scratchpad.
+The plan, read in full before being left unapplied: `0 to add, 6 to change, 0 to destroy` — the six
+persona inline policies and nothing else, each gaining the one condition with the two Sandbox endpoint
+ids; both preconditions passed; the saved plan file sits in the session scratchpad.
 
 **`data-governance/data/` — the trusted list rebuilt on the right axis**: `trusted_vpce_ids =
-sort(distinct(consumer ∪ vpn_home))`, consumed by `DenyOutsideTrustedNetworks`. **It renders
-identically today** — the slice plans `No changes` — because the single home is also a consumer; the
-line exists so that stops being load-bearing (Lesson 33's second finding). And `maintenance.tf`'s
-crawler comment now carries the demander finding beside its own cost argument.
+sort(distinct(consumer ∪ vpn_home))`, consumed by `DenyOutsideTrustedNetworks`. It renders identically
+today — the slice plans `No changes` — because the single home is also a consumer; the line exists so
+that stops being load-bearing (Lesson 33's second finding). `maintenance.tf`'s crawler comment now
+carries the demander finding beside its own cost argument.
 
-**Why not applied, said plainly**: the statement binds six permission sets in every governed account,
-and this sitting's authorization was for review and propagation. **The apply is its own sitting**, and
-its sequence is already written into the stage: apply → `VP-7` read-back → the two unblocked proofs
-(the drop-box `PutObject`, which should now meet `AllowInteractiveWriterPutOnly`; the pandas negative,
-which should finally return D13's **implicit** deny) → then 4e, still last. **For the crawler demander,
-no Terraform was authored, deliberately**: open question 19 is an undecided design input, and authoring
-a `Schedule` or an event pipe would be inventing the decision it asks for.
+Not applied because the statement binds six permission sets in every governed account, and this
+sitting's authorization was for review and propagation. The apply is its own sitting, and its sequence
+is written into the stage: apply → `VP-7` read-back → the two unblocked proofs (the drop-box
+`PutObject`, which should now meet `AllowInteractiveWriterPutOnly`; the pandas negative, which should
+return D13's **implicit** deny) → then 4e, still last. For the crawler demander, no Terraform was
+authored: open question 19 is an undecided design input, and authoring a `Schedule` or an event pipe
+would be inventing the decision it asks for.
 
 ### The session's AWS CLI, as a debugging reference
 
-Every command family this session used, with what it was *for* and what it *does* — the readings live
-verbatim in the entries above; this is the map. All reads unless marked.
+Every command family this session used, with what it was for and what it does; the readings live
+verbatim in the entries above. All reads unless marked.
 
 | Command | Why it was run | What it does, and what to read |
 |---|---|---|
@@ -2548,7 +2516,7 @@ none.
 4. open question **19** — the demander — decided by the user, with verification (iv) as the live
    candidate.
 
-## 2026-08-20 — The amendment applied, and the four proofs it was blocking: the deny stands down, D13's mechanism is finally its own reason, and the drop-box is put-only in three directions
+## 2026-08-20 — The amendment applied: the deny stands down, D13's mechanism is its own reason, and the drop-box is put-only
 
 *Provenance. **This entry is Claude's, and so are the commands.** **Three writes ran, each authorized in
 its own sitting**: the `terraform apply` of the amendment ("pode aplicar a emenda"), and the drop-box
@@ -2559,15 +2527,15 @@ a role ARN by **the persona's role**; the readings are otherwise verbatim.*
 ### The apply, and the guard that fired on the second try
 
 The saved plan from the review sitting (`0 to add, 6 to change, 0 to destroy`) was applied from
-`terraform-live/identity/sso` as the **infrastructure user**, `InfrastructureAccess`, in `Management`.
-It succeeded. A second invocation of the same file was **refused — "Saved plan is stale"** — which is
-Recipe D's guard doing exactly its job: a saved plan is spent once, and the refusal is the mechanism
-that stops a re-run from applying a world that has moved. Re-plan: **`No changes`**.
+`terraform-live/identity/sso` as the infrastructure user, `InfrastructureAccess`, in `Management`. It
+succeeded. A second invocation of the same file was refused — **"Saved plan is stale"** — which is
+Recipe D's guard: a saved plan is spent once, and the refusal is what stops a re-run from applying a
+world that has moved. Re-plan: `No changes`.
 
-**The read-back was taken on both provisioned roles, not on the document.** The defect was a property of
-the shared fragment, so the fix is only proven where the fragment lands — `AWSReservedSSO_DataScientistAccess_…07f8` in
-`Sandbox 1` and `…bf66` in `Development`, the same two roles that had failed identically in groups A and
-B. Both now carry three conditions:
+The read-back was taken on both provisioned roles rather than on the document. The defect was a
+property of the shared fragment, so the fix is only proven where the fragment lands —
+`AWSReservedSSO_DataScientistAccess_…07f8` in `Sandbox 1` and `…bf66` in `Development`, the same two
+roles that had failed identically in groups A and B. Both now carry three conditions:
 
 ```json
 { "BoolIfExists":            { "aws:ViaAWSService": "false" },
@@ -2575,17 +2543,16 @@ B. Both now carry three conditions:
   "StringNotEqualsIfExists": { "aws:SourceVpce": ["vpce-0a215b90df70b23c3", "vpce-0cc3e139c1167ca83"] } }
 ```
 
-`./aws/vpn.py` → **all checks passed**. **`VP-7` passes in both directions** — the fragment is on all six
-persona sets, and **absent from `InfrastructureAccess`** — which is the half that keeps the recovery
-path open and would have been the expensive thing to get wrong.
+`./aws/vpn.py` → all checks passed. **`VP-7` passes in both directions**: the fragment is on all six
+persona sets and absent from `InfrastructureAccess`, the half that keeps the recovery path open.
 
 ### The proofs, taken as the persona
 
 The user signed in as the **data-scientist persona**, `DataScientistAccess`, in `Sandbox 1` and
 `Development`. `curl checkip` → `52.89.212.1` first, so identity varied and route did not.
 
-**The before/after, on the one call that diagnosed the defect.** `s3api list-buckets` is what the
-previous sitting caught in CloudTrail arriving with `aws:SourceVpce` and a private address. Re-run now:
+The before/after runs on the call that diagnosed the defect. `s3api list-buckets` is what the previous
+sitting caught in CloudTrail arriving with `aws:SourceVpce` and a private address. Re-run now:
 
 ```
 not authorized to perform: s3:ListAllMyBuckets
@@ -2593,10 +2560,10 @@ because no identity-based policy allows the s3:ListAllMyBuckets action
 ```
 
 **Explicit deny in an identity-based policy → implicit.** Same call, same role, same tunnel, one
-variable changed. Nothing else in this stage measures the fix that directly.
+variable changed.
 
-**The contrast pair — one action, two buckets, one session.** This is what separates *"S3 is blocked"*
-from *"this bucket is not granted"*, and the two were indistinguishable while the deny sat on top:
+The contrast pair — one action, two buckets, one session — separates *"S3 is blocked"* from *"this
+bucket is not granted"*, indistinguishable while the deny sat on top:
 
 | `s3api get-bucket-location` on | `Sandbox 1` | `Development` |
 |---|---|---|
@@ -2604,11 +2571,10 @@ from *"this bucket is not granted"*, and the two were indistinguishable while th
 | `awsds-data-curated` | implicit deny | implicit deny |
 
 `GetBucketLocation` was chosen over `ListObjectsV2` for the same reason as last sitting: it is a
-**management** event, so the trail will carry it. The instrument's scope is a standing constraint here,
-not a one-off.
+**management** event, so the trail will carry it. The instrument's scope is a standing constraint.
 
-**D13's mechanism, closed.** The direct S3 path to a registered location is refused **because nothing
-grants it** — not because an unrelated rule intervened:
+D13's mechanism is closed. The direct S3 path to a registered location is refused because nothing
+grants it:
 
 ```
 s3:ListBucket on "arn:aws:s3:::awsds-data-curated"
@@ -2617,15 +2583,14 @@ because no identity-based policy allows the s3:ListBucket action
 
 Both accounts, identical wording, so the property belongs to the design and not to an accident of one
 account. While the explicit deny was in the way, this reading and a broken-share reading produced the
-same output — **Lesson 13 in its live form**, and the reason the amendment had to land before the claim
-could be made at all.
+same output (**Lesson 13**), which is why the amendment had to land before the claim could be made.
 
-### The drop-box: `PutObject` lands, and the success response carries the third half
+### The drop-box: `PutObject` lands, and the success response names the key
 
 `s3api put-object` on `awsds-data-dropbox/incoming/2026/08/20/probe-4d-sandbox.txt`, 38 bytes, fixed
-size **deliberately** — a stdin stream of unknown length would have gone multipart, and the identity
-half grants `s3:PutObject` with no multipart companion, so the probe would have failed for a reason that
-was not the one under test. It succeeded, and returned:
+size: a stdin stream of unknown length would have gone multipart, and the identity half grants
+`s3:PutObject` with no multipart companion, so the probe would have failed for a reason that was not the
+one under test. It succeeded, and returned:
 
 ```
 ServerSideEncryption: aws:kms
@@ -2637,17 +2602,17 @@ VersionId:            FdI4Gv5zaoOYBH_SaVIpCdD7Pv37GfNm
 **`AllowInteractiveWriterPutOnly` moves from attached to exercised** — Lesson 20 discharged for that
 statement, and the identity half authored in 4c delivered.
 
-**The finding: on an encrypted write path, Lesson 28's intersection has three terms, not two.** Three
-policies in two accounts had to agree at once — the identity half (`WriteIngestionDropBox`), the
-resource half (`AllowInteractiveWriterPutOnly`, `ArnLike` over both consumer accounts' reserved-SSO
-pattern), and **the key policy** of the lake CMK meeting `UseLakeDataKeyViaS3`, each side carrying the
-`ViaService = s3` scope that bounds the other. The third term is invisible in the failure taxonomy the
-stage has been using — a missing key policy surfaces as a **KMS** error, which is precisely the shape
-yesterday's INSERT failure took. It is visible here only because a *successful* `PutObject` echoes
-`SSEKMSKeyId`. **Lesson 28's wording is owed an amendment**: two halves is the identity/resource case;
-encryption adds a third, and the success response is where you read it.
+On an encrypted write path, Lesson 28's intersection has three terms. Three policies in two accounts had
+to agree at once: the identity half (`WriteIngestionDropBox`), the resource half
+(`AllowInteractiveWriterPutOnly`, `ArnLike` over both consumer accounts' reserved-SSO pattern), and the
+key policy of the lake CMK meeting `UseLakeDataKeyViaS3`, each side carrying the `ViaService = s3` scope
+that bounds the other. The third term is invisible in the failure taxonomy the stage has been using — a
+missing key policy surfaces as a KMS error, the shape yesterday's INSERT failure took — and is visible
+here only because a *successful* `PutObject` echoes `SSEKMSKeyId`. Lesson 28's wording is owed an
+amendment: two halves is the identity/resource case; encryption adds a third, read from the success
+response.
 
-**Put-only, measured in three directions.** All three refusals are implicit — absence of grant, the same
+Put-only, measured in three directions. All three refusals are implicit — absence of grant, the same
 reason as D13's:
 
 | the persona attempts | result |
@@ -2657,21 +2622,21 @@ reason as D13's:
 | `ListObjectsV2` on `incoming/` | implicit deny |
 | `DeleteObject` on its own object | implicit deny |
 
-Write and lose sight of it. **D18's refusal of an exchange bucket is now a construction, not a
-convention** — and the delete probe is what makes that claim complete, since a writer that can retract
-is a writer that can launder.
+The writer writes and loses sight of it. D18's refusal of an exchange bucket is a construction rather
+than a convention, and the delete probe completes the claim: a writer that can retract is a writer that
+can launder.
 
-The `Development` leg was **not** run, deliberately: the resource half is an `ArnLike` pattern covering
-both accounts and both provisioned roles were already read back above, so a second uncollectable object
-would have bought weaker evidence than what the read-back already gives.
+The `Development` leg was not run: the resource half is an `ArnLike` pattern covering both accounts and
+both provisioned roles were read back above, so a second uncollectable object would have bought weaker
+evidence than the read-back already gives.
 
-### The residue, declared rather than discovered later
+### The residue
 
-**The probe object stays.** Versioned, under the lake CMK, and **no principal in the current design can
-collect it**: the pickup is `awsds-prod-job-exec`, a Stage 9 object that does not exist. This is the
-expected consequence of the drop-box being complete before its consumer, not stray debris — but
-undeclared it becomes a phantom finding in some later snapshot, so `AWS_STATE.md` is owed an `EXC` row
-naming the object and the stage that removes it.
+The probe object stays. Versioned, under the lake CMK, and no principal in the current design can
+collect it: the pickup is `awsds-prod-job-exec`, a Stage 9 object that does not exist. That is the
+expected consequence of the drop-box being complete before its consumer; undeclared it becomes a phantom
+finding in a later snapshot, so `AWS_STATE.md` is owed an `EXC` row naming the object and the stage that
+removes it.
 
 ### New to the session's command reference
 
@@ -2691,7 +2656,7 @@ Closed: the Lesson 33 fix, **proven** rather than authored; `VP-7` both halves; 
 amendment, last, through battery phase 4b — the in-account Athena door now genuinely exists to close),
 **pass 6** (Security Hub), and open question **19**, the crawler demander, which is the user's decision.
 
-## 2026-08-20 — The propagation sitting: four findings the writing itself produced, an instrument that had been reporting `pass` over the defect, and 4e prepared
+## 2026-08-20 — The propagation sitting: the findings the writing produced, an instrument reporting `pass` over the defect, and 4e prepared
 
 *Provenance. **This entry is Claude's, at the user's request.** **No AWS write ran, and no AWS read
 completed**: the only call attempted was `./aws/vpn.py`, which found the infrastructure profiles'
@@ -2714,35 +2679,33 @@ authoring plus the offline gates.*
 | Terraform | `policies-shared.tf`, `policies-data-scientists.tf`, `buckets.tf`, and both lake READMEs |
 | `aws/vpn.py` | `VP-7` strengthened — below |
 
-### Four findings the propagation produced, none of them from a machine
+### The findings the propagation produced
 
 **1. `VP-7` had been reporting `pass` over the defect for three days.** The check greps each persona
 set's inline policy for the Sid `DenyControlPlaneOffVpn` — presence, and the report even says
-"presence, never sufficiency". But the 4d defect was *presence with the wrong conditions*, which is
-precisely the case a Sid grep cannot see, so the instrument said "all six carry it" throughout the
-period when all six carried something that denied every direct S3 call from inside the perimeter.
-**Lesson 31's shape** — a check inheriting the scope it was written in. Amended: the grep now also reads
-`aws:SourceVpce` and reports a third state, **`yes, IP only`**, whose failure text carries the whole
-diagnosis (traffic splits by destination; the fix is the *home's* endpoints, not the consumers'). It is
-still not sufficiency — the values in the list are not checked — and saying so in the report is part of
-the change. **Not exercised against AWS**: `ruff` clean and the new branch is unrun, because the
-infrastructure session had expired by then. It is owed a run.
+"presence, never sufficiency". The 4d defect was *presence with the wrong conditions*, the case a Sid
+grep cannot see, so the instrument said "all six carry it" throughout the period when all six carried
+something that denied every direct S3 call from inside the perimeter (**Lesson 31**). Amended: the grep
+now also reads `aws:SourceVpce` and reports a third state, `yes, IP only`, whose failure text carries
+the diagnosis (traffic splits by destination; the fix is the home's endpoints, not the consumers'). It
+is still not sufficiency — the values in the list are not checked — and the report says so. Not
+exercised against AWS: `ruff` clean and the new branch unrun, because the infrastructure session had
+expired. It is owed a run.
 
 **2. Debt item 4 said "amend `DenyUserCompute`" and meant *two* documents.** `POLICIES.md`'s Identity
-section states it plainly — the statement is one idea in two files, `Data` and `Identity` — and it also
-states the trap: **`check-index.py` compares `Sid`s, not action lists**, so a one-document amendment
-passes every gate in the repository and leaves the two silently divergent. **Lesson 14 in the shape the
-file itself predicted.** Corrected in the stage's debt item, which is where 4e will actually be read
-from.
+section states it — the statement is one idea in two files, `Data` and `Identity` — and states the trap:
+`check-index.py` compares `Sid`s, not action lists, so a one-document amendment passes every gate in the
+repository and leaves the two silently divergent (**Lesson 14**). Corrected in the stage's debt item,
+which is where 4e will be read from.
 
 **3. INT-05's behavioural proof arrived from a call nobody nominated as its proof.** That row had said
 "nothing here is proven behaviourally until pass 4d" and expected the proof from a lake *read*. What
 proved it was the drop-box **write**: every lake bucket carries `DenyOutsideTrustedNetworks`, so the
 persona's `PutObject` had to satisfy the `aws:SourceVpce` branch — and did, arriving through Sandbox's
 own `[P]` gateway endpoint. The row now also carries the finding the same measurement forced: the
-identity side needs endpoint ids too, and **the two lists are on different axes** (who consumes the
-lake / what is on the network path). They coincide only because the single VPN home happens to be a
-consumer; Stage 14's second home is where they part.
+identity side needs endpoint ids too, and the two lists are on different axes (who consumes the lake /
+what is on the network path). They coincide only because the single VPN home happens to be a consumer;
+Stage 14's second home is where they part.
 
 **4. A stale verification row, found by reading rather than by a gate.** Verification (x) still said
 "the explicit-grant half remains" although 4d's second authorized act had answered it on 2026-08-19 —
@@ -2751,16 +2714,15 @@ after the revert. The bullet in the body had been updated; the row had not. Noth
 the two, and this is the second time in three sittings that a summary drifted from the body it
 summarises.
 
-### One thing recorded because it argues against itself
+### The exemption of open question 17 is also a diagnostic instrument
 
 Open question 17 chose to leave `InfrastructureAccess` outside the VPN deny, weighing recovery against
-bypass. **The 4d episode revealed a third property nobody argued at the time: the exemption is also the
-negative control for that deny.** When every persona's S3 call started failing, what isolated the cause
+bypass. The 4d episode revealed a third property nobody argued at the time: the exemption is the
+negative control for that deny. When every persona's S3 call started failing, what isolated the cause
 was `InfrastructureAccess` succeeding on the same bucket over the same tunnel — exonerating the bucket
-policy, the CMK, the endpoint and the network in one reading. A deny applied to *every* set would have
-had no such control inside the estate. Written into the question as a benefit **and** a warning:
-narrowing that set later removes a diagnostic instrument as well as a bypass, and that should be said at
-the time rather than discovered during an incident.
+policy, the CMK, the endpoint and the network in one reading. A deny applied to every set would have had
+no such control inside the estate. Written into the question as a benefit and a warning: narrowing that
+set later removes a diagnostic instrument as well as a bypass.
 
 ### 4e, prepared
 
@@ -2772,11 +2734,10 @@ not exist** so that a not-denied call fails harmlessly, with Lesson 21's fork sp
 to be accepted deliberately, never slipped in); then `POLICIES.md`'s two rewrites, `./aws/org-policies.py`,
 and the two new `probes.py` entries in the same sitting.
 
-**And the cost of closing it, written before it is closed**: `DenyUserCompute` carries no condition, so
-after the amendment nothing in Data Governance can run an Athena query — `InfrastructureAccess`
-included. The `count(*) = 12` that proved the sample rows stops being reproducible from that account;
-the equivalent runs from a consumer over the share. That is D13 working, and it is still a diagnostic
-being given up.
+The cost of closing it: `DenyUserCompute` carries no condition, so after the amendment nothing in Data
+Governance can run an Athena query, `InfrastructureAccess` included. The `count(*) = 12` that proved the
+sample rows stops being reproducible from that account; the equivalent runs from a consumer over the
+share. That is D13 working, and it is still a diagnostic being given up.
 
 ### Gates
 
@@ -2787,7 +2748,7 @@ expired.
 
 ---
 
-## 2026-08-20 — The sign-in that succeeded as the wrong human: one wording, two opposite causes, and the instrument that would have written an operator's click down as a ceiling breach
+## 2026-08-20 — The sign-in that succeeded as the wrong human: one wording, two opposite causes
 
 *Provenance. **This entry is Claude's, at the user's request.** The user signed in and authorized the
 two owed checks; every AWS call below is a **read** (`sts:GetCallerIdentity`, `sso:ListAccounts`,
@@ -2817,35 +2778,34 @@ token, presented it, and Identity Center refused to exchange it for the role. As
 **The persona's token.** The browser still held the portal session from the entry above, and the device
 authorization was re-approved against it without a prompt.
 
-**The mechanism worth keeping: the token cache is keyed by `sso-session` name, never by user.** So a
-sign-in as the wrong identity does not fail — it *occupies the right identity's slot*, and every
-subsequent `aws sso login --sso-session awsds` finds a valid token there and returns success without
-asking the browser anything. The remedy is the logout, not the login.
+The token cache is keyed by **`sso-session` name, never by user**. A sign-in as the wrong identity does
+not fail — it occupies the right identity's slot, and every subsequent
+`aws sso login --sso-session awsds` finds a valid token there and returns success without asking the
+browser anything. The remedy is the logout, not the login.
 
-### Three instruments were pointing at the wrong fix
+### The instruments were pointing at the wrong fix
 
 **1. `awslib/profiles.py` handed back the command that had just run.** Its preflight prints
-"no profile authenticated. log in first: `aws sso login --sso-session awsds`" — literally the inert
-command in this state. It now recognises the two causes apart and, in this one, prints the logout.
+"no profile authenticated. log in first: `aws sso login --sso-session awsds`", the inert command in this
+state. It now recognises the two causes apart and, in this one, prints the logout.
 
 **2. `check-ou-coverage.py` named the right human and still handed over the inert command.** Its message
-already said *sign in as the INFRASTRUCTURE USER, Identity account, `InfrastructureAccess`* — correct,
+already said *sign in as the infrastructure user, Identity account, `InfrastructureAccess`* — correct
 and not enough: naming the right human does not help when the wrong one's token is already in the slot.
 
-**3. `scp-battery.py` — and this is the one that mattered.** Its `ensure_session` forks on the *wording*
-(Lesson 24) between an expired token, which stops the run, and anything else, which is recorded as
-**`NO-CREDENTIALS`, a floor breach** and, in its own docstring's words, the most serious finding the
-battery can produce. That fork is right, and it was written from a real measurement: on **2026-08-14**
-this exact wording *was* the ceiling — `awsds-org-rcp-perimeter` denied the SAML flow's own STS actions
-in all six member accounts.
+**3. `scp-battery.py`.** Its `ensure_session` forks on the wording (Lesson 24) between an expired token,
+which stops the run, and anything else, which is recorded as `NO-CREDENTIALS`, a floor breach and, in
+its own docstring's words, the most serious finding the battery can produce. That fork was written from
+a real measurement: on 2026-08-14 this exact wording *was* the ceiling — `awsds-org-rcp-perimeter`
+denied the SAML flow's own STS actions in all six member accounts.
 
-So the wording has **two causes and no third state**: the ceiling refusing a sign-in that is assigned,
-and a token belonging to somebody the role was never assigned to. **Filtering the second by its text
-would have suppressed the first along with it** — which is Lesson 24 arriving from the opposite
-direction, in the very function whose docstring cites it.
+So the wording has two causes and no third state: the ceiling refusing a sign-in that is assigned, and a
+token belonging to somebody the role was never assigned to. Filtering the second by its text would have
+suppressed the first along with it — Lesson 24 arriving from the opposite direction, in the function
+whose docstring cites it.
 
-The discriminator therefore asks a *different system*, not a different string: **IdC's own listing of
-what the token is assigned. That path never traverses STS, so no SCP and no RCP can shape its answer.**
+The discriminator asks a different system rather than a different string: IdC's own listing of what the
+token is assigned. That path never traverses STS, so no SCP and no RCP can shape its answer.
 
 | `assignment_exists` | Meaning | What the battery does |
 |---|---|---|
@@ -2853,8 +2813,8 @@ what the token is assigned. That path never traverses STS, so no SCP and no RCP 
 | `False` | this token's user holds no such role | stop, operator error, record nothing |
 | `None` | could not tell | **keep the finding** — hiding a real breach is the expensive direction |
 
-Exercised in the wrong-identity state, which was the only window to test it, by loading the functions
-directly — **the battery itself was never run and no probe fired**:
+Exercised in the wrong-identity state, the only window to test it, by loading the functions directly —
+the battery itself was never run and no probe fired:
 
 ```
 account    profile                    sts     wrong_identity  assignment_exists
@@ -2866,11 +2826,11 @@ sandbox1   awsds-infra-sandbox-1      FAILED  True            False   -> STOP (o
 prod       awsds-infra-prod           FAILED  True            False   -> STOP (operator)
 ```
 
-Six correct classifications. Without the discriminator this sitting would have written **six floor
-breaches** into the battery's report — a tool's failure recorded as a property of the world, which is
-**Lesson 30**. Note that `dev`, `prod` and `sandbox1` answer `False` even though the token *does* hold
-those accounts: the comparison is by **role**, not by account, and that granularity is what makes it a
-test rather than a coincidence.
+Six correct classifications. Without the discriminator this sitting would have written six floor
+breaches into the battery's report — a tool's failure recorded as a property of the world
+(**Lesson 30**). `dev`, `prod` and `sandbox1` answer `False` even though the token does hold those
+accounts: the comparison is by **role**, not by account, and that granularity is what makes it a test
+rather than a coincidence.
 
 ### New to the session's command reference
 
@@ -2886,7 +2846,7 @@ aws sso list-accounts --access-token "$TOKEN" --region us-west-2
 The cache file is named for the **sso-session**, which is why the hash is taken over that name and why
 the wrong user's token is found there at all.
 
-### The two owed checks, run
+### The owed checks, run
 
 After the logout-and-login as the **infrastructure user** (`Identity` and `Sandbox 1`,
 `InfrastructureAccess`; both ARNs read back as `<that user's role>`):
@@ -2900,7 +2860,7 @@ pass  VP-7  DenyControlPlaneOffVpn absent from InfrastructureAccess   by decisio
 ```
 
 That is the amended branch reading the amended policy: the instrument that spent three days reporting
-`pass` over the defect now passes for the reason it claims to. **It is still not sufficiency** — the
+`pass` over the defect now passes for the reason it claims to. It is still not sufficiency — the
 endpoint ids inside the condition are not compared against anything — and the report says so.
 
 **`make check-ou` — OK.** The root plus seven OUs, all four sections clean: every OU accounted for
@@ -2910,15 +2870,14 @@ file in `policies/`, and every attachment as authored — six documents at the r
 
 ### Where the finding was written down
 
-**Lesson 24, amended** rather than a new lesson — it is the same family, and saying so is part of the
-record. The parent lesson produced the wording fork; the amendment says that fork is **necessary and not
-sufficient**, and that the missing half is *where to look*, not *how to read*. A second text rule would
-have repeated the lesson in reverse, because the two causes emit the same sentence by construction. So
-the separating evidence has to come from **a channel the tested mechanism cannot influence** — which is
-the rule the parent lesson's own instruments were already following (Management, which RCPs cannot
-reach; the trust policy, read rather than exercised) without naming it. It carries a corollary that is
-not about sign-in at all: **before a harness records a breach in every account at once, ask what single
-local thing could produce that same uniformity.**
+**Lesson 24 was amended** rather than replaced by a new lesson: it is the same family. The parent lesson
+produced the wording fork; the amendment says that fork is necessary and not sufficient, and that the
+missing half is *where to look*, not *how to read*. A second text rule would have repeated the lesson in
+reverse, because the two causes emit the same sentence by construction, so the separating evidence has
+to come from a channel the tested mechanism cannot influence — the rule the parent lesson's own
+instruments were already following (Management, which RCPs cannot reach; the trust policy, read rather
+than exercised). The corollary is not about sign-in: before a harness records a breach in every account
+at once, ask what single local thing could produce that uniformity.
 
 `CLAUDE.md`'s current position also carries the operational half, because it outlives this stage: the
 cache is keyed by sso-session name, the remedy is the logout, and that wording is never to be suppressed
@@ -2927,13 +2886,13 @@ by text alone.
 ### Gates
 
 `make check: **OK**`. `ruff check` and `ruff format --check` clean on the three amended scripts
-(`aws/awslib/profiles.py`, `aws/probes/scp-battery.py`, `scripts/check-ou-coverage.py`).
-**Nothing is owed to a machine from the propagation sitting any more.** Nothing was committed in this
-sitting; six files stand modified.
+(`aws/awslib/profiles.py`, `aws/probes/scp-battery.py`, `scripts/check-ou-coverage.py`). Nothing is owed
+to a machine from the propagation sitting. Nothing was committed in this sitting; six files stand
+modified.
 
 ---
 
-## 2026-08-20 — 4e applied, and two assumptions it broke on the way: the procedure the item carried was stale by a stage, and Athena's refusal names no policy
+## 2026-08-20 — 4e applied: the procedure the item carried was stale by a stage, and Athena's refusal names no policy
 
 *Provenance. **This entry is Claude's, at the user's request.** The user authorized the apply explicitly
 after reading the plan ("pode aplicar"). **Writes performed: one `terraform apply` changing three
@@ -2942,25 +2901,25 @@ at a workgroup that does not exist, which is the probe design. Everything else i
 Account ids are redacted as `<acct>`; the two policy ids are stable public identifiers and are written
 as they are, per this log's convention.*
 
-### The procedure in the item was wrong, and it was wrong in a way that would not have announced itself
+### The procedure in the item was wrong
 
 Debt item 4 step 3 said *"amend both JSONs, then `update-policy` in place"*. That instruction came from
-`POLICIES.md` and the battery runbook, and both describe the **Stage 1c** world, where these documents
-were pasted into the console by hand. **Stage 2 step 5.5 adopted all ten into Terraform** —
+`POLICIES.md` and the battery runbook, and both describe the Stage 1c world, where these documents were
+pasted into the console by hand. Stage 2 step 5.5 adopted all ten into Terraform —
 `aws_organizations_policy.this`, imported, `prevent_destroy` — so the hand upload is drift the next apply
 reverts, and it bypasses the four `precondition` blocks written to catch a bad amendment.
 
-**It would have broken something concrete, silently.** `awsds-org-scp-ou-data.json` carries
+It would have broken something concrete, silently. `awsds-org-scp-ou-data.json` carries
 `<ACCOUNT_ID_DATA>` inside the D27 crawler carve-out; the real id is substituted at render time and never
 enters a tracked file. Uploading the tracked file raw leaves an `ArnNotEquals` comparing against the
 literal string `<ACCOUNT_ID_DATA>` — a carve-out that matches nothing, with no error at upload, no error
-at evaluation, and a `DenyCatalogMaintenanceRunsExceptMaintenanceRole` that has quietly become
-decoration. Two independent guards exist against exactly this (`render.py`'s `SURVIVOR_RE`, `policies.tf`'s
-precondition), and the hand path uses neither.
+at evaluation, and a `DenyCatalogMaintenanceRunsExceptMaintenanceRole` become decoration. Two independent
+guards exist against this (`render.py`'s `SURVIVOR_RE`, `policies.tf`'s precondition), and the hand path
+uses neither.
 
-**Lesson 11's shape**: Stage 2 changed *who authors* these documents, and that invalidated every
-procedure written about them — including one written four days ago, by reading the two files that had not
-been updated either. The correction is in the item, at the step that carried the error.
+**Lesson 11**: Stage 2 changed *who authors* these documents, and that invalidated every procedure
+written about them — including one written four days ago, by reading the two files that had not been
+updated either. The correction is in the item, at the step that carried the error.
 
 ### The apply
 
@@ -2971,13 +2930,11 @@ been updated either. The correction is in the item, at the step that carried the
 Plan: 0 to add, 3 to change, 0 to destroy.
 ```
 
-**Three, where the amendment is two** — and the third was **declared in advance rather than discovered**:
-commit `6a5bf33`'s message ends *"One change reaches AWS on the next apply: locals.tf's RCP description
-(1 to change, description only) - not applied."* Verified in the plan: `awsds-org-rcp-perimeter` changes
-`description` and nothing else — zero occurrences of `content` or `Statement` in its diff. **It could not
-be left out without `-target`**, which the runbook's §8 permits only in Recipe D, so it was carried on
-purpose and named out loud. The alternative — a sanctioned exception to avoid a description edit — would
-have been the more expensive choice.
+Three, where the amendment is two, and the third was declared in advance: commit `6a5bf33`'s message
+ends *"One change reaches AWS on the next apply: locals.tf's RCP description (1 to change, description
+only) - not applied."* Verified in the plan: `awsds-org-rcp-perimeter` changes `description` and nothing
+else — zero occurrences of `content` or `Statement` in its diff. It could not be left out without
+`-target`, which the runbook's §8 permits only in Recipe D, so it was carried on purpose.
 
 | Document | Id | Change | Bytes |
 |---|---|---|---|
@@ -2985,14 +2942,14 @@ have been the more expensive choice.
 | `awsds-org-scp-ou-identity` | `p-mmfc17ac` | `+ athena:StartQueryExecution` | 494 → 523 |
 | `awsds-org-rcp-perimeter` | — | `description` only, the declared rider | — |
 
-Re-plan: **`No differences`**. Both documents read back from Organizations carrying the action.
-`./aws/org-policies.py` re-run — all checks passed, both attached, and **`CHK-3` still passes**, which is
-the placeholder substitution proving itself on the very statement the hand path would have wrecked.
+Re-plan: `No differences`. Both documents read back from Organizations carrying the action.
+`./aws/org-policies.py` re-run — all checks passed, both attached, and `CHK-3` still passes: the
+placeholder substitution proving itself on the statement the hand path would have wrecked.
 
 ### The probe, and the third outcome
 
 The item's fork had two branches: `AccessDenied` naming the policy = landed; workgroup-not-found =
-**untested**, because Athena would have validated before authorizing. **Neither happened.**
+untested, because Athena would have validated before authorizing. Neither happened.
 
 | From | OU | Answer |
 |---|---|---|
@@ -3000,27 +2957,25 @@ The item's fork had two branches: `AccessDenied` naming the policy = landed; wor
 | `awsds-infra-identity` | `Identity` | the same, verbatim |
 | `awsds-infra-sandbox-1` | `Interactive` | `InvalidRequestException: WorkGroup is not found` |
 
-So Lesson 21's fork resolved the useful way — **Athena authorizes before it validates for this action**,
-proven by the third row reaching validation. But the denial **names no policy**: no *"explicit deny in a
-service control policy"*, no policy id.
+Lesson 21's fork resolved the useful way — **Athena authorizes before it validates for this action**,
+proven by the third row reaching validation. The denial names no policy: no *"explicit deny in a service
+control policy"*, no policy id.
 
-**That breaks an assumption the battery has held since Stage 1c.** `classify()` reads wording, in a
+That breaks an assumption the battery has held since Stage 1c. `classify()` reads wording, in a
 deliberate order, and its last rule before `UNTESTED` says *"an AccessDenied that names no policy is an
 IAM/permission-set deny, not the ceiling — worth separating, because it answers a different question"*.
-That reasoning is right in general and **wrong here**, and no phrasing would fix it, because the service
-never emits one. Every probe written before this one happened to hit a service that names the document;
-the assumption was invisible until a service that does not came along.
+That reasoning is right in general and wrong here, and no phrasing would fix it, because the service
+never emits one. Every probe written before this one happened to hit a service that names the document.
 
-**So the attribution was moved out of the string and into a contrast probe.** Same action, same principal
-type, same region, one session — the only difference is which OU the account sits in. Sandbox 1 is in
-`Interactive`, which this amendment does not reach, and it got past authorization. Given that, the two
-denials can only be the per-OU documents.
+The attribution was moved out of the string and into a contrast probe. Same action, same principal type,
+same region, one session — the only difference is which OU the account sits in. Sandbox 1 is in
+`Interactive`, which this amendment does not reach, and it got past authorization, so the two denials can
+only be the per-OU documents.
 
-`probes.py` therefore gained **three** entries rather than two, the third an `allow`, with a comment
-saying the three are one measurement and naming the row to look at first if the pair ever stops
-attributing. **The two denies will report `note`, never `ok`** — that is the honest reading, and pretending
-otherwise would mean teaching the classifier to call a policy-less deny an SCP, which would misread every
-genuine IAM deny in the battery. 93 probes → **96**.
+`probes.py` therefore gained three entries rather than two, the third an `allow`, with a comment saying
+the three are one measurement and naming the row to look at first if the pair ever stops attributing.
+The two denies will report `note`, never `ok`: teaching the classifier to call a policy-less deny an SCP
+would misread every genuine IAM deny in the battery. 93 probes → **96**.
 
 *Must still succeed* trio in both amended accounts — `sts:GetCallerIdentity`, `s3 ls`,
 `ec2:DescribeVpcs` — all six calls OK.
@@ -3029,25 +2984,24 @@ genuine IAM deny in the battery. 93 probes → **96**.
 
 Nothing in Data Governance can run an Athena query now, `InfrastructureAccess` included. The
 `count(*) = 12` that proved the sample rows exist is no longer reproducible from that account; the
-equivalent runs from a consumer over the share. That is D13 working, and it was argued before the change
-rather than discovered after — which is the only reason it reads as a design and not as a regression.
+equivalent runs from a consumer over the share. That is D13 working, argued before the change rather
+than discovered after.
 
 ### Paperwork, same sitting
 
 `POLICIES.md`: both `DenyUserCompute` rows carry the action and the names-no-policy caveat; the Athena
 non-coverage bullet, which had asked in its own words to be rewritten when this landed, became a
-blockquote **kept rather than deleted** — an allow whose justification had been withdrawn for two days is
-precisely the state that list exists to make visible, and deleting the entry would delete the evidence
-that the list works. The `Identity` row records that what closed there was a **shape without content**.
-`check-index.py` clean over all ten documents.
+blockquote kept rather than deleted — an allow whose justification had been withdrawn for two days is the
+state that list exists to make visible. The `Identity` row records that what closed there was a shape
+without content. `check-index.py` clean over all ten documents.
 
-**Stage 6 inherits two of today's measurements**, written into its 1.6 because the cheapest place to learn
-them is not the sitting that needs them: Athena names no policy, so `DenyAthenaSparkStartSession` must be
-probed as a contrast pair; and authorize-before-validate is **per-action**, so it must be re-measured for
-`StartSession` rather than assumed. Plus one thing to check rather than a correction: the installed CLI's
-Athena operation list has no `update-session`, while 1.6's action pair names `athena:UpdateSession` — it
-came from AWS's own sample statement, which is the better authority for a policy, so the note asks for
-the machine-readable action list to be consulted before shipping it, as 7.6a did for the EC2 siblings.
+Stage 6 inherits two of today's measurements, written into its 1.6: Athena names no policy, so
+`DenyAthenaSparkStartSession` must be probed as a contrast pair; and authorize-before-validate is
+per-action, so it must be re-measured for `StartSession` rather than assumed. Plus one thing to check
+rather than a correction: the installed CLI's Athena operation list has no `update-session`, while 1.6's
+action pair names `athena:UpdateSession` — it came from AWS's own sample statement, which is the better
+authority for a policy, so the note asks for the machine-readable action list to be consulted before
+shipping it, as 7.6a did for the EC2 siblings.
 
 ### Gates
 
@@ -3057,154 +3011,151 @@ the machine-readable action list to be consulted before shipping it, as 7.6a did
 
 ### The review that followed, in the same sitting
 
-Pass 4 closing is the trigger to re-trim `CLAUDE.md`'s current position, and it was **over budget**:
-10859 bytes against ~8 KB. The four sub-passes collapsed into one state bullet plus **three things Stage 5
-leaves standing** — crawlers with no demander, `EXC-02`, and now no Athena in Data Governance — and the
+Pass 4 closing is the trigger to re-trim `CLAUDE.md`'s current position, and it was over budget: 10859
+bytes against ~8 KB. The four sub-passes collapsed into one state bullet plus the three things Stage 5
+leaves standing — crawlers with no demander, `EXC-02`, and now no Athena in Data Governance — and the
 `security-zone` bullet folded into the same line, since `GOVERNANCE.md` §Encryption is its one copy.
 **8080 bytes.** What was dropped was apply counts and commit shapes, which the stage file and this log
-already hold; what was kept is what a cold session would otherwise get wrong.
+already hold.
 
 Then the two findings were followed to the files that could repeat them.
 
 **`scp-battery.md` was one of the two sources of the stale instruction, and still said it.** Phase 4b's
 opening sentence read *"`update-policy` replaces its content in place"* — true when written, false since
 Stage 2. Corrected with the reasoning rather than the command alone, because the danger is not the verb:
-it is that the hand path **succeeds** and only the placeholder substitution degrades. `terraform-changes.md`
-§8 gained the paired rule, on both sides — never change a Terraform-owned object by hand because a
-document told you to, and **when you import something, grep the prose for a mutating command naming it and
-fix those files in the same sitting.** An adoption is not finished when the plan is clean.
+the hand path succeeds and only the placeholder substitution degrades. `terraform-changes.md` §8 gained
+the paired rule, on both sides — never change a Terraform-owned object by hand because a document told
+you to, and when you import something, grep the prose for a mutating command naming it and fix those
+files in the same sitting.
 
-**`terraform-live/identity/org-policies/README.md` had the near-miss written into it as a defect already.**
-Its placeholder sentence enumerated four tokens and omitted the fifth — `<ACCOUNT_ID_DATA>`, the one inside
-the D27 carve-out, the one that would have caused the damage. Fixed, and the sentence now says why that
-particular omission is the expensive one. **Nobody found this by running anything**; it surfaced because
+**`terraform-live/identity/org-policies/README.md` had the near-miss written into it as a defect
+already.** Its placeholder sentence enumerated four tokens and omitted the fifth — `<ACCOUNT_ID_DATA>`,
+the one inside the D27 carve-out, the one that would have caused the damage. Fixed, and the sentence now
+says why that omission is the expensive one. Nobody found this by running anything; it surfaced because
 the near-miss sent a reader to the file.
 
-**`stage-01c`'s copy was deliberately left alone.** Its sentence is dated 2026-08-13 and describes what
-closed that sitting, accurately, under the mechanism of the time. History records what happened; runbooks
-say what to do. Only the second kind was corrected.
+**`stage-01c`'s copy was left alone.** Its sentence is dated 2026-08-13 and describes what closed that
+sitting, accurately, under the mechanism of the time. History records what happened; runbooks say what to
+do. Only the second kind was corrected.
 
-**`AWS_STATE.md` gained `EXC-03`**, because the battery will now print two `note` rows forever and the next
-reader will investigate them. The row says they are expected, says the attribution lives in the third
-probe, and says explicitly **not** to fix them by loosening the classifier — which would misread every
-genuine IAM deny in the battery.
+**`AWS_STATE.md` gained `EXC-03`**, because the battery will now print two `note` rows forever and the
+next reader will investigate them. The row says they are expected, says the attribution lives in the
+third probe, and says not to fix them by loosening the classifier, which would misread every genuine IAM
+deny in the battery.
 
 **Lessons.** A new **35** — *adopting an object into IaC invalidates every procedure written about it, and
 touches none of the files carrying them; the stale path is the one that still succeeds.* It sits beside
-Lesson 11 rather than inside it: 11 is about **claims** going false when authorship changes and is repaired
-by re-reading decisions; this is about **instructions**, repaired by grepping prose, and its failure shape
-is the opposite — a stale procedure that errors is self-correcting, this one returns cleanly and leaves a
+Lesson 11 rather than inside it: 11 is about claims going false when authorship changes and is repaired
+by re-reading decisions; this is about instructions, repaired by grepping prose, and its failure shape is
+the opposite — a stale procedure that errors is self-correcting, this one returns cleanly and leaves a
 carve-out matching nothing.
 
-And **Lesson 24 was widened, hours after being amended**, by a second instance that did not fit the
-sentence just written. The morning's case was one wording with **two causes**; the afternoon's has one
-cause and **no attribution at all**. Same remedy, so the rule was restated on the property both share:
-*when a result cannot be attributed from its own text — ambiguous **or** silent — the attribution must come
-from a channel the tested mechanism cannot influence.* Recorded with its consequence: **a probe's expected
-wording is an assumption about the service, not about the control**, and worth stating when the probe is
-written, because it is the kind that holds for years and then does not.
+**Lesson 24 was widened** by a second instance that did not fit the sentence just written. The morning's
+case was one wording with two causes; the afternoon's has one cause and no attribution at all. Same
+remedy, so the rule was restated on the property both share: *when a result cannot be attributed from its
+own text — ambiguous or silent — the attribution must come from a channel the tested mechanism cannot
+influence.* Recorded with its consequence: a probe's expected wording is an assumption about the service,
+not about the control, and worth stating when the probe is written.
 
-**Decisions: none needed changing, and that was checked rather than assumed.** D13 is enforced on the
-identity side and 4e is an SCP in a different account — its pass-4d proof stands untouched. No decision
-file references the battery procedure or `update-policy`. **Open question 14 gained a pointer, not a
-copy**: 1.6's two inherited readings, plus the fact that 4e binds `Data` and `Identity` while that item's
-D13 query path runs under `Interactive` — so nothing there is narrowed by today.
+Decisions: none needed changing, checked rather than assumed. D13 is enforced on the identity side and 4e
+is an SCP in a different account, so its pass-4d proof stands untouched. No decision file references the
+battery procedure or `update-policy`. Open question 14 gained a pointer rather than a copy: 1.6's two
+inherited readings, plus the fact that 4e binds `Data` and `Identity` while that item's D13 query path
+runs under `Interactive` — so nothing there is narrowed by today.
 
-## 2026-08-20 — Pass 6 read before it was run, and the step turned out to describe a mechanism that does not exist
+## 2026-08-20 — Pass 6 read before it was run: the step described a mechanism that does not exist
 
 *Claude's hand throughout, at the user's "proceed with the plan". **No AWS write of any kind** — every call
 in this entry is read-only, and pass 6 itself is still unexecuted. The one decision here is the user's,
 recorded at its sub-step. The sitting produced no infrastructure change and a large plan change.*
 
-**The before-reading, first.** `./aws/datalake.py` as the infrastructure user: **six profiled accounts, all
-`not enabled`**, and — read from Identity, which the script tolerates failing — `securityhub.amazonaws.com`
-returning **`(none registered)`** as delegated administrator. `securityhub` appears in **no policy of this
-organization**, checked separately, so nothing in the ceiling shapes these calls. `DL-11` sat on its
+The before-reading. `./aws/datalake.py` as the infrastructure user: six profiled accounts, all
+`not enabled`, and — read from Identity, which the script tolerates failing — `securityhub.amazonaws.com`
+returning `(none registered)` as delegated administrator. `securityhub` appears in no policy of this
+organization, checked separately, so nothing in the ceiling shapes these calls. `DL-11` sat on its
 standing `note`, which is what it is there to say before the step runs.
 
 ### The step's mechanism was not a setting anybody could choose
 
-Step 13.1 said *"auto-enable for existing and future accounts"*. **Auto-enable reaches new accounts only,
-in the current Region only** — so on this organization, where every account already exists, it would have
-enabled Security Hub in **zero of them**. Not a wrong parameter: the described thing is not offered.
+Step 13.1 said *"auto-enable for existing and future accounts"*. Auto-enable reaches new accounts only,
+in the current Region only, so on this organization, where every account already exists, it would have
+enabled Security Hub in zero of them. The described thing is not offered.
 
-What does what 13.1 meant is **central configuration** — a configuration policy associated with the
-**root**, covering existing accounts, future accounts and every OU. It arrives with its own prerequisite
-(a home Region, which doubles as the finding aggregator), its own API family, and one consequence that
-reshaped a later sub-step: **a centrally managed account cannot run `BatchUpdateStandardsControlAssociations`**,
-so 13.3's triage stops being a per-account click and becomes an edit to the policy — the recommended
-policy must become a **custom** one at the first disable. That was written into 13.3 rather than left to
-be discovered at the keyboard.
+What 13.1 meant is **central configuration** — a configuration policy associated with the root, covering
+existing accounts, future accounts and every OU. It arrives with its own prerequisite (a home Region,
+which doubles as the finding aggregator), its own API family, and one consequence that reshaped a later
+sub-step: a centrally managed account cannot run `BatchUpdateStandardsControlAssociations`, so 13.3's
+triage stops being a per-account click and becomes an edit to the policy — the recommended policy must
+become a custom one at the first disable. That was written into 13.3 rather than left to be discovered at
+the keyboard.
 
-### Two products wear one name, and enabling both would have taken the Config recorder from Control Tower
+### Security Hub CSPM and Security Hub v2 share one name
 
 The installed CLI carries both generations side by side — `describe-hub` beside `describe-security-hub-v2`
-— which is how the split was noticed at all. Only **Security Hub CSPM** runs the FSBP standard, which is
-this step's whole reason to exist. The v2 product is now refused **by decision (13.0), with its reason
-stated**, because the reason is not preference: with both enabled, CSPM creates a service-linked
-configuration recorder and AWS documents that *"Security Hub does not use the customer-managed
-configuration recorder"* — which here is **`aws-controltower-BaselineConfigRecorder`**. A recorder nobody
-chose, displacing a Control-Tower-owned object, with its own bill, silently voiding this plan's standing
-"leave the recorder to Stage 12" deferral. Lesson 17 in its exact shape.
+— which is how the split was noticed. Only **Security Hub CSPM** runs the FSBP standard, this step's
+reason to exist. The v2 product is refused by decision (13.0) with its reason stated: with both enabled,
+CSPM creates a service-linked configuration recorder and AWS documents that *"Security Hub does not use
+the customer-managed configuration recorder"* — which here is `aws-controltower-BaselineConfigRecorder`.
+A recorder nobody chose, displacing a Control-Tower-owned object, with its own bill, silently voiding
+this plan's standing "leave the recorder to Stage 12" deferral (**Lesson 17**).
 
 `DL-11` was extended to guard that decision: `describe-security-hub-v2` is now read per account and the
 check **fails on the v2 product's arrival**, never on its absence. It is the one Security Hub reading that
 is not "has the stage run yet". The report gained a `V2 PRODUCT` column; all six accounts read `absent`.
 
-### Three smaller corrections the reading forced
+### Smaller corrections the reading forced
 
 **The console pushes toward a configuration the ceiling denies.** Its opt-in workflow instructs *"Select at
 least one Region to link to the home Region"*, and a linked Region is a Region where the policy would try
 to enable Security Hub — which the `us-west-2` ceiling refuses (`securityhub` is not in
 `CT.MULTISERVICE.PV.1`'s `NotAction` list). The CLI path takes no linked-Region argument, and the
-aggregator has a `NO_REGIONS` mode. **13.1a now prefers CloudShell in Audit over the console**, with the
-collision as the reason rather than taste.
+aggregator has a `NO_REGIONS` mode. 13.1a now prefers CloudShell in Audit over the console, with the
+collision as the reason.
 
-**The Config prerequisite was measured, not assumed.** Every governed account holding a profile carries
-Control Tower's recorder with `allSupported: true`, `includeGlobalResourceTypes: true`, `CONTINUOUS`,
-status `SUCCESS`. So FSBP has what it needs — and it has it *because Control Tower did it*, which is the
-second reason 13.0 leaves that recorder alone.
+**The Config prerequisite was measured.** Every governed account holding a profile carries Control
+Tower's recorder with `allSupported: true`, `includeGlobalResourceTypes: true`, `CONTINUOUS`, status
+`SUCCESS`. FSBP has what it needs because Control Tower did it, which is the second reason 13.0 leaves
+that recorder alone.
 
-**`INV-09`'s count in 13.4 was stale, and the 2026-08-18 split is what made it so.** It read "ten
-principals", written when GuardDuty preceded this stage. The split moved GuardDuty **after** it. Security
-Hub is the **ninth** principal and the **fourth** delegation. `AWS_STATE.md` now says to read the count
-from its own row and never from a stage file.
+**`INV-09`'s count in 13.4 was stale**, made so by the 2026-08-18 split. It read "ten principals", written
+when GuardDuty preceded this stage; the split moved GuardDuty after it. Security Hub is the ninth
+principal and the fourth delegation. `AWS_STATE.md` now says to read the count from its own row and never
+from a stage file.
 
 ### The Management decision, and the finding it unlocked
 
-**The user chose: Management is designated self-managed** until Stage 12. The first framing offered was
-two-way and wrong, and was corrected before the choice: including Management would **not** cover it,
-because **enabling Security Hub CSPM does not record an account** — AWS requires the recorder to be turned
-on manually. It would have bought a bill and a dashboard whose controls return `WARNING`, the status that
-*"doesn't actually evaluate the configuration state of the resource"*. Apparent coverage, which is worse
-than a declared gap.
+The user chose: **Management is designated self-managed** until Stage 12. The first framing offered was
+two-way and wrong, and was corrected before the choice: including Management would not cover it, because
+enabling Security Hub CSPM does not record an account — AWS requires the recorder to be turned on
+manually. It would have bought a bill and a dashboard whose controls return `WARNING`, the status that
+*"doesn't actually evaluate the configuration state of the resource"*: apparent coverage, worse than a
+declared gap.
 
-Writing that reason down surfaced something belonging to another stage. **Stage 1d decision 8's revision
-trigger** — *"if Management becomes recorded for any other reason, the rule costs nothing and goes on
-then"* — names **"Stage 5's Security Hub central configuration"** as its candidate. **That candidate does
-not fire.** The only Security Hub path that manufactures a recorder is the v2 product, which 13.0 refuses.
-One account's free recorder against eight accounts' recorder ownership is not a close trade, but it *is* a
-trade, and it was invisible while the two halves sat in different stages. **Decision 8 was corrected in
-place**: no candidate remains before Stage 12, so nothing should wait for it.
+Writing that reason down surfaced something belonging to another stage. Stage 1d decision 8's revision
+trigger — *"if Management becomes recorded for any other reason, the rule costs nothing and goes on
+then"* — names *"Stage 5's Security Hub central configuration"* as its candidate, and that candidate does
+not fire. The only Security Hub path that manufactures a recorder is the v2 product, which 13.0 refuses.
+One account's free recorder against eight accounts' recorder ownership is a trade, and it was invisible
+while the two halves sat in different stages. Decision 8 was corrected in place: no candidate remains
+before Stage 12, so nothing should wait for it.
 
-The cost of the choice is recorded rather than left to be rediscovered: `DL-11` **cannot see Management**
-(no profile), so the absence shows only in Audit's organization-coverage view, where a reader who has not
-read 13.1c will read it as a gap.
+The cost of the choice is recorded: `DL-11` cannot see Management (no profile), so the absence shows only
+in Audit's organization-coverage view, where a reader who has not read 13.1c will read it as a gap.
 
-### Two things this sitting got wrong, and how they were caught
+### What this sitting got wrong, and how it was caught
 
 **An assertion written into the stage that the repository already contradicted.** The 13.1 callout claimed
 "delegating *is* enabling" was unmeasured for this service and must not be inherited from GuardDuty.
 `REFERENCES.md` already carried the page saying the opposite — designation *"enables Security Hub CSPM …
 for the delegated administrator account"* — recorded at some earlier reading. Corrected: the coupling is
-documented for CSPM, **two** acts now assert it, and the read-back survives as confirmation rather than
-discovery. This is precisely the failure the sitting's own new lesson describes, arriving while the lesson
-was being written.
+documented for CSPM, two acts now assert it, and the read-back survives as confirmation rather than
+discovery. This is the failure the sitting's own new lesson describes, arriving while the lesson was being
+written.
 
 **`make check-docs` caught a rule violation and a wrong number in the same line.** The Config measurement
 had been written as "all four accounts holding a profile — " followed by their names, which the gate
-refuses (enumerating accounts instead of "every governed account"). Rewriting it exposed that **four was
-wrong**: the instrument had read **six**. The prose count came from four manual calls made earlier in the
+refuses (enumerating accounts instead of "every governed account"). Rewriting it exposed that four was
+wrong: the instrument had read six. The prose count came from four manual calls made earlier in the
 sitting; the script's own answer was never re-read against it.
 
 ### Lesson 36
@@ -3212,15 +3163,14 @@ sitting; the script's own answer was never re-read against it.
 *"Auto-enable" is a word each service defines for itself — and a cross-service finding written down in the
 stage that hit it stays in that stage.* Three services, three measured answers: GuardDuty's `ALL` covers
 existing accounts, Macie's covers new ones only, Security Hub's covers new ones only and is replaced
-outright by a different feature. Two halves make it worth its own number. First, **the repair was not a
-corrected parameter** — for Macie it was "add the existing accounts too", for Security Hub it is an
-entirely different mechanism with different prerequisites and a different executor; so a wrong mechanism
-assumption should be budgeted as "the described thing may not exist", not "the setting is off by one".
-Second, **the Macie instance had already been found and written down** — correctly, and dated — in Stage
-11's Status row, where Stage 5's step 13 would never read it. A finding about a *class* of thing cannot
-have a stage file as its only home.
+outright by a different feature. Two halves make it worth its own number. The repair was not a corrected
+parameter — for Macie it was "add the existing accounts too", for Security Hub it is a different mechanism
+with different prerequisites and a different executor, so a wrong mechanism assumption should be budgeted
+as "the described thing may not exist". And the Macie instance had already been found and written down,
+correctly and dated, in Stage 11's Status row, where Stage 5's step 13 would never read it: a finding
+about a *class* of thing cannot have a stage file as its only home.
 
-### What was touched, and what was deliberately not
+### What was touched, and what was not
 
 Plan and instrument: `stage-05-data-foundation.md` (step 13 rewritten, sub-numbers 13.1-13.4 kept because
 Stage 15's prerequisites row cites 13.2 by number; verification (ix)'s first half answered NO **by
@@ -3230,7 +3180,7 @@ documentation, before the step ran**), `stage-01d-org-wide-enablement.md` (decis
 a second window from GuardDuty's, opening at a different stage — and neither trial covers the Config cost
 underneath), `CLAUDE.md`.
 
-**Not touched, on purpose:** the working tree carried unrelated uncommitted work of the user's — the VPN
+Not touched, on purpose: the working tree carried unrelated uncommitted work of the user's — the VPN
 host's move to `t4g.medium` and its slice, runbook and script. `REFERENCES.md` is the one file both hands
 edited this sitting; both sets of entries are present and neither overwrote the other.
 
@@ -3246,16 +3196,16 @@ deliberately the same placeholders step 13.1d uses, so the log and the runbook m
 line. The organization **root id** is written in full: a stable public identifier, like the two policy ids
 of the 4e entry above.*
 
-**This is the first AWS write of pass 6.** Everything in the entry above it was doc-only — no AWS call at
-all — and that is why this is a separate sitting rather than a section of that one.
+This is the first AWS write of pass 6. Everything in the entry above it was doc-only, with no AWS call at
+all, which is why this is a separate sitting.
 
 ### Leg 1, in Management
 
 Console sign-in as **`AWS Control Tower Admin` → `Management` → `AWSAdministratorAccess`**, then
-CloudShell, `us-west-2`. The three reads come first **because Audit cannot go back for them**: it is a
-member account, holds no Organizations view, and `list-roots` is refused there — so the `RootId` and
-Management's own id, both of which leg 2 needs, have to leave this shell written down. That ordering was
-added to 13.1d before the leg ran; without it the pass stalls halfway, in the account that cannot fix it.
+CloudShell, `us-west-2`. The three reads come first because Audit cannot go back for them: it is a member
+account, holds no Organizations view, and `list-roots` is refused there — so the `RootId` and Management's
+own id, both of which leg 2 needs, have to leave this shell written down. That ordering was added to
+13.1d before the leg ran; without it the pass stalls halfway, in the account that cannot fix it.
 
 ```
 ~ $ aws organizations list-roots --query 'Roots[0].Id' --output text
@@ -3270,20 +3220,19 @@ r-zhj6
 }
 ```
 
-**What the third read proves is not the id.** The query carries the standing rule in both halves — the
-vended name is `Audit Account`, not `Audit`, and `Status=='ACTIVE'` is there because a **SUSPENDED
-`Sandbox`** sits in this roster. It returned **exactly one line**, so the fail-loudly condition did not
-fire and no wrong id was substituted into the write that followed it.
+The third read proves more than the id. The query carries the standing rule in both halves — the vended
+name is `Audit Account`, not `Audit`, and `Status=='ACTIVE'` is there because a SUSPENDED `Sandbox` sits
+in this roster. It returned exactly one line, so the fail-loudly condition did not fire and no wrong id
+was substituted into the write that followed it.
 
-**The write was accepted with no denial, which is the expected shape and not a lucky one:** `securityhub`
-appears in **no policy of this organization** (checked 2026-08-20, before the step), so nothing in the
-ceiling shapes these calls. The response echoes the admin account and says nothing about state — per
-13.1's callout the designation *"enables Security Hub CSPM in the current AWS Region for the delegated
-administrator account"*, and **that sentence stays documentation until leg 2's `describe-hub` reads it
-back**. The delegation is Region-scoped: a second Region later repeats this same command and must never
-pick a different account.
+The write was accepted with no denial: `securityhub` appears in no policy of this organization (checked
+2026-08-20, before the step), so nothing in the ceiling shapes these calls. The response echoes the admin
+account and says nothing about state — per 13.1's callout the designation *"enables Security Hub CSPM in
+the current AWS Region for the delegated administrator account"*, and that sentence stays documentation
+until leg 2's `describe-hub` reads it back. The delegation is Region-scoped: a second Region later repeats
+this same command and must never pick a different account.
 
-### Leg 2, in Audit — RUN, 23:07 to 23:24 UTC
+### Leg 2, in Audit — run 23:07 to 23:24 UTC
 
 Console sign-in as **`AWS Control Tower Admin` → `Audit` → `AWSAdministratorAccess`**, then CloudShell,
 `us-west-2`. Ids entered the shell once as variables so the rest could be pasted unchanged.
@@ -3509,52 +3458,49 @@ aws securityhub list-configuration-policy-associations --region us-west-2
 
 #### `describe-hub` turned a documented sentence into a measurement
 
-The hub in Audit reads `SubscribedAt: 2026-08-20T23:07:11Z` — **before any enabling call was made in
-Audit**, because none ever was. The only act that preceded it is leg 1's designation, from Management. So
-*"delegating is enabling"* is now **observed for Security Hub CSPM**, not inherited from GuardDuty and not
-taken on the documentation's word; this is the reading 13.1's callout asked for, and it is the whole reason
-that callout said one command was worth spending.
+The hub in Audit reads `SubscribedAt: 2026-08-20T23:07:11Z` — before any enabling call was made in Audit,
+because none ever was. The only act that preceded it is leg 1's designation, from Management. So
+*"delegating is enabling"* is observed for Security Hub CSPM, not inherited from GuardDuty and not taken
+on the documentation's word; this is the reading 13.1's callout asked for.
 
 Two attributes came with it that central configuration now owns: `AutoEnableControls: true` and
 `ControlFindingGenerator: STANDARD_CONTROL`. They are Audit's local settings, and from here on the
-configuration policy is what decides them for every governed account — which is the point of 13.1b.
+configuration policy decides them for every governed account, which is the point of 13.1b.
 
-#### The census: seven OUs, ten accounts — and the tenth is EXC-01
+#### The census, and the account that is EXC-01
 
-`list-configuration-policy-associations` returns **eighteen rows**, and the arithmetic closes exactly:
-**seven `ORGANIZATIONAL_UNIT` rows** — every OU this organization has (`Security`, `Interactive`,
-`Sandboxes`, `Data`, `Identity`, `Policy Test`, `Workloads`) — plus **ten `ACCOUNT` rows**, plus the
-`ROOT` row itself. Nothing was missed and nothing unexpected was reached, with **one exception that is
-worth a paragraph rather than a shrug**.
+`list-configuration-policy-associations` returns eighteen rows, and the arithmetic closes: seven
+`ORGANIZATIONAL_UNIT` rows — every OU this organization has (`Security`, `Interactive`, `Sandboxes`,
+`Data`, `Identity`, `Policy Test`, `Workloads`) — plus ten `ACCOUNT` rows, plus the `ROOT` row itself.
+Nothing was missed and nothing unexpected was reached, with one exception.
 
-**Ten accounts, not nine.** The organization holds nine live accounts; the tenth row is
-`<Sandbox, SUSPENDED - EXC-01>` — the suspended `Sandbox` attached **directly to the organization root**,
-left over from an experiment that predates this project. **`EXC-01` says the policy sets never reach it and
-that this costs nothing. Security Hub is the first control that reaches it**, and the reason is structural
-rather than accidental: a configuration policy associated with the **root** walks the organization tree,
-and that account hangs off the root itself. `EXC-01` is amended in `docs/AWS_STATE.md` to say so, because
-the next reader of this listing will otherwise meet a row that no document predicts.
+Ten accounts, not nine. The organization holds nine live accounts; the tenth row is
+`<Sandbox, SUSPENDED - EXC-01>` — the suspended `Sandbox` attached directly to the organization root, left
+over from an experiment that predates this project. `EXC-01` says the policy sets never reach it and that
+this costs nothing. **Security Hub is the first control that reaches it**, structurally: a configuration
+policy associated with the root walks the organization tree, and that account hangs off the root itself.
+`EXC-01` is amended in `docs/AWS_STATE.md` to say so, because the next reader of this listing will
+otherwise meet a row that no document predicts.
 
-What it will cost is one row that never turns green: a suspended account cannot have a service enabled in
-it, so its association is expected to sit at `PENDING` or settle at `FAILED` **permanently**. That is a
-known, named row — not the signal that the pass failed. Any *other* row failing is.
+It costs one row that never turns green: a suspended account cannot have a service enabled in it, so its
+association is expected to sit at `PENDING` or settle at `FAILED` permanently. That is a known, named row,
+not the signal that the pass failed. Any other row failing is.
 
 #### PENDING is not SUCCESS — this read-back does not close the pass
 
-The read-back was taken roughly ninety seconds after the root association, and **only one row had
-settled**: `<Management>`, `SELF_MANAGED_SECURITY_HUB`, `SUCCESS` — 13.1c applied, and the one act of this
-leg that is already proven. **Every other row is `PENDING`**, including the root itself and all nine
-inherited accounts.
+The read-back was taken roughly ninety seconds after the root association, and only one row had settled:
+`<Management>`, `SELF_MANAGED_SECURITY_HUB`, `SUCCESS` — 13.1c applied, the one act of this leg already
+proven. Every other row is `PENDING`, including the root itself and all nine inherited accounts.
 
-Association is asynchronous, so `PENDING` at ninety seconds is the expected reading and not a fault. But it
-means that at *this* point in the sitting nothing had been established except that the calls were
-*accepted* — not that Security Hub was enabled anywhere but Audit. That is the distinction Lesson 13 exists
-for, and it is why the sitting did not stop here.
+Association is asynchronous, so `PENDING` at ninety seconds is the expected reading and not a fault. It
+means that at this point in the sitting nothing had been established except that the calls were accepted,
+not that Security Hub was enabled anywhere but Audit (Lesson 13), which is why the sitting did not stop
+here.
 
-#### The re-read — and it lands one row away from where the section above predicted
+#### The re-read
 
-Same listing, filtered to everything that is **not** `SUCCESS`, which is the shape that makes a short answer
-mean something. *The column rule below was widened to fit the redaction; the values are the run's own.*
+Same listing, filtered to everything that is not `SUCCESS`, the shape that makes a short answer mean
+something. *The column rule below was widened to fit the redaction; the values are the run's own.*
 
 ```
 $ aws securityhub list-configuration-policy-associations --region us-west-2 --query "ConfigurationPolicyAssociationSummaries[?AssociationStatus!='SUCCESS'].{Target:TargetId,Type:TargetType,Status:AssociationStatus}" --output table
@@ -3568,32 +3514,29 @@ $ aws securityhub list-configuration-policy-associations --region us-west-2 --qu
 +---------+---------------------------+-------------+
 ```
 
-**Sixteen of the eighteen rows settled — all seven OUs and all nine live accounts.** So the association
-half of pass 6 is done: Security Hub CSPM is enabled under `awsds-fsbp-only` in every governed account, and
-`<Management>` is self-managed exactly as 13.1c decided.
+Sixteen of the eighteen rows settled — all seven OUs and all nine live accounts. The association half of
+pass 6 is done: Security Hub CSPM is enabled under `awsds-fsbp-only` in every governed account, and
+`<Management>` is self-managed as 13.1c decided.
 
-**Two rows remain, and the section above predicted one.** `<the SUSPENDED Sandbox>` is the expected one.
-The **`ROOT` row is not**, and the likeliest reading is that it is not a second problem but the same one
-seen from above: a parent's association status has nothing to summarise except its descendants, and one
-descendant can never succeed. **That is a reading, not a measurement**, and the two candidates are
-distinguishable by doing nothing — propagation still in flight settles in minutes, while an aggregate over
-a permanently stuck child stays `PENDING` for as long as the suspended account exists. Re-read this one row
-on a later sitting and the answer arrives for free.
+Two rows remain, and the section above predicted one. `<the SUSPENDED Sandbox>` is the expected one. The
+`ROOT` row is not, and the likeliest reading is that it is the same problem seen from above: a parent's
+association status has nothing to summarise except its descendants, and one descendant can never succeed.
+That is a reading, not a measurement, and the two candidates are distinguishable by doing nothing —
+propagation still in flight settles in minutes, while an aggregate over a permanently stuck child stays
+`PENDING` for as long as the suspended account exists. Re-read this one row on a later sitting.
 
-**What it costs if the reading is right, and this is the part worth carrying:** the obvious invariant —
-*every association row reads `SUCCESS`* — is **not available to this organization**, and a check written
-that way would fail forever, on two rows, for one reason. The true invariant is narrower, and `EXC-01` now
-states it: **every OU and every live account `SUCCESS`; the suspended account, and the root above it,
-exempt by name.** An invariant written from the happy path would have had to be unlearned later, from a red
-check nobody could explain.
+If the reading is right, the obvious invariant — *every association row reads `SUCCESS`* — is not
+available to this organization, and a check written that way would fail forever, on two rows, for one
+reason. The true invariant is narrower, and `EXC-01` now states it: **every OU and every live account
+`SUCCESS`; the suspended account, and the root above it, exempt by name.**
 
-#### The two instrument readings, and what they close
+#### The instrument readings, and what they close
 
 *Run by **[user]** from their own machine as the infrastructure user, `./aws/datalake.py`; the
 trusted-access snapshot re-run by Claude in the same sitting. Both are read-only. Account ids are in
 `aws/output/`, which is untracked — none is copied here.*
 
-`DL-11` turned from its standing `note` into **six `pass`**, and section 11 of the report reads the same way
+`DL-11` turned from its standing `note` into six `pass`, and section 11 of the report reads the same way
 across every profiled account:
 
 ```
@@ -3608,39 +3551,38 @@ awsds-policy-canary    enabled   yes            absent
 delegated administrator (securityhub.amazonaws.com): <Audit Account>  ACTIVE
 ```
 
-`0 check(s) FAILED`. **`V2 PRODUCT: absent` in all six is the reading worth naming**, because it is the only
-one here that is not "has the stage run yet": 13.0 refused the v2 product so that Control Tower keeps
+`0 check(s) FAILED`. `V2 PRODUCT: absent` in all six is the reading worth naming, the only one here that
+is not "has the stage run yet": 13.0 refused the v2 product so that Control Tower keeps
 `aws-controltower-BaselineConfigRecorder`, and `DL-11` fails on that product's **arrival**, never on its
-absence. Six accounts enabled and the recorder still Control Tower's is the whole decision, measured.
+absence. Six accounts enabled and the recorder still Control Tower's is the decision, measured.
 
-**Read what this table is and is not.** The org configuration lives in Audit, which holds no profile — so
-these six rows are the **result** of the root-associated policy, never the policy itself. Management is
-absent by 13.1c's decision, not by an oversight of the instrument.
+The org configuration lives in Audit, which holds no profile, so these six rows are the result of the
+root-associated policy rather than the policy itself. Management is absent by 13.1c's decision, not by an
+oversight of the instrument.
 
 #### 13.4 — INV-09 restated from a measurement, not derived
 
-`./aws/org-trusted-access-services.py` re-run: **nine** trusted-access principals, `securityhub.amazonaws.com`
-now among them, and **four** delegations — `access-analyzer`, `config` and **`securityhub`** to
-`<Audit Account>`, `sso` to `<Identity Account>`, all `ACTIVE`.
+`./aws/org-trusted-access-services.py` re-run: nine trusted-access principals,
+`securityhub.amazonaws.com` now among them, and four delegations — `access-analyzer`, `config` and
+`securityhub` to `<Audit Account>`, `sso` to `<Identity Account>`, all `ACTIVE`.
 
-**Nine and four is what the corrected ordering predicted**, and it is worth recording that the prediction
-was itself a repair: the sub-step said *"ten"* until 2026-08-20, written when GuardDuty was Stage 4 and so
-landed *before* this stage. The 2026-08-18 split moved GuardDuty to Stage 15 and no count followed it.
-`docs/AWS_STATE.md` now carries the rule that made this come out right — **read the count from INV-09's row,
-never from a stage file.**
+Nine and four is what the corrected ordering predicted, and the prediction was itself a repair: the
+sub-step said *"ten"* until 2026-08-20, written when GuardDuty was Stage 4 and so landed before this
+stage. The 2026-08-18 split moved GuardDuty to Stage 15 and no count followed it. `docs/AWS_STATE.md` now
+carries the rule that made this come out right: read the count from INV-09's row, never from a stage file.
 
-**One shape to notice for the two delegations still to come:** nobody enabled trusted access for
+One shape to notice for the two delegations still to come: nobody enabled trusted access for
 `securityhub`. The designation in leg 1 did it, and the principal appeared in section 1 as a side effect.
 GuardDuty (Stage 15) and Macie (Stage 11) will arrive the same way, which is why neither has a step that
 turns trusted access on.
 
-#### What is left of pass 6, and it is not paperwork
+#### What is left of pass 6
 
 **13.3's triage.** Enablement is minutes old, so the first FSBP report does not exist yet; when it does it
 will be this environment's largest finding count ever, and the useful act is deciding which controls are
-not applicable. **Central configuration changes how that is done** — a centrally managed account cannot run
-`BatchUpdateStandardsControlAssociations`, so a disable is an edit to the policy and **turns
-`awsds-fsbp-only` from the recommended shape into a custom one**. Expect one custom policy, not a list of
+not applicable. Central configuration changes how that is done: a centrally managed account cannot run
+`BatchUpdateStandardsControlAssociations`, so a disable is an edit to the policy and turns
+`awsds-fsbp-only` from the recommended shape into a custom one. Expect one custom policy, not a list of
 per-account exclusions.
 
 Everything else in the step is closed: the product decision (13.0) measured as `absent`, the Config
