@@ -2,7 +2,7 @@
 # s3-persistence.py - every S3 persistence resource the infrastructure user can reach, and
 # how each one is configured, all accounts side by side.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -29,61 +29,58 @@
 #             the free daily storage metrics S3 publishes on its own - no S3 Storage Lens
 #             advanced tier, no S3 Inventory report, nothing that bills per object.
 #
-# WHAT THIS ANSWERS THAT NOTHING ELSE DOES - the reason it is a script and not a loop.
+# What this answers that nothing else does.
 #
-#   Three files already judge S3, and each judges ONE contract: tf-backends.py judges the
-#   Stage 2 state buckets, datalake.py judges the Stage 5 lake, account-bpa.py judges the
-#   ACCOUNT-level Block Public Access flag. Every one of them starts from a list of buckets
-#   it expects. None of them answers "what is actually there" - and a bucket nobody expected
-#   is invisible to all three, which is precisely the bucket worth finding.
+#   Three files already judge S3, and each judges one contract: tf-backends.py the Stage 2
+#   state buckets, datalake.py the Stage 5 lake, account-bpa.py the account-level Block
+#   Public Access flag. Every one of them starts from a list of buckets it expects, so a
+#   bucket nobody expected is invisible to all three.
 #
-#   So this file inverts the direction: it starts from the estate and judges it against
-#   invariants that hold for EVERY bucket regardless of which stage made it - it is in
+#   This file inverts the direction: it starts from the estate and judges it against
+#   invariants that hold for every bucket regardless of which stage made it - it is in
 #   us-west-2, it blocks public access, it is encrypted, its ACLs are disabled, its policy
 #   admits nobody outside the organization, it serves no website. Data-leakage protection is
 #   a requirement of its own (docs/plan/objectives.md), and the estate view is the only one
-#   in which "a bucket somewhere less governed" (Lesson 1's shape) is even visible.
+#   in which "a bucket somewhere less governed" (Lesson 1) is visible at all.
 #
-#   IT DELIBERATELY DOES NOT RE-JUDGE THE OTHER THREE CONTRACTS. A state bucket without a
+#   It does not re-judge the other three contracts. A state bucket without a
 #   noncurrent-version lifecycle is tf-backends.py's BK-5, not a failure here; the lake's
-#   policy branches are datalake.py's. Encoding a step list in two files is Lesson 14 in the
-#   small, and the copy that is not the owner is the one that goes stale.
+#   policy branches are datalake.py's. Encoding one step list in two files is Lesson 14.
 #
-# ONE DELIBERATE DEVIATION from aws/INDEX.md's "one profile per script", the same one AZs.py,
-# account-bpa.py and tf-backends.py take, for the same reason: the subject is a per-account
-# fact whose meaning is the comparison BETWEEN accounts. A bucket holding governed data is
-# not a finding; the same bucket in the wrong account is. Section 1 names the identity behind
-# every row, which is what the one-profile rule exists to make visible.
+# It deviates from aws/INDEX.md's "one profile per script", as AZs.py, account-bpa.py and
+# tf-backends.py do, for the same reason: the subject is a per-account fact whose meaning is
+# the comparison between accounts. A bucket holding governed data is not a finding; the same
+# bucket in the wrong account is. Section 1 names the identity behind every row.
 #
-# WHY THE DEFAULT PROFILE LIST IS NARROWER THAN `awsds-*`. profiles.discover() would also
-# return the four persona sessions (awsds-scientist-*, awsds-deploy-*, awsds-governance-*,
-# awsds-devenv-*), which belong to DIFFERENT PEOPLE and different sso-sessions: including
+# The default profile list is narrower than `awsds-*`. profiles.discover() would also return
+# the four persona sessions (awsds-scientist-*, awsds-deploy-*, awsds-governance-*,
+# awsds-devenv-*), which belong to different people and different sso-sessions: including
 # them would make one run demand four more logins to answer a question none of them is asked.
 # The default here is the infrastructure user's own reach - every awsds-infra-* profile plus
-# awsds-policy-canary, which is the same human through a different permission set (D32) -
-# and any profile named on the command line overrides it.
+# awsds-policy-canary, the same human through a different permission set (D32) - and any
+# profile named on the command line overrides it.
 #
-# ABSENT IS NOT DENIED, AND THE TABLE SAYS WHICH. A bucket with no lifecycle rule and a
+# Absent is not denied, and the table says which. A bucket with no lifecycle rule and a
 # bucket whose lifecycle this identity may not read both return no rows; read as one value
 # they are Lesson 13's verification that answers the same thing either way. Every per-bucket
 # call here is classified: a 404 with a "not configured" error code becomes `none`, anything
 # else becomes `DENIED` in the cell and a row in section 11's second table. Denied reads do
-# NOT set the exit code - refusals are an expected reading of a permission ceiling, and only
+# not set the exit code - a refusal is an expected reading of a permission ceiling, and only
 # a call that should always work (the preflight, the listings) makes this exit 1.
 #
-# WHAT IT CANNOT SEE, stated because an empty column and a missing account look alike:
-#   - MANAGEMENT, LOG ARCHIVE and AUDIT hold no CLI profile and never will (guiding
-#     principle 1). Log Archive is where the CloudTrail bucket lives, and INV-14's Object
-#     Lock on it is therefore NOT measured here. Section 10 names them.
+# What it cannot see, stated because an empty column and a missing account look alike:
+#   - Management, Log Archive and Audit hold no CLI profile and never will (guiding
+#     principle 1). Log Archive is where the CloudTrail bucket lives, so INV-14's Object
+#     Lock on it is not measured here. Section 10 names them.
 #   - `Staging` is unvended and every Sandbox beyond the first has no profile until Stage 14.
 #     Absent, not reassuring.
-#   - THIS IS THE CONFIGURATION, NEVER THE CONTENT. No object is listed, read or counted by
+#   - This is the configuration, never the content. No object is listed, read or counted by
 #     hand; the object count in section 6 is CloudWatch's daily metric, which lags by a day
 #     or two and is a scale reading, not an inventory.
-#   - A PERMISSION IS THE INTERSECTION OF TWO SYSTEMS (Lesson 28). The bucket policy in
-#     section 4 is the RESOURCE half. What a given principal may actually do also depends on
+#   - A permission is the intersection of two systems (Lesson 28). The bucket policy in
+#     section 4 is the resource half. What a given principal may actually do also depends on
 #     its identity policy, the SCP above it and, for the lake, Lake Formation - so nothing
-#     here proves anyone CAN read a bucket, only who the bucket itself lets in.
+#     here proves anyone can read a bucket, only who the bucket itself lets in.
 
 from __future__ import annotations
 
@@ -107,7 +104,7 @@ CANARY_PROFILE = "awsds-policy-canary"
 BPA_FLAGS = ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")
 
 # "This bucket has no such configuration" is a 404 carrying a per-feature error code, and it
-# is an ANSWER, not a failure. Everything not on this list - AccessDenied, PermanentRedirect,
+# is an answer, not a failure. Everything not on this list - AccessDenied, PermanentRedirect,
 # a throttle - reads DENIED in the cell and lands in section 11's second table.
 NOT_CONFIGURED = "|".join(
     (
@@ -126,8 +123,8 @@ NOT_CONFIGURED = "|".join(
 )
 
 # Condition keys that tie a wildcard principal back to something the organization owns. A
-# statement that allows `*` and carries NONE of them is open to the whole internet; one that
-# carries any of them is scoped, and WHICH one is the reading - section 4 prints the keys
+# statement that allows `*` and carries none of them is open to the whole internet; one that
+# carries any of them is scoped, and which one is the reading - section 4 prints the keys
 # rather than collapsing them, because `aws:PrincipalOrgID` and `aws:SourceIp` scope to very
 # different things and only the first survives a device moving.
 ORG_GUARD_KEYS = frozenset(
@@ -189,12 +186,11 @@ def human_bytes(value) -> str:
 def tsv_rows(text: str) -> list:
     """The rows of an `--output text` answer, with JMESPath's null dropped.
 
-    MEASURED 2026-08-23, and it is why this function exists: `X[].[a,b]` over a key the
-    response does not carry at all evaluates to null, and `--output text` prints null as the
-    literal string `None`. Read naively that is ONE PHANTOM ROW PER ACCOUNT in every table
-    whose real answer is "there is nothing here" - the Storage Lens table said six
-    configurations existed, named `None`, in six accounts that have none. Dropping it here is
-    what lets an empty section say empty.
+    Measured 2026-08-23: `X[].[a,b]` over a key the response does not carry at all evaluates
+    to null, and `--output text` prints null as the literal string `None`. Read naively that
+    is one phantom row per account in every table whose real answer is "there is nothing
+    here" - the Storage Lens table said six configurations existed, named `None`, in six
+    accounts that have none. Dropping it here is what lets an empty section say empty.
     """
     out = []
     for line in text.splitlines():
@@ -245,7 +241,7 @@ def condense_principal(stmt: dict) -> str:
 
 
 def condition_keys(stmt: dict) -> list:
-    """Every condition KEY in a statement, flattened out of its operators."""
+    """Every condition key in a statement, flattened out of its operators."""
     keys = []
     for operand in (stmt.get("Condition") or {}).values():
         if isinstance(operand, dict):
@@ -271,7 +267,7 @@ def is_open(stmt: dict) -> bool:
 
     Allow + a wildcard principal + no condition key tying the caller back to the org, an
     account, a VPC endpoint or an address. A `Deny` with `Principal: *` is the TLS-only
-    statement and the opposite of a hole, which is why Effect is tested first.
+    statement and the opposite of a hole, so Effect is tested first.
     """
     if stmt.get("Effect") != "Allow" or not wildcard_principal(stmt):
         return False
@@ -345,8 +341,8 @@ def main(argv: list) -> int:
     live = [c for c in callers if c.live]
     checks = Checks()
 
-    # Reads this identity was refused, kept OUT of the error log on purpose: a refusal is a
-    # reading of the permission ceiling, not a broken script. Section 11 prints them.
+    # Reads this identity was refused, kept out of the error log: a refusal is a reading of
+    # the permission ceiling, not a broken script. Section 11 prints them.
     refused: list = []  # (profile, subject, call, wording)
 
     def probe(cli: AwsCli, subject: str, *args: str) -> tuple:
@@ -484,9 +480,9 @@ def main(argv: list) -> int:
                 )
 
         # S3 Tables and S3 Express are separate namespaces: neither shows up in list-buckets,
-        # which is exactly why they are asked for by name. `S3TableCatalog` is one of the
-        # eleven enabled SMUS blueprints (docs/SMUS.md), so a table bucket is a surface a
-        # project can create without anyone writing Terraform for it.
+        # so both are asked for by name. `S3TableCatalog` is one of the eleven enabled SMUS
+        # blueprints (docs/SMUS.md), so a table bucket is a surface a project can create
+        # without anyone writing Terraform for it.
         text, state = probe(
             cli,
             "account",
@@ -555,10 +551,9 @@ def main(argv: list) -> int:
             note(f"    {name}")
             created = (row[1] if len(row) > 1 else "-").split("T")[0]
 
-            # THE REGION COMES FIRST, and not only because it is a finding on its own: every
-            # per-bucket call below has to be made against the bucket's OWN Region or S3
-            # answers PermanentRedirect, which would read as a denial for a bucket that is
-            # merely somewhere else.
+            # The Region is read first: every per-bucket call below has to be made against
+            # the bucket's own Region or S3 answers PermanentRedirect, which would read as a
+            # denial for a bucket that is merely somewhere else.
             loc, loc_state = probe(
                 cli,
                 name,
@@ -660,7 +655,7 @@ def main(argv: list) -> int:
             )
             b.ownership = cell(text, state, "NOT SET")
 
-            # THE RESOURCE HALF OF EVERY PERMISSION THIS BUCKET GRANTS - and only that half
+            # The resource half of every permission this bucket grants, and only that half
             # (Lesson 28). Parsed rather than grepped: `Principal: *` is the whole question
             # and it is one JSON level below any string a grep would match.
             text, state = probe(
@@ -745,7 +740,7 @@ def main(argv: list) -> int:
             else:
                 b.lock = cell("", state, "off")
 
-            # REPLICATION IS AN EGRESS PATH WITH NO NETWORK IN IT. A rule here copies every
+            # Replication is an egress path with no network in it. A rule here copies every
             # new object into another bucket - possibly another account - continuously, and
             # no VPC endpoint policy, no SCP on the reader and no DNS allow-list is in that
             # path. Every destination is printed; none is judged, because whether it is
@@ -845,10 +840,10 @@ def main(argv: list) -> int:
                 "--output",
                 "text",
             )
-            # THE CALL SUCCEEDING IS THE FACT, not what the query returned: a redirect-only
+            # The call succeeding is the fact, not what the query returned: a redirect-only
             # website configuration carries no IndexDocument, so `--query IndexDocument.Suffix`
-            # answers `None` for a bucket that is very much serving the web. Reading the query
-            # instead of the status is how a website reads `no` (Lesson 13's shape).
+            # answers `None` for a bucket that is serving the web. Reading the query instead of
+            # the status is how a website reads `no` (Lesson 13).
             if state == "ok":
                 b.website = f"YES ({text})" if text and text != "None" else "YES (redirect-only)"
             else:

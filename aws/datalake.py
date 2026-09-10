@@ -1,14 +1,15 @@
 #!/usr/bin/env -S uv run --quiet
 # datalake.py - Stage 5's evidence, per account, side by side: the lake buckets and their
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
-# crawlers), the catalog-maintenance role and its trust, the Lake Formation settings WITH
-# THE PARAMETERS READING THAT DEFENDS INT-11, the RAM shares and any pending invitation,
-# the consumer Athena workgroups and the derived zone (BOTH removed 2026-08-26, D19
-# revised - absence is the pass, DL-8/DL-9), the EFS reading (absence expected,
-# save the home filesystem a Studio domain creates for itself - the NFS requirement was
-# withdrawn 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing regression after it.
+# crawlers), the catalog-maintenance role and its trust, the Lake Formation settings with the
+# parameters reading that defends INT-11, the RAM shares and any pending invitation, the
+# consumer Athena workgroups and the derived zone (both removed 2026-08-26, D19 revised -
+# absence is the pass, DL-8/DL-9), the EFS reading (absence expected, save the home
+# filesystem a Studio domain creates for itself - the NFS requirement was withdrawn
+# 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing
+# regression after it.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -28,23 +29,23 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The whole subject
-# is a CROSS-ACCOUNT shape (D22): the lake and its policy live in Data Governance while
-# every legitimate reader sits in a consumer account, a share has a grantor side and a
-# resource-link side on opposite sides of the boundary, and a pending RAM invitation is
-# only visible from the consumer. A single-profile version would answer nothing. Section 1
-# pays the rule back with the caller ARN of every profile.
+# It is multi-profile, which aws/INDEX.md admits only for a reason: the whole subject is a
+# cross-account shape (D22). The lake and its policy live in Data Governance while every
+# legitimate reader sits in a consumer account, a share has a grantor side and a
+# resource-link side on opposite sides of the boundary, and a pending RAM invitation is only
+# visible from the consumer. Section 1 pays the rule back with the caller ARN of every
+# profile.
 #
-# THE ONE CHECK TO KNOW BY NAME: DL-5. The account's DataLakeSettings carry
+# DL-5 is the check to know by name. The account's DataLakeSettings carry
 # CROSS_ACCOUNT_VERSION=4 / SET_CONTEXT=TRUE - values nobody set and nobody else defends -
-# and the Stage 5 apply that declares admins RESETS them if it omits `parameters`
+# and the Stage 5 apply that declares admins resets them if it omits `parameters`
 # (1d step 11.2, INT-11). The failure is total and mute: every later grant appears to
 # succeed and no share ever arrives. This file turns that into a reading that fails.
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, stated because an empty listing and a missing account look alike:
 #   - The behavioural proofs - the pandas pair, the workgroup boundary, the crawler run
 #     as the maintenance role, the drop-box asymmetry - are the stage's own (Lesson 20).
-#   - Bucket-policy readings are PRESENCE, never sufficiency: whether the aws:SourceVpce
+#   - Bucket-policy readings are presence, never sufficiency: whether the aws:SourceVpce
 #     list names the right gateway endpoints is proven by reads that succeed and fail
 #     where they should, not by a grep.
 #   - Security Hub's org configuration lives in Audit (no profile); only each member's
@@ -64,19 +65,18 @@ OUT_NAME = "datalake.txt"
 
 DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
-# The consumer side is PER BUSINESS UNIT (D35): unit 1's Sandbox today, Production at Stage 9.
-# Add each vended unit's profile here as Stage 14 vends it.
-# ONE CONSUMER SINCE STAGE 6b STEP 2.4 (2026-09-06). It was two; `awsds-infra-dev` left with
-# the share itself - that account becomes the headless `Staging`, and D20 keeps a deployment
-# target off the lake entirely.
+# The consumer side is per business unit (D35): unit 1's Sandbox today, Production at Stage 9.
+# Add each vended unit's profile here as Stage 14 vends it. `awsds-infra-dev` left this tuple
+# at Stage 6b step 2.4 (2026-09-06) together with the share itself - that account becomes the
+# headless `Staging`, and D20 keeps a deployment target off the lake entirely.
 #
-# AND LEAVING IT HERE WAS NOT NEUTRAL, WHICH IS WHY THIS COMMENT EXISTS. Destroying the
-# consumer slice destroys `aws_lakeformation_data_lake_settings`, and that resource's "destroy"
-# is a RESET to AWS defaults, not a deletion: the account came back with
-# `CROSS_ACCOUNT_VERSION=1` and an EMPTY administrator list. Read as a consumer, those are
-# DL-5 and DL-13 failing. Read as what the account now is - no share, no resource link, no
-# catalog object, nothing to administer - they are the resting state. A check inherits the
-# scope of the account it was written for (Lesson 31), and this is that scope moving.
+# Keeping it listed would not have been neutral. Destroying the consumer slice destroys
+# `aws_lakeformation_data_lake_settings`, and that resource's "destroy" is a reset to AWS
+# defaults, not a deletion: the account came back with `CROSS_ACCOUNT_VERSION=1` and an empty
+# administrator list. Read as a consumer, those are DL-5 and DL-13 failing; read as what the
+# account now is - no share, no resource link, no catalog object, nothing to administer - they
+# are the resting state. A check inherits the scope of the account it was written for
+# (Lesson 31).
 CONSUMER_PROFILES = ("awsds-infra-sandbox-1",)
 
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
@@ -320,13 +320,12 @@ def main(argv: list) -> int:
             shares = [
                 (s.get("name", "?"), s.get("status", "?")) for s in doc.get("resourceShares", [])
             ]
-    # THE CONSUMER-SIDE RECEIPT, added 2026-08-19 (Stage 5 pass 3) because DL-7 could not tell
-    # its two failure branches apart. "Shares exist and no resource link" was reported as one
-    # verdict whether step 8 had simply not run yet or the share had silently never arrived -
-    # opposite causes, one message, which is Lesson 13's family. The discriminator is here: a
-    # share the consumer's own RAM ACTUALLY HOLDS. Measured at pass 3, both consumers held
-    # their two shares ACTIVE while their catalogs were still empty, so the empty catalog is
-    # NOT evidence of a failed share.
+    # The consumer-side receipt, which is what lets DL-7 tell its two failure branches apart.
+    # "Shares exist and no resource link" was one verdict whether step 8 had simply not run yet
+    # or the share had silently never arrived - opposite causes, one message (Lesson 13). The
+    # discriminator is a share the consumer's own RAM actually holds. Measured at Stage 5 pass 3
+    # (2026-08-19): both consumers held their two shares ACTIVE while their catalogs were still
+    # empty, so an empty catalog is not evidence of a failed share.
     received: list = []  # (profile, share name, status)
     lf_admin_counts: dict = {}  # profile -> number of data lake admins in that account
     lf_consumer_settings: dict = {}  # profile -> {params, db_defaults, tbl_defaults}
@@ -342,7 +341,7 @@ def main(argv: list) -> int:
         if doc:
             for s in doc.get("resourceShares", []):
                 received.append((p, s.get("name", "?"), s.get("status", "?")))
-        # WHY THE ADMIN COUNT RIDES ALONG: it is the CAUSE of the empty catalog above. AWS
+        # The admin count rides along because it is the cause of the empty catalog above. AWS
         # requires at least one data lake administrator in a consumer account before a shared
         # resource is visible there at all, so zero admins explains the emptiness completely
         # and step 8 owes that account a DataLakeSettings of its own.
@@ -350,13 +349,12 @@ def main(argv: list) -> int:
         if doc:
             cs = doc.get("DataLakeSettings", {})
             lf_admin_counts[p] = len(cs.get("DataLakeAdmins", []))
-            # EXTENDED 2026-08-19 (Stage 5 pass 4). Until this pass only Data Governance had a
-            # DataLakeSettings, so DL-5 and DL-6 read one account and said nothing about the
-            # others. Both consumers were then measured carrying CROSS_ACCOUNT_VERSION=4 /
-            # SET_CONTEXT=TRUE - values nobody in this repository set - and
-            # IAM_ALLOWED_PRINCIPALS on BOTH create-defaults. So the two hazards are symmetric,
-            # and the check that was scoped to the producer was reporting `pass` while two
-            # accounts sat in exactly the state it exists to fail (Lesson 13's family).
+            # Each consumer carries its own DataLakeSettings, and DL-5 / DL-6 read them too.
+            # Measured at Stage 5 pass 4 (2026-08-19): both consumers carried
+            # CROSS_ACCOUNT_VERSION=4 / SET_CONTEXT=TRUE - values nobody in this repository set
+            # - and IAM_ALLOWED_PRINCIPALS on both create-defaults. The two hazards are
+            # symmetric, and a check scoped to the producer alone reports `pass` while two
+            # accounts sit in the state it exists to fail (Lesson 13).
             lf_consumer_settings[p] = {
                 "params": cs.get("Parameters", {}) or {},
                 "db_defaults": json.dumps(cs.get("CreateDatabaseDefaultPermissions", [])),
@@ -436,18 +434,16 @@ def main(argv: list) -> int:
                     expiry = "yes"
             derived.append((p, b, expiry))
 
-    # ------------------------------- the persona's IDENTITY half of the cross-account grants
+    # ------------------------------- the persona's identity half of the cross-account grants
     #
-    # ADDED 2026-08-19 (pass 4c), and it exists because a review, a plan and a commit gate all
-    # missed the thing it measures. The drop-box write crosses an account line, so it needs an
-    # allow in the drop-box BUCKET POLICY (Data Governance, measured above as DL-2) *and* one
-    # in the writer's own identity policy - and for a year of this plan only the first existed,
-    # while the stage file asserted in writing that the absence was correct. Lesson 28, amended.
+    # The drop-box write crosses an account line, so it needs an allow in the drop-box bucket
+    # policy (Data Governance, measured above as DL-2) *and* one in the writer's own identity
+    # policy. Only the first existed until pass 4c (2026-08-19), while the stage file asserted
+    # in writing that the absence was correct (Lesson 28, amended).
     #
-    # IT READS THE PROVISIONED ROLE, NOT THE PERMISSION SET, and that is the whole point: a set
-    # lives in the Identity account and becomes an IAM role in every account it reaches, so the
-    # only place the permission actually IS is the role - which is also the object an
-    # unprovisioned change would leave stale.
+    # It reads the provisioned role, not the permission set: a set lives in the Identity account
+    # and becomes an IAM role in every account it reaches, so the role is the only place the
+    # permission is, and it is also the object an unprovisioned change would leave stale.
     persona_grants: list = []  # (profile, role, has dropbox put, has lake key via s3)
     for p in CONSUMER_PROFILES:
         if p not in live:
@@ -491,11 +487,10 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------------- EFS, the VPN home
     # The NFS requirement was withdrawn 2026-08-17 (D24 with it): no stage creates a
-    # filesystem, so this reading is an absence check - with one exemption (2026-08-18).
-    # A SageMaker AI domain creates a home EFS for itself and RETAINS it past deletion
-    # (conventions 5.1 rule 2; Lesson 17 - a service that "sets itself up"), tagged with
-    # the domain's ARN. From Stage 6 on that filesystem is the domain working as
-    # documented; only an untagged one is drift.
+    # filesystem, so this reading is an absence check, with one exemption. A SageMaker AI
+    # domain creates a home EFS for itself and retains it past deletion (conventions 5.1
+    # rule 2; Lesson 17), tagged with the domain's ARN. From Stage 6 on that filesystem is the
+    # domain working as documented; only an untagged one is drift.
     efs_rows: list = []  # (file system id, owning domain from SM_DOMAIN_TAG, or None)
     sbx_profile = CONSUMER_PROFILES[0]
     if sbx_profile in live:
@@ -512,14 +507,13 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------- Security Hub, per account
     #
-    # TWO PRODUCTS SHARE THIS API NAMESPACE (measured 2026-08-20). "Security Hub CSPM" is the
-    # one that runs the FSBP standard, and it is the one step 13 enables. Beside it sits the
-    # v2 product ("Security Hub"), reached through the *-v2 call family. Step 13.0 decides
-    # AGAINST enabling v2, and not on merit: with BOTH enabled, CSPM creates a service-linked
-    # configuration recorder and AWS stops using the customer-managed one - which here is
-    # Control Tower's aws-controltower-BaselineConfigRecorder. That displacement is silent,
-    # costs money, and voids the plan's standing "leave the recorder to Stage 12" deferral.
-    # So v2 is read per account purely so its ARRIVAL is noticed (Lesson 17).
+    # Two products share this API namespace (measured 2026-08-20). "Security Hub CSPM" runs the
+    # FSBP standard and is the one step 13 enables. Beside it sits the v2 product ("Security
+    # Hub"), reached through the *-v2 call family. Step 13.0 decides against enabling v2: with
+    # both enabled, CSPM creates a service-linked configuration recorder and AWS stops using the
+    # customer-managed one - here Control Tower's aws-controltower-BaselineConfigRecorder. That
+    # displacement is silent, costs money, and voids the plan's standing "leave the recorder to
+    # Stage 12" deferral. So v2 is read per account so that its arrival is noticed (Lesson 17).
     sh_rows: list = []  # (profile, hub, fsbp, hub_v2)
     for p in live:
         cli = cli_for(p)
@@ -672,7 +666,7 @@ def main(argv: list) -> int:
                     "is a person holding the SCP exemption (D27, step 3.5).",
                 )
 
-    # DL-5: THE INT-11 DEFENCE - the parameters nobody set and Stage 5 can silently reset.
+    # DL-5: the INT-11 defence - the parameters nobody set and Stage 5 can silently reset.
     if data_live and lf_read:
         ver = lf_params.get("CROSS_ACCOUNT_VERSION", "")
         setctx = lf_params.get("SET_CONTEXT", "")
@@ -699,8 +693,8 @@ def main(argv: list) -> int:
                 f"CROSS_ACCOUNT_VERSION={ver}, SET_CONTEXT={setctx} - the 5.4 bracket holds",
             )
 
-    # DL-5, THE CONSUMER HALF (added at pass 4). The reset is not the producer's peculiarity:
-    # each consumer account carries its own Parameters map, this stage writes an
+    # DL-5, the consumer half. The reset is not the producer's peculiarity: each consumer
+    # account carries its own Parameters map, this stage writes an
     # aws_lakeformation_data_lake_settings into both, and that resource replaces the whole
     # structure. Same failure, same silence, one account further from where anybody looks.
     for prof, cs in sorted(lf_consumer_settings.items()):
@@ -728,25 +722,26 @@ def main(argv: list) -> int:
                 f"CROSS_ACCOUNT_VERSION={ver}, SET_CONTEXT={setctx}",
             )
 
-    # DL-13: THE ADMIN LIST, PER ACCOUNT - the check that replaced a plan diff (2026-08-26,
+    # DL-13: the admin list, per account - the check that replaced a plan diff (2026-08-26,
     # Stage 16's finding; consumer-data v0.5.0). `admins` is service-shared territory: SMUS
     # appoints its own two service roles when an account's first project is created, so the
-    # module stopped declaring the list (`ignore_changes`) - and from that day NO PLAN defends
-    # it. This check is the replacement, and it separates three things a plan never could:
+    # module stopped declaring the list (`ignore_changes`), and from that day no plan defends
+    # it. This check separates three seats a plan never could:
     #
-    #   the REQUIRED seat   this account's AWSReservedSSO_InfrastructureAccess_* role. Its
-    #                       loss is a FAIL: an account with no administrator sees an EMPTY
+    #   the required seat   this account's AWSReservedSSO_InfrastructureAccess_* role. Its
+    #                       loss is a fail: an account with no administrator sees an empty
     #                       catalog while its shares sit ACTIVE in RAM (measured 2026-08-19),
     #                       and with ignore_changes even a plan would stay silent about it.
-    #   the KNOWN seats     awsds-<env>-smus-manage-access / awsds-<env>-smus-provisioning,
+    #   the known seats     awsds-<env>-smus-manage-access / awsds-<env>-smus-provisioning,
     #                       service-appointed at the first project (Sandbox, 2026-08-22).
-    #                       A `note`, never a `pass`: whether they SHOULD hold the seat is
-    #                       open question 24, and a note is what keeps the question visible
-    #                       without failing on a state the user chose to leave standing.
-    #   anything else       a FAIL by definition - "a fourth administrator is a principal
+    #                       A `note`, never a `pass`: whether they should hold the seat is
+    #                       open question 24, and a note keeps the question visible without
+    #                       failing on a state the user chose to leave standing.
+    #   anything else       a fail by definition - "a fourth administrator is a principal
     #                       nobody granted" (AWS_STATE.md's invariant for this list).
-    # The EXACT name shape, not an endswith: awsds-<env>-smus-manage-access is the
-    # sagemaker-prereqs contract, and a lookalike suffix on a stranger's role must land in
+    #
+    # The match is on the exact name shape, not an endswith: awsds-<env>-smus-manage-access is
+    # the sagemaker-prereqs contract, and a lookalike suffix on a stranger's role must land in
     # the strangers branch, not this one.
     smus_seat_re = re.compile(r":role/awsds-[a-z0-9]+(-[0-9]+)?-smus-(manage-access|provisioning)$")
     admin_lists = {DATA_PROFILE: lf_admins} if lf_read else {}
@@ -806,12 +801,12 @@ def main(argv: list) -> int:
                 "no IAMAllowedPrincipals default - grants are the model (step 5.2)",
             )
 
-    # DL-6, THE CONSUMER HALF (added at pass 4, and it is the more dangerous one). The defaults
-    # act at CREATION time and there is no second reading later: the first local catalog object
-    # in a consumer account is the RESOURCE LINK, so a link created while they still stand is
-    # born deferring to plain IAM and clearing them afterwards does not reach it. Reported per
-    # account with no `databases exist` guard, deliberately - here the reading has to be
-    # available BEFORE the first object, which is exactly when the guard would silence it.
+    # DL-6, the consumer half, and the more dangerous one. The defaults act at creation time and
+    # there is no second reading later: the first local catalog object in a consumer account is
+    # the resource link, so a link created while they still stand is born deferring to plain IAM
+    # and clearing them afterwards does not reach it. Reported per account with no `databases
+    # exist` guard - the reading has to be available before the first object, which is exactly
+    # when the guard would silence it.
     for prof, cs in sorted(lf_consumer_settings.items()):
         if "IAM_ALLOWED_PRINCIPALS" in (cs["db_defaults"] + cs["tbl_defaults"]):
             checks.fail(
@@ -842,7 +837,7 @@ def main(argv: list) -> int:
             "by hand (step 7.3).",
         )
     links = [d for d in databases if d[0] in CONSUMER_PROFILES and d[2] != "-"]
-    # THE TWO BRANCHES THAT USED TO SHARE ONE VERDICT (see the collection note above).
+    # The two branches the consumer-side receipt above separates.
     consumers_seen = [p for p in CONSUMER_PROFILES if p in live]
     consumers_without = [p for p in consumers_seen if not any(r[0] == p for r in received)]
     if shares:
@@ -877,13 +872,12 @@ def main(argv: list) -> int:
     elif data_live and lf_registered:
         checks.note("DL-7", "cross-account shares", "none yet - expected before Stage 5 step 7.")
 
-    # DL-8: the estate's own consumer workgroup is REMOVED (2026-08-26, D19 revised - the
-    # derived zone re-homed onto the SMUS project path). This check measured its enforcement;
-    # it now measures its ABSENCE, the DL-10 pattern: an awsds-* workgroup re-appearing in a
-    # consumer account is a regression to the removed design, not a feature arriving. The SMUS
-    # project workgroups (workgroup-<project>-<env>, sagemaker-studio-spark-workgroup-*) are
-    # service-named, service-owned, and deliberately NOT this check's subject - studio.py owns
-    # that surface.
+    # DL-8: the estate's own consumer workgroup is removed (2026-08-26, D19 revised - the
+    # derived zone re-homed onto the SMUS project path), so the check measures its absence, the
+    # DL-10 pattern: an awsds-* workgroup re-appearing in a consumer account is a regression to
+    # the removed design, not a feature arriving. The SMUS project workgroups
+    # (workgroup-<project>-<env>, sagemaker-studio-spark-workgroup-*) are service-named,
+    # service-owned, and not this check's subject - studio.py owns that surface.
     for p, wg, enforce, out, limit in workgroups:
         checks.fail(
             "DL-8",
@@ -899,9 +893,9 @@ def main(argv: list) -> int:
             "no awsds-* workgroup - the removed design staying removed (D19, 2026-08-26)",
         )
 
-    # DL-9: the derived zone's bucket is REMOVED (same revision). Absence is the pass;
-    # a *-derived bucket is the regression - and if one exists, its expiry is still read,
-    # so a transitional FAIL names what is standing rather than just that something is.
+    # DL-9: the derived zone's bucket is removed (same revision). Absence is the pass; a
+    # *-derived bucket is the regression, and if one exists its expiry is still read, so a
+    # transitional FAIL names what is standing rather than just that something is.
     for p, b, expiry in derived:
         checks.fail(
             "DL-9",
@@ -1003,8 +997,8 @@ def main(argv: list) -> int:
             elif hub == "enabled":
                 checks.ok("DL-11", f"Security Hub CSPM in {p}", "enabled, FSBP on")
 
-    # DL-11 second half: the v2 product must stay ABSENT (step 13.0). Checked whether or not
-    # CSPM is on, because the failure this guards against is arrival, not absence - and it is
+    # DL-11 second half: the v2 product must stay absent (step 13.0). Checked whether or not
+    # CSPM is on, because the failure this guards against is arrival, not absence, and it is
     # silent when it happens: enabling v2 alongside CSPM hands the Config recorder from
     # Control Tower to a service-linked one nobody chose.
     for p, _hub, _fsbp, hub_v2 in sh_rows:

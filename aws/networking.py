@@ -1,14 +1,14 @@
 #!/usr/bin/env -S uv run --quiet
 # networking.py - the [P] networking half, per account, side by side: VPCs (default ones
 # flagged), DNS attributes, subnets anchored on zone IDs, route tables and routes, internet
-# gateways, the S3/DynamoDB GATEWAY endpoints (the INT-05 anchor), VPC peerings seen from
+# gateways, the S3/DynamoDB gateway endpoints (the INT-05 anchor), VPC peerings seen from
 # both sides, the private hosted zones with their associations and pending authorizations,
-# flow logs, NACLs and security groups - plus the REGIONAL endpoint-service catalog
+# flow logs, NACLs and security groups - plus the regional endpoint-service catalog
 # (section 10, NT-9) and the [E] endpoints instantiated from it with the DNS names each
-# has SEIZED (section 11, NT-10). The preflight for Stage 3, and the standing regression
+# has seized (section 11, NT-10). The preflight for Stage 3, and the standing regression
 # after each of its passes.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -25,56 +25,53 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject is a
-# PER-ACCOUNT fact whose meaning is the comparison BETWEEN accounts: a CIDR overlap is a
+# It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a
+# per-account fact whose meaning is the comparison between accounts. A CIDR overlap is a
 # relation between two VPCs in two accounts, a peering has a requester and an accepter on
-# opposite sides of a boundary, and a cross-account zone association exists precisely
-# because one account owns the zone and another owns the VPC. A single-profile version
-# would answer nothing. Same shape as AZs.py and tf-backends.py, and it pays the rule back
-# the same way - section 1 prints the caller ARN of every profile.
+# opposite sides of a boundary, and a cross-account zone association exists because one
+# account owns the zone and another owns the VPC. Same shape as AZs.py and tf-backends.py,
+# and it pays the rule back the same way - section 1 prints the caller ARN of every profile.
 #
-# WHAT IT IS FOR, IN TWO PHASES.
+# What it is for, before and after Stage 3.
 #
-#   BEFORE Stage 3: "what networking already exists". The first run (2026-08-15) measured
-#   what no plan file had: every vended account carries an ACCOUNT FACTORY VPC
-#   (172.31.0.0/16, private-only - docs/AWS_STATE.md C), which step 0 now removes.
-#   Principle 4 says private by default; D22 says Data Governance gets no VPC at all.
-#   Whether either sentence is TRUE TODAY is what section 2 answers.
+#   Before Stage 3: what networking already exists. The first run (2026-08-15) measured
+#   that every vended account carries an Account Factory VPC (172.31.0.0/16, private-only -
+#   docs/AWS_STATE.md C), which step 0 now removes. Principle 4 says private by default;
+#   D22 says Data Governance gets no VPC at all. Section 2 answers whether either sentence
+#   is true today.
 #
-#   AFTER each Stage 3 pass: the readings that would otherwise be one console tab per
+#   After each Stage 3 pass: the readings that would otherwise be one console tab per
 #   account - validation 2 (no route into 10.40.0.0/16), step 6.5 (10.90.0.0/24 in no
 #   route table), step 4.4 (the four zone associations), step 5 (a flow log per VPC),
-#   step 4.1 (both DNS attributes on). Each is a check that FAILS, not a listing to eyeball.
+#   step 4.1 (both DNS attributes on). Each is a check that fails, not a listing to eyeball.
 #
-# THE [P]-STABILITY DELIVERABLE IS A DIFF OF TWO RUNS OF THIS FILE. Stage 3's lifecycle
-# deliverable wants every foundation/ ID byte-identical across a make down / make up.
+# The [P]-stability deliverable is a diff of two runs of this file. Stage 3's lifecycle
+# deliverable wants every foundation/ id byte-identical across a make down / make up.
 # Run this, copy aws/output/networking.txt aside, cycle, run again, diff:
 #
 #   cut() { awk '/^# 11\./{s=1} /^# 12\./{s=0} !s' "$1"; }
 #   diff <(cut before.txt) <(cut after.txt)
 #
-# and the only line left that may change is the timestamp. SECTION 11 IS EXCLUDED BECAUSE
-# IT IS THE ONE [E] SECTION IN A [P] FILE, and it is not an oversight - it is a deliberate
-# exception added 2026-08-25 so the seized-DNS-name reading sits beside section 10's
-# catalog rather than in egress.py. It MOVES BY DESIGN: empty while egress/ is down, one
-# row per interface endpoint while it is up, with a NEW vpce-* id on every make up. Read
-# it moving as egress/ being up or down; a foundation/ id moving is the finding.
+# and the only line left that may change is the timestamp. Section 11 is excluded: it is
+# the one [E] section in a [P] file, placed here so the seized-DNS-name reading sits beside
+# section 10's catalog rather than in egress.py. It moves by design - empty while egress/
+# is down, one row per interface endpoint while it is up, with a new vpce-* id on every
+# make up. A foundation/ id moving is the finding.
 #
 # Sections 10 and 11 answer opposite halves of one question and behave oppositely here:
-# 10 is REGIONAL (AWS's offer, identical whether egress/ is up, down, or never applied -
+# 10 is regional (AWS's offer, identical whether egress/ is up, down, or never applied -
 # only AWS changes it, which is NT-9's job), 11 is this account's instantiation of it.
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
-#   - Staging is UNVENDED (held on the account cap) and has no profile: the deliverable
+# What it cannot see, stated because an empty listing and a missing account look alike:
+#   - Staging is unvended (held on the account cap) and has no profile: the deliverable
 #     "describe-vpc-peering-connections in Staging returns empty" cannot run from here
 #     until the vend. Absence from this report is silence, not evidence.
 #   - Management, Log Archive and Audit hold no CLI profile by design; their default VPCs
 #     (if any) are unmeasured here. None of them is meant to hold a Stage 3 VPC.
-#   - This is a CONTROL-PLANE reading. The stage's behavioural proofs - dnf through the
+#   - This is a control-plane reading. The stage's behavioural proofs - dnf through the
 #     gateway endpoint, NXDOMAIN from Staging, the probe reaching GitLab's port - need the
 #     throwaway probe instances the stage describes; a describe call proves none of them
-#     (read the configuration when the question is configuration, keep probes for
-#     behaviour - Lesson 20).
+#     (Lesson 20).
 
 from __future__ import annotations
 
@@ -96,47 +93,34 @@ STAGING_PROFILE = "awsds-infra-staging"
 DATA_PROFILE = "awsds-infra-data"
 CANARY_PROFILE = "awsds-policy-canary"
 
-# The two ranges the route checks are about (Stage 3 validation 2 and step 6.5).
+# The ranges the route checks are about (Stage 3 validation 2 and step 6.5).
 #
-# 10.40.0.0/16 IS AN UNALLOCATED RANGE, AND IT USED TO BE CALLED THE STAGING RANGE (rewritten
-# 2026-09-06, Stage 6b step 4.1). It was reserved for a `Staging` account this project never
-# vended - the quota refused it - and Stage 6b made Staging by RENAMING `Development`, which has
-# held 10.50.0.0/16 since Stage 3 and IS peered to Production. So D20's "Staging is deliberately
-# unpeered" stopped being true of the account, while the ASSERTION below stayed exactly as
-# valid: nothing should route or peer into a range nobody has allocated, and a route that does
-# is either a mistake or an allocation somebody made without writing it down.
+# 10.40.0.0/16 is unallocated. It was reserved for a `Staging` account this project never vended
+# - the quota refused it - and Stage 6b made Staging by renaming `Development`, which has held
+# 10.50.0.0/16 since Stage 3 and is peered to Production. Stage 6b step 4.1 says Stage 6c
+# consumes the freed range; Stage 6c step 0.2 says 10.40.0.0/16 "is free and stays unallocated",
+# and D38's hub is built from 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The stage
+# that has to build it is the one that governs (Lesson 32).
 #
-# WHAT CHANGED IS THE SENTENCE, NOT THE TEST, and that is why this constant was flagged for a
-# sitting rather than half-fixed: a check whose message and whose assertion disagree is read by
-# whoever is debugging at the time, and it tells them the wrong thing at the worst moment.
-#
-# AND THE ROW IS PERMANENT, WHICH IS THE OPPOSITE OF WHAT THIS COMMENT SAID FOR ONE DAY. It read
-# "Stage 6c step 0 spends 10.40, and the day it does these checks are re-pointed or retired" -
-# copied out of Stage 6b step 4.1, which says 6c "consumes" the freed range. **Stage 6c step 0.2
-# says the opposite in as many words**: 10.40.0.0/16 "is free and stays unallocated", and D38's
-# hub is built from 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The stage that has to
-# BUILD it is the one that is right (Lesson 32), and it was corrected here on 2026-09-06 before
-# any 6c code was written.
-#
-# SO THESE THREE CHECKS NEED NO EXPIRY DATE. They measure that AWS agrees with
-# scripts/tfhygiene/backend.py's allocation table about a range nobody has claimed, and nothing
-# else in the estate measures that at all. They only ever need re-pointing if a later stage
-# allocates 10.40 - and no stage currently plans to.
+# The assertion is about the range, not about any account: nothing should route or peer into a
+# range nobody has allocated, and a route that does is either a mistake or an allocation somebody
+# made without writing it down. The three checks measure that AWS agrees with
+# scripts/tfhygiene/backend.py's allocation table about a range nobody has claimed, which nothing
+# else in the estate measures; they need re-pointing only if a later stage allocates 10.40.
 UNALLOCATED_CIDR = "10.40.0.0/16"
 
 # D38's hub, and the one VPC allowed to hold a route to the WireGuard client range (NT-4, re-cut
-# at 6c step 3.6). Kept beside the other address literals for the reason they are all here: an
-# address in a .tf file is a copy, and an address in an instrument is a claim about the
-# allocation table, which scripts/tfhygiene/backend.py's VPC_CIDRS owns.
+# at 6c step 3.6). An address in a .tf file is a copy; an address in an instrument is a claim
+# about the allocation table, which scripts/tfhygiene/backend.py's VPC_CIDRS owns.
 HUB_CIDR = "10.31.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
 
-# INT-22's ZONE MATRIX, WHICH NT-12 READS (6c steps 2.4 and 2.6). Keyed by zone, valued by the VPC
-# RANGES that must be associated - and by exactly those, because the associations that are ABSENT
-# carry as much of the design as the ones that are present: `prod.awsds.internal` is deliberately
-# not in Sandbox, `awsds-pages.internal` deliberately not in Workloads.
+# INT-22's zone matrix, read by NT-12 (6c steps 2.4 and 2.6). Keyed by zone, valued by the VPC
+# ranges that must be associated - and by exactly those, because an absent association carries as
+# much of the design as a present one: `prod.awsds.internal` is not in Sandbox,
+# `awsds-pages.internal` not in Workloads.
 #
-# BY CIDR AND NOT BY NAME TAG, for two reasons. A range is this estate's identifier for a VPC
+# Keyed by CIDR and not by Name tag: a range is this estate's identifier for a VPC
 # (`scripts/tfhygiene/backend.py`'s allocation table), it is already in this file's readings, and it
 # does not move when a Name tag does - which it did at 6c step 1.1, breaking two spokes while every
 # id-shaped gate read clean (Lesson 48). The human names are here as comments so a reader can
@@ -156,44 +140,43 @@ INT22_MATRIX = {
     "awsds-pages.internal": ("10.30.0.0/16", "10.31.0.0/16"),  # where Pages is served and read
 }
 
-# The range Control Tower's ACCOUNT FACTORY VPC occupies (measured 2026-08-15: every vended
+# The range Control Tower's Account Factory VPC occupies (measured 2026-08-15: every vended
 # account carries one - IsDefault=False, three private subnets named aws-controltower-*, no
 # IGW, a flow log at 90 days). The project's own address plan is 10.0.0.0/8-based (step
 # 1.2), so a VPC in this range is a vend artifact, never one of ours.
 AF_CIDR = "172.31.0.0/16"
 
-# NT-9 / section 10: the endpoint-service catalog families whose MEMBERSHIP is a recorded
-# architectural premise (measured 2026-08-24). The load-bearing fact is an ABSENCE: among
-# the region's ~569 services, NO entry serves the SMUS portal's BROWSER surfaces - the
+# NT-9 / section 10: the endpoint-service catalog families whose membership is a recorded
+# architectural premise (measured 2026-08-24). The load-bearing fact is an absence: among
+# the region's ~569 services, no entry serves the SMUS portal's browser surfaces - the
 # on.aws portal itself, its CloudFront assets, agent.datazone.<region>.api.aws,
 # sagemaker-unified-studio.<region>.api.aws - so no endpoint set reaches the portal
-# privately and public egress stays REQUIRED for it - served by the CLIENT plane's
-# proxied egress under the 2026-08-25 re-scope (architecture.md §4.3; OQ 23), never by
-# either D5 compute design. An absence cannot be listed, so the check pins the families
-# the missing door would appear IN: if AWS ships one the way it shipped Console Private
-# Access (the console/signin rows of section 10), the membership moves and NT-9 goes red
-# - the signal to re-read the CLIENT-plane design (OQ 23), never a network failure.
+# privately and public egress stays required for it, served by the client plane's proxied
+# egress (architecture.md §4.3; OQ 23) and by neither D5 compute design. An absence cannot
+# be listed, so the check pins the families the missing door would appear in: if AWS ships
+# one the way it shipped Console Private Access (the console/signin rows of section 10),
+# the membership moves and NT-9 goes red - the signal to re-read the client-plane design
+# (OQ 23), never a network failure.
 PORTAL_FAMILY_BASELINE = {
     "datazone": {"datazone", "datazone-fips"},
     "sagemaker-unified-studio": {"sagemaker-unified-studio-mcp"},
 }
 
-# Section 10's display filter - the families the 2026-08-24 hand query grepped for,
-# mechanised so the next reader gets the rows beside the interpretation.
+# Section 10's display filter: the families the 2026-08-24 hand query grepped for, so the
+# rows arrive beside the interpretation.
 CATALOG_SURFACES = ("datazone", "sagemaker", "sqlworkbench", "console", "signin")
 
-# NT-10 / section 11: the names AWS's own SMUS network-isolation page lists under PUBLIC
-# INTERNET ACCESS - its THIRD table, the one unread until 2026-08-24, which is what makes
-# this a check rather than an opinion. The page requires these of the portal WEB CLIENT
-# while the same page's first table tells you to create the datazone endpoint; the two
-# collide, and the collision is what broke the portal on the tunnel.
+# NT-10 / section 11: the names AWS's SMUS network-isolation page lists under public internet
+# access, in its third table (read 2026-08-24). The page requires these of the portal web
+# client while the same page's first table tells you to create the datazone endpoint; the
+# collision is what broke the portal on the tunnel.
 #
-# Only the CONCRETE names are here. The page's wildcard rows (*.sagemaker.aws,
+# Only the concrete names are here. The page's wildcard rows (*.sagemaker.aws,
 # *.execute-api.<region>.amazonaws.com, *.console.api.aws, *.console.aws.a2z.com,
-# *.sagemaker.aws.dev and the CDN ones) are deliberately NOT mechanised: a wildcard
-# required-name cannot be tested for shadowing without deciding what it stands for, and a
-# check that needs a judgement is one that reports the judgement rather than the fact
-# (Lesson 13). Section 11's prose names them so the gap is visible instead of silent.
+# *.sagemaker.aws.dev and the CDN ones) are not mechanised: a wildcard required-name cannot
+# be tested for shadowing without deciding what it stands for, and a check that needs a
+# judgement reports the judgement rather than the fact (Lesson 13). Section 11's prose names
+# them so the gap is visible instead of silent.
 PORTAL_PUBLIC_NAMES = (
     f"agent.datazone.{context.REGION}.api.aws",
     f"sagemaker-unified-studio.{context.REGION}.api.aws",
@@ -205,12 +188,12 @@ def shadow_verdict(required: str, seized: str) -> str | None:
     """How a deployed endpoint's seized name interferes with a public-required name.
 
     An interface endpoint's private DNS installs a hosted zone that is authoritative for
-    the WHOLE SUBTREE of each name it seizes - there is no fall-through to public DNS. So
-    two distinct breakages, and naming which one matters when reading the fix:
+    the whole subtree of each name it seizes - there is no fall-through to public DNS,
+    which gives two distinct breakages:
 
-      SEIZED   the required name IS the seized name: it answers privately, and a browser
+      SEIZED   the required name is the seized name: it answers privately, and a browser
                outside the VPC path never sees the public service at all.
-      SHADOWED the required name is a strict SUBDOMAIN of a seized name. If the seizure
+      SHADOWED the required name is a strict subdomain of a seized name. If the seizure
                carries no wildcard the answer is NXDOMAIN (measured 2026-08-24:
                agent.datazone.<region>.api.aws); with a wildcard it resolves to the
                endpoint, which is the wrong target rather than no target.
@@ -234,13 +217,13 @@ def catalog_family(token: str) -> str | None:
 def internet_exit_default(dest: str, target: str) -> bool:
     """The catch-all route out to the internet - the shape every public tier carries (2.1).
 
-    0.0.0.0/0 contains every RFC1918 range ARITHMETICALLY, but an internet exit cannot
-    deliver INTO one: an IGW or NAT forwards to the internet routing table, where 10/8 is
+    0.0.0.0/0 contains every RFC1918 range arithmetically, but an internet exit cannot
+    deliver into one: an IGW or NAT forwards to the internet routing table, where 10/8 is
     unroutable. Left in the overlap test, the mandatory public default route keeps NT-3 and
-    NT-4 red forever - and a permanently red check is one nobody reads (Lesson 13's
-    corollary; first tripped on the pass-1 measurement, 2026-08-16). Only exactly this
-    shape is excluded: a route naming a guarded range ITSELF, whatever its target, is still
-    flagged - somebody wrote that range deliberately, and NT-6 covers the peering side.
+    NT-4 red forever, and a permanently red check is one nobody reads (Lesson 13; first
+    tripped on the pass-1 measurement, 2026-08-16). Only exactly this shape is excluded: a
+    route naming a guarded range itself, whatever its target, is still flagged, and NT-6
+    covers the peering side.
     """
     return dest == "0.0.0.0/0" and (target.startswith("igw-") or target.startswith("nat-"))
 
@@ -394,11 +377,10 @@ def main(argv: list) -> int:
 
         # Interface endpoints - the [E] doors terraform-modules/vpc-egress/endpoints.tf
         # instantiates, one per name of core_services + extra_services. egress.py owns the
-        # [E] AUDIT of these (one AZ per D9, the org condition, the burn); what is read
-        # HERE is the field neither script read until 2026-08-25 and which section 11
-        # exists for: DnsEntries - the public names each deployed endpoint SEIZES in this
-        # VPC's resolver. That is a namespace fact about the VPC, it pairs with section
-        # 10's catalog, and it is the mechanism behind the portal breakage of 2026-08-24.
+        # [E] audit of these (one AZ per D9, the org condition, the burn); what is read here
+        # is DnsEntries, the public names each deployed endpoint seizes in this VPC's
+        # resolver. That is a namespace fact about the VPC, it pairs with section 10's
+        # catalog, and it is the mechanism behind the portal breakage of 2026-08-24.
         res = cli.run(
             "ec2",
             "describe-vpc-endpoints",
@@ -501,12 +483,12 @@ def main(argv: list) -> int:
                 if rid:
                     flows.add((p, rid))
 
-    # The endpoint-service CATALOG - regional, not per-account: one call from the first
-    # live profile answers for everyone. egress.py section 7 reads the SAME API for a
-    # DIFFERENT question - which services support an endpoint POLICY, feeding EG-1, an
-    # [E]-session concern - while this read is a standing premise of the egress design
-    # itself: which doors EXIST for this estate's surfaces. Two files, one API, two
-    # questions - kept apart deliberately (Lesson 33), each beside the checks it feeds.
+    # The endpoint-service catalog - regional, not per-account: one call from the first live
+    # profile answers for everyone. egress.py section 7 reads the same API for a different
+    # question, which services support an endpoint policy (EG-1, an [E]-session concern);
+    # this read is a standing premise of the egress design itself, which doors exist for
+    # this estate's surfaces. The two are kept apart, each beside the checks it feeds
+    # (Lesson 33).
     svc_catalog: list = []  # (service name, service type, private dns name)
     catalog_read = False
     if live:
@@ -532,8 +514,8 @@ def main(argv: list) -> int:
     nondef = sum(1 for v in vpcs if v[3] == "False")
 
     # NT-1: VPCs nobody in this project created - the field Stage 3 never named (Lesson 16,
-    # Lesson 17). Three shapes: a true DEFAULT VPC (public subnets, an IGW); the ACCOUNT
-    # FACTORY VPC every vend leaves behind (172.31.0.0/16, private-only); and a
+    # Lesson 17). Three shapes: a true default VPC (public subnets, an IGW); the Account
+    # Factory VPC every vend leaves behind (172.31.0.0/16, private-only); and a
     # project-range VPC in an account where a decision says there must be none.
     for p, vpc, vpc_cidr, is_default, _s, _h in vpcs:
         extra = ""
@@ -633,28 +615,25 @@ def main(argv: list) -> int:
             f"{len(routes)} routes read across {n_accounts} account(s)",
         )
 
-    # NT-4: 10.90.0.0/24 in no route table OUTSIDE VPC-Networking (Stage 3 step 6.5, re-cut at
-    # 6c step 3.6 on 2026-09-06). Peering does no edge-to-edge routing, so a route to the
-    # WireGuard client range in a SPOKE is a route that can never work, and its presence means
-    # somebody is about to lose an evening to it.
+    # NT-4: 10.90.0.0/24 in no route table outside VPC-Networking (Stage 3 step 6.5, re-cut at
+    # 6c step 3.6). Peering does no edge-to-edge routing, so a route to the WireGuard client
+    # range in a spoke is a route that can never carry a packet.
     #
-    # THE ONE EXCEPTION IS INSIDE THE HUB, and it is the point of the re-cut. Step 4.7 adds
-    # `10.90.0.0/24 -> the WireGuard host's ENI` to VPC-Networking's PUBLIC route table: the
-    # tunnel terminates there, and that route is what stops the host masquerading traffic bound
-    # for the proxy - which is what gives the proxy's access log a per-device address without any
-    # logging change. Same VPC, so no edge-to-edge routing is involved and the original argument
-    # does not apply.
+    # The one exception is inside the hub. Step 4.7 adds `10.90.0.0/24 -> the WireGuard host's
+    # ENI` to VPC-Networking's public route table: the tunnel terminates there, and that route is
+    # what stops the host masquerading traffic bound for the proxy, which gives the proxy's access
+    # log a per-device address without any logging change. Same VPC, so no edge-to-edge routing is
+    # involved.
     #
-    # RE-CUT BEFORE 4.7 RATHER THAN WITH IT, deliberately: this widens what is allowed, so it
-    # stays green either way, and a check that has to be edited in the same sitting as the change
-    # it would have failed on is a check nobody trusts afterwards (Lesson 50, the other direction
-    # - written EARLY it is safe, written LATE it is a rubber stamp).
-    # WHICH VPC IS THE HUB, resolved from a reading rather than from a hard-coded id - and the
-    # signal is its CIDR, because that is the one fact in the `vpcs` rows that names the VPC
-    # rather than describing it. `scripts/tfhygiene/backend.py`'s VPC_CIDRS allocates
-    # 10.31.0.0/16 to (production, networking) and nothing else may hold it: NT-5 is what
-    # measures that no two VPCs overlap, so a second VPC answering to this range is already a
-    # failure there rather than a silent mis-identification here.
+    # The re-cut lands before 4.7 rather than with it: it widens what is allowed, so the check
+    # stays green either way, and a check edited in the same sitting as the change it would have
+    # failed on is a rubber stamp (Lesson 50).
+    #
+    # The hub is resolved from a reading rather than from a hard-coded id, and the signal is its
+    # CIDR - the one fact in the `vpcs` rows that names the VPC rather than describing it.
+    # `scripts/tfhygiene/backend.py`'s VPC_CIDRS allocates 10.31.0.0/16 to (production,
+    # networking) and nothing else may hold it: NT-5 measures that no two VPCs overlap, so a
+    # second VPC answering to this range fails there rather than mis-identifying the hub here.
     hub_vpc_ids = {v for _p, v, c, _d, _s, _h in vpcs if c == HUB_CIDR}
 
     nt4 = 0
@@ -687,9 +666,9 @@ def main(argv: list) -> int:
 
     # NT-5: pairwise CIDR overlap among project VPCs, across every measured account (1.2:
     # ranges are non-overlapping even between accounts that will never peer). Default and
-    # Account Factory VPCs are excluded - they are ALL 172.31.0.0/16, they never peer, and
-    # fifteen overlap rows with one root cause would bury a real one; their fate is NT-1's
-    # question, and they are counted once below.
+    # Account Factory VPCs are excluded - they are all 172.31.0.0/16, they never peer, and
+    # their overlap rows would bury a real one; their fate is NT-1's question, and they are
+    # counted once below.
     project_vpcs = [
         (p, vpc, c)
         for p, vpc, c, is_default, _s, _h in vpcs
@@ -764,20 +743,19 @@ def main(argv: list) -> int:
                 "the flow log is how a dropped packet is seen at all.",
             )
 
-    # NT-8 IS RETIRED AND NT-12 REPLACES IT (6c step 2.6, 2026-09-07). NT-8 asked whether
-    # `prod.internal` and `pages.internal` reached the two spoke VPCs - four questions about a zone
-    # family that no longer exists. What replaced that family is not a longer list of the same
-    # question: it is INT-22's MATRIX, five zones against five VPCs, where the associations that are
-    # ABSENT carry as much of the design as the ones that are present. `prod.awsds.internal` is
-    # deliberately not in Sandbox; `awsds-pages.internal` is deliberately not in Workloads.
+    # NT-12 replaces the retired NT-8 (6c step 2.6). NT-8 asked whether `prod.internal` and
+    # `pages.internal` reached the two spoke VPCs - four questions about a zone family that no
+    # longer exists. Its replacement is INT-22's matrix, five zones against five VPCs, where an
+    # absent association carries as much of the design as a present one: `prod.awsds.internal` is
+    # not in Sandbox, `awsds-pages.internal` not in Workloads.
     #
-    # SO THE CHECK IS TWO-SIDED, and that is the whole difference. A missing association is a name
-    # that NXDOMAINs where somebody expects it; an EXTRA one is a spoke resolving into a plane it
-    # was kept out of, which no amount of testing the expected direction would find.
+    # The check is two-sided. A missing association is a name that NXDOMAINs where somebody
+    # expects it; an extra one is a spoke resolving into a plane it was kept out of, which no test
+    # of the expected direction would find.
     #
-    # THE VPCs ARE RESOLVED BY NAME TAG, not by position: an account with three VPCs (Production
-    # has three) cannot be reduced to "its non-default VPC", which is exactly the assumption NT-8
-    # carried and could carry only while every account had one.
+    # The VPCs are resolved by CIDR, not by position: an account with three VPCs (Production has
+    # three) cannot be reduced to "its non-default VPC", the assumption NT-8 carried and could
+    # carry only while every account had one.
     vpc_by_cidr = {c: vpc for _p, vpc, c, is_default, _s, _h in vpcs if is_default == "False"}
     zone_names = {z[2] for z in zones}
     for zone, want_names in sorted(INT22_MATRIX.items()):
@@ -819,7 +797,7 @@ def main(argv: list) -> int:
             )
 
     # NT-9: the private-door premise of 2026-08-24 (PORTAL_FAMILY_BASELINE). A membership
-    # change in EITHER direction is a recorded premise moving, so it FAILS loudly rather
+    # change in either direction is a recorded premise moving, so it fails loudly rather
     # than noting quietly - red is the signal to re-read, never a network to fix.
     if catalog_read:
         prefix = f"com.amazonaws.{context.REGION}."
@@ -855,10 +833,10 @@ def main(argv: list) -> int:
             "private-door premise is UNMEASURED, not confirmed (Lesson 13).",
         )
 
-    # NT-10: does any DEPLOYED interface endpoint's private DNS take over a name AWS's own
-    # network-isolation page requires of the portal over the PUBLIC internet? This is the
-    # 2026-08-24 breakage as a check - the one thing that reading left behind that a
-    # describe call CAN answer, so it never has to be rediscovered from a browser error.
+    # NT-10: does any deployed interface endpoint's private DNS take over a name AWS's
+    # network-isolation page requires of the portal over the public internet? The 2026-08-24
+    # breakage as a check - the half of that reading a describe call can answer, so it never
+    # has to be rediscovered from a browser error.
     if not ifeps:
         checks.note(
             "NT-10",
@@ -868,14 +846,13 @@ def main(argv: list) -> int:
             "becomes a real reading only while egress/ is up.",
         )
     else:
-        # WHICH VPC THE SEIZURE IS IN DECIDES THE VERDICT (re-cut 2026-09-08, 6c step 6.5). A private
-        # zone binds the clients of THAT VPC's resolver. Until 6c the tunnelled laptop was one of
-        # Sandbox's (the 2026-08-24 breakage); under D38 it resolves in VPC-Networking, which holds
-        # no interface endpoint, and 6.2 measured both portal names PUBLIC from the tunnel. So a
-        # seizure in a COMPUTE VPC is design B working - 5.3 requires the datazone endpoint there,
-        # and the apps inside are not portal web clients - and only a seizure in the hub is the
-        # finding. Written to the final expectation with the discriminator (Lesson 50), because
-        # this check went red the first time egress/ was up after 6.7 and nothing had broken.
+        # Which VPC the seizure is in decides the verdict (6c step 6.5). A private zone binds the
+        # clients of that VPC's resolver. Until 6c the tunnelled laptop was one of Sandbox's (the
+        # 2026-08-24 breakage); under D38 it resolves in VPC-Networking, which holds no interface
+        # endpoint, and 6.2 measured both portal names public from the tunnel. A seizure in a
+        # compute VPC is design B working - 5.3 requires the datazone endpoint there, and the apps
+        # inside are not portal web clients - so only a seizure in the hub is the finding. Written
+        # to the final expectation with the discriminator (Lesson 50).
         collisions = [
             (p, ep, svc, required, seized, verdict, vpc)
             for p, ep, svc, _state, privdns, vpc, seized_names in ifeps
@@ -916,31 +893,29 @@ def main(argv: list) -> int:
                 "The page's WILDCARD rows are not mechanised (section 11).",
             )
 
-    # NT-11: EVERY ACTIVE PEERING HAS A ROUTE ON BOTH SIDES (Stage 6c step 3.7).
+    # NT-11: every active peering has a route on both sides (Stage 6c step 3.7).
     #
-    # WHY IT EXISTS, and it is not hypothetical: the reference implementation this project keeps
-    # as a comparison has exactly this defect - a peering connection that is `active` and a route
-    # table on one side that never learned about it. Nothing describes that as an error. The
-    # attachment shows healthy, the CIDRs look right in a diagram, and traffic in one direction
-    # dies with no ICMP and no log line. Peering shares an ADDRESS, never a PATH (Lesson 44), and
-    # the path is exactly this route.
+    # The reference implementation this project keeps as a comparison has exactly this defect: a
+    # peering connection that is `active` and a route table on one side that never learned about
+    # it. Nothing describes that as an error - the attachment shows healthy, the CIDRs look right
+    # in a diagram, and traffic in one direction dies with no ICMP and no log line. Peering shares
+    # an address, never a path (Lesson 44), and the path is this route.
     #
-    # TWO FINDINGS THAT MUST NOT SHARE A VERDICT, which is what step 3.7 asks for after noticing
-    # this check would otherwise be red for a whole pass:
+    # The two findings never share a verdict:
     #
-    #   DECLARED BUT NOT ROUTED   an `active` peering with no route on one side. Real, and the
-    #                             normal state for the minutes between creating a peering and
-    #                             adding its routes - so it is reported with the SIDE named, not
-    #                             as a bare count.
-    #   ROUTED BUT NOT ACTIVE     a route whose target is a peering that is deleted, failed or
-    #                             pending. That is a BLACKHOLE: packets leave and nothing comes
-    #                             back. It is the opposite finding and the more urgent one, and a
-    #                             single verdict covering both would let it hide behind the first.
+    #   declared but not routed   an `active` peering with no route on one side. The normal state
+    #                             for the minutes between creating a peering and adding its
+    #                             routes, so it is reported with the side named, not as a bare
+    #                             count.
+    #   routed but not active     a route whose target is a peering that is deleted, failed or
+    #                             pending - a blackhole: packets leave and nothing comes back. It
+    #                             is the more urgent one, and a single verdict covering both would
+    #                             let it hide behind the first.
     #
-    # IT ASSERTS ONLY ABOUT ACCOUNTS IT ACTUALLY READ. A VPC whose account holds no live profile
-    # is skipped and SAID so, because "no route found" and "no session" are the same silence
-    # (Lesson 13) - and this check runs across accounts by construction, so that case is normal
-    # rather than exceptional.
+    # It asserts only about accounts it actually read. A VPC whose account holds no live profile
+    # is skipped and said so, because "no route found" and "no session" are the same silence
+    # (Lesson 13); this check runs across accounts by construction, so that case is normal rather
+    # than exceptional.
     read_vpcs = {v for _p, v, _c, _d, _s, _h in vpcs}
     routed_by_pcx: dict = {}
     for _p, _rtb, vpc, _dest, target, _state in routes:
