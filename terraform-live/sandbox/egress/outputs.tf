@@ -32,8 +32,9 @@ output "interface_endpoint_ids" {
 # `images/dev-env` does consume it, since 6d decision 8 (2026-09-10): that image runs in exactly one
 # account, and both API-side mechanisms were measured unable to carry the value -
 # ContainerEnvironmentVariables caps each value at 256 characters, and a lifecycle configuration
-# cannot be updated in place. It arrives there as a `--build-arg`, never transcribed, and the image
-# is therefore stale the moment this list changes: docs/plan/runbooks/dev-env.md E owns that chain.
+# cannot be updated in place. That image carries a DATED COPY of this output as a literal, with the
+# command that refreshes it in the comment beside it, and it is therefore stale the moment this list
+# changes: docs/plan/runbooks/dev-env.md E owns that chain. Every other consumer reads the output.
 
 output "no_proxy" {
   description = "The literal NO_PROXY value for a client inside this VPC - comma-joined, no wildcard, no CIDR, no port."
