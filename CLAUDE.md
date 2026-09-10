@@ -282,10 +282,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Inside a space** (6d steps 3 and 8): on an image built before 2026-09-10 the variables are
   exported by hand and `sudo` strips them (`apt` needs `-o Acquire::http::Proxy`); the Code Editor
   client honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting, so the repair is the
-  environment on the `codeeditorserver` supervisord program. `open-vsx.org` serves the API,
-  `openvsx.eclipsecontent.org` the `.vsix` bytes; `alpine-arm64` is the registry's detection when no
-  platform is named. A space started while `sandbox/egress` is down hangs at "IDE configuration in
-  progress". `conda` and CRAN are not on the compute plane (3.1); Portal Query Editors has no endpoint
+  environment on the `codeeditorserver` supervisord program. `open-vsx.org` serves the API and
+  `openvsx.eclipsecontent.org` the `.vsix` bytes. A space started while `sandbox/egress` is down
+  hangs at "IDE configuration in progress". `conda` and CRAN are not on the compute plane (3.1); Portal Query Editors has no endpoint
   in any VPC (3.6).
 - **6d step 4, MWAA Serverless** (measured 2026-09-09/10). One workflow, `READY`, `manual_only`; every
   run is two attempts, so read the task's `DurationInSeconds`, never the run's. The surface needs
