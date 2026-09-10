@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **SUPERSEDED IN PART 2026-09-05 by [6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md), and this row is the pointer that stops it being read as current:** the one-VPC-per-account topology becomes five VPCs (three of them in Production), the per-account NAT gateways are **destroyed** with `egress_mode` fixed at B, the `*.internal` zones are replaced by the `awsds.internal` family, and the two peerings become five. **What this stage established and 6c keeps:** the `vpc`/`vpc-egress` modules, the tier cut, the zone-id anchoring, the gateway endpoints as the only `[P]` endpoint ids a policy may name (INT-05), the peering pattern with its accepter-side apply, and step 6.5's rule — a peering shares an address, never a path — which is the premise the whole hub design rests on (Lesson 44). — *earlier:* **ALL THREE PASSES APPLIED (2026-08-16)** — step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)), Account Factory creates no VPC; steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**; steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32, verification (iv): additive, re-plan `No changes` everywhere); steps 7-10: `vpc-egress-v0.1.0` and the three `egress/` slices, **applied through `make up`** for 16/15/14 resources — **`./aws/egress.py` all checks passed, `./aws/networking.py` 0 FAILED, every `foundation/` re-plan `No changes`**. **The Validation's `make down`/`make up` cycle RAN 2026-08-16** and is answered: all three `foundation/` output sets **byte-identical** across the cycle, all three re-plans `No changes` (`-detailed-exitcode 0`), **39/39 `[E]` ids new**, the S3 and DynamoDB gateway endpoints unmoved, and the private tier's default route rebuilt onto the new NAT in every account. **The probes RAN 2026-08-16** as three `[E]` slices — the blockquote on Deliverables carries every reading, **verification (iii) among them: `dnf makecache` succeeded from a tier with no default route, and the allow-list denied an equally public bucket it does not name (200 / 403)**. **INT-09 was exercised for the first time.** **TORN DOWN 2026-08-16 — `make down` on all three accounts, 59 resources, USD 0.0000/h**, probe slices before `egress/` in each because `probes` ranks 60 and `down` walks the table in reverse; `foundation/` byte-identical for the third time and every re-plan `No changes`. **The stage is closed.** What remains belongs elsewhere: the `Staging` clause of the DNS Deliverable, which has no host to refuse until the vend, and verification (ii), which is Stage 6's by nature. **Stage 4's verification (i) is NOT pre-answered** — `dnf makecache` measured the metadata path, not a package download, and the CloudWatch agent comes from an allow-list entry `makecache` never touches. **The five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it ("Decisions due while executing" is the index). **Revised 2026-08-16 into the action-checklist format**, with three corrections taken from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management** — not a per-account hand-deletion, which is what the log's first entry still records; **AL2023 serves its mirror list from the repository bucket itself**, so the design-B caveat 9.3 carried is withdrawn; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association). **Amended 2026-08-17: `elasticfilesystem` left the Sandbox endpoint list (8.3)** — the NFS requirement was withdrawn and D24 with it; the slice as *applied and torn down* carried 12 interface endpoints, the next `make up` carries 11 |
+| **Status** | **Superseded in part 2026-09-05 by [6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md)**: the one-VPC-per-account topology becomes five VPCs (three of them in Production), the per-account NAT gateways are **destroyed** with `egress_mode` fixed at B, the `*.internal` zones are replaced by the `awsds.internal` family, and the two peerings become five. **6c keeps** the `vpc`/`vpc-egress` modules, the tier cut, the zone-id anchoring, the gateway endpoints as the only `[P]` endpoint ids a policy may name (INT-05), the peering pattern with its accepter-side apply, and step 6.5's rule — a peering shares an address, never a path (Lesson 44) — which is the premise the hub design rests on. **All three passes applied 2026-08-16 and the stage is closed.** Step 0: the stack instances deleted from Management, **nothing survived** (verification (vi)); Account Factory creates no VPC. Steps 1-5: the four modules tagged `*-v0.1.0`, `foundation/` **applied in Sandbox (31), Development (30) and Production (32)**. Steps 4.4-4.5 and 6: the four zone associations and the two peerings with their 22 subnet-level routes, **one ordered apply on the accepting side** (+1/+1/+32; verification (iv): additive, re-plan `No changes` everywhere). Steps 7-10: `vpc-egress-v0.1.0` and the three `egress/` slices **applied through `make up`** for 16/15/14 resources — **`./aws/egress.py` all checks passed, `./aws/networking.py` 0 FAILED, every `foundation/` re-plan `No changes`**. The Validation's `make down`/`make up` cycle ran the same day: all three `foundation/` output sets **byte-identical**, all three re-plans `No changes` (`-detailed-exitcode 0`), **39/39 `[E]` ids new**, the S3 and DynamoDB gateway endpoints unmoved, the private tier's default route rebuilt onto the new NAT in every account. The probes ran as three `[E]` slices — every reading is in the blockquote on Deliverables, **verification (iii) among them: `dnf makecache` succeeded from a tier with no default route, and the allow-list denied an equally public bucket it does not name (200 / 403)**. **INT-09 was exercised for the first time.** **Torn down 2026-08-16** — `make down` on all three accounts, 59 resources, USD 0.0000/h, probe slices before `egress/` in each because `probes` ranks 60 and `down` walks the table in reverse; `foundation/` byte-identical for the third time and every re-plan `No changes`. What remains belongs elsewhere: the `Staging` clause of the DNS Deliverable, which has no host to refuse until the vend, and verification (ii), which is Stage 6's by nature. **Stage 4's verification (i) is not pre-answered** — `dnf makecache` measured the metadata path, not a package download, and the CloudWatch agent comes from an allow-list entry `makecache` never touches. **The five execute-time decisions were settled with the user on 2026-08-16**, before the stage, each recorded at the step that owns it. Three corrections from the official documentation: **step 0's supported removal path is deleting the stack instances from the Account Factory StackSet on Management**, not a per-account hand-deletion; **AL2023 serves its mirror list from the repository bucket itself**, withdrawing the design-B caveat 9.3 carried; and **verification (vii) is answered by the Route 53 documentation** (the authorization persists until deleted; deleting it does not affect the association). **2026-08-17: `elasticfilesystem` left the Sandbox endpoint list (8.3)** — the NFS requirement was withdrawn and D24 with it; the slice as *applied and torn down* carried 12 interface endpoints, the next `make up` carries 11 |
 | **Prerequisites** | Stage 2. The AZ name→ID question from 1b step 6 is settled — subnets anchor on `zone_ids` (1.5), the mapping is `./aws/AZs.py`. **`Staging` is unvended** — the quota-increase request sits in an open AWS support ticket (2026-08-15) — so its `foundation/` and `egress/` apply **at vend**, and the two proofs that name it (its VPC, its empty peering list) defer with it; nothing else in this stage waits on it |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D9](../decisions/D09-az-count.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D35](../decisions/D35-sandbox-cardinality.md) — **plus, for step 8's endpoint lists only**, [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md) |
 | **Proves** | [INT-09](../integrations.md) (Development ↔ Production peering). **Supplies** what [INT-05](../integrations.md) later depends on: the `[P]` gateway endpoint IDs of step 3 |
@@ -80,7 +80,7 @@ apply is additive rather than a rewrite of what pass 1 created.
 
 ## The topology
 
-> **This section is the target as PLANNED at this stage, and it is kept for that.** What the network
+> **This section is the target as planned at this stage.** What the network
 > looks like **now** — measured, with every account's addresses, the two egress paths and the
 > blueprint-provisioned pieces this stage could not foresee — is
 > [`docs/NETWORK.md`](../../NETWORK.md), which is the file that gets updated when the network changes.
@@ -140,7 +140,7 @@ flowchart TB
 *View 2 — inside one VPC.* The same `terraform-modules/vpc/` module produces this in every VPC-bearing
 account; only the CIDR and the interface-endpoint list differ. Under **design B** the NAT node and both
 `0.0.0.0/0` routes do not exist, and the gateway endpoint is the *only* path to the AWS-owned buckets of
-step 9 — which is what makes that allow-list load-bearing rather than tidy.
+step 9, which is what makes that allow-list load-bearing.
 
 ```mermaid
 flowchart TB
@@ -187,7 +187,7 @@ flowchart TB
     class NAT,IFEP eph;
 ```
 
-*View 3 — who resolves what.* Neither view above shows it, and it is where step 4 is lost: **a name is
+*View 3 — who resolves what.* Neither view above shows it: **a name is
 answered by the resolver of the VPC the query enters**, so the laptop's whole private namespace is whatever
 the Sandbox VPC can resolve. Solid edges are zones this project owns and can associate; dotted edges are the
 two things that return `NXDOMAIN`, one by AWS's design and one by ours.
@@ -235,13 +235,12 @@ lifecycles (`docs/plan/conventions.md` §5.1).
 more. **Why:** each carries an S3 gateway endpoint on the default full-access policy — a private, unlogged
 path to any bucket the moment anything computes there — their range is outside the 1.2 plan, and in Data
 Governance D22 forces the removal. **Explanation:** settled 2026-08-16 (decision 6): remove all of them,
-creation off. Corrected against the documentation on the same day: the VPCs are CloudFormation artifacts,
-and the **supported removal is deleting their stack instances from the StackSet on Management** — cleanly,
-through the same machinery that created them — not a per-account hand-deletion, which is what the log's
-first entry still records as the intent. Both halves are Management console acts; only the configuration
-half has a deadline (**before the `Staging` vend**).
+creation off. The VPCs are CloudFormation artifacts, and the **supported removal is deleting their stack
+instances from the StackSet on Management**, through the same machinery that created them, rather than a
+per-account hand-deletion. Both halves are Management console acts; only the configuration half has a
+deadline (**before the `Staging` vend**).
 
-> **RAN 2026-08-16, all four sub-steps.** 0.1 clean (one Account Factory VPC per vended account, zero
+> **Ran 2026-08-16, all four sub-steps.** 0.1 clean (one Account Factory VPC per vended account, zero
 > ENIs in each, one `CREATE_COMPLETE` stack per account); 0.2 and 0.3 by the user from Management, the
 > log has the field-by-field record; 0.4 closed the loop — **no VPC in any measured account**, every
 > `NT-1`/`EG-1` note gone, `docs/AWS_STATE.md` §C rewritten. Verification (vi): **nothing survives** the
@@ -271,7 +270,7 @@ half has a deadline (**before the `Staging` vend**).
 
 ### `foundation/` — layer `[P]`, free at rest, never destroyed
 
-> **RAN 2026-08-16 — pass 1 applied in Sandbox, Development and Production** (31, 30 and 32
+> **Ran 2026-08-16 — pass 1 applied in Sandbox, Development and Production** (31, 30 and 32
 > resources; **only-create plans, re-plan `No changes` everywhere**). Modules tagged `vpc-v0.1.0`,
 > `iam-role-v0.1.0`, `kms-key-v0.1.0`, `s3-bucket-v0.1.0` on GitHub; the two-commit order (modules +
 > tags pushed **before** the slices' commit) is what lets `terraform_validate` init the callers. The
@@ -280,7 +279,7 @@ half has a deadline (**before the `Staging` vend**).
 > `0.0.0.0/0 → igw` route as an "overlap"; the instrument now excludes exactly the internet-exit
 > default route, which cannot deliver into an RFC1918 range.
 >
-> **RAN 2026-08-16, same day — pass 2 applied** (4.4-4.5, 6): the requesters in Sandbox and Development
+> **Ran 2026-08-16, same day — pass 2 applied** (4.4-4.5, 6): the requesters in Sandbox and Development
 > (+1 each), then **everything else in one ordered apply on the accepting side** (+32: 4 authorizations,
 > 4 associations made *as* the VPC owners through provider aliases, 2 accepters, 22 subnet-level
 > routes) — the one place "authorization before association" and "route only after the peering is
@@ -376,9 +375,8 @@ decided (Lesson 16). **Explanation:** all free, all `[P]`, inside the same `vpc`
 - **2.2 — [Claude] Create route tables per tier.** The private tier's default route exists **only under
   design A** and is inserted by `egress/` (steps 7 and 10), not here. The isolated tier never gets one —
   that is what makes it isolated.
-- **2.3 — [Claude] Leave NACLs at the default allow** — the control lives in security groups. Written down
-  so it is a decision, not an omission: NACLs are stateless, and a stateless deny is the fastest way to
-  break a path nobody can then debug.
+- **2.3 — [Claude] Leave NACLs at the default allow** — the control lives in security groups. NACLs are
+  stateless, and a stateless deny is the fastest way to break a path nobody can then debug.
 - **2.4 — [Claude] Create the baseline security groups**, referencing each other by ID rather than by CIDR:
   an **endpoint SG** allowing TCP/443 from the VPC CIDR (consumed by step 8 — under design B an endpoint
   whose SG does not admit 443 is not a slow path, it is no path), and one per subnet tier for later
@@ -401,8 +399,7 @@ entries, not ENIs — which is why they are here and not in `egress/`.
 - **3.3 — [Claude] Anchor nothing on interface-endpoint IDs** (Lesson 3): the `[E]` IDs of step 8 may be
   named by no policy anywhere; `aws:SourceVpc` is the alternative anchor where a service has no gateway
   endpoint.
-- **3.4 — Their policy is step 9** — and for the S3 one it is the single most consequential policy in this
-  stage.
+- **3.4 — Their policy is step 9.**
 
 #### 4. Private DNS
 
@@ -414,7 +411,7 @@ so any name it must see either lives in a zone this project owns and associates,
 - **4.1 — [Claude] Turn both VPC DNS attributes on** in the `vpc` module — `enable_dns_support` **and**
   `enable_dns_hostnames`; `aws_vpc` defaults the second to **false**, and nothing below (endpoint private
   DNS included) works without both.
-- **4.2 — [Claude] Create three zones, deliberately not one per account**: `sandbox.internal` (one per
+- **4.2 — [Claude] Create three zones, not one per account**: `sandbox.internal` (one per
   business unit), `prod.internal`, and `pages.internal` — the last built here rather than in Stage 7
   because `docs/plan/conventions.md` §6 places it in `production/foundation/` and its associations are cheaper made
   alongside the others. **Development and Staging get no zone**: nothing in either is addressed by a
@@ -442,11 +439,11 @@ so any name it must see either lives in a zone this project owns and associates,
   by itself; a §7 row in `./aws/networking.py` that has no matching association is the handshake whose
   second half has not run. Both zones are `[P]` — the association lives in `foundation/`, out of
   `make down`'s reach.
-- **4.6 — Know what none of this extends to**: the private DNS of an **interface** endpoint is served by an
-  AWS-*managed* zone, invisible in the account, that cannot be associated with another VPC — so an endpoint
-  created in Production answers inside Production only. **Any AWS-service name the laptop must resolve
-  privately needs its endpoint in the Sandbox VPC**, or an ALIAS record in a zone of ours. Not a problem
-  today; it is why the provisioned-MWAA fallback carries a DNS step (Stage 10 step 4).
+- **4.6 — None of this extends to an interface endpoint's private DNS.** That is served by an AWS-*managed*
+  zone, invisible in the account, which cannot be associated with another VPC, so an endpoint created in
+  Production answers inside Production only. **Any AWS-service name the laptop must resolve privately needs
+  its endpoint in the Sandbox VPC**, or an ALIAS record in a zone of ours. It is why the provisioned-MWAA
+  fallback carries a DNS step (Stage 10 step 4).
 
 #### 5. VPC Flow Logs
 
@@ -477,7 +474,7 @@ account, accepter in `production/foundation/` behind a provider alias, as a `for
   *originate* the traffic — a peering between an experimentation account and production earns a narrow
   route table:
 
-  | Route table | Destination | Why it is the one that matters |
+  | Route table | Destination | Why |
   |---|---|---|
   | Sandbox **public** | the Production subnet holding GitLab | **the tunnel's route.** The WireGuard instance SNATs the laptop and lives in the public subnet; omit this and the tunnel comes up while GitLab stays unreachable |
   | Sandbox **private** | same | Studio apps |
@@ -488,13 +485,11 @@ account, accepter in `production/foundation/` behind a provider alias, as a `for
   across a same-region peering) or the peer subnet CIDR explicitly — never `0.0.0.0/0`, never the whole
   peer VPC.
 - **6.5 — Put `10.90.0.0/24` in no route table anywhere.** Peering does no edge-to-edge routing and only
-  forwards packets whose source and destination sit inside the two VPCs' CIDRs — which is exactly why the
-  NAT on the WireGuard instance is not optional (Stage 4 step 1). `./aws/networking.py` `NT-4` fails on any
-  route touching the range.
-- **6.6 — Create no peering to Staging — a decision, not an omission (D20).** Nothing there needs a
-  VPC-level path: the data scientists' read access (D18) is data plane, reached over public AWS endpoints
-  through the tunnel. Recorded so that the day something genuinely needs it, the question is reopened
-  deliberately.
+  forwards packets whose source and destination sit inside the two VPCs' CIDRs, which is why the NAT on the
+  WireGuard instance is not optional (Stage 4 step 1). `./aws/networking.py` `NT-4` fails on any route
+  touching the range.
+- **6.6 — Create no peering to Staging (D20).** Nothing there needs a VPC-level path: the data scientists'
+  read access (D18) is data plane, reached over public AWS endpoints through the tunnel.
 - **[Claude⚡] Apply pass 2** — the second `production/foundation/` apply must be additive (verification
   (iv)).
 
@@ -505,7 +500,7 @@ account, accepter in `production/foundation/` behind a provider alias, as a `for
 row (Lesson 6) — in the same commit that creates the slice. These are the repository's first `[E]` rows:
 from here `make up` / `make down` stop being no-ops, and `make status` starts reporting a real burn.
 
-> **RAN 2026-08-16 — pass 3, steps 7-10 in Sandbox, Development and Production.** One module,
+> **Ran 2026-08-16 — pass 3, steps 7-10 in Sandbox, Development and Production.** One module,
 > `terraform-modules/vpc-egress` at `vpc-egress-v0.1.0`, called once per account; the slices read
 > `foundation/`'s `[P]` facts through `terraform_remote_state`. Applied through **`make up ENV=<account>`**
 > — the first exercise of the D11 machinery that is not a no-op — for **16 / 15 / 14** resources
@@ -519,8 +514,8 @@ from here `make up` / `make down` stop being no-ops, and `make status` starts re
 > re-plan reads **`No changes`**: routes into a `[P]` route table are owned by the `[E]` slice, so the
 > two lifecycles do not touch. `make status`: `UP  16/15/14  →  USD 0.4800/h`.
 >
-> **Two instruments were wrong and were corrected in the same sitting** — the applies are what exposed
-> them, and both had the shape Lesson 13 names. `EG-4` had no pattern for the **ECR layer-storage**
+> **Two instruments were wrong and were corrected in the same sitting**, both with the shape Lesson 13
+> names. `EG-4` had no pattern for the **ECR layer-storage**
 > family, so `prod-<region>-starport-layer-bucket` was in the live policy, unread by the check, and would
 > have kept reporting `pass` the day somebody deleted it — the one family 9.3 calls the entry the step
 > was missing. And `make status` counted a child module as **one** resource and counted data sources,
@@ -542,7 +537,7 @@ B this resource does not exist.
   default route at all.
 - **7.3 — Cost: ~USD 0.050/h plus 0.045/GB processed** (with its public IPv4).
 
-#### 8. Interface VPC endpoints — a per-account list, not one list
+#### 8. Interface VPC endpoints — a list per account role
 
 **Action:** create each account's interface endpoints from a per-role list. **Why:** one list applied
 everywhere was wrong in both directions — paying for endpoints an account cannot use, and missing the ones
@@ -566,20 +561,18 @@ its data plane needs (under design B, a missing `athena`/`glue` means no query e
 
 - **8.4 — Under D5(B) the Interactive accounts add `codeartifact.api` and `codeartifact.repositories`** —
   the package path when there is no NAT, resolving a domain created by **Stage 7 step 5.a** — written
-  there, applied in **Stage 6's pass 0**, precisely so this works when the comparison runs. *(Reworded
-  2026-08-21: this used to read "applied early, before Stage 6", which was a claim about a thing that had
-  not been done — the whole clause is Stage 6's Status row.)*
+  there, applied in **Stage 6's pass 0**, so this works when the comparison runs.
 - **8.5 — [Claude] Per endpoint**: private DNS enabled (needs 4.1), the endpoint SG from 2.4, and a
   **single AZ** (D9) — two AZs doubles the largest hourly line item, and a resource in the other AZ still
   resolves and reaches it.
 - **8.6 — Condition nothing on these IDs** (Lesson 3, INT-05) — they are `[E]` and new on every `make up`.
   Anchor on step 3's gateway endpoint or on `aws:SourceVpc`.
-- **8.7 — Candidates deliberately not created yet, with the trigger for each** — so "it must be a missing
-  endpoint" is a checklist rather than a guess at 23:00:
+- **8.7 — Candidates not created yet, with the trigger for each** — so "it must be a missing endpoint" is
+  a checklist rather than a guess:
 
   | Candidate | Account | Trigger |
   |---|---|---|
-  | `datazone` | Interactive | ~~if VPC-only project apps call the domain for project context. **Verify at Stage 6** and add it there~~ — **VERIFIED AND ANSWERED NO for design A** (added 2026-08-21, removed 2026-08-25, issue #39): under A the apps reach the domain through the NAT, and the endpoint's private zone shadows the portal name the client needs. **Design B must add it** — it has no NAT |
+  | `datazone` | Interactive | ~~if VPC-only project apps call the domain for project context. **Verify at Stage 6** and add it there~~ — **verified and answered no for design A** (2026-08-25, issue #39): under A the apps reach the domain through the NAT, and the endpoint's private zone shadows the portal name the client needs. **Design B must add it** — it has no NAT |
   | `ssm` + `ssmmessages` + `ec2messages` | Production | the first time you need into the GitLab host outside a build window (its NAT is `[E]`). +0.030/h |
   | `secretsmanager` | Production | `gitlab-secrets.json` (Stage 7 step 1), same NAT caveat |
   | `monitoring` | any | if the CloudWatch agent on a private-subnet host cannot push metrics |
@@ -619,15 +612,12 @@ and the failure mode of getting the allow-list wrong is a package manager that h
   | **ECR layer storage** — `prod-<region>-starport-layer-bucket`, `s3:GetObject` | the entry this step was missing | **every `docker pull`**, Stages 6-8: `ecr.api`/`ecr.dkr` (8.2) authorise the pull, the **layers** come from S3 — so it fails *after* a successful login, pointing at S3 rather than at ECR |
   | SageMaker regional buckets | JumpStart, sample files | **Stage 6** |
 
-  **A claim this step carried was falsified by the documentation and is withdrawn (2026-08-16, this
-  revision):** AL2023 does **not** resolve its mirror list from a generic public endpoint — the default
-  `mirrorlist=` URL points into the **same regional repository bucket** (the S3 dualstack hostname of
-  `al2023-repos-<region>-de612dc2`), and AWS's own no-internet-access guidance is exactly this
+  **AL2023 does not resolve its mirror list from a generic public endpoint** (documentation, 2026-08-16).
+  The default `mirrorlist=` URL points into the **same regional repository bucket** (the S3 dualstack
+  hostname of `al2023-repos-<region>-de612dc2`), and AWS's own no-internet-access guidance is exactly this
   gateway-endpoint policy. So the package path works under **both** designs through this list; what would
-  break it is a repo file referencing `cdn.amazonlinux.com`, which requires internet. The design-B input
-  this step used to send to Stage 6 dissolves; what verification (iii) confirms at execution is the
-  behaviour **and** that the AMI's repo files use the default mirrorlist. The log's first entry records the
-  withdrawn claim — this paragraph is the correction.
+  break it is a repo file referencing `cdn.amazonlinux.com`, which requires internet. Verification (iii)
+  confirms at execution the behaviour **and** that the AMI's repo files use the default mirrorlist.
 
   **Still not settled by any of this:** the bucket names above are documentation, **not measured**
   (Lesson 23) — each is confirmed at execution by verification (iii).
@@ -648,8 +638,8 @@ comparison is the point of D5. **Explanation:** settled 2026-08-16 (decision 4):
   tier's default route target comes from a variable. **Default `A`** — under B there is no default route
   at all and B's package path (CodeArtifact, with Julia and R still uncovered — open question 5) is not
   built until Stages 6-7. Choosing A as the default is not choosing A as the outcome: D5's comparison
-  happens at Stage 6, deliberately.
-- **10.2 — Stage 6 changes the path without touching `[P]`** — that is what the switch buys.
+  happens at Stage 6.
+- **10.2 — Stage 6 changes the path without touching `[P]`.**
 - **10.3 — The switch is per account.** D5 governs the Interactive accounts; Staging and Production keep a
   NAT for the minutes a promotion or a build runs.
 
@@ -657,7 +647,7 @@ comparison is the point of D5. **Explanation:** settled 2026-08-16 (decision 4):
 
 ## Deliverables
 
-> **RAN 2026-08-16 — every one answered except the `Staging` clause, which has no host to
+> **Ran 2026-08-16 — every one answered except the `Staging` clause, which has no host to
 > refuse until the vend.** Built as three `[E]` slices rather than as a script, because the
 > expensive failure for a probe is an instance nobody turned off: `sandbox/probes` (perimeter +
 > peering), `production/probes` (the target), `development/probes` (INT-09). **No IAM principal
@@ -665,7 +655,7 @@ comparison is the point of D5. **Explanation:** settled 2026-08-16 (decision 4):
 > so anonymous requests are judged by exactly the statement being measured.
 >
 > **Perimeter:** premise measured first (no route to the internet, `curl` exit 28), then
-> `dnf makecache` **SUCCEEDED** from the isolated tier, then the pair — the allow-listed
+> `dnf makecache` **succeeded** from the isolated tier, then the pair — the allow-listed
 > repository bucket **200**, an equally public Amazon Linux 2 bucket that the policy does not
 > name **403 AccessDenied**. **Peering:** from Sandbox and again from Development, against one
 > target host — permitted address **HTTP 200**, the *same host's* second interface in an
@@ -677,7 +667,7 @@ comparison is the point of D5. **Explanation:** settled 2026-08-16 (decision 4):
 > Deliverables' peering is Sandbox↔Production, which says nothing about it.
 >
 > **Two instrument defects, both found by running it.** The perimeter pair first used buckets
-> that DO NOT EXIST and returned 404/404, which by its own criterion reads as "the perimeter is
+> that do not exist and returned 404/404, which by its own criterion reads as "the perimeter is
 > open": S3 answers `NoSuchBucket` **before** it evaluates authorization, so a nonexistent
 > bucket cannot measure a policy — **Lesson 21, and the nonexistence chosen to keep the
 > bucket's own policy out of the comparison had removed the policy under test with it.** And
@@ -691,7 +681,7 @@ Each is written so its output differs between working and broken (Lesson 13). **
 every reading below is `./aws/networking.py` and `./aws/egress.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md));
 the probes carry only what a describe call cannot. Two throwaway `t4g.nano` probes — one in the Sandbox
 public subnet, one in the Production GitLab subnet — carry the reachability proofs and are destroyed in
-the same sitting (**[Claude⚡]**, ~USD 0.004/h): the cheapest honest evidence available before Stage 4.
+the same sitting (**[Claude⚡]**, ~USD 0.004/h).
 
 - **The module applied N + 3 times:** the VPCs from one module, the Sandbox range taken from the
   allocation table rather than from a literal. **N + 2 while `Staging` is unvended** — its apply joins at
@@ -717,13 +707,13 @@ the same sitting (**[Claude⚡]**, ~USD 0.004/h): the cheapest honest evidence a
 
 ## Validation
 
-> **RAN 2026-08-16 — items 1 and 2 answered; item 3 waits on the probes.** Item 1 was taken byte-exact
+> **Ran 2026-08-16 — items 1 and 2 answered; item 3 waits on the probes.** Item 1 was taken byte-exact
 > rather than as prose: `terraform output -json` of each `foundation/` captured to a file **before** the
 > destroy and `diff`ed against the same command after the rebuild — IDENTICAL in all three — plus
 > `plan -detailed-exitcode` returning 0 (`No changes`) in all three, and a before/after table of every
 > `[E]` id: **39 of 39 new**, none surviving. The `./aws/networking.py` half of item 1 was **not** taken
-> as written, and the reason is worth carrying: `aws/output/` is regenerated **in place**, so the
-> pre-cycle report was overwritten by the post-cycle run. **A validation that prescribes a before/after
+> as written: `aws/output/` is regenerated **in place**, so the pre-cycle report was overwritten by the
+> post-cycle run. **A validation that prescribes a before/after
 > diff of a regenerated-in-place report has to copy the "before" aside first** — the captured
 > `terraform output` JSON is what saved this one, and it is the stricter reading anyway (byte equality of
 > the anchor set, against a text diff whose timestamp line is expected to move). Item 2: `NT-3` inside
@@ -761,10 +751,9 @@ row of the hourly table is per business unit (D35)** and is the term that multip
 
 ## Decisions due while executing
 
-**Blocking questions for the user: none. All five were settled with the user on 2026-08-16, before the
-stage** — brought forward because two of them (5 and 6) have consequences outside this stage. **The
-reasoning stays at the step that owns it**; these rows are the index, and the user's log records the
-sitting.
+**Blocking questions for the user: none.** All five were settled with the user on 2026-08-16, before the
+stage; two of them (5 and 6) have consequences outside it. **The reasoning stays at the step that owns
+it**; these rows are the index, and the user's log records the sitting.
 
 1. **The Sandbox supernet and the allocation table** (1.2, 1.3). **Settled: `10.16.0.0/13`, unit 1 at
    `10.20.0.0/16`, the allocation in `scripts/tfhygiene/backend.py`**, reaching each slice through the
@@ -781,11 +770,9 @@ sitting.
    and SageMaker. **And the step gained a correction that outranks the decision**: a NAT does not bypass
    an endpoint policy, so the list is load-bearing from **Stage 4**, not Stage 6.
 6. **The Account Factory VPCs** (step 0). **Settled: remove all of them, and turn creation off in Account
-   Factory** — the configuration half before the `Staging` vend. **Corrected 2026-08-16 against the
-   documentation, after the log entry that recorded it:** the removal mechanism is the **StackSet
-   stack-instance deletion from Management** (0.2), not the per-account hand-deletion the log's entry
-   describes — the decision itself is unchanged, and both halves are now one Management sitting.
-   **Executed 2026-08-16** — step 0's RAN record above.
+   Factory** — the configuration half before the `Staging` vend. The removal mechanism is the **StackSet
+   stack-instance deletion from Management** (0.2), not a per-account hand-deletion, so both halves are one
+   Management sitting. **Executed 2026-08-16** — step 0's record above.
 
 ## Verifications to answer while executing
 

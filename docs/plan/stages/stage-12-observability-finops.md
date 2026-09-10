@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **rewritten 2026-09-05 into the action-checklist format** and re-scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards lose their NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
+| **Status** | not started, and scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, which is what separates this stage from a projection |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -33,20 +33,20 @@ a hard prerequisite** (a real bill) and step 3 the one with an irreversible floo
 
 ## To execute
 
-### 1. Build the dashboards — one per environment, and one for the hub
+### 1. Build the dashboards
 
 **Action:** a CloudWatch dashboard per account plus a hub dashboard. **Why:** every earlier stage measured
 its own thing once; nothing shows the estate at a glance, and D38 made one account's two hosts a dependency
 of every other account's session. **Explanation:** the panels are chosen so that a *stopped* hub host and a
-*full* disk look different from each other — a dashboard where every failure looks the same is a screenshot.
+*full* disk look different from each other.
 
 - **1.1 — [Claude] Write the per-environment dashboard**: SageMaker app and job hours, Athena bytes
   scanned against the workgroup limit, GitLab instance and EBS, the `[E]` endpoint count, and — replacing
   the NAT panels that no longer have a resource — **the DNS Firewall query count** for that VPC.
 - **1.2 — [Claude] Write the hub dashboard**: the WireGuard host's state and handshake age, the **proxy's
-  request rate, its 403 rate and its top destinations**, and **peering bytes cross-AZ**. The 403 rate is
-  the one panel that reads as a design signal rather than a fault: a rising refusal rate means the
-  allow-list is behind the work.
+  request rate, its 403 rate and its top destinations**, and **peering bytes cross-AZ**. The 403 rate
+  reads as a design signal rather than a fault: a rising refusal rate means the allow-list is behind the
+  work.
 - **1.3 — [Claude] Point every panel at a `[P]` log group or metric**, never at an `[E]` resource's id
   (Lesson 4) — a dashboard that empties on `make down` is a dashboard nobody trusts afterwards.
 
@@ -65,7 +65,7 @@ quietly. **Explanation:** each alarm names the runbook that answers it, or it is
 - **2.4 — [Claude⚡] Apply, then [user] provoke one alarm of each class once** — an alarm that has never
   fired is a configuration, not an alarm (Lesson 13).
 
-### 3. Set log retention everywhere — and respect the one floor that cannot be lifted
+### 3. Set log retention everywhere
 
 **Action:** an explicit retention on every log group. **Why:** the default is "forever", which costs money
 quietly. **Explanation:** one retention in this estate is floored by a compliance-mode lock, and getting it
@@ -73,7 +73,7 @@ wrong is unrecoverable rather than merely expensive.
 
 - **3.1 — [Claude] Set retention on every group this project creates**, including the proxy access log and
   the DNS query logs.
-- **3.2 — [Claude] Do NOT shorten the organization CloudTrail bucket's lifecycle below 90 days.** Its
+- **3.2 — [Claude] Do not shorten the organization CloudTrail bucket's lifecycle below 90 days.** Its
   objects carry S3 Object Lock in **compliance** mode at 90 days (Stage 1d step 9), and its lifecycle rule
   expires versions at 365. **Shortening it below 90 makes the landing zone's own expirations start failing
   against locked versions, and the lock cannot be shortened to fix it.** 365 → anything ≥ 90 is safe;
@@ -83,8 +83,8 @@ wrong is unrecoverable rather than merely expensive.
 
 **Action:** turn on the cost allocation tags and reconcile the invoice against
 [`cost-model.md`](../cost-model.md). **Why:** every price in this project is measured (Lesson 6), but the
-*quantities* have only ever been projected. **Explanation:** this is the step the whole stage exists for —
-everything else is instrumentation around it.
+*quantities* have only ever been projected. **Explanation:** everything else in this stage is
+instrumentation around this step.
 
 - **4.1 — [user] Activate the cost allocation tags in Billing** (Management account, console only).
 - **4.2 — [Claude] Reconcile the invoice line by line against `cost-model.md`**, and rewrite the model from
@@ -120,16 +120,16 @@ real cost supports it.
 ### 7. Tighten the permission sets against real usage
 
 **Action:** narrow `identity/sso/` using IAM Access Analyzer **unused-access** findings. **Why:** a review
-reports what a reader thinks the policy says; the analyzer reports what was granted and never exercised —
-which is the question. **Explanation:** the personas were written narrow and then widened by six stages of
-"the object now exists"; this is where the widening is paid back.
+reports what a reader thinks the policy says; the analyzer reports what was granted and never exercised.
+**Explanation:** the personas were written narrow and then widened by six stages of "the object now
+exists"; this is where the widening is paid back.
 
 - **7.1 — [Claude] Enable an unused-access analyzer and read its findings** — note that it is a *different*
   analyzer from Stage 11's internal-access one, and priced differently.
 - **7.2 — [Claude] Propose the removals**, then **[Claude⚡] apply `identity/sso/`** as
   `awsds-infra-identity`, `terraform output inline_policy_bytes` still under the ceiling.
 
-### 8. Build backup and recoverability — the thing no earlier stage owns
+### 8. Build backup and recoverability
 
 **Action:** an org-wide AWS Backup plan, Vault Lock over it, cross-region copies, and a **tested** RTO.
 **Why:** every earlier stage protected against a permission failure; none protects against deletion.
@@ -155,12 +155,10 @@ way to learn a limit. **Explanation:** the candidates are the ones this estate h
   is five per Region and the hub now holds two)**, VPC endpoints per VPC, and hosted zones.
 - **9.2 — [Claude⚡] Set CloudWatch alarms** on each at 80 %, pointing at the request-increase path.
 
-### 10. Write the instrument this stage has been missing
+### 10. Write `./aws/observability.py`
 
-**Action:** a read-only `./aws/observability.py`. **Why:** every other stage since 2 is pre-instrumented,
-and this one — the stage whose whole subject is *what is actually there* — has nothing. **Explanation:** it
-is the last stage in the plan with no mechanical half, and the checks are cheap because the facts are all
-`describe`-shaped.
+**Action:** a read-only instrument for this stage. **Why:** every other stage since 2 is pre-instrumented
+and this one is not. **Explanation:** the checks are cheap because the facts are all `describe`-shaped.
 
 - **10.1 — [Claude] Write the checks**: **`OB-1`** every log group this project creates carries an explicit
   retention (the sweep 3.1 is otherwise trusted to have done); **`OB-2`** the CloudTrail bucket's lifecycle

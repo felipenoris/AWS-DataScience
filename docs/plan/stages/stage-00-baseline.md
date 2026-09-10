@@ -13,6 +13,7 @@
 
 Management account created manually; `aws`, `terraform` and `uv` installed; repository documentation written
 and reviewed. Nothing provisioned.
+
 ---
 
 *Stage index: [stages/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

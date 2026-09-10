@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-scoped 2026-09-05 by [D38](../decisions/D38-single-egress-hub.md) and rewritten into the action-checklist format.** The public tier lands in **`VPC-Networking`'s public tier**, the estate's only internet-facing tier, with IP targets reaching the backend in `VPC-Workloads` over the peering. The ALB becomes the **second enumerated listener** there (the WireGuard endpoint is the first), and `docs/AWS_STATE.md` carries that enumeration — a world-open rule anywhere else is a finding. The public DNS half (D15 phase 2) is unchanged and still needs the domain name from the user |
+| **Status** | not started. The public tier lands in **`VPC-Networking`'s public tier**, the estate's only internet-facing tier ([D38](../decisions/D38-single-egress-hub.md)), with IP targets reaching the backend in `VPC-Workloads` over the peering. The ALB becomes the **second enumerated listener** there (the WireGuard endpoint is the first), and `docs/AWS_STATE.md` carries that enumeration — a world-open rule anywhere else is a finding. The public DNS half (D15 phase 2) still needs the domain name from the user |
 | **Prerequisites** | [6c](stage-06c-networking-hub.md) (the hub and its public tier; the Networking↔Workloads peering), [Stage 9](stage-09-deployment-targets.md) (a backend to front). **The domain name from the user** — this is the only stage that needs it, and the only blocking input left in the whole plan |
 | **Consumes** | [D15](../decisions/D15-tls-internal.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | that the ingress enumeration of 6c step 1.4 survives its first real addition — the only stage that tests it |
@@ -46,7 +46,7 @@ the project — Stage 1c step 7's region-exemption list carries it for exactly t
 - **1.2 — [user] Register it** and create the public hosted zone (Management or Production per the
   registrar's constraint; record which, because it decides where the delegation lives).
 - **1.3 — [Claude] Record the new zone in `NETWORK.md` §10 beside the private ones** — the first row in that
-  table that is resolvable from outside, which is the fact worth making visible.
+  table resolvable from outside.
 
 ### 2. Build the public tier in `VPC-Networking`, and enumerate it
 
@@ -62,7 +62,7 @@ exists it bills.
   must be issued in `us-east-1`** — which is what `acm:*` is exempted from the region control for.
 - **2.3 — [Claude⚡] Create the ALB with WAF** in the hub's public tier, HTTPS only, HTTP redirecting.
 - **2.4 — [Claude] Add the listener to the ingress enumeration** in `docs/AWS_STATE.md` — the **second**
-  row, after the WireGuard endpoint's UDP/51820. **This is the step that keeps 6c's invariant true**, and
+  row, after the WireGuard endpoint's UDP/51820. It is what keeps 6c's invariant true, and
   `./aws/networking.py`'s no-public-address gate (6c step 1.5) fails without it.
 
 ### 3. Put the application behind it, in `VPC-Workloads`
@@ -88,7 +88,7 @@ outbound calls, if any, cross the proxy like everything else.
 whole value of putting this in the hub is that it changes nothing about what a spoke can reach.
 **Explanation:** both are distinguishable outcomes, not a single "it loads".
 
-- **4.1 — [user] Load the site from a browser with the tunnel DOWN** — it answers, on a public certificate.
+- **4.1 — [user] Load the site from a browser with the tunnel down** — it answers, on a public certificate.
 - **4.2 — [Claude] Re-run `./aws/networking.py`** — the no-public-address gate still passes everywhere
   outside the hub's public tier, and `NT-3`/`NT-6` still show no path between an Interactive VPC and
   `VPC-Workloads`.
@@ -108,9 +108,8 @@ teardown points the world at something that no longer exists — or worse, at wh
 
 **Action:** decide whether the internal endpoints stay on `*.awsds.internal` with the internal CA, or move
 onto a subdomain of the registered domain with split-horizon DNS and public ACM. **Why:** the trade is now
-measurable rather than predicted. **Explanation:** **defaulting silently to "we have a domain now, use it
-everywhere" is the outcome to avoid** — it is a real change in what is publicly known about this
-environment.
+measurable rather than predicted. **Explanation:** the outcome to avoid is defaulting silently to "we have
+a domain now, use it everywhere" — a real change in what is publicly known about this environment.
 
 - **6.1 — [Claude] Put the two costs side by side**: the internal CA's distribution friction, **measured**
   at Stage 7 (four surfaces, one rebuild, INT-19's failures) — against publishing the internal name

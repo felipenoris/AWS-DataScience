@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started — **re-scoped and re-reviewed 2026-09-05**, against [6b](stage-06b-development-becomes-staging.md)/[6c](stage-06c-networking-hub.md)/[D38](../decisions/D38-single-egress-hub.md) and [Stage 7](stage-07-gitlab-runners-ecr.md)'s own review. **Nothing here waits on a vend any more**: 6b makes `Staging` by renaming, so pass 4 is gated by 6b like every other pass rather than by a support ticket. (1) **The chain is `Sandbox → Staging → Production`**: the *engineering* apply of step 2.4 moves to a new `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies into Sandbox — the answer to D21's surviving objection, now with a `layers.py` refusal behind it. (2) **`awsds-deploy-devenv-dev` is not written** and image parity is `note` at N = 1. (3) **The runners have no NAT** — see Stage 7's note (3): every build step is an explicit-proxy client, and the promotion lint runs on the runner in `VPC-SharedServices`. (4) **The workflow lint grows four rules** (from [6d](stage-06d-unified-studio-remainder.md) step 4): reject project-scoped references, rewrite `start_date` at deploy time, enforce MWAA Serverless's operator allow-list and the 3600 s task cap, and pin `DefinitionS3Location.VersionId`; artifact class **(2b) operator code package** is added to D28. (5) **The SageMaker Unified Studio CI/CD CLI is an exporter, never a deployer**: it deploys only into existing SMUS *projects*, which a Workload account will not have — so `bundle` may produce the artifact on the Sandbox side and this stage's pipeline remains what applies into Staging and Production. — *earlier (2026-08-16, against the GitLab and AWS documentation):* push **before** scan (scan-on-push fires on arrival, and an image is re-scannable only once per 24 h); Dependency Scanning is **Ultimate**, so the dependency gate is `pip-audit`; a CE manual job blocks only under `rules:`; the deploy-role scope is `egress/` **plus** `app/*`; job containers reach the instance profile because the declarative policy already defaults IMDSv2 hop limit 2; and `sts:AssumeRoleWithWebIdentity` sits outside the RCP's deny, so GitHub OIDC is *possible* and still declined (decision 3) |
+| **Status** | not started. **Nothing here waits on a vend**: [6b](stage-06b-development-becomes-staging.md) makes `Staging` by renaming, so pass 4 is gated by 6b like every other pass rather than by a support ticket. **The chain is `Sandbox → Staging → Production`**: the *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies into Sandbox — D21's surviving objection, with a `layers.py` refusal behind it. **The runners have no NAT** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client, and the promotion lint runs on the runner in `VPC-SharedServices`. The workflow lint's four rules come from [6d](stage-06d-unified-studio-remainder.md) step 4 (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 recorded |
 | **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). Stage 6 — **step 5.1's recorded INT-17 mechanism** and the hand-built image digest step 1.6 replaces. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image under the pipeline's role), [INT-08](../integrations.md) (the two deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy roles reaching from Production into the Interactive accounts). **Exercises INT-17's automated half** — the mechanism itself is recorded at Stage 6 step 5.1; what this stage adds is the pipeline making the same registration |
@@ -12,7 +12,7 @@
 **Forward constraint from D35:** step 1's registration writes into **N accounts — every unit's Sandbox,
 N = 1 today**. The target list, the per-target roles and the trust-policy ARNs are enumerated **from the
 authored map in `scripts/tfhygiene/backend.py`** (Stage 7's forward-constraint pattern), so a vend adds one
-map entry and Lesson 14 never gets a chance. **The promotion chain is untouched by N** (D21/D35): whatever
+map entry (Lesson 14). **The promotion chain is untouched by N** (D21/D35): whatever
 the Sandbox count, there is one tag, one Staging leg, one gate. `CI-6`'s image-parity check prints `note`
 ("N = 1, parity trivially true") until [Stage 14](stage-14-sandbox-vending.md) vends a second unit.
 
@@ -88,8 +88,7 @@ not change. The sequence to work in is **six passes**:
 
 **On ordering:** this stage builds the promotion *machinery* — the chain, the gates, the deploy roles. The
 Staging and Production *data platforms* are Stage 9's, so until then the chain is exercised with an
-application that touches no data: a pipeline proven only against real data is a pipeline whose failures
-are ambiguous.
+application that touches no data.
 
 ---
 
@@ -104,11 +103,10 @@ to the one it was written against, and the only way to make that true *by constr
 ancestor image**: application images are `FROM base:<pinned tag>`, never `FROM dev-env` and never a base of
 their own — two independently built images with the same package list diverge quietly at the first rebuild.
 The repository stays **writable by the data scientist** (which Julia version, which CRAN snapshot is their
-expertise; routing it through a ticket is what makes an environment stale): **the control is not who may
-propose but who may release** — the `dev-env-stewards` gate. **Explanation:** the chain runs on the
-protected release tag (Stage 7 step 3.5's shape); registration is a *new registered version* the projects
-resolve to, the Model Registry shape — "which runtime is everyone on" stays a queryable fact with an
-approval attached, not the result of whoever pushed last. Under **D5(B)** this pipeline is also the
+expertise): **the control is who may release**, the `dev-env-stewards` gate. **Explanation:** the chain runs
+on the protected release tag (Stage 7 step 3.5's shape); registration is a *new registered version* the
+projects resolve to, the Model Registry shape, so "which runtime is everyone on" stays a queryable fact with
+an approval attached. Under **D5(B)** this pipeline is also the
 delivery mechanism for every ecosystem CodeArtifact does not cover (Julia, R, Rust —
 `docs/plan/architecture.md` §4.3), so the gate sits inside the "I need package X" loop: its measured time
 re-prices the D5 comparison (1.7).
@@ -117,30 +115,26 @@ re-prices the D5 comparison (1.7).
   the fields named): on `dev-env/` — `data-scientists` **Developer**, `dev-env-stewards` **Maintainer**;
   the release tag pattern **protected, creation Maintainers-only** — in CE that role mapping *is*
   the gate's authorization, per 3.3's recorded answer.
-  **THE PATTERN IS `*-v*` AND NOT `v*`, AND THE CORRECTION IS SECURITY-RELEVANT RATHER THAN COSMETIC**
-  (2026-08-22, when Stage 6 step 5.0 settled the image tag convention — `<flavour>-v<semver>`, one copy in
-  [`docs/SMUS.md`](../../SMUS.md) §*Custom images*): a release of this repository is now tagged
-  `default-v0.2.0`, which **`v*` does not match**. Left as it was, the protection would silently apply to
-  nothing this repository ever tags, and since 3.3's answer makes *who can push the protected tag* the
-  whole of the CE authorization, the gate would be open to every **Developer** — i.e. to
+  **The pattern is `*-v*`, not `v*`**, and the difference is security-relevant: under Stage 6 step 5.0's
+  image tag convention `<flavour>-v<semver>` ([`docs/SMUS.md`](../../SMUS.md) §*Custom images*) a release
+  of this repository is tagged `default-v0.2.0`, which **`v*` does not match**. A `v*` protection would
+  apply to nothing this repository ever tags, and since 3.3's answer makes *who can push the protected tag*
+  the whole of the CE authorization, the gate would be open to every **Developer** — i.e. to
   `data-scientists` — while still reading as protected in the settings page. The failure is invisible
   from inside GitLab: an unprotected tag is created successfully. **Verify by attempting a tag creation
   as a Developer after setting it**, rather than by reading the pattern back.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
-  on, plus the commit — pushed nowhere yet. **This is the hand convention carried forward rather than a
-  second one** (2026-08-22): `<flavour>-v<semver>` is Stage 6 step 5.0's, whose one copy is
-  [`docs/SMUS.md`](../../SMUS.md) §*Custom images*, and the `-<short-sha>` suffix is what this step
-  always wanted — it keeps two builds of the same release tag from colliding in a repository where
-  **a tag is spent on first landing**, and it makes a pipeline-built image distinguishable from the two
-  hand-built ones (5.0 and Stage 7 step 2.6), which carry no suffix. **The flavour stays in front**, so
-  the registry's lifecycle rule can be split per flavour with a plain `tagPrefixList` when a second one
-  exists — see that same section for why rule 2 has to be split at all. The
+  on, plus the commit — pushed nowhere yet. `<flavour>-v<semver>` is Stage 6 step 5.0's convention
+  ([`docs/SMUS.md`](../../SMUS.md) §*Custom images*); the `-<short-sha>` suffix keeps two builds of the same
+  release tag from colliding in a repository where **a tag is spent on first landing**, and makes a
+  pipeline-built image distinguishable from the two hand-built ones (5.0 and Stage 7 step 2.6), which carry
+  no suffix. **The flavour stays in front**, so the registry's lifecycle rule can be split per flavour with
+  a plain `tagPrefixList` when a second one exists. The
   `Dockerfile`s keep the requirements of the two hand builds unchanged: the SMUS BYOI specification and
   the activity-monitor extension from Stage 6 step 5.0, **plus the CA root from the one source (INT-19),
-  which joins at Stage 7 step 2.6 and not at 5.0** — D36 §3 was amended 2026-08-21 and the root does not
-  exist while Stage 6 runs. By the time this pipeline builds, the layer is filled and this job inherits it
-  rather than introducing it.
+  which joins at Stage 7 step 2.6 and not at 5.0** — the root does not exist while Stage 6 runs (D36 §3).
+  By the time this pipeline builds, the layer is filled and this job inherits it.
 - **1.2 — [Claude] Write the smoke-test job**: the `dev-env` image starts, every language runtime resolves
   the **pinned** versions the manifest asked for, the key libraries import. Cheap, and it catches the class
   of failure that otherwise reaches every workstation at once — the analogue of step 3.3's integration
@@ -151,15 +145,14 @@ re-prices the D5 comparison (1.7).
 - **1.4 — [Claude] Write the scan gate**: `aws ecr wait image-scan-complete`, then
   `describe-image-scan-findings`; **blocks on decision 1's severity set**. It **reads the push's own scan
   and never triggers another** — basic scanning allows one scan per image per 24 h — and it covers **OS
-  packages only**; the language-package half is step 5's `pip-audit`. **The two compose to OS + Python
-  and no further, which is less than "the two compose" used to imply** (corrected 2026-08-22 from a
-  measurement, not a re-reading): Stage 6 step 5.0's `base` and `dev-env` scanned to **identical**
+  packages only**; the language-package half is step 5's `pip-audit`. **The two compose to OS + Python and
+  no further**: Stage 6 step 5.0's `base` and `dev-env` scanned to **identical**
   severity counts, so **Julia, R and the baked Rust toolchain passed this gate contributing nothing,
   because nothing looked at them**. That residual is **accepted with a named control** — the Dev Env
   Steward's review of a version-pinned manifest — and both the acceptance and its price live in
   [`institutional-delta.md`](../institutional-delta.md)'s row *"Vulnerability scanning of what the
   notebook image actually contains"*. **Do not close it by enabling enhanced scanning**: Inspector's
-  ECR language list has no Julia and no R (Stage 7 decision 2, re-framed the same day).
+  ECR language list has no Julia and no R (Stage 7 decision 2).
 - **1.5 — [user] Run the release gate**: a **blocking manual job** — `when: manual` under `rules:`, so
   `allow_failure` defaults false and the pipeline stops — with the image diff, the scan report and the
   smoke output in its artifacts. Premium form: a deployment approval assigned to `dev-env-stewards`. CE
@@ -193,7 +186,7 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
 - **2.1 — [user] Create `app-etl` from the template** (Stage 7 step 3.5 named it; this step fixes the
   fields): `data-scientists` **Developer**, `deployment-managers` **Maintainer**, release tag pattern
   (`v*`) **protected, creation Maintainers-only** — the CE anchor of step 3.5's gate.
-  **`v*` is correct HERE and the difference from 1.0 is deliberate** (2026-08-22): the flavour segment
+  **`v*` is correct here**, and the difference from 1.0 is deliberate: the flavour segment
   exists because `base`/`dev-env` branch by *runtime* — GPU, Spark, plain — and an application does not.
   Its repository already names it, its ECR repository is `awsds-prod-ecr-app-etl`, and a mandatory
   `default-` on every application tag would be a word that never varies. **Application images are
@@ -211,10 +204,9 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   `https://app-etl.awsds-pages.internal` — two pipeline deliverables in one push.
 - **2.4 — [Claude] Write `sandbox/app/app-etl/` and the machinery rows**, then **[Claude⚡] apply as
   `awsds-infra-sandbox-1`**: the application running against Sandbox's own data, applied **by hand** while
-  it is being engineered. **This is the engineering apply that lost its home when `Development` became
-  `Staging`, and moving it to Sandbox rather than to Staging is deliberate** — Staging is written only by
-  the pipeline (D20), so an engineer's iterate-and-re-apply loop has nowhere else to live, and putting it
-  in Sandbox keeps CI out of the one account a human runs code in (D21's surviving objection). Machinery,
+  it is being engineered. **The engineering apply lands in Sandbox, not in Staging**: Staging is written
+  only by the pipeline (D20), so an engineer's iterate-and-re-apply loop has nowhere else to live, and
+  Sandbox keeps CI out of the one account a human runs code in (D21's surviving objection). Machinery,
   same sitting: `RANKS["app/app-etl"]` (after `egress`, so `down` destroys the app before the endpoints it
   reaches AWS through), the three `[E]` rows (`sandbox` now, `staging`/`production` at 3.0), and
   **refusal 5 in `layers.py`: `make up` never applies an `app/` slice** — the pipeline (or this hand apply)
@@ -249,11 +241,11 @@ never touched.
 - **3.2 — [pipeline] Deploy to Staging**: `terraform apply` of `staging/app/app-etl/` pinned to the
   application tag, the image pulled from the Production ECR **under the Staging role — INT-07 proven
   here**.
-- **3.3 — [pipeline] Run the integration tests against Staging** — the step that justifies the account:
-  not step 2's unit tests, but the deployed artifact against a real catalog, real IAM and a real network.
+- **3.3 — [pipeline] Run the integration tests against Staging** — the deployed artifact against a real
+  catalog, real IAM and a real network, which is what justifies the account.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging`, in
-  `after_script`/always so a failed run cannot leave the endpoints burning. The line is smaller than it was
-  — 6c removed the NAT gateway, which was two thirds of it — but an endpoint set left up is still a bill.
+  `after_script`/always so a failed run cannot leave the endpoints burning. 6c removed the NAT gateway,
+  but an endpoint set left up is still a bill.
 - **3.5 — [user] Run the production gate**: a **blocking manual job** (`when: manual` under `rules:`) with
   the Staging test results and the Production `terraform plan` in its artifacts, `resource_group:
   production` serializing deployments. Premium form: a deployment approval assigned to
@@ -295,11 +287,10 @@ the approval, and 4.6's alarm.
   test.
 - **4.2 — [Claude] Write the dev-env deploy roles** (INT-18): `awsds-deploy-devenv-sandbox-<unit>`, one
   per map entry, in each unit's `foundation/`. **`awsds-deploy-devenv-dev` is not written** — it died with
-  the second Interactive account (6b), and a role for an account that no longer exists is the kind of
-  leftover the next reader treats as a requirement. Scope: the `dev-env/` slice's state
+  the second Interactive account (6b). Scope: the `dev-env/` slice's state
   prefix and the SageMaker image-registration calls on the named resources, per 5.1's recorded mechanism —
   **never a general deploy role reused**: this is the one flow where the supply chain writes *into* the
-  accounts where people work, and its narrowness is the design.
+  accounts where people work.
 - **4.3 — [Claude] Amend `production/runners/` with the deploy runner**: Name tag
   **`awsds-prod-runner-deploy`** (a contract with `./aws/cicd.py`; Stage 7's `awsds-prod-runner*` glob
   still matches), `[E]`, registered **Protected** (runs only jobs on protected branches/tags — a Free-tier
@@ -332,8 +323,8 @@ the approval, and 4.6's alarm.
 
 **Action:** the blocking gates, one file included by the three pipelines. **Why:** a gate that only warns
 is documentation, not a gate — each finding class gets a named tool and a named blocking severity, and the
-tier of every tool was checked (Lesson 12) rather than assumed. **Explanation, from the 2026-08-16
-documentation pass:** GitLab **Dependency Scanning is Ultimate** and its analyzer is not available to this
+tier of every tool was checked (Lesson 12). **Explanation:** GitLab
+**Dependency Scanning is Ultimate** and its analyzer is not available to this
 CE instance — the dependency gate is **`pip-audit`** (PyPA) in an ordinary job; **Secret Detection is
 Free** (a template include); the ECR gate (1.4) covers **OS packages only** — `pip-audit` covers the
 Python dependencies, and the two compose rather than substitute.
@@ -359,7 +350,7 @@ Python dependencies, and the two compose rather than substitute.
   `DefinitionS3Location.VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in
   the same commit — a workflow that ships its own operator code is a fifth promotable artifact, and D28
   named four.
-- **5.7 — [Claude] Record what the SMUS CI/CD CLI is, so nobody re-derives it**: `aws-smus-cicd-cli`
+- **5.7 — [Claude] Record what the SMUS CI/CD CLI is**: `aws-smus-cicd-cli`
   deploys **only into existing SMUS projects**, and a Workload account has none. It is therefore an
   **exporter on the Sandbox side** — `bundle` may produce the artifact this pipeline promotes — and **this
   stage's pipeline stays the deployer** (D26/D28). Using it as the promotion path would mean associating
@@ -404,7 +395,7 @@ behavioural proofs are the stage's own (Lesson 20):
 
 - **The promotion:** a version tag on `app-etl` flows through Staging to a running artifact in Production
   with one human approval — and **a deliberately broken version fails at 3.3 and never reaches
-  Production**, which is the whole point of D20 and the one test that proves the account earns its keep.
+  Production**, the test that proves the D20 account earns its keep.
 - **The gate pair:** a build with a known-vulnerable dependency is stopped by 5.2; an image with a
   blocking-severity OS finding is stopped by 1.4.
 - **The dev-env release:** a steward-approved tag ends as the **same digest registered in every Interactive
@@ -443,12 +434,11 @@ Measured (`docs/PRICING.md`), us-west-2:
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage and written into
-`docs/log/log-stage-08-cicd-pipelines.md` (Lesson 16). Recommendations stated so the keyboard is not the
-decision-maker.
+`docs/log/log-stage-08-cicd-pipelines.md` (Lesson 16), with a recommendation stated.
 
 1. **The blocking severity set for the two scanners** (1.4, 5.2, 5.5) — recommended: **CRITICAL blocks,
    HIGH warns** at first, tightened against real findings rather than set maximally strict and then
-   overridden ad hoc — an override habit is worse than a looser written rule.
+   overridden ad hoc.
 2. **The infrastructure-repository mirror for the deploy jobs** (6.1) — recommended: **dual-push from the
    laptop**, no standing mirror machinery; revisit only if staleness actually bites (the printed SHA is
    the instrument).
