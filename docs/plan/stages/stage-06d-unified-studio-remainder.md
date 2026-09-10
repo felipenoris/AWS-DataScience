@@ -94,9 +94,9 @@ work at all* — is still open.
     configurations with `ValidationException … Member must have length less than or equal to 256`; the
     API reference gives the cap as 25 entries, 256 characters per key and per value, and the generated
     `NO_PROXY` is 50 entries and about 2,300 characters. **This is the mechanism 2.2 and 8.4(c) both
-    name**, so the delivery is not a matter of choosing between (b) and (c) any more — it is decision
-    due 8, with three candidates and their prices in
-    [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E. The four proxy variables were **not** delivered
+    name**, so the delivery stopped being a choice between (b) and (c): decision due 8 was opened and
+    **taken the same day — the `ENV` in the Dockerfile**, delivered in code with the rebuild owed
+    ([`runbooks/dev-env.md`](../runbooks/dev-env.md) §E). The four proxy variables were **not** delivered
     without the bypass list: with `.amazonaws.com` on the compute plane a missing `NO_PROXY` succeeds
     while losing `aws:SourceVpce`, which is the failure that does not announce itself (8.8's own
     finding, from the other end).
@@ -1062,16 +1062,24 @@ measurement.
 7. **Whether the build plane's deny list stays empty** (9.6). Empty by decision today; Stage 11 owns the
    policy that would fill it.
 8. **How the six proxy variables reach a space** (2.2, 8.4), opened by the measurement of 2026-09-10:
-   the app image configuration cannot carry `NO_PROXY`, so the mechanism this stage assumed does not
-   exist. Three candidates, priced in [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E — a **lifecycle
-   configuration** (16 KB of script, attached to the same blueprint-provisioned domain as the image, and
-   whether its exports reach the `codeeditorserver` supervisord program is exactly 8.4's unanswered
-   question); an **`ENV` in the Dockerfile** (a rebuild, and one artifact pinned to one VPC's endpoint
-   list, which moved 28 → 50 on 2026-09-09); or a **`NO_PROXY` compressed to suffix form**, which fits
-   and is a perimeter change — every AWS name in the Region would bypass the proxy, turning a call to a
-   service with no endpoint from a public call into a silent timeout. **Recommended: the lifecycle
-   configuration, measured before it is adopted** — it is the only candidate that changes neither the
-   image nor the perimeter, and the measurement is one space restart.
+   the app image configuration cannot carry `NO_PROXY` — 256 characters per value against about 2,300 —
+   so the mechanism this stage assumed does not exist. **Taken the same day by the user: the `ENV` in
+   the Dockerfile.** The two it was chosen over: a **lifecycle configuration** (fits in 16 KB, but has
+   no update API and cannot be deleted while a domain references it, so every list change is a
+   detach/replace/re-attach in a console the CLI cannot stand in for), and a **`NO_PROXY` compressed to
+   suffix form** (fits, and `UpdateAppImageConfig` would make a change an in-place apply — at the price
+   of a perimeter change, since every AWS name in the Region would then bypass the proxy and a service
+   with no endpoint would become a silent timeout rather than a public call).
+   **Delivered in code the same day**: [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile)
+   §6 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
+   `NO_PROXY` arriving as a build argument read from `<account>/egress` — the build **fails** on an
+   empty value, because an image carrying a proxy and no bypass list works while losing the perimeter.
+   **What it costs is a standing obligation rather than a one-off**: the image is shaped by one VPC's
+   endpoint list, so a change there is a rebuild, a new tag, a version replace and a re-attach, and no
+   gate sees it. The image writes `/opt/awsds-proxy.txt` — entry count and sha256 prefix — so the
+   staleness is at least readable; [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain
+   and the comparison. **Owed: the rebuild.** `default-v0.1.1` predates this, so `image_tag` stays where
+   it is until a buildbox session pushes the next tag.
 
 ## Verifications to answer while executing
 

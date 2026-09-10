@@ -192,4 +192,64 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
       org.awsds.julia="${JULIA_VERSION}" \
       org.awsds.rust="${RUST_TOOLCHAIN}"
 
+# ------------------------------------------------- 6. the estate's proxy contract (6d decision 8)
+#
+# Every internet call from a space crosses the Squid proxy (D38), so a working session needs six
+# variables - and NO_PROXY is the load-bearing one: it is what keeps AWS traffic on the VPC
+# endpoints. Delivering the proxy WITHOUT the bypass list is worse than delivering neither, because
+# `.amazonaws.com` is on the compute plane: the call succeeds and arrives carrying neither
+# aws:SourceVpc nor aws:SourceVpce, so the perimeter is lost with nothing to read afterwards.
+# The guard below turns that into a build failure instead.
+#
+# Why the image carries this at all, decided 2026-09-10 by the user. The two API-side mechanisms
+# cannot: ContainerEnvironmentVariables on the app image configuration caps every value at 256
+# characters against a NO_PROXY of about 2,300 (measured at 6d step 2.2, ValidationException), and a
+# lifecycle configuration has no update API and cannot be deleted while a domain references it.
+# What it costs is written where it is paid: this image is now shaped by ONE VPC's endpoint list, so
+# an endpoint added anywhere is a rebuild, a new tag and a re-attach - images/README.md, and
+# docs/plan/runbooks/dev-env.md E.
+#
+# The list is never a literal here. It arrives as a build argument, read from the slice that
+# generates it (`terraform output -raw no_proxy` on <account>/egress): eight of its names are not
+# derivable from a service token and a gateway endpoint has no PrivateDnsName at all, so a
+# transcribed list is wrong for the estate's busiest path and wrong silently.
+#
+# The section is LAST on purpose. An ENV set earlier would apply to every RUN above it, and those
+# run on the build host in VPC-SharedServices, whose endpoint set is not this list: AWS calls during
+# the build would bypass a proxy toward endpoints that are not there.
+ARG PROXY_URL=http://proxy.awsds.internal:3128
+ARG NO_PROXY_LIST=""
+
+RUN set -eu; \
+    test -n "${NO_PROXY_LIST}" || { \
+      echo "NO_PROXY_LIST is empty. Build with:"; \
+      echo "  --build-arg NO_PROXY_LIST=\"\$(terraform -chdir=terraform-live/<account>/egress output -raw no_proxy)\""; \
+      echo "An image carrying a proxy and no bypass list sends every AWS call out as a public one."; \
+      exit 1; }; \
+    printf 'Acquire::http::Proxy "%s";\nAcquire::https::Proxy "%s";\n' "${PROXY_URL}" "${PROXY_URL}" \
+      > /etc/apt/apt.conf.d/01proxy; \
+    printf 'Defaults env_keep += "http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY"\n' \
+      > /etc/sudoers.d/awsds-proxy; \
+    chmod 0440 /etc/sudoers.d/awsds-proxy; \
+    if command -v visudo >/dev/null 2>&1; then visudo -cf /etc/sudoers.d/awsds-proxy; fi; \
+    { echo "proxy           : ${PROXY_URL}"; \
+      echo "no_proxy entries: $(printf '%s' "${NO_PROXY_LIST}" | awk -F, '{print NF}')"; \
+      echo "no_proxy sha256 : $(printf '%s' "${NO_PROXY_LIST}" | sha256sum | cut -c1-16)"; \
+    } | tee /opt/awsds-proxy.txt
+
+# The two files above exist because the variables alone are not enough, measured 2026-09-08 (6d step
+# 3.1): `sudo` resets the environment, so `sudo apt update` ran with no proxy and failed to resolve a
+# name that IS on the plane. apt reads its own configuration whatever the environment does, and the
+# sudoers line keeps the six names across `sudo` for everything else.
+#
+# /opt/awsds-proxy.txt is what makes a stale image detectable from inside a space: the entry count and
+# the first 16 hex of the list's sha256, against `terraform output -raw no_proxy | sha256sum` on the
+# operator's side. Nothing enforces the comparison - it is a reading, and the runbook names it.
+ENV http_proxy="${PROXY_URL}" \
+    https_proxy="${PROXY_URL}" \
+    HTTP_PROXY="${PROXY_URL}" \
+    HTTPS_PROXY="${PROXY_URL}" \
+    no_proxy="${NO_PROXY_LIST}" \
+    NO_PROXY="${NO_PROXY_LIST}"
+
 USER $MAMBA_USER

@@ -1,6 +1,14 @@
 
 # Runbook — The proxy inside a SageMaker space
 
+> **Who this is for, since 2026-09-10.** Everything below is the by-hand path, and it is what a space on
+> the **stock image** — or on a `dev-env` built before that date — needs. 6d decision 8 puts the six
+> variables in the house image itself (`ENV` in `images/dev-env/Dockerfile`, the list baked from
+> `<account>/egress` at build time), together with `/etc/apt/apt.conf.d/01proxy` and a sudoers
+> `env_keep`, so on a space running that image none of the exports below is needed and `sudo apt` works
+> unqualified. The image that carries it is the one whose `/opt/awsds-proxy.txt` matches the current
+> list — [`dev-env.md`](dev-env.md) §E is the comparison and the rebuild chain.
+
 ## Producing the `NO_PROXY` value
 
 Read it as the output of the endpoints Terraform declares:
