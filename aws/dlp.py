@@ -6,7 +6,7 @@
 # DISABLED before step 4 and ENABLED everywhere after it), and the CloudTrail-tampering
 # Sid in the baseline SCP.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -23,14 +23,14 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The stage's
-# whole subject is detection ACROSS accounts: the lake and drop-box live in Data
-# Governance while the derived zone - where governed data actually re-surfaces (D19; the
-# SMUS project path since 2026-08-26) - lives in the Interactive accounts, so "is the monitored map covered" is only readable
-# with the columns side by side; and the GuardDuty features are org-wide state, where one
-# account silently uncovered is exactly the finding (the same argument as ./aws/guardduty.py).
+# It is multi-profile, which aws/INDEX.md admits only for a reason: the stage's subject is
+# detection across accounts. The lake and drop-box live in Data Governance while the derived zone,
+# where governed data re-surfaces (D19, the SMUS project path), lives in the Interactive accounts,
+# so whether the monitored map is covered is readable only with the columns side by side; and the
+# GuardDuty features are org-wide state, where one account silently uncovered is the finding (the
+# same argument as ./aws/guardduty.py).
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - trail name         awsds-<env>-data-events           (Stage 11 step 5.1)
 #   - delivery bucket    awsds-data-logs                   (5.1, decision 7)
 #   - filter name prefix awsds-flt-                        (2.1a)
@@ -39,13 +39,13 @@
 #   - SNS topic          awsds-<env>-security              (5.2)
 #   - baseline Sid       DenyCloudTrailKill                (5.4, decision 6)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
-#   - Everything in AUDIT: Macie's job history and results-repository answer, the
+# What it cannot see, stated because an empty listing and a missing account look alike:
+#   - Everything in Audit: Macie's job history and results-repository answer, the
 #     internal-access analyzer (audit-iam-analyser.sh reads that one), and GuardDuty's
-#     org configuration. No CLI profile reaches that account, by design (D33/D34).
+#     org configuration. No CLI profile reaches that account (D33/D34).
 #   - The behavioural proofs - the alarm pair of 5.5, the filter pair of 2.3 - are the
-#     stage's own, run from persona sessions (Lesson 20). A describe call proves none.
-#   - Whether a rule's PATTERN is right is proven by 5.5 firing it, not by its name
+#     stage's own, run from persona sessions (Lesson 20).
+#   - Whether a rule's pattern is right is proven by 5.5 firing it, not by its name
 #     existing here (presence, never sufficiency).
 
 from __future__ import annotations
@@ -63,20 +63,16 @@ DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 
-# The DLP-scoped accounts (decision 3's map at N=1): the lake account plus the two
-# Interactive accounts whose projects buckets D19 (as revised 2026-08-26) puts in
-# scope. Production joins when
-# decision 3 adds awsds-prod-outputs; every sandbox ordinal is in scope (D35).
+# The DLP-scoped accounts (decision 3's map at N=1): the lake account plus the two Interactive
+# accounts whose projects buckets D19 puts in scope. Production joins when decision 3 adds
+# awsds-prod-outputs; every sandbox ordinal is in scope (D35).
 def env_token(profile: str) -> str | None:
     if profile.startswith("awsds-infra-sandbox"):
         return "sandbox"
     return {
         DATA_PROFILE: "data",
-        # Renamed 2026-09-06 (Stage 6b): the profile is `awsds-infra-staging` since step 5.0
-        # and the token it maps to is the FINAL one. Nothing is misnamed by that today -
-        # Stage 11 has not run, so no trail, filter or bucket of this shape exists in the
-        # account yet; when it does it will be `awsds-staging-*`, because step 4.4 flips the
-        # env token before Stage 11 builds anything.
+        # Stage 6b step 4.4 flips the env token before Stage 11 builds anything, so the
+        # objects this file looks for in that account are named `awsds-staging-*`.
         "awsds-infra-staging": "staging",
     }.get(profile)
 
@@ -254,11 +250,10 @@ def main(argv: list) -> int:
                 (p, name, logging, str(validation), bucket, data_only, str(arn_count))
             )
 
-            # D19's promise, re-homed 2026-08-26: the derived zone is the SMUS project
-            # path now (awsds-<env>-smus-projects), so THAT bucket is the one each
-            # Interactive account's trail must select - orphaned project prefixes
-            # included, which is exactly what a scope written from the live project
-            # list would miss (stage-11's callout).
+            # D19's promise: the derived zone is the SMUS project path
+            # (awsds-<env>-smus-projects), so that bucket is the one each Interactive
+            # account's trail must select - orphaned project prefixes included, which a
+            # scope written from the live project list would miss (stage-11's callout).
             if env in ("sandbox", "dev") and selector_blob:
                 r2 = cli.run(
                     "s3api",
@@ -499,8 +494,8 @@ def main(argv: list) -> int:
             else:
                 checks.ok("DP-3", f"trail {name} in {p}", f"logging, validated, {arns} ARN(s)")
 
-    # DP-4: the D19 promise, re-homed 2026-08-26 - the derived zone is the SMUS project
-    # path, so the projects bucket outside its own account's trail scope is the gap.
+    # DP-4: the D19 promise - the derived zone is the SMUS project path, so a projects
+    # bucket outside its own account's trail scope is the gap.
     if built:
         for p, b in derived_gap:
             checks.fail(

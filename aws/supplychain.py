@@ -1,14 +1,13 @@
 #!/usr/bin/env -S uv run --quiet
-# supplychain.py - Stage 7's evidence, producer and consumers side by side: the GitLab host
-# and its [D] state, the runner ([E] - absent between sessions is the design), the [P]
-# anchors a rebuild depends on (object/backup buckets, the gitlab-secrets container), the
-# TLS surface (imported ACM leaves and their expiry - ACM does NOT renew imports - the DNS
-# records, the one-source CA root parameter), the registries (ECR repositories with tag
-# immutability and scan-on-push, the pull-through cache rules, the CodeArtifact domain and
-# its policy), and the cross-account consumer reads that are INT-01/INT-02's mechanical
-# half.
+# supplychain.py - Stage 7's evidence, producer and consumers side by side: the GitLab host and its
+# [D] state, the runner ([E], absent between sessions), the [P] anchors a rebuild depends on
+# (object/backup buckets, the gitlab-secrets container), the TLS surface (imported ACM leaves and
+# their expiry - ACM does not renew imports - the DNS records, the CA root parameter), the
+# registries (ECR repositories with tag immutability and scan-on-push, the pull-through cache
+# rules, the CodeArtifact domain and its policy), and the cross-account consumer reads that are
+# INT-01/INT-02's mechanical half.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -24,19 +23,18 @@
 #             GetLifecyclePolicy, DescribeImages, codeartifact:ListDomains,
 #             ListRepositoriesInDomain, DescribeRepository, GetDomainPermissionsPolicy,
 #             GetRepositoryEndpoint, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything. It never reads a secret VALUE:
-#             the gitlab-secrets check is DescribeSecret metadata only, on purpose - a
-#             report file must not contain what Secrets Manager exists to hold.
+#             It never creates, updates or deletes anything, and never reads a secret value:
+#             the gitlab-secrets check is DescribeSecret metadata only, so the report cannot
+#             contain what Secrets Manager exists to hold.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. D14 puts the
-# registries in Production while every legitimate consumer is an Interactive account, so
-# "does the consumer map reach everyone" (Lesson 14) is only readable from BOTH sides: the
-# policies from Production, and a cross-account read from each consumer - a denied read
-# from a consumer that should be in the map IS the finding. Section 1 pays the rule back
-# with the caller ARN of every profile.
+# It is multi-profile, which aws/INDEX.md admits only for a reason: D14 puts the registries in
+# Production while every legitimate consumer is an Interactive account, so whether the consumer map
+# reaches everyone (Lesson 14) is readable only from both sides - the policies from Production, and
+# a cross-account read from each consumer, where a denied read from a consumer that should be in
+# the map is the finding. Section 1 names the caller ARN of every profile.
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the GitLab host's Name tag is awsds-prod-gitlab (Stage 7 step 1.2)
 #   - the runner's Name tag matches awsds-prod-runner* (step 6.1)
 #   - the required ECR repositories are awsds-prod-ecr-base and awsds-prod-ecr-dev-env,
@@ -45,12 +43,11 @@
 #   - the secret container is awsds-prod-gitlab-secrets (step 1.1)
 #   - the CA root parameter is /datascience/prod/pki/ca-root-pem (step 2.3)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
-#   - The behavioural proofs - the clone pair, the SAML round-trip, the restore rehearsal,
-#     the TLS triple on the three client surfaces (INT-19) - are the stage's own
-#     (Lesson 20). A describe call cannot shake hands with a certificate.
-#   - Whether the backup → destroy → restore path works (step 8.2) is a rehearsal, not a
-#     reading; this file only shows the anchors it depends on.
+# What it cannot see, stated because an empty listing and a missing account look alike:
+#   - The behavioural proofs - the clone pair, the SAML round-trip, the restore rehearsal, the TLS
+#     triple on the three client surfaces (INT-19) - are the stage's own (Lesson 20).
+#   - Whether the backup → destroy → restore path works (step 8.2) is a rehearsal, not a reading;
+#     this file shows only the anchors it depends on.
 #   - GitLab's own objects - groups, protected tags, mirror settings - live behind
 #     gitlab.awsds.internal, which no AWS API reads.
 
@@ -78,9 +75,8 @@ CA_DOMAIN = "awsds-prod-packages"
 CA_REPOS = ("pypi", "crates")
 SECRET_NAME = "awsds-prod-gitlab-secrets"
 CA_ROOT_PARAM = "/datascience/prod/pki/ca-root-pem"
-# The zones GitLab and Pages are named in. `prod.internal`/`pages.internal` until 6c step 2.6
-# (2026-09-07) retired them: the shared names moved to the APEX, which is the one zone all five
-# VPCs resolve, and Pages keeps a sibling apex of its own for the cookie-scope reason D36 gives.
+# The zones GitLab and Pages are named in: the shared names sit on the apex, the one zone all five
+# VPCs resolve, and Pages keeps a sibling apex of its own for the cookie scope D36 gives.
 ZONES = ("awsds.internal.", "awsds-pages.internal.")
 LEAF_EXPIRY_WARN_DAYS = 45
 
@@ -557,8 +553,8 @@ def main(argv: list) -> int:
             else:
                 checks.ok("SC-4", f"repository {rname}", "IMMUTABLE")
 
-    # SC-5: the pull-through cache repositories must NOT be tag-immutable (the documented
-    # trap: an immutable tag blocks the cache update).
+    # SC-5: the pull-through cache repositories must not be tag-immutable - an immutable tag
+    # blocks the cache update (step 5.2's trap).
     if prod_live and ptc_rows:
         prefixes = tuple(p for p, _u, _c in ptc_rows)
         stuck = [

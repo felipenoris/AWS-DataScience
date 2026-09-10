@@ -1,77 +1,67 @@
 #!/usr/bin/env -S uv run --quiet
-# dns-allowlist.py - re-resolve every name on the PROXY's source-scoped allow-lists and report
-# what each one answers with, which entries collide under Squid's matching rules, and what the
-# committed lists say against what the estate is actually serving them from.
+# dns-allowlist.py - re-resolve every name on the proxy's source-scoped allow-lists and report what
+# each one answers with, which entries collide under Squid's matching rules, and what the committed
+# lists say against what the estate is actually serving them from.
 #
-#   needs:    NOTHING, in the default mode - no SSO session, no profile, no AWS call. It
+#   needs:    nothing in the default mode - no SSO session, no profile, no AWS call. It
 #             reads this repository's own .tf and asks a resolver. `dig` must be on PATH.
 #             `--from-api PROFILE` is the AWS mode and needs a live session:
 #
 #                 aws sso login --sso-session awsds
 #
-#   run:      ./aws/dns-allowlist.py                    the planes as CODE declares them
+#   run:      ./aws/dns-allowlist.py                    the planes as code declares them
 #             ./aws/dns-allowlist.py --whois            + who owns each answer address
 #             ./aws/dns-allowlist.py --from-api awsds-infra-prod
-#                                                       + the DEPLOYED parameter, compared
+#                                                       + the deployed parameter, compared
 #             ./aws/dns-allowlist.py --resolver 1.1.1.1 ask a specific resolver
 #   writes:   aws/output/dns-allowlist.txt   (untracked - see .gitignore)
 #   reads:    DNS, and `whois` only with --whois. With --from-api, one read-only call:
 #             ssm:GetParameter. This script never creates, updates or deletes anything.
 #
-# WHAT THIS FILE MEASURED UNTIL 2026-09-06, AND WHY IT NOW MEASURES SOMETHING ELSE. It was
-# written for the Route 53 Resolver DNS Firewall allow-lists in the two Interactive `egress/`
-# slices, when those lists WERE the estate's egress policy: a NAT gateway carried anything, so a
-# name that did not resolve was a host nobody reached. Stage 6c step 5.1 removed the last default
-# route (D38) and step 5.7 cut those lists from sixty-three entries to ten - AWS's own namespaces
-# and this estate's private zones, nothing else. The policy moved, whole, to the explicit proxy's
-# source-scoped allow-lists, so this instrument moved with it. Pointing it at a list that no
-# longer decides anything would be Lesson 31 in the other direction: a check that keeps reading
-# `pass` about a thing that stopped mattering.
+# The lists read here are the proxy's, not the Route 53 Resolver DNS Firewall lists in the two
+# Interactive `egress/` slices: since D38 removed the last default route those carry only AWS's own
+# namespaces and this estate's private zones, and the egress policy lives whole in the proxy's
+# source-scoped allow-lists. Pointing this instrument at the resolver's lists would be Lesson 31 in
+# the other direction - a check reading `pass` about a thing that stopped deciding anything.
 #
-# THE SUBSTITUTION IS NOT A TRANSLATION, and that is the first thing to know before reading a row
-# here against an old report. Three things changed at once:
+# How the proxy's lists differ from the resolver's, before a row here is read against an old report:
 #
-#   1. THERE ARE FIVE LISTS, NOT TWO, and they are keyed by SOURCE rather than by account: the
-#      tunnel range carries the institutional web filter (what a person may reach), each spoke
-#      CIDR carries its own. Two filters where the resolver could only ever hold one, which is
-#      the whole reason D38 splits them.
-#   2. SQUID MATCHES THE HOSTNAME THAT WAS REQUESTED. It never evaluates a CNAME chain, so
-#      EXC-05's entire failure mode - a listed name blocked because a hop was not listed, with
-#      the log blaming the queried name - has no place to occur. `TRUST_REDIRECTION_DOMAIN`, the
-#      v0.4.0 repair, is now a setting on a list that no longer carries a CDN-fronted name.
-#   3. THE SYNTAX IS THE OTHER ONE. Route 53 needs `x` and `*.x` as two entries; Squid's `.x`
-#      covers both, and listing the apex BESIDE it is not redundant but FATAL - `ERROR: '.x' is
-#      a subdomain of 'x'`, then `FATAL: Bungled`. That is DN-2's new question, and it is not a
-#      style rule: it is a proxy that refuses to start (Lesson 53).
+#   1. There are five lists, keyed by source rather than by account: the tunnel range carries the
+#      institutional web filter (what a person may reach), each spoke CIDR carries its own. D38
+#      splits them because the resolver could only ever hold one filter.
+#   2. Squid matches the hostname that was requested and never evaluates a CNAME chain, so EXC-05's
+#      failure mode - a listed name blocked because a hop was not listed, with the log blaming the
+#      queried name - has no place to occur. `TRUST_REDIRECTION_DOMAIN` is a setting on a list
+#      that carries no CDN-fronted name.
+#   3. The syntax is the other one. Route 53 needs `x` and `*.x` as two entries; Squid's `.x` covers
+#      both, and listing the apex beside it is fatal - `ERROR: '.x' is a subdomain of 'x'`, then
+#      `FATAL: Bungled`, a proxy that refuses to start. DN-2 decides it (Lesson 53).
 #
-# WHAT STAYED. DN-1 is the same question it always was - does every name somebody depends on
-# still answer - and it is the reason this file resolves anything at all. A dead entry is a dead
-# dependency whichever system enforces it.
+# DN-1 is why this file resolves anything at all: does every name somebody depends on still answer.
+# A dead entry is a dead dependency whichever system enforces it.
 #
-# TWO DELIBERATE DEVIATIONS from aws/INDEX.md's rules for this folder, both stated because a
-# reader is entitled to know why this file looks unlike its neighbours:
-#   - It runs with NO AWS identity by default. Every other script here photographs AWS; this
+# It deviates from aws/INDEX.md's rules for this folder in two ways:
+#   - It runs with no AWS identity by default. Every other script here photographs AWS; this
 #     one photographs the DNS the allow-list depends on, which is not AWS's to answer.
 #   - Its default source is the repository rather than the deployed estate. Read the two
 #     together: --from-api answers "is the deployed list still resolvable, and does it still
 #     match the code", the default answers "is the list we are about to deploy still resolvable".
-#     The parameter is [P] and always present, unlike the [E] domain lists this file used to
-#     read - so --from-api is now reliable rather than opportunistic.
+#     The parameter is [P] and always present, so --from-api is reliable rather than opportunistic.
 #
-# WHAT IT CANNOT SEE, stated because a clean run here is not a clean run in the VPC:
-#   - THE RESOLVER IS NOT THE ONE THAT MATTERS, and under an explicit proxy it is even further
-#     away: a spoke client does not resolve an internet name at all - SQUID does, from
+# What it cannot see, stated because a clean run here is not a clean run in the VPC:
+#   - The resolver is not the one that matters, and under an explicit proxy it is further away
+#     still: a spoke client does not resolve an internet name at all - Squid does, from
 #     VPC-Networking. This asks the laptop's resolver (or --resolver). A CDN can steer an answer
-#     by geography or by EDNS client subnet, so a name can answer here and not there. This is a
-#     SCREEN, and a fast one; the proof is a request through the proxy.
+#     by geography or by EDNS client subnet, so a name can answer here and not there. It is a fast
+#     screen; the proof is a request through the proxy.
 #   - Private-zone names (*.internal) are answered only inside the VPC. They are listed and
 #     skipped, never resolved, and never counted as a failure.
-#   - A leading-dot entry (`.example.com`) is COVERAGE, not a subject: it is not a name anything
-#     queries, so it is never a row in section 2. It still participates in DN-2, which is about
-#     entries colliding with each other rather than about what resolves.
-#   - Whether the RUNNING squid.conf matches the parameter. That is PX-3 in ./aws/proxy.py, read
+#   - A leading-dot entry (`.example.com`) is coverage, not a subject: nothing queries it, so it is
+#     never a row in section 2. It still participates in DN-2, which is about entries colliding
+#     with each other rather than about what resolves.
+#   - Whether the running squid.conf matches the parameter. That is PX-3 in ./aws/proxy.py, read
 #     on the host over SSM. The chain is code -> parameter -> host; DN-3 is the first link and
-#     PX-3 is the second, and neither one alone says the proxy is enforcing what was written.
+#     PX-3 the second, and neither alone says the proxy is enforcing what was written.
 
 from __future__ import annotations
 
@@ -88,14 +78,14 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "dns-allowlist.txt"
 
-# The [P] slice that owns the proxy's allow-lists (Stage 6c steps 4.9/4.10). ONE file, because
-# the lists are locals in it and the SSM parameter is rendered from them - which is what makes
-# "the committed list" a thing this script can read without an AWS call.
+# The [P] slice that owns the proxy's allow-lists (Stage 6c steps 4.9/4.10). One file: the lists are
+# locals in it and the SSM parameter is rendered from them, which is what lets this script read the
+# committed list without an AWS call.
 ANCHORS = ("production", "networking", "hub-anchors.tf")
 
 # The parameter the [D] proxy renders at boot and on a State Manager schedule. Its name is built
 # in the .tf from `/datascience/${var.env}/proxy/allowlist`; `prod` is production's env token.
-# NOT `/awsds/...` - Parameter Store reserves every name beginning with `aws`.
+# Not `/awsds/...`: Parameter Store reserves every name beginning with `aws`.
 PARAMETER = "/datascience/prod/proxy/allowlist"
 
 # Answered only by a private hosted zone inside the VPC - listed, never resolved here.
@@ -104,13 +94,10 @@ PRIVATE_SUFFIXES = (".internal",)
 DIG_TIMEOUT = 15
 WHOIS_TIMEOUT = 25
 
-# THE PLANES A DECISION HAS PUT IN `open` MODE, AND WHY - DN-4's allow-list of exceptions.
-# DN-4 used to read "every plane but `tunnel` must be an allow-list", which was true of the
-# design on the day it was written and stopped being true on 2026-09-08. Rewriting it as
-# "whatever is open is fine" would have retired the check; this keeps it load-bearing, because a
-# NEW plane going `open` still fails, and the entry a person has to add to make it pass carries
-# the decision that took it. The value is the reason, printed in the pass line - a reader of the
-# report should not have to open a decision file to learn why a plane is open (Lesson 50).
+# The planes a decision has put in `open` mode - DN-4's allow-list of exceptions. A plane not named
+# here fails DN-4 the moment it goes `open`, and the entry a person adds to make it pass carries the
+# decision that took it. The value is the reason, printed in the pass line, so the report can be
+# read without opening a decision file (Lesson 50).
 OPEN_BY_DECISION = {
     "tunnel": "the client's internet is MONITORED, not restricted - objectives.md, 2026-09-07",
     "production-foundation": (
@@ -142,28 +129,24 @@ def _balanced(text: str, start: int, opener: str, closer: str) -> tuple[str, int
 
 
 _STRIP_COMMENTS = re.compile(r"#[^\n]*")
-# `proxy_deny_*` as well as `proxy_allow_*` since 2026-09-07 - the client plane carries a DENY
-# list, and a regex that only knew one kind would read it as an absent plane.
+# `proxy_deny_*` as well as `proxy_allow_*`: the client plane carries a deny list, and a regex that
+# knew only one kind would read it as an absent plane.
 _LIST_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*\[", re.M)
 
-# THE SECOND SHAPE A LIST CAN TAKE, and it was added to the .tf before it was added here - which
-# cost a KeyError traceback rather than the loud, readable refusal this parser promises.
-# `proxy_allow_shared` became `concat(<comprehension>, <literal>)` on 2026-09-06, when one
-# CloudFront distribution had to be added to a list that is otherwise DERIVED from the notebook's.
-# Both halves are parsed; anything else still fails by name.
-# NOTHING IN THE .tf MATCHES EITHER FORM SINCE 2026-09-08 - `proxy_allow_shared` was deleted when
-# the build plane became `open` (D38 section 6, 6d step 9). KEPT ANYWAY, and not because it might
-# come back: without the derived branch a `[for d in local.x : d if d != "y"]` list would be read
-# by the literal path, whose `findall` would return the EXCLUDED name and nothing else. That is a
-# silent misreading, and this parser's whole contract is that an unknown form fails loudly. The
-# dead branch is what keeps the failure loud.
+# The second shape a list can take: `concat(<comprehension>, <literal>)`, a list derived from
+# another with one literal name added. Both halves are parsed; anything else fails by name.
+# Nothing in the .tf matches either form today - `proxy_allow_shared` went when the build plane
+# became `open` (D38 section 6, 6d step 9). The branch stays because without it a
+# `[for d in local.x : d if d != "y"]` list would be read by the literal path, whose `findall`
+# returns the excluded name and nothing else: a silent misreading, where this parser's contract is
+# that an unknown form fails loudly.
 _CONCAT_ASSIGN = re.compile(r"^\s*(proxy_(?:allow|deny)_[a-z_]+)\s*=\s*concat\(", re.M)
 _DERIVED = re.compile(
     r"^\s*for\s+(\w+)\s+in\s+local\.(proxy_allow_[a-z_]+)\s*:\s*\1\s+if\s+\1\s*!=\s*\"([^\"]+)\"\s*$"
 )
-# BOTH KINDS OF LOCAL SINCE 2026-09-08. `proxy_deny_by_plane` names the planes that are `open`,
-# and its rows have the same shape as the allow map's - so the grammar widens by one alternation
-# rather than growing a second regex that could drift from this one.
+# Both kinds of local. `proxy_deny_by_plane` names the planes that are `open` and its rows have the
+# same shape as the allow map's, so the grammar widens by one alternation rather than growing a
+# second regex that could drift from this one.
 _PLANE_ROW = re.compile(
     r'^\s*"?([a-z0-9-]+)"?\s*=\s*(local\.(proxy_(?:allow|deny)_[a-z_]+)|\[\s*\])\s*$'
 )
@@ -172,14 +155,14 @@ _PLANE_ROW = re.compile(
 def parse_anchors(path) -> dict[str, list[str]]:
     """`({plane: [names]}, {plane: mode})` from the [P] slice that declares them.
 
-    The names are what this file RESOLVES, and both kinds are worth resolving: a dead entry on a
+    The names are what this file resolves, and both kinds are worth resolving: a dead entry on a
     deny list is as stale as one on an allow list. The mode is what stops DN-4 reading an empty
     deny list as an empty allow list, which are opposite states.
 
-    A small explicit grammar rather than an HCL parser, for the reason parse_slice had before
-    it: this package is dependency-free (the CloudShell fallback needs it). It fails LOUDLY on
-    any form it was not written for - a plane silently read as empty would report a proxy that
-    allows nothing as a proxy with nothing to check.
+    A small explicit grammar rather than an HCL parser, for parse_slice's reason: this package is
+    dependency-free (the CloudShell fallback needs it). It fails loudly on any form it was not
+    written for - a plane silently read as empty would report a proxy that allows nothing as a
+    proxy with nothing to check.
     """
     text = path.read_text(encoding="utf-8")
 
@@ -221,12 +204,11 @@ def parse_anchors(path) -> dict[str, list[str]]:
     planes: dict[str, list[str]] = {}
     modes: dict[str, str] = {}
 
-    # TWO MAPS SINCE 2026-09-08, AND WHICH ONE A PLANE IS IN IS ITS MODE. `proxy_allow_by_plane`
-    # holds the allow-lists; `proxy_deny_by_plane` holds the planes that are `open` and carries
-    # what they may NOT reach. Both are REQUIRED here: a missing deny map would make an `open`
-    # plane read as an allow-list with nothing on it, which is the exact inversion this parser
-    # exists to prevent - a plane that reaches everything, reported as a plane that reaches
-    # nothing.
+    # A plane's mode is which of the two maps it is in. `proxy_allow_by_plane` holds the
+    # allow-lists; `proxy_deny_by_plane` holds the planes that are `open` and carries what they may
+    # not reach. Both are required here: a missing deny map would make an `open` plane read as an
+    # allow-list with nothing on it - a plane that reaches everything, reported as a plane that
+    # reaches nothing.
     for map_name, mode in (("proxy_allow_by_plane", "allowlist"), ("proxy_deny_by_plane", "open")):
         m = re.search(r"^\s*" + map_name + r"\s*=\s*\{", text, re.M)
         if not m:
@@ -253,12 +235,11 @@ def parse_anchors(path) -> dict[str, list[str]]:
             planes[row.group(1)] = list(named[row.group(3)]) if row.group(3) else []
             modes[row.group(1)] = mode
 
-    # THE CLIENT PLANE IS NOT IN THAT MAP, AND ITS ABSENCE IS THE POINT (2026-09-07). `tunnel` used
-    # to be a row there carrying a 23-name allow-list. `objectives.md` asks for the client's
-    # internet to be **monitored** rather than restricted, so it is now an `open` plane whose list
-    # is a DENY list - `proxy_deny_tunnel`, empty by decision. It is read from its own local
-    # because it is a different KIND of list, and merging the two would let this instrument report
-    # "the tunnel allows nothing", which is the exact opposite of what an empty deny list means.
+    # The client plane is in neither map. `objectives.md` asks for the client's internet to be
+    # monitored rather than restricted, so `tunnel` is an `open` plane whose list is a deny list -
+    # `proxy_deny_tunnel`, empty by decision. It is read from its own local because it is a
+    # different kind of list: merging the two would let this instrument report "the tunnel allows
+    # nothing", the opposite of what an empty deny list means.
     if "proxy_deny_tunnel" in named:
         planes["tunnel"] = list(named["proxy_deny_tunnel"])
         modes["tunnel"] = "open"
@@ -283,7 +264,7 @@ def substitute(names: list[str]) -> tuple[list[str], list[str]]:
 
 
 def read_from_api(cli, errors: ErrorLog) -> dict[str, dict] | None:
-    """The DEPLOYED parameter - the [P] value the proxy renders its configuration from."""
+    """The deployed parameter - the [P] value the proxy renders its configuration from."""
     res = cli.call(
         "ssm",
         "get-parameter",
@@ -310,11 +291,10 @@ def read_from_api(cli, errors: ErrorLog) -> dict[str, dict] | None:
 def covers(pattern: str, name: str) -> bool:
     """Does one Squid `dstdomain` entry match this name?
 
-    SQUID'S SEMANTICS, NOT ROUTE 53's, and the difference is the whole of Lesson 53: a leading
-    dot means "this domain AND every subdomain of it", so `.example.com` matches both
-    `example.com` and `a.b.example.com` - where Route 53 needed `example.com` and `*.example.com`
-    as two separate entries and its wildcard never matched the apex. An entry with no leading dot
-    is an EXACT hostname match.
+    Squid's semantics, not Route 53's (Lesson 53): a leading dot means "this domain and every
+    subdomain of it", so `.example.com` matches both `example.com` and `a.b.example.com` - where
+    Route 53 needed `example.com` and `*.example.com` as two separate entries and its wildcard
+    never matched the apex. An entry with no leading dot is an exact hostname match.
     """
     p, n = pattern.rstrip(".").lower(), name.rstrip(".").lower()
     if p.startswith("."):
@@ -323,19 +303,19 @@ def covers(pattern: str, name: str) -> bool:
 
 
 def collisions(names: list[str]) -> tuple[list[str], list[str]]:
-    """Squid's two overlap outcomes, which are NOT the same severity.
+    """Squid's two overlap outcomes, which differ in severity.
 
-    Measured 2026-09-06 while building the proxy, and it cost four attempts to learn:
+    Measured 2026-09-06 while building the proxy:
 
-      an apex listed BESIDE its own leading-dot form   ->  FATAL. Squid logs
+      an apex listed beside its own leading-dot form   ->  fatal. Squid logs
           `ERROR: '.x' is a subdomain of 'x'` and then `FATAL: Bungled`, and refuses to start.
           The estate's single egress does not come up, which surfaces as every spoke losing the
           internet at once - a symptom no reader attributes to one redundant line.
 
-      a DEEPER name under a leading-dot form           ->  a WARNING only. `d35uxhjf90umnp.cloudfront.net`
-          sat beside `.cloudfront.net` for a fortnight without breaking anything. It is still
-          worth removing - a line that warns on every reconfigure is a line people stop reading -
-          but it is a tidy, not an outage.
+      a deeper name under a leading-dot form           ->  a warning only.
+          `d35uxhjf90umnp.cloudfront.net` sat beside `.cloudfront.net` for a fortnight without
+          breaking anything. It is still worth removing, because a line that warns on every
+          reconfigure is a line people stop reading, but it is a tidy rather than an outage.
     """
     fatal, redundant = [], []
     lowered = [n.rstrip(".").lower() for n in names]
@@ -654,9 +634,8 @@ EXC-05's failure mode has no place left to occur. The chains below are read for 
                 f"{len(all_fatal)} FATAL: " + "; ".join(all_fatal),
             )
         elif all_redundant:
-            # `note` rather than `fail`, and the asymmetry is Squid's rather than a soft reading:
-            # a redundant entry produces a warning on reconfigure and a working proxy, while the
-            # apex pair produces `FATAL: Bungled` and no proxy at all.
+            # `note` rather than `fail`: a redundant entry produces a warning on reconfigure and a
+            # working proxy, while the apex pair produces `FATAL: Bungled` and no proxy at all.
             checks.note(
                 "DN-2",
                 "no plane carries a Squid dstdomain collision",

@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run --quiet
 # egress.py - the [E] networking half, per account, side by side: interface endpoints (with
-# their AZ count and private-DNS flag), NAT gateways and elastic IPs, every endpoint POLICY
+# their AZ count and private-DNS flag), NAT gateways and elastic IPs, every endpoint policy
 # read against step 9 (the org condition and the AWS-owned-bucket allow-list), the
 # service-per-account matrix step 8's lists produce, the hourly burn those resources cost
-# RIGHT NOW, and the region's endpoint service-name catalog.
+# right now, and the region's endpoint service-name catalog.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -18,51 +18,43 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject is a
-# PER-ACCOUNT fact whose meaning is the comparison BETWEEN accounts: step 8's endpoint list
-# is deliberately different per account role, so "is the set right" is only readable with
-# the columns side by side - an endpoint present in five accounts and missing in the sixth
-# is either the sixth account's gap or the five accounts' waste, and both are the point.
-# Section 1 prints the caller ARN of every profile, which is what the one-profile rule
-# exists to make visible.
+# It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a per-account
+# fact whose meaning is the comparison between accounts. Step 8's endpoint list differs per account
+# role, so whether the set is right is readable only with the columns side by side - an endpoint
+# present in five accounts and missing in the sixth is either the sixth account's gap or the five
+# accounts' waste. Section 1 prints the caller ARN of every profile.
 #
-# WHAT IT IS FOR, AT THE TWO ENDS OF A SESSION.
+# What it decides, at the two ends of a session:
 #
-#   AT make up: did egress/ produce the right set - the per-role lists of step 8, one AZ
-#   per endpoint (D9), private DNS on (8.5), and a policy on every endpoint that names the
-#   organization (9.1) plus the AWS-owned-bucket allow (9.3). Each is a check that FAILS,
-#   not a listing to eyeball - and 9's failure mode in real life is a package manager that
-#   HANGS, which no error message will ever attribute to an endpoint policy.
+#   At make up: did egress/ produce the right set - the per-role lists of step 8, one AZ per
+#   endpoint (D9), private DNS on (8.5), and a policy on every endpoint that names the
+#   organization (9.1) plus the AWS-owned-bucket allow (9.3). Each is a check that fails rather
+#   than a listing to eyeball, and step 9's failure mode in real life is a package manager that
+#   hangs, which no error message attributes to an endpoint policy.
 #
-#   AT make down - AND WHENEVER IN DOUBT: section 6 is the burn meter. A forgotten egress/
-#   costs ~USD 3.84/day and, by decision D12, NO BUDGET ALERT EXISTS to catch it; this
-#   section is the manual instrument that risk gets. Zero everywhere is the correct
-#   between-sessions answer (D11).
+#   At make down, and whenever in doubt: section 6 is the burn meter. A forgotten egress/ costs
+#   ~USD 3.84/day and no budget alert exists to catch it (D12), so this section is the manual
+#   instrument that risk gets. Zero everywhere is the correct between-sessions answer (D11).
 #
-#   THE FIGURE IS RE-DERIVED, NOT COPIED (2026-08-21; re-derived again 2026-08-25): 11
-#   interface endpoints x 0.010 plus the NAT and its IPv4 at 0.050 = 0.160/h = 3.84/day, at
-#   the Sandbox list. It read 4.08 here and 3.84 in section 6's own text for four days - the
-#   2026-08-17 commit that removed elasticfilesystem decremented one and not the other -
-#   then `datazone` joining at Stage 6 step 4.2 made the stale 4.08 accidentally right, and
-#   its removal on 2026-08-25 (issue #39) has put the list back at 3.84. Both are stated
-#   from the same arithmetic so the next change moves them together (docs/PRICING.md 3).
+#   The figure is re-derived rather than copied (2026-08-25): 11 interface endpoints x 0.010 plus
+#   the NAT and its IPv4 at 0.050 = 0.160/h = 3.84/day, at the Sandbox list. Section 6's own text
+#   states it from the same arithmetic, so a change moves both together (docs/PRICING.md 3).
 #
-# ONE MORE PREFLIGHT IT CARRIES, before anything is paid for: section 7 lists the region's
-# endpoint service names - which answers stage verification (i) (is SageMaker Studio's
-# endpoint `aws.sagemaker.<region>.studio` rather than `com.amazonaws.*`?), confirms the
-# CodeArtifact pair exists in this region (Lesson 6 found it absent in sa-east-1), and
-# records which services support an endpoint POLICY at all, which is what keeps check EG-1
-# from failing a service that cannot comply.
+# Section 7 is the preflight before anything is paid for: it lists the region's endpoint service
+# names, which answers stage verification (i) (is SageMaker Studio's endpoint
+# `aws.sagemaker.<region>.studio` rather than `com.amazonaws.*`?), confirms the CodeArtifact pair
+# exists in this region (Lesson 6 found it absent in sa-east-1), and records which services support
+# an endpoint policy at all - what keeps check EG-1 from failing a service that cannot comply.
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
-#   - Staging is UNVENDED and has no profile; every Sandbox beyond the first likewise
+# What it cannot see, stated because an empty listing and a missing account look alike:
+#   - Staging is unvended and has no profile; every Sandbox beyond the first likewise
 #     (Stage 14). Absence from this report is silence, not evidence.
-#   - Whether the allow-list of 9.3 is COMPLETE is behavioural: `dnf makecache` from a
-#     probe instance with no NAT route is the honest test, and it is the stage's, not this
-#     script's. This file proves the statement is PRESENT, never that it is sufficient.
-#   - INTERFACE ENDPOINT IDS ARE [E] AND MAY BE NAMED BY NOTHING (Lesson 3, step 8.6):
-#     they are new on every make up. The IDs a policy may anchor on are the gateway
-#     endpoints in networking.py section 5.
+#   - Whether the allow-list of 9.3 is complete is behavioural: `dnf makecache` from a probe
+#     instance with no NAT route is the honest test, and it is the stage's, not this script's.
+#     This file proves the statement is present, never that it is sufficient.
+#   - Interface endpoint ids are [E] and may be named by nothing (Lesson 3, step 8.6): they are
+#     new on every make up. The ids a policy may anchor on are the gateway endpoints in
+#     networking.py section 5.
 
 from __future__ import annotations
 
@@ -77,7 +69,7 @@ from awslib.report import Checks, Report, note
 OUT_NAME = "egress.txt"
 
 # Hourly rates, from the Stage 3 cost table (measured for docs/PRICING.md, not reasoned -
-# Lesson 6; re-measure THERE if these look stale). The NAT figure includes its public IPv4.
+# Lesson 6; re-measure there if these look stale). The NAT figure includes its public IPv4.
 RATE_IFEP = 0.010
 RATE_NAT = 0.050
 
@@ -112,7 +104,7 @@ def main(argv: list) -> int:
         cli = cli_for(p)
         note(f"measuring {p} ...")
 
-        # subnet -> AZ-id map, so each endpoint row can say WHICH datacenter it is in (D9).
+        # subnet -> AZ-id map, so each endpoint row can say which datacenter it is in (D9).
         res = cli.run(
             "ec2",
             "describe-subnets",
@@ -199,7 +191,7 @@ def main(argv: list) -> int:
             orgkeys = "yes" if re.search(r"aws:(Principal|Resource)OrgID", r.stdout) else "no"
             eppol.append((p, ep, svc, ep_type, vpc, orgkeys))
 
-        # NAT gateways - the other metered item, and the design-A switch made flesh.
+        # NAT gateways - the other metered item, and where design A shows up.
         res = cli.run(
             "ec2",
             "describe-nat-gateways",
@@ -256,7 +248,7 @@ def main(argv: list) -> int:
         return vpc_cidr.get(p, {}).get(vpc, "").startswith("172.31.")
 
     # EG-1: every endpoint whose service supports a policy carries one naming the
-    # organization (9.1) - binding to the CONDITION KEYS, not to a Sid, because the
+    # organization (9.1) - binding to the condition keys rather than to a Sid, because the
     # statement's name is the author's and the condition is the control (Lesson 23).
     for p, ep, svc, ep_type, vpc, orgkeys in eppol:
         if af_endpoint(p, vpc):
@@ -323,8 +315,8 @@ def main(argv: list) -> int:
                 "the public name and the endpoint answers nothing.",
             )
 
-    # EG-4: the S3 GATEWAY policy carries the AWS-owned-bucket allow (9.3). PRESENCE only -
-    # whether the list is COMPLETE is the stage's dnf probe, not a scan. Account Factory
+    # EG-4: the S3 gateway policy carries the AWS-owned-bucket allow (9.3). Presence only -
+    # whether the list is complete is the stage's dnf probe, not a scan. Account Factory
     # endpoints are EG-1's note, not this check's subject.
     for p, ep, svc, ep_type, vpc, _orgkeys in eppol:
         if ep_type != "Gateway" or not svc.endswith(".s3"):
@@ -334,13 +326,11 @@ def main(argv: list) -> int:
         pol = policies.get((p, ep), "")
         if not pol:
             continue
-        # ONE PATTERN PER FAMILY OF 9.3, and every family gets one - added 2026-08-16, on
-        # the first measurement of a real egress/: the table had no pattern for ECR layer
-        # storage, so the policy's `prod-<region>-starport-layer-bucket` entry was present
-        # in the document, invisible to this check, and would have stayed "pass" the day
-        # somebody deleted it (Lesson 13 - a check whose output is the same either way).
-        # That family is the one 9.3 calls the entry the step was missing, and it fails
-        # AFTER a successful ECR login, pointing at S3 rather than at ECR.
+        # One pattern per family of 9.3, every family covered: a family with no pattern here
+        # leaves its entry in the document invisible to this check, which would stay "pass"
+        # the day somebody deleted it (Lesson 13). The ECR layer-storage family
+        # (`prod-<region>-starport-layer-bucket`) is the one 9.3 calls the entry the step was
+        # missing, and it fails after a successful ECR login, pointing at S3 rather than ECR.
         hits = ""
         if "al2023-repos" in pol:
             hits += "al2023 "
