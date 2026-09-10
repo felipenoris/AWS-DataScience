@@ -260,8 +260,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   moved from plan to apply (**Lesson 59**); v0.11.1 splits it into `declared` and `served`. Both halves
   carry a negative control. **Still `.api.aws`/`.app.aws`/`.on.aws`/`.aws.dev` are separate AWS families**,
   and **the first question about a `403` is whether the name has an ENDPOINT**, never whether to allow it.
-  **Not closed**: the other three `egress/` slices are `[E]` and down — they take v0.11.1 on their next
-  `make up`; the in-space proof is the user's.
+  **PROVEN IN A SPACE THE SAME NIGHT, ON TWO CHANNELS**: after a restart (CloudTrail-dated), the name is
+  **absent** from the proxy log for the new container — which made 76 other proxied requests — against
+  **`403` × 11** from an earlier space container that day, while CloudTrail shows **eight** DataZone calls
+  from it **all carrying the endpoint's `vpcEndpointId`**. **`streaming-logs` has NEVER appeared in the
+  proxy log**, so that entry is preventive and **unexercised**. **Not closed**: the other three `egress/`
+  slices are `[E]` and down — they take v0.11.1 on their next `make up`. **Idle shutdown observed unasked**
+  (both spaces, service-deleted; 5.1's threshold half still open).
 - **6d STEP 3 RUN, STEP 8 MEASURED, STEP 9 DONE (2026-09-08).** The proxy works from a space with the
   variables exported by hand. **Two components failed for ONE cause — no proxy IN THE PROCESS**: `sudo`
   strips the variables (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code

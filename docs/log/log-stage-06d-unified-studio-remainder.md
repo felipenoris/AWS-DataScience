@@ -1289,7 +1289,65 @@ it on the plane is decision due 6's, unchanged by this.
    `http.noProxy` needs a running space, and no API reading substitutes for it. That is the test this
    sitting hands over.
 
-**One operational note for the next sitting**: the infrastructure user's SSO session expired during this
-one — the cached token file was gone mid-command — so the last readings above were taken before it
-lapsed and the runbook's export string was rebuilt from the post-apply output already on disk rather
-than re-read live.
+**One operational note**: the infrastructure user's SSO session expired mid-sitting — the cached token
+file was gone mid-command — so the runbook's export string was rebuilt from the post-apply output
+already on disk rather than re-read live. The user signed in again for the verification below.
+
+### [user ran the space, Claude read] The in-space proof — the name left the proxy log, and CloudTrail says which door it took
+
+The user opened the `editor` Code Editor space, pasted the 52-entry array from
+[`sg-proxy.md`](../plan/runbooks/sg-proxy.md) into User Settings, and restarted the space. **CloudTrail
+dates the restart to the second**, which matters because the container address changes with it and that is
+what cuts the proxy log into two non-overlapping windows (the 8.4 method):
+
+| time (−03) | event | by |
+|---|---|---|
+| 19:39:49 → 19:40:46 | `CreateApp` | the user's browser, then the service |
+| **19:43:50** | `DeleteApp` `editor`/CodeEditor | **the user — the restart's stop half** |
+| **19:44:02** | `CreateApp` | **the user — the restart's start half** |
+| 20:40:30 | `DeleteApp` on the **JupyterLab** space | `AWSServiceRoleForAmazonSageMakerNotebooks` |
+| 20:47:20 | `DeleteApp` `editor`/CodeEditor | idem |
+
+So the proxy log's two source addresses are the pair: **`10.20.74.163`** (2 requests, the pre-restart app)
+and **`10.20.104.252`** (76 requests, 22:45:06→22:47:15Z — **the app running the new list**).
+
+**`datazone.us-west-2.api.aws` is ABSENT for `10.20.104.252`.** Searched across the log group's whole life
+(retention 365 days, created 2026-09-06) the name has exactly three sources, and the contrast is between
+two space containers on the same day:
+
+| source | plane | result |
+|---|---|---|
+| `10.20.79.130` | a Sandbox space, earlier on 2026-09-09 | **`403` × 11** — the refusals that opened 8.8 |
+| **`10.20.104.252`** | **the Sandbox space, after the restart** | **absent** — while making 76 other proxied requests in the same minutes |
+| `10.90.0.2` | the tunnel — the laptop's browser reaching the portal | `200` × 23 (09-07) and × 14 (09-09), expected and unrelated |
+
+**And the absence is a door rather than a silence, which is the half a proxy log cannot prove.**
+CloudTrail for the same window, `datazone.amazonaws.com`, filtered to that container:
+`GetDomainExecutionRoleCredentials` × 4, `ListConnections` × 3, `GetUserProfile` × 1 — **eight calls, every
+one carrying `vpcEndpointId vpce-0fb1f3ed96ef5653c`**, the Sandbox `datazone` interface endpoint. The app
+did make the calls; they took the endpoint. Two channels that do not share a failure mode, which is the
+shape 3.2 established.
+
+**`streaming-logs.<region>.amazonaws.com` has never appeared in this log group at all** — zero hits over
+its whole life. The entry is therefore **preventive and unexercised**: the fail-open it closes was real —
+that name is on the compute plane's `.amazonaws.com`, so it would have been permitted and would have
+arrived without `aws:SourceVpce` — but nothing has been measured taking it. Recorded as an absence with
+its window, not as a hole that was seen and closed.
+
+**Decision 6's subtraction is enforced and visible in the same burst**: `api.github.com` **`403` × 5** and
+`raw.githubusercontent.com` **`403` × 3**, beside `idetoolkits.amazonwebservices.com`,
+`ide-toolkits.app-composer.aws.dev` and `sagemaker-unified-studio-mcp.<region>.api.aws` all **`200`** — the
+names allowed and the names refused, one day later, in one window.
+
+**Two things read off the same burst that belong to other steps:**
+
+- **Idle shutdown was observed, unasked — step 5.1's first half.** Both apps were deleted by
+  `AWSServiceRoleForAmazonSageMakerNotebooks`, the JupyterLab space's at 20:40:30 and `editor`'s at
+  20:47:20, `FailureReason` null. The Code Editor app had run 63 minutes.
+- **The volume, and it is one host.** 76 requests moved ~101 MiB, of which
+  **`aws-language-servers.us-east-1.amazonaws.com` alone is 54.98 MiB in two requests** — the largest
+  single item at every app start, through a `t3.micro` proxy. `files.pythonhosted.org` is 38.4 MiB in 51.
+- **And two `t4g.nano` probes are running** in Sandbox since 21:27Z — `awsds-sandbox-probe-perimeter` and
+  `awsds-sandbox-probe-peering`, the `[E]` Stage 3 slices — doing nothing but `ssm` and `time.aws.com`
+  lookups every twenty minutes. The `time.aws.com` `BLOCK`s in `/awsds/sandbox/dns-firewall` are theirs
+  (chrony), which attributes a block that had none.
