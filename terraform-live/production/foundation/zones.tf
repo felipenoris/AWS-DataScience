@@ -2,9 +2,10 @@
 # sibling (Pages keeps its own apex for the cookie-scope reason D36 gives; conventions §6 places
 # it here rather than in Stage 7). ~USD 0.50/zone-month each, both in the cost-model floor.
 #
-# The inline `vpc` block is the initial association only. The four cross-account associations of
-# 4.4 (Sandbox and Development, pass 2) are made by aws_route53_zone_association resources in the
-# consuming accounts' slices, after an authorization written here, and the provider requires
+# The inline `vpc` block is the initial association only. The cross-account associations of 4.4
+# (Sandbox and Staging, pass 2 - Staging kept its apex association when 6c step 3.1 retired its
+# peering) are made by aws_route53_zone_association resources in the consuming accounts' slices,
+# after an authorization written here, and the provider requires
 # ignore_changes on vpc for exactly that mix or every later plan tries to remove what the other
 # account associated.
 

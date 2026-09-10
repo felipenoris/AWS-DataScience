@@ -346,7 +346,7 @@ persona to draw conclusions.
   to one role is untested, and worth testing before it is proposed as the fix — this document already lost
   `NotAction`/`NotResource` to an AWS restriction.
 
-# The two families of IAM role
+# The families of IAM role
 
 Every IAM role in this project answers one of two questions, and the axis separating them is *who assumes
 it — a person, or an AWS service*. The sections after this one are almost entirely about the first family;
@@ -817,7 +817,7 @@ its explicit denies**. That file is the specification and this table is the inve
 ## A permission set is a factory for IAM roles
 
 **It is not an alternative to an IAM role — it produces one**, of the *human* family only; the other is
-[above](#the-two-families-of-iam-role). Assigning set `P` to a principal on account `A` makes IAM Identity
+[above](#the-families-of-iam-role). Assigning set `P` to a principal on account `A` makes IAM Identity
 Center provision a real IAM role *inside* `A`:
 
 ```

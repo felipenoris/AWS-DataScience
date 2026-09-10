@@ -86,7 +86,8 @@ resource "aws_security_group" "probe" {
   }
 }
 
-# One rule per source account - Sandbox for the Deliverables, Development for INT-09.
+# One rule per source VPC range - Sandbox for the Deliverables and, since 6c step 3.1 re-homed it,
+# for INT-09 as well.
 resource "aws_vpc_security_group_ingress_rule" "listener" {
   for_each = toset(var.peer_cidrs)
 

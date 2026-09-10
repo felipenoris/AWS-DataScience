@@ -251,7 +251,7 @@ package the notebook installs — a typosquatted PyPI name is enough, and it exe
 Whose credential it is decides the argument. The code runs as the *execution role* — the role SageMaker
 assumes — and not as the role the person signed in with. So restricting what a data scientist may
 *click* does not restrict what their notebook may *reach*, and a control written against the wrong one of the
-two constrains nothing. `docs/ORGANIZATION.md`, "The two families of IAM role", carries the distinction and what
+two constrains nothing. `docs/ORGANIZATION.md`, "The families of IAM role", carries the distinction and what
 actually happens when a job runs.
 
 In a conventional environment, code reaches production through review, CI and a deploy. In a data science
