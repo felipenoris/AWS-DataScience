@@ -206,7 +206,7 @@ This table is the only routing map; every other file points here rather than rep
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | Anything VPN: the pieces, starting and stopping the hub, a tunnel that will not come up, a key event, a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md): §S the system, §C the client, §K the keys, §K0a the SSM session. The hub is started and stopped with `make hub-up` / `make hub-down`, never `make up ENV=…` |
 | Connecting a laptop: the session's up/down order, the `.conf` and its checks, the proxy on macOS and Linux, the two client profiles | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) |
-| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`), never transcribed |
+| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`); the house image carries a dated copy of it (6d decision 8) and every other consumer reads the output |
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
@@ -227,22 +227,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Step 9 and most of 3 and 8 done 2026-09-08; step 4 exercised
-  2026-09-09/10; 7.1/7.2 read 2026-09-07. Decision due 6 was taken in full 2026-09-09 — five names in,
-  `api.github.com` and `raw.githubusercontent.com` refused. **2.1 and 2.2 applied 2026-09-10**:
-  `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env` v1 against `default-v0.1.1`,
-  `ImageVersionStatus CREATED`, the digest the same `sha256:6916fc13…` 9.5 pushed; the image role
-  `awsds-sandbox-sagemaker-image` is what SageMaker assumes to read the repository cross-account
-  (CloudTrail: `BatchGetImage`, session `SageMaker`), so the `RoleArn` is not decorative. **The proxy
-  variables do not fit**: `ContainerEnvironmentVariables` caps each value at 256 characters and
-  `NO_PROXY` is ~2,300, so both app image configs carry no environment. **Decision 8 taken the same day
-  (the user): the six variables are `ENV` in `images/dev-env/Dockerfile`**, `NO_PROXY` as a build arg
-  read from `<account>/egress`, the build failing on an empty value, plus the apt and sudoers files;
-  the image is now shaped by one VPC's endpoint list, so a list change is a rebuild + tag + version +
-  re-attach, readable through `/opt/awsds-proxy.txt` —
-  [`runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) §E, which also carries the attach recipe.
-  **The rebuild is owed**: `default-v0.1.1` predates it. Owed: 2.3-2.5 (the attach is a hand `update-domain` on the
-  blueprint's domain, full-replace, unexercised); 3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5
-  beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision due 4.
+  2026-09-09/10; 7.1/7.2 read 2026-09-07; decision due 6 taken in full 2026-09-09. **2.1/2.2 applied
+  2026-09-10**: `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env` v1 against
+  `default-v0.1.1`, `CREATED`, digest `sha256:6916fc13…` — 9.5's own. SageMaker assumes the image role
+  `awsds-sandbox-sagemaker-image` to read the repository cross-account, so the `RoleArn` is not
+  decorative. **`ContainerEnvironmentVariables` caps each value at 256 characters** against a
+  `NO_PROXY` of ~2,300, so the app image configs carry no environment: **decision 8 (the user) put the
+  six variables in `images/dev-env/Dockerfile` as `ENV`**, the bypass list a dated literal (50 entries,
+  sha256 `856bc57bb…`) beside its refresh command, plus the apt and sudoers files. The image is now
+  shaped by one VPC's endpoint list, and `./aws/devenv.py` (`DE-1`..`DE-4`) reads the divergence.
+  Owed: **the rebuild**; 2.3-2.5, behind the attach (a hand `update-domain` on the blueprint's
+  domain); 3.1's `uv`/Julia/R; 1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown observed
+  unasked; step 6; and 7.3-7.9, which wait on decision due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
   sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →

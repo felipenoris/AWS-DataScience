@@ -49,29 +49,33 @@ cd /opt/awsds/images && sudo docker build -t awsds/base:local base
 ```
 
 ```bash
-sudo docker build --build-arg NO_PROXY_LIST="<the value read below>" -t awsds/dev-env:local dev-env
+sudo docker build -t awsds/dev-env:local dev-env
 ```
 
-**`dev-env` does not build without that argument, by design** (6d decision 8, 2026-09-10). The image
-carries the estate's six proxy variables as `ENV`, and `NO_PROXY` is what keeps AWS traffic on the VPC
-endpoints; an image with a proxy and no bypass list works while sending every AWS call out as a public
-one, past every `aws:SourceVpc` condition, so the Dockerfile refuses an empty value rather than
-producing that image. The value is **generated, never transcribed** — read it on the laptop, in the
-account the image will run in, and paste it into the command above:
+**Check the baked `NO_PROXY` before that build** (6d decision 8, 2026-09-10). The image carries the six
+proxy variables as `ENV`, and `NO_PROXY` — what keeps AWS traffic on the VPC endpoints — is a **literal
+in the Dockerfile**, dated in its own comment. An image whose list predates the account's current
+endpoint set still works, and sends the names added since out through the proxy as public calls. So
+read the current value on the laptop, and if it differs from the one in `dev-env/Dockerfile` §6, update
+the file first:
 
 ```bash
 AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
 ```
+
+Another account's image overrides it without editing the file:
+`--build-arg NO_PROXY_LIST="$(…)"`.
 
 **This is what makes the image estate-shaped.** It is baked with one VPC's endpoint list, so an endpoint
 added anywhere in that account — `sandbox/egress` went 28 → 50 entries on 2026-09-09 without a hand edit,
 on a module bump — makes every existing image stale, and the repair is a rebuild, a new tag, a new
 SageMaker image version and a re-attach. A second Sandbox (D35) needs its own build for the same reason.
 The trade was taken with its eyes open, against two API-side mechanisms that cannot carry the value at
-all: [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md) §E. **What makes a stale image
-detectable** is `/opt/awsds-proxy.txt` inside it — the entry count and the first 16 hex of the list's
-sha256, against `terraform output -raw no_proxy | shasum -a 256 | cut -c1-16` on the operator's side.
-Nothing enforces the comparison; it is a reading, and the runbook names where it belongs.
+all: [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md) §E. **What reports a stale
+Dockerfile** is `./aws/devenv.py`, which compares the literal against the account's current output and
+names the entries each side is missing; **what reports a stale image** is `/opt/awsds-proxy.txt` inside
+it, the entry count and the first 16 hex of the list's sha256. Neither is enforced by a gate: both are
+readings, and [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §E says when to take them.
 
 ```bash
 ./scripts/buildbox.py down

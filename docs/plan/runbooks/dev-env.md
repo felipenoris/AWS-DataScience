@@ -200,11 +200,13 @@ So [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) §6 sets th
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-**The list is a build argument, never a literal.** `NO_PROXY_LIST` is read from the account the image
-will run in (`terraform output -raw no_proxy` on `<account>/egress`) and passed to `docker build`; the
-Dockerfile **fails the build** on an empty value rather than producing an image that works and loses the
-perimeter. The section sits last in the file so its `ENV` does not reach the build's own `RUN` steps,
-which run in `VPC-SharedServices` against a different endpoint set.
+**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-09-10 (50 entries,
+sha256 `856bc57bb73c4134`). The comment beside it carries the command that produces the current value —
+`terraform output -raw no_proxy` on `<account>/egress` — because the list is generated there and eight
+of its names are not derivable from a service token. A second account overrides it at build time with
+`--build-arg NO_PROXY_LIST=…` rather than editing the file. The section sits last in the file so its
+`ENV` does not reach the build's own `RUN` steps, which run in `VPC-SharedServices` against a different
+endpoint set.
 
 ### What an endpoint change costs
 
@@ -213,16 +215,19 @@ shaped by one VPC's endpoint list**. A change to that list — including one nob
 `sandbox/egress` went 28 → 50 entries on a module bump — makes every existing image stale, and the
 repair is the whole chain:
 
-1. `make up ENV=<env>` and read the new value (`terraform output -raw no_proxy`).
-2. A buildbox session: `base` if it moved, then `dev-env` with the new `--build-arg`
-   ([`buildbox.md`](buildbox.md) §U), and a push under a **new tag** — the repositories are tag-immutable.
+1. `make up ENV=<env>`, read the new value (`terraform output -raw no_proxy`) and put it in
+   `images/dev-env/Dockerfile` §6, with its date.
+2. A buildbox session ([`buildbox.md`](buildbox.md) §U): `base` if it moved, then `dev-env`, and a push
+   under a **new tag** — the repositories are tag-immutable.
 3. `image_tag` in [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf), then apply — a version replace (§B).
 4. Re-attach: the domain's `CustomImages` names a version number (§C6).
 5. Every space restarts. A running app keeps the environment it started with, under any mechanism.
 
-Nothing in the estate notices when steps 1-4 have not happened. **What makes it detectable** is
-`/opt/awsds-proxy.txt` in the image — the entry count and the first 16 hex of the list's sha256, written
-at build time. From inside a space:
+**What reports the divergence** is `./aws/devenv.py`: it reads the account's list out of
+`<account>/egress`'s state and compares it with the Dockerfile's literal, naming each side's extra
+entries (`DE-1`..`DE-4`, exit 2 on a divergence). It compares the **repository**, so it cannot see an
+image older than the file. That second gap is what `/opt/awsds-proxy.txt` closes — the entry count and
+the first 16 hex of the list's sha256, written at build time. From inside a space:
 
 ```bash
 cat /opt/awsds-proxy.txt
@@ -275,6 +280,7 @@ which is the guard rather than a problem.
 | Does the domain offer the image? | `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | the attachment, which no Terraform state records |
 | Did the registration read the repository across the boundary? | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=BatchGetImage --profile awsds-infra-prod` | the image role as `AWSAccount`/`…:SageMaker` on `awsds-prod-ecr-dev-env` (§C5) |
 | Did a **space** pull it? | the same lookup, in the window a space started | the project role rather than the image role — a different principal, and Stage 6d step 2.5's own reading |
+| Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py` | the repository's two copies, name by name; an image older than the Dockerfile is the gap it cannot see (§E) |
 
 ## F. Failures, and what each one is
 

@@ -68,10 +68,10 @@ resource "aws_sagemaker_image_version" "dev_env" {
 #
 # So these configurations bind an app type to the image and carry no environment. The delivery was
 # decided by the user on 2026-09-10 (6d decision 8): the six variables are ENV in
-# images/dev-env/Dockerfile, with NO_PROXY arriving as a build argument read from <account>/egress
-# so the generated list is never transcribed. What that costs - the image is shaped by one VPC's
-# endpoint list, and a change to it is a rebuild, a tag, a version and a re-attach - is
-# docs/plan/runbooks/dev-env.md E, which also carries the staleness reading.
+# images/dev-env/Dockerfile, the bypass list a dated literal there with the command that refreshes it
+# beside it. What that costs - the image is shaped by one VPC's endpoint list, and a change to it is a
+# rebuild, a tag, a version and a re-attach - is docs/plan/runbooks/dev-env.md E, which also carries
+# the staleness reading.
 
 resource "aws_sagemaker_app_image_config" "jupyterlab" {
   app_image_config_name = "awsds-${var.env}-dev-env-jupyterlab"
