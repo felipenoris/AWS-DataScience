@@ -6,13 +6,12 @@ an apply; `[user]` is something done by hand, with any measurement pasted verbat
 
 ---
 
-## 2026-09-07 — two readings taken ahead of the stage, because both are inputs to other people's steps
+## 2026-09-07 — readings taken ahead of the stage: 3.6 and 7.2
 
 *Stage 6c's pass 6 is waiting on four `[user]` readings, so the two 6d steps that need nothing from
-anybody were taken first. Both turned out to be worth taking early for the reason their own step
-texts give: each one is a **lead time**, not a portal click.*
+anybody were taken first. Each is a **lead time**, not a portal click.*
 
-### 3.6 — the two portal surfaces, measured against the Region's own catalog
+### 3.6 — the portal surfaces, measured against the Region's own catalog
 
 - **[Claude] All four names exist in `us-west-2`** — read from
   `describe-vpc-endpoint-services`, not from the vendor table:
@@ -29,15 +28,14 @@ texts give: each one is a **lead time**, not a portal click.*
   covered by accident — `logs` was in the core list from Stage 3 for a different reason — and the
   other, **Portal Query Editors, has no endpoint in any VPC**. Under design B that is not a slower
   path, it is **no path at all**: a portal feature that exists in the UI and fails on first use.
-- **[Claude] WHAT IS NOT DECIDED HERE, deliberately.** Both spellings exist, and which one the portal
+- **[Claude] What is not decided here, deliberately.** Both spellings exist, and which one the portal
   actually calls is a measurement that needs the feature opened — a step that belongs to whoever
   opens it. Adding both would be 0.020/h for a feature nobody has used; adding neither is the state
-  today. **Recorded as a named gap rather than closed by guess**, and it is a cheap one to close once
-  somebody clicks the editor: the symptom will be a 403 or a timeout with `sqlworkbench` in it.
+  today. **Recorded as a named gap**: the symptom will be a 403 or a timeout with `sqlworkbench` in it.
 
-### 7.2 — which principal makes the remote-IDE call, and the static half is decisive
+### 7.2 — which principal makes the remote-IDE call
 
-- **[Claude] The step asks the right question and the answer is worse than it feared.** 6a step 3.2
+- **[Claude] The answer is worse than the step feared.** 6a step 3.2
   attached two denies — `DenyRemoteSessionOnSomeoneElsesSpace` and `DenyRemoteSessionAsSomeoneElse`,
   both on `sagemaker:StartSession` — to the **six persona sets**, to *scope* the remote-IDE channel
   rather than deny it. Read back from Identity Center today, `DataScientistAccess` carries:
@@ -58,16 +56,15 @@ texts give: each one is a **lead time**, not a portal click.*
     rather than a scoping decision;
   - if it connects with the **project role**, it succeeds **unscoped**, because that role carries
     neither deny.
-  Either way **the objective's scoping was granted by nothing**. This is Lesson 18 in its plainest
-  form — a policy never constrains the principal that authors it — with Lesson 28 underneath: the
-  grant and the constraint are in two different slices, and neither file shows the gap.
-- **[Claude] The repair the step already names is the right one and is NOT a new SCP.** An SCP would
+  Either way **the objective's scoping was granted by nothing** (Lesson 18, with Lesson 28
+  underneath: the grant and the constraint are in two different slices, and neither file shows the gap).
+- **[Claude] The repair the step already names is the right one, and it is not a new SCP.** An SCP would
   deny the feature rather than scope it. The estate has exactly one instrument that reaches a role a
   blueprint writes: **the D13 permissions boundary of 6a step 2.1**. The two conditions move there.
   **Not done here**: it changes a boundary on a blueprint-authored role, the boundary field is
   write-only (always `get-role`, never `list-roles`), and 7.5's CloudTrail is what names the role to
-  attach it to. Recorded so the repair is not rediscovered as a design question.
-- **[Claude] What this does NOT settle**: whether a space is created with remote access at all (7.3,
+  attach it to.
+- **[Claude] What this does not settle**: whether a space is created with remote access at all (7.3,
   the user's decision) and which of the three connection methods works (7.4). The reading above makes
   7.3's recommendation stronger rather than weaker — *on for one space, by hand, off as the default* —
   because the scoping everyone assumed was in place is not.
@@ -76,7 +73,7 @@ texts give: each one is a **lead time**, not a portal click.*
 
 *The step said to take it first because a missing endpoint is a slice edit with a lead time. There is
 no missing endpoint. What the pages carry instead is three requirements the step never asked about
-and one fact that re-frames 7.2 — so the lead time went into the plan rather than into a slice.*
+and one fact that re-frames 7.2.*
 
 - **[Claude] Eight pages read, two of them the ones `REFERENCES.md` had carried since 2026-08-16
   without a consumer** — the SMUS admin guide's *Configuring remote access* and *Network configuration
@@ -130,7 +127,7 @@ and one fact that re-frames 7.2 — so the lead time went into the plan rather t
   - **SMD ≥ 2.7, or a BYOI carrying `curl`/`wget`, `unzip`, `tar`, `gzip`** — `images/base/` is
     `sagemaker-distribution:4.3.0-cpu` and installs `curl` and `unzip`; and **TIP must be off** —
     delivered `false` and non-editable by 6a decision 2, which named this feature as its reason.
-  - **The VS Code server is downloaded by the SPACE**, from `update.code.visualstudio.com` and
+  - **The VS Code server is downloaded by the space**, from `update.code.visualstudio.com` and
     `vscode.download.prss.microsoft.com` (extensions: `marketplace.visualstudio.com`,
     `*.gallerycdn.vsassets.io`). The vendor's private-subnet answer is an HTTP proxy with those names
     allowed — on this estate a **compute-plane widening**, the plane the user's rule keeps
@@ -138,7 +135,7 @@ and one fact that re-frames 7.2 — so the lead time went into the plan rather t
     `remote.downloadExtensionsLocally = true` (the laptop downloads on the open plane and pushes
     through the SSH tunnel), and AWS's pre-packaged tarball installed by a lifecycle configuration
     from S3. Recorded as **decision due 5**, recommended: the client settings.
-- **[Claude] And the pages re-frame 7.2, which is why the lead time went into the plan.** The SMUS
+- **[Claude] The pages re-frame 7.2.** The SMUS
   guide names the **project role** as the principal that must hold `StartSession`, and says AWS's
   managed policy *"has already been updated to provide access for the Spaces they own"* —
   conditioned on `AmazonDataZoneProject` and `datazone:userId`, the same two tags as the estate's
@@ -152,7 +149,7 @@ and one fact that re-frames 7.2 — so the lead time went into the plan rather t
   - **The persona pair would deny everything, not scope.** A persona's SSO session carries no
     `AmazonDataZoneProject` or `datazone:userId` principal tag, so `StringNotEquals` against an
     unresolvable variable is true for every space. The guard `policies-sagemaker.tf` describes —
-    *"a deny is what survives someone else granting it"* — is a kill-switch wearing a scoping's name.
+    *"a deny is what survives someone else granting it"* — is a kill-switch, not a scoping.
     The 2026-09-07 morning reading said *granted by nothing*; the precise sentence is **scoped by
     AWS's Allow on the project role if that policy is attached, and by nothing of ours**.
   - **No method is both VPN-bound and scoped today.** Decision due 4 re-framed: choose the method
@@ -161,13 +158,13 @@ and one fact that re-frames 7.2 — so the lead time went into the plan rather t
     carries (the vendor's ABAC example uses `IDC_UserName` through Identity Center's attributes for
     access control; the one space is tagged by hand at 7.3), the pair rewritten to that key, and
     `StartSession` **denied on the D13 boundary** so the deep link's path closes.
-- **[Claude] One reading NOT taken, named so it is not read as taken**: whether the Sandbox project
+- **[Claude] One reading not taken**: whether the Sandbox project
   role actually carries AWS's conditioned Allow — `list-attached-role-policies` and the inline
   documents, as `awsds-infra-sandbox-1`. The SSO session had expired; the user was asked for the
   sign-in (infrastructure user, `Sandbox`, `InfrastructureAccess`). It decides whether the deep-link
   path is *AWS-scoped* or *unscoped*, and nothing above changes with the answer except that word.
 
-## 2026-09-07 — the session audited, the documentation swept for 6b/6c, and three plans re-cut
+## 2026-09-07 — the session audited, the documentation swept for 6b/6c, and the plans re-cut
 
 *Done at the user's request after 7.1, in this order: the transcript against the logs, then every living
 document against what 6b and 6c built, then the plans for what remains.*
@@ -213,10 +210,10 @@ document against what 6b and 6c built, then the plans for what remains.*
 ## 2026-09-07 — the pending reading, two prices, and the space-path ceiling removed at the user's request
 
 *After the sign-in (infrastructure user, `Sandbox`, `InfrastructureAccess`). Everything below is a read
-except the Terraform change, which is authored, tagged and planned — and NOT applied.*
+except the Terraform change, which is authored, tagged and planned — and not applied.*
 
-- **[Claude] The project role's policies — the reading 7.1 left pending, and the word it was waiting for
-  is *scoped*.** One DataZone role in Sandbox, `datazone_usr_role_<project>_<env>`, under the boundary
+- **[Claude] The project role's policies — the reading 7.1 left pending.**
+  One DataZone role in Sandbox, `datazone_usr_role_<project>_<env>`, under the boundary
   **`awsds-sandbox-project-boundary`** (D13's; `get-role`), with three AWS managed policies and no inline
   document: `SageMakerStudioProjectUserRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy` and
   the Bedrock knowledge-base service-role policy. **The second carries
@@ -257,7 +254,7 @@ except the Terraform change, which is authored, tagged and planned — and NOT a
   sets, in place) and **`0 to add, 1 to change, 0 to destroy`** in `sandbox/sagemaker/` (the boundary
   policy, in place), the diff being the one statement. **Not applied** — the two applies (`identity/sso/`
   as `awsds-infra-identity`, `sandbox/sagemaker/` as `awsds-infra-sandbox-1`) wait for the word. **What it
-  gives up, said once**: an `ml.p4d` Code Editor space bills USD 30+/h and D12's budget notifies nobody;
+  gives up**: an `ml.p4d` Code Editor space bills USD 30+/h and D12's budget notifies nobody;
   the Tooling idle shutdown bounds an idle space and nothing bounds a busy one.
 
 ## 2026-09-07 — the two applies, authorized in chat, and the ceiling read back from both objects
@@ -275,7 +272,7 @@ except the Terraform change, which is authored, tagged and planned — and NOT a
   **0 FAILED** — `US-8` all three blueprint-provisioned roles bounded, `US-9` both Sids in all six sets,
   `US-10` zero running apps; the seven persona and `ctadmin` profiles it could not authenticate are
   other `sso-session`s with no token (section 10), not findings.
-- **What changed for a data scientist, in one sentence**: a Code Editor or JupyterLab space may now be
+- **What changed for a data scientist**: a Code Editor or JupyterLab space may now be
   created or resized at any `ml.*` type — from the portal (the project role, under the boundary) or by
   API (the persona set) — while a training, processing, tuning or transform job, an endpoint config or a
   notebook instance still refuses a type outside the seven.
@@ -337,12 +334,11 @@ sagemaker-user@default:~$ curl -sL -o /dev/null -w '%{http_code}\n' --max-time 3
   all**. An absence is weak evidence on its own and is not weak here: had `NO_PROXY` failed,
   `sts.us-west-2.amazonaws.com` would be a `CONNECT` line beside the others, because `.amazonaws.com`
   **is** on the `sandbox-foundation` plane — the proxy would have permitted it, and the call would have
-  arrived carrying neither `aws:SourceVpc` nor `aws:SourceVpce`. The failure this pair rules out is the
-  one that succeeds.
+  arrived carrying neither `aws:SourceVpc` nor `aws:SourceVpce`.
 - `getent hosts` returning **10.20.32.164** for `sts` is the same address 6c step 6.2 recorded on
   2026-09-07 from a restarted space — an unplanned cross-check on the endpoint set.
 
-### [Claude] 3.3 — what the proxy saw, and the GitHub redirect is confirmed BY NAME
+### [Claude] 3.3 — what the proxy saw, and the GitHub redirect confirmed by name
 
 `./aws/proxy.py --on-host` (authorized in chat; `ssm:SendCommand`) read **`PX-1`, `PX-2`, `PX-3`, `PX-5`
 `pass`, `PX-4` the standing note** — five planes, entry for entry, the render current. The report does
@@ -367,11 +363,11 @@ not carry the access log, so the log group was read directly (`filter-log-events
   and the same remedy: read the new name out of this log, never widen to the namespace.
 - **The `403`s are legible because the refused probes used `http://`** — over `https` the refusal is a
   CONNECT refusal and `%{http_code}` reads `000`, which is exactly what the tarball line returned to the
-  user while the proxy was logging a named `403`. The two views of one event, in one sitting.
+  user while the proxy was logging a named `403`.
 - **The source address in every line is the app ENI, 10.20.66.132** — a spoke reaches 3128 over the
   peering, un-masqueraded, so the log is per-workload the same way the tunnel's is per-device.
 
-### [Claude] The one reading that is weaker than it looks, and the user's own first command is why
+### [Claude] The reading that is weaker than it looks
 
 `curl --noproxy '*' https://pypi.org/` returned `000`, and the step wanted that read as *no default
 route*. It is not: the user's **first** command, before the proxy variables were exported, returned
@@ -379,8 +375,8 @@ route*. It is not: the user's **first** command, before the proxy variables were
 families of 6c step 5.7. So the `000` measured a **resolution** refusal, and the absent route was never
 reached. Both facts are true — there is no default route, as code — but this measurement cannot separate
 them (Lesson 42). **The routing half stays 6c step 6.3's probe**, which uses `checkip.amazonaws.com`: a
-name inside `*.amazonaws.com`, so it resolves and then has nowhere to go. Recorded so that a later reader
-does not cite the `000` as the route's proof.
+name inside `*.amazonaws.com`, so it resolves and then has nowhere to go. The `000` is not the route's
+proof.
 
 The same reading is the design working: with an explicit proxy the client never resolves the destination
 — the name is handed to Squid — which is what allowed the DNS list to fall from 63 entries to 10.
@@ -403,7 +399,7 @@ The same reading is the design working: with an explicit proxy the client never 
 allow-list and are not. Both were run by the user; the readings, the plane entry and the plan edits are
 Claude's. Nothing was applied.*
 
-### [user] `apt`, and the two runs whose IDENTITY is the measurement
+### [user] `apt`, and the two runs whose identity is the measurement
 
 *(The `Ign:` block repeats three times in each run — `apt`'s own retries. Elided as `[…]`; nothing else
 is removed.)*
@@ -438,7 +434,7 @@ Reading package lists... Done
 W: Some index files failed to download. They have been ignored, or old ones used instead.
 ```
 
-### [Claude] What that proves, and the evidence is that the export changed NOTHING
+### [Claude] What that proves: the export changed nothing
 
 `archive.ubuntu.com` and `security.ubuntu.com` **are** on `proxy_allow_sandbox` — they have been since
 6c step 4.9. So this is not the allow-list. It is not the proxy at all: the message is `Could not
@@ -447,7 +443,7 @@ A resolution attempt is therefore proof that `apt` was not using a proxy, and th
 Sandbox DNS Firewall, whose ten entries are four families that do not include Ubuntu's archives and by
 design never will.
 
-**Why the export did not help is the whole finding, and the tell is that the two runs are identical.**
+**Why the export did not help: the two runs are identical.**
 `sudo` on Ubuntu defaults to `env_reset`, and `http_proxy` is not in its `env_keep`: the variables were
 stripped at the `sudo` boundary and `apt` ran with a clean environment. Not "the proxy failed" — *the
 process never saw one*. This is the same class as 6c 5.8's *"the host is told in four places"*, arriving
@@ -481,8 +477,8 @@ first time. `-o Acquire::http::Proxy` needs no environment and no sudoers change
 so that a person's exported variables survive `sudo` for everything that is not `apt`. Both are now
 2.2's.
 
-**One incidental fact worth keeping**: the packages are **`amd64`**. It is the only architecture reading
-this estate has taken from inside a space, and it contradicts a string in the next section.
+**One incidental fact**: the packages are **`amd64`** — the only architecture reading this estate has
+taken from inside a space, and it contradicts a string in the next section.
 
 ### [user] A Code Editor space, nothing configured, failing on its own startup
 
@@ -505,7 +501,7 @@ and only three are kept.*
 Six `[Network]` failures, **four** `getaddrinfo ENOTFOUND open-vsx.org`, and the socket to the space
 itself connected in 721 ms — the space works; its gallery does not.
 
-### [Claude] Which side asked, and the shape of the error settles it before any log is opened
+### [Claude] Which side asked, settled by the shape of the error
 
 The candidates are the **space's** VS Code server and the **laptop's** browser, and they resolve through
 different resolvers. The laptop's DNS goes down the tunnel to `10.31.0.2`, which is `VPC-Networking`'s
@@ -519,18 +515,17 @@ Only the Sandbox VPC has a resolver that answers this way. **The space asked.** 
 (30-day retention, the rule action beside the name) turns that from an argument into a record, and that
 reading is step 8.2.
 
-**What the failure is NOT is the allow-list.** `ENOTFOUND` means the server resolved the name itself,
+**The failure is not the allow-list.** `ENOTFOUND` means the server resolved the name itself,
 which an explicit-proxy client never does — the same reading as `apt`, one layer up. Two components, one
 cause: **no proxy in the process**. That is a cheaper repair than *"the component has no proxy support"*,
-and it is worth separating, because the two have different fallbacks (D38's endpoint, then the per-VPC
-NAT contingency) and only one of them is expensive.
+and the two have different fallbacks (D38's endpoint, then the per-VPC NAT contingency), only one of
+them expensive.
 
 **And the failing extensions are AWS's own.** `amazonwebservices.amazon-q-vscode` and
-`amazonwebservices.aws-toolkit-vscode` update themselves at every space start. So this is not a user
-reaching for something unusual — **every Code Editor space in this estate produces this failure, in
-silence**, and reads as a broken IDE rather than as a policy.
+`amazonwebservices.aws-toolkit-vscode` update themselves at every space start. **Every Code Editor space
+in this estate produces this failure, in silence**, and reads as a broken IDE rather than as a policy.
 
-**One string is unexplained and is written down as such.** The requests asked for
+**One string is unexplained.** The requests asked for
 `targetPlatform=alpine-arm64`; the JupyterLab space an hour earlier fetched `amd64` Ubuntu packages, and
 the SageMaker Distribution image is not Alpine. It is more likely VS Code's own fallback than a fact
 about the space, but nothing here measured it — `uname -m` and `/etc/os-release` from that terminal
@@ -551,7 +546,7 @@ than convenience: this plane already carries five package indexes, and an extens
 kind of channel. Refusing it would not have been a narrower perimeter — it would have been the same
 perimeter with one ecosystem missing for no stated reason.
 
-**The qualifier matters more than the decision.** Decision due 6 is written as *"every `403` the proxy
+Decision due 6 is written as *"every `403` the proxy
 logs is a name to allow or a loss to record"*, and this name **never produced a `403`**: it failed at
 resolution, upstream of the proxy, and the proxy's log has no line for it at all. So that decision's
 instrument reads a **floor**, not the whole list — a missing name can fail without ever reaching the
@@ -559,7 +554,7 @@ log, and the second instrument for it is `/awsds/sandbox/dns-firewall`.
 
 ---
 
-## 2026-09-08 — the third sitting: the attribution recorded, and the BUILD plane stops being an allow-list
+## 2026-09-08 — the third sitting: the attribution recorded, and the build plane stops being an allow-list
 
 *The user read `hub-anchors.tf`, reported three more measurements from the JupyterLab space (Rust and
 crates installed, GitHub cloned, random sites refused), asked a mechanism question about CNAMEs, and then
@@ -583,9 +578,9 @@ CNAME chain is evaluated anywhere in the estate. So:
 **A CNAME and an HTTP redirect look alike from the outside and are opposite here.** A CNAME is resolution,
 which this filter does not perform; a redirect is a new request with a new name, which is the only thing
 this filter reads. The old DNS Firewall had it the other way round — it evaluated chains and needed
-`TRUST_REDIRECTION_DOMAIN`, and never met a redirect at all. Lesson 53 from both sides in one paragraph.
+`TRUST_REDIRECTION_DOMAIN`, and never met a redirect at all (Lesson 53).
 
-**One consequence worth stating rather than discovering**: because the control is *which names may be
+**One consequence**: because the control is *which names may be
 requested*, an allowed CDN host is a front for whatever that CDN serves. D38 §6 already records domain
 fronting through an allowed CDN as an accepted residual, in Stage 11's threat model.
 
@@ -612,7 +607,7 @@ other `archive.ubuntu.com`, `pypi.org`, `datazone` and the projects bucket (the 
 
 **Three names nobody had listed, and one of them is a domain this estate had not noticed:**
 
-- **`idetoolkits.amazonwebservices.com` — `amazonwebservices.com` is NOT `amazonaws.com`.** A different
+- **`idetoolkits.amazonwebservices.com` — `amazonwebservices.com` is not `amazonaws.com`.** A different
   registrable domain, AWS's, and `.amazonaws.com` on the plane does not cover a byte of it. Beside it in
   the same log, `idetoolkits-hostedfiles.amazonaws.com` **was** allowed — the two hosts of one feature,
   split across two domains, one covered and one not.
@@ -621,7 +616,7 @@ other `archive.ubuntu.com`, `pypi.org`, `datazone` and the projects bucket (the 
   `codeload.github.com` was refused at 3.1, now stated as a property of the entry rather than as an
   incident.
 
-**And two independent confirmations arrived free.** `pypi.org` BLOCK from `10.20.16.8` is the `curl` before
+**Two independent confirmations arrived free.** `pypi.org` BLOCK from `10.20.16.8` is the `curl` before
 the export in 3.1; `archive.ubuntu.com` and `security.ubuntu.com` BLOCK from the same address is
 `sudo apt update`. Both entries above were written from the terminal output alone; the resolver's own log
 agrees with them.
@@ -629,7 +624,7 @@ agrees with them.
 **Every name is queried twice** — bare, and with `.us-west-2.compute.internal` appended by the VPC search
 domain — and both forms are blocked. It doubles the log volume and is not a finding.
 
-### [user] The decision: the BUILD plane is not the thing the objectives restrict
+### [user] The decision: the build plane is not what the objectives restrict
 
 Reading `proxy_allow_shared`, the user observed that it exists to serve the buildbox, that the buildbox is
 today's stand-in for the CI/CD pipeline, and that a pipeline's external access is criticised **by the code
@@ -659,7 +654,7 @@ belong in SharedServices.
 | Stage 6d | **Step 9** (six sub-steps), 8.2 closed with the reading, 8.6 re-aimed at the three names, deliverables/validation/decision 6 and a new decision 7 |
 | `history.md`, `decisions/INDEX.md`, `institutional-delta.md`, `NETWORK.md`, `vpn.md`, `buildbox.md`, `buildbox/README.md`, `buildbox/main.tf` | the amendment carried to every place that described the build plane as an allow-list |
 
-### [Claude] The three readings taken, and the one middle state to expect
+### [Claude] The readings taken, and the middle state to expect
 
 - **`terraform plan` on `production/networking/`: `0 to add, 1 to change, 0 to destroy`** — the SSM
   parameter, with all four preconditions passing (a precondition failure fails the plan, so this is their
@@ -735,18 +730,17 @@ http_access allow src_tunnel
 | `d5l0dvt14r5h8.cloudfront.net` | **absent from both files** |
 | `squid.conf` part 1-4 | unchanged: `deny to_private` line 1, the port guards, the include, `deny all` last |
 
-**The build plane now renders exactly like the tunnel**, which is the clearest statement of what the
-amendment did: two `open` planes, two bare allows, both sitting **after** `deny to_private` and the port
-guards and **before** the backstop. "Open to the internet, never open to the estate" is not a claim about
-this change — it is the position of the include in the file.
+**The build plane now renders exactly like the tunnel**: two `open` planes, two bare allows, both sitting
+**after** `deny to_private` and the port guards and **before** the backstop. "Open to the internet, never
+open to the estate" is not a claim about this change — it is the position of the include in the file.
 
-**One prediction was wrong in its detail and it is worth correcting.** Claude expected an empty
+**One prediction was wrong in its detail.** Claude expected an empty
 `dstdeny_production_foundation` ACL. There is none: the renderer emits **no ACL at all** for an empty
 list, of either kind. So the observable signature of an `open` plane is `acl src_X` followed by a bare
 `http_access allow src_X` — not a `dstdeny_` line, and somebody grepping for one would conclude the
 change had not landed.
 
-**And a legibility note that follows from the same rule.** `production-workloads` and
+**A legibility note follows from the same rule.** `production-workloads` and
 `staging-foundation` are `allowlist` with empty lists, so they render as **nothing** — they are absent
 from the file entirely. On the host, *"a plane that refuses everything"* and *"a plane that does not
 exist"* are indistinguishable. The behaviour is right either way (the backstop refuses that source by
@@ -780,7 +774,7 @@ Both repositories are `IMMUTABLE` and both still carry `default-v0.1.0` from 202
 are four objects, not two — the digests above are the identity, the tag is the pointer (`SMUS.md`,
 "the tag is not the identity").
 
-### [Claude] What the build actually fetched — 196 requests, and one of them is the finding
+### [Claude] What the build actually fetched — 196 requests
 
 `/awsds/prod/proxy`, filtered to the build window. **196 requests, all from `10.30.47.211`**, a
 `VPC-SharedServices` address — which is the first thing the reading confirms: the source matched
@@ -807,7 +801,7 @@ falsified) now measures the control that survives an `open` plane — `deny to_p
 
 **`conda.anaconda.org` is on no allow-list.** Not on `proxy_allow_sandbox`'s 21 names, not on the
 `proxy_allow_shared` that used to derive from them, and `.amazonaws.com` does not cover it. It is 155 of
-the 196 requests and 368 MiB — and it is not a surprise nobody could have had: 3.1 recorded on
+the 196 requests and 368 MiB — and it could have been foreseen: 3.1 recorded on
 2026-09-08 that **`conda` and CRAN are refused by name on the compute plane**. Nothing carried that
 reading across to the build plane, because on the build plane it had never cost anything.
 
@@ -820,13 +814,12 @@ reading across to the build plane, because on the build plane it had never cost 
 | `00:46:36` → `00:56:20` | `conda.anaconda.org` — 155 requests over ten minutes |
 
 The refusal would have landed **one minute after** the 3.76 GiB pull completed, on the step after the one
-the old allow-list had been patched for. That is the whole argument for the amendment, arriving as a
-measurement rather than as a prediction: the deleted comment called its own next revision *"a WHEN rather
-than an IF"*, and the WHEN was **the next build**.
+the old allow-list had been patched for. The deleted comment called its own next revision *"a WHEN rather
+than an IF"*, and the when was **the next build**.
 
-It also says something sharper about the list that was deleted. Its CloudFront entry came from a failed
-`docker pull` — so what had been exercised against that list was the *pull*, and nothing had ever run
-past it. A list believed complete because it was only ever tested to its first step.
+The deleted list's CloudFront entry came from a failed `docker pull`, so what had been exercised against
+it was the *pull* and nothing beyond: a list believed complete because it was only ever tested to its
+first step.
 
 ### [Claude] Two readings the log gives away for free
 
@@ -837,14 +830,14 @@ does for a build, it does for the distro packages only.
 
 **The `open` mode delivered precisely what it promised**: it restricted nothing and recorded everything —
 every name, every byte, per request. The plane is not "unmonitored", it is *monitored instead of
-restricted*, and this table is what that distinction buys.
+restricted*.
 
-### [Claude] The rebuild is the same recipe, and that is worth writing down
+### [Claude] The rebuild is the same recipe
 
 `images/` carries **no commit** between `default-v0.1.0` and `default-v0.1.1` (last change `e49aa28`).
 The two are the same Dockerfiles built seventeen days apart, and the entire delta is upstream drift:
-`base` **+942 bytes**, `dev-env` **-11.8 MB**. That makes the patch bump the right shape, and it makes
-one property explicit that no stage had yet had cause to state: **the recipe is not reproducible
+`base` **+942 bytes**, `dev-env` **-11.8 MB**. That makes the patch bump the right shape, and makes one
+property explicit: **the recipe is not reproducible
 byte-for-byte**. A pipeline that assumes it is will report a change on every run and push a new digest
 for none. Recorded in `buildbox.md` beside the spent-tag list, and in `SMUS.md`'s tag record.
 
@@ -889,7 +882,7 @@ as a string rather than a finding. One coincidence recorded **without** promotio
 `browser/workbench.js`), so a client-side probe is the likelier author than the server. Nothing measured
 it; nothing depends on it.
 
-> **FALSIFIED THE NEXT DAY — 2026-09-09. The hypothesis above is wrong, and so is the sentence before
+> **Falsified the next day — 2026-09-09. The hypothesis above is wrong, and so is the sentence before
 > it.** The Open VSX API, queried from the space, returns `targetPlatform: alpine-arm64` for this
 > extension whenever **no platform is named** — at the root and at `/latest` alike — and `linux-x64` only
 > when the path asks for it. So VS Code was not detecting a platform at all: the workbench queried the
@@ -972,7 +965,7 @@ failed its first boot. **This is the third instance of one cause — the roster 
 resolver serves** — and `.api.aws` and `.app.aws` make it a *domain-family* problem rather than a
 spelling one, exactly as `amazonwebservices.com` was at 8.2.
 
-**And the two repairs for a `403` are indistinguishable from the symptom.** A name with an endpoint
+**The two repairs for a `403` are indistinguishable from the symptom.** A name with an endpoint
 belongs in the bypass list, where the call keeps `aws:SourceVpce`; putting it on the proxy's allow-list
 instead makes it *work* while sending it out through the hub as a public call. The first thing 8.6 asks
 of a refused name is therefore not *may this be fetched* but **does this have an endpoint** — a question
@@ -1046,7 +1039,7 @@ all — it is blocked behind **2.4**, *does an attachment we make to a blueprint
 reconciliation*. Two mechanisms, one risk, which removes the argument for (b) as a bridge: it buys no
 risk reduction over (c), only earliness.
 
-### [user] Decision due 6, taken in full — and it is the first time it has SUBTRACTED
+### [user] Decision due 6, taken in full — and the first time it has subtracted
 
 Allowed as one block, on the reasoning that each is the IDE working normally: the gallery's two names,
 plus `idetoolkits.amazonwebservices.com`, `ide-toolkits.app-composer.aws.dev` and
@@ -1079,12 +1072,12 @@ defect that reads as data. Rewritten as `${data.aws_region.current.region}`, `dn
 than guessing. **Terraform says `No changes` for either form**, so the instrument was the only thing in
 the toolchain that could tell the two apart. The `.tf` now carries why the form is what it is.
 
-*A process note, recorded because the runbook warns about it two lines above where Claude was reading:*
+*A process note:*
 the apply's output was piped through `tail -8`, which cut off the sentence saying what happened; a second
 apply was then run on a spent plan and returned `Saved plan is stale`. The first apply had succeeded
 (Lesson 46, in its smallest form).
 
-### [user] `PX-3` green — and it is the check that can see a REMOVAL
+### [user] `PX-3` green — the check that can see a removal
 
 `sandbox_foundation allowlist 24` on the running host, **entry for entry**, the association having run at
 01:31:18 after the 01:24:39 write.
@@ -1127,17 +1120,17 @@ sides, in one window.
 an *environment*, and the only place to attach one is the blueprint-provisioned domain, so it waits on
 2.4. **8.8 is open**: the `no_proxy` generator defect.
 
-**And the thing that works is not the thing a user does.** Everything above is `code-editor-server`
+**The thing that works is not the thing a user does.** Everything above is `code-editor-server`
 invoked by hand with variables a person exported. **Opening the space and clicking Install still fails**,
 because the server supervisord starts has none of them. Step 8 has therefore produced a *proof* and not
-yet a *fix*, and saying otherwise would be the failure Lesson 5 names — an intention is not a control.
+yet a *fix* (Lesson 5).
 
 **The platform build was read, and it is `linux-x64`** — `anthropic.claude-code-2.1.266-linux-x64`. So
 `code-editor-server` negotiates the platform correctly, and **8.7's second defect belongs to the browser
 workbench alone**: the `alpine-arm64` it asks for is the registry's default reaching a client that named
 none. The `.vsix` contingency is needed only where that path is in use.
 
-**And installing it properly produced a third face of the same defect.** Into the server's own
+**Installing it properly produced a third face of the same defect.** Into the server's own
 `--extensions-dir`, the extension appears and the `Install` button goes — then **clicking it raises an
 error**. Not an update: `claude-code` is **absent** from the `Auto updating outdated extensions` list,
 yet the workbench fetches `Microsoft.VisualStudio.Code.Manifest` for the version **already installed**,
@@ -1150,7 +1143,7 @@ worth, since the fix is the same and the surface it repairs is larger than *"can
 extension is fine, the IDE's marketplace surface is not, and the only broken action left in this space is
 the one that reads the gallery.
 
-**And the procedure is written down rather than left to be reconstructed.** [`sg-proxy.md`](../plan/runbooks/sg-proxy.md)
+**The procedure is written down.** [`sg-proxy.md`](../plan/runbooks/sg-proxy.md)
 §*Installing an extension in a Code Editor space* carries the invocation with the reason for each
 load-bearing part — three of which were learned by getting them wrong first — the reload it needs, what
 stays broken afterwards so nobody reads the detail-page error as a botched install, and the `403` path
@@ -1230,9 +1223,7 @@ to fail before a single resource was touched.
 
 6c step 5.7 wrote that precondition to turn a silent NXDOMAIN into *a plan-time failure naming the
 endpoint*. v0.11.0 had quietly taken the plan half away. **The repair produced Lesson 39 in a step
-written to remove a different defect**, which is what makes it worth its own lesson rather than an
-instance of that one — written up as **Lesson 59**: changing *where* a value is read from can change
-*when* it is knowable, and every guard reading it moves with it in silence.
+written to remove a different defect**, which earned it a lesson of its own: **Lesson 59**.
 
 v0.11.1 brings the service data source back **for the guard alone, never for the output**, and splits
 the precondition in two — `declared` (one name per service, plan-time, narrow) and `served` (every name,
@@ -1311,7 +1302,7 @@ what cuts the proxy log into two non-overlapping windows (the 8.4 method):
 So the proxy log's two source addresses are the pair: **`10.20.74.163`** (2 requests, the pre-restart app)
 and **`10.20.104.252`** (76 requests, 22:45:06→22:47:15Z — **the app running the new list**).
 
-**`datazone.us-west-2.api.aws` is ABSENT for `10.20.104.252`.** Searched across the log group's whole life
+**`datazone.us-west-2.api.aws` is absent for `10.20.104.252`.** Searched across the log group's whole life
 (retention 365 days, created 2026-09-06) the name has exactly three sources, and the contrast is between
 two space containers on the same day:
 
@@ -1321,7 +1312,7 @@ two space containers on the same day:
 | **`10.20.104.252`** | **the Sandbox space, after the restart** | **absent** — while making 76 other proxied requests in the same minutes |
 | `10.90.0.2` | the tunnel — the laptop's browser reaching the portal | `200` × 23 (09-07) and × 14 (09-09), expected and unrelated |
 
-**And the absence is a door rather than a silence, which is the half a proxy log cannot prove.**
+**The absence is a door rather than a silence, which a proxy log cannot prove on its own.**
 CloudTrail for the same window, `datazone.amazonaws.com`, filtered to that container:
 `GetDomainExecutionRoleCredentials` × 4, `ListConnections` × 3, `GetUserProfile` × 1 — **eight calls, every
 one carrying `vpcEndpointId vpce-0fb1f3ed96ef5653c`**, the Sandbox `datazone` interface endpoint. The app
@@ -1377,7 +1368,7 @@ CloudTrail, flow logs, the VPN host, Studio.
   resolver's is JSON, and its `firewall_rule_action` field is **absent** on an allowed query rather than
   set to `ALLOW`, which is a thing to know before writing a filter that looks for one.
 
-**And reading the format corrected this entry.** The byte figures above were first written as MiB from
+**Reading the format corrected this entry.** The byte figures above were first written as MiB from
 the log's raw counts — `aws-language-servers` as *54.98 MiB* — with no division. The post-restart
 container moved **98.1 MiB in 76 requests**, of which that host is **52.4 MiB**. Corrected in place, and
 the trap is in the runbook's §8 with its date, because the error is invisible: it produces a number of
@@ -1423,8 +1414,8 @@ policy.
   boundary denies. **Every default notebook workflow in this estate is dead on arrival** until that block
   carries subnets. It is 4.5's sharpest lint rule and a Stage 10 input.
 
-**Step 1's deny pair is exercised in SUBSTANCE and not in the object it was written for**, which is
-exactly Lesson 20's distinction. The refusal proves the *statement* works and that its wording is
+**Step 1's deny pair is exercised in substance and not in the object it was written for** (Lesson 20).
+The refusal proves the *statement* works and that its wording is
 attributable — but it came from the **project boundary**, while step 1 was written for the **six persona
 sets'** copy of the same statement. One intent in two objects (Lesson 33's shape). A persona-submitted job
 is still owed.
@@ -1455,12 +1446,12 @@ conditions have nowhere to come from. The fifth, the instance ceiling, is the on
 and satisfying it moved nothing.
 
 **With the ceiling satisfied, four denies now match the same call at once** and AWS names the **policy**,
-never the statement — Lesson 20 in its pure form. The refusal is real and attributable to the boundary;
+never the statement (Lesson 20). The refusal is real and attributable to the boundary;
 it is attributable to no single `Sid` without four contrast probes.
 
-### [Claude] The mistake, because it is the useful part of this sitting
+### [Claude] The mistake
 
-**`update-workflow` is a FULL REPLACE, not a merge.** The first update passed three fields —
+**`update-workflow` is a full replace, not a merge.** The first update passed three fields —
 `--workflow-arn`, `--definition-s3-location`, `--role-arn` — and **silently dropped everything else**:
 
 - **`NetworkConfiguration` became `null`.** The two subnets and the security group that put the workers
@@ -1480,7 +1471,7 @@ no API at all is a failure before the API — which is where the dropped network
 log group, both subnets, the security group, `CUSTOMER_MANAGED_KEY`, `manual_only`, the role. The orphan
 log group was empty (`storedBytes` 0) and was deleted.
 
-**And one loss the API could not restore by itself.** With the network back, the next run failed with
+**One loss the API could not restore by itself.** With the network back, the next run failed with
 `ValueError: Project ID not found in environment` — the portal injects the domain and project into the
 worker's environment, and an API-side update loses that binding. The workflow's tag
 (`AmazonDataZoneProject`) survived and carries the **project**, but nothing carries the **domain**. The
@@ -1497,7 +1488,7 @@ everything else on the workflow matches what it was. The original definition is 
 the thing the user asked about**, and it is a decision rather than an edit: amend the boundary, abandon
 the portal's notebook operator in favour of Stage 10's own DAGs (recommended), or record the loss.
 
-### [Claude] The register — four runs, four definition versions, and the duration is the diagnosis
+### [Claude] The register — the runs, their definition versions, and the duration as diagnosis
 
 Read back from `list-workflow-runs` and `list-task-instances` on 2026-09-10 rather than transcribed from
 the sitting, because a run id read out of prose is a claim (Lesson 38).
@@ -1529,18 +1520,17 @@ group, the workflow's own — the orphan is gone.
   A cheap first cut on any future MWAA failure, and it agrees with the CloudTrail reading that cost real
   work above.
 
-### [Claude] What this failure is, and what it is not — because it reads narrower than it is
+### [Claude] What this failure is, and what it is not
 
-The symptom presents as *one workflow failing*, and every fact above is about one object. It is worth
-saying plainly what the scope actually is, since nothing so far in this file does.
+The symptom presents as *one workflow failing*, and every fact above is about one object.
 
 **It is not one workflow.** The refusal is on `sagemaker:CreateTrainingJob` by the **project role** under
 the **project boundary** — both of which every Sandbox project gets from the same blueprint. So it is
 **every SMUS workflow whose task is a notebook execution, in every project in this estate**, and
-re-authoring it in the portal reproduces it exactly. **Other task types are UNMEASURED** — a query book or
+re-authoring it in the portal reproduces it exactly. **Other task types are unmeasured** — a query book or
 a visual ETL task may never call `CreateTrainingJob` at all, and nothing here licenses a claim about them.
 
-**And almost everything else works**, which is the half a failure record swallows:
+**Almost everything else works**:
 
 | | |
 |---|---|
