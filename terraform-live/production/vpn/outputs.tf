@@ -1,7 +1,7 @@
-# Outputs - what a reader needs to diagnose the host, and nothing a client config pins.
-# The endpoint address and the server's public key are deliberately elsewhere: the first is a
-# foundation/ output because it is [P], the second is derived on the laptop from the private
-# half the user holds. That split is what makes "a rebuild changes nothing" true (step 9.1).
+# Outputs - what a reader needs to diagnose the host, and nothing a client config pins. The
+# endpoint address and the server's public key are elsewhere: the first is a foundation/ output
+# because it is [P], the second is derived on the laptop from the private half the user holds.
+# That split is what makes a rebuild change nothing a client pins (step 9.1).
 
 output "instance_id" {
   description = "The WireGuard host. First reading of a bad first boot is its cloud-init output through Session Manager; if SSM is what failed - verification (iii) - `aws ec2 get-console-output --instance-id <this> --latest` needs no endpoint."

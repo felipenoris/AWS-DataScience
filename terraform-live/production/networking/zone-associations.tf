@@ -1,21 +1,20 @@
 # production/networking/zone-associations.tf - Stage 6c step 2.5, the hub's half of INT-22.
 #
-# WHY THE HUB IS ASSOCIATED WITH EVERY ZONE IN THE ESTATE, and it is the one asymmetry in the
-# matrix. VPC-Networking is where the WireGuard endpoint terminates (step 4.7), so it is the VPC
-# the VPN CLIENT resolves through - and a client that cannot resolve `gitlab.awsds.internal` or
+# The hub is associated with every zone in the estate, the one asymmetry in the matrix.
+# VPC-Networking is where the WireGuard endpoint terminates (step 4.7), so it is the VPC the VPN
+# client resolves through, and a client that cannot resolve `gitlab.awsds.internal` or
 # `<unit>.sandbox.awsds.internal` has no way to reach a private name at all. Every other VPC is
 # associated only with what its own workloads need.
 #
-# A PRIVATE ZONE ANSWERS FOR ITS WHOLE SUBTREE, AND THAT IS WHY THIS FILE IS DANGEROUS TO GET
-# WRONG IN THE OTHER DIRECTION (Lessons 40-43). Associating a zone here makes it authoritative
-# for that name inside this VPC, so a zone associated by mistake SHADOWS the public answer for
-# every client on the tunnel. It is also why this VPC carries no interface endpoint with private
-# DNS - the same mechanism, arriving through a different door.
+# A private zone answers for its whole subtree (Lessons 40-43). Associating a zone here makes it
+# authoritative for that name inside this VPC, so a zone associated by mistake shadows the public
+# answer for every client on the tunnel. The same mechanism is why this VPC carries no interface
+# endpoint with private DNS.
 #
-# A VPC ASSOCIATED WITH A MATCHING ZONE THAT HOLDS NO RECORD GETS **NXDOMAIN**, not a public
-# answer. So a missing association and a missing name are indistinguishable to whoever is
-# debugging, which is the whole reason INT-22's matrix is written down and read by a check
-# (step 2.4) rather than left to be re-derived from these resources.
+# A VPC associated with a matching zone that holds no record gets **NXDOMAIN**, not a public
+# answer, so a missing association and a missing name are indistinguishable while debugging.
+# INT-22's matrix is therefore written down and read by a check (step 2.4) rather than re-derived
+# from these resources.
 
 data "terraform_remote_state" "prod_foundation" {
   backend = "s3"
@@ -37,10 +36,10 @@ data "terraform_remote_state" "prod_workloads" {
   }
 }
 
-# SAME ACCOUNT, SO NO AUTHORIZATION EXISTS OR IS NEEDED. The authorization/association pair is
-# a CROSS-ACCOUNT protocol; within one account the VPC owner simply associates. The cross-account
-# half of this matrix - the two spoke child zones - is 2.5's reversed direction and lands in a
-# second commit, because both of its halves are in other accounts.
+# These zones are in this account, so no authorization exists or is needed: the
+# authorization/association pair is a cross-account protocol, and within one account the VPC owner
+# associates directly. The cross-account half of this matrix, the two spoke child zones, is 2.5's
+# reversed direction below.
 locals {
   hub_zone_ids = {
     apex      = data.terraform_remote_state.prod_foundation.outputs.awsds_internal_zone_id
@@ -56,24 +55,22 @@ resource "aws_route53_zone_association" "hub" {
   vpc_id  = module.vpc.vpc_id
 }
 
-# ------------------------------------------------- the REVERSED handshake (step 2.5, INT-22)
+# ------------------------------------------------- the reversed handshake (step 2.5, INT-22)
 #
-# THE DIRECTION IS THE OPPOSITE OF EVERY OTHER CROSS-ACCOUNT ASSOCIATION IN THIS ESTATE, and
-# that is the step's whole point. Until now Production OWNED the zones and the spokes associated
-# their VPCs into them. The apex family inverts one case: each spoke owns its own child zone
-# (`sandbox.awsds.internal`, `staging.awsds.internal`) and this VPC - the one the VPN client
-# resolves through - has to be associated into it.
+# This direction is the opposite of every other cross-account association in the estate. Elsewhere
+# Production owns the zones and the spokes associate their VPCs into them. The apex family inverts
+# one case: each spoke owns its own child zone (`sandbox.awsds.internal`,
+# `staging.awsds.internal`) and this VPC, the one the VPN client resolves through, has to be
+# associated into it.
 #
-# AWS'S PROCEDURE IS EXACT AND HAS NO CONSOLE PATH: the ZONE OWNER runs
-# create-vpc-association-authorization, one request per VPC, and then the VPC OWNER runs
-# associate-vpc-with-hosted-zone. Both halves are here because an aliased provider lets this
-# slice act AS the zone owner for the first half - the same trick peers.tf uses for the peering
-# accepters, which is what keeps a two-account handshake inside one readable apply.
+# AWS's procedure has no console path: the zone owner runs create-vpc-association-authorization,
+# one request per VPC, and then the VPC owner runs associate-vpc-with-hosted-zone. Both halves are
+# here because an aliased provider lets this slice act as the zone owner for the first half, the
+# same shape peers.tf uses for the peering accepters.
 #
-# AWS RECOMMENDS DELETING THE AUTHORIZATION AFTERWARDS AND THIS PROJECT KEEPS IT IN STATE, the
-# same divergence peers.tf records for the peering pair: deleting it does not affect the
-# association, but keeping the resource is what makes the DESTROY order expressible. Recorded
-# here rather than left to look like an oversight.
+# AWS recommends deleting the authorization afterwards and this project keeps it in state, the same
+# divergence peers.tf records for the peering pair: deleting it does not affect the association,
+# but keeping the resource is what makes the destroy order expressible.
 
 provider "aws" {
   alias   = "sandbox"
@@ -87,7 +84,7 @@ provider "aws" {
   profile = var.peers["staging"].profile
 }
 
-# The zones are READ, never pasted (Lesson 3) - a zone id in a tfvars would be a stale copy of
+# The zones are read, never pasted (Lesson 3): a zone id in a tfvars would be a stale copy of
 # another account's state, and this data source cannot go stale.
 data "aws_route53_zone" "sandbox_child" {
   provider     = aws.sandbox

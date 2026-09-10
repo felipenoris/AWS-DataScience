@@ -1,8 +1,8 @@
-# Inputs, all generated (./scripts/gen-tfvars.py production proxy). Nothing here is authored:
-# region and env for Stage 2's standing reasons, zone_ids because the AZ choice lives in
-# scripts/tfhygiene/backend.py (D9), account_folder because the remote-state key is built from
-# the account FOLDER, and rfc1918_cidrs because the private address space appears in the tunnel's
-# forward rules with the OPPOSITE polarity and the two may not drift apart.
+# Inputs, all generated (./scripts/gen-tfvars.py production proxy), none authored here: region and
+# env for Stage 2's standing reasons, zone_ids because the AZ choice lives in
+# scripts/tfhygiene/backend.py (D9), account_folder because the remote-state key is built from the
+# account folder, and rfc1918_cidrs because the private address space appears in the tunnel's
+# forward rules with the opposite polarity and the two may not drift apart.
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -44,10 +44,10 @@ variable "account_folder" {
   nullable    = false
 }
 
-# THE SAME RANGES THE TUNNEL FORWARDS TO, USED THE OTHER WAY ROUND (6c steps 4.7/4.8). Here they
-# are DENIED as destinations, and that deny is the single line standing between an explicit proxy
-# and an L7 bridge between VPCs that peering deliberately keeps apart - D38's own hole, if it
-# were missing. Generated from one constant so the two lists cannot part company (Lesson 51).
+# The same ranges the tunnel forwards to, used the other way round (6c steps 4.7/4.8): here they
+# are denied as destinations, and that deny is the single line standing between an explicit proxy
+# and an L7 bridge between VPCs peering keeps apart. Generated from one constant so the two lists
+# cannot part company (Lesson 51).
 variable "rfc1918_cidrs" {
   description = "The private address space - denied as a proxy DESTINATION. Generated; never authored here."
   type        = list(string)
@@ -71,13 +71,12 @@ variable "instance_type" {
   }
 }
 
-# A `cron()` EXPRESSION AND NOT `rate(30 minutes)`, AND THE REASON IS A HARD API CONSTRAINT rather
-# than a preference (measured 2026-09-06): `ApplyOnlyAtCronInterval is not supported for Rate
-# Schedule associations`. That flag is what keeps the association from firing at CREATION time,
-# seconds after RunInstances, onto a host still running `dnf install` - a run that cannot succeed
-# and leaves a `Failed` association as a working proxy's first impression. So the schedule form is
-# decided by the flag, not the other way round. `0/30` is the same half-hourly cadence, at
-# predictable wall-clock times.
+# A `cron()` expression and not `rate(30 minutes)`, because the API refuses the combination
+# (measured 2026-09-06): `ApplyOnlyAtCronInterval is not supported for Rate Schedule
+# associations`. That flag keeps the association from firing at creation time, seconds after
+# RunInstances, onto a host still running `dnf install` - a run that cannot succeed and leaves a
+# `Failed` association as a working proxy's first impression. `0/30` is the same half-hourly
+# cadence, at predictable wall-clock times.
 variable "reconfigure_schedule" {
   description = "How often State Manager re-renders the allow-lists onto the running host (step 4.10). Half-hourly is the trade the step names: an allow-list edit is an apply plus at most one interval, against no write API from the laptop, no host replacement and no estate-wide outage. MUST be a cron() expression: apply_only_at_cron_interval, which is what stops the boot race, is rejected by the API on a rate() schedule."
   type        = string

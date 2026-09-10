@@ -1,6 +1,6 @@
 # Outputs - what a reader needs to diagnose the exit, and nothing a client pins. The address is
-# networking/'s [P] output because it is [P]: that split is what makes "a rebuild changes
-# nothing" true of the one host every VPN-only condition names after step 4.12.
+# networking/'s [P] output, which is what keeps a rebuild of this host from changing the address
+# every VPN-only condition names after step 4.12.
 
 output "instance_id" {
   description = "The proxy host. First reading of a bad first boot is its cloud-init output through Session Manager; if SSM itself is what failed, `aws ec2 get-console-output --instance-id <this> --latest` needs no endpoint at all."

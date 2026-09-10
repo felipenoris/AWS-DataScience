@@ -1,20 +1,20 @@
-# Inputs, from TWO files - and one deliberate absence. The first five arrive from the
-# generated, untracked terraform.auto.tfvars (./scripts/gen-tfvars.py production vpn) - region
-# and env for Stage 2's standing reasons, zone_ids because the AZ choice lives in
-# scripts/tfhygiene/backend.py (D9), account_folder because the remote-state key is keyed by
-# the account FOLDER, and peer_cidr because an address range written in a .tf file is a copy
-# of the allocation table that nothing keeps in step (Lesson 14).
+# Inputs, from two files, and one deliberate absence. The generated, untracked
+# terraform.auto.tfvars (./scripts/gen-tfvars.py production vpn) supplies region and env for Stage
+# 2's standing reasons, zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9),
+# account_folder because the remote-state key is keyed by the account folder, and peer_cidr because
+# an address range written in a .tf file is a copy of the allocation table that nothing keeps in
+# step (Lesson 14).
 #
-# `peers` ARRIVES FROM THE ONE FILE A PERSON WRITES: peers.auto.tfvars - TRACKED,
-# deliberately, because the public halves are the network's authorization roster and a
-# roster benefits from review and history; ./scripts/check-tfvars-shape.py holds it to that
-# shape. THE ABSENCE IS THE HOST'S PRIVATE KEY (third design review, 2026-08-16): it is not
-# a variable of this slice at all - it lives in networking/'s [P] Secrets Manager secret,
-# enrolled by the user (step 4.3) and fetched by the instance at first boot, so it crosses
-# neither tfvars nor state nor user data. Keys are still generated on a laptop and never by
-# Terraform (steps 4.1, 4.3): a tls_private_key resource would both put the key in state and
-# make it something Terraform rotates on its own schedule. README.md beside this file has
-# the roster's shape and the enrollment command.
+# `peers` arrives from the one file a person writes, peers.auto.tfvars. It is tracked, because the
+# public halves are the network's authorization roster and a roster benefits from review and
+# history; ./scripts/check-tfvars-shape.py holds it to that shape.
+#
+# The host's private key is not a variable of this slice at all (third design review, 2026-08-16).
+# It lives in networking/'s [P] Secrets Manager secret, enrolled by the user (step 4.3) and fetched
+# by the instance at first boot, so it crosses neither tfvars nor state nor user data. Keys are
+# generated on a laptop and never by Terraform (steps 4.1, 4.3): a tls_private_key resource would
+# put the key in state and make it something Terraform rotates on its own schedule. README.md
+# beside this file has the roster's shape and the enrollment command.
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -68,16 +68,15 @@ variable "root_volume_size" {
   default     = 8
 
   validation {
-    # A BAND, not a closed list - what is being defended here is a floor and a bill, not an
-    # architecture, so the instance_type validation's shape would be the wrong instrument.
-    # FLOOR 8: EC2 refuses a root volume smaller than the snapshot of the AMI it restores, and
-    # the module's pinned AL2023 x86_64 image ships an 8 GiB one - a refusal that arrives at
-    # APPLY, after a plan that read clean. CEILING 128: at the us-west-2 gp3 rate of 0.08
-    # USD/GB-mo (docs/PRICING.md 8) that is ~10.24 USD/month STANDING - it accrues whether or
-    # not the host runs, and unlike an oversized instance type it cannot be given back, only
-    # replaced away. So the ceiling is where a fat-fingered 640 (~51 USD/month, D12's entire
-    # budget) is caught at PLAN time; raising it is a decision taken against that budget with
-    # section S6's arithmetic in hand, never a convenience.
+    # A band, not a closed list: what is defended here is a floor and a bill, not an architecture,
+    # so the instance_type validation's shape would be the wrong instrument.
+    # Floor 8: EC2 refuses a root volume smaller than the snapshot of the AMI it restores, and the
+    # module's pinned AL2023 x86_64 image ships an 8 GiB one - a refusal that arrives at apply,
+    # after a plan that read clean. Ceiling 128: at the us-west-2 gp3 rate of 0.08 USD/GB-mo
+    # (docs/PRICING.md 8) that is ~10.24 USD/month standing - it accrues whether or not the host
+    # runs, and unlike an oversized instance type it cannot be given back, only replaced away. The
+    # ceiling is where a fat-fingered 640 (~51 USD/month, D12's entire budget) is caught at plan
+    # time; raising it is a decision taken against that budget with section S6's arithmetic in hand.
     condition     = var.root_volume_size >= 8 && var.root_volume_size <= 128
     error_message = "root_volume_size must be between 8 GiB (the AL2023 x86_64 image's snapshot, the floor EC2 accepts for a root volume) and 128 GiB (~10.24 USD/month standing at this region's gp3 rate; vpn.md section S6)."
   }
@@ -95,7 +94,7 @@ variable "peer_cidr" {
   nullable    = false
 }
 
-# ------------------------------------------------- the one hand-written file, one variable
+# ------------------------------------------- the tunnel's IPv6 prefix and the peer roster
 
 variable "peer_cidr_v6" {
   description = "The tunnel's IPv6 ULA prefix, generated beside `peer_cidr` from the one allocation table (2026-09-07). It carries no traffic - every VPC here is IPv4-only - and exists so that `AllowedIPs = ::/0` in a client config is REAL: without an IPv6 address on the interface, `wg-quick` installs no IPv6 route and the device's IPv6 leaves by its own uplink, outside the tunnel, the proxy and the access log."
@@ -112,7 +111,7 @@ variable "peers" {
   nullable = false
 }
 
-# ------------------------------------------------------------------------- the five tags
+# ------------------------------------------------------------------------------ the tags
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
@@ -133,11 +132,11 @@ variable "cost_center" {
 }
 
 # Stage 6c step 4.7 - the private address space, generated from scripts/tfhygiene/backend.py's
-# RFC1918_CIDRS. It is a STANDARD constant and not one of this project's allocations, which is
-# why it does not live beside vpc_cidr in VPC_CIDRS - and it is generated rather than written
-# here because the SAME ranges appear in the proxy slice's Squid ACL with the opposite polarity:
-# the tunnel ADMITS them as destinations, Squid DENIES them. A range in one list and not in the
-# other is a spoke reachable through the proxy that the topology says is unreachable.
+# RFC1918_CIDRS. It is a standard constant rather than one of this project's allocations, which is
+# why it does not live beside vpc_cidr in VPC_CIDRS, and it is generated rather than written here
+# because the same ranges appear in the proxy slice's Squid ACL with the opposite polarity: the
+# tunnel admits them as destinations, Squid denies them. A range in one list and not in the other
+# is a spoke reachable through the proxy that the topology says is unreachable.
 variable "rfc1918_cidrs" {
   description = "The private address space - the only destinations this tunnel forwards to. Generated; never authored here."
   type        = list(string)

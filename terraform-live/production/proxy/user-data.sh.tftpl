@@ -1,16 +1,16 @@
 #!/bin/bash
-# The Squid proxy's first boot - Stage 6c step 4.8. Everything here runs ONCE: this is a [D]
-# host, so anything that must survive a stop/start belongs in a systemd unit or in the State
-# Manager association, not in this file.
+# The Squid proxy's first boot - Stage 6c step 4.8. Everything here runs once: this is a [D] host,
+# so anything that must survive a stop/start belongs in a systemd unit or in the State Manager
+# association, not in this file.
 #
-# WHAT IS DELIBERATELY NOT HERE: the ALLOW-LISTS. They are [P] data in SSM (step 4.10), fetched
-# by the render script below at the end of this boot and re-fetched every half hour after it. A
-# list baked into this file would make every allow-list edit a host replacement, which is a
-# 30-second outage of the whole estate's internet to add one domain (Lesson 4).
+# The allow-lists are not here. They are [P] data in SSM (step 4.10), fetched by the render script
+# below at the end of this boot and re-fetched every half hour after it; a list baked into this
+# file would make every allow-list edit a host replacement, a 30-second outage of the whole
+# estate's internet to add one domain (Lesson 4).
 #
-# EVERY PACKAGE COMES FROM THE AL2023 REPOSITORIES BY NAME - squid, jq and the CloudWatch agent
-# are all in them - so this script downloads no binary of its own and needs no allow-list entry
-# of its own to build itself.
+# Every package comes from the AL2023 repositories by name - squid, jq and the CloudWatch agent are
+# all in them - so this script downloads no binary of its own and needs no allow-list entry to
+# build itself.
 set -euxo pipefail
 
 say() { echo "=== awsds-proxy: $*"; }
@@ -24,10 +24,10 @@ cat > /etc/squid/squid.conf <<'SQUIDEOF'
 ${squid_conf}
 SQUIDEOF
 
-# THE INCLUDED FILE MUST EXIST BEFORE SQUID PARSES ANYTHING - `include` of a missing file is a
-# fatal error, and at this moment the render script has not run yet. An EMPTY file is also the
-# correct starting state: nothing is allowed until the [P] parameter says so, and squid.conf's
-# backstop turns that into a named 403 rather than a hang.
+# The included file must exist before Squid parses anything: `include` of a missing file is a fatal
+# error, and the render script has not run yet. An empty file is also the correct starting state -
+# nothing is allowed until the [P] parameter says so, and squid.conf's backstop turns that into a
+# named 403 rather than a hang.
 touch /etc/squid/conf.d/awsds-planes.conf
 
 say "(3) the render script - the only thing that reads the [P] allow-lists"
@@ -37,10 +37,10 @@ RENDEREOF
 chmod 0755 /usr/local/sbin/awsds-render-squid
 
 say "(4) first render - squid is not running yet, so the reconfigure inside is a no-op"
-# NOT FATAL AT FIRST BOOT, and this is the one place that is true: if SSM is briefly unreachable
-# while the Elastic IP is still being associated, the proxy still comes up - with an empty
-# allow-list, which refuses everything by name. The State Manager association fills it within one
-# interval, and `./aws/proxy.py` is what says whether it did.
+# Not fatal at first boot, and this is the one place that is true: if SSM is briefly unreachable
+# while the Elastic IP is still being associated, the proxy still comes up, with an empty
+# allow-list that refuses everything by name. The State Manager association fills it within one
+# interval, and `./aws/proxy.py` says whether it did.
 /usr/local/sbin/awsds-render-squid || say "(4) first render FAILED - starting with an empty allow-list; State Manager will retry"
 
 say "(5) squid"

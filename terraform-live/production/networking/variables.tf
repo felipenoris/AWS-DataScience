@@ -1,8 +1,8 @@
-# Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py production foundation) - region and env for Stage 2's standing
-# reasons, vpc_cidr and zone_ids because the address allocation lives in
-# scripts/tfhygiene/backend.py (Stage 3 decision 1) and may be a literal in no .tf file,
-# and peers because the profile names live in the same module's PROFILES table (pass 2).
+# Inputs. Those without a default arrive from the generated, untracked terraform.auto.tfvars
+# (./scripts/gen-tfvars.py production networking): region and env for Stage 2's standing reasons,
+# vpc_cidr and zone_ids because the address allocation lives in scripts/tfhygiene/backend.py
+# (Stage 3 decision 1) and may be a literal in no .tf file, and peers because the profile names
+# live in the same module's PROFILES table (pass 2).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -44,12 +44,11 @@ variable "zone_ids" {
   nullable    = false
 }
 
-# THE `peers` MAP - and at 1.2 this slice deliberately had none, because nothing consumed it.
-# Step 2.5 gave it a consumer: the REVERSED zone authorizations. Each spoke owns a child zone
-# under the estate apex and must authorize this VPC on it, and the shape peers.tf already uses -
-# the hub acting AS each spoke through an aliased provider - makes both halves of a cross-account
-# handshake one apply. That needs a profile per account, which is what this carries. 3.1 replaces
-# the shape with the peering matrix; the need survives.
+# The `peers` map carries a profile per account. Its consumer is step 2.5's reversed zone
+# authorizations: each spoke owns a child zone under the estate apex and must authorize this VPC
+# on it, and the hub acting as each spoke through an aliased provider makes both halves of a
+# cross-account handshake one apply. 3.1 replaced the shape with the peering matrix; the need
+# survives.
 variable "peers" {
   description = "Profile, env token and VPC name suffix per VPC-bearing account. Generated in scripts/tfhygiene/backend.py; consumed here by the aliased providers of step 2.5's reversed zone authorizations."
   type        = map(object({ profile = string, env = string, name_suffix = string }))
@@ -93,11 +92,11 @@ variable "account_folder" {
   nullable    = false
 }
 
-# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from ONE list in
+# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from one list in
 # scripts/tfhygiene/backend.py so a requester and an accepter can never disagree about which
 # peerings exist. A slice can hold both roles: production/foundation requests one and accepts
-# another. `same_account` decides the SHAPE - within an account a single resource with
-# auto_accept is the whole handshake; across one it is a requester, an accepter and two applies.
+# another. `same_account` decides the shape: within an account a single resource with auto_accept
+# is the whole handshake; across one it is a requester, an accepter and two applies.
 variable "peerings" {
   description = "The peering matrix, projected onto this slice. Generated - never authored here."
   type = list(object({
@@ -115,12 +114,11 @@ variable "peerings" {
 }
 
 # Stage 6c step 4.1 - the WireGuard client range, generated from scripts/tfhygiene/backend.py's
-# WIREGUARD_PEER_CIDR, which is where every address literal in this project lives (Stage 3
-# decision 1). It arrives here and not only at the vpn/ slice because D38 puts the tunnel
-# endpoint and the proxy in ONE VPC: step 4.7 stops masquerading packets bound for the proxy, so
-# this range becomes a source the proxy's security group must admit and a destination the hub's
-# public route table must send at the WireGuard host. Emitted on VPN_HOST_SLICE, which is
-# deliberately not VPN_HOMES - see that tuple's comment.
+# WIREGUARD_PEER_CIDR, where every address literal in this project lives (Stage 3 decision 1). It
+# arrives here as well as at the vpn/ slice because D38 puts the tunnel endpoint and the proxy in
+# one VPC: step 4.7 stops masquerading packets bound for the proxy, so this range becomes a source
+# the proxy's security group must admit and a destination the hub's public route table must send
+# at the WireGuard host. Emitted on VPN_HOST_SLICE, not VPN_HOMES - see that tuple's comment.
 variable "wireguard_peer_cidr" {
   description = "The WireGuard client range. Generated - never authored here."
   type        = string
