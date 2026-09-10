@@ -183,7 +183,18 @@ is the one the environment will have. A denied name is a decision to take, not a
   **second, independent** environment under `/opt/awsds` on a uv-managed CPython, from
   `images/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
   kernel (`awsds-python`, *Python (awsds dev-env)*). The list is seeded to the distribution's own
-  library surface. Three measurements came out of writing it, all from `uv lock` on the laptop rather
+  library surface, and then **diffed against it**: `cpu.env.in` for SMD 4.3.0 names 71 packages, of
+  which 30 were already covered and 6 are tooling rather than libraries. Of the 36 missing, 24 are
+  the server-side half a kernel does not carry; the other 12 were added on the user's decision the
+  same day — the S3 Access Grants boto3 plugin (this estate's own vending path, so its absence would
+  make a notebook here reach the lake by a different door than the default kernel), the SMUS
+  kernel-side integrations (`%%sql`, the project connection magics, the kernel wrapper, the headless
+  execution driver, the Glue session magics, the Studio CLI) and the agent SDKs. **`python-gssapi`
+  is the one left out**: it is `gssapi` on PyPI and publishes **no linux wheel**, so it would compile
+  and would need `libkrb5-dev` in the image — a loss that costs only Kerberos'd Hive.
+  Adding the twelve pulled `jupyterlab`, `notebook` and `jupyter-server` in transitively
+  (`aws-glue-sessions` → `notebook`; the SMUS sessions package → `sparkmagic` → `notebook`): files on
+  disk that nothing starts, since the server a space runs is the base environment's. Three measurements came out of writing it, all from `uv lock` on the laptop rather
   than from a build: **TensorFlow has no wheel past `cp313`**, which is what set the interpreter —
   the user kept the framework and moved the Python to **3.13** rather than the newest; the default
   PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
