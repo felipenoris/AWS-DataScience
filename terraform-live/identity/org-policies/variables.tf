@@ -41,7 +41,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary. `org` marks org-level and platform resources."
+  description = "The Environment tag value - the third vocabulary. `org` marks org-level and platform resources."
   type        = string
   nullable    = false
 
@@ -58,7 +58,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md). The organization's ceiling is the infrastructure group's to author, whichever OU a document lands on."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md). The organization's ceiling is the infrastructure group's to author, whichever OU a document lands on."
   type        = string
   default     = "sso-group-infrastructure"
 }

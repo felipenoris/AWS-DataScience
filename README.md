@@ -14,7 +14,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   - `docs/plan/objectives.md` — what the project must achieve, in the user's own words. The specification
     every stage is measured against, copied nowhere.
   - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `docs/plan/decisions/` — one file per decision `D1`…`D37`, plus a one-line-per-decision `INDEX.md`. All
+  - `docs/plan/decisions/` — one file per decision `D1`…`D38`, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
   - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered:
     `break-glass.md`, when the Management account root may be used, what to do with it, and what watches
@@ -25,7 +25,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     start/stop), the client (what a device may reach, and the failure modes WireGuard is silent about by
     design), and the keys, where loss is recovery from the `[P]` secret and never rotation;
     `client-vpn-proxy-configuration.md`, the one a device's owner follows (the session up and down, the
-    `.conf` with its four checks, the proxy on macOS and Linux); plus `buildbox.md` and `sandbox-lake.md`.
+    `.conf` with its four checks, the proxy on macOS and Linux); `sg-proxy.md`, the proxy inside a SageMaker
+    space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed; plus
+    `buildbox.md` and `sandbox-lake.md`.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
@@ -56,7 +58,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   consumer half in `sandbox/` and `development/`, one module (`consumer-data`) applied twice, the second
   destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
-  the two member `sagemaker/` slices (one module, `sagemaker-prereqs`), and the `[E]` `sandbox/buildbox/`.
+  `sandbox/sagemaker/` (the `sagemaker-prereqs` module; `development/sagemaker/` went with the account at
+  Stage 6b), and the `[E]` `production/buildbox/`, moved there from Sandbox at 6c step 5.8.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5's. `wireguard` has called `iam-role` by
@@ -205,10 +208,12 @@ An **instance rebuild** changes nothing in any client config. Every config pins 
 server: its **endpoint address** and its **public key**. The SSM-resolved AMI moves with each Amazon
 Linux release and the user data carries `user_data_replace_on_change`, so the host is replaced on a
 schedule nobody sets — and both pinned values survive it, because neither lives in the instance: the
-address is a `[P]` Elastic IP allocated in `sandbox/foundation/`, and the key is a `[P]` Secrets Manager
-secret the host fetches at first boot. A key generated on the host instead would have broken every
-client config at the first AMI drift, silently (Lesson 4). The same property is what makes `make down`
-safe: it *stops* the host, it does not destroy it, and it cannot reach `[P]` at all.
+address is a `[P]` Elastic IP held in `production/networking/` — allocated in `sandbox/foundation/` until
+6c pass 4 transferred it between accounts, which is what kept every client's `Endpoint =` line unchanged —
+and the key is a `[P]` Secrets Manager secret the host fetches at first boot. A key generated on the host
+instead would have broken every client config at the first AMI drift, silently (Lesson 4). The same
+property is what makes `make down` safe: it *stops* the host, it does not destroy it, and it cannot reach
+`[P]` at all.
 
 ---
 

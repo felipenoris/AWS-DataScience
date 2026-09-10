@@ -3,7 +3,7 @@
 # audit-iam-analyser.sh - the IAM Access Analyzer analyzers of one account and Region: what
 # each one is, what it is scoped to, and what it has found.
 #
-#   run:      IN CLOUDSHELL, on the Audit account, as `AWS Control Tower Admin`. CloudShell
+#   run:      in CloudShell, on the Audit account, as `AWS Control Tower Admin`. CloudShell
 #             does not have this repository, so upload this one file - Actions -> Upload
 #             file - and run it where it lands:
 #

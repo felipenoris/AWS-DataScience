@@ -14,7 +14,7 @@
 # which is why reaching the data itself would defeat them.
 
 # ============================================================================================
-# DeploymentManagerAccess - Sandbox, Development, Production (D31). Nothing on Data Governance
+# DeploymentManagerAccess - Sandbox, Staging, Production (D31). Nothing on Data Governance
 # ============================================================================================
 #
 # This set replaced the AWS-managed `ReadOnlyAccess`, which on the lifecycle accounts reaches
@@ -345,7 +345,7 @@ data "aws_iam_policy_document" "governance_manager" {
 }
 
 # ============================================================================================
-# DevEnvStewardAccess - Production, Sandbox and Development
+# DevEnvStewardAccess - Production and Sandbox
 # ============================================================================================
 #
 # The artifact, never the data. The steward approves the `dev-env` image - the runtime every
@@ -353,9 +353,10 @@ data "aws_iam_policy_document" "governance_manager" {
 # consuming no AWS permission. The set is for judging the artifact: what is in the image, what
 # the scanner found, and what is actually registered as a SageMaker image.
 #
-# One set, three accounts, read-only in all of them (1b step 3.3). "Production plus read-only on
-# Sandbox and Development" describes the assignment table; the policy itself writes nothing
-# anywhere, so the distinction is carried by the content rather than by the assignment.
+# One set, two accounts since Stage 6b step 2.1 removed the Staging assignment, read-only in both
+# (1b step 3.3). "Production plus read-only on Sandbox" describes the assignment table; the policy
+# itself writes nothing anywhere, so the distinction is carried by the content rather than by the
+# assignment.
 #
 # Still owed: Stage 7 the ECR repository ARNs, so the metadata reads below can be scoped to the
 # dev-env repository rather than to every repository in the account.

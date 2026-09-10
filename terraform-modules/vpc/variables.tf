@@ -1,5 +1,5 @@
 variable "env" {
-  description = "The <env> NAME TOKEN (docs/plan/conventions.md) - builds every name here. Not the Environment tag, which the caller's provider default_tags applies."
+  description = "The <env> name token (docs/plan/conventions.md) - builds every name here. Not the Environment tag, which the caller's provider default_tags applies."
   type        = string
   nullable    = false
 }
@@ -46,7 +46,7 @@ variable "vpc_cidr" {
 }
 
 variable "zone_ids" {
-  description = "Exactly two AZ ZONE IDS (usw2-az1, ...) - D9. Subnets anchor on the id, never on a name and never on list position (step 1.5): both peerings carry constant traffic, and cross-AZ bills USD 0.01/GB each way with no error anywhere."
+  description = "Exactly two AZ zone IDS (usw2-az1, ...) - D9. Subnets anchor on the id, never on a name and never on list position (step 1.5): both peerings carry constant traffic, and cross-AZ bills USD 0.01/GB each way with no error anywhere."
   type        = list(string)
   nullable    = false
 

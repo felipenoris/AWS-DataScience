@@ -3,9 +3,10 @@
 # A module rather than a third data "aws_iam_policy_document" in this slice, because the same
 # statements have to reach a second object in a different account: the D13 permissions boundary
 # that terraform-modules/sagemaker-prereqs/ imposes on the roles the SMUS blueprint authors in
-# Sandbox and Development (Stage 6 step 2.1's "mirror both statements in 2.1's boundary"). Two
-# objects, two accounts, two services, one intent (Lesson 33), so the structure and the values
-# both live in terraform-modules/sagemaker-denies/ and both ends compose it.
+# Sandbox (Stage 6 step 2.1's "mirror both statements in 2.1's boundary"; the second Interactive
+# account left at Stage 6b step 1.2). Two objects, two services, one intent (Lesson 33), so the
+# structure and the values both live in terraform-modules/sagemaker-denies/ and both ends
+# compose it.
 #
 # The cost: this slice - the entitlement plane, whose mistakes cost people their sign-in - has a
 # module dependency it did not have before. It is pinned by tag like every other, and it creates

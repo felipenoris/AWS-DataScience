@@ -23,6 +23,13 @@ can be recognised without opening this file; the reasoning that makes each one u
    pinned the Data Governance bucket policies to the consumers' `aws:SourceVpce`, but interface endpoints
    are `[E]` (new IDs on every `make up`) and since D22 live in a *different* account, so nothing would
    ever repair them. Anchor on the `[P]` S3 **gateway** endpoint, or on `aws:SourceVpc`.
+
+    Its quieter half, measured 2026-09-06 and written out as Lesson 48: the resource
+    need not move at all — its **name** moving is enough, when another account resolves it by
+    tag, alias or path rather than by id. Stage 6c step 1.1 re-labelled a VPC, every id was
+    unchanged, its gate passed, and two other accounts broke until somebody ran a plan in one
+    of them.
+
 4. **State that lives only inside an `[E]` resource is this design's recurring failure mode**
    (`docs/plan/conventions.md` §5.1 rule 2). Three hits already — EFS, the Studio domain, MWAA's
    metadata database — and it will recur for every stateful service considered for the `make up`/`make
@@ -83,13 +90,6 @@ can be recognised without opening this file; the reasoning that makes each one u
    empty list in both cases. This is the detection-side twin of Lesson 5: an intention is not a control,
    and a command that cannot fail is not a check. Before writing a deliverable, ask what its output
    looks like when the thing is *broken*.
-
-    Its quieter half, measured 2026-09-06 and written out as Lesson 48: the resource
-    need not move at all — its **name** moving is enough, when another account resolves it by
-    tag, alias or path rather than by id. Stage 6c step 1.1 re-labelled a VPC, every id was
-    unchanged, its gate passed, and two other accounts broke until somebody ran a plan in one
-    of them.
-
 14. **A condition that has to appear in N places by hand is a control that will be missing from one of
    them.** The case that produced this was D30's blanket carve-out — a principal exempt from every custom
    `Deny`, which meant the *same condition* had to appear in every statement, and a set where three

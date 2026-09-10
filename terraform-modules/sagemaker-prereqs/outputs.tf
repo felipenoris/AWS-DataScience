@@ -14,7 +14,7 @@ output "project_boundary_arn" {
 }
 
 output "project_key_arn" {
-  description = "This account's project CMK - NOT its data CMK (kms.tf says why)."
+  description = "This account's project CMK - not its data CMK (kms.tf says why)."
   value       = module.project_key.key_arn
 }
 

@@ -183,9 +183,8 @@ resource "aws_ssoadmin_managed_policy_attachment" "cloudwatch_logs_readonly" {
 # the constraint is met (user decision of 2026-08-23, strategy 1-A; consumer: `s3-read-write/`).
 # Decision 4 deferred the boundary because a customer-managed policy must exist as an
 # aws_iam_policy of the same name in every account the set is provisioned into, and no governed
-# account had a foundation/ slice to put one in. Both member accounts have had one since
-# Stage 3, so the object is created there -
-# terraform-live/{sandbox,development}/foundation/persona-vending.tf, which carries the whole
+# account had a foundation/ slice to put one in. Sandbox has had one since Stage 3, so the object
+# is created there - terraform-live/sandbox/foundation/persona-vending.tf, which carries the whole
 # argument for what it authorizes - and this is the reference.
 #
 # The statement is not inline like every other grant in this slice because `DataScientistAccess`
@@ -195,13 +194,13 @@ resource "aws_ssoadmin_managed_policy_attachment" "cloudwatch_logs_readonly" {
 # becomes in every account it reaches.
 #
 # The apply order is the members first. Provisioning resolves the name in each target account:
-# applied here first, DataScientistAccess fails to provision in both members - an entitlement
+# applied here first, DataScientistAccess fails to provision in every member - an entitlement
 # outage whose message names a policy, not a slice. The order out is the reverse: this reference
 # is removed before the objects are.
 #
-# One reference, two accounts. Unlike the assignments, this resource is per permission set, not
-# per (set, account) - the accounts come from wherever the set is assigned, which is why the
-# object has to exist in each of them and why backend.py's PERSONA_VENDING_ACCOUNTS follows the
+# One reference, whichever accounts the set reaches - Sandbox alone today. Unlike the assignments,
+# this resource is per permission set, not per (set, account), so the object has to exist in each
+# account the set is assigned to, which is why backend.py's PERSONA_VENDING_ACCOUNTS follows the
 # assignment rows rather than the other way round.
 #
 # No `path` on either side. The reference carries a name and a path, both default to "/", and

@@ -52,7 +52,7 @@ module "flow_log_role" {
         Effect    = "Allow"
         Principal = { Service = "vpc-flow-logs.amazonaws.com" }
         Action    = "sts:AssumeRole"
-        # The confused-deputy guard: only flow logs OF THIS ACCOUNT may assume the role.
+        # The confused-deputy guard: only this account's flow logs may assume the role.
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }

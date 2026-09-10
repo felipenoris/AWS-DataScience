@@ -62,7 +62,7 @@
 # done" and "not thought of" stay distinguishable.
 
 # ============================================================================================
-# DataScientistAccess - Sandbox and Development (D21)
+# DataScientistAccess - Sandbox only since Stage 6b step 2.1 (D21)
 # ============================================================================================
 #
 # 1b step 3.4: not PowerUserAccess and not AmazonSageMakerFullAccess. The second is the one
@@ -291,15 +291,15 @@ data "aws_iam_policy_document" "data_scientist" {
 # environment a person can write to has stopped being evidence of what the pipeline actually
 # does.
 #
-# Not assigned yet. The Staging account is unvended (step 3.2, held on the account cap), so
-# locals.tf carries no Staging row. The set is created anyway - it costs nothing, and having it
-# reviewed now rather than typed at the vend is why six sets are written in code at all.
+# Assigned since Stage 6b step 4.6 (2026-09-06): locals.tf's `data-scientist-staging@staging` row
+# swapped this set in for `DataScientistAccess` when `Development` was renamed. It was written
+# before there was an account to assign it to, which is why six sets are written in code at all.
 #
 # Nothing is owed to this set. Stage 9 step 5.2 verifies it by reading - no Athena,
 # DenyEveryWrite intact, nothing added. The only thing still coming to this document is the
 # Stage 3 permissions boundary, owed to all six sets rather than to this one; README.md carries
-# the owed table. "Stage 5 s3:GetObject on Staging's own prefixes" is not owed: Stage 5's
-# consumers are Sandbox and Development only (backend.py), and a staging environment a human can
+# the owed table. "Stage 5 s3:GetObject on Staging's own prefixes" is not owed: Sandbox is Stage
+# 5's only consumer since 6b step 2.4 (backend.py), and a staging environment a human can
 # read through IAM rather than through the pipeline's path is the first step back to one a human
 # can write.
 

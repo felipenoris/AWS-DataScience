@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # management-landing-zone-drift.sh - Stage 2 verification (iii): does the Organizations
-# RESOURCE POLICY coexist with the Control Tower landing zone without raising drift?
+# resource policy coexist with the Control Tower landing zone without raising drift?
 #
 #   needs:    CloudShell on the MANAGEMENT account, as `AWS Control Tower Admin` through
 #             `AWSAdministratorAccess`. There is no laptop path - see IDENTITY below.
@@ -13,7 +13,7 @@
 #             GetLandingZoneOperation; organizations:DescribeOrganization,
 #             DescribeResourcePolicy, ListRoots, ListPolicies; sts:GetCallerIdentity.
 #             It never creates, updates, resets or deletes anything.
-#   exits:    0 the report was produced FROM MANAGEMENT | 1 a call failed
+#   exits:    0 the report was produced from Management | 1 a call failed
 #             | 2 it ran somewhere else, so the report is not an answer - see below
 #
 # What is being asked, and why it is the last thing open in Stage 2. Step 5.1 put a

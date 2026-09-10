@@ -11,7 +11,7 @@ output "vpc_cidr" {
 }
 
 output "s3_gateway_endpoint_id" {
-  description = "THE INT-05 ANCHOR (step 3.2) - what Stage 5's bucket policies condition on."
+  description = "The INT-05 anchor (step 3.2) - what Stage 5's bucket policies condition on."
   value       = module.vpc.s3_gateway_endpoint_id
 }
 

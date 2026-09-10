@@ -13,13 +13,13 @@ variable "name" {
 }
 
 variable "kms_key_arn" {
-  description = "The CMK the repository encrypts layers with - the slice's OWN key (Stage 7 step 5.4, option-preservation measure 3), never the account default. A consumer that may pull must also hold kms:Decrypt on it, which is the key policy's job and not this module's."
+  description = "The CMK the repository encrypts layers with - the slice's own key (Stage 7 step 5.4, option-preservation measure 3), never the account default. A consumer that may pull must also hold kms:Decrypt on it, which is the key policy's job and not this module's."
   type        = string
   nullable    = false
 }
 
 variable "pull_principal_arns" {
-  description = "Account root ARNs allowed to PULL - the D35 consumer map, resolved to ARNs by the caller. Empty means no cross-account pull, which is a legitimate state for a repository whose only reader is the account itself. Never a wildcard: a registry that any account may read is the exfiltration path this design spends a whole stage closing."
+  description = "Account root ARNs allowed to pull - the D35 consumer map, resolved to ARNs by the caller. Empty means no cross-account pull, which is a legitimate state for a repository whose only reader is the account itself. Never a wildcard: a registry that any account may read is the exfiltration path this design spends a whole stage closing."
   type        = list(string)
   nullable    = false
   default     = []

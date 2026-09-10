@@ -8,7 +8,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name."
   type        = string
   nullable    = false
 
@@ -19,7 +19,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -30,7 +30,7 @@ variable "environment_tag" {
 }
 
 variable "consumers" {
-  description = "The accounts that PULL images and READ packages (REGISTRY_CONSUMERS in scripts/tfhygiene/backend.py, D35's forward constraint). Keyed by account folder, carrying the profile an aliased provider resolves the account id from - a profile may be a literal in no .tf file (Lesson 14). It is NOT the lake's consumer list: that answers a different question and Stage 9 adds Production to it while this one must never carry the account that owns the registry."
+  description = "The accounts that pull images and read packages (REGISTRY_CONSUMERS in scripts/tfhygiene/backend.py, D35's forward constraint). Keyed by account folder, carrying the profile an aliased provider resolves the account id from - a profile may be a literal in no .tf file (Lesson 14). It is not the lake's consumer list: that answers a different question and Stage 9 adds Production to it while this one must never carry the account that owns the registry."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
@@ -42,7 +42,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

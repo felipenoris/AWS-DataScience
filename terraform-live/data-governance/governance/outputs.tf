@@ -1,7 +1,7 @@
 # Outputs - what other slices read through terraform_remote_state (never pasted).
 
 output "domain_id" {
-  description = "THE VALUE EVERY MEMBER ACCOUNT'S sagemaker/ SLICE READS on its second apply - the blueprint configurations name it."
+  description = "The value every member account's sagemaker/ slice reads on its second apply - the blueprint configurations name it."
   value       = aws_datazone_domain.this.id
 }
 
@@ -36,6 +36,6 @@ output "project_profile_ids" {
 }
 
 output "project_profile_creators" {
-  description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by GROUP NAME rather than group id (aws/INDEX.md rule 1). Empty until pass 2c."
+  description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by group name rather than group id (aws/INDEX.md rule 1). Empty until pass 2c."
   value       = { for k, p in local.project_profiles : k => p.group if var.profiles_enabled }
 }

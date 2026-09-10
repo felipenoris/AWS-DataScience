@@ -216,7 +216,7 @@ locals {
 }
 
 output "no_proxy_entries" {
-  description = "This VPC's NO_PROXY as a list: every name its interface endpoints answer for, plus the fixed entries. Consumed by whatever configures a client in THIS VPC (the buildbox's docker daemon and SSM agent, a runner, a Studio app image configuration), through terraform_remote_state so the list cannot be transcribed (Lesson 3)."
+  description = "This VPC's NO_PROXY as a list: every name its interface endpoints answer for, plus the fixed entries. Consumed by whatever configures a client in this VPC (the buildbox's docker daemon and SSM agent, a runner, a Studio app image configuration), through terraform_remote_state so the list cannot be transcribed (Lesson 3)."
   value       = local.no_proxy_entries
 }
 

@@ -29,10 +29,9 @@ locals {
   # reads like a permissions problem. account_ids below filters on ACTIVE as a second line of
   # defence; the primary one is that the name is written out in full.
   #
-  # No `staging` entry: the account is unvended (step 3.2, held on the account cap), so every
-  # Staging cell of 1b step 3.1 is skipped here exactly as it was skipped there. The set for
-  # Staging is still created - see permission-sets.tf - because a set costs nothing and having
-  # it reviewed now is the point of writing it in code.
+  # `staging` is here since Stage 6b renamed `Development` into it (2026-09-06). The account 1b
+  # step 3.2 held on the quota was never vended; this one arrived by rename, and 1b step 3.1's
+  # Staging cells are filled by the assignments below.
   #
   # The key is the account folder of terraform-live/, not a slug invented here. That vocabulary
   # already exists - scripts/tfhygiene/backend.py's ENV_TOKENS is keyed on it, and every path
@@ -108,8 +107,8 @@ locals {
     # one account the deployment manager cannot enter is the only one this one can.
     "governance-manager@data-governance" = { set = "governance_manager", group = "governance_managers", account = "data-governance" }
 
-    # DevEnvStewardAccess - Production, plus Sandbox and Development. The set is read-only
-    # everywhere by construction, so "read-only on Sandbox and Development" is a property of
+    # DevEnvStewardAccess - Production, plus Sandbox. The set is read-only
+    # everywhere by construction, so "read-only on Sandbox" is a property of
     # the policy rather than of the assignment (1b 3.3: one set object is one policy, however
     # many accounts it reaches).
     # Stage 6b step 2.1 (2026-09-06) removed it from this account. The reason is D14's, not "a

@@ -4,13 +4,13 @@
 # user writes. A literal in this file would be a copy of one of those three (Lesson 14).
 
 variable "env" {
-  description = "The <env> NAME TOKEN (docs/plan/conventions.md) - builds every name here, including the awsds-<env>-vpn Name tag that scripts/slices.py and ./aws/vpn.py both find the host by. Not the Environment tag, which the caller's provider default_tags applies."
+  description = "The <env> name token (docs/plan/conventions.md) - builds every name here, including the awsds-<env>-vpn Name tag that scripts/slices.py and ./aws/vpn.py both find the host by. Not the Environment tag, which the caller's provider default_tags applies."
   type        = string
   nullable    = false
 }
 
 variable "public_subnet_ids" {
-  description = "foundation/'s public subnets BY ZONE ID. The host lands in one of them - it is the tunnel endpoint, so it needs an address the internet can reach."
+  description = "foundation/'s public subnets by zone ID. The host lands in one of them - it is the tunnel endpoint, so it needs an address the internet can reach."
   type        = map(string)
   nullable    = false
 }
@@ -41,7 +41,7 @@ variable "zone_index" {
 }
 
 variable "security_group_id" {
-  description = "foundation/'s [P] WireGuard security group (step 2.2) - created there, not here, because Stage 7's GitLab rule admits it BY ID across an account boundary and a group a rebuild can replace is not worth referencing."
+  description = "foundation/'s [P] WireGuard security group (step 2.2) - created there, not here, because Stage 7's GitLab rule admits it by ID across an account boundary and a group a rebuild can replace is not worth referencing."
   type        = string
   nullable    = false
 }
@@ -53,7 +53,7 @@ variable "eip_allocation_id" {
 }
 
 variable "peer_cidr" {
-  description = "The client range, from the allocation table through the generated tfvars (step 4.2, Stage 3 decision 1). The host takes .1 of it. NOTHING INSIDE AWS EVER SEES THIS RANGE - the instance SNATs (see the user data) - so its one job is not colliding with a home or cafe LAN."
+  description = "The client range, from the allocation table through the generated tfvars (step 4.2, Stage 3 decision 1). The host takes .1 of it. Nothing inside AWS ever sees this range - the instance SNATs (see the user data) - so its one job is not colliding with a home or cafe lan."
   type        = string
   nullable    = false
 
@@ -113,7 +113,7 @@ variable "peer_cidr_v6" {
 }
 
 variable "peers" {
-  description = "One entry per PERSON PER DEVICE, keyed by a name that reads in `wg show` output (e.g. \"felipe-laptop\"). Revoking a device is deleting one entry, which is the price D4 accepted when it turned down Identity Center integration - so the shape has to make that a one-line diff. A MAP AND NOT A LIST, deliberately: `host` is authored per peer rather than derived from position, so removing an entry cannot renumber everybody else's tunnel address and silently invalidate their client configs."
+  description = "One entry per person per device, keyed by a name that reads in `wg show` output (e.g. \"felipe-laptop\"). Revoking a device is deleting one entry, which is the price D4 accepted when it turned down Identity Center integration - so the shape has to make that a one-line diff. A map and not A list, deliberately: `host` is authored per peer rather than derived from position, so removing an entry cannot renumber everybody else's tunnel address and silently invalidate their client configs."
   type = map(object({
     public_key = string
     host       = number
@@ -137,7 +137,7 @@ variable "peers" {
 }
 
 variable "host_key_secret_arn" {
-  description = "The [P] Secrets Manager secret holding the SERVER's private key (step 2.2a; decision 4, third review) - the ARN alone, never the value. The key is in a secret rather than generated on first boot because every client config pins the server's PUBLIC key as well as its address: a key that lived only inside the instance would be destroyed by the next AMI drift or user-data edit and would break every client at once, silently - Lesson 4 in a [D] resource. And it is a POINTER rather than a key variable so that neither state nor user data carries the secret: the instance fetches the value at first boot with its own role (iam.tf grants GetSecretValue on exactly this ARN; the secret's resource policy admits nobody else but InfrastructureAccess). The consequence to know: a new VALUE changes nothing Terraform can see, so rotation is put-secret-value PLUS a deliberate -replace of the instance (the keys runbook, procedure C)."
+  description = "The [P] Secrets Manager secret holding the server's private key (step 2.2a; decision 4, third review) - the ARN alone, never the value. The key is in a secret rather than generated on first boot because every client config pins the server's public key as well as its address: a key that lived only inside the instance would be destroyed by the next AMI drift or user-data edit and would break every client at once, silently - Lesson 4 in a [D] resource. And it is a pointer rather than a key variable so that neither state nor user data carries the secret: the instance fetches the value at first boot with its own role (iam.tf grants GetSecretValue on exactly this ARN; the secret's resource policy admits nobody else but InfrastructureAccess). The consequence to know: a new value changes nothing Terraform can see, so rotation is put-secret-value plus a deliberate -replace of the instance (the keys runbook, procedure C)."
   type        = string
   nullable    = false
 
@@ -150,7 +150,7 @@ variable "host_key_secret_arn" {
 # ------------------------------------------------------------------ shape and observability
 
 variable "instance_type" {
-  description = "D4's shape - the smallest burstable there is - on the ARCHITECTURE main.tf's AMI pins, x86_64 since 2026-08-20 (it was t4g.nano, arm64, from D4 until then). Measured at 0.0052 USD/h in this region, +23.8% on the Graviton shape it replaced (docs/PRICING.md 8, both rows read the same day; Lesson 6). A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it. THE VALUE MUST MATCH THE IMAGE: this module validates nothing here, deliberately - a size list belongs with the caller that selects from it, and the caller's own validation is the closed list. What decides which family is admissible is the SSM parameter in main.tf and nothing else, so moving that line is what moves this default, in that order."
+  description = "D4's shape - the smallest burstable there is - on the architecture main.tf's AMI pins, x86_64 since 2026-08-20 (it was t4g.nano, arm64, from D4 until then). Measured at 0.0052 USD/h in this region, +23.8% on the Graviton shape it replaced (docs/PRICING.md 8, both rows read the same day; Lesson 6). A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it. The value must match the image: this module validates nothing here, deliberately - a size list belongs with the caller that selects from it, and the caller's own validation is the closed list. What decides which family is admissible is the SSM parameter in main.tf and nothing else, so moving that line is what moves this default, in that order."
   type        = string
   default     = "t3.nano"
 }
@@ -165,19 +165,19 @@ variable "instance_type" {
 # here (conventions 6): the old caller keeps the old module, byte for byte.
 
 variable "forward_destinations" {
-  description = "WHERE A TUNNEL PACKET MAY BE FORWARDED - and empty, the default, means ANYWHERE, which is v0.4.0's behaviour and what every reading before 2026-09-06 was taken under. A non-empty list makes wg0's PostUp accept `-i wg0` only toward these ranges and REJECT the rest. WHY IT EXISTS: under D38 a VPN client is a PRIVATE-NETWORK client - its whole internet crosses the proxy, by name, over an explicit HTTP CONNECT - so a packet from the tunnel addressed straight at a public IP is either a misconfigured client or an attempt to walk around the one egress the estate audits. Callers pass the private address space (scripts/tfhygiene/backend.py RFC1918_CIDRS), never a literal. REJECT AND NOT DROP, deliberately: the plan's word is `drops` and the target is a refusal, because the failure this produces is a client whose proxy settings are wrong, and a timeout is the one symptom nobody diagnoses correctly (the same reasoning that puts `http_access deny all` last in the proxy's own configuration - a fast, named refusal beats a hang)."
+  description = "Where a tunnel packet may be forwarded - and empty, the default, means anywhere, which is v0.4.0's behaviour and what every reading before 2026-09-06 was taken under. A non-empty list makes wg0's PostUp accept `-i wg0` only toward these ranges and REJECT the rest. Why it exists: under D38 a VPN client is a private-network client - its whole internet crosses the proxy, by name, over an explicit HTTP CONNECT - so a packet from the tunnel addressed straight at a public IP is either a misconfigured client or an attempt to walk around the one egress the estate audits. Callers pass the private address space (scripts/tfhygiene/backend.py RFC1918_CIDRS), never a literal. REJECT and not DROP, deliberately: the plan's word is `drops` and the target is a refusal, because the failure this produces is a client whose proxy settings are wrong, and a timeout is the one symptom nobody diagnoses correctly (the same reasoning that puts `http_access deny all` last in the proxy's own configuration - a fast, named refusal beats a hang)."
   type        = list(string)
   default     = []
 }
 
 variable "no_masquerade_cidrs" {
-  description = "DESTINATION ranges that must see the CLIENT's tunnel address instead of this host's - empty by default. Every other destination is masqueraded to this instance, exactly as before. THE ONE CALLER AND THE ONE REASON: the proxy's access log is the estate's egress evidence (Stage 11), and a log in which every line reads `the VPN host` identifies nothing. Passing the hub's PUBLIC subnet ranges - where the proxy lives - gives Squid a per-device source with no logging change anywhere. WHY DESTINATIONS AND NOT `the whole VPC`, which is the tidy-looking version and is WRONG: the VPC resolver at `.2` sits inside the VPC too, and the Amazon DNS server answers requests from within the VPC's own range - a tunnel packet arriving with a `10.90.0.x` source is not that, so exempting the VPC CIDR would take the tunnel's DNS down and the symptom would look like anything but a masquerade rule. The public subnets are the narrow, correct answer. WHAT IT COSTS: source/destination checking on this ENI, which main.tf keys off this list being non-empty - a packet that leaves with a foreign source and returns to a foreign destination is dropped by the ENI before any kernel rule sees it. It also needs a ROUTE: the peer range pointed at this host's ENI in the route table of whatever subnet the far end sits in, and that route is the caller's (6c step 4.7)."
+  description = "Destination ranges that must see the client's tunnel address instead of this host's - empty by default. Every other destination is masqueraded to this instance, exactly as before. The one caller and the one reason: the proxy's access log is the estate's egress evidence (Stage 11), and a log in which every line reads `the VPN host` identifies nothing. Passing the hub's public subnet ranges - where the proxy lives - gives Squid a per-device source with no logging change anywhere. Why destinations and not `the whole VPC`, which is the tidy-looking version and is wrong: the VPC resolver at `.2` sits inside the VPC too, and the Amazon DNS server answers requests from within the VPC's own range - a tunnel packet arriving with a `10.90.0.x` source is not that, so exempting the VPC CIDR would take the tunnel's DNS down and the symptom would look like anything but a masquerade rule. The public subnets are the narrow, correct answer. What it costs: source/destination checking on this ENI, which main.tf keys off this list being non-empty - a packet that leaves with a foreign source and returns to a foreign destination is dropped by the ENI before any kernel rule sees it. It also needs a route: the peer range pointed at this host's ENI in the route table of whatever subnet the far end sits in, and that route is the caller's (6c step 4.7)."
   type        = list(string)
   default     = []
 }
 
 variable "mtu" {
-  description = "The tunnel's MTU on the SERVER side, and it governs one direction only: the size of what this host injects into the tunnel, which is the DOWNLOAD direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. WHY 1280 AND NOT A LARGER 'CORRECT' VALUE: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits BETWEEN paths; the floor trades against nobody. WHAT IT DOES NOT FIX: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
+  description = "The tunnel's MTU on the server side, and it governs one direction only: the size of what this host injects into the tunnel, which is the download direction for every client. Absent this line wg-quick derives it from the uplink - 9001 on an AWS ENA, so wg0 came up at 8921 (measured 2026-08-17), a value nobody chose and which no internet path carries. Why 1280 and not A larger 'correct' value: it is the IPv6 minimum and the same number the client template pins, so the two sides of the design say one thing. The reason this was left open at pass 2 - that a server value trades against every client's path at once, rather than one - only bites when the value chosen sits between paths; the floor trades against nobody. What it does not fix: the upload direction is still governed by the client's own MTU line, typed by hand per device, and closing that needs an MSS clamp in PostUp - deliberately not here, because a clamp is two rules whose directions are easy to get wrong by reading and which nothing in this repository would exercise (Lesson 20)."
   type        = number
   default     = 1280
 
@@ -192,7 +192,7 @@ variable "mtu" {
 }
 
 variable "listen_port" {
-  description = "The UDP port the tunnel listens on - and the ONLY world-open port in this estate (step 3.1). It must match the ingress rule of foundation/'s [P] security group, which is why it is a variable in both places and a literal in neither."
+  description = "The UDP port the tunnel listens on - and the only world-open port in this estate (step 3.1). It must match the ingress rule of foundation/'s [P] security group, which is why it is a variable in both places and a literal in neither."
   type        = number
   default     = 51820
 }

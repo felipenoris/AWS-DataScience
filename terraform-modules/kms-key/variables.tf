@@ -1,5 +1,5 @@
 variable "alias_name" {
-  description = "Alias WITHOUT the alias/ prefix, awsds-<env>-<component> (conventions §6). Also the Name tag."
+  description = "Alias without the alias/ prefix, awsds-<env>-<component> (conventions §6). Also the Name tag."
   type        = string
   nullable    = false
 }

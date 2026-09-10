@@ -1,8 +1,9 @@
 # Version pin - Stage 2 step 1. The same constraint every slice carries.
 #
 # Terraform has no repository-wide pin: it belongs to each root module, so the four lines are
-# repeated per slice (Lesson 14). scripts/check-bootstrap-parity.py keeps the five bootstrap
-# copies from drifting; this slice is not one of them.
+# repeated per slice (Lesson 14). scripts/check-provider-locks.py compares required_version and
+# the hashicorp/aws constraint against sandbox/foundation's, in every slice; the byte-for-byte
+# comparison in check-bootstrap-parity.py is the five bootstrap copies only, and this is not one.
 #
 # The constraint admits a range; the exact build is pinned in the committed
 # .terraform.lock.hcl, which carries darwin_arm64, linux_amd64 and linux_arm64 (step 6.3) so

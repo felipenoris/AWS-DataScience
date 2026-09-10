@@ -9,7 +9,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. Never *the* sandbox: D35 vends one per business unit."
   type        = string
   nullable    = false
 
@@ -20,7 +20,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -47,7 +47,7 @@ variable "environment_tag" {
 # its tfvars.
 
 variable "tenants" {
-  description = "The per-prefix roster: sso-group NAME => the permission set whose reserved role in THIS account is the grantee. The group name is the prefix (s3://awsds-<env>-lake/<sso-group>/), so this map is simultaneously the layout of the bucket and the grant table over it."
+  description = "The per-prefix roster: sso-group name => the permission set whose reserved role in this account is the grantee. The group name is the prefix (s3://awsds-<env>-lake/<sso-group>/), so this map is simultaneously the layout of the bucket and the grant table over it."
   type        = map(string)
 
   default = {
@@ -80,7 +80,7 @@ variable "tenants" {
 # register, so a project that is gone leaves a row here and §R's second half stays auditable.
 
 variable "wired_projects" {
-  description = "SMUS projects with an S3 connection into this bucket: a free-form key => { project_role_name, project_id }. Empty until step 4.1. Appended by runbooks/sandbox-lake.md W and REMOVED by R - an entry outliving its project is the finding, not the record. The role arrives as a NAME, never an ARN: the ARN carries the account id, this table lives in a TRACKED file, and aws/INDEX.md rule 1 forbids the copy - iam.tf builds the ARN from the account this slice already reads."
+  description = "SMUS projects with an S3 connection into this bucket: a free-form key => { project_role_name, project_id }. Empty until step 4.1. Appended by runbooks/sandbox-lake.md W and removed by R - an entry outliving its project is the finding, not the record. The role arrives as a name, never an ARN: the ARN carries the account id, this table lives in a tracked file, and aws/INDEX.md rule 1 forbids the copy - iam.tf builds the ARN from the account this slice already reads."
   type = map(object({
     project_role_name = string
     project_id        = string
@@ -114,7 +114,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

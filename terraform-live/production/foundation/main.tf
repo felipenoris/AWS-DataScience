@@ -1,9 +1,9 @@
 # production/foundation/ - Production's [P] network (Stage 3 pass 1), built now because
 # Stage 7 (GitLab) cannot start before it exists (D14). One vpc-module instance plus its
 # flow-log delivery role; the awsds.internal apex and awsds-pages.internal are in zones.tf. Pass 2
-# (the two peering accepters - Sandbox and Development, and nothing else, step 6.2 - and the
-# four association authorizations of 4.4, as a for_each over a map of peers so the second
-# apply is additive) lands here in its own sitting.
+# (the peering accepter - Sandbox and nothing else, step 6.2, since 6c step 3.1 retired the
+# Staging one - and the association authorizations of 4.4, as a for_each over a map of peers so
+# the second apply is additive) lands here in its own sitting.
 #
 # Modules arrive by git tag, never by branch (docs/plan/conventions.md §6; Stage 3 step 1.1a). The
 # first callers pin GitHub over SSH, the transport the operator's remote already uses; moving to

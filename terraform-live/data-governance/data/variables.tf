@@ -10,7 +10,7 @@ variable "region" {
 }
 
 variable "env" {
-  description = "The <env> NAME TOKEN of docs/plan/conventions.md - what goes into a resource name. 'data' for this account."
+  description = "The <env> name token of docs/plan/conventions.md - what goes into a resource name. 'data' for this account."
   type        = string
   nullable    = false
 
@@ -21,7 +21,7 @@ variable "env" {
 }
 
 variable "environment_tag" {
-  description = "The Environment TAG value - the third vocabulary."
+  description = "The Environment tag value - the third vocabulary."
   type        = string
   nullable    = false
 
@@ -38,7 +38,7 @@ variable "consumers" {
 }
 
 variable "vpn_homes" {
-  description = "The accounts playing the VPN-home role (VPN_HOMES in scripts/tfhygiene/backend.py) - one Elastic IP each, read from the SLICE the row names. The aws:SourceIp branch of the perimeter deny (step 1.3, D18) is built from this list, per D35. The slice field arrived at Stage 6c step 0.5, when D38 moved the tunnel out of a foundation/ slice and into production/networking/."
+  description = "The accounts playing the VPN-home role (VPN_HOMES in scripts/tfhygiene/backend.py) - one Elastic IP each, read from the slice the row names. The aws:SourceIp branch of the perimeter deny (step 1.3, D18) is built from this list, per D35. The slice field arrived at Stage 6c step 0.5, when D38 moved the tunnel out of a foundation/ slice and into production/networking/."
   type        = map(object({ profile = string, env = string, slice = string }))
   nullable    = false
 }
@@ -56,7 +56,7 @@ variable "project" {
 }
 
 variable "owner" {
-  description = "Owner tag - an sso-group-* GROUP, never a person (docs/plan/conventions.md)."
+  description = "Owner tag - an sso-group-* group, never a person (docs/plan/conventions.md)."
   type        = string
   default     = "sso-group-infrastructure"
 }

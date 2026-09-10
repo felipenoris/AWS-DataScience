@@ -1,9 +1,9 @@
 # Outputs - readings for the Validation's before/after diff, not anchors: everything in this slice
 # is [E] and new on every make up (step 8.6, Lesson 3, INT-05). The ids other slices may name are
-# foundation/'s.
+# production/workloads/'s, this VPC's [P] slice.
 
 output "interface_endpoint_ids" {
-  description = "Endpoint id per service token - expected ALL NEW after a make down/up cycle."
+  description = "Endpoint id per service token - expected all new after a make down/up cycle."
   value       = module.egress.interface_endpoint_ids
 }
 

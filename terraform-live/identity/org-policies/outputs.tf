@@ -31,7 +31,7 @@ output "policy_document_bytes" {
 }
 
 output "attachment_targets" {
-  description = "Every managed attachment, by for_each key, and the target it names - `root` or an OU NAME, never an id. This is the map read back from what the configuration actually computed, which is the thing to compare against ./aws/import-ids.py section 5b before importing: a key that differs here is the failure step 5.5a(iii) names."
+  description = "Every managed attachment, by for_each key, and the target it names - `root` or an OU name, never an id. This is the map read back from what the configuration actually computed, which is the thing to compare against ./aws/import-ids.py section 5b before importing: a key that differs here is the failure step 5.5a(iii) names."
   value       = { for key, pair in local.attachment_pairs : key => pair.target }
 }
 

@@ -479,7 +479,7 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 
 - Policy awsds-org-scp-perimeter created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-4vs49ztw`. Policy was attached to root account `r-zhj6`.
 
-- - **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
+- **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
   root now carries `FullAWSAccess`, `p-1fp032g8` and `p-4vs49ztw`. The direction phase 1 could not test:
   both in-org writes **still succeed** — `s3:PutObject` (7 bytes confirmed) and
   `ecr:InitiateLayerUpload`. The statement does not over-reach: it would otherwise break `docker push`

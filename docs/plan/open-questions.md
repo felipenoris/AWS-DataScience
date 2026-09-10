@@ -364,8 +364,6 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     lockout but a **silent regression** to the 4d defect, which is why `permission-sets.tf` carries a
     second `precondition` beside the CIDR one.
 
-### Raised by Stage 5 pass 3, 2026-08-19
-
     **A fourth use, 2026-08-21, surfaced by the user.** Stage 6 step 5.0's build host
     (`sandbox/buildbox/`) is reached with `aws ssm start-session`, and the user noticed it works **with
     the tunnel down** and asked whether that was expected. It is, by this decision: `start-session` is an
@@ -377,6 +375,9 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     egress-through-the-VPN-host requirement kept unchanged. **The reusable part is the shape, not the
     host:** an exemption taken for a recovery path keeps arriving in places nobody weighed it for, and
     each arrival is a chance for a design to describe itself wrongly.
+
+### Raised by Stage 5 pass 3, 2026-08-19
+
 18. **Does `lakeformation:CreateLFTag` in the governance manager's IAM half make it an "LF-Tag creator",
     and therefore able to *grant data* it cannot read?** The larger question this came from is
     **answered** and closed: AWS states that granting data permissions through an LF-Tag expression
