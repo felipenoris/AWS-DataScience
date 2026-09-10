@@ -20,12 +20,9 @@ in Production; five peerings; no NAT gateway anywhere; no default route in any s
 
 ## The design premise: peering shares an address, never a path
 
-VPC peering shares an address, never a path (Lesson 44; [D38](../decisions/D38-single-egress-hub.md)).
-The AWS peering guide's *"Edge to edge routing through a gateway or private connection"* section says so
-for an internet gateway (*"If VPC A has an internet gateway, resources in VPC B can't use the internet
-gateway in VPC A"*), for *"a NAT device"*, for a VPN or Direct Connect connection and for *"a gateway
-endpoint that provides connectivity to Amazon S3"*, and adds that *"VPC peering does not support
-transitive peering relationships"*. Five consequences:
+VPC peering shares an address, never a path (Lesson 44).
+[D38](../decisions/D38-single-egress-hub.md) §1 carries the AWS peering guide's wording and the argument;
+what this stage builds from it:
 
 1. **The single egress reaches a spoke only as an explicit proxy** — an ENI address inside
    `VPC-Networking` that clients are configured to use. There is no transparent path.
@@ -41,7 +38,7 @@ transitive peering relationships"*. Five consequences:
    every spoke's AWS call would carry the hub's `aws:SourceVpc`, satisfying the personas' VPN-only
    condition from any account.
 
-A sixth limitation from the same page decides pass 2: *"You cannot connect to or query the Amazon DNS
+Pass 2 is decided by a sixth limitation on the same page: *"You cannot connect to or query the Amazon DNS
 server in a peer VPC."* A spoke resolves at its own `.2` only, so every name it must resolve has to come
 from a zone associated with the spoke's own VPC. The association matrix is the design.
 
@@ -105,7 +102,7 @@ Each row corrects an assumption of the 2026-09-05 draft.
 | **5** | the spokes become design B | after 4 | [6d](stage-06d-unified-studio-remainder.md), Stage 7 |
 | **6** | the measurements | after 5 | the close |
 | **7** | cost, lifecycle, the two operational instruments | after 6 | — |
-| **8** | **the second client profile** — the split-tunnel profile beside the monitored one; laptop-only, no host change *(added and DONE 2026-09-08)* | after 6 | [6d](stage-06d-unified-studio-remainder.md) 7.5, [Stage 11](stage-11-dlp.md) step 3.4 |
+| **8** | **the split-tunnel client profile** beside the monitored one; laptop-only, no host change *(done 2026-09-08)* | after 6 | [6d](stage-06d-unified-studio-remainder.md) 7.5, [Stage 11](stage-11-dlp.md) step 3.4 |
 
 Passes 0-3 are `[P]` and cost nothing at rest. **Stage 7 waits on passes 1-2**; **Stage 13's public tier**
 lands in `VPC-Networking`'s public tier as its second enumerated listener; **6d waits on pass 5**.
@@ -114,76 +111,70 @@ lands in `VPC-Networking`'s public tier as its second enumerated listener; **6d 
 
 ## To execute
 
-### 0. Prepare the vocabulary and the modules — the groundwork with no AWS side
+### 0. Prepare the vocabulary and the modules
 
 **Action:** teach the tooling about three VPCs in one account, before any folder exists. **Why:**
 `layers.py` refuses a slice kind it has no rank for, `CIDRS` holds one address per account, and two
-resources in the `vpc` module are account-unique. **Explanation:** none of this is visible in a `plan`, and
-one of the four (0.4) is a hard create-time conflict rather than a naming preference — so it comes first.
+resources in the `vpc` module are account-unique. **Explanation:** none of this shows in a `plan`, and
+0.4 is a create-time conflict, so this pass comes first.
 
 - **0.1 — [Claude] Confirm what is already written**, and do not re-author it: `D38`, `Lesson 44`, `INT-21`,
-  `INT-22`, Recipe E and Recipe F all landed on 2026-09-05. What this pass adds is code, not prose.
-- **0.2 — READ 2026-09-06 AND NOT YET WRITTEN, because this step contradicts Stage 6b and it is the one
-  that is right.** 6b step 4.1 said 6c *"consumes"* the freed `10.40.0.0/16`; **this step says it "is free
-  and stays unallocated"**, and the hub is 10.30 (the existing VPC, re-labelled), 10.31 and 10.32. The
-  stage that has to BUILD the thing is the correct side (Lesson 32) — **and 6b's wrong clause had already
-  been copied into six files in one day, two of them instruments.** All corrected before any 6c code was
-  written; the consequence is that `networking.py`'s `NT-3`/`NT-5`/`NT-6` **stop having an expiry date**,
-  because nothing will ever allocate the range they watch.
-  - **DONE 2026-09-06, and the table REPLACES `CIDRS` rather than sitting beside it.** This step asked for
-    two tables; the deviation was settled by measuring the call sites rather than by preference. **Every
-    reader of `CIDRS` was asking a per-VPC question** and read per-account only because each account had
-    one VPC: `vpc_cidr` wants the slice's own range, the D22 guard wants *"does this slice have an
-    allocation"*, `peer_cidrs` wants a peer VPC's range, and the doc gate iterates the values. **None
-    needs an account-level answer**, and `CIDRS["production"]` has none to give once Production holds
-    three. Two tables carrying the same numbers with no reader for one of them is Lesson 33 with nothing
-    bought. Stage 14's human reader still works: *"the lowest free /16 in the supernet"* is a question
-    about the values.
-  - **The gate for this step is that NOTHING generated changed**, and it holds: `sandbox/foundation`,
+  `INT-22`, Recipe E and Recipe F all landed on 2026-09-05. This pass adds code, not prose.
+- **0.2 — Read 2026-09-06; this step contradicts Stage 6b.** 6b step 4.1 said 6c *"consumes"* the freed
+  `10.40.0.0/16`; this step says it is free and stays unallocated, and the hub is 10.30 (the existing
+  VPC, re-labelled), 10.31 and 10.32. The stage that has to build the thing is the correct side
+  (Lesson 32), and 6b's clause had already been copied into six files, two of them instruments. All
+  corrected before any 6c code was written, so `networking.py`'s `NT-3`/`NT-5`/`NT-6` **stop having an
+  expiry date**: nothing will ever allocate the range they watch.
+  - **Done 2026-09-06, and the table replaces `CIDRS` rather than sitting beside it.** The step asked for
+    two tables; the call sites decided otherwise. Every reader of `CIDRS` was asking a per-VPC question
+    and read per-account only because each account had one VPC: `vpc_cidr` wants the slice's own range,
+    the D22 guard wants *"does this slice have an allocation"*, `peer_cidrs` wants a peer VPC's range,
+    and the doc gate iterates the values. None needs an account-level answer, and `CIDRS["production"]`
+    has none to give once Production holds three (Lesson 33). Stage 14's human reader still works: *"the
+    lowest free /16 in the supernet"* is a question about the values.
+  - **The gate is that nothing generated changed**, and it holds: `sandbox/foundation`,
     `production/foundation` and `staging/foundation` all re-plan **`No changes`** after the swap. The
-    `peers` map is deliberately still keyed by ACCOUNT — **that seam is 0.6's**, and the comment says so
-    where the derivation lives: today every peering joins two accounts with one `foundation/` VPC each, so
-    an account key names a VPC unambiguously; the moment Production holds three it stops doing so.
-  - **`NETWORK_SLICES` gained the four 6c slices and a subset, `VPC_SLICES`** — the ones that *create* a
-    VPC rather than living inside one. `foundation` was the whole answer while every account had one.
+    `peers` map is still keyed by account — that seam is 0.6's, and the comment says so where the
+    derivation lives: today every peering joins two accounts with one `foundation/` VPC each, so an
+    account key names a VPC unambiguously; the moment Production holds three it stops doing so.
+  - **`NETWORK_SLICES` gained the four 6c slices and a subset, `VPC_SLICES`** — the slices that *create* a
+    VPC rather than live inside one. `foundation` was the whole answer while every account had one.
 - **0.2 — [Claude] Extend the address vocabulary**: `scripts/tfhygiene/backend.py` gains a
   per-**(account, VPC)** table — `production-shared` 10.30.0.0/16, `production-networking` 10.31.0.0/16,
   `production-workloads` 10.32.0.0/16 — beside the per-account `CIDRS` that already carries
   `sandbox` 10.20.0.0/16 and `staging` 10.50.0.0/16 (6b step 4.1 put it there). **`10.40.0.0/16` is free**
   and stays unallocated; `10.60.0.0/16` is reserved for the `shared` account D38's trigger names;
   `10.16.0.0/13` stays the Sandbox supernet and `10.90.0.0/24` the WireGuard client range.
-- **0.1 / 0.3 — DONE 2026-09-06.** 0.1 confirmed by reading: `D38`, `Lesson 44`, `INT-21`, `INT-22`,
-  Recipe E and Recipe F all stand as written, and Recipe E was **used, not authored**, by 6b the next day.
-  0.3 added four ranks — `networking` 21, `workloads` 23, `proxy` 41, `workloads-egress` 51 — each with the
-  reason its number is what it is, in the discipline `vpn` and `pki` already sat under. `slices.py check`:
+- **0.1 / 0.3 — Done 2026-09-06.** 0.1 confirmed by reading: `D38`, `Lesson 44`, `INT-21`, `INT-22`,
+  Recipe E and Recipe F all stand as written, and Recipe E was used by 6b the next day. 0.3 added four
+  ranks — `networking` 21, `workloads` 23, `proxy` 41, `workloads-egress` 51 — each with the reason its
+  number is what it is, in the discipline `vpn` and `pki` already sat under. `slices.py check`:
   **24 declared, 24 on disk**.
 - **0.3 — [Claude] Add the slice ranks before any folder exists**: `RANKS` in `scripts/tfhygiene/layers.py`
   gains `networking` (21), `workloads` (23), `proxy` (41) and **`workloads-egress` (51)** — the `[E]`
   endpoint slice for the second Production VPC, ranked just above `egress` (50) so both come up after the
-  proxy and go down before it. Rank first, folder second, same commit
-  (Recipe C). The order is load-bearing: `up` ascends and `down` descends, so `proxy` at 41 comes up before
-  any `egress` (50) and goes down after it — which is what makes a spoke's package path exist for the whole
-  life of an `[E]` session.
-- **0.4 — DONE 2026-09-06, `vpc-v0.2.0` released and the callers bumped.** Sixteen name sites in the
+  proxy and go down before it. Rank first, folder second, same commit (Recipe C). `up` ascends and `down`
+  descends, so `proxy` (41) comes up before any `egress` (50) and goes down after it, which keeps a
+  spoke's package path alive for the whole life of an `[E]` session.
+- **0.4 — Done 2026-09-06, `vpc-v0.2.0` released and the callers bumped.** Sixteen name sites in the
   module now read one `local.name_prefix`; the calling slices mirror it so the flow-log **role** and the
   **log group** keep the single contract their comment already stated. The suffix is generated per
-  (account, slice) from a new `VPC_NAME_SUFFIXES` table keyed identically to `VPC_CIDRS` — one is the
-  address plan, the other the naming plan, and sharing the key is what stops them drifting on the part
-  that matters — and it is **emitted only when non-empty**.
-  - **The default being harmless is proven, not assumed.** Recipe B step 1's source override was used:
+  (account, slice) from a new `VPC_NAME_SUFFIXES` table keyed identically to `VPC_CIDRS` — the address
+  plan and the naming plan share a key so they cannot drift — and it is emitted only when non-empty.
+  - **The default is harmless, and it was proven.** Recipe B step 1's source override was used:
     `sandbox/foundation` planned against the local module **before** the tag existed and read
     `No changes`; the override was reverted and re-initialised. After the bump, `sandbox/foundation` and
     `staging/foundation` both re-plan `No changes` on the version alone.
-  - **The tag was confirmed by asking origin, not by trusting the push** (Recipe B step 5):
-    `git ls-remote --tags origin vpc-v0.2.0` returns one line whose hash is the commit tagged.
-  - **This step's note about the plan is now a measurement**: `production/foundation` plans
-    **`8 to add, 13 to change, 8 to destroy`** — and it is the **same eight** 6b step 4.4 measured on
-    Staging, one class: four security groups, the flow-log group, its IAM role, that role's inline policy,
-    and the flow log binding them, all replaced because their *names* are inputs. The VPC, all six
-    subnets, four route tables and the IGW change **in place**. **The gateway endpoints do not appear in
-    the plan at all** — they carry no `Name` tag — so 1.1's *"endpoint ids unchanged"* gate passes by
-    construction rather than by luck. **Not applied**: that is step 1.1, and 6c carries no apply
-    authorization yet.
+  - **The tag was confirmed by asking origin** (Recipe B step 5): `git ls-remote --tags origin
+    vpc-v0.2.0` returns one line whose hash is the commit tagged.
+  - **The plan is measured**: `production/foundation` plans **`8 to add, 13 to change, 8 to destroy`** —
+    the **same eight** 6b step 4.4 measured on Staging, one class: four security groups, the flow-log
+    group, its IAM role, that role's inline policy, and the flow log binding them, all replaced because
+    their *names* are inputs. The VPC, all six subnets, four route tables and the IGW change **in
+    place**. The gateway endpoints do not appear in the plan at all — they carry no `Name` tag — so
+    1.1's *"endpoint ids unchanged"* gate passes by construction. **Not applied**: that is step 1.1, and
+    6c carries no apply authorization yet.
 - **0.4 — [Claude] Bump `terraform-modules/vpc` to v0.2.0 with a `name_suffix`**, and carry it into the two
   names that are **account-unique, not VPC-unique**: `aws_cloudwatch_log_group.flow_logs`
   (`awsds-<env>-vpc-flow-logs`) and, in the calling slice, the flow-log IAM role of the same name whose
@@ -192,11 +183,11 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   well (`awsds-prod-shared-*`, `awsds-prod-networking-*`, `awsds-prod-workloads-*`). Two commits, one tag
   (the runbook's order). **Note in the plan review that the existing VPC's tags change in place while its
   security groups are replaced.**
-- **0.4a — DEFERRED TO 5.1, BECAUSE THIS STEP CONTRADICTS ITSELF** *(read 2026-09-06)*. Its first
-  sentence says to bump `vpc-egress` **in the same sitting**; its last says the suffix *"rides along with
-  the **v0.5.0** bump 5.1 makes for the NAT removal, so there is one version bump rather than two"*. Doing
-  it now produces exactly the two bumps that sentence exists to avoid. **The last sentence wins**, and the
-  deferral was checked rather than assumed:
+- **0.4a — Deferred to 5.1; the step contradicts itself** *(read 2026-09-06)*. Its first sentence says to
+  bump `vpc-egress` **in the same sitting**; its last says the suffix *"rides along with the **v0.5.0**
+  bump 5.1 makes for the NAT removal, so there is one version bump rather than two"*. Doing it now
+  produces the two bumps that sentence exists to avoid. The last sentence wins, and the deferral was
+  checked:
   - **`production/egress/` does not set `dns_firewall`** — measured — so none of the module's
     firewall-shaped account-unique names (`awsds-<env>-egress*`, `/awsds/<env>/dns-firewall`) exists in
     Production today. What *would* collide is the **NAT pair** (`awsds-prod-nat`, gateway and EIP) and the
@@ -211,11 +202,11 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
   `awsds-<env>-egress`. Two Production VPCs both running a firewall collide, and `./aws/egress.py` reads
   these by name. The suffix rides along with the **v0.5.0** bump 5.1 makes for the NAT removal, so there is
   one version bump rather than two.
-- **0.5 — DONE 2026-09-06, shape only — the VALUE is 4.9's.** Each row is `(account, slice)`, both
+- **0.5 — Done 2026-09-06, shape only; the value is 4.9's.** Each row is `(account, slice)`, both
   consumers' `vpn_homes` variables carry the third field, and both `terraform_remote_state` keys read
-  `${each.value.slice}` where they hard-coded `foundation`. **The row still points at
-  `("sandbox", "foundation")` deliberately**: flipping it now would make `identity/sso` read an *empty*
-  state, and `DenyControlPlaneOffVpn` would then deny every call from every network — the failure
+  `${each.value.slice}` where they hard-coded `foundation`. The row still points at
+  `("sandbox", "foundation")`: flipping it now would make `identity/sso` read an *empty* state, and
+  `DenyControlPlaneOffVpn` would then deny every call from every network — the failure
   `permission-sets.tf`'s precondition already has an error message for. **Gate: `identity/sso` and
   `data-governance/data` both re-plan `No changes`.**
 - **0.5 — [Claude] Give `VPN_HOMES` a slice field**: each row is consumed by `identity/sso/` and
@@ -227,73 +218,70 @@ one of the four (0.4) is a hard create-time conflict rather than a naming prefer
 - **0.6 — [Claude] Teach the peering pattern about three VPCs**: `production/foundation/peers.tf` finds a
   peer by the single tag `awsds-<env>-vpc`; that lookup becomes per-VPC and the peering map moves into
   `backend.py`, so both sides of every peering are generated from one list (Lesson 14).
-- **0.7 — DONE 2026-09-06.** Rules A and B both read `VPC_CIDRS` per (account, slice). Rule B's
+- **0.7 — Done 2026-09-06.** Rules A and B both read `VPC_CIDRS` per (account, slice). Rule B's
   "no slice on disk" branch now has **two live examples** — `production/networking` and
   `production/workloads`, whose rows are authored before their folders — where before it had none, and
   `docs/NETWORK.md` already names 10.31 and 10.32 in its §T target tables, so rule A passes without a
-  documentation edit. That is the address plan having been written down before the code, working. Its second half was the header's stale parenthetical. The gate's own header carried a stale parenthetical —
-  *"an account with an allocation and no `foundation/` (Staging today)"* — which described the **unvended**
-  Staging, whose 10.40 row had no VPC behind it. 6b renamed `Development` into Staging, so all three
-  allocated accounts carry a `foundation/` and that branch now has **no example**; it is kept because
-  Stage 14 vends a CIDR row before its slices exist and puts an account back in it. The rule-B rewrite
-  waits on 0.2's table.
+  documentation edit. The gate's own header carried a stale parenthetical — *"an account with an
+  allocation and no `foundation/` (Staging today)"* — describing the **unvended** Staging, whose 10.40 row
+  had no VPC behind it. 6b renamed `Development` into Staging, so all three allocated accounts carry a
+  `foundation/` and that branch now has no example; it is kept because Stage 14 vends a CIDR row before
+  its slices exist and puts an account back in it. The rule-B rewrite waits on 0.2's table.
 - **0.7 — [Claude] Fix the documentation gate**: `scripts/check-network-doc.py` rule B recomputes subnet
   tiers from **one** CIDR per account; it now reads the per-VPC table. `docs/NETWORK.md` §2.1 gains every
   new network-bearing slice in the same commit.
 
-### 1. Build the three VPCs — the address plan and the tiers that carry the new rules
+### 1. Build the Production VPCs
 
 **Action:** re-label the existing Production VPC and create two more. **Why:** the hub needs a public tier
 that is the estate's only internet-facing tier, and nothing can be peered to a VPC that does not exist.
-**Explanation:** nothing here costs money at rest, and the re-label is the least-churn choice — GitLab was
+**Explanation:** nothing here costs money at rest, and the re-label is the least-churn choice: GitLab was
 always planned in 10.30's private tier, both peering accepters live there, and the four zone associations
 point at it.
 
-- **1.1 — DONE 2026-09-06.** `8 to add, 13 to change, 8 to destroy`, re-plan `No changes`, and the two
+- **1.1 — Done 2026-09-06.** `8 to add, 13 to change, 8 to destroy`, re-plan `No changes`, and the two
   readings that decide it came back right: **`s3_gateway_endpoint_id` is the pre-apply value** and both
   peerings are still `active` under the **same `pcx-` ids**. The VPC tags as `awsds-prod-shared-vpc`.
   The eight replacements are the same class 6b step 4.4 measured on Staging.
 - **1.1 — [Claude⚡] Re-label the existing VPC as `VPC-SharedServices`**: apply the `name_suffix` to
   `production/foundation/` and read the plan — tags in place, security groups replaced, **VPC and gateway
   endpoint ids unchanged**. Any id in the replacement list stops the step.
-- **1.2 — DONE 2026-09-06.** `30 to add, 0 to change, 0 to destroy`, re-plan `No changes`. Free at rest:
+- **1.2 — Done 2026-09-06.** `30 to add, 0 to change, 0 to destroy`, re-plan `No changes`. Free at rest:
   no NAT, no interface endpoint, no Elastic IP. The slice is `foundation`'s module with
-  `name_suffix = "networking"` and **no zones, no peering and no `peers` input** — that last one was
-  dropped from its `variables.tf` because 3.1's matrix is the map it will need, and a declared input
-  nothing consumes is what tflint rejects.
-  - **Its "the estate's ONLY IGW route" is the TARGET, not today's reading.** Measured after the apply:
+  `name_suffix = "networking"` and **no zones, no peering and no `peers` input**; that last one was
+  dropped from its `variables.tf` because 3.1's matrix is the map it will need, and tflint rejects a
+  declared input nothing consumes.
+  - **The "only IGW route" claim is the target, not today's reading.** Measured after the apply:
     **four** IGW routes exist — Production 2, Sandbox 1, Staging 1. The spokes still carry Stage 3's, and
-    **pass 5 is what removes them**. Worth stating before step 1.5 writes a check that would otherwise be
-    red for four passes — the failure this stage's own pass-5 discipline exists to catch.
+    pass 5 removes them.
 - **1.2 — [Claude⚡] Create `production/networking/`**: VPC 10.31.0.0/16 from the same module, both AZs by
   `zone_id` (D9), IGW attached, the public tier carrying the estate's only `0.0.0.0/0 → igw` route, S3 and
   DynamoDB gateway endpoints on every route table, flow logs on.
-- **1.3 — DONE 2026-09-06, and it needed a module capability 0.4 did not add.**
+- **1.3 — Done 2026-09-06; it needed a module capability 0.4 did not add.**
   `aws_route.public_internet` was **unconditional**, so every VPC the module builds reached an internet
-  gateway. `vpc-v0.3.1` adds `public_internet_route`; the gateway is still created when it is false,
-  because that makes *"is this VPC private?"* a question about a **route table** — the object the answer
-  is enforced in — rather than about which branch of a module ran.
-  - **`29 to add` against the hub's 30, and the difference is exactly the missing route.** Read back from
+  gateway. `vpc-v0.3.1` adds `public_internet_route`; the gateway is still created when it is false, so
+  *"is this VPC private?"* stays a question about a **route table** rather than about which branch of a
+  module ran.
+  - **`29 to add` against the hub's 30, and the difference is the missing route.** Read back from
     AWS rather than from state: `awsds-prod-workloads-public` returns **0** IGW routes,
     `awsds-prod-networking-public` returns **1**.
-  - **A tag was burned getting here.** The `git commit` failed its hooks, the failure was swallowed by a
-    `| grep` on the same command line, and `git tag` ran anyway — so `vpc-v0.3.0` is on origin pointing at
-    the wrong commit. The runbook forbids force-moving a pushed tag, so v0.3.0 is **abandoned** and the
-    release is **v0.3.1**. Second time this session that piping a command into `grep` hid its exit code.
+  - **A tag was burned getting here.** The `git commit` failed its hooks, a `| grep` on the same command
+    line swallowed the failure, and `git tag` ran anyway — so `vpc-v0.3.0` is on origin pointing at the
+    wrong commit. The runbook forbids force-moving a pushed tag, so v0.3.0 is **abandoned** and the
+    release is **v0.3.1**. Second time this session a pipe hid a command's exit code (Lesson 46).
 - **1.3 — [Claude⚡] Create `production/workloads/`**: VPC 10.32.0.0/16, same shape, **no IGW route in any
   route table**. The module still creates the gateway (free, unused); the absence of the route is what
   makes the tier private. **Two private subnets in two AZs** — Stage 10's MWAA Serverless workers land
   here and AWS's private-routing shape requires it, which is why this one VPC's endpoint set is the
   estate's single D9 exception (Stage 10 decision 3 bounds how far the duplication goes).
-- **1.3a — DONE 2026-09-06, and "empty" took an override the module says never happens.**
+- **1.3a — Done 2026-09-06; "empty" took an override the module says never happens.**
   `extra_services = []` alone left **eight interface endpoints** — the module's `core_services` default,
   0.010/h each, **0.080/h for a VPC nothing runs in**. That variable's description reads *"Overridden
-  never"*, and it was written when every egress slice served a VPC people work in, where the core eight
-  are what a notebook cannot function without under design B. **This slice is the case that comment did
-  not anticipate**, so it empties both lists — and the plan then reads *"apply this plan to save these
-  new output values… without changing any real infrastructure"*, which is what makes `usd_per_hour = 0.0`
-  honest rather than aspirational. Stage 9/10 decides what comes back, and deciding is the point:
-  restoring the core eight wholesale would inherit a list chosen for a different kind of VPC.
+  never"*, written when every egress slice served a VPC people work in, where the core eight are what a
+  notebook cannot function without under design B (Lesson 49). This slice empties both lists, and the
+  plan then reads *"apply this plan to save these new output values… without changing any real
+  infrastructure"*, which is what makes `usd_per_hour = 0.0` a reading. Stage 9/10 decides what comes
+  back: restoring the core eight wholesale would inherit a list chosen for a different kind of VPC.
   - `egress_mode = "B"` from birth — this slice never passes through the shape 5.1 converts away from.
 - **1.3a — [Claude] Write `production/workloads-egress/` beside it, empty of endpoints until Stage 9/10
   names them**: the `[E]` slice that gives `VPC-Workloads` its interface endpoints and its DNS firewall.
@@ -303,15 +291,15 @@ point at it.
   *"internet-originated traffic terminates only in `VPC-Networking`'s public tier, and every listener there
   is enumerated"* — today the WireGuard host's UDP/51820; Stage 13's public ALB becomes the second row. A
   world-open rule anywhere else is a finding.
-- **1.5 — CORRECTED BEFORE IT IS WRITTEN (2026-09-06). As specified it is red for four passes.**
-  *"Fails on any IGW route … outside that tier, in **any** account"* — measured today, **three** such
+- **1.5 — Corrected before being written (2026-09-06); as specified it is red for four passes.**
+  *"Fails on any IGW route … outside that tier, in **any** account"* — measured 2026-09-06, **three** such
   routes exist (Sandbox 1, Staging 1, Production's `foundation/` 1), and they are Stage 3's, removed at
-  **pass 5**. A check written now goes red immediately and stays red through 6c, 6d, 7 and 8, which is
-  this stage's own pass-5 discipline and 6b's `DT-8` arriving a third time. **It takes a discriminator or
-  it waits for 5.1** — `deploytargets.py`'s `built` is the pattern: a spoke that still carries its Stage 3
-  NAT and IGW route is *unconverted*, and unconverted is a **note**; a spoke converted at 5.1 that grows
-  one back is a **failure**. The cheapest signal for "converted" is the spoke's `egress_mode`, which is
-  code, or the absence of its NAT gateway, which is a read.
+  **pass 5**. A check written now goes red immediately and stays red through 6c, 6d, 7 and 8 (Lesson 50;
+  6b's `DT-8` a third time). It takes a discriminator or it waits for 5.1: `deploytargets.py`'s `built` is
+  the pattern — a spoke that still carries its Stage 3 NAT and IGW route is *unconverted*, and
+  unconverted is a **note**; a spoke converted at 5.1 that grows one back is a **failure**. The cheapest
+  signal for "converted" is the spoke's `egress_mode`, which is code, or the absence of its NAT gateway,
+  which is a read.
 - **1.5 — [Claude] Write the no-public-address gate**: extend `./aws/networking.py` with a check that fails
   on any IGW route, public IP or world-open security-group rule outside that tier, in **any** account.
 
@@ -320,54 +308,52 @@ point at it.
 **Action:** create the apex, the three child zones and the second Pages apex, and associate each into the
 VPCs that must resolve it. **Why:** private zones do not delegate, overlapping zones resolve by most-
 specific match, a VPC cannot query a peer's resolver, and a VPC associated with a matching zone that holds
-no record gets **NXDOMAIN** rather than a public answer. **Explanation:** a missing association therefore
-produces a failure indistinguishable from a name that does not exist — which is why the matrix is written
-down (INT-22) and read by a check, since nothing derives it.
+no record gets **NXDOMAIN** rather than a public answer. **Explanation:** a missing association produces a
+failure indistinguishable from a name that does not exist, so the matrix is written down (INT-22) and read
+by a check; nothing derives it.
 
-- **2.1 / 2.2 / 2.3 — DONE 2026-09-06.** Five zones: `awsds.internal` and `awsds-pages.internal` in
+- **2.1 / 2.2 / 2.3 — Done 2026-09-06.** Five zones: `awsds.internal` and `awsds-pages.internal` in
   `production/foundation/`, `prod.awsds.internal` in `production/workloads/`, `sandbox.awsds.internal` and
   `staging.awsds.internal` in the accounts that own them. **All five carry `ignore_changes = [vpc]` from
   the first apply** — 2.5 reverses the direction, so without it every later plan in an owning account
   would try to remove the association Production made. **Eight zones stand across three accounts**; the
   old three go at 2.6.
-- **STEP 1.1 HAD BROKEN BOTH SPOKES, AND THIS PASS IS HOW IT SURFACED.** Renaming Production's VPC `Name`
+- **Step 1.1 had broken both spokes, and this pass surfaced it.** Renaming Production's VPC `Name`
   tag to `awsds-prod-shared-vpc` broke `data "aws_vpc" "production"` in **both** spokes' `peering.tf`:
-  `Error: no matching EC2 VPC found`, on every plan and apply, from 1.1's apply until this fix. **The VPC
-  id never changed**, so 1.1's gate — *"any id in the replacement list stops the step"* — could not see
-  it. What moved was a **name another account resolves by**. **0.6's smallest half was pulled forward**:
-  the `peers` map gains `name_suffix` and the lookup builds the tag from it. **The peering LIST can wait
-  for 3.1's matrix; the peer LOOKUP cannot wait past the rename that breaks it**, which is why 0.6 is in
-  pass 0 and moving it was the wrong call.
+  `Error: no matching EC2 VPC found`, on every plan and apply, from 1.1's apply until this fix. The VPC
+  id never changed, so 1.1's gate — *"any id in the replacement list stops the step"* — could not see it;
+  what moved was a **name another account resolves by** (Lesson 48). 0.6's smallest half was pulled
+  forward: the `peers` map gains `name_suffix` and the lookup builds the tag from it. The peering list can
+  wait for 3.1's matrix; the peer lookup cannot wait past the rename that breaks it.
 - **2.1 — [Claude⚡] Create the apex** `awsds.internal`, owned by `production/foundation/` (the services
   named directly under it live there). Records: `gitlab.awsds.internal`; `proxy.awsds.internal` and
   `vpn.awsds.internal` are written by pass 4 from the two hosts' **private** addresses.
-  **THOSE TWO RECORDS WERE NOT WRITTEN BY PASS 4, AND NOBODY NOTICED UNTIL 5.7 (2026-09-06).** The
-  zone was created here, both host slices were built at 4.7/4.8, and neither declared a record — so
+  **Neither record was written by pass 4, and it surfaced only at 5.7 (2026-09-06).** The zone was
+  created here, both host slices were built at 4.7/4.8, and neither declared a record — so
   `proxy.awsds.internal` was **NXDOMAIN** while every client instruction, `NO_PROXY`'s
-  `.awsds.internal` entry and step **6.1's closing check** all named it. A deferred obligation
-  recorded only at the deferring end ([Lesson 34](../lessons.md)). **Repaired and applied**: each
-  record is declared in the `[D]` slice that owns the address, `1 to add` each, both re-planning
-  `No changes`. `gitlab.awsds.internal` is still owed and belongs to [Stage 7](stage-07-gitlab-runners-ecr.md).
+  `.awsds.internal` entry and step **6.1's closing check** all named it ([Lesson 34](../lessons.md)).
+  **Repaired and applied**: each record is declared in the `[D]` slice that owns the address, `1 to add`
+  each, both re-planning `No changes`. `gitlab.awsds.internal` is still owed and belongs to
+  [Stage 7](stage-07-gitlab-runners-ecr.md).
 - **2.2 — [Claude⚡] Create the three child zones**: `sandbox.awsds.internal` (owned by Sandbox),
   `staging.awsds.internal` (owned by the renamed account), `prod.awsds.internal` (owned by
   `production/workloads/`).
 - **2.3 — [Claude⚡] Keep Pages on its own apex**: `awsds-pages.internal`, unchanged in intent from D36 — a
   sibling under the shared apex would weaken the cookie-scope separation the two-apex choice exists for.
-- **2.4 — the same shape, flagged now (2026-09-06): `NT-12` cannot be written to the FINAL matrix and
-  run before 2.6.** Step 2.6 retires `sandbox.internal`, `prod.internal` and `pages.internal` *"after pass
-  6 measures the new ones"*, so **both zone families coexist for the whole of passes 2-6** and a check
-  asserting *"the matrix as documented equals the matrix as deployed"* fails on every surviving old
-  association. It needs the old family named as an expected, dated exception that 2.6 removes — the same
-  treatment `EXC-nn` rows get — or it is written at 2.6 rather than at 2.4.
-- **2.4 — DONE 2026-09-07, WRITTEN AT 2.6 AS ITS OWN NOTE PREDICTED.** `NT-12` reads all five
-  zones and passes — **5, 2, 2, 3, 2 associations, and no others**. It is **two-sided on purpose**:
-  a MISSING association is a name that NXDOMAINs where the matrix says it resolves, and an EXTRA
-  one is a spoke resolving into a plane INT-22 keeps it out of — *the half no expected-direction
-  test would find*. It resolves each VPC by **CIDR and not by Name tag**, because a range is this
-  estate's identifier and does not move when a tag does, which it did at step 1.1 while every
-  id-shaped gate read clean (Lesson 48). All four branches exercised on synthetic input.
-  **`NT-8` is RETIRED, not renumbered** — it asked four questions about a zone family that no
-  longer exists. *The original step follows:*
+- **2.4 — flagged 2026-09-06: `NT-12` cannot be written to the final matrix and run before 2.6.**
+  Step 2.6 retires `sandbox.internal`, `prod.internal` and `pages.internal` *"after pass 6 measures the
+  new ones"*, so both zone families coexist for the whole of passes 2-6 and a check asserting *"the matrix
+  as documented equals the matrix as deployed"* fails on every surviving old association. It needs the old
+  family named as an expected, dated exception that 2.6 removes — the treatment `EXC-nn` rows get — or it
+  is written at 2.6 rather than at 2.4 (Lesson 50).
+- **2.4 — Done 2026-09-07, written at 2.6.** `NT-12` reads all five zones and passes — **5, 2, 2, 3, 2
+  associations, and no others**. It is two-sided: a missing association is a name that NXDOMAINs where
+  the matrix says it resolves, and an extra one is a spoke resolving into a plane INT-22 keeps it out of,
+  the half no expected-direction test would find. It resolves each VPC by **CIDR, not by `Name` tag**,
+  because a range does not move when a tag does, which it did at step 1.1 while every id-shaped gate read
+  clean (Lesson 48). All four branches exercised on synthetic input. **`NT-8` is retired, not
+  renumbered** — it asked four questions about a zone family that no longer exists. *The original step
+  follows:*
 - **2.4 — [Claude] Write the association matrix** into `docs/NETWORK.md` §10, enforced by a new
   `./aws/networking.py` check **`NT-12`** (the matrix as documented equals the matrix as deployed):
 
@@ -386,21 +372,20 @@ down (INT-22) and read by a check, since nothing derives it.
   authorizes and the spokes associate. **AWS recommends deleting the authorization afterwards; this project
   keeps it in Terraform state** (`aws_route53_vpc_association_authorization`, as `peers.tf` keeps the
   peering pair) so the destroy order stays expressible — record the divergence and its reason in
-  `NETWORK.md` §10 rather than leaving it to look like an oversight.
-- **2.6 — DONE 2026-09-07 FOR TWO OF THREE, AND THE THIRD IS BLOCKED BY A DIFFERENT GATE.**
+  `NETWORK.md` §10.
+- **2.6 — Done 2026-09-07 for two of three; the third is blocked by a different gate.**
   `prod.internal` and `pages.internal` destroyed with their four authorizations and four
   cross-account associations — **`0 to add, 0 to change, 10 to destroy`**, exactly the old family
-  and nothing else. The gate was step **6.1's DNS pair**, which was built to discriminate:
+  and nothing else. The gate was step **6.1's DNS pair**, built to discriminate:
   `prod.awsds.internal` must answer and `sandbox.internal` must not.
-  **`sandbox.internal` STAYS**, and not for a reason of its own: `sandbox/foundation` is **frozen**
-  — it plans `1 to add`, an Elastic IP that would be a **second** allocation, until the `VPN_HOMES`
-  trim, and that trim waits on **6.5**. The zone is harmless (nothing resolves it, nothing points at
-  it) and leaves with the apply that unfreezes the slice. `NT-12` carries it as a **dated note**.
-  **THE OBVIOUS TARGET FOR THE PROBE RECORDS WAS WRONG.** `probe.prod.internal` and
-  `probe-isolated.prod.internal` look like they belong in `prod.awsds.internal` — and INT-22
-  deliberately does **not** associate that zone with Sandbox, which is the one place the records are
-  resolved FROM. They moved to the **apex** instead, joining `gitlab`, `proxy` and `vpn`, and unlike
-  those three they are `[E]`.
+  **`sandbox.internal` stays**, held by a freeze elsewhere: `sandbox/foundation` plans `1 to add`, an
+  Elastic IP that would be a **second** allocation, until the `VPN_HOMES` trim, and that trim waits on
+  **6.5**. The zone is harmless (nothing resolves it, nothing points at it) and leaves with
+  the apply that unfreezes the slice. `NT-12` carries it as a dated note.
+  **The probe records went to the apex, not to `prod.awsds.internal`.** `probe.prod.internal` and
+  `probe-isolated.prod.internal` look like they belong there, but INT-22 does **not** associate that zone
+  with Sandbox, the one place the records are resolved from. They join `gitlab`, `proxy` and `vpn` on the
+  apex, and unlike those three they are `[E]`.
   Seven consumers followed the retirement: the three probe slices, `networking.py` (NT-8 → NT-12),
   `supplychain.py`'s `ZONES`, `cicd.py`, `orchestration.py`, `layers.py` and `aws/INDEX.md`.
   *The original step follows:*
@@ -408,25 +393,25 @@ down (INT-22) and read by a check, since nothing derives it.
   `prod.internal` and `pages.internal` with their associations. Zones cannot be renamed, so this is
   create-then-retire and the two families coexist for one sitting.
 
-### 3. Build the five peerings — and generate every route from one map
+### 3. Build the peerings and generate every route from one map
 
 **Action:** declare the peering matrix once and generate both sides from it. **Why:** the isolation rule in
 the user's brief — Interactive and Workloads never talk — is enforced by the *absence* of a peering, the
 cheapest control in the design. **Explanation:** adding peerings "because they might be needed" spends it;
 deploys are AWS API calls and need no L3 path into a target VPC.
 
-- **3.1 — 0.6 LANDS HERE, and two consequences of 6b land with it** (recorded 2026-09-06).
-  0.6 is the mechanism whose data this step is; doing either alone is half a change, because `CIDRS`'s
-  key set is what builds the `peers` map `production/foundation/peers.tf` consumes today.
-  - **This matrix RETIRES the Staging ↔ `VPC-SharedServices` peering.** Staging keeps only
+- **3.1 — 0.6 lands here, with two consequences of 6b** (recorded 2026-09-06). 0.6 is the mechanism whose
+  data this step is: `CIDRS`'s key set is what builds the `peers` map
+  `production/foundation/peers.tf` consumes today.
+  - **This matrix retires the Staging ↔ `VPC-SharedServices` peering.** Staging keeps only
     Staging → `VPC-Networking`, and `VPC-SharedServices` ↔ Staging is on the *not built* list. That is the
-    peering 6b step 4.5 preserved through a `for_each` rename with five `moved {}` blocks — correctly,
-    because the alternative was destroying it mid-conversion with no replacement, and **INT-09 rides on it
-    until this step re-homes INT-09 onto Sandbox ↔ `VPC-SharedServices`**.
+    peering 6b step 4.5 preserved through a `for_each` rename with five `moved {}` blocks, the
+    alternative being to destroy it mid-conversion with no replacement; **INT-09 rides on it until this
+    step re-homes INT-09 onto Sandbox ↔ `VPC-SharedServices`**.
   - **Those five `moved {}` blocks become dead here.** Their `from` addresses stopped existing when 4.5
-    applied; they are a migration record, and this is the commit that should delete them rather than
-    carry them into a file it is restructuring. The same is true of `terraform-live/identity/sso/moved.tf`
-    at 4.9, which its own header already says.
+    applied, so this commit deletes them rather than carrying a migration record into a file it is
+    restructuring. The same is true of `terraform-live/identity/sso/moved.tf` at 4.9, which its own header
+    already says.
 - **3.1 — [Claude] Declare the matrix** in `backend.py`:
 
   | Requester | Accepter | Why |
@@ -439,55 +424,48 @@ deploys are AWS API calls and need no L3 path into a target VPC.
 
   **Not built, and the omission is the control:** Sandbox ↔ Staging, Sandbox ↔ `VPC-Workloads`,
   `VPC-SharedServices` ↔ Staging, `VPC-SharedServices` ↔ `VPC-Workloads`.
-- **3.2 — [Claude] Record why the last two are absent, because the intuition says otherwise**: *deployment
-  is an API act.* The runner in `VPC-SharedServices` assumes a role across the account boundary and calls
-  SageMaker, CloudFormation and S3; artifacts travel as ECR images, CodeArtifact packages and S3 objects,
-  each reached through an endpoint in the target's own VPC. **Nothing in a deployment target clones a
-  repository** — the image carries the code (D28), so a runtime `git clone` there is a contract violation to
-  catch rather than a path to provide. Keeping them absent costs one later change; building them costs
-  standing L3 reach from the host that executes repository-supplied build code into both deployment
-  targets — the blast radius D14 accepted, widened (Lesson 2).
-- **3.3 — [Claude] Name the trigger, so it is recognised rather than rediscovered**: a peering to a
-  deployment target is added when a **shared service is consumed at runtime** rather than at deploy time.
-  Candidates, none of which exists today: a package mirror or registry proxy on an instance (as opposed to
-  ECR and CodeArtifact, which are endpoints), a metrics or log collector that is not CloudWatch, an
-  internal secrets or configuration service, a certificate-status endpoint. **The internal CA is not one** —
-  D36 issues no CRL and runs no OCSP responder, by decision. When one appears, prefer a regional service or
-  an endpoint; the peering is the last resort, generated from this same map.
+- **3.2 — [Claude] Record why the last two are absent**: *deployment is an API act*, and
+  [D38](../decisions/D38-single-egress-hub.md) §6b carries the reasoning — the runner in
+  `VPC-SharedServices` assumes a role across the account boundary, artifacts travel as ECR images,
+  CodeArtifact packages and S3 objects through an endpoint in the target's own VPC, and **nothing in a
+  deployment target clones a repository** (D28). Building the two peerings would give the host that
+  executes repository-supplied build code standing L3 reach into both deployment targets, widening the
+  blast radius D14 accepted (Lesson 2).
+- **3.3 — [Claude] Name the trigger**: a peering to a deployment target is added when a **shared service
+  is consumed at runtime** rather than at deploy time. D38 §6b lists the candidates, none of which exists
+  today; **the internal CA is not one** — D36 issues no CRL and runs no OCSP responder. When one appears,
+  prefer a regional service or an endpoint; the peering is the last resort, generated from this same map.
 - **3.4 — [Claude⚡] Generate and apply both sides**: the accepter stays in Production (`foundation/` for
   SharedServices, `networking/` for the hub), with subnet-scoped routes on **both** sides, applied
   accepter-last as the existing pattern does.
 - **3.5 — [Claude⚡] Route the tunnel's return path**: every spoke private route table carries a route to
   `VPC-Networking`'s **public** tier (where both hosts live) as well as to its private tier.
-- **3.6 — DONE (the re-cut landed with 4.7; the epilogue caught up 2026-09-06).** `NT-4` reads
-  *"no route overlaps `10.90.0.0/24` **outside the hub**"* and pairs it with a positive reading —
-  *"the ONE `10.90.0.0/24` route, inside the hub"* — so the exception is **asserted** rather than
-  merely excluded. Measured: `rtb-0b13c0405057ab331`, `10.90.0.0/24 → eni-0a6313a565c2b09c7`,
-  `active`. The instrument's closing legend still described the old wording and now does not.
+- **3.6 — Done (the re-cut landed with 4.7; 2026-09-06).** `NT-4` reads *"no route overlaps
+  `10.90.0.0/24` **outside the hub**"* and pairs it with a positive reading — *"the one `10.90.0.0/24`
+  route, inside the hub"* — so the exception is asserted rather than merely excluded. Measured:
+  `rtb-0b13c0405057ab331`, `10.90.0.0/24 → eni-0a6313a565c2b09c7`, `active`.
   *The original step follows:*
 - **3.6 — [Claude] Keep `10.90.0.0/24` out of every table but one**: the WireGuard client range is
   masqueraded today and stays invisible to the spokes. The **one** exception is inside `VPC-Networking`,
   added at 4.7. Re-cut `./aws/networking.py` `NT-4` from *"no route to 10.90/24"* to *"no route to
   10.90/24 outside `VPC-Networking`"*.
-- **3.7 — `NT-11` has a window too, and it is inside pass 3 rather than across passes** (2026-09-06).
+- **3.7 — `NT-11` has a window too, inside pass 3 rather than across passes** (2026-09-06).
   *"Every active peering has a route on both sides in every affected route table"* is false between **3.4**
   (the peerings applied) and **3.5** (the tunnel's return path added), and false again for any old peering
-  still standing while the new ones come up. Written as specified it goes red mid-pass, in the one place
-  an operator most needs a trustworthy reading. Either it runs only at pass 6, or it takes the peering
-  matrix as its expectation and reports *"declared but not yet routed"* separately from *"routed to
-  something not in the matrix"* — which are opposite findings and must not share a verdict.
-- **3.7 — DONE 2026-09-06, AND THE TWO FINDINGS ARE SEPARATE CHECKS, WHICH IS WHAT THE STEP
-  ABOVE ASKED FOR.** `NT-11` reads **`pass`: 5 active peerings, both sides routed in every account
-  this run could read.** The sixth peering in the estate is `deleted` and nothing points at it,
-  which is why it is silent rather than a finding. The split:
+  still standing while the new ones come up. Written as specified it goes red mid-pass, where an operator
+  most needs a trustworthy reading. Either it runs only at pass 6, or it takes the peering matrix as its
+  expectation and reports *"declared but not yet routed"* separately from *"routed to something not in the
+  matrix"*: opposite findings that must not share a verdict.
+- **3.7 — Done 2026-09-06, as two separate checks.** `NT-11` reads **`pass`: 5 active peerings, both
+  sides routed in every account this run could read.** The sixth peering in the estate is `deleted` and
+  nothing points at it, so it is silent rather than a finding. The split:
   **declared but not routed** — an `active` peering with no route on one side, named by side rather
   than counted, and normal for the minutes between creating a peering and adding its routes;
-  **routed but not active** — a route whose target is deleted, failed or pending, which is a
-  **blackhole** and the more urgent of the two. A single verdict over both would let the second
-  hide behind the first.
+  **routed but not active** — a route whose target is deleted, failed or pending, a **blackhole** and the
+  more urgent of the two. A single verdict over both would let the second hide behind the first.
   **It asserts only about accounts it actually read**: a VPC whose account holds no live profile is
-  skipped, because *"no route found"* and *"no session"* are the same silence — and this check
-  crosses accounts by construction, so that case is normal rather than exceptional.
+  skipped, because *"no route found"* and *"no session"* are the same silence, and this check crosses
+  accounts by construction.
   **Both branches proven on synthetic inputs**, since the estate has neither defect and a check
   that has only ever passed is a claim: one side unrouted → named; a deleted peering still routed →
   named as a blackhole; a route to a peering id nobody read → named; an unread side → silent.
@@ -496,13 +474,13 @@ deploys are AWS API calls and need no L3 path into a target VPC.
   both sides in every affected route table. The reference implementation this project keeps as a comparison
   has exactly this defect (an attachment with no route), which is why the check exists.
 
-### 4. Move the VPN and build the proxy — the cut-over, and the only blackout in the stage
+### 4. Move the VPN and build the proxy — the cut-over
 
 **Action:** transfer the Elastic IP, stand up both hub hosts, and re-key every VPN-only condition onto the
 proxy's address. **Why:** the estate's entry point and its exit point both move accounts. **Explanation:**
-two hosts rather than one — the WireGuard host receives untrusted UDP from the internet and the Squid host
-parses untrusted internet responses, so separating them keeps a compromise of either off the other. The
-address transfer is what keeps every client's `Endpoint` line unchanged.
+the WireGuard host receives untrusted UDP from the internet and the Squid host parses untrusted internet
+responses, so two hosts keep a compromise of either off the other. The address transfer is what keeps
+every client's `Endpoint` line unchanged. This pass is the stage's only blackout.
 
 - **4.1 — [Claude⚡] Apply the `[P]` anchors in `production/networking/`**: the same output names the
   Sandbox slice exports (`wireguard_eip_public_ip`, `vpc_id`, `s3_gateway_endpoint_id`,
@@ -511,10 +489,10 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   groups are new — WireGuard UDP/51820 world-open and nothing else; the proxy TCP/3128 **from the spoke and
   tunnel CIDRs only** — so pass 1.4's ingress invariant still reads one listener. The host-key secret is
   new and **empty**.
-  **APPLIED 2026-09-06 — `6 to add`, and three corrections the writing of it forced.** (i) The
-  `wireguard_eip_public_ip` output listed above is **NOT** in this step: the address is transferred rather
-  than allocated, so the resource backing that output arrives with 4.6's `import {}`. Declaring it here
-  would mean allocating a second address, which is the risk table's *fallback*, not the plan.
+  **Applied 2026-09-06 — `6 to add`, with three corrections.** (i) The `wireguard_eip_public_ip` output
+  listed above is **not** in this step: the address is transferred rather than allocated, so the resource
+  backing that output arrives with 4.6's `import {}`. Declaring it here would allocate a second address,
+  the risk table's fallback.
   (ii) The proxy's allow-list parameter is `/datascience/<env>/proxy/allowlist` and **cannot** be
   `/awsds/…`: Parameter Store reserves every name beginning with `aws`, a collision
   [`conventions.md`](../conventions.md) has carried since 2026-08-16 and this step did not repeat — the
@@ -559,52 +537,50 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   ```
 
   so neither side tries to create or release it (Terraform ≥ 1.7; this project runs 1.15.8).
-- **4.6a — CHECKED FOR THE COLLISION THIS STAGE HAS HIT TWICE, AND THERE IS NONE (measured 2026-09-06).** *(Numbered `4.7` when written, beside the host build that already had that number — corrected 2026-09-06 at execution. Step numbers are identifiers in this plan, so two steps sharing one is the identifier failing at its only job.)*
-  0.4 and 1.3 both found a module asked for a capability its step had not enumerated, and 4.7/4.8 put
-  **two hosts in one account** — the exact shape that made `vpc` need a `name_suffix`. So the `wireguard`
-  module was grepped rather than assumed: it builds **two** names, `awsds-<env>-vpn` and
-  `awsds-<env>-vpn-health`, and a proxy slice builds `awsds-<env>-proxy-*`. **Different modules, different
-  stems, no collision** — no bump needed here, and this line exists so the question is not re-opened at
-  the keyboard. `vpc-egress` is the module that *does* need the suffix, and that is 0.4a's deferral to 5.1.
-- **4.7a — THE TUNNEL GAINED AN IPv6 ULA ON 2026-09-07 (`wireguard-v0.6.0`), AND IT CLOSES A LEAK
-  RATHER THAN OPENING A PATH.** Found by the user asking why a conversation kept working while the
-  tunnel was up and nothing else did. `AllowedIPs = 0.0.0.0/0, ::/0` had been in every config from
-  the start and the `::/0` half was **inert**: `wg-quick` installs routes only for the families the
-  interface **has an address in**, and `Address` was IPv4-only. Measured on the live client — **nine
-  established connections outside the tunnel**, four of them on a global IPv6 address, **zero** on
-  `10.90.0.2`. The estate is IPv4-only in all five VPCs, so the ULA carries no traffic: IPv6 now
-  *enters* the tunnel and is **rejected** by one `ip6tables` rule, explicit rather than dropped so
-  the refusal is **counted** (Lesson 55). `fd90::<n>` mirrors `10.90.0.<n>` — a departure from
-  RFC 4193's random global ID, recorded as such. **It is not a control against the device's owner**
-  and the runbook says so: `AllowedIPs` on the client side is a routing directive, and enforcement
-  lives in `DenyControlPlaneOffVpn` and the proxy's lists. Clients gain **one line**.
-  **A second leak the same measurement found and this does NOT close**: macOS keeps the physical
+- **4.6a — No module-name collision between the two hosts (measured 2026-09-06).** 0.4 and 1.3 both found
+  a module asked for a capability its step had not enumerated, and 4.7/4.8 put **two hosts in one
+  account** — the shape that made `vpc` need a `name_suffix`. The `wireguard` module was grepped: it
+  builds two names, `awsds-<env>-vpn` and `awsds-<env>-vpn-health`, and a proxy slice builds
+  `awsds-<env>-proxy-*`. Different modules, different stems, no collision, so no bump is needed here.
+  `vpc-egress` is the module that *does* need the suffix, and that is 0.4a's deferral to 5.1.
+- **4.7a — The tunnel gained an IPv6 ULA on 2026-09-07 (`wireguard-v0.6.0`), closing a leak.**
+  Found by the user asking why a conversation kept working while the tunnel was up and nothing else did.
+  `AllowedIPs = 0.0.0.0/0, ::/0` had been in every config from the start and the `::/0` half was
+  **inert**: `wg-quick` installs routes only for the families the interface has an address in, and
+  `Address` was IPv4-only (Lesson 56). Measured on the live client: **nine established connections
+  outside the tunnel**, four of them on a global IPv6 address, **zero** on `10.90.0.2`. The estate is
+  IPv4-only in all five VPCs, so the ULA carries no traffic — IPv6 now *enters* the tunnel and is
+  **rejected** by one `ip6tables` rule, explicit rather than dropped so the refusal is counted
+  (Lesson 55). `fd90::<n>` mirrors `10.90.0.<n>`, a departure from RFC 4193's random global ID. It is not
+  a control against the device's owner: `AllowedIPs` on the client side is a routing directive, and
+  enforcement lives in `DenyControlPlaneOffVpn` and the proxy's lists. Clients gain one line.
+  **A second leak the same measurement found and this does not close**: macOS keeps the physical
   default as an **interface-scoped** route, so a socket that predates the tunnel keeps using it.
-- **4.7 — [Claude⚡] Build the WireGuard host — AND RE-HOME `./aws/vpn.py` IN THE SAME SITTING.** The
+- **4.7 — [Claude⚡] Build the WireGuard host, and re-home `./aws/vpn.py` in the same sitting.** The
   instrument hard-codes `VPN_HOME_PROFILE = "awsds-infra-sandbox-1"` (measured 2026-09-06 at 4.1), so from
   the moment a host exists here it reports on the *old* account: a stopped instance and a group about to be
   destroyed, while the live tunnel goes unmeasured and **`VP-3` keeps reading `pass` about Sandbox**
-  ([Lesson 31](../lessons.md) exactly — a check inherits the scope of the account it was written in).
-  Between 4.1 and 4.13 the estate carries **two** world-open rules, one per account, and that is expected;
-  the discriminator is the group *name*, `awsds-<env>-vpn`. Build: `production/vpn/` `[D]`, in `VPC-Networking`'s public tier,
+  ([Lesson 31](../lessons.md)). Between 4.1 and 4.13 the estate carries **two** world-open rules, one per
+  account, which is expected; the discriminator is the group *name*, `awsds-<env>-vpn`.
+  Build: `production/vpn/` `[D]`, in `VPC-Networking`'s public tier,
   from the existing module at **v0.5.0** with three changes: `vpc_nat_cidrs` is **removed** (the
   isolated-tier NAT job dies with the buildbox's move, 5.8), the `PostUp` chain forwards tunnel packets
   **only to RFC1918 destinations** and drops the rest, and it stops masquerading traffic bound for the
   proxy so Squid sees `10.90.0.x`. Add `10.90.0.0/24 → the WireGuard host's ENI` to the hub's public-tier
   route table — the single exception 3.6 names, in the same VPC, which is what gives the access log a
   per-device address without any logging change.
-- **4.7-4.11 AUTHORED 2026-09-06, NOTHING APPLIED.** `wireguard-v0.5.0` (untagged as yet),
+- **4.7-4.11 — Authored 2026-09-06, nothing applied.** `wireguard-v0.5.0` (untagged as yet),
   `terraform-live/production/vpn/` and `terraform-live/production/proxy/` with its `squid.conf` and render
   templates, the `[P]` access log and its key in `networking/`, and both allow-lists filled. Every gate is
   green — `terraform validate`, `tflint` 0, `checkov` 0 failed, `./scripts/slices.py check` 29/29,
-  `make check` OK — and both templates were **rendered**, not merely validated, which is what caught three
-  defects a reading would not have: `+` in HCL is arithmetic and not concatenation; `%{` is `templatefile`'s
-  directive marker and collides with Squid's own `strftime` escape (**and with a comment describing the
-  collision**); and the first render script's "revert" deleted the new file while the old one was already
-  gone. **What is deliberately NOT authored is 4.11's second half** — the export to Log Archive. The
-  mechanism is a real choice (a subscription filter into a Firehose in Log Archive, against a scheduled
-  `CreateExportTask` to S3) with different cost shapes, and picking one silently would be an estimate
-  standing in for a measurement (Lesson 6). It is a decision due below — **taken 2026-09-08 as (c)**.
+  `make check` OK — and both templates were **rendered**, not merely validated (Lesson 54), which caught
+  three defects a reading would not have: `+` in HCL is arithmetic and not concatenation; `%{` is
+  `templatefile`'s directive marker and collides with Squid's own `strftime` escape (including in a
+  comment describing the collision); and the first render script's "revert" deleted the new file while
+  the old one was already gone. **4.11's second half is not authored** — the export to Log Archive. The
+  mechanism is a choice (a subscription filter into a Firehose in Log Archive, against a scheduled
+  `CreateExportTask` to S3) with different cost shapes, so picking one silently would be an estimate
+  standing in for a measurement (Lesson 6). It is a decision due below, **taken 2026-09-08 as (c)**.
 - **4.8 — [Claude⚡] Build the proxy**: `production/proxy/` `[D]`, a second host in the same public tier.
   Squid is in the Amazon Linux 2023 repositories (`dnf install -y squid`) and needs no third-party repo.
   The configuration, **in this order**:
@@ -618,19 +594,16 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   3. Source-scoped allow-lists, **one per plane** (4.9).
   4. `http_access deny all`, last — so an unlisted name is a fast, named 403 rather than a timeout.
 
-- **4.9 — REOPENED AND CORRECTED 2026-09-07: THE CLIENT PLANE WAS THE WRONG SHAPE, AND THIS
-  STEP'S OWN PARAPHRASE IS WHAT MADE IT SO.** The user found it on the first browser that tried to
-  use the proxy: the AWS console opened and **nothing else on the internet did**.
-  `objectives.md` is explicit in two places and they agree — *"all internet access will be
+- **4.9 — Reopened and corrected 2026-09-07: the client plane was the wrong shape.** The user found it on
+  the first browser that tried to use the proxy: the AWS console opened and nothing else on the internet
+  did. `objectives.md` is explicit in two places and they agree — *"all internet access will be
   **MONITORED** … the user can therefore use the browser to reach the internet"* and *"the
   restriction is on the SageMaker-**MANAGED COMPUTE**, never on the user's (client's) machine"*.
   What stood here was a **23-name allow-list** of AWS console, portal and sign-in families, which
-  made the **client's** internet stricter than the **compute's**. The step said *"the tunnel range
-  carries the institutional web filter — what a person on a company laptop may reach"*, and
-  `squid.conf` is default-deny, so *"filter"* was implemented as an **allow-list**. **An
-  institutional web filter is a DENY-list over an open default.** `CLAUDE.md` says the objectives
-  are *"the specification a stage is measured against, so it is summarised nowhere"* — and the
-  summary in this step became the specification, which is exactly what that rule exists to stop.
+  made the **client's** internet stricter than the **compute's**: this step's paraphrase — *"the tunnel
+  range carries the institutional web filter — what a person on a company laptop may reach"* — met a
+  default-deny `squid.conf` and became an allow-list (Lesson 57). An institutional web filter is a
+  **deny-list over an open default**.
   **The repair**: every plane now carries a `mode`. `allowlist` (the four spokes, unchanged —
   `sandbox-foundation` is D5's *"short list"* for the compute) and **`open`** (the tunnel), whose
   list is a **deny** list, **empty by decision** — everything permitted, everything logged, filled
@@ -652,7 +625,7 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   - **The SharedServices CIDR carries the build hosts' package sources**; the Workloads CIDR is empty by
     default. One list per source is what keeps the two filters two: a name a person may reach is not
     thereby reachable from a notebook.
-  - **AND THE STAGING CIDR, which this list omitted until 4.1 was written (2026-09-06).** Staging is a
+  - **And the Staging CIDR**, omitted from this list until 4.1 was written (2026-09-06). Staging is a
     peered spoke with a runtime of its own, so it needs a plane like every other. The omission is why the
     parameter's planes are **derived from the peering matrix** rather than transcribed from this
     paragraph: a spoke the security group admits and the allow-list has never heard of is reachable and
@@ -674,29 +647,28 @@ address transfer is what keeps every client's `Endpoint` line unchanged.
   exits through Squid, so `VPN_HOMES` yields `aws:SourceIp` = the **proxy's** EIP, `aws:SourceVpc` =
   `VPC-Networking`, and `trusted_vpce_ids` gains `VPC-Networking`'s S3 gateway endpoint id (S3 from the
   proxy still leaves through that gateway, so the call presents a VPC and a VPCE rather than the proxy's
-  public address — both branches of `DenyControlPlaneOffVpn` are load-bearing, and that is why the
-  statement already pairs `NotIpAddress` with `StringNotEqualsIfExists`). **Apply the list containing BOTH
-  the old WireGuard EIP and the new proxy EIP, measure pass 6, and trim in a second apply** — a single
+  public address — both branches of `DenyControlPlaneOffVpn` are load-bearing, which is why the
+  statement already pairs `NotIpAddress` with `StringNotEqualsIfExists`). **Apply the list containing both
+  the old WireGuard EIP and the new proxy EIP, measure pass 6, and trim in a second apply**: a single
   cut-over apply is one typo away from locking out all six personas. Apply `identity/sso/` and
   `data-governance/data/` as `InfrastructureAccess`, which carries no VPN-only deny by decision (open
   question 17's recovery path). Read the Sandbox lake's and the projects bucket's policies in the same
   sitting: any `aws:SourceVpce` branch there needs the hub's gateway id too.
-- **4.13 — DONE IN TWO HALVES: the host on 2026-09-06, the anchors, `sandbox.internal` and the folder at
-  6.5 on 2026-09-08.** The Elastic IP was *forgotten*, never released — it is Production's `[P]` allocation;
-  `VP-2` reads no orphan. *The original step follows:*
+- **4.13 — Done in two halves: the host on 2026-09-06, the anchors, `sandbox.internal` and the folder at
+  6.5 on 2026-09-08.** The Elastic IP was *forgotten*, never released — it is Production's `[P]`
+  allocation; `VP-2` reads no orphan. *The original step follows:*
 - **4.13 — [Claude⚡] Destroy the old home, last**: `sandbox/vpn/` and the VPN anchors in
   `sandbox/foundation/`, once pass 6's readings pass. `VP-2` (no orphan allocation) is the closing check.
 
-### 5. Turn the spokes into design B — no NAT, no default route, and a DNS firewall with a new job
+### 5. Turn the spokes into design B
 
 **Action:** destroy all three NAT gateways, complete each VPC's endpoint set, and re-purpose the DNS
-firewall. **Why:** with the proxy reachable, the per-account NAT gateways are the last transparent path and the only
-metered thing in the egress slices the design no longer wants. **Explanation:** removing them is also what
-makes the proxy's allow-list the single filter it is supposed to be — and it is what makes the SMUS
-network-isolation page's required endpoint list finally apply, because its premise (no public egress)
-becomes true.
+firewall. **Why:** with the proxy reachable, the per-account NAT gateways are the last transparent path and
+the only metered thing in the egress slices. **Explanation:** removing them makes the proxy's allow-list
+the single filter, and makes the SMUS network-isolation page's required endpoint list apply, because its
+premise (no public egress) becomes true.
 
-- **5.1 — DONE 2026-09-06 AS CODE, AND IT WAS NEVER A DESTROY.** Measured first: **zero NAT gateways,
+- **5.1 — Done 2026-09-06 as code; it was never a destroy.** Measured first: **zero NAT gateways,
   zero default routes and zero interface endpoints in all three accounts** — the `egress/` slices are
   `[E]` and were all down, so there was nothing to destroy. The act is a code change so that the next
   `make up` never creates one. `vpc-egress-v0.6.0` deletes `nat.tf` and **`egress_mode`,
@@ -708,27 +680,26 @@ becomes true.
   zero NAT resources in any of the four, and the DNS Firewall's six resources still present in
   Sandbox. `production/workloads-egress` reads *no infrastructure changes* — outputs only.
   *The original step follows:*
-- **5.1 — [Claude⚡] Destroy all THREE NAT gateways**: `egress_mode = "B"` in **Sandbox, Staging and
+- **5.1 — [Claude⚡] Destroy all three NAT gateways**: `egress_mode = "B"` in **Sandbox, Staging and
   Production** — `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so
   `VPC-SharedServices` has one as well and "both NAT gateways" undercounted. Every private route table
-  loses its `0.0.0.0/0` entirely. `vpc-egress` drops the NAT half (and its `nat_public_subnet_id` input) rather than keeping dead code, and
-  carries 0.4a's `name_suffix` in the same version. **THAT VERSION IS NOW v0.6.0, NOT v0.5.0** — v0.5.0
-  was spent on 5.3's `optional_service_groups` (2026-09-06), and the *one bump rather than two* line was
-  an optimisation rather than a constraint. **AND IT CARRIES A COUPLING THIS STEP MUST HANDLE EXPLICITLY,
-  found while writing v0.5.0:** `dns-firewall.tf` reads `dns_firewall_enabled = var.dns_firewall &&
-  var.egress_mode == "A"`, so **deleting mode A silently disables the DNS Firewall** that 5.7 wants kept
-  in every compute VPC. One condition, two intents ([Lesson 51](../lessons.md)) — the clause goes in the
-  same commit as the NAT, or 5.1 and 5.7 undo each other without either plan reading wrong.
-- **5.2 — DONE 2026-09-06 (as code; the slice is `[E]` and down, so it takes effect at the next
+  loses its `0.0.0.0/0` entirely. `vpc-egress` drops the NAT half (and its `nat_public_subnet_id` input)
+  and carries 0.4a's `name_suffix` in the same version. **That version is v0.6.0**: v0.5.0 was spent on
+  5.3's `optional_service_groups` (2026-09-06). **It carries a coupling**, found while writing v0.5.0:
+  `dns-firewall.tf` reads `dns_firewall_enabled = var.dns_firewall && var.egress_mode == "A"`, so
+  **deleting mode A silently disables the DNS Firewall** that 5.7 wants kept in every compute VPC. One
+  condition, two intents ([Lesson 51](../lessons.md)): the clause goes in the same commit as the NAT, or
+  5.1 and 5.7 undo each other without either plan reading wrong.
+- **5.2 — Done 2026-09-06 (as code; the slice is `[E]` and down, so it takes effect at the next
   `make up`).** Sandbox's `extra_services` goes from 4 to **10** — the three SageMaker names and
   `s3tables`, plus `datazone`, `ssm`, `ssmmessages`, `ec2messages`, `ec2` and `secretsmanager`.
   **18 interface endpoints in total**, counted from the slice's own plan. `q` is struck: the
   Region's catalog (569 services, re-measured with a healthy session) carries `qapps` and
   `quicksight*` and nothing named `q`.
-  **The three `layers.py` rates moved with the NAT and were COUNTED, not computed** — Sandbox
+  **The three `layers.py` rates moved with the NAT and were counted, not computed** — Sandbox
   **0.160 → 0.180**, Staging 0.160 → **0.110**, Production 0.150 → **0.100**. Sandbox's *idle floor*
-  rises because 5.2 has to enumerate what the NAT covered silently — **and that is the only axis on
-  which it rises.** Per gigabyte a NAT is **0.045** against an endpoint's **0.010**, so design B costs
+  rises because 5.2 enumerates what the NAT covered silently, and that is the only axis on which it
+  rises. Per gigabyte a NAT is **0.045** against an endpoint's **0.010**, so design B costs
   +0.020/h fixed here and saves 0.035 on every GB: **break-even ≈ 0.57 GB/h**, which one container pull
   passes in minutes. Estate-wide the fixed rate falls too, 0.470 → **0.390/h**. None of the three
   includes 5.3's optional groups, which only exist for an apply that names them.
@@ -736,32 +707,31 @@ becomes true.
 - **5.2 — [Claude⚡] Complete the required endpoint set**: Sandbox re-adds **`datazone`** — removed on
   2026-08-25 only because its private zone shadowed a client-plane name, which cannot happen now — and
   gains `ec2`, `ec2messages`, `secretsmanager`, `ssm`, `ssmmessages` and ~~`q`~~. **Measure rather than
-  copy** — and the measurement caught this step's own list on 2026-09-06: **there is NO `q` endpoint
+  copy**: the measurement caught this step's own list on 2026-09-06 — **there is no `q` endpoint
   service in `us-west-2`.** The Region's catalog carries `qapps` and the `quicksight*` family and
   nothing named `q`, so that entry is struck. `codewhisperer` is `us-east-1`-only for the same reason
   ([6d](stage-06d-unified-studio-remainder.md) step 3.5 decides it).
-  **AND ONE NAME THIS STEP MISSED IS NOW ALWAYS-ON: `s3tables`** (user decision, 2026-09-06).
+  **`s3tables` is always-on**, a name this step missed (user decision, 2026-09-06).
   `S3TableCatalog` is one of category 1's **eleven** — enabled — and the S3 **gateway** endpoint does
   not cover it: a gateway carries `s3` and `dynamodb`, while `s3tables` is its own service name. Under
   design B a project using that blueprint had no path at all, which is 5.3's failure in a blueprint
   nobody had named. Applied in `sandbox/egress`'s `extra_services`, not behind a flag.
-- **5.3 — TAKEN 2026-09-06, AND IT IS NONE OF THE THREE SHAPES THIS STEP OFFERED.** The user kept **both
-  families enabled** and made the ENDPOINTS the variable: `vpc-egress` **v0.5.0** takes
+- **5.3 — Taken 2026-09-06, and it is none of the three shapes this step offered.** The user kept **both
+  families enabled** and made the endpoints the variable: `vpc-egress` **v0.5.0** takes
   `optional_service_groups`, **empty by default**, threaded by `make up ENV=<x> GROUPS=bedrock,emr`.
-  So a family nobody uses that day costs nothing, and nothing is removed from the portal. **The group
+  A family nobody uses that day costs nothing, and nothing is removed from the portal. **The group
   map lives in the module** (three hand-kept copies would diverge on the first addition) with a
   **closed-list validation**, because an unknown group name fails *silently* — it contributes nothing,
   the apply succeeds, and the blueprint fails on first use exactly as with no flag. Wired in
   `sandbox/egress` alone: these are SMUS blueprints and the SMUS surface is in that account only.
-  **`bedrock` IS FOUR ENDPOINTS AND NOT THE THREE BELOW** — the six enabled blueprints both AUTHOR
-  Bedrock objects and INVOKE them, and `bedrock` (the control plane `CreateGuardrail` and
-  `CreateEvaluationJob` call) is a different service from `bedrock-agent`. `mwaa` is **reserved and
-  empty**: `Workflows` is category 2 and the estate's decision is *MWAA Serverless only*, while the
-  catalog splits `airflow-serverless` from the provisioned trio — filling it in now would settle a
-  Stage 10 question by accident. Measured end to end: **12** interface endpoints with no flag, **23**
-  with `bedrock,emr`. *The step's original text follows, because the shapes it weighed are why the
-  answer is a fourth one:*
-- **5.3 — [Claude reads, user decides] Close the gap between the required table and the ENABLED
+  **`bedrock` is four endpoints, not the three below** — the six enabled blueprints both author Bedrock
+  objects and invoke them, and `bedrock` (the control-plane `CreateGuardrail` and `CreateEvaluationJob`
+  call) is a different service from `bedrock-agent`. `mwaa` is **reserved and empty**: `Workflows` is
+  category 2 and the estate's decision is *MWAA Serverless only*, while the catalog splits
+  `airflow-serverless` from the provisioned trio, so filling it in now would settle a Stage 10 question
+  by accident. Measured end to end: **12** interface endpoints with no flag, **23** with `bedrock,emr`.
+  *The original step follows:*
+- **5.3 — [Claude reads, user decides] Close the gap between the required table and the enabled
   blueprints**: the guide's **optional** table is keyed to *"projects that include blueprints using the
   services listed below"*, and this estate enables two of them in category 1 — the six `AmazonBedrock*`
   blueprints (`bedrock-agent`, `bedrock-agent-runtime`, `bedrock-runtime`) and `EmrServerless`
@@ -776,7 +746,7 @@ becomes true.
   for Spark, (b) for Bedrock.** Whatever is chosen, the enabled-blueprint list and the endpoint list move
   in the same commit, and the check that compares them (`US-3` reads the first, `./aws/egress.py` the
   second, nothing compares them today) is this step's other deliverable.
-- **5.4 — TAKEN 2026-09-06: PIN THE SUBNETS**, the free option and the recommended one. The blueprint
+- **5.4 — Taken 2026-09-06: pin the subnets**, the free option and the recommended one. The blueprint
   takes a subnet list, so a project's apps are handed only the AZ that holds the endpoints — D9's
   single-AZ rule stays intact and the resolution failure stops existing rather than being paid for.
   Measured at [6d](stage-06d-unified-studio-remainder.md) step 3 either way. *The reading follows:*
@@ -790,22 +760,21 @@ becomes true.
   `sagemaker.runtime` in both AZs; or accept it and let the first `az2` invocation be the measurement.
   **Recommended: pin the subnets**, and measure it at [6d](stage-06d-unified-studio-remainder.md) step 3
   either way.
-- **5.5 — DONE 2026-09-06, AND IT COVERS TWO OF THE THREE VPCs THE STEP NAMES.** Sandbox got the trio
+- **5.5 — Done 2026-09-06; it covers two of the three VPCs the step names.** Sandbox got the trio
   at 5.2; **`VPC-SharedServices` gets it here** (`production/egress` 10 → **13** endpoints,
-  0.100 → **0.130/h**), one step ahead of the buildbox 5.8 lands there. **`VPC-Workloads` does NOT,
-  and the step's own qualifier is what excludes it:** it says *every INSTANCE-BEARING spoke*, and
-  that VPC bears none — measured, Production's only two instances are in `VPC-Networking`, which
-  reaches SSM through the IGW and needs no endpoint. `workloads-egress` already refuses endpoints
-  *"because the other egress slices have them"* for a network nothing runs in; adding 0.030/h of
-  Session Manager path there would have been that exact purchase. **The refusal is written INTO the
-  slice**, next to the empty lists, so the next reader meets it where they would look. They arrive
+  0.100 → **0.130/h**), one step ahead of the buildbox 5.8 lands there. **`VPC-Workloads` does not**,
+  excluded by the step's own qualifier *every instance-bearing spoke*: that VPC bears none — measured,
+  Production's only two instances are in `VPC-Networking`, which reaches SSM through the IGW and needs
+  no endpoint. `workloads-egress` already refuses endpoints *"because the other egress slices have
+  them"* for a network nothing runs in, and 0.030/h of Session Manager path there is that same
+  purchase. **The refusal is written into the slice**, next to the empty lists. The endpoints arrive
   with the first workload, from Stage 9/10.
 - **5.5 — [Claude⚡] Give every instance-bearing spoke its SSM path**: `ssm`, `ssmmessages` and
   `ec2messages` in Sandbox, `VPC-SharedServices` and `VPC-Workloads`. Session Manager does not work through
   an HTTPS proxy listener, and the shell that reads the proxy's own log must not depend on the proxy
   (Lesson 24). `VPC-Networking`'s two hosts reach SSM through the IGW directly.
-- **5.6 — DONE 2026-09-06 AS CODE (`vpc-egress-v0.7.0`), AND THE GENERATOR READS THE NAMES RATHER
-  THAN BUILDING THEM.** The module already turns a token into `com.amazonaws.<region>.<token>`, and
+- **5.6 — Done 2026-09-06 as code (`vpc-egress-v0.7.0`); the generator reads the names rather than
+  building them.** The module already turns a token into `com.amazonaws.<region>.<token>`, and
   building the DNS name the same way is the obvious move and wrong: measured across the **29**
   services this estate can declare, **eight** have a private DNS name no rule derives from the token
   — `ecr.api` → `api.ecr.…`, `ecr.dkr` → `*.dkr.ecr.…`, `sagemaker.api`/`.runtime` reversed the same
@@ -815,9 +784,9 @@ becomes true.
   list would have been wrong for **ECR**, the busiest path here, and wrong *silently*. So a
   `data "aws_vpc_endpoint_service"` per declared service reads `PrivateDnsName` at plan time — free,
   and needing no endpoint to exist.
-  **AND THE STEP'S OWN PARENTHESIS WAS AMBIGUOUS IN THE DANGEROUS DIRECTION.** *"S3 and DynamoDB ride
+  **The step's own parenthesis was ambiguous in the dangerous direction.** *"S3 and DynamoDB ride
   the gateway prefix lists"* can be read as *therefore omit them*; the reading that holds is
-  **therefore include them**, and it is not a convenience. Measured 2026-09-06:
+  **therefore include them**. Measured 2026-09-06:
   `com.amazonaws.<region>.s3` returns a `PrivateDnsName` for its **Interface** shape and **`None` for
   its Gateway shape** — a gateway works by *routing* and never by resolution, so the generator
   **cannot** emit them and they are hand-named in the fixed half. Omitted, every S3 call would go to
@@ -847,17 +816,14 @@ becomes true.
   `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle configuration —
   which for SMUS domains **must be attached in the console**, the CLI path being documented as not
   supported.
-- **5.6a — ANSWERED 2026-09-06: STAGING KEEPS ITS FIREWALL, and 6b's argument was about a job that
-  no longer exists.** 6b reasoned that *a headless deployment target resolves whatever its pipeline
-  resolves* — true, and an argument about **filtering the internet**, which is the job 5.1 ended by
-  deleting the last default route. What is left is 5.7's job, *close the recursive resolver as an
-  exfiltration channel*, and that channel is a property of **a VPC where code runs**, not of who runs
-  it: Staging runs promoted models, unattended, from artefacts built in Sandbox. So the `.tf` keeps
-  `dns_firewall = true`, the `dns-allowlist.py` row stays, **and both moved in the same commit** as
-  5.7's re-cut — which was this step's actual requirement.
-- **5.6a — THIS STEP OWNS A QUESTION 6b DEFERRED TO IT** (2026-09-06). *(Numbered `5.7` when written,
-  beside the DNS-Firewall re-cut that already had that number — corrected 2026-09-06, the same defect
-  4.7 carried. Step numbers are identifiers in this plan.)* 6b step 5.1 wanted
+- **5.6a — Answered 2026-09-06: Staging keeps its firewall.** 6b reasoned that *a headless deployment
+  target resolves whatever its pipeline resolves* — true, and an argument about **filtering the
+  internet**, the job 5.1 ended by deleting the last default route. What is left is 5.7's job, *close the
+  recursive resolver as an exfiltration channel*, and that channel is a property of **a VPC where code
+  runs**, not of who runs it: Staging runs promoted models, unattended, from artefacts built in Sandbox.
+  The `.tf` keeps `dns_firewall = true`, the `dns-allowlist.py` row stays, and both moved in the same
+  commit as 5.7's re-cut.
+- **5.6a — This step owns a question 6b deferred to it** (2026-09-06). 6b step 5.1 wanted
   `./aws/dns-allowlist.py` to drop the Staging slice, reasoning that a headless deployment target resolves
   whatever its pipeline resolves. **The row was retargeted instead, not dropped**, because
   `terraform-live/staging/egress/main.tf` still declares `dns_firewall = true` with an allow-list — a
@@ -865,7 +831,7 @@ becomes true.
   VPC"* is the sentence that decides it: **Staging carries the SageMaker runtime, so it is a compute VPC**
   and keeps its firewall — or it does not, and both the `.tf` and the instrument row go together. Whichever
   way, **the two move in the same commit**.
-- **5.7 — DONE 2026-09-06, IN BOTH HALVES, AND THE LIST WENT FROM 63 ENTRIES TO 10.** Both compute
+- **5.7 — Done 2026-09-06 in both halves; the list went from 63 entries to 10.** Both compute
   VPCs keep the firewall; `VPC-Networking` never had one and still does not; the four families are
   `*.amazonaws.com`, `*.api.aws`, the two private zones — **and `*.sagemaker.aws`, which the step's
   own list omitted**. That omission would have orphaned a **paid** endpoint: `sagemaker.studio`
@@ -876,22 +842,21 @@ becomes true.
   translatable by transcription (Lesson 53) — NO_PROXY needs `*.` gone, a Route 53 domain list needs
   it present **and** the apex beside it. Proven by **negative control**: with the `sagemaker.aws` pair
   removed the plan fails naming `*.studio.us-west-2.sagemaker.aws`; with it, green.
-  **AND A `"*"` CAME OFF THE SANDBOX LIST.** Commit `f6bb316` (*"allow-all egress"*, 2026-08-23) had
-  put a single wildcard at the top, so the sixty-two entries beneath it were decoration and the
-  firewall was a default-**ALLOW** for a fortnight. Named rather than quietly dropped.
-  **`EXC-05` and `EXC-06` close; `EXC-04` DOES NOT, and the stage file said it would.** 5.7 changed
-  the CONTENT of the lists; `EXC-04`'s mechanism is the provider comparing two **spellings** of
+  **A `"*"` came off the Sandbox list.** Commit `f6bb316` (*"allow-all egress"*, 2026-08-23) had put a
+  single wildcard at the top, so the sixty-two entries beneath it were decoration and the firewall was a
+  default-allow for a fortnight.
+  **`EXC-05` and `EXC-06` close; `EXC-04` does not**, though the stage file said it would. 5.7 changed
+  the **content** of the lists; `EXC-04`'s mechanism is the provider comparing two **spellings** of
   whatever the content is. Ten entries churn exactly as sixty-three did, and it could not even be
   re-measured — the symptom appears on the plan *after* an apply, and all four `egress/` slices are
   `[E]` and down.
   **`./aws/dns-allowlist.py` re-aimed at the five Squid planes** (`hub-anchors.tf` by default, the
   SSM parameter with `--from-api`). `DN-1` unchanged in spirit — 46 names, all answering. **`DN-2` is
-  new and is the valuable one**: Squid's two overlap outcomes are not the same severity, and the
-  apex-beside-its-own-`.x` pair is `FATAL: Bungled`, a proxy that does not start. `DN-3` compares
-  committed against deployed — **5 planes, entry for entry** — and is explicitly the *first of two
-  links*, `PX-3` being the second. `DN-4` measures the design claim: **exactly one** entry
-  (`.amazonaws.com`) is on both the tunnel and a workload plane, so the two filters really are two.
-  Both new checks proven with a negative control.
+  new**: Squid's two overlap outcomes differ in severity, and the apex-beside-its-own-`.x` pair is
+  `FATAL: Bungled`, a proxy that does not start. `DN-3` compares committed against deployed —
+  **5 planes, entry for entry** — and is the first of two links, `PX-3` being the second. `DN-4`
+  measures the design claim: **exactly one** entry (`.amazonaws.com`) is on both the tunnel and a
+  workload plane, so the two filters really are two. Both new checks proven with a negative control.
   *The original step follows:*
 - **5.7 — [Claude] Re-cut the DNS Firewall**: it stays in every **compute** VPC and its allow-list shrinks
   to `*.amazonaws.com`, `*.api.aws`, `.awsds.internal` and the proxy's name; the `BLOCK`-NXDOMAIN `*` rule
@@ -901,31 +866,29 @@ becomes true.
   *requested* hostname, so a CDN that stops flattening its chain can no longer turn an allowed name into a
   block that blames the wrong entry. Re-aim `./aws/dns-allowlist.py` at the Squid lists — `DN-1`..`DN-4`
   become questions about the proxy's lists, read through SSM the way `vpn.py --on-host` reads the VPN host.
-- **5.8 — DONE AND EXERCISED END TO END 2026-09-06, AND THE EXERCISE IS THE POINT.** The slice is
-  `production/buildbox/`, in **`VPC-SharedServices`'s PRIVATE tier** — not the isolated one the old
-  home used: **measured**, the peering routes to `VPC-Networking` are in the private route tables and
-  **not** in the isolated one, so an isolated-tier build host could not reach the proxy at all. The
-  Sandbox state was already empty, so the destroy half was free. `vpc_nat_cidrs` was already gone at
-  `wireguard-v0.5.0`; the isolated-tier route is deleted; **the `probes/` refusal is deleted rather
-  than retargeted**, and `buildbox.py`'s two refusals are now *read the `ssmmessages` endpoint before
-  applying* and *start the proxy host*.
-  **THE ECONOMICS INVERTED**: `production/egress/` used to be an obstacle (*"build with `egress/`
-  down"*) and is now a **hard prerequisite** — its SSM endpoints are the host's only door — so a build
+- **5.8 — Done and exercised end to end 2026-09-06.** The slice is `production/buildbox/`, in
+  **`VPC-SharedServices`'s private tier**, not the isolated one the old home used: measured, the peering
+  routes to `VPC-Networking` are in the private route tables and **not** in the isolated one, so an
+  isolated-tier build host could not reach the proxy at all. The Sandbox state was already empty, so the
+  destroy half was free. `vpc_nat_cidrs` was already gone at `wireguard-v0.5.0`; the isolated-tier route
+  is deleted; **the `probes/` refusal is deleted rather than retargeted**, and `buildbox.py`'s two
+  refusals are now *read the `ssmmessages` endpoint before applying* and *start the proxy host*.
+  **The economics inverted**: `production/egress/` used to be an obstacle (*"build with `egress/`
+  down"*) and is now a prerequisite — its SSM endpoints are the host's only door — so a build
   session pays **0.130 USD/h** it used to avoid.
-  **FOUR PLACES, BECAUSE AN EXPLICIT PROXY IS NOT TRANSPARENT**: `/etc/environment`, a docker daemon
-  systemd drop-in, `~/.docker/config.json` for build containers, and **the boot script's own exported
-  environment**, which `/etc/environment` does not provide.
-  **THREE DEFECTS THE RUN FOUND THAT NEITHER `validate` NOR `plan` COULD** (Lesson 54, and the whole
-  reason this was applied rather than authored):
+  **The proxy is told in four places**, an explicit proxy being anything but transparent:
+  `/etc/environment`, a docker daemon systemd drop-in, `~/.docker/config.json` for build containers, and
+  **the boot script's own exported environment**, which `/etc/environment` does not provide.
+  **Three defects the run found that neither `validate` nor `plan` could** (Lesson 54):
   1. **`dnf.conf`'s `proxy=` has no exclusion setting**, so it sent the AL2023 repositories — which
      are on S3 and must go direct — at the proxy. Removed; the environment is the only place that
      expresses both halves.
-  2. **`s3.dualstack.<region>.amazonaws.com` is a DIFFERENT NAME**, not a label under
+  2. **`s3.dualstack.<region>.amazonaws.com` is a different name**, not a label under
      `s3.<region>.amazonaws.com`, so `NO_PROXY` did not cover it and the first boot died on
      `Failed to download metadata`. `vpc-egress-v0.9.1` adds both gateway services' dualstack forms.
-     (**`v0.9.0` is ABANDONED on origin** — Lesson 46 a second time: a piped `git commit` returned
+     (**`v0.9.0` is abandoned on origin** — Lesson 46 a second time: a piped `git commit` returned
      `tail`'s exit code and the `&&` chain tagged a commit that never happened.)
-  3. **`public.ecr.aws` REDIRECTS blob downloads to a CloudFront distribution**, and Squid matches the
+  3. **`public.ecr.aws` redirects blob downloads to a CloudFront distribution**, and Squid matches the
      hostname the client *requested* — so a redirect is a new request with a new name that must
      itself be allowed. The name came **out of the access log**, which is what 4.11 is for:
      `docker pull` said only `Forbidden`. **One distribution, not `.cloudfront.net`** — the tunnel
@@ -942,7 +905,7 @@ becomes true.
   ENI, and a route target cannot live in another VPC. The `vpc_nat_cidrs` input, the isolated-tier
   security-group rule and the *must not coexist with `probes/`* rule all die in the same commit;
   `runbooks/buildbox.md` is rewritten in the same sitting.
-- **5.9 — DONE 2026-09-06, AND IT GAINED A FALLBACK THAT IS MEASURED RATHER THAN ARGUED.** The
+- **5.9 — Done 2026-09-06, with a measured fallback.** The
   re-statement itself was already carried by [D38](../decisions/D38-single-egress-hub.md) — MWAA
   Serverless struck (its private shape *forbids* a NAT route; the requirements list demanding two NAT
   gateways belongs to the public shape, Lesson 41), ECR's pull-through cache named as the candidate,
@@ -952,9 +915,8 @@ becomes true.
   CloudFront distribution was on the build plane, with the **layers taking the free S3 gateway path**.
   It needs no host in the hub, no second build environment and no route. It does **not** make the
   pull-through *cache* work — that is AWS fetching upstream on the service's own behalf, which no
-  client-side proxy setting reaches — so 5.2 still measures that. But the estate no longer *depends*
-  on the answer in order to obtain a public image, which is what "the contingency has a candidate and
-  no instance" was worth having.
+  client-side proxy setting reaches — so 5.2 still measures that. The estate no longer depends on that
+  answer to obtain a public image.
   *The original step follows:*
 - **5.9 — [Claude] Re-state the NAT contingency, with its first candidate removed**: a NAT gateway is built
   **only** for a named service that needs the internet and cannot be told about a proxy, in **that
@@ -970,29 +932,26 @@ becomes true.
   gateway, with a cost row and a removal trigger. Two cheaper fallbacks are ranked ahead of it in that
   step, and the honest state is: the contingency has a candidate and no instance.
 
-### 6. Measure the whole thing — the readings that close the stage
+### 6. The readings that close the stage
 
 **Action:** take six readings, each with two distinguishable outcomes. **Why:** every claim in this stage is
 about a path, and a path is measured, never read off a diagram. **Explanation:** three of these also close
 obligations older than the stage.
 
-- **6.1 — DONE 2026-09-07 BY THE USER, ALL FOUR READINGS, AND ONE OF THEM CORRECTED THIS
-  REPOSITORY'S OWN PREDICTION.** The client edited **one line** — `DNS = 10.31.0.2` — and the
-  `Endpoint` and `PublicKey` lines did not move, which is the transfer and the hand-copied host key
-  paying off in the only place a user would notice. Readings: the DNS **pair** discriminated
-  (`prod.awsds.internal` answered, `sandbox.internal` did not); `proxy.awsds.internal` →
+- **6.1 — Done 2026-09-07 by the user, all four readings.** The client edited **one line** —
+  `DNS = 10.31.0.2` — and the `Endpoint` and `PublicKey` lines did not move, which is the transfer and
+  the hand-copied host key paying off in the only place a user would notice. Readings: the DNS **pair**
+  discriminated (`prod.awsds.internal` answered, `sandbox.internal` did not); `proxy.awsds.internal` →
   **`10.31.160.106`**, private, in the hub's public tier; no internet without the proxy; and
   `curl -x` → **`184.33.8.126`**, the proxy's address.
-  **THE THIRD READING WAS A TIMEOUT WHERE THE RUNBOOK PREDICTED A FAST REFUSAL**, and measuring the
-  host settled it rather than a re-reading: `FORWARD` rule 4 had rejected **8453 packets** with
-  `icmp-admin-prohibited`, so the host refuses exactly as designed — and the sender retransmits until it times out. *This
-  block first blamed macOS ignoring the ICMP; **6.4 measured the real cause**, the host's per-destination
-  ICMP rate limit.* The refusal is
-  real and only legible in the **counter on the refusing side**. [Lesson 55](../lessons.md); runbook
-  §S2 and §C2 corrected.
-  **AND THE RUN PROVED TWO THINGS 6.1 DID NOT ASK FOR.** The proxy's access log carries
+  **The third reading was a timeout where the runbook predicted a fast refusal**, and measuring the
+  host settled it: `FORWARD` rule 4 had rejected **8453 packets** with `icmp-admin-prohibited`, so the
+  host refuses as designed and the sender retransmits until it times out. 6.4 measured the cause, the
+  host's per-destination ICMP rate limit; the refusal is real and only legible in the **counter on the
+  refusing side** ([Lesson 55](../lessons.md)). Runbook §S2 and §C2 corrected.
+  **The run proved two things 6.1 did not ask for.** The proxy's access log carries
   `10.90.0.2 CONNECT checkip.amazonaws.com:443 200 TCP_TUNNEL` — a **per-device** address, which is
-  4.7's no-masquerade exemption and 4.11's log working together, end to end, for the first time. The
+  4.7's no-masquerade exemption and 4.11's log working together end to end for the first time. The
   NAT table confirms it from the other side: the `RETURN` rule for `10.31.160.0/24` counted exactly
   the user's two connections.
   *The original step follows:*
@@ -1000,16 +959,16 @@ obligations older than the stage.
   `VPC-Networking`'s `.2`); the `Endpoint` is unchanged because the address moved with it. Then
   `runbooks/vpn.md` §C's three checks, plus a fourth: `curl https://1.1.1.1` **times out**, and
   `curl -x proxy.awsds.internal:3128 https://checkip.amazonaws.com` prints the **proxy's** EIP.
-- **6.2 — DONE 2026-09-07 BY THE USER, AND THE PORTAL OPENED WITH NO BROWSER GRANT.** From the
+- **6.2 — Done 2026-09-07 by the user; the portal opened with no browser grant.** From the
   tunnel, `agent.datazone.us-west-2.api.aws` → three **public** addresses;
   `<domain-id>.studio.us-west-2.sagemaker.aws` → a CNAME to `studio.us-west-2.sagemaker.aws` and three
   public ones. In a Chrome launched with `--proxy-server` and nothing else, the IdC start page, the
   portal (`dzd-*.sagemaker.us-west-2.on.aws`), the project, its **catalog tab** and a **JupyterLab
   space** all opened — the two surfaces that demanded the Local Network Access grant on 2026-08-26 —
   and **Chrome asked for no permission**. Lesson 43's term is out of the reach question.
-  **One wrong turn on the way, kept because the next person will take it**: the bare
-  `<domain-id>.studio.…` host, opened at its root, redirects to AWS's SageMaker marketing page — it is
-  the Studio front-end, not the portal. **And a reading the step did not ask for**: the space was first
+  **One wrong turn on the way**: the bare `<domain-id>.studio.…` host, opened at its root, redirects to
+  AWS's SageMaker marketing page — it is the Studio front-end, not the portal. **A reading the step did
+  not ask for**: the space was first
   started while `sandbox/egress` was **down** — the terminal worked and JupyterLab hung at *"IDE
   configuration in progress"*, the kernel never returning; `make up ENV=sandbox` and a restart cleared
   it (`getent hosts sts.…` → `10.20.32.164`, `curl` → `302`). Under design B an app's AWS call with no
@@ -1024,14 +983,14 @@ obligations older than the stage.
     the one `runbooks/vpn.md` §C5a names; paste both `dig` outputs and the portal's result into the log.
   - **[Claude] Restate `docs/NETWORK.md` §10's shadowing paragraph from the reading** — it is written from
     the design until this lands, and 6.7 says so in the file.
-- **6.3 — MEASURED 2026-09-06, AND IT IS FOUR READINGS RATHER THAN TWO — but NOT over SSM, and
-  not from a Workloads probe.** Two things the step assumed turned out not to hold. **The probes
-  carry no IAM role at all** — they report to `/dev/console`, read with `get-console-output`, which
-  is why they work in a tier with no SSM path; so the readings were added to the **peering probe's
-  user data** rather than driven over Session Manager, which makes them repeatable instead of
-  ad hoc. And **there is no Workloads probe and cannot be one today**: that VPC has no interface
-  endpoint, by 5.5's deliberate refusal, so a host there would have no management path. The mirror
-  is taken from `VPC-SharedServices` instead (the buildbox, at 5.8): `http://10.32.0.10/` → **403**.
+- **6.3 — Measured 2026-09-06 as four readings rather than two, not over SSM and not from a Workloads
+  probe.** Two things the step assumed did not hold. **The probes carry no IAM role at all** — they
+  report to `/dev/console`, read with `get-console-output`, which is why they work in a tier with no SSM
+  path; so the readings were added to the **peering probe's user data** rather than driven over Session
+  Manager, which makes them repeatable. And **there is no Workloads probe and cannot be one today**:
+  that VPC has no interface endpoint, by 5.5's refusal, so a host there would have no management path.
+  The mirror is taken from `VPC-SharedServices` instead (the buildbox, at 5.8):
+  `http://10.32.0.10/` → **403**.
   From the Sandbox spoke, on the console:
 
   | reading | result | what it proves |
@@ -1043,7 +1002,7 @@ obligations older than the stage.
 
   **The refused probes use `http://`**: over `https` a refusal is a CONNECT refusal and `curl`'s
   `%{http_code}` reads **000** — the 403 is where that format string cannot see it.
-  **AND IT FOUND A STALE VOCABULARY ROW ON THE WAY, as a TIMEOUT rather than a diff.** The first
+  **It found a stale vocabulary row on the way, as a timeout rather than a diff.** The first
   run could not reach the proxy at all: `PROBE_PEERS` still read `{"sandbox": ["production"],
   "development": [...]}` — blind to the peering pass 3 added, and carrying an account name 6b
   retired. Its own comment had predicted *"the reading that will force PROBE_PEERS to name slices
@@ -1053,9 +1012,8 @@ obligations older than the stage.
   *The original step follows:*
 - **6.3 — [Claude] Prove the isolation over SSM**: from a Sandbox probe,
   `curl -x proxy:3128 https://<a Workloads private address>` returns the proxy's **403** while
-  `https://pypi.org` returns 200; the mirror from a Workloads probe. Two distinguishable outputs, which is
-  what makes it a verification.
-- **6.4 — DONE 2026-09-07, AND READING B OVERTURNED 6.1'S MECHANISM.** The user's half at 15:29 UTC
+  `https://pypi.org` returns 200; the mirror from a Workloads probe. Two distinguishable outputs.
+- **6.4 — Done 2026-09-07; reading B overturned 6.1's mechanism.** The user's half at 15:29 UTC
   (`curl: (28)` timeout; Squid's `400` from `http://proxy.awsds.internal:3128` — an RFC1918 name still
   reached) and again at 16:48, where the same command failed in **194 ms** (`curl: (7) … Couldn't
   connect to server`). Reading A (16:36 UTC) → B (16:54): `REJECT` **21040 → 27681**; the nat `RETURN`
@@ -1081,7 +1039,7 @@ obligations older than the stage.
     `ip6tables -L FORWARD -v -n` and the nat table's `POSTROUTING` (added 2026-09-07 for this step). The
     REJECT rule's packet count must have **grown** across the user's attempt; the nat `RETURN` rule for the
     proxy's subnet must not.
-- **6.5 — DONE 2026-09-08, AND VERIFICATION 4 ANSWERED: TWO DOORS, BY SERVICE FAMILY.** Both laptop
+- **6.5 — Done 2026-09-08; verification 4 answered — two doors, by service family.** Both laptop
   proofs ran from the new tunnel through the proxy as the Data Scientist — `demo.py` once per grant scope
   (the sandbox lake's `sso-group-data-scientists/*`, then the project's `shared/*` by `--target`):
   discover, vend, write, list, read-back all OK, each vend naming its own role — and the direct `aws s3 ls`
@@ -1130,7 +1088,7 @@ obligations older than the stage.
     security groups rather than Production's alone (Lesson 31 — a check inherits the account it was
     written in); restate `docs/NETWORK.md`, `AWS_STATE.md`'s last §C row and `cost-model.md`'s zone count
     from the readings.
-- **6.6 — DONE 2026-09-07: THE USER CHOSE (ii), RECORDED ACCEPTANCE — recorded as a DEVIATION, not as a
+- **6.6 — Done 2026-09-07: the user chose (ii), recorded acceptance, as a deviation rather than a
   gap.** Taken after 6.2's reading (the portal, the catalog tab and a JupyterLab space open from the
   tunnel with no browser grant; off the tunnel the same surfaces open with a valid IdC session — measured
   2026-08-22, unchanged). Fallback (i) — `NotIpAddress` on the proxy's EIP **and** `StringNotEqualsIfExists`
@@ -1156,7 +1114,7 @@ obligations older than the stage.
     endpoint — so the documented policy would deny the portal outright.
   - **[Claude⚡] Apply** in `data-governance/governance/` as `awsds-infra-data`; **[user]** repeat 6a step
     1.7's off-tunnel portal reading — it must now be **refused**, and the wording goes into the log.
-- **6.7 — DONE 2026-09-07, REWRITTEN FROM THE READINGS AND NOT PROMOTED FROM §T.** `docs/NETWORK.md`
+- **6.7 — Done 2026-09-07, rewritten from the readings rather than promoted from §T.** `docs/NETWORK.md`
   (331 lines) from `describe-vpcs`/`-subnets`/`-route-tables`/`-vpc-peering-connections` across three
   profiles plus `NT-1`..`NT-12`, `PX-1`..`PX-5`, `DN-1`..`DN-4`, `VP-1`..`VP-9` and the rendered proxy
   parameter; where §T said *"five peerings"* the body names which five, by `pcx-` id and CIDR pair, and
@@ -1172,7 +1130,7 @@ obligations older than the stage.
   `./aws/networking.py` and `./aws/egress.py` snapshots regenerated; `docs/AWS_STATE.md`'s §C rows, the VPN
   row and the DNS rows restated.
 
-### 7. Close the stage — cost, lifecycle, and the two operational instruments
+### 7. Close the stage — cost, lifecycle and the operational instruments
 
 **Action:** split the hub's lifecycle out of `make up`, turn a stopped hub into an error, and restate the
 cost from measurements. **Why:** the hub makes one account's `[D]` host a dependency of every other
@@ -1180,44 +1138,42 @@ account's session, and `make up`/`down` has no concept of that. **Explanation:**
 host is a blackhole rather than an error — the failure mode `buildbox.md` documents for one tier, now
 estate-wide (INT-21's availability cost).
 
-- **7.1 — DONE 2026-09-06.** `make hub-up` / `make hub-down`, over
+- **7.1 — Done 2026-09-06.** `make hub-up` / `make hub-down`, over
   `./scripts/slices.py up --env production --only vpn,proxy`. `--only` **narrows and never
   widens** — a slice the env already refuses stays refused, with its reason still printed — and it
   is a **closed list**: an unknown name is an error, not a run that quietly does nothing. It
   filters the `[D]` hook as well as the `[E]` loop, which is what makes `hub-up` act on the two
-  hosts and **no** endpoint slice. **No `ENV` argument, on purpose**: there is exactly one hub, so
-  a parameter with one legal value would be the shape that invites a second nobody meant. Verified
-  by dry-run on both directions: `[E] (0)`, both `[D]` hosts named.
+  hosts and **no** endpoint slice. **No `ENV` argument**: there is one hub, and a parameter with one
+  legal value invites a second. Verified by dry-run on both directions: `[E] (0)`, both `[D]` hosts
+  named.
   *The original step follows:*
 - **7.1 — [Claude] Split the hub's lifecycle**: `make hub-up` / `make hub-down`, over a new
   `./scripts/slices.py up --env production --only vpn,proxy`, so a Sandbox session starts the two hub hosts
   **without** starting GitLab or Production's `[E]` endpoints.
-- **7.2 — DONE 2026-09-06, WITH ONE DELIBERATE ASYMMETRY.** A spoke's `make up` reads both hub
+- **7.2 — Done 2026-09-06, with one asymmetry.** A spoke's `make up` reads both hub
   hosts **before** the `[D]` hook and before the first apply — a refusal after either would leave
   the env half-raised — and names the stopped one. **A direct `describe-instances` rather than
-  `./aws/vpn.py`**, which the step named: that instrument writes a nine-check report and is what a
-  person runs to find out *why* the tunnel is unhappy; this needs one boolean and must not turn
-  `make up` into a report generator. The two agree because both find the host by the same Name tag.
-  **UNREADABLE is waived, not refused**, and that is the uncomfortable half of Lesson 13: a spoke
-  operator may hold no session on Production at all, so a failed read must not make a legitimate
-  `make up ENV=sandbox` impossible. A read that **succeeds** and says `stopped` is what stops the
-  apply. **All four outcomes exercised** — both running (proceed), proxy stopped (refuse, naming
-  it), unreadable (waive with a printed reason), and the hub's own env (never checked, since `up`
-  is what starts it).
+  `./aws/vpn.py`**, which the step named: that instrument writes a nine-check report for a person
+  asking *why* the tunnel is unhappy, while this needs one boolean. The two agree because both find
+  the host by the same Name tag.
+  **Unreadable is waived, not refused** (Lesson 13): a spoke operator may hold no session on
+  Production at all, so a failed read must not make a legitimate `make up ENV=sandbox` impossible. A
+  read that **succeeds** and says `stopped` is what stops the apply. **All four outcomes exercised** —
+  both running (proceed), proxy stopped (refuse, naming it), unreadable (waive with a printed reason),
+  and the hub's own env (never checked, since `up` is what starts it).
   *The original step follows:*
 - **7.2 — [Claude] Turn the blackhole into an error**: `make up ENV=<spoke>` reads the hub hosts' state
   through `./aws/vpn.py` and **refuses**, naming the stopped host, when either is down.
-- **7.3 — DONE 2026-09-06. `./aws/proxy.py`, all five checks, and TWO of them found defects in
-  themselves before they found anything in AWS.** Shaped after `vpn.py` deliberately — same
-  two-profile default, same typed `--on-host` fence around `ssm:SendCommand`, same "an empty
-  answer and a failed answer are different things" discipline — because the two files are the
-  instruments for D38's two hosts and a reader who knows one should not have to learn the other.
+- **7.3 — Done 2026-09-06: `./aws/proxy.py`, all five checks; two of them found defects in
+  themselves before finding anything in AWS.** Shaped after `vpn.py` — same two-profile default, same
+  typed `--on-host` fence around `ssm:SendCommand`, same "an empty answer and a failed answer are
+  different things" discipline — so a reader who knows one instrument does not have to learn the other.
   **PX-1** `pass`: five rules, all TCP/3128, from the four spoke CIDRs and the tunnel.
   **PX-2** `pass` on **both** sources; the committed template needs no session at all, which
   matters because the answer is most wanted *before* an apply. **PX-3** `pass`: five planes,
   entry for entry. **PX-4** is a **`note`, not a `fail`** — the log group exists with 365 days
-  and has no export, and 4.11's second half was an **open decision** (due #4, taken 2026-09-08 as (c)), so a `fail` would
-  report a gap the plan is holding open on purpose. **PX-5** `pass`: the proxy's address is in
+  and has no export, and 4.11's second half was an open decision (due #4, taken 2026-09-08 as (c)),
+  so a `fail` would report a gap the plan holds open. **PX-5** `pass`: the proxy's address is in
   `DenyControlPlaneOffVpn` on all six persona sets, `InfrastructureAccess` exempt by decision.
   **The two self-defects, both found by running it** (Lesson 54 again): the per-plane lists are
   an **`include`d drop-in**, not part of `squid.conf`, so reading the two files as one blob made
@@ -1235,20 +1191,20 @@ estate-wide (INT-21's availability cost).
   CIDRs (`PX-1`); no `http_access allow` precedes the private-destination deny (`PX-2`); the running
   allow-list equals the committed one (`PX-3`, over SSM Run Command); the access log group exists with its
   Log Archive export (`PX-4`); the EIP is the one `identity/sso/` names (`PX-5`).
-- **7.4 — DONE 2026-09-06, AND RE-MEASURING FOUND ONE WRONG NUMBER — in the direction that
+- **7.4 — Done 2026-09-06; re-measuring found one wrong number, in the direction that
   flattered a rejection** ([Lesson 7](../lessons.md)). The three rows this step wanted in
   `PRICING.md` were already there from the 2026-09-05 review; re-read against offer files
   republished **2026-08-31**, the `us-west-2` figures held **exactly** (Transit Gateway 0.05 per
   attachment-hour and 0.02/GB, Resolver endpoint **0.125 per ENI-hour**, the same in both regions).
   **`sa-east-1`'s Transit Gateway attachment is 0.09/h, not 0.05** — so the hub-and-spoke this
   estate does *not* build would be ≈ **USD 328/month** there rather than 182. Corrected.
-  **`cost-model.md`'s hourly table is REWRITTEN rather than annotated.** The 2026-09-05 repricing
-  sat below it as a list of corrections — one intent in two places, which is the shape that drifts
+  **`cost-model.md`'s hourly table is rewritten rather than annotated.** The 2026-09-05 repricing
+  sat below it as a list of corrections — one intent in two places, the shape that drifts
   (Lesson 33) — so the corrections are folded in and the endpoint counts are now **counted, not
   ranged**: Sandbox **18** = 0.180/h, Staging **11** = 0.110, `VPC-SharedServices` **13** = 0.130,
   `VPC-Workloads` **0**. The old `Production egress/` row said *"NAT ~0.050 + endpoints
   ~0.100-0.120"* — a range over a set nobody had counted.
-  **`architecture.md` §4.3a's proxy cell now names the shape that EXISTS** — `t3.micro` at
+  **`architecture.md` §4.3a's proxy cell now names the shape that exists** — `t3.micro` at
   **0.0104/h**, sized up from `t3.nano` because `dnf` was OOM-killed on 415 MiB — and adds the half
   the comparison kept omitting: **an EC2 proxy charges nothing per GB**, where a NAT gateway adds
   0.045/GB of processing. **Estate-wide the fixed rate fell 0.470 → 0.390/h**; Sandbox's own idle
@@ -1263,44 +1219,42 @@ estate-wide (INT-21's availability cost).
   figure against the measured rate, and reconcile PRICING with the cost model on peering (charged
   **cross-AZ** only).
 
-### 8. The second client profile — the same device, the same key, a tunnel that carries only the private space
+### 8. The split-tunnel client profile
 
 **Action:** give every enrolled device a second `.conf`, differing from the first in **one line**, and write
-down which of the two a session uses and why. **Why:** the **monitored** profile — (a), the one every reading
+down which of the two a session uses and why. **Why:** the **monitored** profile (a) — the one every reading
 above was taken under — is the institution's: every byte of the client's internet crosses Squid, which is
-`objectives.md`'s sentence and Stage 11's evidence. It is also what makes a day of building this project
-slow: a proxy in every terminal and every browser, no SSH to `github.com`, no protocol but HTTP, a
+`objectives.md`'s sentence and Stage 11's evidence. It also makes a day of building this project slow: a
+proxy in every terminal and every browser, no SSH to `github.com`, no protocol but HTTP, a
 browser-launched program with no way to find the proxy ([6d](stage-06d-unified-studio-remainder.md) step
 7), and every refused background packet of the laptop counted on the host. The user asked on 2026-09-08 for
-a **split-tunnel** profile — (b) — beside it: the tunnel carries the private address space only, the
+a **split-tunnel** profile (b) beside it: the tunnel carries the private address space only, the
 client's internet leaves through its own uplink, and the monitored profile is reached for whenever the
 institution is what is being tested. **The names are the requirement's** — `objectives.md` says
-*monitored* and *split-tunnel* (the user, 2026-09-08) — and *open* is deliberately not one of them: it is
-the proxy plane's `mode`, a different object with a similar word. **Explanation:** what makes (b) *cheap* is what `runbooks/vpn.md` §C6 already
-says about `AllowedIPs` — a routing directive of the device's owner, never a control — and what makes it
-*safe* is that the cloud cannot tell the two profiles apart and does not need to: the host's `FORWARD`
-chain still refuses every tunnel packet bound for the internet (under (b) none arrives), and
-`DenyControlPlaneOffVpn` and the lake's `DenyOutsideTrustedNetworks` still accept a persona's call only
-from the proxy's exit. **So the two profiles differ on the laptop and nowhere else** — no host edit, no
-roster row, no Elastic IP, no instance, no apply. What (b) changes is the reach table, and the change is
-**by identity, not by network** — read this before executing anything below: a persona's AWS work under
-(b) must still be pointed at the proxy (`proxy-on` in that terminal, the flag on that Chrome), which is the
-requirement's own control holding; `InfrastructureAccess` carries no such deny (open question 17) and
-needs no proxy at all under (b). Nothing (a) reaches is out of (b)'s reach, and (b) reaches what (a)
-cannot — SSH to `github.com:22`, any protocol, IPv6 — unmonitored, by decision. `aws sts
-get-caller-identity` is **not** a discriminator between the two, and never was: AWS documents that no
-permission is required for it and that an explicit deny does not affect it — the persona contrast below
-uses `list-buckets`, the call 4d's proof already used.
+*monitored* and *split-tunnel* (the user, 2026-09-08); *open* is the proxy plane's `mode`, a different
+object with a similar word. **Explanation:** (b) is cheap because `AllowedIPs` is a routing directive of
+the device's owner and never a control (`runbooks/vpn.md` §C6), and safe because the cloud cannot tell the
+two profiles apart and does not need to: the host's `FORWARD` chain still refuses every tunnel packet
+bound for the internet (under (b) none arrives), and `DenyControlPlaneOffVpn` and the lake's
+`DenyOutsideTrustedNetworks` still accept a persona's call only from the proxy's exit. **The two profiles
+differ on the laptop and nowhere else** — no host edit, no roster row, no Elastic IP, no instance, no
+apply. What (b) changes is the reach table, and the change is **by identity, not by network**: a persona's
+AWS work under (b) must still be pointed at the proxy (`proxy-on` in that terminal, the flag on that
+Chrome); `InfrastructureAccess` carries no such deny (open question 17) and needs no proxy at all under
+(b). Nothing (a) reaches is out of (b)'s reach, and (b) reaches what (a) cannot — SSH to `github.com:22`,
+any protocol, IPv6 — unmonitored, by decision. `aws sts get-caller-identity` is **not** a discriminator
+between the two: AWS documents that no permission is required for it and that an explicit deny does not
+affect it, so the persona contrast below uses `list-buckets`, the call 4d's proof already used.
 
-- **8.1 — DONE 2026-09-08, on decisions due 5 and 6 (one key; `DNS` unchanged) — written on their
-  recommendations and confirmed by the user the same evening.** `vpn.md` §C7: the table of the two profiles (what each
+- **8.1 — Done 2026-09-08, on decisions due 5 and 6 (one key; `DNS` unchanged), confirmed by the user the
+  same evening.** `vpn.md` §C7: the table of the two profiles (what each
   reaches, and by which door), why the host is untouched, the one discipline, what the profile changes in
   the reading of the runbook, what it is not, and the decisions it was written on; the scope rule
   re-worded, the banner and the C0-C3 stub pointing at it, §S4's sentence. The client runbook: the second
   file in §3.3 (one `sed` over the first — `mbp-split.conf`), the `AllowedIPs` row, §3.4's inverted third
   reading, §4's first sentence, the two profile notes in the session order. **Written from the design and
-  the client's source, not from a reading** — 8.3 is where the file is proved, and the user's first
-  split-tunnel `.conf`, shown in chat the same evening, matched the template line for line.
+  the client's source, not from a reading**: 8.3 proves the file, and the user's first split-tunnel
+  `.conf`, shown in chat the same evening, matched the template line for line.
   *The original step follows:*
 - **8.1 — [Claude] Write the profile before anyone uses it.** `runbooks/vpn.md` gains **§C7, the two
   profiles**: the one-line difference; the rule for choosing — **monitored** for anything that models
@@ -1325,7 +1279,7 @@ uses `list-buckets`, the call 4d's proof already used.
   (`/etc/resolver/awsds.internal` → `10.31.0.2`, macOS `resolver(5)`; `resolvectl domain %i
   ~awsds.internal ~awsds-pages.internal` on Linux) — documented, not exercised (Lesson 54), and `dig`
   ignores scoped resolvers, so its reading is `dscacheutil -q host -a name proxy.awsds.internal`.
-- **8.2 — DONE 2026-09-08, BOTH HALVES.** The user's: `objectives.md`'s VPN bullet is now *two types of
+- **8.2 — Done 2026-09-08, both halves.** The user's: `objectives.md`'s VPN bullet is now *two types of
   VPN access* — **monitored** and **split-tunnel**, in the user's words, with the sentence that nothing on
   the cloud side changes and that a persona's calls still leave through the proxy; the first draft had
   said *restricted*, which is the word Lesson 57 caught on 2026-09-07 (the client plane is monitored,
@@ -1342,8 +1296,8 @@ uses `list-buckets`, the call 4d's proof already used.
   owner chooses); `NETWORK.md` §7's title gains *"under which profile"* and the section is **re-measured
   at 8.3, never edited ahead** (its own rule); `AWS_STATE.md` gains no row, because no invariant moves;
   `GLOSSARY.md` gains the two terms, *monitored profile* and *split-tunnel profile*.
-- **8.3 — DONE 2026-09-08 (02:30-02:53 UTC), THE USER'S HALF FROM THE LAPTOP AND CLAUDE'S FROM THE SAME
-  LAPTOP — AND THE STEP'S WORDING WAS ONE FLAG SHORT.** The `.conf` matched the template line for line.
+- **8.3 — Done 2026-09-08 (02:30-02:53 UTC), the user's half and Claude's from the same laptop; the
+  step's wording was one flag short.** The `.conf` matched the template line for line.
   **Routes**: the IPv4 default stays on `en0` (`UGScg`), the six private routes sit on `utun4`, and the
   `utun4` default carries **`I`** — interface-scoped, inert for any unbound socket; the IPv6 `fd90::`
   default carries `I` too, where 6.4's monitored reading had it `UGcg`, primary. *The step said "no
@@ -1391,8 +1345,8 @@ uses `list-buckets`, the call 4d's proof already used.
     their exit code). The positive control is the `s3-read-write` tool through `proxy-on`, 6.5's own
     proof, succeeding under (b). Paste all of it verbatim.
   - `ssh -T git@github.com` → GitHub's greeting: the one door (a) has none for.
-- **8.4 — DONE 2026-09-08: TWO `--on-host` READS TWO MINUTES APART, A DELIBERATE BURST BETWEEN THEM, AND
-  THE `REJECT` COUNTER DID NOT MOVE.** The user authorized both `ssm:SendCommand`s in chat. Reading A at
+- **8.4 — Done 2026-09-08: two `--on-host` reads two minutes apart, a deliberate burst between them, and
+  the `REJECT` counter did not move.** The user authorized both `ssm:SendCommand`s in chat. Reading A at
   02:53:04Z, reading B at 02:55:01Z; between them, from the laptop: four public sites direct (`301`, `200`,
   `200`, `200`), one IPv6 attempt (`Couldn't connect … after 397 ms` — no primary IPv6 route on the laptop,
   so nothing to enter the tunnel), three names through the tunnel's resolver, two `checkip`s through the
@@ -1411,7 +1365,7 @@ uses `list-buckets`, the call 4d's proof already used.
   active. `OutRateLimitHost` must not grow either. The nat `RETURN` for `10.31.160.0/24` grows by the
   proxied `checkip` and the proxied `list-buckets` alone. That is the reading which separates *the
   profile is what it claims* from *the profile parsed* (Lesson 54, on a configuration file).
-- **8.5 — DONE 2026-09-08.** `NETWORK.md` §7 re-measured with a profile column and its *owed* paragraph
+- **8.5 — Done 2026-09-08.** `NETWORK.md` §7 re-measured with a profile column and its *owed* paragraph
   retired; the client runbook's check 1 gains the app's fields (the App Store tunnel is invisible to `wg
   show`) and its split-tunnel paragraph carries the measured values and the flag; `vpn.md` §C7 and its
   banner say *measured* where they said *owed*; `lessons.md`'s second list gains the App Store client's
@@ -1449,7 +1403,7 @@ uses `list-buckets`, the call 4d's proof already used.
 - Zero NAT gateways, zero default routes outside `VPC-Networking`, and a DNS firewall in every compute VPC
   with an intranet-only list.
 - `./aws/proxy.py`, `./aws/eip-transfer.py`, `make hub-up`/`hub-down`, and the spoke guard.
-- **The second client profile** (pass 8, added 2026-09-08): `vpn.md` §C7, the (b) template in the client
+- **The split-tunnel client profile** (pass 8, 2026-09-08): `vpn.md` §C7, the (b) template in the client
   runbook, the requirement amended by the user, and the readings of 8.3/8.4 — laptop-only, no host change.
 
 ## Validation
@@ -1470,38 +1424,37 @@ uses `list-buckets`, the call 4d's proof already used.
 
 ## Cost
 
-**The address and gateway count, which nothing else states in one place** ([D38](../decisions/D38-single-egress-hub.md) §3
-carries the full table): this stage takes the estate from **4 Elastic IPs and 3 NAT gateways** (one `[P]`
-WireGuard address plus one `[E]` NAT address per `egress/` slice) to **2 Elastic IPs and 0 NAT gateways** —
-both addresses `[P]` in `production/networking/`, one of them transferred rather than allocated. Peak during
+**The address and gateway count** ([D38](../decisions/D38-single-egress-hub.md) §3 carries the full
+table): this stage takes the estate from **4 Elastic IPs and 3 NAT gateways** (one `[P]` WireGuard
+address plus one `[E]` NAT address per `egress/` slice) to **2 Elastic IPs and 0 NAT gateways** — both
+addresses `[P]` in `production/networking/`, one of them transferred rather than allocated. Peak during
 the cut-over was projected at **3** addresses in Production for one sitting, against a default quota of
 five. **Measured 2026-09-06 at 4.2: the peak is 2, and the headroom 4 of 5.** Production held **zero**
 Elastic IPs before 4.1 — the projection counted an `[E]` NAT address per `egress/` slice, and those slices
-are torn down. The figure that mattered was never the peak but the destination quota, which
-`AddressLimitExceeded` enforces at *accept* time; `ET-6` is where it is read.
+are torn down. The destination quota is the figure that matters, and `AddressLimitExceeded` enforces it at
+*accept* time; `ET-6` is where it is read.
 
-Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes three NAT gateways**
-(−0.150/h while a session runs, plus their per-GB processing — 0.045 each plus 0.005 for each one's address) and **adds one Elastic IP** (the proxy's, +0.005/h ≈ 3.65/month) and
-one to two private hosted zones, **and one CMK — `alias/awsds-prod-proxy-log`, USD 1.00/key-month
-measured (`docs/PRICING.md`), the stage's one line that is neither an address nor a gateway.** It is
-the first key in this estate created for a LOG, and the reason is the distinction every other log group
-here recorded when it DECLINED one: those are diagnostics, this is the record of what left the estate.
-The two `[D]` hosts bill only while running. Interface endpoints stay
-per-VPC, single AZ — `VPC-Networking` carries none. Peering is free within an AZ and charged each way
-across one, so pinning both hosts and the endpoint sets to `usw2-az1` keeps the common path free. **A
-standing NAT gateway is the largest single line the design avoids**, which is why it is a contingency and
-not a component. Every figure above is written into `docs/PRICING.md` from a measurement before it is used
-in the cost model.
+Measured rates, `us-west-2` (PRICING §7/§8 after 7.4's additions): the design **removes three NAT
+gateways** (−0.150/h while a session runs, plus their per-GB processing — 0.045 each plus 0.005 for each
+one's address) and **adds one Elastic IP** (the proxy's, +0.005/h ≈ 3.65/month), one to two private hosted
+zones, **and one CMK — `alias/awsds-prod-proxy-log`, USD 1.00/key-month measured
+(`docs/PRICING.md`)**. It is the first key in this estate created for a log: every other log group here
+declined one because it holds diagnostics, while this one records what left the estate. The two `[D]`
+hosts bill only while running. Interface endpoints stay per-VPC, single AZ — `VPC-Networking` carries
+none. Peering is free within an AZ and charged each way across one, so pinning both hosts and the endpoint
+sets to `usw2-az1` keeps the common path free. **A standing NAT gateway is the largest single line the
+design avoids**, which is why it is a contingency. Every figure above is written into `docs/PRICING.md`
+from a measurement before it is used in the cost model.
 
 ## Decisions due while executing
 
-1. ~~**The optional-endpoint trade for the two enabled blueprint families** (5.3)~~ — **TAKEN 2026-09-06,
-   as a fourth shape**: both stay enabled, the ENDPOINTS become a per-apply flag (`GROUPS=bedrock,emr`),
+1. ~~**The optional-endpoint trade for the two enabled blueprint families** (5.3)~~ — **taken 2026-09-06,
+   as a fourth shape**: both stay enabled, the endpoints become a per-apply flag (`GROUPS=bedrock,emr`),
    empty by default. `s3tables` is always-on rather than optional. `make help` documents it.
-2. ~~**The `sagemaker.runtime` AZ answer** (5.4)~~ — **TAKEN 2026-09-06: pin the subnets** (free; D9 intact).
-3. ~~**INT-16's closing choice** (6.6)~~ — **TAKEN 2026-09-07: (ii), recorded acceptance**, a recorded
+2. ~~**The `sagemaker.runtime` AZ answer** (5.4)~~ — **taken 2026-09-06: pin the subnets** (free; D9 intact).
+3. ~~**INT-16's closing choice** (6.6)~~ — **taken 2026-09-07: (ii), recorded acceptance**, a recorded
    deviation revisited at Stage 11 step 3.4; the (i) condition shape stays in 6.6's original text.
-4. ~~**How the proxy's access log reaches Log Archive**~~ — **TAKEN 2026-09-08: (c), the 365-day
+4. ~~**How the proxy's access log reaches Log Archive**~~ — **taken 2026-09-08: (c), the 365-day
    in-account retention stands until Stage 11, recorded.** Measured first (Lesson 6; `PRICING.md`): the
    log runs 0.13-0.53 MB/day; Firehose is 0.029 USD/GB in 5 KB increments, the Scheduler free, and the
    catalogue holds no SKU for an export task or a Standard-class subscription — under a cent a month
@@ -1511,24 +1464,24 @@ in the cost model.
    organization trail, which already lands in Log Archive; and Stage 11 step 5.1 decides once where
    every log the author must not own lands (its decision 7), where this group now joins. The author of
    the allow-list owns its record until then, knowingly; `PX-4` carries it as a note. *The question as
-   opened (4.11, 2026-09-06):* the requirement is Lesson 18's — the author of the allow-list must not own its record — and
-   the group plus its CMK are built; only the *export* is open. Candidates: (a) a CloudWatch Logs
-   **subscription filter** into a Kinesis Data Firehose owned by Log Archive, which is continuous and
+   opened (4.11, 2026-09-06):* the requirement is Lesson 18's — the author of the allow-list must not own
+   its record — and the group plus its CMK are built; only the *export* is open. Candidates: (a) a
+   CloudWatch Logs **subscription filter** into a Kinesis Data Firehose owned by Log Archive, continuous and
    carries a per-GB Firehose rate; (b) a scheduled **`CreateExportTask`** to a Log Archive bucket, which is
    cheap and batchy and needs something to schedule it; (c) accept the 365-day in-account retention until
    Stage 11 and record that. **Both rates are measured before the choice, never estimated** (Lesson 6).
-5. ~~**One key, or one per profile** (8.1, added 2026-09-08)~~ — **TAKEN 2026-09-08 by the user: one key**
+5. ~~**One key, or one per profile** (8.1)~~ — **taken 2026-09-08 by the user: one key**
    (*"Confirmo as decisões 5 e 6. Uma chave."*). The profile is invisible to the host, and nothing moves;
    the alternative would have named the profile in the handshake log at the price of a roster row per
    device — an instance replacement (`vpn.md` §K4) — and a second tunnel address per device.
-6. ~~**Where the split-tunnel profile resolves** (8.1, added 2026-09-08)~~ — **TAKEN 2026-09-08 by the user:
+6. ~~**Where the split-tunnel profile resolves** (8.1)~~ — **taken 2026-09-08 by the user:
    `DNS = 10.31.0.2` in both** (*"DNS 10.31.0.2"*) — the measured path, and one line of difference between
    the two files. The scoped resolver (no `DNS` line, `/etc/resolver/awsds.internal`) stays the refinement
    if the tunnel round trip per name shows; it is documented, not exercised, and `dig` cannot read it.
 
 ## Verifications to answer while executing
 
-1. ~~Does the allocation id survive the address transfer?~~ **Answered 2026-09-06 at 4.5: it does NOT** —
+1. ~~Does the allocation id survive the address transfer?~~ **Answered 2026-09-06 at 4.5: it does not** —
    the address kept its value and arrived under a new `eipalloc-` id, so 4.6 was an `import` of the new id
    and a `removed {}` is owed in Sandbox (6.5).
 2. ~~Does Session Manager reach both hub hosts through the IGW with no interface endpoint?~~ **Answered
@@ -1538,12 +1491,12 @@ in the cost model.
    2026-09-07 at 6.2: yes** — the portal, the catalog tab and a JupyterLab space, with no Local Network
    Access prompt, and both client-plane names public from the tunnel (Lesson 43's term retired).
 4. ~~Which door does a laptop's S3 call take after the re-keying — the hub's gateway endpoint, or the proxy's
-   public address?~~ **Answered 2026-09-08 at 6.5: BOTH, by service family.** `sts` arrives from the proxy's
+   public address?~~ **Answered 2026-09-08 at 6.5: both, by service family.** `sts` arrives from the proxy's
    Elastic IP with no endpoint; `s3control` (`GetDataAccess`, `ListCallerAccessGrants`) arrives from the proxy
    host's private address through VPC-Networking's S3 gateway endpoint — so both branches of
    `DenyControlPlaneOffVpn` are load-bearing, and `trusted_vpce_ids` was complete (the vends succeeded).
 5. ~~Does the App Store client apply a `DNS` line to **every** query under a split `AllowedIPs`, as its
-   source says (`matchDomains = [""]`, read 2026-09-08)?~~ **Answered 2026-09-08 at 8.3: YES** —
+   source says (`matchDomains = [""]`, read 2026-09-08)?~~ **Answered 2026-09-08 at 8.3: yes** —
    `scutil --dns` lists the tunnel's resolver first (order 102200, no domain restriction, `if_index` the
    `utun`), `/etc/resolv.conf` names it, and `dig` resolved a private name through it. In `lessons.md`'s
    second list from that reading.
