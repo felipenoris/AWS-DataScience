@@ -1,21 +1,21 @@
 #!/usr/bin/env -S uv run --quiet
 # vpn.py - Stage 4's evidence, side by side: the WireGuard host ([D]) and its IMDS
 # setting, the Elastic IP, the one world-open security-group rule and the host-key secret
-# ([P] anchors - the secret must carry its value-read deny and keep rotation OFF), the
-# handshake log and health alarm, and WHICH permission sets carry the control-plane deny
+# ([P] anchors - the secret must carry its value-read deny and keep rotation off), the
+# handshake log and health alarm, and which permission sets carry the control-plane deny
 # of step 8 (read back from Identity Center, never assumed).
 #
-# THE GUARDDUTY READING LEFT THIS FILE ON 2026-08-18, the day GuardDuty left Stage 4 for
-# Stage 15: it is ./aws/guardduty.py now (GD-1..GD-3). VP-8 is RETIRED here, not
-# renumbered - the Stage 4 log cites it by that name.
+# The GuardDuty reading is ./aws/guardduty.py (GD-1..GD-3) since 2026-08-18, the day
+# GuardDuty left Stage 4 for Stage 15. VP-8 is retired here, not renumbered - the Stage 4
+# log cites it by that name.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/vpn.py                        # every awsds-infra-* profile (VP-3 reads all)
 #             ./aws/vpn.py awsds-infra-prod  # only the ones named
-#             ./aws/vpn.py --on-host              # ALSO read inside the host (see below)
+#             ./aws/vpn.py --on-host              # also read inside the host (see below)
 #             python3 aws/vpn.py -                # CloudShell, ambient credentials
 #   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeInstances, DescribeVolumes, DescribeAddresses,
@@ -26,28 +26,28 @@
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything - see the next line for the
 #             single, typed exception.
-#   sends:    NOTHING IN AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
-#             GetCommandInvocation, and SendCommand is a WRITE API - it creates a Command,
-#             is a mutating CloudTrail event, and runs code on an instance - even though
-#             every command it carries is a read. It is a flag and not a default precisely
-#             so that `./aws/vpn.py` stays safe to fire at anything. Section 2a says what it
-#             buys: WHICH PEERS THE RUNNING wg0 ACTUALLY HOLDS, which no describe answers.
+#   sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
+#             GetCommandInvocation, and SendCommand is a write API: it creates a Command,
+#             is a mutating CloudTrail event, and runs code on an instance, even though
+#             every command it carries is a read. It is a flag and not a default so that
+#             `./aws/vpn.py` stays safe to fire at anything. Section 2a says what it buys -
+#             which peers the running wg0 actually holds, which no describe answers.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS TWO-PROFILE, which aws/INDEX.md admits only for a reason: the step 8 deny
-# lives in the IDENTITY account's permission sets while the Elastic IP it names lives in
-# the VPN home, so the two halves of one control sit in two accounts by design. With the
-# GuardDuty reading gone (2026-08-18) those two are the whole subject, and the default run
-# selects exactly them; naming profiles on the command line still measures any set.
-# Section 1 pays the rule back with the caller ARN of every profile.
+# It is two-profile, which aws/INDEX.md admits only for a reason: the step 8 deny lives in
+# the Identity account's permission sets while the Elastic IP it names lives in the VPN
+# home, so the two halves of one control sit in two accounts by design. Since the GuardDuty
+# reading left (2026-08-18) those two are the whole subject, and the default run selects
+# exactly them; naming profiles on the command line still measures any set. Section 1 pays
+# the rule back with the caller ARN of every profile.
 #
-# FOUR CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# The contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag matches awsds-*-vpn (Stage 4 step 1.1)
 #   - the deny statement's Sid is DenyControlPlaneOffVpn (Stage 4 step 8.1)
 #   - the host-key secret's name ends in -vpn-host-key (Stage 4 step 2.2a)
 #   - its resource policy's Sid is DenyValueReadExceptHostAndInfrastructure (2.2a)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, stated because an empty listing and a missing account look alike:
 #   - The behavioural proofs - the tunnel pair, the control-plane deny pair, the
 #     on-behalf carve-out - are the stage's own, run from the laptop with the tunnel up
 #     and down. A describe call proves none of them (Lesson 20).
@@ -67,74 +67,67 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "vpn.txt"
 
-# The VPN home is a ROLE an account plays (D35, Stage 4's forward constraint). Sandbox played
-# it from Stage 4 until 6c step 4.7; **PRODUCTION PLAYS IT SINCE 2026-09-06**, because D38 puts
-# the tunnel endpoint in VPC-Networking beside the proxy.
+# The VPN home is a role an account plays (D35, Stage 4's forward constraint). Sandbox played
+# it from Stage 4 until 6c step 4.7; Production plays it since 2026-09-06, because D38 puts the
+# tunnel endpoint in VPC-Networking beside the proxy.
 #
-# THIS LINE IS WHY THE MOVE WAS AN OBLIGATION AND NOT A TIDY-UP (Lesson 31: a check inherits the
-# scope of the account it was written in, and keeps reporting `pass` about that one while the
-# design spreads past it). Left at Sandbox after the host moved, every check here would have gone
-# on describing an account with no tunnel in it - VP-3 reading `pass` about a world-open rule
-# guarding nothing, VP-1 finding no host and calling it a finding - while the live tunnel went
-# entirely unmeasured. The failure mode is not a wrong answer, it is a confident answer about the
-# wrong place.
+# This constant moves with the host. Left pointing at an account with no tunnel in it, every
+# check here goes on describing the wrong place - VP-3 reading `pass` about a world-open rule
+# guarding nothing, VP-1 finding no host and calling it a finding - while the live tunnel goes
+# unmeasured (Lesson 31).
 #
-# NOTHING ELSE IN THIS FILE HAD TO MOVE, and that is NAME_TAG_PATTERN below earning its wildcard:
-# `awsds-*-vpn` matched `awsds-sandbox-vpn` and matches `awsds-prod-vpn`. A pattern written as a
-# literal would have been a second edit nobody would have found until a check came back empty.
+# NAME_TAG_PATTERN below needs no such edit: `awsds-*-vpn` matched `awsds-sandbox-vpn` and
+# matches `awsds-prod-vpn`, where a literal would have been a second edit nobody would find
+# until a check came back empty.
 VPN_HOME_PROFILE = "awsds-infra-prod"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 # The contracts (see header).
 NAME_TAG_PATTERN = "awsds-*-vpn"
 DENY_SID = "DenyControlPlaneOffVpn"
-# The deny's THIRD condition, and it has had two spellings. Until 2026-08-23 it was
-# aws:SourceVpce over the VPN home's two GATEWAY endpoint ids - the right fix measured one
-# case short: with egress/ up, every service holding an INTERFACE endpoint resolves to a
-# private address through the VPC resolver and the call presents THAT endpoint's id, which
-# the list did not carry and may never carry ([E], new on every make up - Lesson 3). It was
-# widened to aws:SourceVpc, which is [P] and SUBSUMES the two gateway ids (AWS_STATE.md).
-# This file went on grepping for the retired key and reported the six CORRECT sets as
-# "present and wrong" for a week (Lesson 30 - a tool's failure written down as a property of
-# the world); it is read again here as the RETIRED form, so the narrower predecessor is
-# named rather than lumped in with the address-only defect.
-# Both are matched QUOTED: "aws:SourceVpc" is a prefix of "aws:SourceVpce", so a bare
-# substring test cannot tell the current form from the retired one - which is the entire
-# distinction the check has to make.
+# The deny's third condition, which has had two spellings. Until 2026-08-23 it was
+# aws:SourceVpce over the VPN home's two gateway endpoint ids, one case short: with egress/
+# up, every service holding an interface endpoint resolves to a private address through the
+# VPC resolver and the call presents that endpoint's id, which the list did not carry and
+# may never carry ([E], new on every make up - Lesson 3). It was widened to aws:SourceVpc,
+# which is [P] and subsumes the two gateway ids (AWS_STATE.md). The retired form is still
+# read here, so the narrower predecessor is named rather than lumped in with the
+# address-only defect.
+#
+# Both are matched quoted: "aws:SourceVpc" is a prefix of "aws:SourceVpce", so a bare
+# substring test cannot tell the current form from the retired one, which is the distinction
+# the check has to make.
 VPC_CONDITION_KEY = "aws:SourceVpc"
 RETIRED_VPCE_CONDITION_KEY = "aws:SourceVpce"
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
-# The size the COST MODEL is written against - D4's shape, the slice's default, and the only
-# one scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. Since 2026-08-20 the slice takes
-# instance_type as a PARAMETER (t3.nano | t3.micro | t3.medium, vpn.md section S6), so a host
-# that is not this size is a deliberate selection and NOT A FAILURE - VP-1 reports the type it
-# found and passes. What that report is for: the burn line of `make status` and the hourly rows
-# of PRICING keep quoting the nano's rate whatever is running, so this line is the only place
-# the reader is told the two have parted company (a t3.medium is EIGHT times the rate).
-# Deliberately not a fail, and deliberately not silent.
+# The size the cost model is written against - D4's shape, the slice's default, and the only
+# one scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. The slice takes instance_type as
+# a parameter (t3.nano | t3.micro | t3.medium, vpn.md section S6), so a host that is not this
+# size is a deliberate selection and not a failure: VP-1 reports the type it found and passes.
+# The burn line of `make status` and the hourly rows of PRICING keep quoting the nano's rate
+# whatever is running, so this line is the only place the reader is told the two have parted
+# company (a t3.medium is eight times the rate).
 #
-# THE FAMILY MOVED THE SAME DAY, and it is a different kind of change from the size: the
-# wireguard module's AMI went from AL2023 arm64 to x86_64 on user direction, so the baseline is
-# t3.nano where it was t4g.nano and every admitted value is a t3. This constant follows the
-# module, never the running host - a host still reading t4g here after that apply is not drift
-# this check is measuring, it is an apply that has not happened yet.
+# The family is t3, not t4g: the wireguard module's AMI is AL2023 x86_64. This constant follows
+# the module, never the running host - a host still reading t4g here after that apply is not
+# drift this check is measuring, it is an apply that has not happened yet.
 BASELINE_INSTANCE_TYPE = "t3.nano"
 
-# The DISK the cost model is written against - the wireguard module's default, and the size
-# docs/PRICING.md 2's `WireGuard EBS (8 GB)` row prices. Since 2026-08-20 the slice takes
-# root_volume_size as a PARAMETER too (8-128 GiB, vpn.md section S6), so a host on a bigger
-# disk is a deliberate selection and NOT A FAILURE - VP-1 reports the size it found and
-# passes, exactly as it does for the type.
+# The disk the cost model is written against - the wireguard module's default, and the size
+# docs/PRICING.md 2's `WireGuard EBS (8 GB)` row prices. The slice takes root_volume_size as
+# a parameter too (8-128 GiB, vpn.md section S6), so a host on a bigger disk is a deliberate
+# selection and not a failure: VP-1 reports the size it found and passes, as it does for the
+# type.
 #
-# WHY IT IS A SECOND CONSTANT RATHER THAN A SECOND CLAUSE ON THE FIRST: the two gaps are not
-# the same kind of wrong, so one "non-baseline" verdict would blur them. A stopped instance
-# bills no hours, so the TYPE's understatement is only live while somebody is working - it is
-# an hourly figure being wrong for an hour that is happening. The VOLUME bills every hour of
-# the month regardless, so ITS understatement is standing: it is wrong in a month when the
-# tunnel was never brought up at all (64 GiB is ~5.12 USD/month against this baseline's
-# ~0.64). VP-1 therefore names them separately, and points at different cost lines.
+# It is a second constant rather than a second clause on the first because the two gaps are
+# not the same kind of wrong, and one "non-baseline" verdict would blur them. A stopped
+# instance bills no hours, so the type's understatement is only live while somebody is
+# working. The volume bills every hour of the month regardless, so its understatement is
+# standing: it is wrong in a month when the tunnel was never brought up at all (64 GiB is
+# ~5.12 USD/month against this baseline's ~0.64). VP-1 names them separately, and points at
+# different cost lines.
 BASELINE_ROOT_VOLUME_SIZE_GIB = 8
 
 # The six persona sets the step 8 fragment reaches, and the one it deliberately does not
@@ -151,24 +144,24 @@ INFRA_SET = "InfrastructureAccess"
 
 # --------------------------------------------------------------- the inside of the host (2a)
 #
-# THIS IS THE ONE PART OF THIS FILE THAT IS NOT READ-ONLY, WHICH IS WHY IT IS OPT-IN.
-# Everything the commands below do ON the host is a read - grep, cat, wg show, systemctl
-# is-active, tail - but `ssm:SendCommand` is a WRITE API: it creates a Command, appears in
-# CloudTrail as a mutating call, and executes code on an instance. The whole point of
-# `aws/*` being read-only is that anyone may run these scripts to gather information without
-# thinking about it, so the escalation has to be typed: WITHOUT --on-host nothing here runs.
+# This is the one part of this file that is not read-only, so it is opt-in. Everything the
+# commands below do on the host is a read - grep, cat, wg show, systemctl is-active, tail -
+# but `ssm:SendCommand` is a write API: it creates a Command, appears in CloudTrail as a
+# mutating call, and executes code on an instance. `aws/*` is read-only so that anyone may
+# run these scripts to gather information without thinking about it, so the escalation has to
+# be typed: without --on-host nothing here runs.
 #
-# WHY IT EXISTS AT ALL, since a read-only path was tried first: ec2:GetConsoleOutput is a
-# pure read and returns the boot's say-lines - but it returned ZERO BYTES on both Stage 4
-# hosts for the first several minutes (measured 2026-08-17), and it cannot answer the
-# questions that matter after the boot: which peers the interface actually holds, whether
-# the name map matches the roster, whether the sampler timer is alive. Those are the live
-# state of the tunnel, and SSM is the only path to them.
+# A read-only path was tried first. ec2:GetConsoleOutput is a pure read and returns the boot's
+# say-lines, but it returned zero bytes on both Stage 4 hosts for the first several minutes
+# (measured 2026-08-17), and it cannot answer the questions that matter after the boot: which
+# peers the interface actually holds, whether the name map matches the roster, whether the
+# sampler timer is alive. Those are the live state of the tunnel, and SSM is the only path to
+# them.
 #
-# `wg show wg0` AND NEVER `wg show all dump`: the dump form prints the INTERFACE'S PRIVATE
-# KEY on its first line, and this output is written verbatim into aws/output/vpn.txt. The
-# host's own sampler avoids the same form for the same reason (Stage 4 step 7); the check
-# below is the gate under that rule rather than a memory of it (Lesson 5).
+# `wg show wg0` and never `wg show all dump`: the dump form prints the interface's private key
+# on its first line, and this output is written verbatim into aws/output/vpn.txt. The host's
+# own sampler avoids the same form for the same reason (Stage 4 step 7); the check below is
+# the gate under that rule rather than a memory of it (Lesson 5).
 HOST_PROBE_COMMANDS = (
     "grep -a AWSDS-VPN /var/log/cloud-init-output.log",
     "echo ---STATUS---",
@@ -180,32 +173,33 @@ HOST_PROBE_COMMANDS = (
     "echo ---SAMPLER---",
     "systemctl is-active awsds-wg-handshakes.timer",
     "tail -4 /var/log/wireguard-handshakes.log",
-    # THE OTHER HALF OF THE DISK READING, and the reason it is worth an SSM round trip:
-    # section 2's ROOT DISK column is DescribeVolumes, which is the BLOCK DEVICE. Growing a
-    # volume does not grow the partition or the XFS on top of it - cloud-init's growpart does
-    # that, at BOOT - so a disk change applied to a running host leaves the two disagreeing,
-    # and vpn.md section S6 says to read both rather than one. These two lines are the only
-    # place the second one is legible. Both are reads (HOST_PROBE_BANNED is unmoved).
+    # The other half of the disk reading, and why it is worth an SSM round trip: section 2's
+    # ROOT DISK column is DescribeVolumes, which is the block device. Growing a volume does not
+    # grow the partition or the XFS on top of it - cloud-init's growpart does that, at boot -
+    # so a disk change applied to a running host leaves the two disagreeing, and vpn.md section
+    # S6 says to read both rather than one. These two lines are the only place the second one
+    # is legible. Both are reads (HOST_PROBE_BANNED is unmoved).
     "echo ---DISK---",
     "lsblk",
     "df -h /",
-    # THE REFUSING SIDE'S COUNTERS (6c step 6.1, 2026-09-07; Lesson 55). A refusal the sender cannot
-    # see is indistinguishable from silence: the FORWARD chain REJECTs every tunnel packet not bound
-    # for RFC1918 with icmp-admin-prohibited but rate-limits the ICMP that would say so (the ICMP
-    # block below, step 6.4), and the client reads a TIMEOUT more often than not. The only place the refusal is legible is the rule's packet count here - which
-    # is what 6c step 6.4 reads across a client's attempt. The nat table is 4.7's other half: the
-    # RETURN rule for the proxy's subnet is the deliberate masquerade hole that lets Squid log a
-    # per-device address, and its counter should move only for proxy-bound connections. All three
-    # are `-L` listings - reads, under the same ban list as everything above.
+    # The refusing side's counters (6c step 6.1, 2026-09-07; Lesson 55). A refusal the sender
+    # cannot see is indistinguishable from silence: the FORWARD chain REJECTs every tunnel
+    # packet not bound for RFC1918 with icmp-admin-prohibited but rate-limits the ICMP that
+    # would say so (the ICMP block below, step 6.4), so the client reads a timeout more often
+    # than not. The only place the refusal is legible is the rule's packet count here, which is
+    # what 6c step 6.4 reads across a client's attempt. The nat table is 4.7's other half: the
+    # RETURN rule for the proxy's subnet is the deliberate masquerade hole that lets Squid log
+    # a per-device address, and its counter should move only for proxy-bound connections. All
+    # three are `-L` listings - reads, under the same ban list as everything above.
     "echo ---FORWARD---",
     "iptables -L FORWARD -v -n --line-numbers",
     "ip6tables -L FORWARD -v -n --line-numbers",
     "echo ---NAT---",
     "iptables -t nat -L POSTROUTING -v -n --line-numbers",
-    # WHETHER THE HOST SAYS "NO" OUT LOUD (6c step 6.4, 2026-09-07). A REJECT counts a packet
+    # Whether the host says "no" out loud (6c step 6.4, 2026-09-07). A REJECT counts a packet
     # whether or not the ICMP error it is meant to send actually left: Linux rate-limits ICMP
     # errors per destination (icmp_ratelimit / icmp_ratemask), so a laptop whose background
-    # applications are being refused dozens of times a second can starve the bucket, and the ONE
+    # applications are being refused dozens of times a second can starve the bucket, and the one
     # packet the user is watching gets no ICMP at all - a timeout on the client that the REJECT
     # counter alone would attribute to macOS. The contrast is REJECT pkts against
     # Icmp OutDestUnreachs (and Icmp6OutDestUnreachs for the ULA rule): equal means every
@@ -223,9 +217,9 @@ HOST_PROBE_INTERVAL_S = 5
 def _assert_probe_commands_are_reads() -> None:
     """Refuse to send a command list that stopped being a read, before it is sent.
 
-    A banned fragment here is not a style rule: `dump` would ship the interface's private
-    key into an output file, and the three write forms would make this script something
-    nobody can run to gather information any more.
+    A banned fragment is a safety gate: `dump` would ship the interface's private key into an
+    output file, and the three write forms would make this script something nobody can run to
+    gather information any more.
     """
     for cmd in HOST_PROBE_COMMANDS:
         for banned in HOST_PROBE_BANNED:
@@ -298,8 +292,8 @@ def main(argv: list) -> int:
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
 
-    # The one flag this file has, and it is stripped BEFORE profiles.select() - which reads
-    # every remaining argument as a profile name (see awslib/profiles.py).
+    # The one flag this file has, stripped before profiles.select(), which reads every
+    # remaining argument as a profile name (see awslib/profiles.py).
     on_host = "--on-host" in argv
     argv = [a for a in argv if a != "--on-host"]
     if on_host:
@@ -308,10 +302,9 @@ def main(argv: list) -> int:
     if argv:
         selected, source = profiles.select(argv)
     else:
-        # EVERY awsds-infra-* PROFILE SINCE 2026-09-07 (6c step 6.5), not the two this file
-        # used to need: VP-3 asks whether the estate holds exactly one world-open rule, and a
-        # check that reads one account keeps reporting pass while another account carries a
-        # second (Lesson 31 - it did, for a day). The home and Identity are among them.
+        # Every awsds-infra-* profile, the home and Identity among them (6c step 6.5): VP-3
+        # asks whether the estate holds exactly one world-open rule, and a check that reads
+        # one account keeps reporting pass while another account carries a second (Lesson 31).
         selected = sorted(
             set(profiles.discover("awsds-infra-")) | {VPN_HOME_PROFILE, IDENTITY_PROFILE}
         )
@@ -367,9 +360,9 @@ def main(argv: list) -> int:
                             [g.get("GroupId") for g in inst.get("SecurityGroups", [])],
                         )
                     )
-                    # The ROOT device only - a WireGuard host has one, but the mapping is a
-                    # list and matching on RootDeviceName is what keeps this honest if a
-                    # second volume is ever attached for something.
+                    # The root device only - a WireGuard host has one, but the mapping is a
+                    # list, and matching on RootDeviceName keeps this honest if a second
+                    # volume is ever attached for something.
                     root_name = inst.get("RootDeviceName")
                     for bdm in inst.get("BlockDeviceMappings", []):
                         if bdm.get("DeviceName") == root_name:
@@ -377,13 +370,12 @@ def main(argv: list) -> int:
                             if vol_id:
                                 root_volumes[inst.get("InstanceId", "?")] = (vol_id, "?", "?")
 
-        # THE SIZE IS NOT IN THE ANSWER ABOVE, which is the whole reason this is a second
-        # call rather than one more field: DescribeInstances names the root device and its
-        # VOLUME ID and stops - capacity is a property of the volume, so DescribeVolumes is
-        # where it lives. One extra call, for the hosts already found. A failure here leaves
-        # the size reading `?` rather than taking the section down, because the disk is a
-        # REPORT and not a control: nothing in this file fails on it (see
-        # BASELINE_ROOT_VOLUME_SIZE_GIB), so nothing should stop for it either.
+        # The size is not in the answer above, which is why this is a second call rather than
+        # one more field: DescribeInstances names the root device and its volume id and stops,
+        # and capacity is a property of the volume. One extra call, for the hosts already
+        # found. A failure here leaves the size reading `?` rather than taking the section
+        # down: the disk is a report and not a control, and nothing in this file fails on it
+        # (see BASELINE_ROOT_VOLUME_SIZE_GIB).
         if root_volumes:
             res = cli.run(
                 "ec2",
@@ -408,7 +400,7 @@ def main(argv: list) -> int:
                     size, vtype = sized.get(vol_id, ("?", "?"))
                     root_volumes[iid] = (vol_id, size, vtype)
 
-        # Only a RUNNING host can answer; a stopped one is D11 working, not a failure, so it
+        # Only a running host can answer; a stopped one is D11 working, not a failure, so it
         # is skipped rather than attempted and reported as an error.
         if on_host:
             for inst in instances:
@@ -474,7 +466,7 @@ def main(argv: list) -> int:
                     alarms.append((f[0], f[1]))
 
         # The [P] host-key secret (step 2.2a; decision 4, third review). ListSecrets carries
-        # the rotation flag; the resource policy is a second read per match. Matched by NAME,
+        # the rotation flag; the resource policy is a second read per match. Matched by name,
         # like the instance's Name tag above: the name is the documented contract.
         res = cli.run(
             "secretsmanager",
@@ -579,15 +571,12 @@ def main(argv: list) -> int:
                 elif not r.stdout.strip():
                     set_rows.append((name, "(no inline policy)"))
                 else:
-                    # Presence of the Sid is not enough, and 2026-08-20 is why: the
-                    # statement carried the right Sid and the wrong condition set for
-                    # three days while this check reported "all six carry it" (Lesson
-                    # 31 - a check inheriting the scope it was written in). Tunnel
-                    # traffic splits by destination, so an aws:SourceIp-only test denies
-                    # every direct S3 call made from INSIDE the perimeter. The third
-                    # condition is therefore read as well; the grep stays a grep, but it
-                    # greps for the thing that was actually wrong - and, since 2026-08-23,
-                    # for the SPELLING that is current (see VPC_CONDITION_KEY).
+                    # Presence of the Sid is not enough: on 2026-08-20 the statement carried
+                    # the right Sid and the wrong condition set for three days while this
+                    # check reported "all six carry it" (Lesson 31). Tunnel traffic splits by
+                    # destination, so an aws:SourceIp-only test denies every direct S3 call
+                    # made from inside the perimeter. The third condition is read as well,
+                    # in the spelling that is current (see VPC_CONDITION_KEY).
                     if DENY_SID not in r.stdout:
                         set_rows.append((name, "no"))
                     elif f'"{VPC_CONDITION_KEY}"' in r.stdout:
@@ -599,10 +588,10 @@ def main(argv: list) -> int:
 
     # -------------------------------------------------------------------------------- the checks
     # VP-1: exactly one WireGuard host in the VPN home. Absent = not built yet; two = a
-    # rebuild that leaked. The SHAPE - the instance type AND the root volume - is reported,
+    # rebuild that leaked. The shape - the instance type and the root volume - is reported,
     # never judged: both are slice parameters (vpn.md section S6), so a host that is not the
-    # baseline is somebody's decision, and a check that went red about it would be a check
-    # nobody reads (Lesson 31). See BASELINE_INSTANCE_TYPE and BASELINE_ROOT_VOLUME_SIZE_GIB.
+    # baseline is somebody's decision, and a check red about it is a check nobody reads
+    # (Lesson 31). See BASELINE_INSTANCE_TYPE and BASELINE_ROOT_VOLUME_SIZE_GIB.
     if home_live:
         if not instances:
             checks.note(
@@ -622,11 +611,10 @@ def main(argv: list) -> int:
             _vol, vsize, vtype = root_volumes.get(iid, ("-", "?", "?"))
             shape = f"{itype} on {vsize} GiB {vtype}, state {istate}"
 
-            # THE TWO DEPARTURES ARE NAMED SEPARATELY because they break different cost lines
-            # in different ways, and a single "not the baseline" sentence would hide the one
-            # that keeps costing while nothing is happening. Order is deliberate: hourly
-            # first, standing second, so the sentence ends on the one a reader who stops
-            # early should still have seen.
+            # The two departures are named separately because they break different cost lines,
+            # and a single "not the baseline" sentence would hide the one that keeps costing
+            # while nothing is happening. Hourly first, standing second, so the sentence ends
+            # on the one a reader who stops early should still have seen.
             drift = []
             if itype != BASELINE_INSTANCE_TYPE:
                 drift.append(
@@ -651,12 +639,11 @@ def main(argv: list) -> int:
     # VP-2: the [P] Elastic IP exists and is associated with the host (step 2.1). The EIP
     # bills whether or not it is associated, so an orphan allocation is pure cost.
     #
-    # THE ALLOCATED-BUT-HOSTLESS CASE IS A READING AND NOT A SILENCE (found by running this
-    # after step 2.3, 2026-08-17): between the [P] apply and step 1.4 there is legitimately an
-    # address and no instance, and the earlier code fell through both branches and said
-    # NOTHING - so the one state this check exists to price, an allocation nobody ever
-    # attaches, would have gone unmentioned for as long as it lasted (Lesson 13). It is a
-    # note rather than a FAIL because the stage's own order produces it.
+    # The allocated-but-hostless case is a reading, not a silence: between the [P] apply and
+    # step 1.4 there is legitimately an address and no instance, and unreported it would leave
+    # the one state this check exists to price - an allocation nobody ever attaches -
+    # unmentioned for as long as it lasted (Lesson 13). It is a note rather than a FAIL
+    # because the stage's own order produces it.
     if home_live:
         if not addresses:
             checks.note(
@@ -686,10 +673,9 @@ def main(argv: list) -> int:
                     "step 8's deny would then deny everyone everywhere.",
                 )
 
-    # WORLD-OPEN INGRESS, READ IN EVERY LIVE INFRA ACCOUNT (6c step 6.5, 2026-09-07). Until then
-    # this read the VPN home alone, and VP-3 kept passing while Sandbox's retired anchors carried
-    # a second world-open rule guarding no listener - a check inheriting the scope of the account
-    # it was written in (Lesson 31). One describe-security-groups per account; all reads.
+    # World-open ingress, read in every live infra account (6c step 6.5). Reading the VPN home
+    # alone kept VP-3 passing while Sandbox's retired anchors carried a second world-open rule
+    # guarding no listener (Lesson 31). One describe-security-groups per account; all reads.
     sg_accounts_read: list = []
     for prof in [c.profile for c in callers if c.live and c.profile.startswith("awsds-infra-")]:
         res = cli_for(prof).run("ec2", "describe-security-groups", "--output", "json", log=False)
@@ -714,9 +700,9 @@ def main(argv: list) -> int:
                         )
                     )
 
-    # VP-3: exactly one world-open ingress rule in the WHOLE ESTATE, and it is the VPN home's
-    # UDP/51820 (step 3). Widened 2026-09-07 (6c step 6.5): a rule in any other account is a
-    # finding whatever its port, and so is a second one in the home.
+    # VP-3: exactly one world-open ingress rule in the whole estate, the VPN home's UDP/51820
+    # (step 3; widened at 6c step 6.5). A rule in any other account is a finding whatever its
+    # port, and so is a second one in the home.
     def _is_the_tunnel(rule: tuple) -> bool:
         prof, _g, _n, proto, pfrom, pto = rule
         return prof == VPN_HOME_PROFILE and proto == "udp" and pfrom == "51820" and pto == "51820"
@@ -792,12 +778,11 @@ def main(argv: list) -> int:
     elif home_live:
         checks.note("VP-5", "handshake log + alarm", "no host yet - expected before Stage 4.")
 
-    # VP-7: which permission sets carry the step 8 deny. The six persona sets move
-    # together (one shared fragment, 8.2). InfrastructureAccess was DECIDED OFF-VPN
-    # (open question 17, 2026-08-17, option a): the VPN host is a [D] instance that
-    # credential must be able to start from anywhere, or the tunnel's own outage is
-    # unrecoverable without break-glass - so for the seventh set the deny is judged
-    # in the OPPOSITE direction.
+    # VP-7: which permission sets carry the step 8 deny. The six persona sets move together
+    # (one shared fragment, 8.2). InfrastructureAccess stays off-VPN (open question 17,
+    # 2026-08-17, option a): the VPN host is a [D] instance that credential must be able to
+    # start from anywhere, or the tunnel's own outage is unrecoverable without break-glass, so
+    # for the seventh set the deny is judged in the opposite direction.
     if identity_live and set_rows:
         persona = {n: v for n, v in set_rows if n in PERSONA_SETS}
         carrying = [n for n, v in persona.items() if v.startswith("yes")]
@@ -870,7 +855,7 @@ def main(argv: list) -> int:
             )
 
     # VP-9: the [P] host-key secret (step 2.2a; decision 4, third review): present once the
-    # stage runs, the value-read deny attached, and rotation OFF - the keys runbook's one
+    # stage runs, the value-read deny attached, and rotation off - the keys runbook's one
     # rule, mechanised into a failure if it ever flips.
     if home_live:
         if not host_key_secrets:
