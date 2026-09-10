@@ -24,7 +24,7 @@ messages arrived as they read.*
 **Nothing has been created, attached or changed in AWS as of this entry.** Every line below is a
 measurement, taken from the laptop as the **infrastructure user** through the profiles of Stage 1b step 5.
 They exist because Stage 1c closed the same day and three of this stage's steps were written against a
-world that had changed — the revision they produced is in the stage file, not here.
+world that had changed; the revision they produced is in the stage file.
 
 - **The CloudTrail bucket is not the name this project had been carrying, and the trail's validation is
   already on.** From `awsds-infra-identity`, `cloudtrail describe-trails` in `us-west-2`:
@@ -55,12 +55,12 @@ IsOrganizationTrail: true      LogFileValidationEnabled: true      HomeRegion: u
 
   **`s3:PutBucketObjectLockConfiguration` and `s3:PutBucketVersioning` are not in that list**, so
   `AWS Control Tower Admin` — administrator of the Log Archive account — cannot enable Object Lock on the
-  trail's bucket. The **one** exempt principal is `AWSControlTowerExecution`. Two consequences, and the
-  second is why the step survives the first: this cannot be fixed by widening a permission, because the
-  identity that would grant it is the identity the deny is written against; and **the same `NotAction`
-  permits `s3:DeleteObject` and `s3:DeleteObjectVersion` to everyone**, so AWS protects the bucket's
-  *configuration* and deliberately leaves its *contents* deletable — which is exactly the exposure step 9
-  exists to close. Recorded as **decision 9**, to be taken while executing.
+  trail's bucket. The **one** exempt principal is `AWSControlTowerExecution`. Two consequences: this
+  cannot be fixed by widening a permission, because the identity that would grant it is the identity the
+  deny is written against; and **the same `NotAction` permits `s3:DeleteObject` and
+  `s3:DeleteObjectVersion` to everyone**, so AWS protects the bucket's *configuration* and leaves its
+  *contents* deletable — the exposure step 9 exists to close. Recorded as **decision 9**, to be taken
+  while executing.
 
 - **Step 11.2 has nothing to set.** `lakeformation get-data-lake-settings` in Data Governance
   (`awsds-infra-data`, `us-west-2`), an account with no lake, no registered location and no administrator:
@@ -72,12 +72,11 @@ CreateDatabaseDefaultPermissions / CreateTableDefaultPermissions: IAM_ALLOWED_PR
 ```
 
   **Verification (v) is answered without acting**: the cross-account version is above 3 in an account with
-  no lake, because that is the account default. So no `put-data-lake-settings` is made — the
-  replaces-the-whole-structure hazard is avoided by not making the call — and what the step owes Stage 5
-  grew instead: its `aws_lakeformation_data_lake_settings` must carry
-  `parameters = { CROSS_ACCOUNT_VERSION = "4", SET_CONTEXT = "TRUE" }` alongside its `admins`, **both keys**,
-  re-read immediately before writing. A value nobody set is a value nobody defends, and INT-11 fails
-  silently on both sides.
+  no lake, because that is the account default. So no `put-data-lake-settings` is made — the call would
+  replace the whole structure — and what the step owes Stage 5 grew instead: its
+  `aws_lakeformation_data_lake_settings` must carry `parameters = { CROSS_ACCOUNT_VERSION = "4",
+  SET_CONTEXT = "TRUE" }` alongside its `admins`, **both keys**, re-read immediately before writing. A
+  value nobody set is a value nobody defends, and INT-11 fails silently on both sides.
 
 - **Step 11.1 has real work.** `organizations list-aws-service-access-for-organization`, from *Identity*:
   the seven principals of `INV-09` — `access-analyzer`, `cloudtrail`, `config`, `controltower`, `iam`,
@@ -85,27 +84,27 @@ CreateDatabaseDefaultPermissions / CreateTableDefaultPermissions: IAM_ALLOWED_PR
   therefore one name appearing in a list that goes from seven to eight.
 
 - **The exemption reading step 12 asks for, taken early and from the document.** `describe-policy` on
-  `p-fw2pctqw` (the `CT.MULTISERVICE.PV.1` document as Control Tower packed it on `Identity` — it also
-  carries `GRRESTRICTROOTUSER` and `GRRESTRICTROOTUSERACCESSKEYS`, which is Lesson 23 in one line). The
+  `p-fw2pctqw` (the `CT.MULTISERVICE.PV.1` document as Control Tower packed it on `Identity`, which also
+  carries `GRRESTRICTROOTUSER` and `GRRESTRICTROOTUSERACCESSKEYS` — Lesson 23). The
   `CTMULTISERVICEPV1` statement: **86 `NotAction` entries across 68 service prefixes**, condition
   `StringNotEquals aws:RequestedRegion = us-west-2` **AND** `ArnNotLike aws:PrincipalARN` over **four**
   Control Tower roles — `AWSControlTowerExecution`, `aws-controltower-ConfigRecorderRole`,
   `aws-controltower-ForwardSnsNotificationRole`, `AWSControlTower_VPCFlowLogsRole`.
 
-  Read against what actually runs in Log Archive and Audit, which is what open question 16 asked for:
+  Read against what runs in Log Archive and Audit, which is open question 16:
   **`config:*`, `access-analyzer:*`, `iam:*`, `kms:*` and `organizations:*` are exempt entirely**, so the
   Config aggregator and `awsds-org-external-access` are untouched in any region; of `cloudtrail:` only
   `LookupEvents` is exempt, so creating a second trail elsewhere would be denied — which is the intent; and
   of `s3:` only the account-level and multi-region-access-point actions are exempt, so a bucket created in
   another region would be denied — also the intent. **`guardduty`, `securityhub` and `macie2` are not
-  exempt**, so enabling the control is a commitment that Stages 4, 5 and 11 stay in `us-west-2` — which they
-  are in this design. The two Control Tower roles that matter in these two accounts,
-  `ConfigRecorderRole` and `ForwardSnsNotificationRole`, are both exempt.
+  exempt**, so enabling the control commits Stages 4, 5 and 11 to `us-west-2`. The two Control Tower
+  roles that matter in these two accounts, `ConfigRecorderRole` and `ForwardSnsNotificationRole`, are
+  both exempt.
 
-- **Operational, and it shapes the whole stage:** there is **no CLI profile for Log Archive, Audit or
-  Management** on this laptop, and there is not meant to be — the infrastructure user has no assignment in
-  any of them. Every remaining reading of this stage is taken in **CloudShell as `AWS Control Tower Admin`**
-  through `AWSAdministratorAccess`, and `./aws/probes/scp-battery.sh` can never reach those accounts.
+- **No CLI profile exists for Log Archive, Audit or Management** on this laptop, and none is meant to:
+  the infrastructure user has no assignment in any of them. Every remaining reading of this stage is
+  taken in **CloudShell as `AWS Control Tower Admin`** through `AWSAdministratorAccess`, and
+  `./aws/probes/scp-battery.sh` can never reach those accounts.
 
 - Login as CT Admin -> Log Archive Account -> AWSAdministratorAccess.
 
@@ -160,13 +159,13 @@ aws: [ERROR]: An error occurred (ObjectLockConfigurationNotFoundError) when call
   `ConfigurationRecorders: []` in `us-west-2`. So `docs/plan/cost-model.md`'s assumption holds and its Config
   row's account count is right as written. `describe-delivery-channels` was not run and does not need to
   be: an empty recorder list already answers the question, and a delivery channel with no recorder records
-  nothing. **What this does to decision 8 is make it a real choice rather than a formality** — there is no
-  recorder in Management to attach a rule to, so 10.4's "yes" means creating the whole Config plane there
-  by hand, in the one account this project keeps out of Terraform.
+  nothing. **Decision 8 is therefore a real choice**: there is no recorder in Management to attach a
+  rule to, so 10.4's "yes" means creating the whole Config plane there by hand, in the one account this
+  project keeps out of Terraform.
 
-- `SummaryMap.AccountAccessKeysPresent` reads **`0`** — D16's invariant holds **today**. Recorded as a
-  measurement, not as a control: this is the free instrument 10.4 itself calls an intention (Lesson 5),
-  and it answers the state question only at the moment somebody runs it.
+- `SummaryMap.AccountAccessKeysPresent` reads **`0`** — D16's invariant holds **today**. A measurement,
+  not a control: the free instrument 10.4 itself calls an intention (Lesson 5), answering the state
+  question only at the moment somebody runs it.
 
 - Login as CT Admin -> Audit Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
 
@@ -247,10 +246,9 @@ AWSServiceRoleForResourceAccessManager  2026-08-14T18:47:23+00:00
 - **Step 11 is done.** `enable-sharing-with-aws-organization` returned `true`; the trusted-access list
   went from the **seven** principals of the before-reading to **eight**, with `ram.amazonaws.com` at
   18:47:22Z, and `AWSServiceRoleForResourceAccessManager` was created at 18:47:23Z. **The one-second gap
-  is the result worth keeping**: the RAM call made both halves. Enabling trusted access from the
-  Organizations side instead would have produced an identical list and no role — the list would read
-  correct and organization-wide sharing would still not work, which is INT-11's silent-failure shape
-  arriving one stage early.
+  says the RAM call made both halves.** Enabling trusted access from the Organizations side instead would
+  have produced an identical list and no role: the list would read correct and organization-wide sharing
+  would still not work — INT-11's silent-failure shape one stage early.
 
 - **Re-read independently from the laptop** as the infrastructure user (`awsds-infra-identity`): eight
   principals, `ram.amazonaws.com` among them. The after-reading answers from a member account, as the
@@ -299,27 +297,25 @@ aws: [ERROR]: An error occurred (DryRunOperation) when calling the CreateKeyPair
 
 - Step 12 is done, and decision 10 was yes. All three controls on Security: CT.MULTISERVICE.PV.1
 allowing us-west-2, AWS-GR_RESTRICT_ROOT_USER with ExemptAssumeRoot, and
-AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS without one (D16). The reasoning, so a later reader can tell
-a decision from an omission: the ceiling is free today — everything in Log Archive and Audit is already
-us-west-2 — and the alternative was leaving the two accounts holding the immutable trail and the
-organization's findings as the only governed accounts where a resource may be created in any Region.
+AWS-GR_RESTRICT_ROOT_USER_ACCESS_KEYS without one (D16). The reasoning: the ceiling is free today —
+everything in Log Archive and Audit is already us-west-2 — and the alternative was leaving the two
+accounts holding the immutable trail and the organization's findings as the only governed accounts
+where a resource may be created in any Region.
 The exemption reading taken earlier this day is what made it safe: the four Control Tower roles are
 exempt and config:* is exempt entirely, so nothing Control Tower itself runs there is constrained.
 What it commits: guardduty, securityhub and macie2 are not in the NotAction list, so
-Stages 4, 5 and 11 are us-west-2 or they are denied — which is this design, stated now rather than
-discovered then.
+Stages 4, 5 and 11 are us-west-2 or they are denied.
 
 - The step's one real unknown is answered: Security accepts enable-control. Being Control Tower's
-own foundational OU did not make it a non-target, and a refusal would have turned decision 10 from
-"declined" into "impossible" — which is a different sentence in the log.
+own foundational OU did not make it a non-target.
 
 - Control Tower packed the three enablements in a third shape. CT.MULTISERVICE.PV.1 went into a
 new document, aws-guardrails-KAmzSQ (p-idgyiios, one statement, CTMULTISERVICEPV1), while the
 two root-user controls went into the pre-existing AWS guardrail aws-guardrails-rFWRFL
 (p-2xyaqn66), taking it from 11 statements to 13. So the three measured layouts are now: original
 guardrail (Policy Test, Workloads, Interactive), Region document (Identity, Data), and both
-at once (Security). Lesson 23 is therefore not "one of two layouts" — it is that the layout cannot be
-inferred at all, only read. Log Archive and Audit resolve to 26 statements each, up from 23.
+at once (Security) — the layout cannot be inferred, only read (Lesson 23). Log Archive and Audit
+resolve to 26 statements each, up from 23.
 
 - The half no probe can reach was verified by reading, and it passes. ./aws/org-policies.sh from the
 laptop as awsds-infra-identity: CHK-1 — ExemptAssumeRoot present on Security, so
@@ -334,13 +330,13 @@ returning DryRunOperation. Second half provisional: that Control Tower's own ope
 accounts are unaffected is answered by the exemption reading, not by a probe, and is re-checked at the
 next landing-zone update, account update or re-enrollment — the same shape as (iv) and 1b's (vi).
 
-- And this is now permanently untestable by the battery. ./aws/probes/scp-battery.sh maps probes to
+- This is now permanently untestable by the battery. ./aws/probes/scp-battery.sh maps probes to
 CLI profiles and neither account has one, by design. The probes above were run by hand, once. What stands
 behind them is CHK-1/CHK-2 and section 4 of ./aws/org-policies.sh — a regression on the Security
 row surfaces there or nowhere. Open question 16 is closed (AWS_STATE.md INV-11 and INV-12 restated).
 
-- Root was used twice, and the reason is a finding rather than a convenience. AWS Control Tower Admin
-holds AdministratorAccess, which includes ce:, and Management is exempt from SCPs — yet the Cost
+- Root was used twice, and the reason is a finding. AWS Control Tower Admin holds
+AdministratorAccess, which includes ce:, and Management is exempt from SCPs — yet the Cost
 Management console refused it. The cause was IAM user and role access to Billing never having been
 activated, which only the root user can change. So the permission model was never the obstacle and no
 policy edit would have fixed it. Now that it is activated, every future billing and Cost Explorer
@@ -349,16 +345,14 @@ reading is taken as CT Admin, and needing root for one is a signal that this tog
 - The break-glass alarm, which those two sign-ins tested for free. awsds-org-root-activity (1a step 5)
 fires on any root activity that is not an AWS service event, so both sign-ins should have notified.
 All break-glass notifications arrived on both channels.
-Recorded because this is an unplanned live test of the whole chain (trail → S3 → Logs → filter → alarm),
-distinct from the deliberate test of 2026-08-09, and because a silent alarm here would undermine the
-fallback that decision 8 is about to lean on.
+An unplanned live test of the whole chain (trail → S3 → Logs → filter → alarm), distinct from the
+deliberate test of 2026-08-09; a silent alarm here would undermine the fallback decision 8 leans on.
 
-- Step 10's spend half is measured, and the shape matters more than the total. Cost Explorer from
-Management as CT Admin, current month, daily, Service = Config:
+- Step 10's spend half is measured. Cost Explorer from Management as CT Admin, current month, daily,
+Service = Config:
 
   - One usage type only, USW2-ConfigurationItemRecorded. No rule-evaluation line at all — so 100% of
-the Config spend is configuration items, which is exactly what step 10 is about, and the usage-type
-split 10.3 asked for has a trivial answer.
+the Config spend is configuration items, and the usage-type split 10.3 asked for has a trivial answer.
 
   - USD 2.28 month-to-date, of which USD 2.20 is a single-day spike on Aug 09, spread evenly across
 the accounts, with Audit's entire share at USD 0.28 and the most recent activity the previous day, in
@@ -408,8 +402,8 @@ Canary. 18 AWS::IAM::Role, 17 AWS::CodeDeploy::DeploymentConfig, 6 AWS::CloudFor
 each. ≈28 of the 82 — a third — are defaults AWS creates by itself and that nobody will ever change:
 the CodeDeploy deployment configurations, the AppConfig strategies, the Keyspaces system keyspaces, the
 two Fargate capacity providers, the primary Athena workgroup. That is the obvious exclusion list, and
-measuring it is what kills it: they are recorded once and never change, so they cost USD 0.08 per
-account in total, not per month. Excluding them saves under a dollar across the organization, forever.
+measuring it kills it: they are recorded once and never change, so they cost USD 0.08 per account in
+total, not per month. Excluding them saves under a dollar across the organization, forever.
 
 - The battery creates nothing, now proven from the other side. Policy Canary's inventory is identical
 to Development's, type for type, after 93 probes including three creates. The residual USD 0.08
@@ -425,9 +419,9 @@ rate is ~USD 0.5/month, below PRICING.md's USD 2.50-5.00 band, and the two sides
 comparable: the alternative is a Lambda driven by Control Tower lifecycle events, with a StackSet, a role
 per account and re-application on every re-enrollment, to save less than a dollar — and an exclusion list
 that is wrong breaks a detective control silently, since both Control Tower's controls and Stage 5's
-Security Hub consume Config. The honest limit of the measurement, and its answer: these are empty
-accounts, but the shape covers that — the cost is event-driven, not time-driven, and an idle account
-bills almost nothing. What will move it is churn, not inventory: AWS::IAM::Role is already the
+Security Hub consume Config. The limit of the measurement: these are empty accounts, but the shape
+covers that — the cost is event-driven, not time-driven, and an idle account bills almost nothing.
+What will move it is churn, not inventory: AWS::IAM::Role is already the
 largest real type at 18 and Stage 2 writes dozens more, and Stage 6's Spark clusters churn EC2 and ENIs.
 The revision signal at Stage 12 step 5 is EC2/ENI churn, not the resource count.
 
@@ -471,23 +465,21 @@ RESULTS {"COUNT(*)":79,"accountId":"<Log Archive Account>"}
   `aws-controltower-config-*` bucket lives in Audit with a policy written for enrolled accounts, which
   Management is not; so D16's `iam-root-access-key-check` meant **a bucket, a bucket policy, a delivery
   channel, a recorder and the rule** — five hand-made resources in the one account kept out of Terraform,
-  to answer one boolean. **`AccountAccessKeysPresent` reading `0` is what made declining safe rather than
-  merely cheap**: the rule's value over 1a's alarm was state versus event, and the only window the alarm
-  cannot see — a key created before it existed — is now permanently excluded, while the alarm itself was
+  to answer one boolean. **`AccountAccessKeysPresent` reading `0` is what made declining safe**: the
+  rule's value over 1a's alarm was state versus event, and the only window the alarm cannot see — a key
+  created before it existed — is now permanently excluded, while the alarm itself was
   measured live on both channels earlier the same day.
 
 - **The instrument changed; the invariant did not.** The state read is now **step 4 of `break-glass.md`
   §6**, performed by the tester who is already signed in as Management root. Hanging it on an existing
-  procedure is not a control, but it is not an intention either (Lesson 5). **The residual, accepted and
-  written rather than argued away:** if the alarm chain breaks silently and a root access key is created
-  in that window, nothing reports it until a human looks. **Revision trigger:** Management becoming
-  recorded for any other reason — Stage 5's Security Hub central configuration — makes the rule nearly
-  free, and it should go on then.
+  procedure is not a control, but it is not an intention either (Lesson 5). **The residual:** if the
+  alarm chain breaks silently and a root access key is created in that window, nothing reports it until
+  a human looks. **Revision trigger:** Management becoming recorded for any other reason — Stage 5's
+  Security Hub central configuration — makes the rule nearly free, and it should go on then.
 
-- **The wider gap this decision accepts is not the missing rule, it is the missing history.** Management
-  has no configuration record at all, so "what changed here, and what does it look like now" is answerable
-  only from CloudTrail, which records calls and not state. Written as a row in
-  `docs/plan/institutional-delta.md` rather than left as a consequence nobody named.
+- **The wider gap this decision accepts is the missing history.** Management has no configuration record
+  at all, so "what changed here, and what does it look like now" is answerable only from CloudTrail,
+  which records calls and not state. Written as a row in `docs/plan/institutional-delta.md`.
 
 - **Step 10 is closed. Stage 1d is down to step 9**, whose before-state was already read: no Object Lock,
   versioning `Enabled`, lifecycle expiring current and noncurrent versions at 365 days.
@@ -507,10 +499,10 @@ aws-controltower-cloudtrail-access-logs-<Log Archive Account>-gcs-gsx => None
 aws-controltower-cloudtrail-logs-<Log Archive Account>-gcs-gsx => aws-controltower-cloudtrail-access-logs-<Log Archive Account>-gcs-gsx
 ```
 
-- **The check that mattered: the target bucket appears only on the left of the arrow.** Nothing writes S3
-  server access logs into it, so enabling Object Lock does not silently stop access logging for a bucket
-  beside it. The CloudTrail bucket is a *source* of access logs, and its destination is the access-log
-  bucket, which is correctly left untouched.
+- **The target bucket appears only on the left of the arrow.** Nothing writes S3 server access logs
+  into it, so enabling Object Lock does not silently stop access logging for a bucket beside it. The
+  CloudTrail bucket is a *source* of access logs, and its destination is the access-log bucket, which
+  is correctly left untouched.
 
 - **Two corrections to 9.1's names, both found here.** The access-log bucket is
   **`aws-controltower-cloudtrail-access-logs-*`**, not `aws-controltower-access-logs-*`. And **there is no
@@ -531,12 +523,12 @@ $ eval $(aws sts assume-role --role-arn arn:aws:iam::<Log Archive Account>:role/
 }
 ```
 
-  **Nothing was written from this session and it was never ended.** It stayed exported in the shell, which
-  is exactly the leak the next attempt then ran into — so the borrow was proven to work before the run
-  that appears to fail on permissions, and the two entries below describe one shell, not two problems.
+  **Nothing was written from this session and it was never ended.** It stayed exported in the shell — the
+  leak the next attempt ran into — so the borrow was proven to work before the run that appears to fail
+  on permissions, and the two entries below describe one shell, not two problems.
 
-- **First attempt from Management, which failed and is recorded because the failure is instructive.** Login
-  as CT Admin -> Management Account -> AWSAdministratorAccess. Log of commands executed on CloudShell:
+- **First attempt from Management, which failed.** Login as CT Admin -> Management Account ->
+  AWSAdministratorAccess. Log of commands executed on CloudShell:
 
 ```
 ~ $ LOG_ARCHIVE=$(aws organizations list-accounts --query "Accounts[?Name=='Log Archive'].Id | [0]" --output text) && BUCKET=$(aws cloudtrail describe-trails --region us-west-2 --query "trailList[?Name=='aws-controltower-BaselineCloudTrail'].S3BucketName | [0]" --output text) && echo "$LOG_ARCHIVE / $BUCKET"
@@ -620,18 +612,18 @@ Log Archive Account     <Log Archive Account>
   `s3:DeleteObjectVersion` to everyone**, so AWS protects the bucket's configuration and leaves its
   contents deletable on purpose, and D34 made the principal this defends against permanent. A
   project-owned second trail is a full second copy of CloudTrail in S3 to solve by duplication what one
-  call solves. **What option A actually costs is precedent, not privilege** — whoever performs it is
-  already administrator of that account, and the session adds exactly the set `CTS3PV8` denies. **So this
-  is recorded as the only sanctioned by-hand use of `AWSControlTowerExecution`; any future one is a new
-  decision.** The asymmetry that settled it: Object Lock cannot be undone, by us or by Control Tower, so
-  the usual "a landing-zone update silently reverts a manual change" risk does not apply — an update can
-  only fail, not revert.
+  call solves. **Option A costs precedent, not privilege**: whoever performs it is already administrator
+  of that account, and the session adds exactly the set `CTS3PV8` denies. **So this is recorded as the
+  only sanctioned by-hand use of `AWSControlTowerExecution`; any future one is a new decision.** The
+  asymmetry that settled it: Object Lock cannot be undone, by us or by Control Tower, so the usual "a
+  landing-zone update silently reverts a manual change" risk does not apply — an update can only fail,
+  not revert.
 
 - **Decision 7 is now exercised rather than only measured.** The `CTS3PV8` exemption is keyed on
   `ArnNotLike …:role/AWSControlTowerExecution` and it matched an assumed-role session, which is the same
   property 1c measured on `aws:PrincipalArn`.
 
-- **Decision 3 is taken: 90 days, compliance mode — and its cost is zero, which the plan did not expect.**
+- **Decision 3 is taken: 90 days, compliance mode, and its cost is zero.**
   9.3 treats a long retention as the one cost easy to create by accident. The 9.1 reading removes that
   entirely: the bucket already expires current *and* noncurrent versions at 365 days, so for any retention
   **below** 365 the objects would be kept that long regardless — **Object Lock adds no storage and no
@@ -701,7 +693,7 @@ $ LZ=$(aws controltower list-landing-zones --region us-west-2 --query 'landingZo
 }
 ```
 
-- **Verification (iv), first half: read, and it is a weaker answer than it looks.** `status: ACTIVE`,
+- **Verification (iv), first half: read, and it is a weak answer.** `status: ACTIVE`,
   `driftStatus: IN_SYNC`, `version 4.0` equal to `latestAvailableVersion`, so there is no pending landing-
   zone update either. **What this does not do is predict one.** Control Tower's drift detection watches a
   closed list of things *it* owns — its own `aws-guardrails-*` policies, OU and account placement, the

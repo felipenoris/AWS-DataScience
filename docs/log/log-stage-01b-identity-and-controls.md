@@ -398,10 +398,9 @@ AWS Control Tower Admin
       the two Control Tower groups it arrived with (D33/D34), and it is in no project group.
       `AWSSecurityAuditPowerUsers` — `AWSPowerUserAccess` on *every* account — and `AWSSecurityAuditors` are
       **empty**.
-  **The caveat is the point of the step:** those two empty groups are state, not a control. Nothing prevents
-  a membership being added, and step 4 closes the *assignment* path into Management while leaving the
-  *membership* path open by construction. The 8.3 alarm is what observes it — which is why it was built
-  before step 1 rather than beside it.
+  **The caveat:** those two empty groups are state, not a control. Nothing prevents a membership being
+  added, and step 4 closes the *assignment* path into Management while leaving the *membership* path open
+  by construction. The 8.3 alarm is what observes it.
 
 - Verification (ii) — answered for the assignment path, by probe. Deleting an assignment that does not
   exist, so the write path is exercised against Management with nothing to lose either way:
@@ -416,26 +415,26 @@ is not authorized to perform: sso:DeleteAccountAssignment
 on resource: arn:aws:sso:::account/<MGMT_ID> with an explicit deny in a resource-based policy
 ```
 
-  Three things it shows beyond the yes/no:
+  What it shows beyond the yes/no:
     - **The deny is explicit and lives in a resource-based policy**, not in what the principal was granted.
       The call was made by a principal holding `AdministratorAccess` *in the account that administers the
       directory* and was denied anyway — so the restriction cannot be lifted from inside Identity by editing
-      an identity policy. Lesson 18 seen from the side that works: the delegated administrator does not
-      author the policy that contains it.
+      an identity policy. The delegated administrator does not author the policy that contains it
+      (Lesson 18).
     - **It is scoped by target account** (`arn:aws:sso:::account/<MGMT_ID>`), which is the shape step 4
       describes.
     - **Reads are not restricted.** Everything under (a) above was run from Identity, as the delegated
       administrator, and returned. So the boundary is manage-vs-read, not visibility.
   **What the probe does not answer:** whether Management-targeted assignments are the *only* thing the
   delegated administrator cannot manage. One operation was exercised. Registering/deregistering a delegated
-  administrator and the instance-level operations are expected to stay with Management too, so the honest
-  answer is **"no, not the only thing"**, and (ii) is recorded here as answered **for the assignment path**,
+  administrator and the instance-level operations are expected to stay with Management too, so the answer
+  is **"no, not the only thing"**, and (ii) is recorded here as answered **for the assignment path**,
   pending a documentation check for the rest.
 
 - **The identity that executed steps 2, 3 and 4** is the infrastructure user through Control Tower's
   `AWSReservedSSO_AWSAdministratorAccess_*` — the Account Factory direct assignment (D32), which the stage's
-  "Who executes what" table names as the bootstrap of the whole stage. Consequence worth stating before
-  step 5: **`sso-group-infrastructure` → `InfrastructureAccess` → an account is still unexercised.**
+  "Who executes what" table names as the bootstrap of the whole stage. The consequence, before step 5:
+  **`sso-group-infrastructure` → `InfrastructureAccess` → an account is still unexercised.**
   Everything proven about that path so far is a listing of assignments, never an `sts:GetCallerIdentity`
   under it. Step 5 is where it turns into evidence, and that evidence is 5.1's precondition.
 
@@ -536,7 +535,7 @@ yields:
   `awsds-infra-identity` profile. Read-only; writes `aws/output/list-identities.txt`, not versioned.
   Every call returned — the report's "calls that failed" section came back empty.
 
-- What that first run settles, beyond the listings themselves:
+- What that first run settles, beyond the listings:
 
   - **Step 3's owed tag check is answered.** `list-tags-for-resource` on the `InfrastructureAccess`
     permission set returns all five tags sent at creation: `Project`, `Environment=org`,
@@ -551,12 +550,11 @@ yields:
     get-inline-policy-for-permission-set, list-tags-for-resource,
     list-accounts-for-provisioned-permission-set, list-account-assignments; `identitystore` list-groups,
     list-users, list-group-memberships. **Including the assignments that target the Management account** —
-    the one thing step 4 proved cannot be *changed* from here. The boundary is manage-vs-read, and it is
-    now measured on both sides.
+    the one thing step 4 proved cannot be *changed* from here. The boundary is manage-vs-read, measured
+    on both sides.
 
   - **Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the organization root.** `RESOURCE_CONTROL_POLICY`,
-    `TAG_POLICY` and `DECLARATIVE_POLICY_EC2` are absent, exactly as Stage 1c step 7.2 assumes. That
-    assumption is now measured instead of inherited from documentation.
+    `TAG_POLICY` and `DECLARATIVE_POLICY_EC2` are absent, exactly as Stage 1c step 7.2 assumes.
 
 - Observed on the same run and unrelated to this stage: an account named `Sandbox`, `SUSPENDED`, attached
   directly to the organization root. Left over from an earlier experiment of mine, nothing to do with this
@@ -622,8 +620,7 @@ for P in awsds-infra-sandbox-1 awsds-infra-dev awsds-infra-prod awsds-infra-data
 - Ordering, stated because it differed from the step: `Identity` was removed second rather than last.
   The step puts it last so the bootstrap is the last thing withdrawn; executing from Management made that
   moot — the session was in an account not being touched, and all five profiles had already returned
-  `InfrastructureAccess` before the first removal. Recorded so the sequence is not read back as the
-  planned one.
+  `InfrastructureAccess` before the first removal.
 
 - Re-ran `./aws/list-identities.sh`. `AWSAdministratorAccess` now has exactly one USER assignment in the
   whole organization, on `Policy Canary`, and the report shows no `(provisioned, no assignment)` rows —
