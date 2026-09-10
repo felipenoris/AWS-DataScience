@@ -466,6 +466,8 @@ the reasoning that makes it *usable* is in the file. Recognising one is the sign
     SUCCESS is the cheap one.**
 59. **Changing WHERE a value is read from can change WHEN it is knowable — and every guard that
     reads it moves with it, silently.**
+60. **A full-replace update API turns every field you did not pass into a deletion — and the
+    object's creator may have injected state no field of that API can restore.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

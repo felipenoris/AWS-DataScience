@@ -1433,3 +1433,61 @@ is still owed.
 `is_paused_upon_creation: false`, and the run id is `scheduled__2026-08-27T00:00:00+00:00`. Those are two
 different switches and which one the portal's *Run* button uses is unmeasured — 4.2's to settle, not this
 sitting's to guess.
+
+### [Claude⚡, authorized in chat] The `compute: {}` fix, three runs — and a mistake of mine in the middle
+
+The user asked for `compute: {}` to be filled and the workflow re-run. **It was, and the result is that
+the fix is correct, complete, and changes nothing**: the third run reaches `CreateTrainingJob` and is
+refused by the same boundary, with the same wording, on the same role.
+
+**Why the fix could never have been enough, read from the code rather than from the symptom.** `compute`
+accepts `instance_type`, `volume_size_in_gb` and `image_details`. The decisive source is the operator:
+`SageMakerNotebookOperator` delegates to `SageMakerNotebookHook.start_notebook_execution()`, whose whole
+contract is `domain_id`, `project_id`, `domain_region`, `input_config`, `output_config`, `compute`,
+`termination_condition`, `tags`, `execution_name`, `waiter_*`. **There is no parameter for `VpcConfig`,
+`NetworkIsolation`, `VolumeKmsKey` or `InterContainerTrafficEncryption`** — four of the boundary's five
+conditions have nowhere to come from. The fifth, the instance ceiling, is the one the YAML can satisfy,
+and satisfying it moved nothing.
+
+**With the ceiling satisfied, four denies now match the same call at once** and AWS names the **policy**,
+never the statement — Lesson 20 in its pure form. The refusal is real and attributable to the boundary;
+it is attributable to no single `Sid` without four contrast probes.
+
+### [Claude] The mistake, because it is the useful part of this sitting
+
+**`update-workflow` is a FULL REPLACE, not a merge.** The first update passed three fields —
+`--workflow-arn`, `--definition-s3-location`, `--role-arn` — and **silently dropped everything else**:
+
+- **`NetworkConfiguration` became `null`.** The two subnets and the security group that put the workers
+  in this estate's private tier were **gone**, on a workflow that had been correctly VPC-attached since
+  2026-08-27.
+- **`LoggingConfiguration` was replaced by a service default**, creating an orphan log group
+  `/aws/mwaa-serverless/<workflow-arn-suffix>/` — which is also why the run's logs could not be found in
+  the group everything else pointed at.
+
+**The tell was an absence, and it took a negative control to read it.** The task failed in 7 seconds and
+CloudTrail had **no SageMaker event at all** — where the 2026-08-27 failure *is* in CloudTrail, twice.
+Two lookups settled it: my own `StartWorkflowRun` and `UpdateWorkflow` **were** in the trail for the same
+window, so the trail was current and the worker genuinely never made an AWS call. A failure that reaches
+no API at all is a failure before the API — which is where the dropped network configuration lives.
+
+**Restored by re-passing every field**, then verified against the values recorded before the change:
+log group, both subnets, the security group, `CUSTOMER_MANAGED_KEY`, `manual_only`, the role. The orphan
+log group was empty (`storedBytes` 0) and was deleted.
+
+**And one loss the API could not restore by itself.** With the network back, the next run failed with
+`ValueError: Project ID not found in environment` — the portal injects the domain and project into the
+worker's environment, and an API-side update loses that binding. The workflow's tag
+(`AmazonDataZoneProject`) survived and carries the **project**, but nothing carries the **domain**. The
+repair was to name them in the definition — `domain_id`, `project_id`, `domain_region`, which is the
+operator's documented contract — and that is what got the third run to the boundary.
+
+**So the rule this sitting bought**: a portal-authored object edited through its service API loses both
+what you did not pass *and* what its creator injected, and the second kind has no field to restore it
+(Lesson 60).
+
+**State left behind, deliberately.** The definition carries the requested fix plus the three project keys;
+everything else on the workflow matches what it was. The original definition is recoverable byte for byte
+— the bucket is versioned and the pre-change `VersionId` is in the stage record. **What is not repaired is
+the thing the user asked about**, and it is a decision rather than an edit: amend the boundary, abandon
+the portal's notebook operator in favour of Stage 10's own DAGs (recommended), or record the loss.
