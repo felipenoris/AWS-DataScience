@@ -1,4 +1,4 @@
-# probes.py - THE BATTERY, as data. Imported by scp-battery.py; never run on its own.
+# probes.py - the battery, as data. Imported by scp-battery.py; never run on its own.
 #
 # Amending the ceiling means editing this file and nothing else: add the probe next to its
 # statement's siblings, run ./aws/probes/scp-battery.py, and the report says whether the
@@ -10,27 +10,27 @@
 #
 #                  The last three are step 7.8's, one per document, because 7.8 is attached
 #                  one document at a time and each phase is the measurement for the attach
-#                  that just happened. `rcp` in particular is run BEFORE widening the RCP
+#                  that just happened. `rcp` in particular is run before widening the RCP
 #                  from Policy Test to the root - see docs/plan/runbooks/scp-battery.md.
 #     account      canary data identity dev sandbox1 prod
 #     expect       deny   the ceiling must stop it
 #                  allow  it must still work - a cross-check, or the floor
-#     allowed_re   the wording that proves THIS action reached authorization. Lesson 21:
-#                  that is a property of the action, not of the service, so it is declared
+#     allowed_re   the wording that proves this action reached authorization. That is a
+#                  property of the action, not of the service (Lesson 21), so it is declared
 #                  per probe. Anything not matching it and not a deny is UNTESTED, never
 #                  silently "allowed".
 #
-#     safety       MANDATORY, and it is the field that answers "does this create anything?"
-#                  in the file rather than in someone's head. The driver rejects any probe
-#                  whose safety is not one of:
+#     safety       Mandatory: the field that answers "does this create anything?" in the
+#                  file rather than in someone's head. The driver rejects any probe whose
+#                  safety is not one of:
 #
 #                    ro       read-only. The call changes nothing even if fully allowed.
 #                    dryrun   carries --dry-run, so the service refuses to perform it.
-#                    blocked  mutating, but it CANNOT succeed: a prerequisite named in the
+#                    blocked  mutating, but it cannot succeed: a prerequisite named in the
 #                             command does not exist (a domain, a role, an instance, a
 #                             snapshot, a bucket). Remove the deny and the call still fails,
 #                             one step later. The reason is written next to it.
-#                    creates  mutating AND it would really do something if the deny were
+#                    creates  mutating, and it would really do something if the deny were
 #                             absent. **The driver refuses to run these outside Policy
 #                             Canary.** There are seven in this file and each is argued:
 #                             three in `root`, four in `decl`.
@@ -63,9 +63,9 @@ def probe(phase, account, expect, allowed, safety, label, argv):
 # canary, which is the one account they reach that can be probed freely (D29).
 # ==========================================================================
 
-# --- DenyGuardDutyTampering. GuardDuty authorizes BEFORE validating the detector id, which
-#     is what lets this statement be proven while the service is still off everywhere - and
-#     the same property is what makes these three `blocked`: no such detector exists.
+# --- DenyGuardDutyTampering. GuardDuty authorizes before validating the detector id, so the
+#     statement can be proven while the service is still off everywhere, and the same property
+#     makes these probes `blocked`: no such detector exists.
 probe("root", "canary", "deny", None, "blocked",
       "guardduty:DisassociateFromAdministratorAccount (the spelling 7.5a added)",
       ["guardduty", "disassociate-from-administrator-account",
@@ -81,16 +81,15 @@ probe("root", "canary", "deny", None, "blocked", "guardduty:StopMonitoringMember
        "--detector-id", "00000000000000000000000000000000",
        "--account-ids", "000000000000", "--region", "us-west-2"])
 
-# --- DenySnapshotAndImageSharing. The AMI id is deliberately one that does not exist:
-#     measured 2026-08-13, ModifyImageAttribute authorizes first, so the probe reaches the
-#     deny without ever naming a real image. An earlier version passed the public Amazon
-#     Linux AMI, which asked to make a real image public and gained nothing by it.
+# --- DenySnapshotAndImageSharing. The AMI id names no real image: ModifyImageAttribute
+#     authorizes first (measured 2026-08-13), so the probe reaches the deny without ever
+#     asking to make a real image public.
 probe("root", "canary", "deny", None, "blocked", "ec2:ModifyImageAttribute (no such image)",
       ["ec2", "modify-image-attribute", "--image-id", "ami-0123456789abcdef0",
        "--launch-permission", "Add=[{Group=all}]", "--region", "us-west-2"])
 
-# --- DenyImageAndSnapshotExport (7.5a). All four are `blocked`: the image, instance,
-#     snapshot and destination bucket named here exist nowhere.
+# --- DenyImageAndSnapshotExport (7.5a). Every probe here is `blocked`: the image, instance,
+#     snapshot and destination bucket named exist nowhere.
 probe("root", "canary", "deny", None, "blocked", "ec2:ExportImage",
       ["ec2", "export-image", "--image-id", "ami-0123456789abcdef0",
        "--disk-image-format", "VMDK",
@@ -105,8 +104,8 @@ probe("root", "canary", "deny", None, "blocked", "ec2:CreateInstanceExportTask",
        '"ContainerFormat":"ova"}',
        "--region", "us-west-2"])
 
-# The one that needs a REAL ami to reach authorization (Lesson 21) - and is still blocked,
-# by the destination bucket, which does not exist.
+# This one needs a real AMI to reach authorization (Lesson 21); it stays `blocked` by the
+# destination bucket, which does not exist.
 probe("root", "canary", "deny", None, "blocked",
       "ec2:CreateStoreImageTask (real AMI, bucket that does not exist)",
       ["ec2", "create-store-image-task", "--image-id", "@AMI@",
@@ -119,11 +118,11 @@ probe("root", "canary", "deny", None, "blocked", "rds:StartExportTask",
        "--iam-role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
        "--kms-key-id", "alias/aws/rds", "--region", "us-west-2"])
 
-# --- CREATES #1. DenyAccountBpaChangeExceptInfrastructure: the canary is on the denied side
-#     of decision 7. This one really writes if the deny lifts - so the four values sent are
-#     the four already set (INV: all true in all nine accounts), which makes the write a
-#     no-op. A probe that cannot be blocked by a missing prerequisite is made harmless by
-#     asking for the state that already exists.
+# --- `creates` #1. DenyAccountBpaChangeExceptInfrastructure: the canary is on the denied side
+#     of decision 7. This one really writes if the deny lifts, so the four values sent are the
+#     four already set (INV: all true in all nine accounts), which makes the write a no-op. A
+#     probe no missing prerequisite can block is made harmless by asking for the state that
+#     already exists.
 probe("root", "canary", "deny", None, "creates",
       "s3:PutAccountPublicAccessBlock (canary is NOT exempt)",
       ["s3control", "put-public-access-block", "--account-id", "@ACCT@",
@@ -131,18 +130,18 @@ probe("root", "canary", "deny", None, "creates",
        "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,"
        "RestrictPublicBuckets=true"])
 
-# --- CREATES #2. DenyIamUserCreation. Nothing can block this one: creating a user needs no
+# --- `creates` #2. DenyIamUserCreation. Nothing can block this one: creating a user needs no
 #     prerequisite. If the deny lifts, an IAM user called awsds-canary-probe appears in
 #     Policy Canary - which is why it may run nowhere else, and why the canary is emptied at
 #     the end of every battery.
 probe("root", "canary", "deny", None, "creates", "iam:CreateUser",
       ["iam", "create-user", "--user-name", "awsds-canary-probe"])
 
-# --- CREATES #3. DenyEcrPublicEntirely. Same shape, and the resource it would create is
-#     world-readable, which is exactly what the statement exists to prevent. Canary only.
-#     NOTE the interlock: ecr-public is a us-east-1-only API, so once CT.MULTISERVICE.PV.1
-#     is enabled the region control may deny it first. The policy id in the outcome column
-#     is what tells the two apart (Lesson 20).
+# --- `creates` #3. DenyEcrPublicEntirely. Same shape, and the resource it would create is
+#     world-readable, which is what the statement exists to prevent. Canary only.
+#     The interlock: ecr-public is a us-east-1-only API, so once CT.MULTISERVICE.PV.1 is
+#     enabled the region control may deny it first. The policy id in the outcome column tells
+#     the two apart (Lesson 20).
 probe("root", "canary", "deny", None, "creates", "ecr-public:CreateRepository",
       ["ecr-public", "create-repository", "--repository-name", "awsds-canary-probe",
        "--region", "us-east-1"])
@@ -160,12 +159,12 @@ probe("root", "canary", "allow", None, "ro", "floor: iam:ListRoles (global, us-e
 # ==========================================================================
 # phase: ou - the four per-OU documents, each in its own OU's account. The
 # canary cannot reach these OUs, so this is the only place they can be
-# measured, and the cross-checks below are what prove nothing leaks between
-# them or down from the root (Lesson 20).
+# measured, and the cross-checks below prove nothing leaks between them or
+# down from the root (Lesson 20).
 #
-# EVERY probe here is ro, dryrun or blocked. Nothing in this phase can create
-# anything in a real account even with the whole ceiling removed - which is
-# the property that makes it safe to re-run at any time.
+# Every probe here is ro, dryrun or blocked: nothing in this phase can create
+# anything in a real account even with the whole ceiling removed, which is
+# what makes it safe to re-run at any time.
 # ==========================================================================
 
 # --- Workloads: no interactive surface, no DataZone at all
@@ -183,29 +182,24 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
        "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
        "--region", "us-west-2"])
 
-# THE SECOND WORKLOADS ACCOUNT, AND IT IS A DIFFERENT QUESTION FROM THE THREE ROWS ABOVE
-# (added 2026-09-06, Stage 6b step 3.7). Those ask whether the Workloads DOCUMENT is in force;
-# this one asks whether the account Stage 6b MOVED actually acquired it - a question about a
-# membership rather than about a policy, and one worth keeping permanently because this is the
-# account that will hold deploy credentials. `datazone:ListDomains` is the decisive row of the
-# three: it is `ro`, it costs nothing, and DataZone is precisely the surface this stage spent
-# pass 1 removing from the account by hand.
+# The second Workloads account asks a different question from the rows above: those ask whether
+# the Workloads document is in force, this one whether the account Stage 6b moved actually
+# acquired it - a membership question rather than a policy one, kept permanently because this
+# account will hold deploy credentials. `datazone:ListDomains` is the decisive row: it is `ro`,
+# it costs nothing, and DataZone is the surface Stage 6b pass 1 removed from the account by hand.
 probe("ou", "staging", "deny", None, "ro",
       "workloads: datazone:ListDomains in the account Stage 6b moved",
       ["datazone", "list-domains", "--region", "us-west-2"])
 
-# --- Interactive: decision 1 costs no feature, and that is the point of the two allows.
-#     The nonexistent domain is what keeps an "allowed" outcome from billing a space.
+# --- Interactive: the allows say decision 1 costs no feature. The nonexistent domain keeps an
+#     "allowed" outcome from billing a space.
 #
-#     THE SAMPLE CHANGED ON 2026-09-06 (Stage 6b step 3.7), AND IT IS NOW AN INHERITED ONE.
-#     Both rows used to run in `Development Account`, which sat DIRECTLY in Interactive. That
-#     account is now `Staging Account` in Workloads, and NO account sits directly in
-#     Interactive any more - `Sandbox Account 1`, in the nested `Sandboxes` OU, is the only
-#     sample the Interactive document has left. The claim is unweakened and it is worth saying
-#     why rather than leaving it to be re-derived: an SCP can only DENY, `Sandboxes` carries no
-#     document of its own (the row below this block is that evidence), so an ALLOW observed
-#     under Interactive+Sandboxes is at least as strong as one observed under Interactive alone.
-#     What is genuinely gone is the direct-attachment sample, and no account can restore it.
+#     The sample is an inherited one. No account sits directly in Interactive; `Sandbox Account
+#     1`, in the nested `Sandboxes` OU, is the only sample the Interactive document has left.
+#     An SCP can only deny and `Sandboxes` carries no document of its own (the row below this
+#     block is that evidence), so an allow observed under Interactive+Sandboxes is at least as
+#     strong as one observed under Interactive alone. The direct-attachment sample is gone, and
+#     no account can restore it.
 probe("ou", "sandbox1", "allow", "ValidationException|ResourceNotFound|does not exist",
       "blocked",
       "interactive (inherited): sagemaker:CreateSpace still works",
@@ -215,17 +209,14 @@ probe("ou", "sandbox1", "allow", None, "ro",
       "interactive (inherited): datazone:ListDomains still works",
       ["datazone", "list-domains", "--region", "us-west-2"])
 
-# THE THIRD ROW OF THIS BLOCK WAS DELETED RATHER THAN RETARGETED (2026-09-06). It was
-# `dev` denied on sagemaker:CreateNotebookInstance, attributed to DenyClassicNotebookInstances
-# in the Interactive document. Moved to Workloads the account keeps the deny but from a
-# DIFFERENT Sid - DenyInteractiveSageMakerSurface carries CreateNotebookInstance and
-# CreatePresignedNotebookInstanceUrl, exactly the two actions the Interactive one carried - so
-# retargeting it would have produced a THIRD copy of a question `prod` and `sandbox1` already
-# ask two rows above and one row below. The Interactive half is the sandbox1 row below; the
-# Workloads half is the prod row above.
+# sagemaker:CreateNotebookInstance has no row of its own here: the Interactive half is the
+# sandbox1 row below and the Workloads half is the prod row above. In Workloads the deny comes
+# from DenyInteractiveSageMakerSurface, which carries CreateNotebookInstance and
+# CreatePresignedNotebookInstanceUrl - the same two actions DenyClassicNotebookInstances carries
+# in the Interactive document - so a third row would repeat a question both halves already ask.
 
-# --- Sandboxes is governed by INHERITANCE and carries no policy of its own. This probe is
-#     the whole evidence for that, and it is why sandbox1 appears here at all.
+# --- Sandboxes is governed by inheritance and carries no policy of its own. This probe is
+#     the whole evidence for that, and why sandbox1 appears here at all.
 probe("ou", "sandbox1", "deny", "ValidationException|does not exist", "blocked",
       "sandboxes: inherits Interactive's deny",
       ["sagemaker", "create-notebook-instance",
@@ -234,46 +225,43 @@ probe("ou", "sandbox1", "deny", "ValidationException|does not exist", "blocked",
        "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
        "--region", "us-west-2"])
 
-# --- THE STAGE 6 1.6 AMENDMENT (2026-08-21) - DenyAthenaSparkStartSession, and the three
-#     rows below are ONE measurement for exactly the reason 4e's three are (see the long
-#     comment further down): Athena's AccessDenied names no policy, so classify() files a
-#     real ceiling deny as DENY-NOT-SCP and reports `note`. Nothing in the wording can fix
-#     that, and the attribution is carried by the `prod` row instead.
+# --- The Stage 6 1.6 amendment (2026-08-21) - DenyAthenaSparkStartSession. The rows below are
+#     one measurement, for the reason 4e's are (the long comment further down): Athena's
+#     AccessDenied names no policy, so classify() files a real ceiling deny as DENY-NOT-SCP and
+#     reports `note`. No wording fixes that; the attribution is carried by the `prod` row.
 #
-#     WHY prod IS THE CONTRAST AND data IS NOT. The contrast has to be an account the
-#     amendment does not reach where the SAME call is otherwise authorized.
-#     awsds-org-scp-ou-workloads carries no athena action at all (measured 2026-08-21:
-#     DenyInteractiveSageMakerSurface is sagemaker-only, DenyDataZoneEntirely is datazone:*),
-#     so Production is authorized and dies on the workgroup. Data Governance and Identity are
-#     NOT usable here: 4e put athena:StartQueryExecution into their DenyUserCompute, and while
-#     StartSession is a different action, an account already carrying an athena deny is the
-#     worst possible control for an athena probe.
+#     Why prod is the contrast and data is not: the contrast has to be an account the amendment
+#     does not reach, where the same call is otherwise authorized. awsds-org-scp-ou-workloads
+#     carries no athena action at all (measured 2026-08-21: DenyInteractiveSageMakerSurface is
+#     sagemaker-only, DenyDataZoneEntirely is datazone:*), so Production is authorized and dies
+#     on the workgroup. Data Governance and Identity are not usable: 4e put
+#     athena:StartQueryExecution into their DenyUserCompute, and an account already carrying an
+#     athena deny is the worst possible control for an athena probe, even for another action.
 #
-#     WHAT THE PAIR PROVES, AND WHAT IT DOES NOT. Denied in both Interactive accounts and
-#     authorized in Workloads => the deny is the amended document. It does NOT prove the
-#     ordering Lesson 21 asks about for this action: if the `prod` row ever comes back as a
-#     validation error BEFORE authorization, these two notes stop attributing anything and
-#     that is the first row to read. Measured for StartQueryExecution on 2026-08-20 and
-#     deliberately NOT assumed for StartSession - per-action, not per-service.
+#     Denied in both Interactive accounts and authorized in Workloads means the deny is the
+#     amended document. It does not prove the ordering Lesson 21 asks about for this action: if
+#     the `prod` row ever comes back as a validation error before authorization, these two notes
+#     stop attributing anything and that is the first row to read. Measured for
+#     StartQueryExecution on 2026-08-20 and not assumed for StartSession - per-action, not
+#     per-service.
 #
-#     THE WORKGROUP DOES NOT EXIST, which is what makes these `blocked`: an authorized call
-#     cannot start a Spark session and cannot bill a DPU-hour.
-#     THE INTERACTIVE ROW IS NOW THE INHERITED ONE (2026-09-06, step 3.7). A `dev` row stood
-#     here and measured the same call in the account that sat directly in Interactive; that
-#     account is in Workloads now and the row below is the whole Interactive half.
+#     The workgroup does not exist, which is what makes these `blocked`: an authorized call
+#     cannot start a Spark session and cannot bill a DPU-hour. The Interactive row is the
+#     inherited one - the account that sat directly in Interactive is in Workloads now, and the
+#     row below is the whole Interactive half.
 probe("ou", "sandbox1", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
       "sandboxes: athena:StartSession inherits Interactive's deny (1.6)",
       ["athena", "start-session", "--work-group", "awsds-canary-probe",
        "--engine-configuration",
        '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
        "--region", "us-west-2"])
-# THE CONTRAST MOVED TO THE CANARY ON 2026-09-06 (Stage 6b step 3.8), AND EXC-03 NAMED THIS
-# EVENT IN ADVANCE: "the row to watch is the contrast one - if it ever turns into a denial too,
-# the pair stops attributing". Step 3.8 added DenyAthenaSparkStartSession to the Workloads
-# document, so Production - which was the contrast precisely because its OU document carried no
-# athena action at all - now inherits the deny like everyone else. Two rows change together:
-# `prod` flips from allow to deny, and `canary` takes over the contrast from `Policy Test`, an
-# OU with no project SCP of its own.
+# The contrast is the canary, not Production. Stage 6b step 3.8 added
+# DenyAthenaSparkStartSession to the Workloads document, so Production - the contrast precisely
+# because its OU document carried no athena action at all - inherits the deny like everyone
+# else. The two rows move together: `prod` expects a deny, and `canary` carries the contrast
+# from inside `Policy Test`, an OU with no project SCP of its own. EXC-03 named this event in
+# advance: "the row to watch is the contrast one - if it ever turns into a denial too, the pair
+# stops attributing".
 probe("ou", "prod", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
       "workloads: athena:StartSession now denied too (3.8 amendment)",
       ["athena", "start-session", "--work-group", "awsds-canary-probe",
@@ -287,19 +275,17 @@ probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found",
        '{"CoordinatorDpuSize":1,"MaxConcurrentDpus":2,"DefaultExecutorDpuSize":1}',
        "--region", "us-west-2"])
 
-# --- 1.6's NEGATIVE probe, and it is the one that matters most: the amendment must not have
-#     taken D13's query path with it. Athena SQL rides StartQueryExecution on the required
-#     `athena` API endpoint; the three Spark session surfaces are a different product wearing
-#     the same service name. If that row ever flips to a denial, 1.6 broke the lake read.
+# --- 1.6's negative probe: the amendment must not have taken D13's query path with it. Athena
+#     SQL rides StartQueryExecution on the required `athena` API endpoint; the three Spark
+#     session surfaces are a different product wearing the same service name. If that row ever
+#     flips to a denial, 1.6 broke the lake read.
 #
-#     IT IS NOW 4e'S CONTRAST ROW AND NOTHING ELSE (2026-09-06, step 3.7), and the reason is
-#     the one this comment already gave when there were two: a `dev` row used to carry the
-#     question because Interactive had a direct member; it does not any more, and the only
-#     Interactive account left is Sandbox 1 - where the identical call, with the identical
-#     expectation, already runs as "sandboxes: athena:StartQueryExecution still authorized
-#     (4e contrast)" further down. Retargeting rather than deleting would have put the same
-#     call in the same account under two labels, which makes a count of probes stop meaning a
-#     count of questions. If 1.6 ever breaks D13's read, THAT row is what goes red.
+#     The question is carried by 4e's contrast row and nothing else. The only Interactive
+#     account left is Sandbox 1, where the identical call with the identical expectation already
+#     runs as "sandboxes: athena:StartQueryExecution still authorized (4e contrast)" further
+#     down. A second label on the same call in the same account would make a count of probes
+#     stop meaning a count of questions. If 1.6 ever breaks D13's read, that row is what goes
+#     red.
 
 # --- Data: nothing runs in the lake account
 probe("ou", "data", "deny", None, "dryrun", "data: ec2:RunInstances",
@@ -336,25 +322,23 @@ probe("ou", "data", "deny", "EntityNotFoundException", "blocked",
        "--resource-arn", "arn:aws:s3:::awsds-canary-does-not-exist",
        "--region", "us-west-2"])
 
-# --- THE 4e AMENDMENT (2026-08-20), AND THE THREE PROBES ARE ONE MEASUREMENT. Read them
-#     together or none of them says anything.
+# --- The 4e amendment (2026-08-20). Its three probes are one measurement: read them together
+#     or none of them says anything.
 #
-#     WHY THIS ONE CANNOT REPORT `ok`, AND THAT IS NOT A DEFECT. Athena answers a refused
-#     StartQueryExecution with a bare "You are not authorized to perform:
-#     athena:StartQueryExecution on the resource" - it names NO policy. classify() reads the
-#     wording, so it lands on DENY-NOT-SCP, whose verdict is `note`: "an AccessDenied that
-#     names no policy is an IAM/permission-set deny, not the ceiling". Here that reading is
-#     WRONG and there is no wording that would correct it, because the service never emits
-#     one. Every probe written before this amendment happened to hit services that name the
-#     policy; this is the first that does not, and the assumption was invisible until then.
+#     This one cannot report `ok`. Athena answers a refused StartQueryExecution with a bare
+#     "You are not authorized to perform: athena:StartQueryExecution on the resource" - it
+#     names no policy. classify() reads the wording, so it lands on DENY-NOT-SCP, whose verdict
+#     is `note`: "an AccessDenied that names no policy is an IAM/permission-set deny, not the
+#     ceiling". That reading is wrong here, and no wording corrects it, because the service
+#     never emits one.
 #
-#     SO THE ATTRIBUTION IS CARRIED BY THE THIRD PROBE, not by any string. Same action, same
+#     The attribution is carried by the third probe, not by any string. Same action, same
 #     principal type (InfrastructureAccess), same region, one session - and Sandbox 1 sits in
 #     `Interactive`, which the amendment does not reach. It gets past authorization and dies
 #     on the workgroup, proving both that the call is authorized outside the amended OUs and
-#     that Athena AUTHORIZES BEFORE IT VALIDATES for this action (Lesson 21's fork, resolved
-#     by measurement rather than assumed). Given that, the two denials above can only be the
-#     ceiling. Measured exactly this way on 2026-08-20.
+#     that Athena authorizes before it validates for this action (Lesson 21's fork, resolved
+#     by measurement). Given that, the two denials above can only be the ceiling. Measured
+#     exactly this way on 2026-08-20.
 #
 #     If the sandbox1 row ever turns into a denial too, the pair stops attributing anything
 #     and the two notes below become unreadable - that is the row to look at first.
@@ -363,9 +347,9 @@ probe("ou", "data", "deny", "InvalidRequestException|WorkGroup is not found", "b
       ["athena", "start-query-execution", "--query-string", "SELECT 1",
        "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
 
-# --- Identity: the same DenyUserCompute and NONE of Data's neighbours. The last two are the
-#     cross-check: denied in Data, allowed here, which is what says nothing leaks from the
-#     root set and the two documents differ exactly where they were written to differ.
+# --- Identity: the same DenyUserCompute and none of Data's neighbours. The last two are the
+#     cross-check - denied in Data, allowed here - which says nothing leaks from the root set
+#     and that the two documents differ exactly where they were written to differ.
 probe("ou", "identity", "deny", None, "dryrun", "identity: ec2:RunInstances",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
@@ -393,14 +377,14 @@ probe("ou", "identity", "allow", "EntityNotFoundException", "blocked",
 
 # The 4e amendment's second half - one idea in two documents, so it is probed in both. The
 # comment on the `data` row above carries the whole reading; this row is not independent
-# evidence of anything on its own.
+# evidence on its own.
 probe("ou", "identity", "deny", "InvalidRequestException|WorkGroup is not found", "blocked",
       "identity: athena:StartQueryExecution (4e; Athena names no policy)",
       ["athena", "start-query-execution", "--query-string", "SELECT 1",
        "--work-group", "awsds-canary-probe", "--region", "us-west-2"])
 
-# The attribution probe for both rows above. It is an `allow` on purpose: what it proves is
-# that the call reaches authorization and passes it in an OU the amendment does not touch.
+# The attribution probe for both rows above. It is an `allow`: it proves the call reaches
+# authorization and passes it in an OU the amendment does not touch.
 probe("ou", "sandbox1", "allow", "InvalidRequestException|WorkGroup is not found", "blocked",
       "sandboxes: athena:StartQueryExecution still authorized (4e contrast)",
       ["athena", "start-query-execution", "--query-string", "SELECT 1",
@@ -426,19 +410,17 @@ probe("ou", "prod", "allow", None, "ro", "floor: ec2:DescribeVpcs",
 # reads "deny expected, ALLOWED" and that FAIL is the before-reading, not a
 # bug.
 #
-# The pair is the point: a deny in us-east-1 alone is also what the loose
+# Both rows are needed: a deny in us-east-1 alone is also what the loose
 # construction (adding us-east-1 to the allowed list) would produce, so the
 # us-west-2 half is what distinguishes the intended control from it.
 # ==========================================================================
 
-# The probed action needs NO resource id, and that is not a convenience - it is what keeps
-# the probe working after the control starts working. The first version launched an instance
-# with @AMI@, which meant resolving a public AMI **through ssm:GetParameter in the region
-# being denied**: the moment the control took effect, the resolution itself was denied, the
-# id came back empty, and the probe degraded to UNTESTED - reporting "not measured" at
-# exactly the moment it finally had something to measure. Measured 2026-08-13, on the run
-# that found the control already enabled. `create-key-pair --dry-run` authorizes with
-# nothing but a name.
+# The probed action needs no resource id, which is what keeps the probe working once the
+# control does. Launching an instance with @AMI@ means resolving a public AMI **through
+# ssm:GetParameter in the region being denied**: with the control in effect the resolution is
+# denied, the id comes back empty, and the probe degrades to UNTESTED at exactly the moment it
+# has something to measure (measured 2026-08-13, on the run that found the control already
+# enabled). `create-key-pair --dry-run` authorizes with nothing but a name.
 probe("region", "canary", "deny", None, "dryrun", "region: ec2 in us-east-1 must be denied",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-east-1"])
@@ -448,10 +430,10 @@ probe("region", "canary", "allow", None, "dryrun",
        "--region", "us-west-2"])
 
 # The global services that resolve in us-east-1 and must survive the control. AWS's own
-# NotAction list covers these; the probes are what say so rather than assume it.
-# The control is enabled per OU, so it is measured per OU. The canary above proves the
-# control works; these prove it was enabled where it was meant to be - which is a different
-# claim, and the one an enable-per-OU design can get wrong five times.
+# NotAction list covers these; the probes say so rather than assume it.
+# The control is enabled per OU, so it is measured per OU. The canary above proves the control
+# works; these prove it was enabled where it was meant to be - a different claim, and the one
+# an enable-per-OU design can get wrong five times.
 #
 # `sandbox1` is not a repetition of `dev`: it is verification (xi)'s second half. The SCP an
 # enabled control attaches is *inherited* by a nested OU whether or not that OU is itself a
@@ -522,39 +504,38 @@ probe("region", "canary", "allow", None, "ro",
       ["organizations", "describe-organization"])
 
 # ==========================================================================
-# phase: rcp - awsds-org-rcp-perimeter (step 7.8). ALL FLOOR, ON PURPOSE, and
-# the absence of a deny probe here is the finding rather than an omission.
+# phase: rcp - awsds-org-rcp-perimeter (step 7.8). All floor: the absence of a
+# deny probe here is the finding rather than an omission.
 #
-# WHY THERE IS NO DENY PROBE. An RCP denies principals from OUTSIDE the
-# organization. Producing one needs an identity this project does not have and
-# will not create: there are no IAM users (guiding principle), no second
-# organization, and no external IdP. Every principal the harness can produce
-# carries aws:PrincipalOrgID = our org, which is exactly the value that makes
-# the deny NOT fire. That is Lesson 22 - a control whose principal the harness
-# cannot produce is verified by READING, not by attempting - and the reading is
+# An RCP denies principals from outside the organization. Producing one needs
+# an identity this project does not have and will not create: there are no IAM
+# users (guiding principle), no second organization, and no external IdP. Every
+# principal the harness can produce carries aws:PrincipalOrgID = our org, the
+# value that makes the deny not fire. A control whose principal the harness
+# cannot produce is verified by reading (Lesson 22), and the reading is
 # readback.py plus ./aws/org-policies.py, which run anyway.
 #
-# An anonymous request was considered and rejected as evidence: it IS denied
+# An anonymous request was considered and rejected as evidence: it is denied
 # (aws:PrincipalOrgID does not populate, StringNotEqualsIfExists is therefore
 # true), but a public request to any bucket here is already denied by account
 # BPA and by the absence of a bucket policy, and the answer names no policy. A
 # probe that passes for three reasons proves none of them (Lesson 20).
 #
-# WHAT IS MEASURABLE IS THE HALF THAT ACTUALLY BREAKS THINGS. This RCP names
-# s3, dynamodb, sqs, kms, secretsmanager, ecr and five sts actions with a
-# condition keyed on a value that is ABSENT for whole classes of caller. A
-# mistake does not show up as a hole; it shows up as the organization losing
-# access to its own data stores, which is what the rows below detect.
+# What is measurable is the half that breaks things. This RCP names s3,
+# dynamodb, sqs, kms, secretsmanager, ecr and five sts actions with a condition
+# keyed on a value that is absent for whole classes of caller. A mistake does
+# not show up as a hole; it shows up as the organization losing access to its
+# own data stores, which is what the rows below detect.
 # ==========================================================================
 
-# The sts half, and it is the reason the RCP is attached to Policy Test before the root.
+# The sts half, and the reason the RCP is attached to Policy Test before the root.
 # EnforceOrgIdentitiesOnRoleAssumption covers AssumeRoleWithSAML and AssumeRoleWithWebIdentity,
-# where the caller has NO AWS principal yet, so aws:PrincipalOrgID cannot populate and the
+# where the caller has no AWS principal yet, so aws:PrincipalOrgID cannot populate and the
 # IfExists form denies unconditionally. Nothing here federates that way today - Identity
-# Center vends through sso:GetRoleCredentials - but "today" is the whole claim being tested,
-# and the instrument is simply whether a session can still be obtained per account.
-# ensure_session runs before each probe below and ABORTS the battery (exit 2) if it cannot,
-# so these six rows are the AssumeRole floor even though the call they make is trivial.
+# Center vends through sso:GetRoleCredentials - but "today" is the claim being tested, and the
+# instrument is whether a session can still be obtained per account. ensure_session runs before
+# each probe below and aborts the battery (exit 2) if it cannot, so these rows are the
+# AssumeRole floor even though the call they make is trivial.
 probe("rcp", "canary", "allow", None, "ro",
       "rcp floor: credentials still vend in Policy Canary",
       ["sts", "get-caller-identity"])
@@ -574,10 +555,10 @@ probe("rcp", "prod", "allow", None, "ro",
       "rcp floor: credentials still vend in Production",
       ["sts", "get-caller-identity"])
 
-# One read per SERVICE named in the document. An empty result is a pass: the question is
+# One read per service named in the document. An empty result is a pass: the question is
 # whether the call is authorized, not whether anything exists to return. These are the rows
 # that would fail if a condition key were mistyped - a typo in `aws:PrincipalOrgID` denies
-# EVERYONE, and the failure is not subtle once it is being looked for.
+# everyone, and the failure is not subtle once it is being looked for.
 probe("rcp", "canary", "allow", None, "ro", "rcp floor: s3 reachable",
       ["s3api", "list-buckets"])
 probe("rcp", "canary", "allow", None, "ro", "rcp floor: dynamodb reachable",
@@ -606,15 +587,15 @@ probe("rcp", "data", "allow", None, "ro", "rcp floor: glue still reads the catal
 # ==========================================================================
 # phase: tags - awsds-org-scp-tag-enforcement (step 7.8, decision 5).
 #
-# THE TRIPLE IS THE MEASUREMENT, not any single row. The document is two
-# statements, one per required key, because two keys in ONE Null block are
-# ANDed and would deny only when BOTH were missing - the opposite of the
+# The triple is the measurement, not any single row. The document is two
+# statements, one per required key, because two keys in one Null block are
+# ANDed and would deny only when both were missing - the opposite of the
 # requirement. No denial message can name a Sid, so the two statements cannot
-# be told apart by attribution; what tells them apart is the middle row, which
-# supplies ONE tag and must STILL be denied. Drop it and the AND bug passes.
+# be told apart by attribution; the middle row does it, supplying one tag and
+# still being denied. Drop it and the AND bug passes.
 #
-# WHERE THESE MAY NOT RUN: Data Governance and Identity, whose per-OU documents
-# deny ec2:RunInstances outright (7.6a). A deny there proves nothing about this
+# These may not run in Data Governance or Identity, whose per-OU documents deny
+# ec2:RunInstances outright (7.6a): a deny there proves nothing about this
 # document and AWS names only one policy (Lesson 20). Development is the account
 # where a launch is legitimate, which is what makes the third row meaningful.
 # ==========================================================================
@@ -646,11 +627,11 @@ probe("tags", "canary", "allow", None, "dryrun",
        "ResourceType=instance,Tags=[{Key=Environment,Value=org},"
        "{Key=Project,Value=AWS-DataScience}]"])
 
-# The same triple in Staging. This is the half that says the document constrains rather
-# than forbids: Stage 4's VPN endpoint and Stage 7's GitLab both launch instances here, and
-# an over-broad Resource element (`*` instead of `instance/*`) denies EVERY launch, tagged
-# or not, because aws:RequestTag does not populate for the subnet and security group the
-# same call also references. The third row is the only thing that distinguishes the two.
+# The same triple in Staging, the half that says the document constrains rather than forbids:
+# Stage 4's VPN endpoint and Stage 7's GitLab both launch instances here, and an over-broad
+# Resource element (`*` instead of `instance/*`) denies every launch, tagged or not, because
+# aws:RequestTag does not populate for the subnet and security group the same call also
+# references. The third row is the only thing that distinguishes the two.
 probe("tags", "staging", "deny", None, "dryrun", "tags: RunInstances with NO tags (Staging)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",
        "--instance-type", "t3.micro", "--subnet-id", "@SUBNET@",
@@ -676,28 +657,25 @@ probe("tags", "staging", "allow", None, "dryrun",
 # ==========================================================================
 # phase: decl - awsds-org-declarative-ec2 (step 7.8).
 #
-# WHY THESE FOUR CARRY NO --dry-run, WHICH IS THE OPPOSITE OF EVERY OTHER EC2
-# PROBE IN THIS FILE. A declarative policy is enforced in the SERVICE's control
-# plane, not in authorization (AWS Organizations user guide, "How declarative
-# policies work"). `--dry-run` stops after authorization and returns
-# DryRunOperation, so a dry-run form would come back ALLOWED whether the policy
-# is attached or not - a row that reads as a hole in the ceiling and is not one,
-# every single run. Measuring the wrong layer and reporting it as evidence is
-# worse than not measuring: it is Lesson 5 with a green tick on it.
+# These probes carry no --dry-run, unlike every other ec2 probe in this file. A
+# declarative policy is enforced in the service's control plane, not in
+# authorization (AWS Organizations user guide, "How declarative policies work").
+# `--dry-run` stops after authorization and returns DryRunOperation, so a
+# dry-run form would come back ALLOWED whether the policy is attached or not,
+# reading as a hole in the ceiling that is not one, on every run (Lesson 5).
 #
-# WHAT THEY RISK, WHICH IS WHY THEY ARE canary-ONLY. Each flips one account
-# setting IF AND ONLY IF the declarative policy is not doing its job. The canary
-# holds no AMI, no snapshot and no instance, so all four are inert there even
-# when they succeed - and each has a one-command undo, written next to it and
-# repeated in the runbook's cleanup step. If any of these comes back ALLOWED,
-# run the undo before anything else.
+# They are canary-only because each flips one account setting if and only if the
+# declarative policy is not doing its job. The canary holds no AMI, no snapshot
+# and no instance, so they are inert there even when they succeed, and each has
+# a one-command undo written next to it and repeated in the runbook's cleanup
+# step. If any comes back ALLOWED, run the undo before anything else.
 #
-# WHAT THEY PROVE THAT A READ CANNOT. ./aws/declarative-ec2.py reads the four
-# resulting VALUES, which is the authoritative check. These rows answer a
-# different question: that the account is refused when it tries to change them,
-# and that the caller receives OUR exception message rather than AWS's default.
-# The outcome column carries `custom-message` or `AWS-default-msg`, and the
-# second means the exception_message did not survive the upload.
+# ./aws/declarative-ec2.py reads the resulting values, which is the
+# authoritative check. These rows answer a different question: that the account
+# is refused when it tries to change them, and that the caller receives our
+# exception message rather than AWS's default. The outcome column carries
+# `custom-message` or `AWS-default-msg`, and the second means the
+# exception_message did not survive the upload.
 # ==========================================================================
 
 # undo: aws ec2 enable-image-block-public-access --image-block-public-access-state block-new-sharing
@@ -709,24 +687,24 @@ probe("decl", "canary", "deny", None, "creates",
       "decl: ec2:DisableSnapshotBlockPublicAccess",
       ["ec2", "disable-snapshot-block-public-access", "--region", "us-west-2"])
 
-# The one probe that ENABLES rather than disables: the policy asserts the console is off, so
-# the change it must refuse is turning it on.
+# This probe enables rather than disables: the policy asserts the console is off, so the
+# change it must refuse is turning it on.
 # undo: aws ec2 disable-serial-console-access --region us-west-2
 probe("decl", "canary", "deny", None, "creates", "decl: ec2:EnableSerialConsoleAccess",
       ["ec2", "enable-serial-console-access", "--region", "us-west-2"])
 
-# IMDSv1 is what this asks for, and it is the one setting the document deliberately leaves
-# as a DEFAULT rather than a ceiling: http_tokens_enforced is not set (7.8), so a per-launch
-# override is still legal. This row is about the ACCOUNT default, which the policy does own.
+# This asks for IMDSv1, the one setting the document leaves as a default rather than a
+# ceiling: http_tokens_enforced is not set (7.8), so a per-launch override is still legal.
+# This row is about the account default, which the policy does own.
 # undo: aws ec2 modify-instance-metadata-defaults --http-tokens required --region us-west-2
 probe("decl", "canary", "deny", None, "creates",
       "decl: ec2:ModifyInstanceMetadataDefaults to optional",
       ["ec2", "modify-instance-metadata-defaults", "--http-tokens", "optional",
        "--region", "us-west-2"])
 
-# The floor: reading the settings must keep working everywhere, in every account, because
+# The floor: reading the settings must keep working in every account, because
 # ./aws/declarative-ec2.py depends on exactly these four calls and a policy that broke them
-# would leave the project with no instrument at all.
+# would leave the project with no instrument.
 probe("decl", "canary", "allow", None, "ro", "decl floor: read image BPA state",
       ["ec2", "get-image-block-public-access-state", "--region", "us-west-2"])
 probe("decl", "canary", "allow", None, "ro", "decl floor: read snapshot BPA state",
@@ -738,10 +716,10 @@ probe("decl", "canary", "allow", None, "ro", "decl floor: read IMDS defaults",
 probe("decl", "staging", "allow", None, "ro", "decl floor: read IMDS defaults (Staging)",
       ["ec2", "get-instance-metadata-defaults", "--region", "us-west-2"])
 
-# Launching with IMDSv1 explicitly requested. This is NOT expected to be denied and the row
-# says so: without http_tokens_enforced the account default is a default, and a launch may
-# override it. The row exists so that the day 7.8's follow-up sets http_tokens_enforced, the
-# expectation flips to `deny` and the battery measures the change instead of assuming it.
+# Launching with IMDSv1 explicitly requested. The row expects an allow: without
+# http_tokens_enforced the account default is a default, and a launch may override it. It
+# exists so that the day 7.8's follow-up sets http_tokens_enforced, the expectation flips to
+# `deny` and the battery measures the change instead of assuming it.
 probe("decl", "staging", "allow", None, "dryrun",
       "decl: a launch may still ask for IMDSv1 (no http_tokens_enforced yet)",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",

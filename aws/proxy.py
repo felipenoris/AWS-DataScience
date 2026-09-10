@@ -1,21 +1,20 @@
 #!/usr/bin/env -S uv run --quiet
-# proxy.py - Stage 6c's evidence for the estate's SINGLE INTERNET EXIT: the Squid host ([D]),
+# proxy.py - Stage 6c's evidence for the estate's single internet exit: the Squid host ([D]),
 # the [P] anchors it wears (the Elastic IP, the security group, the allow-list parameter, the
-# access log group), the ORDER of its `http_access` rules, and whether the config actually
+# access log group), the order of its `http_access` rules, and whether the config actually
 # running on the host is the one this repository committed.
 #
-# THE SHAPE IS ./aws/vpn.py's, DELIBERATELY: same two-mode structure, same --on-host fence, same
-# "an empty answer and a failed answer are different things" discipline. The two files are the
-# instruments for D38's two hosts - one way in, one way out - and a reader who knows one should
-# not have to learn the other.
+# The shape is ./aws/vpn.py's: same two-mode structure, same --on-host fence, same "an empty
+# answer and a failed answer are different things" discipline. The two files are the instruments
+# for D38's two hosts - one way in, one way out.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, and nothing else:
 #
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/proxy.py                      # the two profiles it needs (see below)
 #             ./aws/proxy.py awsds-infra-prod     # only the ones named
-#             ./aws/proxy.py --on-host            # ALSO read inside the host (see below)
+#             ./aws/proxy.py --on-host            # also read inside the host (see below)
 #   writes:   aws/output/proxy.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
 #             ssm:GetParameter, logs:DescribeLogGroups, DescribeSubscriptionFilters,
@@ -23,37 +22,37 @@
 #             DescribePermissionSet, GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything - see the next line for the
 #             single, typed exception.
-#   sends:    NOTHING IN AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
-#             GetCommandInvocation, and SendCommand is a WRITE API - it creates a Command, is a
+#   sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
+#             GetCommandInvocation, and SendCommand is a write API - it creates a Command, is a
 #             mutating CloudTrail event, and runs code on an instance - even though every
-#             command it carries is a read. It is a flag and not a default precisely so that
+#             command it carries is a read. It is a flag and not a default so that
 #             `./aws/proxy.py` stays safe to fire at anything. What it buys is PX-3: the
-#             squid.conf the host is SERVING, which no describe call can reach.
+#             squid.conf the host is serving, which no describe call can reach.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS TWO-PROFILE, which aws/INDEX.md admits only for a reason: PX-5 asks whether the
-# address the perimeter NAMES is the address the estate actually leaves under, and those two
-# facts live in two accounts by design - the permission sets are in Identity, the Elastic IP is
-# in Production. One login covers both (they share the `awsds` sso-session).
+# This script is two-profile because PX-5 asks whether the address the perimeter names is the
+# address the estate actually leaves under, and those two facts live in two accounts: the
+# permission sets are in Identity, the Elastic IP is in Production. One login covers both (they
+# share the `awsds` sso-session).
 #
-# FOUR CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag is awsds-<env>-proxy                     (6c step 4.8)
 #   - the security group's name is awsds-<env>-proxy                 (6c step 4.1)
 #   - the allow-list parameter is /datascience/<env>/proxy/allowlist (6c step 4.10)
 #   - the deny statement's Sid is DenyControlPlaneOffVpn             (Stage 4 step 8.1)
 #
-# WHAT IT CANNOT SEE, stated because a clean run here is not a working proxy:
-#   - WHETHER A REQUEST SUCCEEDS. Every check below reads configuration; the behavioural proof
+# What it cannot see, since a clean run here is not a working proxy:
+#   - Whether a request succeeds. Every check below reads configuration; the behavioural proof
 #     is a request through the proxy from inside a spoke, which is 6c step 6.3's probe and its
 #     four readings (no internet without the proxy; 403 to a private address; 200 to a name on
 #     the plane; 403 to a name on none). A describe call proves none of them (Lesson 20).
-#   - THE ALLOW-LIST'S CONTENT as a policy question. PX-3 asks whether the running list EQUALS
+#   - The allow-list's content as a policy question. PX-3 asks whether the running list equals
 #     the committed one; whether the committed one is the right list is `./aws/dns-allowlist.py`
 #     (DN-1..DN-4), which resolves every name on every plane. The chain is
 #     code -> parameter -> host: DN-3 is the first link and PX-3 is the second, and neither one
 #     alone says the proxy is enforcing what was written.
-#   - WHAT THE HOST DID. That is the access log (4.11), which is where an unlisted hostname gets
-#     NAMED - `docker pull` says only `Forbidden`. PX-4 checks the group exists; reading it is
+#   - What the host did. That is the access log (4.11), which is where an unlisted hostname gets
+#     named - `docker pull` says only `Forbidden`. PX-4 checks the group exists; reading it is
 #     `aws logs filter-log-events --filter-pattern DENIED`.
 
 from __future__ import annotations
@@ -80,41 +79,40 @@ DENY_SID = "DenyControlPlaneOffVpn"
 INFRA_SET = "InfrastructureAccess"
 
 # The committed configuration, read from this repository rather than from AWS. PX-2's default
-# source: the ORDER of `http_access` lines is the security property, and it is decidable from the
-# template without any session at all - which matters because the answer is most wanted BEFORE
-# an apply, not after one.
+# source: the order of `http_access` lines is the security property, and it is decidable from the
+# template with no session at all, which is what makes the answer available before an apply.
 TEMPLATE = ("terraform-live", "production", "proxy", "squid.conf.tftpl")
 
 
 # --------------------------------------------------------------- the inside of the host
 #
-# THIS IS THE ONE PART OF THIS FILE THAT IS NOT READ-ONLY, WHICH IS WHY IT IS OPT-IN. Everything
-# the commands below do ON the host is a read - cat, grep, systemctl is-active - but
-# `ssm:SendCommand` is a WRITE API: it creates a Command, appears in CloudTrail as a mutating
+# This is the one part of the file that is not read-only, so it is opt-in. Everything the
+# commands below do on the host is a read - cat, grep, systemctl is-active - but
+# `ssm:SendCommand` is a write API: it creates a Command, appears in CloudTrail as a mutating
 # call, and executes code on an instance. `aws/*` is read-only so that anyone may run these
 # scripts without thinking about it, so the escalation has to be typed.
 #
-# WHY IT EXISTS AT ALL: the parameter is [P] and readable with a plain GetParameter, but the
-# FILE THE DAEMON IS SERVING is not. A State Manager association re-renders it every thirty
-# minutes (4.10) and its silence is indistinguishable from success - which is exactly the shape
-# PX-3 exists to break. Nothing else can see a host whose render failed and whose squid is still
-# serving the previous list.
+# The parameter is [P] and readable with a plain GetParameter; the file the daemon is serving is
+# not. A State Manager association re-renders it every thirty minutes (4.10) and its silence is
+# indistinguishable from success, which is the shape PX-3 exists to break. Nothing else can see
+# a host whose render failed and whose squid is still serving the previous list.
 #
-# `cat /etc/squid/squid.conf` CARRIES NO SECRET, and that is checked rather than assumed: the
+# `cat /etc/squid/squid.conf` carries no secret, and that is checked rather than assumed: the
 # allow-lists are public names, there is no authentication configured, and the banned fragments
 # below keep it that way if somebody ever adds one.
-# TWO FILES, NOT ONE, AND THE SPLIT IS THE DESIGN RATHER THAN AN ACCIDENT (measured 2026-09-06,
-# on the first --on-host run, which read `running 0 planes` from a host serving five). The main
-# `squid.conf` is owned by Terraform because the ORDER of its `http_access` lines is the security
-# property and a drop-in cannot express "before"; the PER-PLANE lists are a drop-in at
-# `/etc/squid/conf.d/awsds-planes.conf`, rendered from the [P] parameter, because their content
-# changes without their position doing so. PX-2 reads the first file and PX-3 the second, and a
-# probe that read only one of them would have answered one question about the other's subject.
 #
-# THE `|| true` ON THE PLANES FILE IS NOT DEFENSIVE PADDING. Without it a host that has never
-# rendered makes the whole invocation `Failed`, and SSM's status is what the report prints - so a
-# missing drop-in would surface as "the command failed" rather than as "there are no planes on
-# this host", which are different findings (Lesson 13).
+# The configuration is two files. The main `squid.conf` is owned by Terraform because the order
+# of its `http_access` lines is the security property and a drop-in cannot express "before"; the
+# per-plane lists are a drop-in at `/etc/squid/conf.d/awsds-planes.conf`, rendered from the [P]
+# parameter, because their content changes without their position doing so. PX-2 reads the first
+# file and PX-3 the second: a probe reading only one of them answers a question about the other's
+# subject (measured 2026-09-06, on the first --on-host run, which read `running 0 planes` from a
+# host serving five).
+#
+# The `|| true` on the planes file is load-bearing. Without it a host that has never rendered
+# makes the whole invocation `Failed`, and SSM's status is what the report prints, so a missing
+# drop-in would surface as "the command failed" rather than as "there are no planes on this
+# host", which are different findings (Lesson 13).
 HOST_PROBE_COMMANDS = (
     "echo ---SQUIDCONF---",
     "cat /etc/squid/squid.conf",
@@ -200,11 +198,11 @@ _ACCESS = re.compile(r"^\s*http_access\s+(allow|deny)\s+(\S+)", re.M)
 def access_order(config_text: str) -> list:
     """Every `http_access` line, in file order, as (action, acl name).
 
-    ORDER IS THE SECURITY PROPERTY HERE AND NOT A STYLE. Squid evaluates `http_access` top to
-    bottom and stops at the first match, so a single `allow` above the private-destination deny
-    turns the proxy into an L7 bridge between VPCs that peering deliberately keeps apart - a
-    peering nobody built, at layer 7 (Lesson 44). That is why the whole `squid.conf` is owned by
-    Terraform rather than dropped into `conf.d/`: a drop-in cannot express "before".
+    Order is the security property. Squid evaluates `http_access` top to bottom and stops at the
+    first match, so a single `allow` above the private-destination deny turns the proxy into a
+    layer-7 bridge between VPCs that peering keeps apart (Lesson 44). The whole `squid.conf` is
+    owned by Terraform rather than dropped into `conf.d/` because a drop-in cannot express
+    "before".
     """
     return [(m.group(1), m.group(2)) for m in _ACCESS.finditer(config_text)]
 
@@ -233,11 +231,10 @@ def order_verdict(lines: list, deny_acl: str = "to_private") -> tuple:
 def host_section(text: str, marker: str) -> str:
     """One `echo ---X---` section of the host probe's output.
 
-    THE TWO FILES MUST NOT BE CONCATENATED, and the first --on-host run showed why: read as one
-    blob, the ordering check sees the drop-in's `http_access allow` lines AFTER `deny all` and
-    reports a proxy that allows everything at the end. They are two files, evaluated by squid in
-    the order the `include` sets, and the report has to keep them apart to say anything true
-    about either.
+    The two files must not be concatenated: read as one blob, the ordering check sees the
+    drop-in's `http_access allow` lines after `deny all` and reports a proxy that allows
+    everything at the end. Squid evaluates them in the order the `include` sets, so the report
+    keeps them apart.
     """
     start = text.find(f"---{marker}---")
     if start < 0:
@@ -250,11 +247,10 @@ def host_section(text: str, marker: str) -> str:
 def parse_allowlist(raw: str) -> dict:
     """The parameter's planes as {plane: (mode, [names])}, or {} when it is not this design's JSON.
 
-    TWO MODES SINCE 2026-09-07, and PX-3 has to compare like with like: an `allowlist` plane's
-    names render into `acl dst_<plane>`, an `open` plane's into `acl dstdeny_<plane>`, and the
-    second may legitimately be EMPTY - which is the client plane's decided state. Reading only
-    `allow`, as this did, would report the tunnel as a plane with nothing on it and the host as a
-    plane with nothing on it, agreeing for the wrong reason.
+    A plane carries a mode, and PX-3 compares like with like: an `allowlist` plane's names render
+    into `acl dst_<plane>`, an `open` plane's into `acl dstdeny_<plane>`, and the second may
+    legitimately be empty, which is the client plane's decided state. Reading only `allow` would
+    report the tunnel and the host as planes with nothing on them, agreeing for the wrong reason.
     """
     try:
         doc = json.loads(raw)
@@ -270,12 +266,12 @@ def parse_allowlist(raw: str) -> dict:
 
 
 def running_allowlist(config_text: str) -> dict:
-    """The planes as the HOST spells them: `acl dst_<plane> dstdomain <names>`, in the drop-in.
+    """The planes as the host spells them: `acl dst_<plane> dstdomain <names>`, in the drop-in.
 
-    Matched on the acl NAME rather than on position, because the render script builds one acl
+    Matched on the acl name rather than on position, because the render script builds one acl
     per plane from the parameter's keys - so a plane that vanished from the parameter and stayed
-    on the host is exactly what PX-3 is looking for, and it is only visible as a missing key.
-    The name is `dst_<plane>` and the file is `/etc/squid/conf.d/awsds-planes.conf`; both are
+    on the host is what PX-3 is looking for, and it is only visible as a missing key. The name
+    is `dst_<plane>` and the file is `/etc/squid/conf.d/awsds-planes.conf`; both are
     render-squid.sh's contract, and a rename there must fail loudly here.
     """
     out: dict = {}
@@ -283,9 +279,9 @@ def running_allowlist(config_text: str) -> dict:
         mode = "open" if m.group(1) else "allowlist"
         cur = out.setdefault(m.group(2), (mode, []))
         cur[1].extend(m.group(3).split())
-    # AN `open` PLANE WITH AN EMPTY DENY LIST EMITS NO dstdomain ACL AT ALL - only `acl src_<n>`
+    # An `open` plane with an empty deny list emits no dstdomain acl at all - only `acl src_<n>`
     # and a bare `http_access allow src_<n>`. It is a real plane in a real state, so it is found
-    # by its ALLOW LINE rather than by a list that is legitimately absent; missing it would make
+    # by its allow line rather than by a list that is legitimately absent; missing it would make
     # PX-3 report the client plane as deployed-but-empty on one side and present on the other.
     for m in re.finditer(r"^\s*http_access\s+allow\s+src_(\S+)\s*$", config_text, re.M):
         out.setdefault(m.group(1), ("open", []))
@@ -297,9 +293,7 @@ def plane_key(name: str) -> str:
 
     `render-squid.sh` builds its acl names with `gsub("-"; "_")`, so the parameter's
     `production-foundation` is the host's `dst_production_foundation`. Comparing the raw keys
-    reports every plane as both missing and extra - which is what the first --on-host run did,
-    and it is Lesson 53's shape at its smallest: two systems, one intent, and a spelling rule
-    between them that nothing had written down.
+    reports every plane as both missing and extra (Lesson 53).
     """
     return name.replace("-", "_")
 
@@ -685,10 +679,9 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
         else:
             ok, detail = order_verdict(access_order(template_text))
             detail = f"committed: {detail}"
-            # BOTH SOURCES COUNT. The first version decided the verdict from the committed
-            # template alone and merely PRINTED the running one, which would have reported
-            # `pass` for a host serving a file nobody committed - a check that reads its own
-            # subject and then does not use it.
+            # Both sources decide the verdict. Judging on the committed template alone and
+            # merely printing the running one would report `pass` for a host serving a file
+            # nobody committed.
             if on_host and running_conf:
                 run_ok, run_detail = order_verdict(access_order(running_conf))
                 ok = ok and run_ok
@@ -723,18 +716,17 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
             for plane in sorted(set(want_by) | set(got_by)):
                 want_mode, want_names = want_by.get(plane, ("(absent)", []))
                 got_mode, got_names = got_by.get(plane, ("(absent)", []))
-                # AN EMPTY `allowlist` PLANE RENDERS NOTHING, AND THAT IS THE CORRECT STATE - not
-                # a mismatch. With no names there is no acl and no allow line, so the source falls
-                # to squid.conf's backstop and is refused BY NAME, which is exactly what an empty
-                # allow-list means. `production-workloads` and `staging-foundation` are in that
-                # state by decision. An empty `OPEN` plane is the opposite and must be present:
-                # it renders a bare `http_access allow src_<n>`, so its absence IS a finding.
+                # An empty `allowlist` plane renders nothing, which is the correct state rather
+                # than a mismatch: with no names there is no acl and no allow line, so the source
+                # falls to squid.conf's backstop and is refused by name. `production-workloads`
+                # and `staging-foundation` are in that state by decision. An empty `open` plane
+                # is the opposite and must be present - it renders a bare
+                # `http_access allow src_<n>`, so its absence is a finding.
                 if want_mode == "allowlist" and not want_names and got_mode == "(absent)":
                     continue
-                # THE MODE IS PART OF THE COMPARISON, not context around it: a plane that flipped
-                # from `allowlist` to `open` with both lists empty would otherwise compare EQUAL,
-                # and the difference between those two is the difference between "may reach
-                # nothing" and "may reach everything".
+                # The mode is part of the comparison: a plane that flipped from `allowlist` to
+                # `open` with both lists empty would otherwise compare equal, and the difference
+                # between those two is "may reach nothing" against "may reach everything".
                 if want_mode != got_mode:
                     diffs.append(f"{plane}: committed mode {want_mode}, running {got_mode}")
                     continue
@@ -760,14 +752,13 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
                 f"no log group named {LOG_GROUP} - 4.11's evidence is not being written",
             )
         elif not subscriptions:
-            # NOT A FAIL, BY DECISION: 6c decision due 4 was taken on 2026-09-08 as (c) - the group
-            # keeps its 365-day retention in Production until Stage 11 step 5.1 folds it into the
-            # centralized log delivery, where the mechanism (a subscription filter into Log
-            # Archive, or a scheduled CreateExportTask) is decided once for every log the author
-            # must not own. Measured first (Lesson 6): 0.13-0.53 MB/day, every mechanism under a
-            # cent a month. Meanwhile a deletion or a shorter retention is a management event on
-            # the organization trail, which already lands in Log Archive. A `fail` here would
-            # report a gap the plan holds open on purpose, dated and compensated.
+            # A note rather than a fail, by decision: 6c decision due 4 was taken on 2026-09-08
+            # as (c). The group keeps its 365-day retention in Production until Stage 11 step 5.1
+            # folds it into the centralized log delivery, where the mechanism (a subscription
+            # filter into Log Archive, or a scheduled CreateExportTask) is decided once for every
+            # log the author must not own. Measured first (Lesson 6): 0.13-0.53 MB/day, every
+            # mechanism under a cent a month. A deletion or a shorter retention meanwhile is a
+            # management event on the organization trail, which already lands in Log Archive.
             checks.note(
                 "PX-4",
                 "the access log group exists, with its Log Archive export",
