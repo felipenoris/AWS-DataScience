@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **CLOSED AS A RECORD 2026-09-05.** This file is the past tense of the old Stage 6: the passes that ran, the measurements they produced, and the six execute-time decisions, all of them settled. **Nothing here is an instruction** — an executor planning work opens [6b](stage-06b-development-becomes-staging.md), [6c](stage-06c-networking-hub.md) or [6d](stage-06d-unified-studio-remainder.md) instead. What ran: passes 0, 1 and 2 (2026-08-21/22, four sittings) — `production/registry/`, the two `sagemaker/` prerequisite slices, the step 3 deny fragment in all six persona sets, 1.6's Athena Spark SCP amendment, the domain `awsds-studio` (V2, Data Governance), both member associations, 11 blueprint configurations and 22 authorization grants per member, both project profiles, and **the create path measured end to end on 2026-08-22**; step 5.0's `default-v0.1.0` pushed to both ECR repositories from one buildbox session; 2.6's derived-zone removal applied 2026-08-26/27; and the dated readings of passes 4-5 (4.1's chain-evaluation finding, 4.2's `datazone` removal and its two-sided measurement, 4.3's friction session, 8.1/8.2's idle-shutdown and teardown machinery, 9.1's log groups). **The Development-account half of everything above is unwound by 6b** and the design-A half of pass 4 is superseded by 6c — this file is not edited to match either; it records what was true when it ran |
+| **Status** | **Closed as a record 2026-09-05.** This file is the past tense of the old Stage 6: the passes that ran, the measurements they produced, and the six execute-time decisions, all settled. Nothing here is an instruction; an executor opens [6b](stage-06b-development-becomes-staging.md), [6c](stage-06c-networking-hub.md) or [6d](stage-06d-unified-studio-remainder.md) instead. What ran: passes 0, 1 and 2 (2026-08-21/22, four sittings) — `production/registry/`, the two `sagemaker/` prerequisite slices, the step 3 deny fragment in all six persona sets, 1.6's Athena Spark SCP amendment, the domain `awsds-studio` (V2, Data Governance), both member associations, 11 blueprint configurations and 22 authorization grants per member, both project profiles, and the create path measured end to end on 2026-08-22; step 5.0's `default-v0.1.0` pushed to both ECR repositories from one buildbox session; 2.6's derived-zone removal applied 2026-08-26/27; and the dated readings of passes 4-5 (4.1's chain-evaluation finding, 4.2's `datazone` removal and its two-sided measurement, 4.3's friction session, 8.1/8.2's idle-shutdown and teardown machinery, 9.1's log groups). 6b unwinds the Development-account half of all of it and 6c supersedes the design-A half of pass 4; this file is not edited to match either and records what was true when it ran |
 | **Prerequisites** | — (a record) |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-01](../integrations.md), [INT-02](../integrations.md) (consumer half), [INT-12](../integrations.md), [INT-15](../integrations.md), [INT-16](../integrations.md) (portal half), [INT-17](../integrations.md) |
@@ -14,29 +14,28 @@
 
 **Objective (as it stood):** the data scientist's working environment — one SageMaker unified domain
 (DataZone V2) with projects (D26), hardened to the data perimeter, plus the D5 egress comparison it existed
-to host. **The comparison's verdict is no longer this stage's**: 6c settles it by construction, since a
-spoke with no default route reaches the internet only through the institutional proxy.
+to host. The comparison's verdict is 6c's: a spoke with no default route reaches the internet only through
+the institutional proxy.
 
 ## What this stage builds, and in which accounts
 
-**The sentence most easily misread, first:** the domain lives in **Data Governance**, and *no compute runs
-there*. A domain is a registry — projects, profiles, blueprint configurations, the catalog. Blueprints
-provision the working environments into whichever account the project profile names: **Sandbox** for
-`experimentation`, **Development** for `engineering`. The D21 boundary comes out stronger: it stops being
-"which URL did the person open" and becomes a property of the project.
+The domain lives in **Data Governance**, and no compute runs there. A domain is a registry — projects,
+profiles, blueprint configurations, the catalog. Blueprints provision the working environments into the
+account the project profile names: **Sandbox** for `experimentation`, **Development** for `engineering`.
+The D21 boundary becomes a property of the project rather than of which URL the person opened.
 
 | Where | What | Layer |
 |---|---|---|
-| `production/registry/` (new, **pass 0**) + `terraform-modules/ecr-repo/` | **the half of Stage 7 step 5 this stage consumes, and nothing else** (5.a): the `base` and `dev-env` ECR repositories with tag immutability, CodeArtifact `awsds-prod-packages` with `pypi`/`crates`, the slice's own KMS key and the D35-map consumer policies. **Authored under Stage 7 step 5.a — one copy of the design, there — and applied here** as `awsds-infra-prod`. The pull-through cache and the per-application repositories stay at Stage 7 (5.b): nothing in this stage pulls a public image or an app image | `[P]` |
-| `sandbox/sagemaker/`, `development/sagemaker/` (new, one module) | the blueprint **prerequisites**: provisioning + manage-access roles, the D13 permissions boundary, the VPC/subnet parameters, the KMS key — **and, since v0.3.x (2026-08-22), the second apply's blueprint configurations with the complete wizard-field set, the 11 `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants and the standing `awsds-<env>-smus-projects` bucket** (the owed table's struck rows are the record) | `[P]` |
+| `production/registry/` (new, **pass 0**) + `terraform-modules/ecr-repo/` | the half of Stage 7 step 5 this stage consumes (5.a): the `base` and `dev-env` ECR repositories with tag immutability, CodeArtifact `awsds-prod-packages` with `pypi`/`crates`, the slice's own KMS key and the D35-map consumer policies. Authored under Stage 7 step 5.a, applied here as `awsds-infra-prod`. The pull-through cache and the per-application repositories stay at Stage 7 (5.b): nothing in this stage pulls a public image or an app image | `[P]` |
+| `sandbox/sagemaker/`, `development/sagemaker/` (new, one module) | the blueprint **prerequisites**: provisioning + manage-access roles, the D13 permissions boundary, the VPC/subnet parameters, the KMS key — and, from v0.3.x (2026-08-22), the second apply's blueprint configurations with the complete wizard-field set, the 11 `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants and the standing `awsds-<env>-smus-projects` bucket (the owed table's struck rows are the record) | `[P]` |
 | `data-governance/governance/` (new) | the DataZone V2 domain, its IAM roles, the two project profiles | `[P]` |
 | `identity/sso/` (amended) | the step 3 deny fragment on the six persona sets | `[P]` |
 | `identity/org-policies/` (amended) | 1.6's `athena:StartSession`/`UpdateSession` deny in `awsds-org-scp-ou-interactive`, through battery phase 4b — never a hand upload (`INV-15`) | `[P]` |
-| `data-governance/data/` (amended) | `writer_role_patterns` extended to the blueprint-provisioned project execution roles, if a notebook writes to the drop-box (2.1); **and `trusted_vpce_ids`, if 4.2's `s3` measurement returns an endpoint id the list does not carry** — verification (xix), Recipe A | `[P]` |
-| `sandbox/data/`, `development/data/` (amended through a `consumer-data` tag) | ~~the consumer data-key policy's second `Decrypt` principal … and the derived buckets' `aws:SourceVpce` condition~~ **RE-CUT 2026-08-26 (D19 revised): the amendment is now the REMOVAL — `consumer-data-v0.6.0` destroys the derived bucket and the enforced workgroup, keeps the data CMK (the sandbox lake's key) minus its persona statement.** The old row's two additions died unconsumed; (xix)'s condition re-homes to the projects bucket (`sagemaker-prereqs`) | `[P]` |
-| `sandbox/egress/`, `development/egress/` (amended) | design A: DNS Firewall + allowlist; design B: `egress_mode=B` + the CodeArtifact endpoints **and the `datazone` endpoint, which only B needs** (no NAT, no other path — A removed it 2026-08-25) | `[E]` |
-| The **management** console of the DOMAIN account, by hand | the account associations — **no public API (read 2026-08-16)**: a RAM share the domain initiates. **RUN 2026-08-21**: the share auto-accepts, so no member-account console is involved at all — this cell used to name two surfaces and one of them is never opened | — |
-| `scripts/` | `layers.py` rows for the **four** new slices; the body of `down-studio-apps.py`. **`registry`'s RANK landed 2026-08-21, ahead of the slice** — an unranked slice name raises at import, so a `production/registry/` written without one breaks `make check` before it can be applied (the same reasoning that put `vpn`'s rank in early); its `SLICES` row lands with the slice, in the same commit | — |
+| `data-governance/data/` (amended) | `writer_role_patterns` extended to the blueprint-provisioned project execution roles, if a notebook writes to the drop-box (2.1); and `trusted_vpce_ids`, if 4.2's `s3` measurement returns an endpoint id the list does not carry — verification (xix), Recipe A | `[P]` |
+| `sandbox/data/`, `development/data/` (amended through a `consumer-data` tag) | the amendment is a removal (D19 revised, 2026-08-26): `consumer-data-v0.6.0` destroys the derived bucket and the enforced workgroup and keeps the data CMK (the sandbox lake's key) minus its persona statement. The second `Decrypt` principal and the derived buckets' `aws:SourceVpce` condition first planned here were never built; (xix)'s condition re-homes to the projects bucket (`sagemaker-prereqs`) | `[P]` |
+| `sandbox/egress/`, `development/egress/` (amended) | design A: DNS Firewall + allowlist; design B: `egress_mode=B` + the CodeArtifact endpoints and the `datazone` endpoint, which only B needs (no NAT, no other path — A removed it 2026-08-25) | `[E]` |
+| The **management** console of the domain account, by hand | the account associations — no public API (read 2026-08-16): a RAM share the domain initiates. Run 2026-08-21: the share auto-accepts, so no member-account console is involved | — |
+| `scripts/` | `layers.py` rows for the four new slices; the body of `down-studio-apps.py`. `registry`'s rank landed 2026-08-21, ahead of the slice: an unranked slice name raises at import, so a `production/registry/` written without one breaks `make check` before it can be applied; its `SLICES` row lands with the slice, in the same commit | — |
 
 ```mermaid
 flowchart LR
@@ -57,69 +56,66 @@ flowchart LR
     DEVRT -.-> PRD
 ```
 
-The four product mechanics behind these steps (Athena Spark's non-VPC default, the notebook identity
-grain, `StartSession`, per-hour spaces) are `docs/plan/open-questions.md` items 12-15 — re-read against the
-2026-08-16 documentation pass; each is answered at the step that owns it below.
+The product mechanics behind these steps (Athena Spark's non-VPC default, the notebook identity grain,
+`StartSession`, per-hour spaces) are `docs/plan/open-questions.md` items 12-15; each is answered at the
+step that owns it below.
 
 ## Step numbers are identifiers, not an order
 
-Two numbers are **stable addresses cited from other files** — `step 1` (INT-16's portal half) from Stage 4
+Two numbers are stable addresses cited from other files — `step 1` (INT-16's portal half) from Stage 4
 and `docs/plan/integrations.md`; `step 2` (the project-role grants) from Stage 5 step 9.3. They do not
-change. The sequence to work in is **six passes**:
+change. The work is sequenced in passes:
 
 | Pass | # | What | Slice · layer | Applied as / by |
 |---|---|---|---|---|
-| **0** | 0 | the two preflights — the no-SageMaker plan reading, and the `CreateDomain` carve-out probe, **which since 2026-08-21 rides step 1.2's creation act plus a CloudTrail-shaped canary replay (0.1a): no standalone CLI probe reaches authorization** | readings + the 0.1a pair | creation act and replay: **user**; readings: Claude |
-| **0** | 5.a (St. 7) | **`production/registry/` — the ECR pair, CodeArtifact, the key and the consumer policies.** Added as a row here 2026-08-21: it was a prerequisite the whole time and appeared in no table this stage executes from, which is how a slice that had never been written could be read as applied | `production/registry/` `[P]` | write + apply: **Claude ⚡ / user** as `awsds-infra-prod` |
+| **0** | 0 | the two preflights — the no-SageMaker plan reading, and the `CreateDomain` carve-out probe, which rides step 1.2's creation act plus a CloudTrail-shaped canary replay (0.1a): no standalone CLI probe reaches authorization | readings + the 0.1a pair | creation act and replay: **user**; readings: Claude |
+| **0** | 5.a (St. 7) | `production/registry/` — the ECR pair, CodeArtifact, the key and the consumer policies. A prerequisite that no table this stage executed from named until 2026-08-21 (Risks) | `production/registry/` `[P]` | write + apply: **Claude ⚡ / user** as `awsds-infra-prod` |
 | **1** | 2.1-2.3 | the prerequisite slices: roles, boundary, KMS, params; the `layers.py` rows | `*/sagemaker/` `[P]` | `awsds-infra-sandbox-1`, `awsds-infra-dev` |
 | **1** | 3 | the deny fragment: jobs off VPC, instance ceiling, `StartSession` scope | `identity/sso/` `[P]` | `awsds-infra-identity` |
-| **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR — **needs pass 0's repositories, and carries no CA root** (Stage 7 step 2.6) | the **buildbox**, build and push in **one session** (`buildbox.md` §P) | **user** (docker + push) — **DONE 2026-08-22**, `default-v0.1.0` in both, digests in the owed table |
-| **2a** | 1.1-1.2 | the domain and its two IAM roles — **and 0.1a's creation act rides this apply** | `data-governance/governance/` `[P]` | `awsds-infra-data` — **DONE 2026-08-21** |
-| **2b** | 1.3 | the account associations, **console-only, no public API**. **DONE 2026-08-21** — auto-accepted, zero invitations. **The `backend.SMUS_ASSOCIATED` row is NOT part of this row's work**: it arms 1.4 *and* 1.5, so it belongs to the sitting that runs them | the domain account's management console | **user** |
-| **2c** | 1.4 | the blueprint configurations — **in each MEMBER account, not the domain account** (corrected 2026-08-21: `PutEnvironmentBlueprintConfiguration` takes no account parameter, so it configures the caller's; 1.4's own body said so and this table did not) | `sandbox/sagemaker/`, `development/sagemaker/` `[P]`, second apply | `awsds-infra-sandbox-1`, `awsds-infra-dev` — **DONE 2026-08-21** (findings 7-9: the NAME contract, two module tags, the ToolingLite re-cut; **11 stand per member**) |
-| **2d** | 1.5, 1.7 | the two project profiles, which need 2c done first; INT-16's portal reading | `data-governance/governance/` `[P]`, second apply + browser | `awsds-infra-data` — **profiles DONE 2026-08-21** (after finding 9's re-cut; decision 2 delivered); 1.7's readings: **both DONE 2026-08-22** — the lobby reading in the morning (finding 12), the full off-VPN reading in the evening (the owed table's off-VPN row: all three rungs pass on both networks) |
-| **2** | 1.6 | the Athena Spark deny into `awsds-org-scp-ou-interactive`, through battery **phase 4b** — 1.6's body owns the procedure | `identity/org-policies/` `[P]` | `awsds-infra-identity` — the ten documents are Terraform-owned since Stage 2 step 5.5 and the delegation names **one** account (`INV-15`), so `awsds-infra-data` cannot update an org policy at all and a hand upload is drift the next apply reverts |
+| **1** | 5.0 | the hand-built `base`/`dev-env` images into the Production ECR — needs pass 0's repositories, and carries no CA root (Stage 7 step 2.6) | the **buildbox**, build and push in one session (`buildbox.md` §P) | **user** (docker + push) — done 2026-08-22, `default-v0.1.0` in both, digests in the owed table |
+| **2a** | 1.1-1.2 | the domain and its two IAM roles; 0.1a's creation act rides this apply | `data-governance/governance/` `[P]` | `awsds-infra-data` — done 2026-08-21 |
+| **2b** | 1.3 | the account associations, console-only, no public API. Done 2026-08-21 — auto-accepted, zero invitations. The `backend.SMUS_ASSOCIATED` row arms 1.4 and 1.5, so it belongs to the sitting that runs them | the domain account's management console | **user** |
+| **2c** | 1.4 | the blueprint configurations, in each **member** account: `PutEnvironmentBlueprintConfiguration` takes no account parameter, so it configures the caller's | `sandbox/sagemaker/`, `development/sagemaker/` `[P]`, second apply | `awsds-infra-sandbox-1`, `awsds-infra-dev` — done 2026-08-21 (findings 7-9: the name contract, two module tags, the ToolingLite re-cut; 11 stand per member) |
+| **2d** | 1.5, 1.7 | the two project profiles, which need 2c done first; INT-16's portal reading | `data-governance/governance/` `[P]`, second apply + browser | `awsds-infra-data` — profiles done 2026-08-21 (after finding 9's re-cut; decision 2 delivered); 1.7's readings both done 2026-08-22 — the lobby reading in the morning (finding 12), the full off-VPN reading in the evening (the owed table's off-VPN row: all three rungs pass on both networks) |
+| **2** | 1.6 | the Athena Spark deny into `awsds-org-scp-ou-interactive`, through battery phase 4b — 1.6's body owns the procedure | `identity/org-policies/` `[P]` | `awsds-infra-identity` — the ten documents are Terraform-owned since Stage 2 step 5.5 and the delegation names one account (`INV-15`), so `awsds-infra-data` cannot update an org policy and a hand upload is drift the next apply reverts |
 | **3** | 2.4-2.7 | one throwaway project per profile: INT-15 (boundary), INT-17 (image) | portal + readings | provision: **user**; readings: `./aws/studio.py` |
 | **4** | 4, 5, 6 | egress design A, egress design B, the comparison — closes D5 | `egress/` `[E]` | the two Interactive infra profiles |
 | **5** | 8, 9 | idle shutdown + the teardown hook; observability | profiles, `scripts/` | mixed |
 
-**Pass 0 now carries the one predecessor that lives outside this stage, and it is stated HERE because this
-paragraph is where the work gets sequenced** (added 2026-08-21 — until then the dependency was declared
-exactly once, in the Prerequisites row, in the perfect tense, so a reader planning from this paragraph
-inherited no warning at all): **step 5.0 cannot run until `production/registry/` exists**, and nothing in
-the repository would have said so first — the step-0 preflights check four other things, `./aws/studio.py`
-never asks, `./aws/supplychain.py` gates its whole note→fail flip on the GitLab host (Stage 7 pass 1) and so
-stays green over a missing pass 0, and `make check` validates only the `SLICES` table against disk.
+Pass 0 is the one predecessor that lives outside this stage: step 5.0 cannot run until
+`production/registry/` exists, and no check says so — the step-0 preflights check four other things,
+`./aws/studio.py` never asks, `./aws/supplychain.py` gates its note→fail flip on the GitLab host (Stage 7
+pass 1) and stays green over a missing pass 0, and `make check` validates only the `SLICES` table against
+disk.
 
 Pass 2 cannot precede pass 1: the blueprint configuration in a member account names the provisioning role
 and VPC parameters the `sagemaker/` slice creates. Pass 3 needs pass 2's profiles and pass 1's image (5.0).
 Pass 4 needs pass 3: a design B measured without a working custom image is missing three of its four
 ecosystems, and the comparison would be decided by a defect (INT-17).
 
-**What is NOT blocked by pass 0, said so the gap is scoped rather than feared:** the step-0 readings, the
-whole of pass 1 except 5.0 (steps 2.1-2.3 and step 3), the whole of pass 2, and design A at pass 4 — which
-reaches packages over the NAT allow-list from public hosts and needs no registry. What pass 0 gates is 5.0
-and everything downstream of it: pass 3, design B, and pass 5's idle-shutdown *detection* half.
+Pass 0 does not block the step-0 readings, pass 1 except 5.0 (steps 2.1-2.3 and step 3), pass 2, or design
+A at pass 4, which reaches packages over the NAT allow-list from public hosts and needs no registry. It
+gates 5.0 and everything downstream: pass 3, design B, and pass 5's idle-shutdown detection half.
 
-## What ran on 2026-08-21, and what it measured
+## The applies, and what each measured
 
-**Applied by Claude under the user's standing authorization for this stage** ("everything that does not
-depend on a decision of mine"), each one planned to a file, applied from that file, and re-planned to
-`No changes`. Every `[E]` slice was deliberately **not** applied: their lifecycle is `make up`/`make down`
-(D11), and design A's control is written and waiting rather than burning.
+Claude applied these on 2026-08-21 under the user's standing authorization for this stage ("everything
+that does not depend on a decision of mine"), each planned to a file, applied from that file, and
+re-planned to `No changes`. No `[E]` slice was applied: their lifecycle is `make up`/`make down` (D11), and
+design A's control is written and waiting.
 
 | Pass | What | Result |
 |---|---|---|
-| **0** | `terraform-modules/ecr-repo/` + `production/registry/` (Stage 7 step 5.a) | **`14 added`.** Two tag-immutable, scan-on-push, KMS-encrypted ECR repositories; CodeArtifact `awsds-prod-packages` with `pypi`/`crates`; `alias/awsds-prod-registry`; four consumer-facing policies built from one list. **Step 5.0 now has somewhere to push** |
-| **0** | 0.4 — read the domain slice's plan for anything SageMaker-shaped | **Answered: none.** Five resources, all `aws_datazone_domain` / `aws_iam_role*`. The premise the `Data` OU's free `sagemaker:Create*` deny rests on holds, and `US-2` keeps it read afterwards |
-| **1** | `terraform-modules/sagemaker-prereqs/` + `sandbox/sagemaker/` + `development/sagemaker/` | **`7 added` each, then `1 added` each** (the 9.1 log group, added in the same sitting). Provisioning and manage-access roles on AWS's own managed policies, `alias/awsds-<env>-project`, `/awsds/<env>/studio` at 30 days, and `awsds-<env>-project-boundary` |
-| **1** | step 3 — the deny fragment in `identity/sso/` | **`6 to change`, exactly six.** All six persona sets in one diff (Lesson 14's shape); `./aws/studio.py` `US-9` moved from `note` to **pass** on both Sids |
-| **2a** | `data-governance/governance/` — the domain and its two roles | **`5 added`.** `awsds-studio`, `V2`, `AVAILABLE`. `US-1` **pass**, `US-2` **pass** |
-| **2** | 1.6 — `DenyAthenaSparkStartSession` into `awsds-org-scp-ou-interactive` | **`1 to change`**, by Recipe A as `awsds-infra-identity`. `POLICIES.md` row written in the same sitting; `./aws/org-policies.py` all-pass. **The probes are owed** |
-| **2c** | 1.4 — the blueprint configurations, per member (second/third sittings) | **`12 added` each, then `1 destroyed` each — 11 stand.** The first apply failed twelve for twelve on the awscc NAME contract (finding 7; fixed by `sagemaker-prereqs-v0.2.2`); the ToolingLite re-cut (finding 9; `v0.2.3`) removed one. Re-plan `No changes` in both; **11/11 carry the boundary**; `US-3` **pass** in both members |
-| **2d** | 1.5 — the two project profiles | **`2 added`**, after the twelve-bundle refusal (finding 9): `experimentation`→Sandbox, `engineering`→Development, eleven configurations each, `Tooling` the only base (`ON_CREATE`), the five locked parameters read back non-editable, TIP `false` — **decision 2 delivered**. `US-4` **pass**; battery **0 FAILED** |
+| **0** | `terraform-modules/ecr-repo/` + `production/registry/` (Stage 7 step 5.a) | `14 added`. Two tag-immutable, scan-on-push, KMS-encrypted ECR repositories; CodeArtifact `awsds-prod-packages` with `pypi`/`crates`; `alias/awsds-prod-registry`; four consumer-facing policies built from one list. Step 5.0 has somewhere to push |
+| **0** | 0.4 — read the domain slice's plan for anything SageMaker-shaped | Answered: none. Five resources, all `aws_datazone_domain` / `aws_iam_role*`. The premise of the `Data` OU's free `sagemaker:Create*` deny holds, and `US-2` keeps it read afterwards |
+| **1** | `terraform-modules/sagemaker-prereqs/` + `sandbox/sagemaker/` + `development/sagemaker/` | `7 added` each, then `1 added` each (the 9.1 log group, added in the same sitting). Provisioning and manage-access roles on AWS's own managed policies, `alias/awsds-<env>-project`, `/awsds/<env>/studio` at 30 days, and `awsds-<env>-project-boundary` |
+| **1** | step 3 — the deny fragment in `identity/sso/` | `6 to change`, exactly six: all six persona sets in one diff (Lesson 14); `./aws/studio.py` `US-9` moved from `note` to `pass` on both Sids |
+| **2a** | `data-governance/governance/` — the domain and its two roles | `5 added`. `awsds-studio`, `V2`, `AVAILABLE`. `US-1` `pass`, `US-2` `pass` |
+| **2** | 1.6 — `DenyAthenaSparkStartSession` into `awsds-org-scp-ou-interactive` | `1 to change`, by Recipe A as `awsds-infra-identity`. `POLICIES.md` row written in the same sitting; `./aws/org-policies.py` all-pass. The probes were owed (closed in the owed table) |
+| **2c** | 1.4 — the blueprint configurations, per member (second/third sittings) | `12 added` each, then `1 destroyed` each — 11 stand. The first apply failed twelve for twelve on the awscc name contract (finding 7; fixed by `sagemaker-prereqs-v0.2.2`); the ToolingLite re-cut (finding 9; `v0.2.3`) removed one. Re-plan `No changes` in both; 11/11 carry the boundary; `US-3` `pass` in both members |
+| **2d** | 1.5 — the two project profiles | `2 added`, after the twelve-bundle refusal (finding 9): `experimentation`→Sandbox, `engineering`→Development, eleven configurations each, `Tooling` the only base (`ON_CREATE`), the five locked parameters read back non-editable, TIP `false` — decision 2 delivered. `US-4` `pass`; battery `0 FAILED` |
 
-### Thirteen findings, each of which changes something written elsewhere
+### Findings that change something written elsewhere
 
 1. **VERIFICATION (i) IS ANSWERED, IN BOTH DIRECTIONS, AND IT HAD BEEN OPEN SINCE 1c.** *Positive:* the
    `terraform apply` of `data-governance/governance/` created the domain from the `Data` OU — the

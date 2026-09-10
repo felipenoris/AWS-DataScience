@@ -2,15 +2,14 @@
 
 | | |
 |---|---|
-| **Status** | **DONE 2026-09-06 — every pass, in one day.** The account is `Staging Account` in `Workloads`; the SMUS surface, the lake share, the persona and the vending policy are gone; `terraform-live/development/` migrated to `staging/` on `awsds-staging-tfstate` and the old bucket is destroyed; every instrument and eleven documents are re-scoped. **What was PRESERVED is the harder half**: the VPC keeps `10.50.0.0/16` (a CIDR is immutable), both `[P]` gateway-endpoint ids survived a folder rename, a state migration and a token flip, and Production's peering kept its `pcx-` id through a `for_each` key rename that would otherwise have destroyed it. **`10.40.0.0/16` is free** and **stays** unallocated (6c step 0.2). **Three times a step's rule was right and its list was short** (4.4's replacements, 4.5's `for_each` keys, 4.6's third assignment); each was caught by saving the plan to a file and reading it, and 4.6's would have revoked the access the apply was running through. **Two steps had their instructions replaced rather than followed**: 4.7's by-hand bucket emptying became a `force_destroy` line in a diff, and 5.1's *remove the DNS slice* was refused because the code still declares the firewall. **One thing is still owed and it is not this stage's to take**: step 3.5, the Account Factory provisioned product's parameters, readable only from Management — which is also what would close Stage 1b verification (vi). Created 2026-09-05, revised the same day, and [logged](../../log/log-stage-06b-development-becomes-staging.md) throughout |
-| **Prerequisites** | [6a](stage-06a-unified-studio.md) — what is being unwound was built there. **6c is not a prerequisite, but this stage runs FIRST**: see "Why this stage precedes 6c" below |
+| **Status** | **Done 2026-09-06**, every pass in one day. The account is `Staging Account` in `Workloads`; the SMUS surface, the lake share, the persona and the vending policy are gone; `terraform-live/development/` migrated to `staging/` on `awsds-staging-tfstate` and the old bucket is destroyed; every instrument and eleven documents are re-scoped. Preserved: the VPC keeps `10.50.0.0/16` (a CIDR is immutable), both `[P]` gateway-endpoint ids survived the folder rename, the state migration and the token flip, and Production's peering kept its `pcx-` id through a `for_each` key rename. `10.40.0.0/16` stays unallocated (6c step 0.2). Three steps listed fewer resources than their plans showed (4.4's replacements, 4.5's `for_each` keys, 4.6's third assignment); each was caught by saving the plan to a file and reading it, and 4.6's would have revoked the access the apply ran through. Two instructions were replaced rather than followed: 4.7's by-hand bucket emptying became a `force_destroy` line in a diff, and 5.1's removal of the DNS slice was refused because the code still declares the firewall. [Logged](../../log/log-stage-06b-development-becomes-staging.md) throughout |
+| **Prerequisites** | [6a](stage-06a-unified-studio.md) — what is unwound here was built there. 6c is not a prerequisite, but this stage runs first: see "Why this stage precedes 6c" below |
 | **Consumes** | [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D32](../decisions/D32-account-factory-sso-user.md), [D35](../decisions/D35-sandbox-cardinality.md) |
-| **Proves** | Nothing new crosses an account boundary. What it **retires**: [INT-04](../integrations.md) (merged into INT-07), the Development halves of INT-01/02/12/15/17/18/19, INT-03's third consumer, and [INT-09](../integrations.md)'s premise (a Studio project cloning GitLab), whose peering 6c re-purposes |
+| **Proves** | Nothing new crosses an account boundary. Retired: [INT-04](../integrations.md) (merged into INT-07), the Development halves of INT-01/02/12/15/17/18/19, INT-03's third consumer, and [INT-09](../integrations.md)'s premise (a Studio project cloning GitLab), whose peering 6c re-purposes |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, §6's slice
-tree) and [`docs/plan/runbooks/terraform-changes.md`](../runbooks/terraform-changes.md) (**Recipe E** —
-moving a slice between folders, and **Recipe F** — a staged `awscc` destroy; both were written on
-2026-09-05 and are used, not authored, here).*
+tree) and [`docs/plan/runbooks/terraform-changes.md`](../runbooks/terraform-changes.md) (Recipe E, moving
+a slice between folders; Recipe F, a staged `awscc` destroy).*
 
 ---
 
@@ -27,25 +26,23 @@ moving a slice between folders, and **Recipe F** — a staged `awscc` destroy; b
 | The account's name and OU | Organizations / Control Tower | `Staging Account`, OU `Workloads` |
 | `terraform-live/development/` on `awsds-dev-tfstate` | the tree | `terraform-live/staging/` on `awsds-staging-tfstate` |
 
-**What this stage does NOT do:** it does not touch the network (6c owns it), does not build Staging's
-runtime (Stage 9), and creates no data share — D20's Staging is never on the lake share.
+This stage does not touch the network (6c owns it), does not build Staging's runtime (Stage 9), and
+creates no data share: D20's Staging is never on the lake share.
 
 ## Why this stage precedes 6c
 
-Not because 6c needs it, but because running it second costs two edits instead of one and puts a rename
-inside a network cut-over:
+Running it second would cost two edits instead of one and put a rename inside a network cut-over:
 
-- **6c writes the peering map once.** The map in `backend.py` (6c step 3) is authored with `staging`
-  already in it. Run in the other order, 6c writes `development` and 6b rewrites both sides of the same
-  peering plus the four literal provider aliases a week later.
-- **`production/foundation/peers.tf` finds a peer by the tag `awsds-<env>-vpc`.** The token flip (step 4.4)
-  renames that tag to `awsds-staging-vpc`; doing it before 6c means the accepter side is authored against
-  the final name.
-- **6b destroys three slices 6c would otherwise have to reason about** (`sagemaker/`, `data/`, and the
+- 6c writes the peering map once. The map in `backend.py` (6c step 3) is authored with `staging` already
+  in it; in the other order 6c writes `development` and 6b rewrites both sides of the same peering plus
+  the four literal provider aliases a week later.
+- `production/foundation/peers.tf` finds a peer by the tag `awsds-<env>-vpc`. The token flip (step 4.4)
+  renames that tag to `awsds-staging-vpc`, so the accepter side is authored against the final name.
+- 6b destroys three slices 6c would otherwise have to reason about (`sagemaker/`, `data/`, and the
   Interactive surface behind them).
 
-The one object the two stages share is the `Development ↔ Production` peering. It stays exactly as it is
-until 6c re-cuts it; nothing in this stage touches a route table.
+The one object the two stages share is the `Development ↔ Production` peering. It stays as it is until
+6c re-cuts it; nothing in this stage touches a route table.
 
 ## Who executes each action
 
@@ -57,16 +54,16 @@ until 6c re-cuts it; nothing in this stage touches a route table.
 
 ## Step numbers are identifiers, not an order
 
-The sequence is six passes. **Passes 1 and 3 are order-critical and pass 1 must complete first**: the
+The sequence is six passes. Passes 1 and 3 are order-critical and pass 1 completes first: the
 `Workloads` OU denies `datazone:*` (`awsds-org-scp-ou-workloads`, `DenyDataZoneEntirely`), the eleven
-blueprint configurations are owned by the **member**, and only the member can delete them. An account moved
+blueprint configurations are owned by the member, and only the member can delete them. An account moved
 to `Workloads` with a configuration still attached can never delete it, and an incomplete configuration
-pins its dependents in **both** directions (Lesson 39).
+pins its dependents in both directions (Lesson 39).
 
 | Pass | What | Slices touched | Applied as |
 |---|---|---|---|
-| **0** | preflight readings — **DONE** (0.1-0.5a 2026-09-05, 0.5b 2026-09-06) | none | read-only |
-| **1** | the SMUS unwind — **inside `Interactive`** | `data-governance/governance/`, `development/sagemaker/` — **and `scripts/tfhygiene/backend.py`**, whose vocabulary edit is what flips the flag (1.2/1.6) | `awsds-infra-data`, `awsds-infra-dev` |
+| **0** | preflight readings — done: 0.1-0.5a 2026-09-05, 0.5b 2026-09-06 | none | read-only |
+| **1** | the SMUS unwind, inside `Interactive` | `data-governance/governance/`, `development/sagemaker/`, and `scripts/tfhygiene/backend.py`, whose vocabulary edit flips the flag (1.2/1.6) | `awsds-infra-data`, `awsds-infra-dev` |
 | **2** | persona swap and lake revocation | `identity/sso/`, `data-governance/data/`, `development/{foundation,data}/` | `awsds-infra-identity`, `awsds-infra-data`, `awsds-infra-dev` |
 | **3** | the rename and the OU move | `identity/sso/` (value only), `identity/org-policies/` (3.8's new Sid), `aws/probes/` (3.7's token) | console + `awsds-infra-identity` |
 | **4** | the folder and token migration | every surviving slice | `awsds-infra-dev` → `awsds-infra-staging` |
@@ -79,100 +76,90 @@ pins its dependents in **both** directions (Lesson 39).
 ### 0. Preflight — measure what the account holds before anything is removed
 
 **Action:** take the readings and paste them into the stage log. **Why:** every destroy count below is
-quoted from a snapshot, and a count that disagrees is the difference between a clean destroy and a
-stranded object. **Explanation:** a reading that contradicts this file stops the stage rather than
-adjusting it — the disagreement is the finding.
+quoted from a snapshot; a reading that contradicts this file stops the stage rather than adjusting it,
+and the disagreement is the finding.
 
-> **PASS 0 IS COMPLETE** — 0.1-0.5a on 2026-09-05 as the infrastructure user through
-> `InfrastructureAccess`, 0.5b on 2026-09-06 from CloudShell in Management. Every reading below now carries
-> what it *measured*, so the numbers in passes 1-4 are dated evidence rather than expectations, and **two
-> of the readings contradicted this file** (0.3's count, 0.5b's switch). The readings are in
+> Pass 0 is complete: 0.1-0.5a on 2026-09-05 as the infrastructure user through `InfrastructureAccess`,
+> 0.5b on 2026-09-06 from CloudShell in Management. Two readings contradicted this file (0.3's count,
+> 0.5b's switch). The readings are in
 > [`log-stage-06b-development-becomes-staging.md`](../../log/log-stage-06b-development-becomes-staging.md);
-> what follows is only what each one *decides*.
+> each step below carries only what its reading decides.
 
 - **0.1 — [Claude] Read the SMUS surface**: `./aws/studio.py`. For the Development profile expect `US-3` =
-  11 blueprint configurations, `US-4` = both project profiles, **no project**, and no SageMaker AI domain.
-  A project here means pass 1 grows a project delete **before** 1.4, and the stage waits for it.
-  **MEASURED 2026-09-05, `0 check(s) FAILED`: exactly that.** `US-8` reads *"no blueprint-provisioned role
-  exists yet — the check is unexercised here"*, which is the no-project reading stated from the other side.
-  **Pass 1 needs no project delete.**
+  11 blueprint configurations, `US-4` = both project profiles, no project, and no SageMaker AI domain. A
+  project would add a project delete to pass 1 before 1.4, and the stage would wait for it.
+  **Measured 2026-09-05, `0 check(s) FAILED`: exactly that.** `US-8` reads *"no blueprint-provisioned
+  role exists yet — the check is unexercised here"*, the no-project reading from the other side. Pass 1
+  needs no project delete.
 - **0.2 — [Claude] Read the lake surface**: `./aws/datalake.py`. Record the Development rows —
   `DataLakeSettings` admins, the two resource links, the four re-grants, and the two TBAC share triples
-  `data-governance/data/` holds for this consumer. These are step 2.3's expected destroy count.
-  **MEASURED 2026-09-05, `0 check(s) FAILED`:** two resource links (`curated`, `raw`); `DL-13` = **the
-  `InfrastructureAccess` seat alone** — no service-appointed Lake Formation admin in this account, unlike
+  `data-governance/data/` holds for this consumer: step 2.3's expected destroy count.
+  **Measured 2026-09-05, `0 check(s) FAILED`:** two resource links (`curated`, `raw`); `DL-13` = the
+  `InfrastructureAccess` seat alone — no service-appointed Lake Formation admin in this account, unlike
   Sandbox, so `OQ 24` does not reach the conversion; `DL-5` = `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
-  - **The four re-grants are NOT in `datalake.py`** — it has no section for consumer-side permissions, and
-    the stage said "record them" without saying from where. Read them directly:
-    `aws lakeformation list-permissions --profile awsds-infra-dev`. **Measured: 6 permissions, of which 4
-    name `AWSReservedSSO_DataScientistAccess_*`** (two `DESCRIBE` on `Database`, two on `LFTagPolicy`) and
-    2 name the `InfrastructureAccess` role. **The four are step 2.4's expected loss**; the two
-    Infrastructure ones belong to the local databases and go with the slice.
+  - The four re-grants are not in `datalake.py`, which has no section for consumer-side permissions.
+    Read them with `aws lakeformation list-permissions --profile awsds-infra-dev`. **Measured: 6
+    permissions, of which 4 name `AWSReservedSSO_DataScientistAccess_*`** (two `DESCRIBE` on `Database`,
+    two on `LFTagPolicy`) and 2 name the `InfrastructureAccess` role. The four are step 2.4's expected
+    loss; the two Infrastructure ones belong to the local databases and go with the slice.
 - **0.3 — [Claude] Read the identity surface**: `./aws/list-identities.py`. Record the permission sets
   assigned and the customer-managed `awsds-org-project-storage-vending` reference.
-  **MEASURED 2026-09-05, and the count in this step was wrong: the account carries SEVEN assignments, not
-  four.** Four are this project's personas — `InfrastructureAccess`, `DataScientistAccess`,
-  `DeploymentManagerAccess`, `DevEnvStewardAccess`, each to its `sso-group-*` — and **three are the landing
-  zone's**, identical in every governed account: `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`,
-  `AWSPowerUserAccess` → `AWSSecurityAuditPowerUsers`, `AWSReadOnlyAccess` → `AWSSecurityAuditors`.
-  **This stage touches none of the three**, so the account ends at **six** assignments, three of them the
-  project's — which is what the Deliverables and Validation now say instead of "three permission sets".
-  - **No direct `AWSAdministratorAccess` assignment today** — 1b step 5.1's removal is still holding. That
-    is what makes step 3.6 a real question: the account update is exactly the event that may re-create it,
-    and the negative baseline is what makes the return detectable.
-- **0.4 — [Claude] Read the conversion in one report**: `./aws/rename-check.py` (written 2026-09-05).
-  Expect the **BEFORE** verdict — old name, `Interactive`, DataZone objects present, share present. Any
-  **MIXED** row before the stage starts is a finding, not a phase.
-  **MEASURED 2026-09-05 — and the first run found three faults in the instrument, not in the estate.**
-  (i) **RC-6 could never have answered**: `list-permissions --principal <account>` without `--resource` is
-  refused — *"Resource is mandatory if Principal is set in the input"* — so it returned `(call failed)` in
-  the BEFORE state and would have returned it identically in the AFTER one (Lesson 13). It now lists the
-  catalog and matches client-side, and reads **2**: the two TBAC triples. (ii) **RC-5 failed on the
-  untouched estate**, against the file's own promise that everything notes before the stage runs; it had no
-  BEFORE branch, and what makes the same reading a *finding* is the account having already been renamed or
-  moved while still holding the two sets. (iii) **RC-4 reported three RAM shares as one question** — the
-  `DataZone-*` share goes at step 1, the two `LakeFormation-V4-*` shares at 2.3 — now split into
-  **RC-4 / RC-4b / RC-4c** so a mid-stage reading names the step that clears it.
-  **After the fixes: six notes, `0 check(s) FAILED`** — the clean BEFORE verdict this step asked for.
-- **0.5 — Read the organization's two switches — with the two instruments that already read them.**
-  This step used to open by writing `aws/cloudshell/management-account-switches.sh`. **It does not, and
-  that is a finding of the 2026-09-05 preparation sitting**: both switches were already being read, one
-  per instrument, and a third script would have been a second copy of two readings that exist — the
-  divergence Lesson 33 describes, bought for nothing. What the two instruments lacked was not the call but
-  the **interpretation**, and that is what was added to each.
+  **Measured 2026-09-05: seven assignments**, against the four this step expected. Four are this
+  project's personas — `InfrastructureAccess`, `DataScientistAccess`, `DeploymentManagerAccess`,
+  `DevEnvStewardAccess`, each to its `sso-group-*` — and three are the landing zone's, identical in every
+  governed account: `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins`, `AWSPowerUserAccess` →
+  `AWSSecurityAuditPowerUsers`, `AWSReadOnlyAccess` → `AWSSecurityAuditors`. This stage touches none of
+  the three, so the account ends at six assignments, three of them the project's, which is what the
+  Deliverables and Validation say.
+  - No direct `AWSAdministratorAccess` assignment today: 1b step 5.1's removal still holds. That negative
+    baseline is what makes step 3.6 a real question — the account update is the event that may re-create
+    it, and a return is detectable.
+- **0.4 — [Claude] Read the conversion in one report**: `./aws/rename-check.py`. Expect the BEFORE
+  verdict — old name, `Interactive`, DataZone objects present, share present. A MIXED row before the
+  stage starts is a finding, not a phase.
+  **Measured 2026-09-05; the first run found three faults in the instrument, none in the estate.**
+  (i) `RC-6` could never have answered: `list-permissions --principal <account>` without `--resource` is
+  refused — *"Resource is mandatory if Principal is set in the input"* — so it returned `(call failed)`
+  in the BEFORE state and would have returned it identically in the AFTER one (Lesson 13). It now lists
+  the catalog and matches client-side, and reads **2**: the two TBAC triples. (ii) `RC-5` failed on the
+  untouched estate: it had no BEFORE branch, and the finding it exists for is an account already renamed
+  or moved while still holding the two sets. (iii) `RC-4` reported three RAM shares as one question —
+  the `DataZone-*` share goes at step 1, the two `LakeFormation-V4-*` shares at 2.3 — and is now split
+  into `RC-4` / `RC-4b` / `RC-4c`, so a mid-stage reading names the step that clears it.
+  After the fixes: six notes, `0 check(s) FAILED` — the clean BEFORE verdict.
+- **0.5 — Read the organization's two switches, with the two instruments that already read them.** A
+  third script (`aws/cloudshell/management-account-switches.sh`) was not written: both switches were
+  already read, one per instrument (Lesson 33). What each lacked was the interpretation, added on
+  2026-09-05.
   - **0.5a — [Claude] `account.amazonaws.com` trusted access**: `./aws/org-trusted-access-services.py`,
-    from the laptop as `awsds-infra-identity`. Section 1 lists every principal and, since 2026-09-05,
-    names this one as a **switch** and says what its absence costs: it is the prerequisite for passing
-    `--account-id` to the Account Management API, which is how a **member** account is renamed (step 3.2).
-    **No CloudShell session is needed for this half** — Organizations reads answer from Identity, and this
-    exact call was measured answering there on 2026-08-12. **MEASURED 2026-09-05: `account.amazonaws.com`
-    is ABSENT.** Nine principals hold trusted access (`access-analyzer`, `cloudtrail`, `config`,
-    `controltower`, `iam`, `member.org.stacksets.cloudformation`, `ram`, `securityhub`, `sso`) and Account
-    Management is not one of them — **so step 3.1 is a real step, not a conditional one**.
+    from the laptop as `awsds-infra-identity`. Section 1 lists every principal and names this one as a
+    switch: it is the prerequisite for passing `--account-id` to the Account Management API, which is
+    how a member account is renamed (step 3.2). No CloudShell session is needed for this half —
+    Organizations reads answer from Identity, measured on 2026-08-12. **Measured 2026-09-05:
+    `account.amazonaws.com` is absent.** Nine principals hold trusted access (`access-analyzer`,
+    `cloudtrail`, `config`, `controltower`, `iam`, `member.org.stacksets.cloudformation`, `ram`,
+    `securityhub`, `sso`) and Account Management is not one of them, so step 3.1 is a real step.
   - **0.5b — [user] account auto-enrollment**: `./aws/cloudshell/management-landing-zone-drift.sh`,
-    CloudShell in **Management** as the **`AWS Control Tower Admin`** user, permission set
+    CloudShell in Management as the `AWS Control Tower Admin` user, permission set
     `AWSAdministratorAccess` (the `awsds-ctadmin-orgfull-*` profiles do not reach Management). Its
-    section 2 has printed `remediationTypes` since its first run; since 2026-09-05 it also says what the
-    value decides. `INHERITANCE_DRIFT` present = Control Tower re-baselines an account moved with the
-    Organizations API; absent = a hand move leaves the **source** OU's baseline and controls attached and
-    raises inheritance drift. The feature needs landing zone 3.1 or later; this one is 4.0.
-    **MEASURED 2026-09-06, from CloudShell in Management: `remediationTypes: INHERITANCE_DRIFT` —
-    AUTO-ENROLLMENT IS ON**, and this step predicted the opposite ("absent — the default, and the expected
-    reading here"). **The value was already in the repository**: `INV-17` has carried it since 2026-08-16,
-    unread as a switch because nothing had named it one. That is what `docs/AWS_STATE.md` exists to
-    prevent, and the prediction was written without consulting it — the reading cost nothing, the
-    prediction would have cost step 3.4's reasoning.
-    The same run re-confirmed the rest of `INV-17` unchanged: `ACTIVE`, 4.0 = latest, `IN_SYNC`, and
-    **one operation ever — `CREATE`/`SUCCEEDED`**, so the landing zone still has not re-run since the
-    Stage 2 delegation, and section 5 still reads the resource policy `PRESENT` with its condition on two
+    section 2 prints `remediationTypes` and says what the value decides: `INHERITANCE_DRIFT` present =
+    Control Tower re-baselines an account moved with the Organizations API; absent = a hand move leaves
+    the source OU's baseline and controls attached and raises inheritance drift. The feature needs
+    landing zone 3.1 or later; this one is 4.0.
+    **Measured 2026-09-06, from CloudShell in Management: `remediationTypes: INHERITANCE_DRIFT` —
+    auto-enrollment is on**; this step had predicted "absent". The value was already in the repository:
+    `INV-17` has carried it since 2026-08-16, and the prediction was written without consulting
+    `docs/AWS_STATE.md`.
+    The same run re-confirmed the rest of `INV-17` unchanged: `ACTIVE`, 4.0 = latest, `IN_SYNC`, and one
+    operation ever (`CREATE`/`SUCCEEDED`), so the landing zone has not re-run since the Stage 2
+    delegation; section 5 still reads the resource policy `PRESENT` with its condition on two
     statements.
-  - **What neither reading changes: step 3.4 — but one of its two reasons is now void.** Auto-enrollment
-    does **not** create, modify or terminate the Account Factory **provisioned product**, and does **not**
-    prevent `Moved member account` drift when the two OUs differ in configuration — which `Interactive` and
-    `Workloads` do. Those two still make the Control Tower `Update account` path the supported one. What
-    the measurement **removes** is 3.4's second clause: with the switch ON, an Organizations move would no
-    longer strand the source OU's Config-rule controls. The conclusion survives its own justification
-    shrinking, which is the only reason it is worth writing down.
+  - Neither reading changes step 3.4, but one of its two reasons is void. Auto-enrollment does not
+    create, modify or terminate the Account Factory provisioned product, and does not prevent
+    `Moved member account` drift when the two OUs differ in configuration, as `Interactive` and
+    `Workloads` do; those two keep the Control Tower `Update account` path the supported one. What the
+    measurement removes is 3.4's second clause: with the switch on, an Organizations move would no longer
+    strand the source OU's Config-rule controls.
 - **0.6 — [user] Paste the five readings into the stage log's first entry**, so every count below is
   measured rather than quoted.
 

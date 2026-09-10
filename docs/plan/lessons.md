@@ -463,293 +463,257 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    tell is different — not a stated intention missing its enforcing line, but a `plan` that renders the
    same text whether the intention will hold or not.
 
-28. **When a service keeps its own permission layer above IAM, a principal's reach is the *intersection* —
-   and this repository's layout puts the two halves in different slices, so a slice is never the unit that
-   answers "what can this persona do".** Stage 5 pass 2 made the governance manager's first grants, and the
-   reading that preceded them is the lesson. `identity/sso/policies-approvers.tf` carries a statement called
-   `AdministerLakeFormation` — `AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag` — which reads like
-   the complete answer to what the persona may do, and **on its own it grants nothing**. Lake Formation
-   authorizes separately: the IAM action permits the API **call**, an LF permission (`ASSOCIATE` on the tag)
-   decides whether the call **succeeds**. The two live in different accounts, different slices and different
-   stages, while the natural unit to open is a slice.
-   **What makes it expensive rather than merely true is the shape of the failure.** Before pass 2 landed
-   that file read exactly as it reads now, and the persona could not tag a single dataset — and with Lake
-   Formation enforcing, a missing grant makes `glue:GetDatabases` return an **empty list**, not an error. So
-   the wrong conclusion is drawn from a file that is *accurate*, and the symptom is an absence: Lesson 13's
-   shape arriving through a service's own result-filtering rather than through a check somebody wrote.
-   **The reverse direction is worse, because it has no symptom at all** — revoke the LF grant and the IAM
-   policy still describes the capability, leaving a confident statement that nothing in the repository
-   contradicts.
-   **The general form:** Lake Formation over IAM is one instance; a KMS key policy, an S3 bucket policy, a
-   Glue or RAM resource policy are the same shape. Any claim about what a principal can do **names both
-   halves or is not a claim**. The discriminator, to apply while writing rather than while debugging: for
-   each capability, can you point at the two grants? If you can point at one, the other exists somewhere
-   and you have not read it. **Against Lesson 20**, its nearest neighbour: there several policies deny the
-   same call and only one is proven — redundancy making a *result* ambiguous; here the two grants are each
-   **necessary**, and reading one makes an *absence* invisible. The mitigation shipped with the lesson: a
-   comment at each end pointing at the other ([`policies-approvers.tf`](../../terraform-live/identity/sso/policies-approvers.tf),
-   [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is the
-   intersection of two systems").
-   **AMENDED 2026-08-19 (Stage 5 pass 4c), because the lesson was stated, listed "an S3 bucket policy"
-   in its general form — and still did not fire.** The intersection has a **second trigger, which is not
-   a service at all: the account boundary.** Cross-account access requires an allow in the resource
-   policy of the account that owns the object **and** an allow in the identity policy of the account that
-   owns the principal. No second permission layer is involved; it is one IAM, whose evaluation rule
-   changes from OR to AND at the boundary. That is why the first trigger did not recognise it: S3 has no
-   layer above IAM, so the case does not look like Lake Formation, and **same-account intuition is
-   actively wrong here** — within one account a bucket policy naming a role *is* sufficient, which is the
-   form everybody has read a hundred times.
-   **What it cost:** the drop-box `PutObject` had lived since pass 1 with only its resource half — three
-   correct statements naming the persona roles — and the stage file recorded in writing that the missing
-   identity half was *"correct rather than missing"*. The reading behind that sentence was accurate; the
-   inference was not. The failure would have surfaced at the first attempt as an `AccessDenied` **whose
-   error names the half that is right**, which is why this direction is expensive rather than merely
-   wrong.
-   **The discriminator, added to the one above:** before claiming any permission works, ask *whose
-   account owns the object, and whose owns the principal* — and if the answer is two accounts, the
-   question "can you point at both grants?" is not optional advice, it is the evaluation rule. The
-   converse is the useful half in review: a resource policy that names a **foreign** principal is by
-   itself always incomplete, in every service, with no exception — so it can be read as a marker that an
-   identity-side statement exists somewhere or the permission is dead.
-   **AMENDED AGAIN 2026-08-20 (Stage 5 pass 4d, when the drop-box `PutObject` finally ran), because
-   "the two halves" is the wrong arity on an encrypted write path: there are THREE.** The write
-   succeeded only because the identity half (`WriteIngestionDropBox`), the resource half
-   (`AllowInteractiveWriterPutOnly`) **and the lake CMK's key policy** meeting `UseLakeDataKeyViaS3` all
-   agreed at once — three policies in two accounts, one call. The third term is not an exotic case: it is
-   present on **every** write to a bucket with SSE-KMS default encryption, because S3 calls
-   `kms:GenerateDataKey` with the **caller's** credentials, not its own.
-   **What makes this amendment worth its own paragraph is where the term is legible.** The first two
-   halves announce themselves on failure — the `AccessDenied` names the action and the resource, and the
-   wording says which layer refused. The key term does not: a missing KMS grant surfaces as a **KMS**
-   error about an action nobody wrote in the policy they are debugging, which is exactly the shape the
-   Athena `INSERT` failure took the day before (Lesson 34's finding arrived wearing this costume). And on
-   **success** the key term is the only one that is visible at all — the `PutObject` response echoes
-   `SSEKMSKeyId`, naming the key and its owning account, while nothing in the response mentions the
-   bucket policy or the identity policy that also had to allow it.
-   **The discriminator, third and last:** after asking *which service has a layer above IAM* and *whose
-   account owns the object*, ask **is the target encrypted, and with whose key** — and if the key lives
-   in another account, that is a third grant on the same call. The review habit that follows: a
-   successful encrypted write is worth reading for its `SSEKMSKeyId` rather than for its exit code,
-   because that field is a **positive** proof of a grant that no failure elsewhere would have attributed
-   correctly.
+28. **When a service keeps its own permission layer above IAM, a principal's reach is the
+   *intersection* — and this repository's layout puts the two halves in different slices, so a slice
+   is never the unit that answers "what can this persona do".** Stage 5 pass 2 made the governance
+   manager's first grants. `identity/sso/policies-approvers.tf` carries a statement called
+   `AdministerLakeFormation` (`AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag`), which reads
+   like the complete answer to what the persona may do, and on its own grants nothing. Lake
+   Formation authorizes separately: the IAM action permits the API call, an LF permission
+   (`ASSOCIATE` on the tag) decides whether the call succeeds. The two live in different accounts,
+   different slices and different stages, while the natural unit to open is a slice. The failure
+   shape is what makes it expensive: before pass 2 that file read exactly as it reads now and the
+   persona could not tag a single dataset, and with Lake Formation enforcing, a missing grant makes
+   `glue:GetDatabases` return an empty list, not an error. The wrong conclusion is drawn from a file
+   that is accurate, and the symptom is an absence (Lesson 13's shape, through a service's own
+   result-filtering). The reverse direction has no symptom at all: revoke the LF grant and the IAM
+   policy still describes the capability. Lake Formation over IAM is one instance; a KMS key policy,
+   an S3 bucket policy, a Glue or RAM resource policy are the same shape. Any claim about what a
+   principal can do names both halves or is not a claim. The discriminator: for each capability, can
+   you point at the two grants? If you can point at one, the other exists somewhere and you have not
+   read it. Against Lesson 20: there several policies deny the same call and only one is proven,
+   redundancy making a result ambiguous; here the two grants are each necessary, and reading one
+   makes an absence invisible. The mitigation: a comment at each end pointing at the other
+   ([`policies-approvers.tf`](../../terraform-live/identity/sso/policies-approvers.tf),
+   [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is
+   the intersection of two systems").
 
-29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule over
-   it — and the rule inherits every resource that wears the attribute for an unrelated reason.** Stage 5
-   pass 3 was one expression away from sharing the drop-box. The classification ontology gives
-   `classification=internal` to the drop-box database for a considered reason: arrivals are user-supplied,
-   the fail-open default says an unclassified arrival is ordinary working data rather than invisible. The
-   default consumer share was then written as `classification ∈ {public, internal}` — a *sensitivity*
-   predicate — and sensitivity is not the question a share asks. The question a share asks is **may people
-   read this**, and the drop-box's answer is no in the strongest terms the design has: it is the letterbox
-   whose whole contract is *write, never read back*. Two correct decisions, one accidental intersection.
-   **What makes this more than a slip is where it was caught**: not in review, but at the apply, by reading
-   the expression against the catalog **as actually tagged** rather than against the model. A tag ontology
-   read as prose looks like a taxonomy; read as a selector it is a set of `WHERE` clauses, and a value
-   chosen for meaning A silently qualifies for rule B. **The discriminator, before writing any grant, SCP
-   condition, ABAC rule or bucket-policy tag match:** enumerate what *currently* carries each value and ask
-   whether every one of them belongs in the result — the model will not tell you, only the inventory will.
-   **And the gate belongs on the axis that expresses the intent**: the fix was not to re-tag the drop-box
-   but to add the dimension the rule was really about (`layer`), leaving each attribute saying the one
-   thing it was chosen to say. **The near-miss also shows how not to reason about it**: the rows would not
-   in fact have leaked, because a second control (the unregistered location) blocks the read — and that is
-   exactly the argument to distrust. Lesson 5's neighbour, in reverse: an unintended *grant* is a defect
-   whether or not a later control happens to cover it, because nobody chose the coverage.
+   Amended 2026-08-19 (Stage 5 pass 4c), because the lesson listed "an S3 bucket policy" and still
+   did not fire. The intersection has a second trigger, which is not a service: the account
+   boundary. Cross-account access requires an allow in the resource policy of the account that owns
+   the object and an allow in the identity policy of the account that owns the principal. No second
+   permission layer is involved; it is one IAM, whose evaluation rule changes from OR to AND at the
+   boundary. S3 has no layer above IAM, so the case does not look like Lake Formation, and
+   same-account intuition is wrong here: within one account a bucket policy naming a role is
+   sufficient. The drop-box `PutObject` had lived since pass 1 with only its resource half, three
+   correct statements naming the persona roles, and the stage file recorded that the missing
+   identity half was *"correct rather than missing"*. The failure would have surfaced at the first
+   attempt as an `AccessDenied` whose error names the half that is right. The discriminator: before
+   claiming any permission works, ask whose account owns the object and whose owns the principal; if
+   two accounts, "can you point at both grants?" is the evaluation rule. In review, a resource
+   policy that names a foreign principal is by itself always incomplete, in every service, so it
+   marks either an identity-side statement somewhere or a dead permission.
 
-30. **A tool's failure is not a property of the world — and if it gets written down as one, the record
-   carries the tool's limit forever.** Stage 5 pass 2 could not fetch AWS's Lake Formation pages: they are
-   JavaScript-rendered and the plain fetcher returned no body. The handling was right in every visible way
-   — the missing information was *not* asserted from memory, the gap was recorded, the question was
-   deferred to the stage that could measure it. But the caveat that went into `REFERENCES.md` said the
-   pages "did not return a body to an automated fetch", which reads as *these pages cannot be read*, and
-   the true statement was *this fetcher cannot read these pages*. One session later a rendering browser
-   opened all of them in a minute, and the question that had been deliberately left open — whether the
-   governance-manager persona can *grant* as well as tag — was answered by a sentence sitting in a page
-   nobody had failed to read, only failed to try. **The discriminator: before recording an unknown, name
-   the instrument that failed and ask what a different instrument would see.** An unread source is a gap in
-   *the record*, not a fact about the source, and the two get filed identically unless you separate them on
-   purpose. **The generalisation this project should keep**: the same shape sits behind an `aws` call that
-   fails on the wrong profile, a plan that "cannot express" something the API supports, and a check that
-   returns empty — each says something about the reach of the instrument first, and the world second.
+   Amended again 2026-08-20 (Stage 5 pass 4d, when the drop-box `PutObject` ran), because "the two
+   halves" is the wrong arity on an encrypted write path: there are three. The write succeeded only
+   because the identity half (`WriteIngestionDropBox`), the resource half
+   (`AllowInteractiveWriterPutOnly`) and the lake CMK's key policy meeting `UseLakeDataKeyViaS3` all
+   agreed at once: three policies in two accounts, one call. The third term is present on every
+   write to a bucket with SSE-KMS default encryption, because S3 calls `kms:GenerateDataKey` with
+   the caller's credentials. The first two halves announce themselves on failure; the key term
+   surfaces as a KMS error about an action nobody wrote in the policy they are debugging, the shape
+   the Athena `INSERT` failure took the day before (Lesson 34). On success the key term is the only
+   visible one: the `PutObject` response echoes `SSEKMSKeyId`, naming the key and its owning
+   account, while nothing in the response mentions the bucket policy or the identity policy. The
+   third discriminator: is the target encrypted, and with whose key? A key in another account is a
+   third grant on the same call. A successful encrypted write is read for its `SSEKMSKeyId` rather
+   than its exit code, because that field is a positive proof of a grant that no failure elsewhere
+   would have attributed correctly.
 
-   **A SECOND OCCURRENCE (2026-08-22) MOVED THE LIMIT INSIDE THE API'S OWN CONTRACT.** `US-8` read
-   permission boundaries through `iam list-roles` — and `ListRoles` **omits `PermissionsBoundary` by
-   documented contract** (`GetRole`-only, along with `Tags` and `RoleLastUsed`), so the reading was a
-   constant `null` for every role that had one. The check reported the world's first real project role as
-   unbounded while `get-role` showed the boundary in place. Two sharpenings: **reading everything the
-   response returned is not enough — the field contract itself has to be read**, because the drop happens
-   at the API's end, not in the collection code (Lesson 31's "what did the collection drop?" asked one
-   layer deeper); and the defect survived from birth because **no object existed that could falsify the
-   check** — its first exercise with a real role was what exposed it, which is Lesson 13's shape stretched
-   over time.
+29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule
+   over it — and the rule inherits every resource that wears the attribute for an unrelated
+   reason.** Stage 5 pass 3 was one expression away from sharing the drop-box. The classification
+   ontology gives `classification=internal` to the drop-box database for a considered reason:
+   arrivals are user-supplied, and the fail-open default says an unclassified arrival is ordinary
+   working data rather than invisible. The default consumer share was then written as
+   `classification ∈ {public, internal}`, a sensitivity predicate, and sensitivity is not the
+   question a share asks. A share asks whether people may read this, and the drop-box's answer is
+   no: it is the letterbox whose contract is write, never read back. Two correct decisions, one
+   accidental intersection. It was caught at the apply, by reading the expression against the
+   catalog as actually tagged rather than against the model. A tag ontology read as prose looks like
+   a taxonomy; read as a selector it is a set of `WHERE` clauses, and a value chosen for meaning A
+   silently qualifies for rule B. Before writing any grant, SCP condition, ABAC rule or
+   bucket-policy tag match, enumerate what currently carries each value and ask whether every one of
+   them belongs in the result; only the inventory will tell you. The gate belongs on the axis that
+   expresses the intent: the fix was not to re-tag the drop-box but to add the dimension the rule
+   was about (`layer`), leaving each attribute saying the one thing it was chosen to say. The rows
+   would not in fact have leaked, because the unregistered location blocks the read, and that is the
+   argument to distrust (Lesson 5 in reverse): an unintended grant is a defect whether or not a
+   later control happens to cover it, because nobody chose the coverage.
 
-31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about that
-   one while the design spreads past it.** `DL-6` decides whether Lake Formation's create-defaults still
-   grant `IAM_ALLOWED_PRINCIPALS` — the reading D13 rests on. It was written at Stage 5 pass 1, when Data
-   Governance was the only account with a `DataLakeSettings`, so it read `DATA_PROFILE`. By pass 4 two more
-   accounts had one, both in the failing state, and the check was **green**. Nothing was broken: it
-   answered its question correctly, about a population that had stopped being the whole population.
-   **This is not Lesson 13** — that one is a check whose output cannot tell success from failure. This one
-   discriminates perfectly and is pointed at the wrong set, which is worse in one specific way: Lesson 13's
-   failure looks empty and invites suspicion, while this one looks like evidence. **The discriminator, and
-   it is cheap: a check's scope is part of its claim, so write the scope into the line it prints** —
-   `DL-6 (awsds-infra-dev)` is a sentence you can falsify by counting accounts, `DL-6` is not.
-   **And the trigger to re-read every check is not a code change but a *topology* change**: the day a
-   second account gains a resource that only one had, every instrument that reads that resource is scoped
-   until proven otherwise. Pass 3 saw this coming and wrote the debt down; the debt still shipped one
-   session of a green check over two failing accounts, which is the argument for extending the instrument
-   **in the same sitting** as the resource rather than in the one that notices.
+30. **A tool's failure is not a property of the world — and if it gets written down as one, the
+   record carries the tool's limit forever.** Stage 5 pass 2 could not fetch AWS's Lake Formation
+   pages: they are JavaScript-rendered and the plain fetcher returned no body. The handling was
+   right in every visible way: the missing information was not asserted from memory, the gap was
+   recorded, the question deferred to the stage that could measure it. But the caveat in
+   `REFERENCES.md` said the pages "did not return a body to an automated fetch", which reads as
+   *these pages cannot be read*, when the true statement was *this fetcher cannot read these pages*.
+   One session later a rendering browser opened all of them in a minute, and the deferred question,
+   whether the governance-manager persona can grant as well as tag, was answered by a sentence in a
+   page nobody had failed to read, only failed to try. Before recording an unknown, name the
+   instrument that failed and ask what a different instrument would see. An unread source is a gap
+   in the record, not a fact about the source. The same shape sits behind an `aws` call that fails
+   on the wrong profile, a plan that "cannot express" something the API supports, and a check that
+   returns empty: each says something about the reach of the instrument first, and the world second.
 
-   **THE SAME MECHANISM ALSO ARRIVES AS A FALSE `FAIL`, AND THAT IS THE SECOND OCCURRENCE (2026-08-21,
-   Stage 6 step 1.3).** `US-2` asks whether a DataZone domain exists outside Data Governance. It counted
-   the rows `datazone list-domains` returned in each account and treated any non-zero as *"a domain was
-   created here"* — true in a world where nothing is shared, which was the world it was written in. The
-   account association shares one domain **into** the member accounts, so on the day the association
-   succeeded the check went red in both, about a domain that had never moved. **A topology change again,
-   and the same lesson at the opposite sign.**
-   **Two things generalise from the second occurrence that the first does not give you.** The **tell** is
-   different and cheaper than counting accounts: *the failure arrived from the act that was supposed to
-   work*. A check that goes red at the exact moment a step succeeds is making a claim about the world
-   before it is making a claim about the estate — audit the check first, and only then the estate.
-   And the **fix** is not scope, it is a discarded field: the collection built `(id, name, version,
-   status)` and **threw away the ARN**, the one attribute carrying the owner. **A check that infers a
-   property it could have read is the shape to look for** — here, inferring ownership from *who is
-   asking* instead of reading it from what the API returned. Ask of any list-shaped check: what did the
-   collection drop, and does the verdict depend on it?
+   A second occurrence (2026-08-22) moved the limit inside the API's own contract. `US-8` read
+   permission boundaries through `iam list-roles`, and `ListRoles` omits `PermissionsBoundary` by
+   documented contract (`GetRole`-only, with `Tags` and `RoleLastUsed`), so the reading was a
+   constant `null` for every role that had one. The check reported the estate's first real project
+   role as unbounded while `get-role` showed the boundary in place. Reading everything the response
+   returned is not enough; the field contract has to be read, because the drop happens at the API's
+   end, not in the collection code (Lesson 31's "what did the collection drop?" one layer deeper).
+   The defect survived from birth because no object existed that could falsify the check (Lesson
+   13's shape stretched over time).
 
-32. **Two spellings of the same object survive indefinitely while nothing has to build it — and the side
-   that has to build it is the one that was right.** For weeks the plan said both "scratch + derived-zone
-   **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5 table) and "scratch and derived
-   **prefixes**" (D13, `identity/sso/`'s owed-grants note, Stage 1b, the permission set's own description).
-   Both entered in the same commit, so it was never drift — it was one object with two vocabularies, and
-   neither spelling failed anything, because no code had yet been written that would have to pick. The
-   disagreement surfaced only at the authoring, as a cost question: a second bucket needs either a third
-   CMK the cost model does not carry or a key shared for no reason. **The tie-break that worked: follow the
-   citation.** All three "bucket" lines credited **D19**, which never mentions `scratch`; the origin is
-   **D13** — *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* —
-   where `scratch` names a *class* of thing, beside `artifacts` and `model outputs`, and not a resource.
-   **The generalisation: when two files disagree about what something is, the one closer to the mechanism
-   wins** — the IAM side had to name a resource in a policy, the topology side only had to draw a box, and
-   a box costs nothing to draw wrong. **And the cheap check is the citation itself**: a claim that cites a
-   decision which does not contain it is the copy, not the original.
+31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about
+   that one while the design spreads past it.** `DL-6` decides whether Lake Formation's
+   create-defaults still grant `IAM_ALLOWED_PRINCIPALS`, the reading D13 rests on. It was written at
+   Stage 5 pass 1, when Data Governance was the only account with a `DataLakeSettings`, so it read
+   `DATA_PROFILE`. By pass 4 two more accounts had one, both in the failing state, and the check was
+   green. It answered its question correctly about a population that had stopped being the whole
+   population. This is not Lesson 13, whose check cannot tell success from failure; this one
+   discriminates perfectly and is pointed at the wrong set, which looks like evidence where Lesson
+   13's failure looks empty and invites suspicion. A check's scope is part of its claim, so write
+   the scope into the line it prints: `DL-6 (awsds-infra-dev)` can be falsified by counting
+   accounts, `DL-6` cannot. The trigger to re-read every check is a topology change, not a code
+   change: the day a second account gains a resource that only one had, every instrument that reads
+   that resource is scoped until proven otherwise. Pass 3 wrote the debt down; it still shipped one
+   session of a green check over two failing accounts, which argues for extending the instrument in
+   the same sitting as the resource.
+
+   The same mechanism also arrives as a false `FAIL` (2026-08-21, Stage 6 step 1.3). `US-2` asks
+   whether a DataZone domain exists outside Data Governance. It counted the rows `datazone
+   list-domains` returned in each account and treated any non-zero as *"a domain was created here"*,
+   true in a world where nothing is shared. The account association shares one domain into the
+   member accounts, so on the day the association succeeded the check went red in both, about a
+   domain that had never moved. Two things generalise. The tell is cheaper than counting accounts:
+   the failure arrived from the act that was supposed to work, so a check that goes red at the
+   moment a step succeeds is audited before the estate is. And the fix is a discarded field, not
+   scope: the collection built `(id, name, version, status)` and threw away the ARN, the one
+   attribute carrying the owner. A check that infers a property it could have read (ownership from
+   who is asking, instead of from what the API returned) is the shape to look for. Ask of any
+   list-shaped check: what did the collection drop, and does the verdict depend on it?
+
+32. **Two spellings of the same object survive indefinitely while nothing has to build it — and the
+   side that has to build it is the one that was right.** For weeks the plan said both "scratch +
+   derived-zone **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5 table) and
+   "scratch and derived **prefixes**" (D13, `identity/sso/`'s owed-grants note, Stage 1b, the
+   permission set's own description). Both entered in the same commit, so it was one object with two
+   vocabularies, and neither spelling failed anything because no code had yet had to pick. The
+   disagreement surfaced at the authoring, as a cost question: a second bucket needs either a third
+   CMK the cost model does not carry or a key shared for no reason. The tie-break: follow the
+   citation. All three "bucket" lines credited D19, which never mentions `scratch`; the origin is
+   D13, *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"*,
+   where `scratch` names a class of thing beside `artifacts` and `model outputs`, not a resource.
+   When two files disagree about what something is, the one closer to the mechanism wins: the IAM
+   side had to name a resource in a policy, the topology side only had to draw a box. The cheap
+   check is the citation itself: a claim that cites a decision which does not contain it is the
+   copy, not the original.
 
 33. **One intent enforced in two places diverges — and sharing the *values* while duplicating the
-   *structure* is what makes it look like it cannot.** "Reachable only over the VPN" is written twice in
-   this estate: `DenyOutsideTrustedNetworks` in the lake's bucket policy, and `DenyControlPlaneOffVpn` in
-   the six persona permission sets. The resource half carries **three** branches — `aws:SourceVpce`,
-   `aws:SourceIp`, `aws:PrincipalAccount` — because traffic can arrive by more than one path. The identity
-   half carries **one**, `aws:SourceIp`. Stage 5 pass 4d measured the difference: tunnel traffic to S3
-   leaves through the `[P]` gateway endpoint and arrives carrying the WireGuard host's *private* address
-   (`10.20.160.254`) and an endpoint id, while Glue and Athena leave by the internet gateway wearing the
-   Elastic IP — so the identity half denies **every direct S3 call a persona makes from inside the
-   perimeter**, including fetching the person's own query result. The resource half was written against the
-   measured topology; the identity half against the intended one.
-   **The trap is not duplication — it is *partial* de-duplication.** Both halves read the Elastic IP from
-   the same `[P]` state and neither pastes it, so the design *looks* like it has one source of truth. It
-   has one source for the **values** and two hand-written copies of the **branch structure**, and the
-   structure is where the two disagree. Nothing compares them: `terraform plan` sees two unrelated
-   documents, and each half is individually plausible on reading. **The discriminator: when one sentence is
-   enforced at two layers, ask whether the *shape* is derived or retyped — a shared variable inside two
-   hand-written conditions is the most convincing possible disguise for a divergence.**
-   **And the reason it survived is worth as much as the finding.** A deny is only debugged by the traffic
-   it *wrongly* blocks. The bucket policy sits on the hot path, so an over-broad branch there breaks a
-   legitimate read on day one and gets fixed; the identity deny fires only when someone is off-VPN, which
-   is a case nobody exercises deliberately — so it accumulated a defect that no apply, no review and no
-   plan could surface, and only a behavioural proof from a real session found it. **A control that is
-   correct in the common case and wrong in the rare one reports as healthy for exactly as long as nobody
-   tries the rare one.**
-   **Two smaller shapes fell out of the same finding, both worth recognising.** First, a guard can foresee
-   the right *symptom* for the wrong *cause* and give false comfort: `permission-sets.tf` already carried a
-   `precondition` whose error message predicts "deny every call from every network for all six personas",
-   written against the address list arriving **malformed** — nothing in it considers a well-formed list
-   whose key is simply irrelevant on the path the traffic takes. Second, the *proposed fix* was itself
-   aimed at the wrong list — the consumers' endpoints rather than the **VPN home's** — because
-   `consumer_vpce_ids` is built along "who consumes the lake" and was being asked "what is on the network
-   path"; today the two intersect by coincidence, since the single VPN home also happens to be a consumer
-   (Lesson 10's axis question and Lesson 29's *describe-becomes-select*, arriving together).
-   **CLOSED 2026-08-20 — the fix is applied and *proven*, and the proof shape is the reusable part.** The
-   third condition (`StringNotEqualsIfExists aws:SourceVpce` over the VPN home's gateway endpoints) went
-   in, and the evidence was taken three ways rather than one. **(a) The same call, before and after:**
-   `s3api list-buckets` — the call whose CloudTrail record diagnosed the defect — moved from *explicit
-   deny in an identity-based policy* to the **implicit** deny, one variable changed. **(b) A contrast
-   pair:** one action (`GetBucketLocation`), two buckets, one session — granted bucket succeeds, lake
-   bucket implicit-denies — which is what distinguishes *"the network is blocked"* from *"this bucket is
-   not granted"*, two hypotheses that had produced identical output while the over-broad deny sat on top.
-   **(c) Both provisioned roles, not the document:** the defect belonged to a shared fragment, so the fix
-   is only proven where the fragment lands, and the two accounts that failed identically are the two that
-   had to be read back.
-   **The lesson's own tail:** a deny that is debugged only by the traffic it wrongly blocks is also
-   *closed* only that way — the apply proves the document changed, and nothing more. **The bracket that
-   opens with "a control reports healthy until someone tries the rare case" closes by someone trying the
-   rare case**, which means the fix and its behavioural proof belong in the same sitting or the finding is
-   merely relocated. A second consequence, cheap and general: while an unrelated **explicit** deny is in
-   the path, every **implicit** deny behind it is unmeasurable — so a fix like this one does not just
-   restore access, it restores the *evidentiary* value of every negative control downstream of it (here,
-   D13's whole mechanism).
+   *structure* is what makes it look like it cannot.** "Reachable only over the VPN" is written
+   twice in this estate: `DenyOutsideTrustedNetworks` in the lake's bucket policy, and
+   `DenyControlPlaneOffVpn` in the six persona permission sets. The resource half carries three
+   branches (`aws:SourceVpce`, `aws:SourceIp`, `aws:PrincipalAccount`), because traffic can arrive
+   by more than one path; the identity half carries one, `aws:SourceIp`. Stage 5 pass 4d measured
+   the difference: tunnel traffic to S3 leaves through the `[P]` gateway endpoint carrying the
+   WireGuard host's private address (`10.20.160.254`) and an endpoint id, while Glue and Athena
+   leave by the internet gateway wearing the Elastic IP, so the identity half denies every direct S3
+   call a persona makes from inside the perimeter, including fetching the person's own query result.
+   The resource half was written against the measured topology; the identity half against the
+   intended one. The trap is partial de-duplication: both halves read the Elastic IP from the same
+   `[P]` state and neither pastes it, so the design looks like it has one source of truth. It has
+   one source for the values and two hand-written copies of the branch structure, and the structure
+   is where they disagree. Nothing compares them: `terraform plan` sees two unrelated documents, and
+   each half is plausible on reading. When one sentence is enforced at two layers, ask whether the
+   shape is derived or retyped; a shared variable inside two hand-written conditions is the most
+   convincing disguise for a divergence. It survived because a deny is only debugged by the traffic
+   it wrongly blocks: the bucket policy sits on the hot path, so an over-broad branch there breaks a
+   legitimate read on day one; the identity deny fires only when someone is off-VPN, a case nobody
+   exercises deliberately, so no apply, review or plan could surface it, and only a behavioural
+   proof from a real session did. A control that is correct in the common case and wrong in the rare
+   one reports healthy for as long as nobody tries the rare one. Two smaller shapes fell out of the
+   finding. A guard can foresee the right symptom for the wrong cause: `permission-sets.tf` carried
+   a `precondition` whose message predicts "deny every call from every network for all six
+   personas", written against the address list arriving malformed, and nothing in it considers a
+   well-formed list whose key is irrelevant on the path the traffic takes. And the proposed fix was
+   aimed at the wrong list, the consumers' endpoints rather than the VPN home's, because
+   `consumer_vpce_ids` is built along "who consumes the lake" and was being asked "what is on the
+   network path"; the two intersect today by coincidence, since the single VPN home is also a
+   consumer (Lessons 10 and 29 together).
+   Closed 2026-08-20: the fix is applied and proven, and the proof shape is the reusable part. The
+   third condition (`StringNotEqualsIfExists aws:SourceVpce` over the VPN home's gateway endpoints)
+   went in, and the evidence was taken three ways. (a) The same call before and after: `s3api
+   list-buckets`, the call whose CloudTrail record diagnosed the defect, moved from *explicit deny
+   in an identity-based policy* to the implicit deny, one variable changed. (b) A contrast pair: one
+   action (`GetBucketLocation`), two buckets, one session; the granted bucket succeeds, the lake
+   bucket implicit-denies, which separates *"the network is blocked"* from *"this bucket is not
+   granted"*, two hypotheses that had produced identical output under the over-broad deny. (c) Both
+   provisioned roles, not the document: the defect belonged to a shared fragment, so the fix is
+   proven only where the fragment lands, in the two accounts that failed identically. A deny
+   debugged only by the traffic it wrongly blocks is also closed only that way; the apply proves the
+   document changed and nothing more, so the fix and its behavioural proof belong in the same
+   sitting. And while an unrelated explicit deny is in the path, every implicit deny behind it is
+   unmeasurable, so a fix like this one restores the evidentiary value of every negative control
+   downstream (here, D13's whole mechanism).
 
-34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage never
-   gets — and a decision scheduled around an unexercised capability inherits a premise nobody measured.**
-   The lake's registration role shipped read-only at Stage 5 pass 1, its comment deferring the write
-   half to "Stage 9, which amends this policy (its step 2)" — and **Stage 9's file never carried that
-   amendment**. The promise lived only where it was made; the stage that was supposed to redeem it had
-   never heard of it. Meanwhile Stage 5's own file scheduled a one-way-door decision — *load sample rows
-   through Athena before 4.3's amendment closes that door* — on the belief that the in-account write
-   path was open. Three files, three spellings of one capability: the plan said *open*, the code said
-   *deferred*, the receiving stage said *nothing* — and every one of them survived because **nothing had
-   ever exercised the path**. This is Lesson 20's mirror: an unexercised *allow-path* is exactly as
-   unmeasured as an unexercised deny, and it fails the first time someone needs it rather than the first
-   time someone attacks it. The first governed write ever attempted (2026-08-19) measured all three
-   files at once — DENIED, the vended session naming `kms:GenerateDataKey` — and the mechanism side was
-   the true one, again (Lesson 32). The user's against-recommendation choice to load rows is what
-   surfaced it in the cheapest possible configuration — one account, one role, one key — instead of
-   inside Stage 9's cross-account job, where the share, the job role and two keys would all have been on
-   the suspect list. **Two discriminators.** When a comment defers work to a later stage, open that
-   stage's file and write the obligation there *in the same sitting* — an obligation recorded at one end
-   is Lesson 4's state-only-in-one-place, for plans; the cheap check is Lesson 32's citation test run in
-   reverse, *follow the promise to its addressee*. And before scheduling anything "before the door
-   closes", **try the door**: as posed, both options of the sample-row decision described a door that
-   was not there, so whichever the user picked, the decision was argued from a premise the first
-   attempt destroyed.
+34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage
+   never gets — and a decision scheduled around an unexercised capability inherits a premise nobody
+   measured.** The lake's registration role shipped read-only at Stage 5 pass 1, its comment
+   deferring the write half to "Stage 9, which amends this policy (its step 2)", and Stage 9's file
+   never carried that amendment. Meanwhile Stage 5's own file scheduled a one-way-door decision,
+   *load sample rows through Athena before 4.3's amendment closes that door*, on the belief that the
+   in-account write path was open. Three files, three spellings of one capability: the plan said
+   *open*, the code said *deferred*, the receiving stage said nothing, and all survived because
+   nothing had exercised the path. This is Lesson 20's mirror: an unexercised allow-path is as
+   unmeasured as an unexercised deny, and it fails the first time someone needs it rather than the
+   first time someone attacks it. The first governed write attempted (2026-08-19) measured all three
+   files at once: denied, the vended session naming `kms:GenerateDataKey`, and the mechanism side
+   was the true one again (Lesson 32). The user's against-recommendation choice to load rows
+   surfaced it in the cheapest configuration, one account, one role, one key, instead of inside
+   Stage 9's cross-account job, where the share, the job role and two keys would all have been
+   suspects. Two discriminators. When a comment defers work to a later stage, open that stage's file
+   and write the obligation there in the same sitting (Lesson 4's state-in-one-place, for plans; the
+   check is Lesson 32's citation test in reverse, follow the promise to its addressee). And before
+   scheduling anything "before the door closes", try the door: both options of the sample-row
+   decision described a door that was not there.
 
-35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written about
-   it — and the adoption touches none of the files that carry those procedures.** Stage 2 step 5.5
-   imported the ten Organizations policy documents into Terraform. Nothing about that commit reached
-   `POLICIES.md` or the battery runbook, because adoption changes code and state, not prose *about* the
-   object — so both files went on saying, correctly for the world they were written in, that an amendment
-   is `update-policy` in place. Four days before pass 4e, that instruction was copied out of them into a
-   stage file as the plan for the next act, and it was wrong by a whole stage. **Against Lesson 11, which
-   is the neighbour**: there a change of authorship invalidates *claims* — sentences that were true
-   because we wrote the thing — and the remedy is to re-read the decisions whose enforcement depends on
-   it. Here it invalidates *instructions*, and the remedy is different in kind: **on any adoption into
-   IaC, grep every prose file for a mutating command naming that object, and correct it in the adoption's
-   own sitting.** A procedure has no revision trigger and no gate; `check-index.py` reads the documents'
-   `Sid`s and would not have noticed, and neither would a plan.
+35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
+   about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
+   5.5 imported the ten Organizations policy documents into Terraform. Nothing about that commit
+   reached `POLICIES.md` or the battery runbook, because adoption changes code and state, not prose
+   about the object, so both files went on saying that an amendment is `update-policy` in place.
+   Four days before pass 4e, that instruction was copied out of them into a stage file as the plan
+   for the next act, wrong by a whole stage. Against Lesson 11: there a change of authorship
+   invalidates claims, and the remedy is to re-read the decisions whose enforcement depends on it;
+   here it invalidates instructions, and the remedy is to grep every prose file for a mutating
+   command naming the object and correct it in the adoption's own sitting. A procedure has no
+   revision trigger and no gate; `check-index.py` reads the documents' `Sid`s and would not have
+   noticed, and neither would a plan.
 
-   **What makes this one worth its own number rather than a line under 11 is the failure shape, not the
-   subject.** A stale procedure that *errors* is self-correcting — you find out immediately and go read.
-   This one **succeeds**: `update-policy` would have returned cleanly, the document would have attached,
-   every gate in the repository would have stayed green. The damage was one layer down and silent — the
-   tracked JSONs carry `<PLACEHOLDER>` tokens substituted at render time, and `awsds-org-scp-ou-data.json`
-   carries `<ACCOUNT_ID_DATA>` *inside the D27 crawler carve-out*, so the hand-uploaded document would
-   have held an `ArnNotEquals` comparing against the literal string `<ACCOUNT_ID_DATA>`: a carve-out
-   matching no principal, no error at upload, none at evaluation, and a control that has quietly become
-   decoration (Lesson 5, arrived at by accident instead of by argument). Two guards exist against exactly
-   that — `render.py`'s survivor check and `policies.tf`'s precondition — and **the abandoned path is
-   precisely the one that uses neither**, which is the general danger: the guards were built into the
-   sanctioned route, so leaving the route leaves the guards, and nothing announces that you have. **The
-   discriminator to apply while reading any procedure: does it name a command that mutates a real object,
-   and is that object still changed the way this text says?** If the text predates the tree that now owns
-   the object, assume it is stale until checked.
+   The failure shape earns the number. A stale procedure that errors is self-correcting; this one
+   succeeds: `update-policy` would have returned cleanly, the document would have attached, every
+   gate would have stayed green. The damage was one layer down: the tracked JSONs carry
+   `<PLACEHOLDER>` tokens substituted at render time, and `awsds-org-scp-ou-data.json` carries
+   `<ACCOUNT_ID_DATA>` inside the D27 crawler carve-out, so the hand-uploaded document would have
+   held an `ArnNotEquals` comparing against the literal string `<ACCOUNT_ID_DATA>`: a carve-out
+   matching no principal, no error at upload or evaluation, a control turned decoration (Lesson 5,
+   by accident). Two guards exist against exactly that, `render.py`'s survivor check and
+   `policies.tf`'s precondition, and the abandoned path uses neither: the guards were built into the
+   sanctioned route, so leaving the route leaves the guards, and nothing announces it. While reading
+   any procedure, ask whether it names a command that mutates a real object, and whether that object
+   is still changed the way the text says; if the text predates the tree that now owns the object,
+   assume it is stale until checked.
 
-36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written down
-    in the stage that hit it stays in that stage.**
+36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written
+    down in the stage that hit it stays in that stage.** Found 2026-08-20, checking Stage 5 step 13
+    against the service before running it: the third time this plan made the same assumption about a
+    different service, and the second time it had already been corrected in writing.
 
-    *Found 2026-08-20, checking Stage 5 step 13 against the service before running it — the third time
-    this plan has made the same assumption about a different service, and the second time it had already
-    been corrected in writing.*
-
-    Three security services in this plan share a management **shape**: delegate administration to Audit,
-    then turn the thing on for the whole organization. The shape is real. The semantics underneath it are
-    not shared at all, and this project has now measured three different answers:
+    Three security services share a management shape: delegate administration to Audit, then turn
+    the thing on for the whole organization. The semantics underneath are not shared, and this
+    project has measured three answers:
 
     | Service | What "auto-enable" actually covers | Where it was learned |
     |---|---|---|
@@ -757,788 +721,747 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
     | Macie | **new accounts only**; existing ones added one at a time by the administrator | Stage 11, corrected 2026-08-17 |
     | Security Hub CSPM | **new accounts only, current Region only** — so on an organization whose accounts all already exist, it covers **none of them** | Stage 5 step 13, corrected 2026-08-20 |
 
-    The plan wrote *"auto-enable for existing and future accounts"* into Stage 5 because the surrounding
-    shape was familiar from GuardDuty. Familiarity is exactly the mechanism: nothing about the sentence
-    looked like a guess, because the sentence next door had been true.
+    The plan wrote *"auto-enable for existing and future accounts"* into Stage 5 because the shape
+    was familiar from GuardDuty; nothing about the sentence looked like a guess, because the
+    sentence next door had been true.
 
-    **The part worth more than the table: the repair was not a different setting.** For Macie the fix was
-    "then add the existing accounts too" — same feature, more work. For Security Hub the fix is an
-    entirely different feature: **central configuration**, with its own prerequisite (a home Region /
-    finding aggregator), its own API family, its own console workflow, its own drift semantics, and an
-    account-level API surface that is *refused* for accounts a policy governs. So when a mechanism
-    assumption turns out to be wrong, do not budget for a corrected parameter — **budget for the
-    possibility that the thing the plan described does not exist**, and that what replaces it changes who
-    runs the act, from where, and what else must be true first.
+    The repair was not a different setting. For Macie the fix was "then add the existing accounts
+    too": same feature, more work. For Security Hub the fix is a different feature, central
+    configuration, with its own prerequisite (a home Region / finding aggregator), its own API
+    family, its own console workflow, its own drift semantics, and an account-level API surface that
+    is refused for accounts a policy governs. When a mechanism assumption turns out wrong, budget
+    for the possibility that the thing the plan described does not exist, and that its replacement
+    changes who runs the act, from where, and what else must be true first.
 
-    **And the second half, which is about this repository rather than about AWS.** The Macie instance was
-    found, understood and written down — correctly, and dated — in **Stage 11's Status row**. That is
-    where it was discovered, so that is where it went. Stage 5's step 13 then carried the same wrong
-    assumption for three more days, because nothing routes a reader from "I am executing Stage 5" to "a
-    sibling stage learned something about the *class* of service you are about to configure". `CLAUDE.md`'s
-    routing table sends you to **the stage you are executing** and to the decisions it consumes; it cannot
-    send you to a paragraph in a stage you are not reading. **A finding about the stage's own subject
-    belongs in the stage. A finding about a *class* of thing — a service family, a provider behaviour, a
-    console pattern — belongs somewhere cross-cutting**, here or in `docs/AWS_STATE.md`'s expectations,
-    *and* in the stage. Duplicating it is not the waste; the waste is the third stage rediscovering it.
-
-    **The discriminator, while writing any correction down:** ask whether the sentence you just wrote
-    would be useful to someone configuring a *different service*. If yes, the stage file is the wrong
-    only-home for it.
-37. **A sentence written in the perfect tense from an intention is, from that moment on, indistinguishable
-    from a record — and all three of this project's have been authored in the commit that was about to
-    make the reading available.**
-
-    *Promoted to a lesson 2026-08-21, on the third occurrence, by the trigger the second one declared
-    ("two instances is a pattern but not yet a lesson; a third in a different shape makes it one").*
+    The second half is about this repository. The Macie instance was found, understood and written
+    down, dated, in Stage 11's Status row, because that is where it was discovered. Stage 5's step
+    13 then carried the same wrong assumption for three more days, because nothing routes a reader
+    from "I am executing Stage 5" to a paragraph in a sibling stage: `CLAUDE.md`'s routing table
+    sends you to the stage you are executing and to the decisions it consumes. A finding about the
+    stage's own subject belongs in the stage. A finding about a class of thing (a service family, a
+    provider behaviour, a console pattern) belongs somewhere cross-cutting, here or in
+    `docs/AWS_STATE.md`'s expectations, and in the stage; the waste is the third stage rediscovering
+    it. While writing any correction down, ask whether the sentence would be useful to someone
+    configuring a different service. If yes, the stage file is the wrong only-home for it.
+37. **A sentence written in the perfect tense from an intention is, from that moment on,
+    indistinguishable from a record — and all three of this project's have been authored in the
+    commit that was about to make the reading available.** Promoted to a lesson on the third
+    occurrence (2026-08-21), by the rule the second one declared: two instances are a pattern, a
+    third in a different shape is a lesson.
 
     | # | The sentence | Written | Falsified | By what |
     |---|---|---|---|---|
     | 1 | a `CLAUDE.md` bullet describing the VPN host's state | Stage 4 | same day | reading the host |
     | 2 | *"step 0 is now runnable"*, Stage 6's Status row, commit `5df5a83` | 2026-08-21 | hours later | running step 0 |
-    | 3 | *"**Pulled forward and applied before this stage:** `production/registry/` … and `production/pki/`"* | 2026-08-16 | **five days and two full stage reviews later** | auditing the prerequisite before executing it |
+    | 3 | *"**Pulled forward and applied before this stage:** `production/registry/` … and `production/pki/`"* | 2026-08-16 | five days and two full stage reviews later | auditing the prerequisite before executing it |
 
-    **All three were written by the same hand, in the same motion, and none of them was a lie**: each was
-    a true statement of what was about to be done, typed into a document, and then the doing either did
-    not happen or came back with a different answer. The commit that carries the sentence is systematically
-    the commit *before* the evidence exists. That is the shape to recognise — not carelessness, but the
-    ordinary sequence of writing the plan and then going to execute it.
+    All three were written by the same hand, in the same motion, and none was a lie: each was a true
+    statement of what was about to be done, typed into a document, and then the doing either did not
+    happen or came back with a different answer. The commit that carries the sentence is
+    systematically the commit before the evidence exists: the ordinary sequence of writing the plan
+    and then executing it.
 
-    **The third is the expensive one, and what made it survive is worth more than what made it wrong.**
-    A prerequisite in another account, owned by a stage that had not started, asserted once in one
-    Prerequisites row. Nothing could catch it: `check-plan-refs.py` validates identifiers, links and
-    sizes; `slices.py` validates the declared slice table against the tree and would not look for a folder
-    nobody declared; `./aws/studio.py` never asks; `./aws/supplychain.py` reads ECR and the CA but gates
-    its whole note→fail flip on a host two stages away, so it reports green over the absence. **A false
-    claim about state degrades gracefully: reading it produces no error, only the belief that something
-    was done.** Its only symptom was that the *other* files disagreed — the owning stage said "runs
-    before Stage 6" in the future tense, a `.tf` comment scheduled the slice at Stage 7, and the decision's
-    own navigation row never listed Stage 6 at all. Four statements, three tenses, no gate between them.
+    The third is the expensive one. A prerequisite in another account, owned by a stage that had not
+    started, asserted once in one Prerequisites row. Nothing could catch it: `check-plan-refs.py`
+    validates identifiers, links and sizes; `slices.py` validates the declared slice table against
+    the tree and would not look for a folder nobody declared; `./aws/studio.py` never asks;
+    `./aws/supplychain.py` reads ECR and the CA but gates its note→fail flip on a host two stages
+    away, so it reports green over the absence. A false claim about state degrades gracefully:
+    reading it produces no error, only the belief that something was done. Its only symptom was that
+    the other files disagreed: the owning stage said "runs before Stage 6" in the future tense, a
+    `.tf` comment scheduled the slice at Stage 7, and the decision's navigation row never listed
+    Stage 6. Four statements, three tenses, no gate between them.
 
-    **The tell, and it is cheap enough to use every time.** This repository dates and grades its claims —
-    *SATISFIED 2026-08-19*, *4d AND 4e are DELIVERED (2026-08-20)*, *measured*, *0 FAILED*. So the question
-    to ask of any perfect-tense clause is not "is this true?", which invites a re-derivation, but: **why
-    does this one clause carry no date, no measurement and no delivery verdict, when the clauses beside it
-    in the same row carry all three?** In case 3 that asymmetry was visible from the day it was written.
+    The tell is cheap. This repository dates and grades its claims (*SATISFIED 2026-08-19*, *4d AND
+    4e are DELIVERED (2026-08-20)*, *measured*, *0 FAILED*), so the question to ask of any
+    perfect-tense clause is not "is this true?", which invites a re-derivation, but why this clause
+    carries no date, no measurement and no delivery verdict when the clauses beside it in the same
+    row carry all three. In case 3 that asymmetry was visible from the day it was written.
 
-    **Two practices, both nearly free:**
+    Two practices, both nearly free:
 
-    - **Write intentions in the future tense and let the past tense be earned by a reading.** *"runs
-      before Stage 6"* and *"applied 2026-08-16, measured"* are both fine; *"applied before this stage"*
-      with no date is the form that cannot be told apart from either.
-    - **Where prose cannot be checked, move the obligation into a structure that can.** The repair here
-      was not better wording: it was a row in the pass table, a row in the build table, a sentence in the
-      ordering paragraph, and a `layers.py` rank — four places an executor actually reads, against one
-      row nobody executes from. **Prose is where an intention and a reading part company**, so the fix is
-      to stop asking prose to carry a dependency at all.
+    - Write intentions in the future tense and let the past tense be earned by a reading. *"runs
+      before Stage 6"* and *"applied 2026-08-16, measured"* are both fine; *"applied before this
+      stage"* with no date cannot be told apart from either.
+    - Where prose cannot be checked, move the obligation into a structure that can. The repair here
+      was a row in the pass table, a row in the build table, a sentence in the ordering paragraph,
+      and a `layers.py` rank: four places an executor reads, against one row nobody executes from.
+      Prose is where an intention and a reading part company, so stop asking prose to carry a
+      dependency.
 
-    **The scope test, so this does not become paranoia about every past-tense verb:** the risk is
-    concentrated in claims about work **outside the file's own stage or account**, because those are
-    exactly the claims no gate reads and no owner re-reads. A stage saying what it itself did is checked
-    by the next person executing it; a stage saying what *another* stage already did is checked by nobody.
+    The scope test: the risk is concentrated in claims about work outside the file's own stage or
+    account, because those are the claims no gate reads and no owner re-reads. A stage saying what
+    it itself did is checked by the next person executing it; a stage saying what another stage
+    already did is checked by nobody.
 
-38. **An identifier read out of prose is a claim, not a reading — and it travels further than the sentence
-   that carried it.** Stage 6 step 1.3's table named the RAM permission the account association would
-   attach: `AWSRAMPermissionDataZoneDefault`, *"never `AWSRAMPermissionDataZonePortalReadWrite`"*. Both
-   names came from a documentation page's body text, read carefully and quoted accurately. **Neither
-   exists.** `ram list-permissions --resource-type datazone:Domain` publishes six permissions and no name
-   resembling either; what the console attaches is
-   `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`. The *decision* the sentence expressed —
-   no data-portal access — was right, available, and taken. Only the proper nouns were fiction.
-   **The damage is not the wrong name, it is where the wrong name ends up.** By the time this was
-   measured, `AWSRAMPermissionDataZoneDefault` had reached `docs/SMUS.md` twice and — worse — a comment in
-   `terraform-modules/sagemaker-prereqs/blueprints.tf`, where it was doing real work: it was the stated
-   *reason* the blueprint resources live in the member account's slice. A name is the most portable thing
-   in a document. It gets quoted without its hedge, it survives every re-read because it looks like a
-   fact rather than an inference, and it ends up load-bearing in a file nobody would think to re-check
-   against an API.
-   **This is not Lesson 16, and not Lesson 23.** Lesson 16 is about a console wizard being under-specified
-   — fields the documentation does not name. This is the opposite: the documentation named something
-   confidently and the API disagrees. Lesson 23 says bind to *contents* rather than to a name, which is
-   about drift over time; this name never had a referent at all.
-   **The discriminator is mechanical and costs one command.** Every class of identifier this project
-   quotes has a cheap enumeration behind it — `ram list-permissions`, `aws iam list-policies --scope AWS`,
-   a service's `list_*.html` action table, a registry's tag list. **If a plan sentence names an
-   AWS-published identifier, enumerate the namespace before the sentence is written**, and if the name
-   cannot be enumerated yet, say *"the console's no-portal option, name unread"* rather than inventing
-   the precision. **The tell in review**: a proper noun with no measurement date beside it, in a file
-   whose neighbours all carry one — the same shape Lesson 37 describes for verbs, applied to nouns.
+38. **An identifier read out of prose is a claim, not a reading — and it travels further than the
+   sentence that carried it.** Stage 6 step 1.3's table named the RAM permission the account
+   association would attach: `AWSRAMPermissionDataZoneDefault`, *"never
+   `AWSRAMPermissionDataZonePortalReadWrite`"*. Both names came from a documentation page's body
+   text, read carefully and quoted accurately. Neither exists. `ram list-permissions --resource-type
+   datazone:Domain` publishes six permissions and no name resembling either; what the console
+   attaches is `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`. The decision the
+   sentence expressed, no data-portal access, was right, available, and taken; only the proper nouns
+   were fiction. The damage is where the wrong name ends up: by the time this was measured,
+   `AWSRAMPermissionDataZoneDefault` had reached `docs/SMUS.md` twice and a comment in
+   `terraform-modules/sagemaker-prereqs/blueprints.tf`, where it was the stated reason the blueprint
+   resources live in the member account's slice. A name is the most portable thing in a document: it
+   gets quoted without its hedge, survives every re-read because it looks like a fact, and ends up
+   load-bearing in a file nobody re-checks against an API. This is not Lesson 16 (a wizard
+   under-specified, fields the documentation does not name): here the documentation named something
+   confidently and the API disagrees. Nor Lesson 23 (bind to contents rather than a name, about
+   drift over time): this name never had a referent. The discriminator costs one command: every
+   class of identifier this project quotes has an enumeration behind it (`ram list-permissions`,
+   `aws iam list-policies --scope AWS`, a service's `list_*.html` action table, a registry's tag
+   list). If a plan sentence names an AWS-published identifier, enumerate the namespace before the
+   sentence is written; if the name cannot be enumerated yet, say *"the console's no-portal option,
+   name unread"* rather than inventing the precision. The tell in review: a proper noun with no
+   measurement date beside it, in a file whose neighbours all carry one (Lesson 37's shape, for
+   nouns).
 
-   **AMENDED 2026-08-23 — the more dangerous variant is a MECHANISM read out of prose and written down as
-   a measurement.** While extending the DNS Firewall allow-list on 2026-08-22, the question *does
-   `*.name` reach a nested subdomain* was settled from a documentation summary and then recorded — in a
-   module comment, a stage step, `REFERENCES.md` and a log entry — with the words *"measured rather than
-   assumed"*. The claim happened to be **true**, which is what made it costly: it read as a closed
+   Amended 2026-08-23: the more dangerous variant is a mechanism read out of prose and written down
+   as a measurement. While extending the DNS Firewall allow-list on 2026-08-22, the question *does
+   `*.name` reach a nested subdomain* was settled from a documentation summary and then recorded, in
+   a module comment, a stage step, `REFERENCES.md` and a log entry, with the words *"measured rather
+   than assumed"*. The claim happened to be true, which made it costly: it read as a closed
    question, so the next reader had no reason to ask what else governs a match, and the thing that
-   actually governed it (the whole resolution chain is evaluated, so a listed name whose CNAME target is
-   unlisted is blocked) went unexamined for a day while the fix it produced did not work. An identifier
-   read out of prose at least stays a name; a *rule* read out of prose becomes the recorded explanation
-   for behaviour nobody has watched. **The tell is the word, not the content:** "measured" is reserved
-   for something this project ran, and a doc reading that says so is worse than an admitted guess,
+   governed it (the whole resolution chain is evaluated, so a listed name whose CNAME target is
+   unlisted is blocked) went unexamined for a day while the fix it produced did not work. An
+   identifier read out of prose stays a name; a rule read out of prose becomes the recorded
+   explanation for behaviour nobody has watched. The tell is the word: "measured" is reserved for
+   something this project ran, and a doc reading that says so is worse than an admitted guess,
    because a guess invites the measurement and a false measurement forbids it.
 
 39. **What a console wizard fills and the authoring API does not require is still required — and the
    validator is the deploy and the teardown, so an incomplete object pins its dependents in both
    directions.** Stage 6's blueprint configurations were created through
-   `PutEnvironmentBlueprintConfiguration`, which accepted objects missing three things the Enable-Tooling
-   wizard always fills: the manage-access role, the projects-bucket `S3Location`, the `KmsKeyArn`. Nothing
-   failed at Put time. Each absence surfaced only when a project tried to **deploy** an environment — and,
-   worse, when a stuck project tried to **delete** one: teardown validates the same fields, so a project
-   born under an incomplete configuration could neither finish nor be removed until the configuration was
-   completed. Five portal attempts paid for the ladder one rung at a time (2026-08-22).
-   **This is Lesson 16 inverted, and the inversion is the content.** Lesson 16's failure mode is a human
-   at a wizard answering fields the plan never named — the wizard as the under-specified surface. Here no
-   wizard was used at all: the API was the lax surface and **the wizard was the de facto completeness
-   specification** — the checklist of what the service will eventually demand. When automating an act a
-   console wizard also performs, enumerate the wizard's fields and treat every one as required, whatever
-   the API's schema says.
-   **The second face, from the same sitting: the strict validator arrives exactly one act late.**
-   `CreateProjectProfile` validated nothing against the blueprint templates — a locked
-   `lifecycleManagement = "true"` sailed through where the template's enum is `ENABLED`/`DISABLED` — and
-   the error arrived from CloudFormation at the first deploy; then `UpdateProjectProfile` validated what
-   Create had not (required template parameters with no default). An authoring API that accepts an object
-   proves only that the object parses; **the act that has to build or redeclare it is the real validator**
-   (Lesson 32's "the side that has to build it is the one that was right", as a lifecycle rule), and the
-   templates were downloadable all along (Lesson 38's discriminator: check locked values against the
-   template, never against prose). **The cost profile is what earns the number**: validation deferred past
-   the authoring act lands on a *destructive or irreversible* act, so the defect is discovered exactly
-   where it is most expensive to hold — a system that cannot deploy AND cannot tear down.
+   `PutEnvironmentBlueprintConfiguration`, which accepted objects missing three things the
+   Enable-Tooling wizard always fills: the manage-access role, the projects-bucket `S3Location`, the
+   `KmsKeyArn`. Nothing failed at Put time. Each absence surfaced only when a project tried to
+   deploy an environment, and when a stuck project tried to delete one: teardown validates the same
+   fields, so a project born under an incomplete configuration could neither finish nor be removed
+   until the configuration was completed. Five portal attempts paid for the ladder one rung at a
+   time (2026-08-22). This is Lesson 16 inverted: there a human at a wizard answers fields the plan
+   never named; here no wizard was used, the API was the lax surface and the wizard was the de facto
+   completeness specification. When automating an act a console wizard also performs, enumerate the
+   wizard's fields and treat every one as required, whatever the API's schema says. The second face,
+   from the same sitting: the strict validator arrives one act late. `CreateProjectProfile`
+   validated nothing against the blueprint templates (a locked `lifecycleManagement = "true"` sailed
+   through where the template's enum is `ENABLED`/`DISABLED`) and the error arrived from
+   CloudFormation at the first deploy; then `UpdateProjectProfile` validated what Create had not
+   (required template parameters with no default). An authoring API that accepts an object proves
+   only that it parses; the act that has to build or redeclare it is the real validator (Lesson 32
+   as a lifecycle rule), and the templates were downloadable all along (Lesson 38: check locked
+   values against the template, never against prose). Validation deferred past the authoring act
+   lands on a destructive or irreversible act, so the defect is discovered where it is most
+   expensive to hold: a system that cannot deploy and cannot tear down.
 
 40. **The door a call takes is a fact of resolution and routing — the service's endpoint roster
    predicts nothing, and an endpoint's private zone answers for its whole subtree.** One sitting
-   measured three doors and a no-door, all from one laptop on the tunnel (2026-08-23/24). `sts` left
-   through the **interface** endpoint — private DNS had hijacked its name, so a deny keyed on gateway
-   endpoint ids denied a call that was *on* the VPN. `s3control` left through the S3 **gateway** — it has
+   measured three doors and a no-door, from one laptop on the tunnel (2026-08-23/24). `sts` left
+   through the interface endpoint: private DNS had hijacked its name, so a deny keyed on gateway
+   endpoint ids denied a call that was on the VPN. `s3control` left through the S3 gateway: it has
    no interface endpoint here, which a derivation turned into "so it rides the IGW", and CloudTrail
-   refuted: a gateway route matches a **prefix list**, `s3-control.<region>` resolves inside `pl-s3`'s
-   ranges, and "has no interface endpoint" says nothing about the IGW. And
-   `agent.datazone.<region>.api.aws` left through **nothing**: the `datazone` endpoint's private hosted
-   zone is **authoritative for the entire subtree** of the name it serves, holds only the apex, and
-   answers NXDOMAIN for every subdomain that exists only in public DNS — no fallback, for every client
-   of the VPC resolver, the full-tunnel laptop included.
-   **The roster is a list of what AWS sells; resolution is what this VPC does — and only the second is a
-   fact here.** Both are measurable for a cent: `dig` from inside, `vpcEndpointId` in CloudTrail. The
-   subtree half is the sharp edge: `PrivateDnsEnabled` reads as *"this name now resolves privately"* and
-   means *"this subtree now resolves ONLY here"* — the blast radius is every name under the service
-   name, including ones the vendor's own front-ends need (the SMUS portal's `agent.datazone…`,
-   documented public-internet-required, went NXDOMAIN and broke the portal ON the VPN). No allow-list
-   sees it: the DNS Firewall filters queries, and these queries were *answered* — authoritatively, with
-   nothing. **Distinct from Lesson 3**, which is about policy conditions anchored on `[E]` endpoint ids;
-   this is the *path itself* being mispredicted from the roster. The design-B corollary: a design that
-   multiplies interface endpoints multiplies authoritative private zones, each shadowing a subtree — a
-   cost no endpoint price list carries.
+   refuted; a gateway route matches a prefix list, `s3-control.<region>` resolves inside `pl-s3`'s
+   ranges, and "has no interface endpoint" says nothing about the IGW.
+   `agent.datazone.<region>.api.aws` left through nothing: the `datazone` endpoint's private hosted
+   zone is authoritative for the entire subtree of the name it serves, holds only the apex, and
+   answers NXDOMAIN for every subdomain that exists only in public DNS, with no fallback, for every
+   client of the VPC resolver, the full-tunnel laptop included. The roster is a list of what AWS
+   sells; resolution is what this VPC does, and only the second is a fact here. Both are measurable
+   for a cent: `dig` from inside, `vpcEndpointId` in CloudTrail. The subtree half is the sharp edge:
+   `PrivateDnsEnabled` reads as "this name now resolves privately" and means "this subtree now
+   resolves only here"; the blast radius is every name under the service name, including ones the
+   vendor's own front-ends need (the SMUS portal's `agent.datazone…`, documented
+   public-internet-required, went NXDOMAIN and broke the portal on the VPN). No allow-list sees it:
+   the DNS Firewall filters queries, and these queries were answered, authoritatively, with nothing.
+   Distinct from Lesson 3, which is about policy conditions anchored on `[E]` endpoint ids; this is
+   the path itself mispredicted from the roster. The design-B corollary: a design that multiplies
+   interface endpoints multiplies authoritative private zones, each shadowing a subtree, a cost no
+   endpoint price list carries.
 
-41. **A vendor "required" travels without its premise — and the page that says required can carry, lower
-   down, the table that contradicts it for your design.** `datazone` entered both Interactive endpoint
-   lists on one comment: *"the SMUS network-isolation page marks it REQUIRED under VpcOnly, so an app
-   cannot reach the domain without it."* Three errors in one sentence, all checkable from the page
-   itself (2026-08-24). The premise is swapped — the page never says `VpcOnly`; its required table is
-   scoped by the page's **own** isolation definition, *"access to the public internet is denied from the
-   Amazon VPC"*, which is design B. The consequence is refuted by the page (*"network calls … route over
-   the public internet when that network path is available"* — design A has that path, with
-   `datazone.<region>.api.aws` allow-listed), by this estate's own history (**six of the fifteen
-   "required" endpoints have never existed here** and the create path closed end to end), and by the
-   page's own troubleshooting table (*"Private with NAT + Private with NAT: Works as expected. No action
-   needed"*). And the same page carries a **third table** two prior readings never recorded — *Public
+41. **A vendor "required" travels without its premise — and the page that says required can carry,
+   lower down, the table that contradicts it for your design.** `datazone` entered both Interactive
+   endpoint lists on one comment: *"the SMUS network-isolation page marks it REQUIRED under VpcOnly,
+   so an app cannot reach the domain without it."* Three errors in one sentence, all checkable from
+   the page (2026-08-24). The premise is swapped: the page never says `VpcOnly`; its required table
+   is scoped by the page's own isolation definition, *"access to the public internet is denied from
+   the Amazon VPC"*, which is design B. The consequence is refuted by the page (*"network calls …
+   route over the public internet when that network path is available"*; design A has that path,
+   with `datazone.<region>.api.aws` allow-listed), by this estate's history (six of the fifteen
+   "required" endpoints have never existed here and the create path closed end to end), and by the
+   page's own troubleshooting table (*"Private with NAT + Private with NAT: Works as expected. No
+   action needed"*). The same page carries a third table two prior readings never recorded, *Public
    internet access*: the portal's client assets, its client APIs (`agent.datazone.<region>.api.aws`
-   among them) and the IdC sign-in endpoints **require the public internet** — so one page instructs the
-   endpoint and requires a name that endpoint's private zone shadows. Where the tables collide, **the
-   browser-facing one wins**: a portal is a web client, and no interface endpoint serves a web client's
-   edge.
-   **"Required" is always required-under-a-premise, and the premise is what falls off in transit** — the
-   word survives the copy, the condition does not: Lesson 38's failure for names, applied to a
-   requirement's scope. The comment even declared itself — *"the ONLY entry added from that page on
-   faith"* — and the self-award of an exception is not a discharge: **an entry marked "on faith" is a
-   scheduled defect**, and of the whole list it was the one that broke. The repair for the class: when
-   copying a "required" row, copy the sentence that scopes the table — and read the whole page, because
-   the contradicting table sat three scrolls down the same URL this repository had already cited twice.
-   **Second instance, 2026-09-05 (the 6b-6d review), and it nearly bought a NAT gateway.** The MWAA
-   Serverless networking page states that a workflow's subnets *"must have a route table to a NAT device
-   (gateway or instance)"* — read alone, that makes orchestration D38's first named exception and puts a
-   ~USD 36.50/month standing line into a USD 50 estate. The premise is the **section heading**: that list
-   scopes *"Public routing over the internet"*, and the next section, *"Private routing without internet
-   access"*, requires the exact opposite — *"must not have a route table to a NAT device … nor an internet
-   gateway"* — with three interface endpoints and a self-referencing security group instead. **When a
-   vendor page offers two topologies, the requirements list you hit first belongs to whichever one it is
-   under**; the tell is the same as the first instance, a "required" whose premise names a network shape
-   nobody checked against ours.
+   among them) and the IdC sign-in endpoints require the public internet, so one page instructs the
+   endpoint and requires a name that endpoint's private zone shadows. Where the tables collide, the
+   browser-facing one wins: a portal is a web client, and no interface endpoint serves a web
+   client's edge. "Required" is always required-under-a-premise, and the premise is what falls off
+   in transit (Lesson 38's failure for names, applied to a requirement's scope). The comment even
+   declared itself, *"the ONLY entry added from that page on faith"*, and the self-award of an
+   exception is not a discharge: an entry marked "on faith" is a scheduled defect, and of the whole
+   list it was the one that broke. When copying a "required" row, copy the sentence that scopes the
+   table, and read the whole page; the contradicting table sat three scrolls down a URL this
+   repository had already cited twice.
+   Second instance, 2026-09-05 (the 6b-6d review), and it nearly bought a NAT gateway. The MWAA
+   Serverless networking page states that a workflow's subnets *"must have a route table to a NAT
+   device (gateway or instance)"*; read alone, that makes orchestration D38's first named exception
+   and puts a ~USD 36.50/month standing line into a USD 50 estate. The premise is the section
+   heading: that list scopes *"Public routing over the internet"*, and the next section, *"Private
+   routing without internet access"*, requires the opposite, *"must not have a route table to a NAT
+   device … nor an internet gateway"*, with three interface endpoints and a self-referencing
+   security group instead. When a vendor page offers two topologies, the requirements list you hit
+   first belongs to whichever one it is under; the tell is a "required" whose premise names a
+   network shape nobody checked against ours.
 
 42. **A permission failure is a response; a network failure is the absence of one — and CloudTrail
-   separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible cause
-   attached: the same week had re-keyed `DenyControlPlaneOffVpn`, so the deny was the suspect. The
-   symptom had already ruled it out. An IAM deny is an **answer** — HTTP 403 with a body, a console
-   naming the policy family, a CloudTrail event carrying `errorCode` — because the request reached the
-   service and was evaluated. The browser's *"Failed to fetch"* is the opposite shape: `fetch()`
-   rejecting before any HTTP exists (DNS, TCP, TLS, CORS), which no policy can produce. And the
-   discriminator costs one query: CloudTrail held **45 events from the home address and zero from the
-   tunnel** — same portal, same minutes. Zero events is not a deny; a deny leaves an event. The
-   suspected policy was never evaluated, because nothing arrived to be evaluated.
-   **Classify the failure by what came back — a body, a refusal, or silence — before opening any policy
-   document**, and let CloudTrail's presence/absence split the last two. The suspect here also failed
-   the *sign* test: the re-keying was **permissive** for the suspected path, so even its direction was
-   wrong. This is Lesson 24's channel discipline pointed at a different pair — not benign-vs-serious
-   wordings of one denial, but denial-vs-no-arrival, which no wording can distinguish because one of the
-   two has no words.
+   separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible
+   cause: the same week had re-keyed `DenyControlPlaneOffVpn`, so the deny was the suspect. The
+   symptom had already ruled it out. An IAM deny is an answer (HTTP 403 with a body, a console
+   naming the policy family, a CloudTrail event carrying `errorCode`), because the request reached
+   the service and was evaluated. The browser's *"Failed to fetch"* is the opposite shape: `fetch()`
+   rejecting before any HTTP exists (DNS, TCP, TLS, CORS), which no policy can produce. The
+   discriminator costs one query: CloudTrail held 45 events from the home address and zero from the
+   tunnel, same portal, same minutes. Zero events is not a deny; a deny leaves an event. The
+   suspected policy was never evaluated, because nothing arrived. Classify the failure by what came
+   back (a body, a refusal, or silence) before opening any policy document, and let CloudTrail's
+   presence or absence split the last two. The suspect also failed the sign test: the re-keying was
+   permissive for the suspected path. This is Lesson 24's channel discipline pointed at a different
+   pair: not benign-vs-serious wordings of one denial, but denial-vs-no-arrival, which no wording
+   can distinguish because one of the two has no words.
 
-43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read — so
-   every gate in the estate stays green through a total outage.** Removing the `datazone` endpoint
-   discharged the NXDOMAIN shadowing of 2026-08-24, and the portal on the tunnel then failed with the
-   **identical words**: `TypeError: Failed to fetch`, on the catalog tab and on the JupyterLab space. The
-   surviving endpoints' private zones were answering *correctly* — the whole `*.studio.<region>.sagemaker.aws`
-   subtree, `glue`, `lakeformation`, `athena`, all to `10.20.x.x`, which is the design working as
-   intended. But the portal is a **public** origin, and a browser gates a public page's request to a
-   private address behind a permission (Chrome's **Local Network Access**); ungranted, `fetch()` rejects
-   before any HTTP exists. `curl` from the same laptop, the same minute, reached every one of those
-   addresses — it implements no such policy. **Everything this repository owns read clean throughout:**
-   `DN-1` 43/43, the DNS Firewall allowing, CloudTrail silent, `dig` answering, `terraform plan` empty.
-   The only instrument that could see it was a person clicking a permission.
-   **CloudTrail could still attribute it afterwards, and that is the reusable move**: the calls that
-   *succeeded* after the grant name what was failing before it — the catalog tab resolved to Glue at the
-   `glue` endpoint, the JupyterLab launch to the SageMaker API at `sagemaker.api`, both arriving from the
-   VPN host's **private** address — while the ~25 minutes of the outage held **zero arrivals**. The trail
-   cannot see a browser-side refusal, but the *shape* of the recovery identifies it: read the first
-   successful minute to learn what the silent minutes were trying to do.
-   **Lesson 28 said reach is an intersection; the intersection does not stop at AWS.** When a control
-   plane's client is a browser, its terms join the product — origin classification, CORS, private-network
-   gating, mixed content, cookie partitioning — and they share a shape: they are properties of the
-   *requesting document's* context, so they are invisible to the account, invariant under IAM, and
-   untestable by any harness that speaks HTTP without being a browser. Two corollaries, both structural.
-   **A full-tunnel client resolving through a VPC that holds interface endpoints has been moved into
-   those endpoints' address space without anyone deciding to** — every public web console for those
-   services inherits the gate, as a side effect of a DNS setting made for the compute plane. And the
-   fixable case was the exception: `datazone` could be deleted, `sagemaker.studio` cannot, so **the class
-   whose first instance was repaired by removing an endpoint is in general repairable only by moving the
-   client off the resolver** (open question 23). A per-origin browser grant is the interim, and it is not
+43. **A browser is a term in the reach question, and its policy is one no AWS instrument can read —
+   so every gate in the estate stays green through a total outage.** Removing the `datazone`
+   endpoint discharged the NXDOMAIN shadowing of 2026-08-24, and the portal on the tunnel then
+   failed with the identical words, `TypeError: Failed to fetch`, on the catalog tab and on the
+   JupyterLab space. The surviving endpoints' private zones were answering correctly (the whole
+   `*.studio.<region>.sagemaker.aws` subtree, `glue`, `lakeformation`, `athena`, all to
+   `10.20.x.x`), the design working as intended. But the portal is a public origin, and a browser
+   gates a public page's request to a private address behind a permission (Chrome's **Local Network
+   Access**); ungranted, `fetch()` rejects before any HTTP exists. `curl` from the same laptop, the
+   same minute, reached every one of those addresses; it implements no such policy. Everything this
+   repository owns read clean throughout: `DN-1` 43/43, the DNS Firewall allowing, CloudTrail
+   silent, `dig` answering, `terraform plan` empty. The only instrument that could see it was a
+   person clicking a permission. CloudTrail could still attribute it afterwards, and that is the
+   reusable move: the calls that succeeded after the grant name what was failing before it. The
+   catalog tab resolved to Glue at the `glue` endpoint, the JupyterLab launch to the SageMaker API
+   at `sagemaker.api`, both arriving from the VPN host's private address, while the ~25 minutes of
+   the outage held zero arrivals. The trail cannot see a browser-side refusal, but the shape of the
+   recovery identifies it: read the first successful minute to learn what the silent minutes were
+   trying to do. Lesson 28 said reach is an intersection; the intersection does not stop at AWS.
+   When a control plane's client is a browser, its terms join the product (origin classification,
+   CORS, private-network gating, mixed content, cookie partitioning), and they share a shape: they
+   are properties of the requesting document's context, so they are invisible to the account,
+   invariant under IAM, and untestable by any harness that speaks HTTP without being a browser. Two
+   structural corollaries. A full-tunnel client resolving through a VPC that holds interface
+   endpoints has been moved into those endpoints' address space without anyone deciding to: every
+   public web console for those services inherits the gate, as a side effect of a DNS setting made
+   for the compute plane. And the fixable case was the exception: `datazone` could be deleted,
+   `sagemaker.studio` cannot, so the class is in general repairable only by moving the client off
+   the resolver (open question 23). A per-origin browser grant is the interim, and it is not
    infrastructure: no gate asserts it, no state file holds it, and it dies with a browser profile.
 
-44. **What peering shares is an address, never a path — and a topology drawn as boxes and lines hides
-    exactly that.** *(2026-09-05, while the single-egress hub was being designed.)* The request was
-    ordinary and, drawn on a whiteboard, correct: one internet gateway in a hub VPC, one NAT gateway
-    behind it, every other VPC reaching the internet "through" it. AWS forbids all three legs of that
-    sentence in one paragraph — a peered VPC cannot use its neighbour's internet gateway, NAT device or
-    gateway endpoint, peering is not transitive, and a peering route may carry only the peer's CIDR — so
-    the drawing describes a path that silently blackholes rather than erroring. **The general form: a
-    connectivity primitive advertises what it joins, not what it forwards, and every "shared" gateway
-    behind it is an assumption nobody wrote down.** The tell is a design in which one VPC's resource
-    appears in another VPC's route table as a *destination of last resort*: `0.0.0.0/0` toward a peering,
-    a shared NAT, a gateway endpoint "for the estate". What survives the constraint is anything with an
-    **address** — an instance, an interface endpoint, a load balancer — which is why the single egress
-    became an explicit proxy and every spoke lost its default route. Two second-order effects arrived with
-    it, and both are worth expecting rather than discovering: the constraint **enforces** an isolation
-    rule for free (two VPCs with no direct peering have no path, whatever the hub does), and it moves the
-    whole filtering problem up a layer, where a proxy that will happily `CONNECT` to a private address is
-    a bridge between the very VPCs the topology was keeping apart. **The repository already held the
-    rule** — Stage 3 step 6.5 wrote it down in 2026-08-16 and `NT-4` measures it — which is the part that
-    should sting: it was known, it was tested, and it was still designed around, because it lives in a
-    stage file nobody re-opens while drawing a new topology.
+44. **What peering shares is an address, never a path — and a topology drawn as boxes and lines
+    hides exactly that.** (2026-09-05, while the single-egress hub was being designed.) The request
+    was ordinary and, drawn on a whiteboard, correct: one internet gateway in a hub VPC, one NAT
+    gateway behind it, every other VPC reaching the internet through it. AWS forbids all three legs
+    of that sentence: a peered VPC cannot use its neighbour's internet gateway, NAT device or
+    gateway endpoint, peering is not transitive, and a peering route may carry only the peer's CIDR,
+    so the drawing describes a path that silently blackholes rather than erroring. A connectivity
+    primitive advertises what it joins, not what it forwards, and every "shared" gateway behind it
+    is an assumption nobody wrote down. The tell is a design in which one VPC's resource appears in
+    another VPC's route table as a destination of last resort: `0.0.0.0/0` toward a peering, a
+    shared NAT, a gateway endpoint "for the estate". What survives the constraint is anything with
+    an address (an instance, an interface endpoint, a load balancer), which is why the single egress
+    became an explicit proxy and every spoke lost its default route. Two second-order effects to
+    expect: the constraint enforces an isolation rule for free (two VPCs with no direct peering have
+    no path, whatever the hub does), and it moves the whole filtering problem up a layer, where a
+    proxy that will `CONNECT` to a private address is a bridge between the VPCs the topology was
+    keeping apart. The repository already held the rule: Stage 3 step 6.5 wrote it down on
+    2026-08-16 and `NT-4` measures it. It was known, tested, and still designed around, because it
+    lives in a stage file nobody re-opens while drawing a new topology.
 
-45. **A default that reaches the internet is a dependency nobody declared — and removing the route is what
-    turns it from invisible into fatal.** *(2026-09-05, reviewing Stages 7-15 against the single-egress
-    design.)* Three of one stage's six documentation corrections turned out to be the same shape. GitLab
-    Omnibus enables **Let's Encrypt automatically whenever `external_url` is HTTPS**, and retries it on
-    every `reconfigure` — on a `.internal` name behind a proxy that is a failing reconfigure, for ever,
-    and the failure names ACME rather than naming the design. ECR's pull-through cache documents that the
-    **first** pull *"may require a route to the internet"*, and offers as its own remedy a public subnet
-    with an internet gateway — the exact thing the design removed. A `PythonOperator` in a workflow whose
-    workers AWS documents as having *"no route table to a NAT device… nor an internet gateway"* has no
-    path to PyPI at all. **The general form: a managed component's convenience defaults were written for
-    an estate with egress, so every one of them is a latent outbound call, and a design that removes the
-    route converts a silent success into an unexplained failure at the worst moment.** What makes it
-    expensive is *when* it surfaces: the proxied estate works for everything anyone thinks to test, and
-    the defaults fire on the paths nobody drives by hand — a renewal, a first pull, a cold start. **Three
-    habits, and only the third is cheap:** read a product's *defaults* page, not only its configuration
-    page, before putting it behind a proxy; make the refusal legible on purpose (an explicit proxy answers
-    **403 naming the host**, which is a finding, where a missing route answers with a timeout, which is
-    not — Lesson 42 at a new address); and prefer a **lint** over a runtime discovery wherever the
-    dependency is expressible in the artifact, which is why the workflow lint rejects an operator rather
-    than the network rejecting a packet.
+45. **A default that reaches the internet is a dependency nobody declared — and removing the route
+    is what turns it from invisible into fatal.** (2026-09-05, reviewing Stages 7-15 against the
+    single-egress design.) Three of one stage's six documentation corrections were the same shape.
+    GitLab Omnibus enables Let's Encrypt automatically whenever `external_url` is HTTPS, and retries
+    it on every `reconfigure`; on a `.internal` name behind a proxy that is a failing reconfigure,
+    for ever, and the failure names ACME rather than the design. ECR's pull-through cache documents
+    that the first pull *"may require a route to the internet"*, and offers as remedy a public
+    subnet with an internet gateway, the thing the design removed. A `PythonOperator` in a workflow
+    whose workers AWS documents as having *"no route table to a NAT device… nor an internet
+    gateway"* has no path to PyPI. A managed component's convenience defaults were written for an
+    estate with egress, so each is a latent outbound call, and a design that removes the route
+    converts a silent success into an unexplained failure. It surfaces late: the proxied estate
+    works for everything anyone thinks to test, and the defaults fire on the paths nobody drives by
+    hand (a renewal, a first pull, a cold start). Three habits, only the third cheap: read a
+    product's defaults page, not only its configuration page, before putting it behind a proxy; make
+    the refusal legible on purpose (an explicit proxy answers 403 naming the host, which is a
+    finding, where a missing route answers with a timeout, which is not: Lesson 42); and prefer a
+    lint over a runtime discovery wherever the dependency is expressible in the artifact, which is
+    why the workflow lint rejects an operator rather than the network rejecting a packet.
 
 46. **A command whose output you redirect or pipe hands you the exit code of the pipe, not of the
     command — and the next step then runs on a failure you never saw.** Three times in one session
-    (2026-09-06, Stage 6b/6c): a `git commit … | grep` swallowed a hook failure and the `git tag` that
-    followed landed on the **wrong commit**, burning a published tag that a runbook forbids moving; a
-    pair of `terraform apply … >/dev/null 2>&1` left **two hosted zones silently uncreated**, discovered
-    only because a later listing was short; and a `git commit && echo pushed` reported success while the
-    commit had been rejected. **The shape is always the same and it is not carelessness about the
-    command — it is carelessness about the SHELL**: `cmd | grep` exits with `grep`'s status, `cmd
-    >/dev/null 2>&1` throws away the sentence that says what happened, and `&&` then chains off a truth
-    that is not the one you meant. **The habit that costs nothing: never chain a consequential act
-    (`tag`, `push`, a second `apply`) onto a command whose output you filtered.** Run it, read it, then
-    act — and where a loop must summarise many commands, have it print the exit code beside each line
-    rather than the output it matched. The expensive half is not the failed command; it is that the
-    failure is discovered *later*, attributed to something else, and the intermediate state has already
-    been published.
+    (2026-09-06, Stage 6b/6c): a `git commit … | grep` swallowed a hook failure and the `git tag`
+    that followed landed on the wrong commit, burning a published tag that a runbook forbids moving;
+    a pair of `terraform apply … >/dev/null 2>&1` left two hosted zones silently uncreated,
+    discovered only because a later listing was short; a `git commit && echo pushed` reported
+    success while the commit had been rejected. The carelessness is about the shell, not the
+    command: `cmd | grep` exits with `grep`'s status, `cmd >/dev/null 2>&1` throws away the sentence
+    that says what happened, and `&&` then chains off a truth that is not the one you meant. Never
+    chain a consequential act (`tag`, `push`, a second `apply`) onto a command whose output you
+    filtered: run it, read it, then act. Where a loop must summarise many commands, have it print
+    the exit code beside each line rather than the output it matched. The expensive half is that the
+    failure is discovered later, attributed to something else, after the intermediate state has been
+    published.
 
-47. **A process waiting on stdin looks exactly like a slow one, and the lock it holds makes the symptom
-    appear somewhere else entirely.** A `terraform plan` was backgrounded with one generated variable
-    missing; with no terminal to prompt at, it **waited eleven minutes**, holding the S3 state lock — and
-    every reading of the problem came from *other* commands, in *other* slices, failing with
-    `Error acquiring the state lock` and naming a lock id, a host and a timestamp that explained nothing.
-    **The diagnosis had to run backwards**: find the lock, find the process, discover it is not slow but
-    blocked, and only then find the missing input. **`-input=false` is the whole fix** — it converts an
-    unanswerable prompt into an immediate, self-describing error — and it belongs on every non-interactive
-    plan and apply, not just the backgrounded ones. **The general form: any tool that can ask a question
-    must be told it may not, before it is run somewhere it cannot be answered.** The second habit is
-    cheaper still: when a lock error names a timestamp, look for a live process *before* force-unlocking,
-    because the two cases — orphaned lock and running command — have identical error text and opposite
-    correct actions (Lesson 13, at the level of an operator rather than a check).
+47. **A process waiting on stdin looks exactly like a slow one, and the lock it holds makes the
+    symptom appear somewhere else entirely.** A `terraform plan` was backgrounded with one generated
+    variable missing; with no terminal to prompt at, it waited eleven minutes holding the S3 state
+    lock, and every reading of the problem came from other commands, in other slices, failing with
+    `Error acquiring the state lock` and naming a lock id, a host and a timestamp that explained
+    nothing. The diagnosis ran backwards: find the lock, find the process, discover it is blocked
+    rather than slow, then find the missing input. `-input=false` is the whole fix; it converts an
+    unanswerable prompt into an immediate, self-describing error, and it belongs on every
+    non-interactive plan and apply, not just the backgrounded ones. Any tool that can ask a question
+    must be told it may not, before it is run somewhere it cannot be answered. Cheaper still: when a
+    lock error names a timestamp, look for a live process before force-unlocking, because an
+    orphaned lock and a running command have identical error text and opposite correct actions
+    (Lesson 13, at the level of an operator).
 
-48. **A name that another account resolves by is a cross-account contract, and no id-shaped gate can see
-    it move.** Stage 6c step 1.1 re-labelled a VPC's `Name` tag; its own gate was *"any id in the
-    replacement list stops the step"*, and **every id was unchanged**, so the step passed. Two other
-    accounts looked that VPC up **by tag** — `data "aws_vpc"` with a `tag:Name` filter — and from that
-    apply until somebody happened to run a plan in one of them, both were broken with `no matching EC2
-    VPC found`. **The failure surfaced through an unrelated command in a different account, hours later.**
-    Lesson 3 says a resource moved across a boundary invalidates every condition that referenced it; this
-    is its quieter half — **a resource that did not move at all, whose *name* did**, with the citation
-    living somewhere the change's own review never opens. **The recognisable trigger is a rename of
-    anything selected by tag, name, alias or path, rather than by id.** Before applying one, grep the
-    whole tree for the old string — the cheap version of the discovery — and treat every hit in another
-    account's slice as part of the same commit.
+48. **A name that another account resolves by is a cross-account contract, and no id-shaped gate can
+    see it move.** Stage 6c step 1.1 re-labelled a VPC's `Name` tag; its gate was *"any id in the
+    replacement list stops the step"*, every id was unchanged, and the step passed. Two other
+    accounts looked that VPC up by tag (`data "aws_vpc"` with a `tag:Name` filter), and from that
+    apply until somebody happened to run a plan in one of them, both were broken with `no matching
+    EC2 VPC found`. The failure surfaced through an unrelated command in a different account, hours
+    later. Lesson 3 says a resource moved across a boundary invalidates every condition that
+    referenced it; this is its quieter half, a resource that did not move at all, whose name did,
+    with the citation living somewhere the change's own review never opens. The trigger is a rename
+    of anything selected by tag, name, alias or path rather than by id. Before applying one, grep
+    the whole tree for the old string, and treat every hit in another account's slice as part of the
+    same commit.
 
 49. **A comment saying a knob is never turned is a claim about the callers that existed when it was
-    written.** `vpc-egress`'s `core_services` reads *"Overridden never — the per-role differences go in
-    `extra_services`"*, and it was right: every caller served a VPC people work in, where those eight
-    endpoints are what a notebook cannot function without under design B. Then a VPC arrived with **no
-    workload at all**, and obeying the comment would have billed **0.080/h of interface endpoints for a
-    network nothing runs in**. **The comment was not wrong and did not become wrong — its premise
-    silently stopped applying**, which is the same shape as a vendor "required" travelling without its
-    premise (Lesson 41) and a rejected-on-cost option going stale in the direction that flatters the
-    rejection (Lesson 7). **What to do with one:** an absolute in a module is read as a constraint and is
-    only ever a default with an argument behind it, so the argument is the thing to re-read — and when it
-    does not apply, override it **with the exception written where the override is**, not where the
+    written.** `vpc-egress`'s `core_services` reads *"Overridden never — the per-role differences go
+    in `extra_services`"*, and it was right: every caller served a VPC people work in, where those
+    eight endpoints are what a notebook cannot function without under design B. Then a VPC arrived
+    with no workload at all, and obeying the comment would have billed 0.080/h of interface
+    endpoints for a network nothing runs in. The comment did not become wrong; its premise stopped
+    applying, the same shape as a vendor "required" travelling without its premise (Lesson 41) and a
+    rejected-on-cost option going stale (Lesson 7). An absolute in a module reads as a constraint
+    and is only a default with an argument behind it, so the argument is the thing to re-read; when
+    it does not apply, override it with the exception written where the override is, not where the
     comment is. A module that meant it would have made the value a `local`.
 
-50. **A check written to a stage's FINAL expectation is red for every pass until that stage ends — and a
-    check that is red for four passes is a check nobody reads on the fifth.** Four instances in two days
-    (2026-09-05/06): `deploytargets.py`'s `DT-8` compared a Staging mirror against the lake and reported
-    `DIVERGES` because **Stage 9 has not built the mirror** — it had never been green, only *skipped*,
-    and the moment a profile made it runnable it went red and would have stayed so through four stages.
-    Stage 6c's `1.5` would fail on three internet-gateway routes that pass 5 removes; its `NT-12` would
-    fail on a zone family step 2.6 retires; its `NT-11` would fail between the two steps that create a
-    peering and route it. **The general form: a stage is a sequence, so "the expectation" is a moving
-    target, and a check asserts a single value.** Three ways out, in order of preference: give the check
-    a **discriminator** that separates *"not built yet"* from *"built wrong"* — `deploytargets.py`'s
-    `built` flag is the pattern, and the signal is usually the presence of any object the later stage
-    creates; **write the check at the pass that makes it true**, which costs nothing but the discipline
-    to leave a gap in the plan; or name the intermediate state as a **dated, expected exception** that a
-    named step removes. **What is never acceptable is the fourth option, which is what happens by
-    default**: ship it red and rely on a human to remember why. The two outcomes — *"the thing is missing"*
-    and *"the thing is wrong"* — are opposite findings, and a check that gives them one verdict has
+50. **A check written to a stage's final expectation is red for every pass until that stage ends —
+    and a check that is red for four passes is a check nobody reads on the fifth.** Four instances
+    in two days (2026-09-05/06): `deploytargets.py`'s `DT-8` compared a Staging mirror against the
+    lake and reported `DIVERGES` because Stage 9 has not built the mirror; it had never been green,
+    only skipped, and the moment a profile made it runnable it went red and would have stayed so
+    through four stages. Stage 6c's `1.5` would fail on three internet-gateway routes that pass 5
+    removes; its `NT-12` would fail on a zone family step 2.6 retires; its `NT-11` would fail
+    between the two steps that create a peering and route it. A stage is a sequence, so "the
+    expectation" is a moving target, and a check asserts a single value. Three ways out, in order of
+    preference: give the check a discriminator that separates *"not built yet"* from *"built wrong"*
+    (`deploytargets.py`'s `built` flag is the pattern; the signal is usually the presence of any
+    object the later stage creates); write the check at the pass that makes it true, which costs
+    only the discipline to leave a gap in the plan; or name the intermediate state as a dated,
+    expected exception that a named step removes. The fourth option, what happens by default, is
+    never acceptable: ship it red and rely on a human to remember why. *"The thing is missing"* and
+    *"the thing is wrong"* are opposite findings, and a check that gives them one verdict has
     stopped being a check (Lesson 13, over time rather than over outcomes).
 
-51. **Two intents sharing one list stay identical until the day they must differ — and then a change made
-    for one silently makes it for the other.** This is Lesson 33's mirror, and it is the more dangerous
-    half. 33 warns that one intent enforced in *two* places diverges; this is *two* intents enforced in
-    *one* place, which never diverges and is wrong in a different way: it **cannot express a difference
-    the design later requires**, so the first change that needs one takes it from both. Stage 6c step 3.1
-    retired a peering, and the same `local.peer_vpc_ids` that named who a VPC **peers with** also named
-    whose VPC its DNS zones are **associated into**. Those were the same set for three stages. Splitting
-    them was not a refactor — **left conflated, the retirement plan would have destroyed a zone
-    association nobody was thinking about, inside a plan whose headline was peerings**, and it would have
-    read as correct in review because every line in it was about a peering. **The tell is a list whose
-    name answers one question while a second reader asks it another** (`peer_vpc_ids` consumed by a
-    `zone_peer` local is the shape, spelled out). **The test that finds it in seconds: name each consumer
-    and ask whether a row could ever be true for one and false for the other.** If yes, the list is two
-    lists whether or not it has diverged yet — and *"a DNS association is not a path"* is the sentence
-    that made this one obvious once asked.
+51. **Two intents sharing one list stay identical until the day they must differ — and then a change
+    made for one silently makes it for the other.** Lesson 33's mirror, and the more dangerous half:
+    33 warns that one intent enforced in two places diverges; this is two intents enforced in one
+    place, which never diverges and cannot express a difference the design later requires, so the
+    first change that needs one takes it from both. Stage 6c step 3.1 retired a peering, and the
+    same `local.peer_vpc_ids` that named who a VPC peers with also named whose VPC its DNS zones are
+    associated into. Those were the same set for three stages. Left conflated, the retirement plan
+    would have destroyed a zone association nobody was thinking about, inside a plan whose headline
+    was peerings, and it would have read as correct in review because every line in it was about a
+    peering. The tell is a list whose name answers one question while a second reader asks it
+    another (`peer_vpc_ids` consumed by a `zone_peer` local). The test: name each consumer and ask
+    whether a row could ever be true for one and false for the other. If yes, the list is two lists
+    whether or not it has diverged yet; *"a DNS association is not a path"* is the sentence that
+    made this one obvious.
 
-52. **A wait whose only exit is SUCCESS waits forever once the thing it waits on is gone — and its
+52. **A wait whose only exit is success waits forever once the thing it waits on is gone — and its
     silence is indistinguishable from patience.** Stage 6c step 4.8 polled two `until` loops for a
     cloud-init line on instance `i-0b04…`; the next step `-replace`d that instance, and both loops
     went on asking a terminated host for its console output every 15 and 20 seconds, indefinitely.
-    They were found by the **user noticing**, not by anything in the repository — for the second
-    time in one session, after the 3h33m `terraform plan` of Lesson 47. **Same symptom, unrelated
-    causes**, which is the point: one was blocked on stdin, this one was polling a corpse, and from
-    outside both look exactly like work in progress. **The defect is the loop's shape, not the
-    object's death:** an `until <success>; do sleep; done` has no branch for *the world changed
-    underneath me*, so every failure mode collapses into "not yet". The `Monitor` tool documents
-    the same trap for event filters — *"if this process crashed right now, would my filter emit
-    anything?"* — and an `until` loop is that question with the answer already fixed at no. **Give
-    every wait a second exit** (a deadline, or a check that the subject still exists) and prefer a
+    They were found by the user noticing, not by anything in the repository, for the second time in
+    one session, after the 3h33m `terraform plan` of Lesson 47. Same symptom, unrelated causes: one
+    was blocked on stdin, this one was polling a corpse, and from outside both look like work in
+    progress. The defect is the loop's shape: an `until <success>; do sleep; done` has no branch for
+    the world changing underneath it, so every failure mode collapses into "not yet". The `Monitor`
+    tool documents the same trap for event filters (*"if this process crashed right now, would my
+    filter emit anything?"*), and an `until` loop is that question with the answer fixed at no. Give
+    every wait a second exit (a deadline, or a check that the subject still exists) and prefer a
     condition on something that outlives the step: `terraform output -raw instance_id` re-read each
-    round, never an id pasted at the top. **The estate-level guard this argues for does not exist:**
-    nothing here looks for a `terraform` process older than an hour, a `.tflock` with no live owner,
-    or a poll loop outliving its subject — and two incidents in one session is the evidence for it.
+    round, never an id pasted at the top. The estate-level guard this argues for does not exist:
+    nothing looks for a `terraform` process older than an hour, a `.tflock` with no live owner, or a
+    poll loop outliving its subject, and two incidents in one session is the evidence for it.
 
 53. **Two systems that express the same intent in the same-looking syntax are not translatable by
     transcription — and the failure is a refusal that reads exactly like a missing entry.** Stage 6c
-    step 4.9 moved an allow-list from Route 53 DNS Firewall to Squid. Both take domain names; both use a
-    leading token for "and subdomains"; the meanings do not line up. In DNS Firewall `example.com` is the
-    **apex only** and `*.example.com` is **subdomains and not the apex**, so covering a name needs *both*.
-    In Squid `example.com` is that **exact host** and `.example.com` is the domain **and** every subdomain,
-    so `.example.com` alone is the whole answer — **and listing both is FATAL**. Transcribing the
-    asterisks would have produced entries matching nothing; transcribing the pairs took the proxy's first
-    boot down to an empty allow-list. **The tell is that the two syntaxes agree on the easy cases** —
-    a bare hostname works in both — so a spot check of five entries passes and the sixth is the one that
-    differs. **Translate by asking what each side means by "covered", entry by entry, and put a gate on
-    the collision the target rejects**; a list that came from another system carries its grammar in, and
-    every future addition copied from that side carries it in again.
+    step 4.9 moved an allow-list from Route 53 DNS Firewall to Squid. Both take domain names; both
+    use a leading token for "and subdomains"; the meanings do not line up. In DNS Firewall
+    `example.com` is the apex only and `*.example.com` is subdomains and not the apex, so covering a
+    name needs both. In Squid `example.com` is that exact host and `.example.com` is the domain and
+    every subdomain, so `.example.com` alone is the whole answer, and listing both is fatal.
+    Transcribing the asterisks would have produced entries matching nothing; transcribing the pairs
+    took the proxy's first boot down to an empty allow-list. The two syntaxes agree on the easy
+    cases (a bare hostname works in both), so a spot check of five entries passes and the sixth
+    differs. Translate by asking what each side means by "covered", entry by entry, and put a gate
+    on the collision the target rejects; a list that came from another system carries its grammar
+    in, and every future addition copied from that side carries it in again.
 
-54. **A program that has never been run is a claim, and `validate`, `render` and `run` are three different
-    verdicts — passing the first two says nothing about the third.** Stage 6c pass 4 wrote a module, two
-    slices and three templates. `terraform validate`, `tflint`, `checkov` and a careful re-read were all
-    green on every one of them, and **seven defects were still there**. Three fell out the moment the
-    templates were *rendered* — `+` is arithmetic and not concatenation in HCL; `%{` is `templatefile`'s
-    directive marker and collides with Squid's own `strftime` escape, **and then with the comment written
-    to explain the first collision**; a "revert" path that deleted the new file while the old one was
-    already overwritten. Four more needed the thing to actually *run* on a host: an allow-list that would
-    not parse, an error the script swallowed, a State Manager association that raced `dnf`, and an
-    instance size that fit the steady state and not the build. **None of these is exotic** — they are the
-    ordinary distance between "the syntax is well-formed", "the output is what I meant" and "the world
-    accepts it". **Render every template with real values before applying** (a throwaway `templatefile`
-    in a scratch directory costs one minute), and treat the first successful *boot* — not the first
-    successful *apply* — as the moment a `[D]` slice is evidence rather than intent.
+54. **A program that has never been run is a claim, and `validate`, `render` and `run` are three
+    different verdicts — passing the first two says nothing about the third.** Stage 6c pass 4 wrote
+    a module, two slices and three templates. `terraform validate`, `tflint`, `checkov` and a
+    careful re-read were green on every one, and seven defects were still there. Three fell out when
+    the templates were rendered: `+` is arithmetic and not concatenation in HCL; `%{` is
+    `templatefile`'s directive marker and collides with Squid's own `strftime` escape, and then with
+    the comment written to explain the first collision; a "revert" path deleted the new file while
+    the old one was already overwritten. Four more needed the thing to run on a host: an allow-list
+    that would not parse, an error the script swallowed, a State Manager association that raced
+    `dnf`, and an instance size that fit the steady state and not the build. None is exotic; they
+    are the ordinary distance between "the syntax is well-formed", "the output is what I meant" and
+    "the world accepts it". Render every template with real values before applying (a throwaway
+    `templatefile` in a scratch directory costs one minute), and treat the first successful boot,
+    not the first successful apply, as the moment a `[D]` slice is evidence rather than intent.
 
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
-    [Lesson 42](#) separates a *permission* failure, which is a response, from a *network* failure, which
-    is the absence of one. This is its mirror and the harder case: there **is** a response, and the
-    sender discards it by policy, so it observes absence anyway. Stage 6c step 6.1, 2026-09-07. The VPN
-    host's `FORWARD` chain rejects every tunnel packet not bound for RFC1918 with
-    `icmp-admin-prohibited`, and this repository's own runbook predicted the client would therefore see
-    *"a fast refusal, not a timeout"*. The client saw `curl: (28) Connection timed out after 15006 ms`.
-    Both are true: measured the same hour, the reject rule had fired **8453 times**. **The mechanism this
-    lesson first named — *macOS ignores an ICMP unreachable arriving mid-`connect()`* — was wrong, and
-    step 6.4 measured the real one the same day**: the host **rate-limits** its ICMP errors per
+    [Lesson 42](#) separates a permission failure, which is a response, from a network failure,
+    which is the absence of one. This is its mirror and the harder case: there is a response, and
+    the sender discards it by policy, so it observes absence anyway. Stage 6c step 6.1, 2026-09-07.
+    The VPN host's `FORWARD` chain rejects every tunnel packet not bound for RFC1918 with
+    `icmp-admin-prohibited`, and this repository's runbook predicted the client would see *"a fast
+    refusal, not a timeout"*. The client saw `curl: (28) Connection timed out after 15006 ms`. Both
+    are true: measured the same hour, the reject rule had fired 8453 times. The mechanism this
+    lesson first named, *macOS ignores an ICMP unreachable arriving mid-`connect()`*, was wrong;
+    step 6.4 measured the real one the same day. The host rate-limits its ICMP errors per
     destination (`icmp_ratelimit`), and a laptop whose background applications are refused several
-    times a second starves the bucket — of 27681 rejected packets the host had *spoken* 4366 and
-    silenced **23318** (`OutRateLimitHost`), so a given SYN gets its ICMP or does not by the luck of a
-    token; when one arrives, macOS honours it at once (`curl: (7) … after 194 ms`). The sender still
-    cannot tell a starved refusal from a black hole, which is the point.
-    **What generalises is where the evidence lives.** The discriminator is not a better reading of the
-    client's error — there is nothing in it to read. It is the **counter on the refusing side**, and a
-    packet count is also what separates *the rule is present* from *the rule is hit*. So when a control
-    is expected to answer rather than drop, write the verification against the enforcing end, and treat
-    any prediction about what the sender will observe as a claim about **someone else's stack** — which
-    is exactly the class of thing this project measures rather than reasons about.
+    times a second starves the bucket: of 27681 rejected packets the host had spoken 4366 and
+    silenced 23318 (`OutRateLimitHost`), so a given SYN gets its ICMP or does not by the luck of a
+    token, and when one arrives macOS honours it at once (`curl: (7) … after 194 ms`). The sender
+    still cannot tell a starved refusal from a black hole. What generalises is where the evidence
+    lives: not in the client's error, which has nothing to read, but in the counter on the refusing
+    side, and a packet count is also what separates *the rule is present* from *the rule is hit*.
+    When a control is expected to answer rather than drop, write the verification against the
+    enforcing end, and treat any prediction about what the sender will observe as a claim about
+    someone else's stack, which this project measures rather than reasons about.
 
 56. **A configuration line that names a capability the surrounding configuration does not have is
-    INERT, and it reads exactly like a working control.** Stage 6c, 2026-09-07. Every client config
-    in this estate carried `AllowedIPs = 0.0.0.0/0, ::/0` from the first day, and three separate
-    documents — the runbook, the stage file, the objectives' reading — described IPv6 as
-    *"deliberately black-holed"* on the strength of it. It was not routed anywhere: `wg-quick`
-    installs routes only for the address families the interface **has an address in**, and the
-    `[Interface] Address` line was IPv4-only. So `::/0` selected nothing, no IPv6 entered the
-    tunnel, and every IPv6-capable application on the device went out of its own uplink — outside
-    the tunnel, outside the proxy, outside the access log. **Nine established connections were doing
-    it, including the one carrying the session that found it**, and the discovery came from a user
-    noticing that a chat kept working while nothing else did.
-    **The tell is a directive that depends on a second setting to mean anything**, where the second
-    setting lives in a different part of the same file, or a different file, and has a permissive
-    default. `AllowedIPs` needs `Address`; a Squid `http_access allow src dst` needs the `dst` acl
-    to exist; a masquerade rule needs a route to send it traffic (Lesson 28's shape one layer down).
-    **Verify a routing directive by reading the ROUTING TABLE, never the config that was supposed to
-    produce it** — `netstat -rn -f inet6` answered in one line what three documents had asserted for
-    three weeks.
+    inert, and it reads exactly like a working control.** Stage 6c, 2026-09-07. Every client config
+    in this estate carried `AllowedIPs = 0.0.0.0/0, ::/0` from the first day, and three documents
+    (the runbook, the stage file, the objectives' reading) described IPv6 as *"deliberately
+    black-holed"* on the strength of it. It was not routed anywhere: `wg-quick` installs routes only
+    for the address families the interface has an address in, and the `[Interface] Address` line was
+    IPv4-only. So `::/0` selected nothing, no IPv6 entered the tunnel, and every IPv6-capable
+    application on the device went out of its own uplink, outside the tunnel, the proxy and the
+    access log. Nine established connections were doing it, including the one carrying the session
+    that found it, and the discovery came from the user noticing that a chat kept working while
+    nothing else did. The tell is a directive that depends on a second setting to mean anything,
+    where the second setting lives in a different part of the same file, or a different file, and
+    has a permissive default. `AllowedIPs` needs `Address`; a Squid `http_access allow src dst`
+    needs the `dst` acl to exist; a masquerade rule needs a route to send it traffic (Lesson 28's
+    shape one layer down). Verify a routing directive by reading the routing table, never the config
+    that was supposed to produce it: `netstat -rn -f inet6` answered in one line what three
+    documents had asserted for three weeks.
 
 57. **A paraphrase in a plan becomes the specification, and it is the plan's own words that make it
     look authoritative.** Stage 6c step 4.9 wrote *"the tunnel range carries the institutional web
     filter — what a person on a company laptop may reach"*, and told the executor to seed it from a
     vendor's table. `objectives.md` says the opposite in two places: the client's internet is
-    **monitored**, and *"the restriction is on the SageMaker-managed compute, never on the user's
+    monitored, and *"the restriction is on the SageMaker-managed compute, never on the user's
     (client's) machine"*. Because the proxy's configuration is default-deny, *"filter"* was
-    implemented as an **allow-list** — and the client's internet ended up **stricter** than the
-    compute's, which is the requirement inverted. Nobody noticed until a browser tried it: the AWS
-    console opened and nothing else did.
-    **`CLAUDE.md` already carried the rule that would have prevented it** — the objectives are *"the
-    specification a stage is measured against, so it is summarised nowhere"* — and the summary was
-    written anyway, in the file an executor actually opens. **An institutional web filter is a
-    DENY-list over an open default**; the paraphrase dropped the shape and kept the word.
-    **Before implementing a step that restates a requirement, open the requirement.** The tell is a
-    step that explains *why* rather than only *what*: an explanation is a paraphrase, and a
-    paraphrase of a specification is a fork of it.
+    implemented as an allow-list, and the client's internet ended up stricter than the compute's,
+    the requirement inverted. Nobody noticed until a browser tried it: the AWS console opened and
+    nothing else did. `CLAUDE.md` already carried the rule that would have prevented it (the
+    objectives are *"the specification a stage is measured against, so it is summarised nowhere"*),
+    and the summary was written anyway, in the file an executor opens. An institutional web filter
+    is a deny-list over an open default; the paraphrase dropped the shape and kept the word. Before
+    implementing a step that restates a requirement, open the requirement. The tell is a step that
+    explains why rather than only what: an explanation is a paraphrase, and a paraphrase of a
+    specification is a fork of it.
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
-    in an SSM parameter, re-rendered onto the host by a State Manager association every half hour —
-    a design bought precisely so a list edit needs no host replacement. A change of **shape** to
-    those lists needed a change to the **renderer**, and the renderer is a script written by user
-    data: `[D]` state on the disk. The parameter was updated, the association was triggered by hand,
-    and it reported **`Success`** — for running the *old* script perfectly. The new plane simply did
-    not appear, and the only evidence was the old `jq` expression still on the host.
-    **A reload path covers the artefacts it was built for and nothing else**, and its success is a
-    statement about the mechanism rather than about the outcome. Name the two classes where the
-    mechanism is documented — *this reaches the host in thirty minutes; that one needs a new host* —
-    because the failure is silent in the most convincing way available: a green status.
+    in an SSM parameter, re-rendered onto the host by a State Manager association every half hour, a
+    design bought so that a list edit needs no host replacement. A change of shape to those lists
+    needed a change to the renderer, and the renderer is a script written by user data: `[D]` state
+    on the disk. The parameter was updated, the association was triggered by hand, and it reported
+    `Success`, for running the old script perfectly. The new plane did not appear, and the only
+    evidence was the old `jq` expression still on the host. A reload path covers the artefacts it
+    was built for and nothing else, and its success is a statement about the mechanism, not the
+    outcome. Name the two classes where the mechanism is documented (this reaches the host in thirty
+    minutes; that one needs a new host), because the failure is silent in the most convincing way
+    available: a green status.
 
-59. **Changing WHERE a value is read from can change WHEN it is knowable — and every guard that
+59. **Changing where a value is read from can change when it is knowable — and every guard that
     reads it moves with it, silently.** Stage 6d step 8.8, 2026-09-09. The `NO_PROXY` generator was
     repaired by reading `aws_vpc_endpoint.dns_entry` (every name an endpoint answers for) instead of
     `data.aws_vpc_endpoint_service.private_dns_name` (the service's one canonical name). Correct on
-    the question it was asked, and it had a second effect nobody was asked about: a **data source**
-    is known at plan time and a **resource attribute** is not. The DNS Firewall coverage
-    precondition, sitting one file away and reading the same local, therefore stopped being
-    evaluatable at plan on any VPC whose endpoints did not exist yet. Terraform did not complain; it
-    deferred the condition to apply and printed a clean plan. Measured on a torn-down slice:
-    `20 to add`, `no_proxy = (known after apply)`, **and nothing raised** — where the same code with
-    a missing family used to fail before a single resource was touched.
-    **The repair had produced Lesson 39** — the strict validator arriving one act late — in a step
-    written to remove a different defect entirely, which is what makes this its own lesson rather
-    than an instance of that one. **A reading has two properties, its CONTENT and its TIMING, and a
-    change of source usually changes both.** The fix was not to choose between them: the narrow,
-    early reading came back beside the complete, late one, as two conditions naming their own
-    reading, so a failure says which half found it *and* whether a plan could have found it at all.
-    **Before swapping the source of a value, list what else reads it and ask when each of those
-    needs an answer.**
+    the question it was asked, with a second effect nobody was asked about: a data source is known
+    at plan time and a resource attribute is not. The DNS Firewall coverage precondition, one file
+    away and reading the same local, stopped being evaluatable at plan on any VPC whose endpoints
+    did not exist yet. Terraform did not complain; it deferred the condition to apply and printed a
+    clean plan. Measured on a torn-down slice: `20 to add`, `no_proxy = (known after apply)`, and
+    nothing raised, where the same code with a missing family used to fail before a single resource
+    was touched. The repair had produced Lesson 39, the strict validator arriving one act late, in a
+    step written to remove a different defect. A reading has two properties, its content and its
+    timing, and a change of source usually changes both. The fix kept both readings: the narrow,
+    early one beside the complete, late one, as two conditions naming their own reading, so a
+    failure says which half found it and whether a plan could have found it at all. Before swapping
+    the source of a value, list what else reads it and ask when each needs an answer.
 
-60. **A full-replace update API turns every field you did not pass into a deletion — and the object's
-    creator may have injected state that no field of that API can restore.** Stage 6d, 2026-09-10.
-    `mwaa-serverless update-workflow` was called with three of its eight fields, to change one line of a
-    workflow's definition. It **dropped the `NetworkConfiguration`** — the two subnets and the security
-    group that had put the workers in the private tier since the day the workflow was made — and
-    replaced the logging configuration with a service default, orphaning a log group. Both were
-    recoverable by re-passing them; a third loss was not. The workflow had been created **by the
-    portal**, which injects the domain and project into the worker's environment, and the API update
-    severed that: the next run died on `Project ID not found in environment`, with no field in
-    `update-workflow` to put it back. It had to be re-expressed inside the definition instead.
-    **The tell was an ABSENCE and it needed a negative control to read**: the task failed in seven
-    seconds with **no event in CloudTrail at all**, where the same failure a fortnight earlier appears
-    twice — and the trail was proven current by finding the operator's *own* calls in the same window.
-    A failure that reaches no API is a failure *before* the API, which is where a dropped network
-    configuration lives.
-    **Two habits follow.** Read the whole input skeleton before calling any `update-*`, and pass every
-    field the object currently has — `--generate-cli-skeleton` beside a `get-*` is the diff. And treat
-    an object authored by a console or a portal as **jointly owned**: the API is not the same surface,
-    and the part you cannot see is the part it will not give back.
+60. **A full-replace update API turns every field you did not pass into a deletion — and the
+    object's creator may have injected state that no field of that API can restore.** Stage 6d,
+    2026-09-10. `mwaa-serverless update-workflow` was called with three of its eight fields, to
+    change one line of a workflow's definition. It dropped the `NetworkConfiguration`, the two
+    subnets and the security group that had put the workers in the private tier since the workflow
+    was made, and replaced the logging configuration with a service default, orphaning a log group.
+    Both were recoverable by re-passing them; a third loss was not. The workflow had been created by
+    the portal, which injects the domain and project into the worker's environment, and the API
+    update severed that: the next run died on `Project ID not found in environment`, with no field
+    in `update-workflow` to put it back. It had to be re-expressed inside the definition. The tell
+    was an absence, and it needed a negative control: the task failed in seven seconds with no event
+    in CloudTrail at all, where the same failure a fortnight earlier appears twice, and the trail
+    was proven current by finding the operator's own calls in the same window. A failure that
+    reaches no API is a failure before the API, which is where a dropped network configuration
+    lives. Two habits: read the whole input skeleton before calling any `update-*` and pass every
+    field the object currently has (`--generate-cli-skeleton` beside a `get-*` is the diff); and
+    treat an object authored by a console or a portal as jointly owned, since the API is not the
+    same surface, and the part you cannot see is the part it will not give back.
 
 ---
 
 ## What AWS does that its documentation does not say
 
-**A second list, and a different kind of thing from the lessons above.** Those are habits; these are
-*facts about the platform* that cost a measurement to learn and that no amount of re-reading the plan or
-the vendor's pages gives back. Each entry says what was measured, when, and where the reading lives —
-because a behaviour recorded without its evidence is indistinguishable from a belief (Lesson 37).
+The lessons above are habits; the entries here are facts about the platform that cost a measurement
+to learn. Each says what was measured, when, and where the reading lives: a behaviour recorded
+without its evidence is indistinguishable from a belief (Lesson 37).
 
-**The rule for adding here: it must be a behaviour the documentation does not state, or states somewhere
-that the person who needed it would not have been reading.** A documented gotcha we merely forgot belongs
-in the file that owns it — `conventions.md`, a runbook, a stage — not here. Two things were **excluded by
-that rule** on the first sweep, and naming them keeps it honest: `iam list-roles` omitting
-`PermissionsBoundary` (documented contract) and ECR's `tagPatternList` accepting wildcards (the page says
-so — what was wrong there was *our* claim, not the vendor's).
+An entry belongs here only if the documentation does not state the behaviour, or states it somewhere
+the person who needed it would not have been reading. A documented gotcha that was merely forgotten
+belongs in the file that owns it (`conventions.md`, a runbook, a stage). Two candidates were
+excluded by that rule: `iam list-roles` omitting `PermissionsBoundary` (documented contract) and
+ECR's `tagPatternList` accepting wildcards (the page says so; the wrong claim was ours).
 
-**Seeded 2026-09-06 from Stage 6c pass 4, then swept across every stage log** — 0 through 6c, ~16k lines —
-for the signatures these findings leave behind: an error message that names the wrong cause, a call that
-answers differently before and after some other act, a field that writes and never reads, and a bill that
-starts at a state nobody named. Entries below carry the stage that found them.
+The signatures these findings leave in a stage log: an error message naming the wrong cause, a call
+answering differently before and after another act, a field that writes and never reads, a bill
+starting at a state nobody named. Each entry carries the stage that found it.
 
 ### Elastic IP transfers
 
-- **The allocation id does NOT survive a transfer** — measured 2026-09-06 (6c step 4.5):
+- **The allocation id does not survive a transfer** (measured 2026-09-06, 6c step 4.5):
   `eipalloc-04397bfae0295333d` in the source became `eipalloc-07edec7a52dc0820a` in the destination.
-  AWS documents it neither way. **The address is preserved and the id is not**, so an allocation id is a
-  *per-account fact about* an address rather than a property *of* it — and anything that had pinned the
-  old id now points at nothing. This is the concrete case behind reading `[P]` ids through remote state
-  instead of pasting them, and it is why an `import` block's id must be **read after** the accept.
-  `log-stage-06c-networking-hub.md`, the 4.3-4.6 entry.
-- **Two of the four documented refusals fire at ACCEPT time, in the DESTINATION account, not at enable
-  time.** `enable-address-transfer` succeeds on an address that is still **associated**, and on a
-  destination that is at its Elastic IP quota; the failure arrives at `accept-address-transfer` as
-  `InvalidTransfer.AddressAssociated` / `AddressLimitExceeded`, **with the transfer already pending and a
-  seven-day clock running that AWS notifies nobody about**. So the eligibility reading has to be taken
-  across two accounts before the first write, which is the whole reason `./aws/eip-transfer.py` exists.
+  AWS documents it neither way. The address is preserved and the id is not, so an allocation id is a
+  per-account fact about an address, and anything that pinned the old id points at nothing. This is
+  why `[P]` ids are read through remote state instead of pasted, and why an `import` block's id is
+  read after the accept. Reading: `log-stage-06c-networking-hub.md`, the 4.3-4.6 entry.
+- **Two of the four documented refusals fire at accept time, in the destination account.**
+  `enable-address-transfer` succeeds on an address that is still associated, and on a destination at
+  its Elastic IP quota; the failure arrives at `accept-address-transfer` as
+  `InvalidTransfer.AddressAssociated` / `AddressLimitExceeded`, with the transfer already pending
+  and a seven-day clock running that AWS notifies nobody about. The eligibility reading is therefore
+  taken across both accounts before the first write, which is what `./aws/eip-transfer.py` does.
 
 ### Systems Manager
 
-- **`ApplyOnlyAtCronInterval` is rejected on `rate()` schedules** — `InvalidSchedule:
-  ApplyOnlyAtCronInterval is not supported for Rate Schedule associations`, measured 2026-09-06 (6c step
-  4.8). The flag is the only thing that stops a State Manager association firing at **creation** time, so
-  the schedule *form* is decided by the flag rather than by preference: an association that must not race
-  a first boot has to be `cron(...)`.
-- **A State Manager association fires seconds after `RunInstances`** when that flag is absent — while the
-  user data is still in `dnf install`. On a fresh host the immediate run is not a diagnostic, it is a
-  guaranteed `exit 127`, and it leaves a `Failed` association as a working host's first impression.
-- **The SSM agent reports `Online` before the user data has finished** — the agent ships in the AMI and
-  registers early. **Agent registration is not a readiness signal**, and a check that treats it as one
-  reads a half-built host as a built one (measured twice on 2026-09-06, on both hub hosts).
-- **Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitively** —
-  `PutParameter` answers `AccessDeniedException: No access to reserved parameter name`, **a message that
-  reads like a policy problem and is a naming one**. Measured at Stage 2's Validation, 2026-08-16; the
-  rule and this project's `/datascience/<env>/…` answer live in `conventions.md`. Listed here because the
-  *error text* is the undocumented half.
+- **`ApplyOnlyAtCronInterval` is rejected on `rate()` schedules**: `InvalidSchedule:
+  ApplyOnlyAtCronInterval is not supported for Rate Schedule associations` (measured 2026-09-06, 6c
+  step 4.8). The flag is the only thing that stops a State Manager association firing at creation
+  time, so an association that must not race a first boot has to be `cron(...)`.
+- **A State Manager association fires seconds after `RunInstances`** when that flag is absent, while
+  the user data is still in `dnf install`. On a fresh host the immediate run is a guaranteed `exit
+  127`, and it leaves a `Failed` association on a working host.
+- **The SSM agent reports `Online` before the user data has finished**: the agent ships in the AMI
+  and registers early. Agent registration is not a readiness signal; a check that treats it as one
+  reads a half-built host as built (measured twice on 2026-09-06, on both hub hosts).
+- **Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitively.**
+  `PutParameter` answers `AccessDeniedException: No access to reserved parameter name`, a message
+  that reads like a policy problem and is a naming one. Measured at Stage 2's Validation,
+  2026-08-16; the rule and this project's `/datascience/<env>/…` names live in `conventions.md`. The
+  undocumented half is the error text.
 
-### ECR, S3 and what a NAT was never carrying
+### ECR, S3 and the NAT
 
-- **AN ECR IMAGE PULL IS TWO PATHS, AND THE HEAVY ONE IS FREE.** `ecr.api` and `ecr.dkr` carry the
-  authentication and the manifest — kilobytes — while **the image LAYERS are fetched from S3**, which in
-  this estate means the `[P]` **gateway** endpoint: no hourly charge and **no per-GB charge at all**. So
-  the expensive-looking part of a container pull costs nothing, and the two interface endpoints are billed
-  for almost no traffic. It is also why AWS requires an S3 gateway endpoint alongside the two ECR ones —
-  without it the pull does not complete, and the symptom is an auth that succeeds and a download that
-  hangs. **Written down 2026-09-06 after a user question found it recorded nowhere** in this repository,
-  which is how a cost model comes to price the wrong thing.
-- **A NAT NEVER CARRIED S3 OR DYNAMODB TRAFFIC HERE, EVEN UNDER DESIGN A** — a prefix-list route is more
-  specific than `0.0.0.0/0`, so the gateway endpoint always won (`docs/NETWORK.md`, measured in Stage 3;
-  the module's own `nat.tf` carried the same sentence until 6c deleted it). **The consequence is a
-  correction to an obvious-sounding inference**: removing the NAT did not make that traffic cheaper,
-  because it was never paying. What design B actually saves is on the traffic that DID use the NAT —
-  internet downloads at **0.045/GB of processing** — which now cross an EC2 proxy that charges **no
-  per-GB processing at all**. Two axes, and the one that looks heaviest was already free.
+- **An ECR image pull is two paths, and the heavy one is free.** `ecr.api` and `ecr.dkr` carry the
+  authentication and the manifest, kilobytes; the image layers are fetched from S3, which in this
+  estate means the `[P]` gateway endpoint: no hourly charge and no per-GB charge. The two interface
+  endpoints are billed for almost no traffic. This is also why AWS requires an S3 gateway endpoint
+  beside the two ECR ones: without it the auth succeeds and the download hangs. Written down
+  2026-09-06 after a user question found it recorded nowhere in this repository.
+- **A NAT never carried S3 or DynamoDB traffic here, even under design A**: a prefix-list route is
+  more specific than `0.0.0.0/0`, so the gateway endpoint always won (`docs/NETWORK.md`, measured in
+  Stage 3). Removing the NAT therefore did not make that traffic cheaper; it was never paying.
+  Design B saves on the traffic that did use the NAT, internet downloads at 0.045/GB of processing,
+  which now cross an EC2 proxy with no per-GB charge.
 
-### WireGuard, and the client platforms this estate actually runs on
+### WireGuard and the client platforms
 
 **`AllowedIPs` is inert for an address family the interface has no address in** (measured
 2026-09-07, macOS, App Store client). `wg-quick` installs routes only for the families present on
-`[Interface] Address`, so `AllowedIPs = 0.0.0.0/0, ::/0` beside an IPv4-only address installs **no
-IPv6 route at all** — and the config still parses, the tunnel still comes up, and `wg show` reports
-nothing unusual. The reading that settles it is `netstat -rn -f inet6`: the tunnel interface simply
-is not among the default routes. Nothing in WireGuard's own documentation says the two lines are
-coupled. Where: `docs/plan/runbooks/vpn.md` §C6.
+`[Interface] Address`, so `AllowedIPs = 0.0.0.0/0, ::/0` beside an IPv4-only address installs no
+IPv6 route; the config parses, the tunnel comes up and `wg show` reports nothing unusual. The
+reading is `netstat -rn -f inet6`: the tunnel interface is not among the default routes. WireGuard's
+documentation does not say the two lines are coupled. Where: `docs/plan/runbooks/vpn.md` §C6.
 
-**macOS keeps the physical default route as an INTERFACE-SCOPED entry while a tunnel is primary**
+**macOS keeps the physical default route as an interface-scoped entry while a tunnel is primary**
 (same reading). `netstat -rn` shows two defaults; the physical one carries the `I` flag, and traffic
-already associated with that interface keeps using it. So a socket established *before* the tunnel
-came up survives the tunnel coming up, and "the tunnel is up" is not the same as "everything is
-going through the tunnel". A new connection to the very same host fails while the old one works.
+already associated with that interface keeps using it. A socket established before the tunnel came
+up survives it, so "the tunnel is up" does not mean everything goes through the tunnel: a new
+connection to the same host fails while the old one works.
 
 **macOS does not consult the system proxy while a NetworkExtension tunnel is primary** (measured
-2026-09-07). `networksetup -getsecurewebproxy "Wi-Fi"` reports the proxy as configured and enabled;
-`scutil --proxy` — which is what applications read — returns an empty dictionary. Safari, Chrome by
-default, and every native application that reads the system configuration behave as if no proxy
-existed. Per-application configuration works (Chrome's `--proxy-server` flag, Firefox's own
-settings, `https_proxy` for shell tools). **And the same setting fails in the opposite direction
-with the tunnel down**: it is consulted again, points at a host only the tunnel can reach, and
-breaks the `aws` CLI — which falls back to the macOS system configuration, so an **empty**
-`https_proxy` does not override it and `NO_PROXY='*'` does. Tracked as
+2026-09-07). `networksetup -getsecurewebproxy "Wi-Fi"` reports the proxy configured and enabled;
+`scutil --proxy`, which is what applications read, returns an empty dictionary. Safari, Chrome by
+default and every native application reading the system configuration behave as if no proxy existed.
+Per-application configuration works (Chrome's `--proxy-server` flag, Firefox's own settings,
+`https_proxy` for shell tools). With the tunnel down the same setting is consulted again, points at
+a host only the tunnel can reach, and breaks the `aws` CLI, which falls back to the system
+configuration: an empty `https_proxy` does not override it and `NO_PROXY='*'` does. Tracked as
 [issue #67](https://github.com/felipenoris/AWS-DataScience/issues/67).
 
 **Linux rate-limits the ICMP errors a `REJECT` rule promises, per destination, and the rule's own
-counter does not say so** (measured 2026-09-07, 6c step 6.4). `iptables -L FORWARD -v` counted
-27681 rejected packets; `/proc/net/snmp`'s `Icmp` line said **4366** `OutDestUnreachs` and **23318**
-`OutRateLimitHost` — `net.ipv4.icmp_ratelimit = 1000` (ms, per destination), `icmp_ratemask = 6168`
-(destination-unreachable included). So a client whose background traffic is being refused a few
-times a second sees a *timeout* for the one packet it is watching, and a fast *refused* when a token
-happens to be free — the same command, minutes apart, both measured. The `REJECT` counter proves the
-rule is hit; only the `Icmp` line says whether the refusal was spoken. `./aws/vpn.py --on-host` reads
-both since that day. Where: `docs/plan/runbooks/vpn.md` §S2, `docs/NETWORK.md` §7.
+counter does not say so** (measured 2026-09-07, 6c step 6.4). `iptables -L FORWARD -v` counted 27681
+rejected packets; `/proc/net/snmp`'s `Icmp` line said 4366 `OutDestUnreachs` and 23318
+`OutRateLimitHost`, under `net.ipv4.icmp_ratelimit = 1000` (ms, per destination) and `icmp_ratemask
+= 6168` (destination-unreachable included). A client whose background traffic is refused a few times
+a second sees a timeout for the packet it is watching, and a fast refusal when a token happens to be
+free; both were measured with the same command, minutes apart. The `REJECT` counter proves the rule
+is hit; only the `Icmp` line says whether the refusal was spoken. `./aws/vpn.py --on-host` reads
+both. Where: `docs/plan/runbooks/vpn.md` §S2, `docs/NETWORK.md` §7.
 
-**The App Store WireGuard client applies a `DNS` line to EVERY query, whatever `AllowedIPs` says**
-(read from its source on 2026-09-08 — `matchDomains = [""]` in `PacketTunnelSettingsGenerator.swift` —
+**The App Store WireGuard client applies a `DNS` line to every query, whatever `AllowedIPs` says**
+(read from its source on 2026-09-08, `matchDomains = [""]` in `PacketTunnelSettingsGenerator.swift`,
 and measured the same night, 6c step 8.3). Under a split `AllowedIPs` the tunnel's resolver is still
-`scutil --dns`'s resolver #1, with no domain restriction and an order ahead of the physical interface's;
-`/etc/resolv.conf` names it, and `dig` resolves a private name through it. So a split tunnel does not
-give the laptop its own DNS back — every name crosses the tunnel, only the traffic does not. The
-`wg-quick` path does the same by writing the server on every network service. Where:
+`scutil --dns`'s resolver #1, with no domain restriction and ordered ahead of the physical
+interface's; `/etc/resolv.conf` names it, and `dig` resolves a private name through it. A split
+tunnel does not give the laptop its own DNS back: every name crosses the tunnel, only the traffic
+does not. The `wg-quick` path does the same by writing the server on every network service. Where:
 `docs/plan/runbooks/vpn.md` §C7.
 
-**The same client installs an INTERFACE-SCOPED default route on the tunnel in both families, even when
-`AllowedIPs` names no default** (measured 2026-09-08, 6c step 8.3). `netstat -rn` shows a
-`default … utun4` carrying the `I` flag beside the physical `default … en0` without it — and the scoped
-entry is inert for any socket not bound to the tunnel. The reading that separates the two profiles is
-therefore the **flag**, not the presence of the line: under the monitored profile the tunnel's default has
-no `I` and is primary. A step written as *"no default via the tunnel"* was one flag short, and the counter
-on the host (`REJECT` flat across a burst) is what proved the route inert. Observed the same night, from
-the user: the app's tunnel is a Network Extension that `wg show` does not list — the app's window is check
-1's reading.
+**The same client installs an interface-scoped default route on the tunnel in both families, even
+when `AllowedIPs` names no default** (measured 2026-09-08, 6c step 8.3). `netstat -rn` shows a
+`default … utun4` carrying the `I` flag beside the physical `default … en0` without it, and the
+scoped entry is inert for any socket not bound to the tunnel. The reading that separates the two
+profiles is the flag, not the presence of the line: under the monitored profile the tunnel's default
+has no `I` and is primary. A step written as *"no default via the tunnel"* was one flag short; the
+host's `REJECT` counter, flat across a burst, proved the route inert. Observed the same night by the
+user: the app's tunnel is a Network Extension that `wg show` does not list, so the app's window is
+check 1's reading.
 
-**A host with no IPv6 route answers a tunnelled IPv6 packet with ICMPv6 *no route* BEFORE the
-`FORWARD` chain sees it** (same reading). The explicit `ip6tables` `REJECT` written on 2026-09-07 to
-make the refusal *counted* stood at **0** while `Icmp6OutDestUnreachs` read **191**: the refusal is
-real and counted, in `/proc/net/snmp6`, and the rule is a backstop that has never fired — Lesson 56's
-shape one layer down, the routing table being the control. Where: `runbooks/vpn.md` §C6.
+**A host with no IPv6 route answers a tunnelled IPv6 packet with ICMPv6 *no route* before the
+`FORWARD` chain sees it** (same reading). The `ip6tables` `REJECT` written on 2026-09-07 to make the
+refusal counted stood at 0 while `Icmp6OutDestUnreachs` read 191: the refusal is real and counted in
+`/proc/net/snmp6`, and the rule is a backstop that has never fired. The routing table is the control
+(Lesson 56). Where: `runbooks/vpn.md` §C6.
 
-**`aws sso logout` invalidates EVERY cached session's token, and a browser sign-out of the access
+**`aws sso logout` invalidates every cached session's token, and a browser sign-out of the access
 portal invalidates none** (measured 2026-09-07/08). The infrastructure token died at
 `GetRoleCredentials … 401` right after the user's `aws sso logout`, while the CLI kept answering for
-profiles whose role credentials were already cached locally — Terraform, which exchanges the token
-itself, was the first to notice. Later the same night the Data Scientist's token survived the user
-signing out of the portal in the browser and signing in again as the infrastructure user. So two
-people's sessions coexist on one laptop as long as nobody types `aws sso logout`; and the browser's
-portal session decides WHOSE token a login mints (`aws/AWS-CLI.md`, the `ForbiddenException` at
-`GetRoleCredentials`). Where: `aws/AWS-CLI.md`.
+profiles whose role credentials were already cached locally; Terraform, which exchanges the token
+itself, noticed first. The same night the Data Scientist's token survived the user signing out of
+the portal in the browser and signing in again as the infrastructure user. Two people's sessions
+coexist on one laptop as long as nobody types `aws sso logout`, and the browser's portal session
+decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentials`). Where:
+`aws/AWS-CLI.md`.
 
 ### Route 53
 
-- **DNS Firewall needs BOTH `example.com` and `*.example.com` to cover a domain and its subdomains** —
-  the apex form does not imply the wildcard and vice versa. Harmless there, and the reason the same list
-  is fatal when transcribed into a system whose wildcard already covers the apex (Lesson 53).
-- **The VPC resolver at `.2` answers only requests sourced from within the VPC's own address range** — so
-  a forwarded packet carrying a tunnel address is not "from within the VPC" as far as it is concerned.
-  This is why 6c step 4.7 exempts the hub's **public subnets** from the masquerade and never the VPC
-  CIDR: the tidy version of that rule takes the tunnel's DNS down, with a symptom pointing anywhere but
-  at a masquerade rule.
+- **DNS Firewall needs both `example.com` and `*.example.com` to cover a domain and its
+  subdomains**: neither form implies the other. Harmless there, and fatal when the same list is
+  transcribed into a system whose wildcard already covers the apex (Lesson 53).
+- **The VPC resolver at `.2` answers only requests sourced from within the VPC's own address
+  range**, so a forwarded packet carrying a tunnel address is not answered. This is why 6c step 4.7
+  exempts the hub's public subnets from the masquerade and never the VPC CIDR: the tidier rule takes
+  the tunnel's DNS down, with a symptom pointing anywhere but at a masquerade rule.
 
 ### Control Tower and Organizations
 
 - **A Control Tower *Update account* renders `Display Name` and `Account Email` read-only**, so an
-  account renamed out of band can never be made to match its provisioned product. **Permanent divergence,
-  not drift** — measured in Stage 6b. The same update **re-asserts** D32's direct
+  account renamed out of band can never be made to match its provisioned product: permanent
+  divergence, not drift (measured in Stage 6b). The same update re-asserts D32's direct
   `AWSAdministratorAccess` assignment, so its absence on other accounts is not a control.
-- **A cached SSO token is keyed by the `sso-session` NAME, never by the user** — so signing in as a
-  second identity silently reuses the first one's token. The remedy is `aws sso logout` plus a portal
-  sign-out, and the failure mode is a command that succeeds as the wrong person (`aws/INDEX.md`).
-- **An `AWSReservedSSO_*` trust policy permits only `sts:AssumeRoleWithSAML` and `sts:TagSession`** — so
-  an RCP denying those actions locks every SSO user out of every member account. Measured the hard way at
-  Stage 1c step 7.8; AWS's own `CT.STS.PV.1` carries the exclusion note, which is why no `sts:` action is
-  added to that document without reading it first.
-- **`describe-effective-policy` answers `{}` rather than raising, when the policy type is ENABLED and
-  nothing is attached** — measured in passing at Stage 1c *"because the documentation does not say and the
-  two halves look alike"*. `EffectivePolicyNotFoundException` is what a reader expects and is **not** what
-  arrives, so *"no policy in force"* and *"an empty policy in force"* are one reading unless something else
-  separates them. Any check written against this call needs a second signal.
-- **An out-of-band account rename propagates with NO observable delay** — measured at Stage 6b step 3.2,
-  where the step itself had flagged the timing as undocumented: the console act and the
-  `organizations list-accounts` read agreed in the same sitting. Worth recording as a *measured absence*,
-  because a delay nobody sees is indistinguishable from a delay that is merely short, and the next person
-  would otherwise build a wait into a procedure that does not need one.
+- **A cached SSO token is keyed by the `sso-session` name, never by the user**, so signing in as a
+  second identity silently reuses the first one's token. The remedy is `aws sso logout` plus a
+  portal sign-out; the failure mode is a command that succeeds as the wrong person (`aws/INDEX.md`).
+- **An `AWSReservedSSO_*` trust policy permits only `sts:AssumeRoleWithSAML` and `sts:TagSession`**,
+  so an RCP denying those actions locks every SSO user out of every member account. Measured at
+  Stage 1c step 7.8; AWS's own `CT.STS.PV.1` carries the exclusion note, which is why no `sts:`
+  action is added to that document without reading it first.
+- **`describe-effective-policy` answers `{}` rather than raising when the policy type is `ENABLED`
+  and nothing is attached** (measured at Stage 1c). A reader expects
+  `EffectivePolicyNotFoundException`, and it does not arrive, so *"no policy in force"* and *"an
+  empty policy in force"* are one reading. Any check written against this call needs a second
+  signal.
+- **An out-of-band account rename propagates with no observable delay** (measured at Stage 6b step
+  3.2, which had flagged the timing as undocumented): the console act and the `organizations
+  list-accounts` read agreed in the same sitting. Recorded as a measured absence, so that nobody
+  builds a wait into a procedure that does not need one.
 
 ### Lake Formation and SageMaker Unified Studio
 
-- **SMUS appoints ITSELF a Lake Formation administrator** when the first project is created — two service
-  roles nobody chose, in an account whose `admins` list a later `aws_lakeformation_data_lake_settings`
-  would silently reset. Found 2026-08-26 because an unrelated plan was run, not because a gate saw it:
-  `DL-5` measures `parameters` and not `admins`.
-- **`CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE` are already set in accounts nobody configured**,
-  including consumers — so the hazard is symmetric, and `aws_lakeformation_data_lake_settings` replaces
-  the whole `Parameters` structure in **any** account that gains the resource.
-- **`EnvironmentRolePermissionBoundary` is WRITE-ONLY on a blueprint configuration** — the schema accepts
-  it and no read returns it (Stage 6a, 2026-08-22). **So boundary drift can never appear in a
-  `terraform plan`**, and the only door is `iam get-role` per role — `list-roles` omits
-  `PermissionsBoundary` by documented contract, which closes the cheap path. A control that cannot be
-  read back needs a sentinel, which is what `US-8` is.
-- **An ASSOCIATED DataZone domain lists from every member account, with an ARN naming the OWNING
-  account.** So *"there is a domain in this account"* reads **true** where there is none — a check that
-  counts domains per account reports a finding that is the association working. Measured when
-  `./aws/studio.py` failed *because the step succeeded*; the tell was the failure arriving from the act
-  that was supposed to work.
-- **`list-environment-blueprint-configurations` cannot succeed from a member account at all until the
-  association exists** — after it, the same call returns `{"items": []}`. **The empty list is the
-  SUCCESS signal**, not an absence, and the two are indistinguishable to anything that only checks the
-  contents.
-- **A blueprint configuration is applied FROM the member account**, an existing one is **immutable
-  through `awscc`**, and an **incomplete** one pins its projects in **both** directions — it can neither
+- **SMUS appoints itself a Lake Formation administrator** when the first project is created: two
+  service roles nobody chose, in an account whose `admins` list a later
+  `aws_lakeformation_data_lake_settings` would silently reset. Found 2026-08-26 by an unrelated
+  plan, not by a gate: `DL-5` measures `parameters`, not `admins`.
+- **`CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE` are already set in accounts nobody
+  configured**, consumers included, and `aws_lakeformation_data_lake_settings` replaces the whole
+  `Parameters` structure in any account that gains the resource.
+- **`EnvironmentRolePermissionBoundary` is write-only on a blueprint configuration**: the schema
+  accepts it and no read returns it (Stage 6a, 2026-08-22). Boundary drift can never appear in a
+  `terraform plan`; the only door is `iam get-role` per role, since `list-roles` omits
+  `PermissionsBoundary` by documented contract. A control that cannot be read back needs a sentinel,
+  which is `US-8`.
+- **An associated DataZone domain lists from every member account, with an ARN naming the owning
+  account.** A check that counts domains per account therefore reports the association working as a
+  finding. Measured when `./aws/studio.py` failed because the step succeeded (Lesson 31).
+- **`list-environment-blueprint-configurations` cannot succeed from a member account until the
+  association exists**; after it, the same call returns `{"items": []}`. The empty list is the
+  success signal, indistinguishable from an absence to anything that only checks the contents.
+- **A blueprint configuration is applied from the member account**, an existing one is immutable
+  through `awscc`, and an incomplete one pins its projects in both directions: they can neither
   deploy nor be torn down. None of the three is on the authoring API's page; each cost a sitting.
-- **The `Workflows` blueprint has THREE states and the bill starts at the third.** Enabling it provides
-  the CloudFormation template; the fee-bearing MWAA environment is born when a **project first uses** the
-  blueprint. *"Enabled"* is therefore not *"billing"*, and neither is *"a project exists"*.
-- **A `VpcOnly` space started with no interface endpoints does not fail — it hangs, with a working
-  terminal** — measured 2026-09-07 (6c step 6.2, the first space under design B). JupyterLab loaded,
-  the terminal answered, and the banner *"IDE configuration in progress"* never cleared while a Python
-  kernel never returned: the app's DataZone and SageMaker calls had no route and no endpoint, so they got
-  silence rather than a denial (Lesson 42), and nothing in the UI said *network*. The vendor's pages list
-  the endpoints as *required* and say nothing about what their absence looks like. `make up ENV=sandbox`
-  plus a stop/start of the space cleared it; the discriminator from inside the space is `getent hosts
-  sts.us-west-2.amazonaws.com` (`10.20.x.x` with the endpoints, public without) and `curl` to the same
-  name (`302` against a timeout). `docs/SMUS.md` §`VpcOnly`, the client runbook §1, and the 6c log.
+- **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
+  provides the CloudFormation template; the fee-bearing MWAA environment is born when a project
+  first uses the blueprint. Neither *"enabled"* nor *"a project exists"* means billing.
+- **A `VpcOnly` space started with no interface endpoints does not fail; it hangs, with a working
+  terminal** (measured 2026-09-07, 6c step 6.2, the first space under design B). JupyterLab loaded,
+  the terminal answered, the banner *"IDE configuration in progress"* never cleared and a Python
+  kernel never returned: the app's DataZone and SageMaker calls had no route and no endpoint, so
+  they got silence rather than a denial (Lesson 42), and nothing in the UI said network. The
+  vendor's pages list the endpoints as required and say nothing about what their absence looks like.
+  `make up ENV=sandbox` plus a stop/start of the space cleared it. The discriminator from inside the
+  space is `getent hosts sts.us-west-2.amazonaws.com` (`10.20.x.x` with the endpoints, public
+  without) and `curl` to the same name (`302` against a timeout). Where: `docs/SMUS.md` §`VpcOnly`,
+  the client runbook §1, the 6c log.
 
 ### Athena
 
-- **`DeleteWorkGroup` counts query HISTORY as contents, and no API deletes a query execution.** A
+- **`DeleteWorkGroup` counts query history as contents, and no API deletes a query execution.** A
   workgroup with zero named queries and zero prepared statements still refuses to delete while old
-  executions remain, and those age out on Athena's own **45-day** clock — there is no way to empty them by
-  hand. The only door is `RecursiveDeleteOption`. **The Terraform corollary is the expensive half**: that
-  door is a *configuration* argument (`force_destroy`), a destroy runs from the attributes in **state**,
-  so the flag has to be set in the configuration **before** the resource is removed from it. Deleting the
-  block and the flag in one version leaves the destroy unarmed, and it surfaces only at destroy time.
+  executions remain, and those age out on Athena's own 45-day clock. The only door is
+  `RecursiveDeleteOption`. The Terraform corollary: that door is a configuration argument
+  (`force_destroy`) and a destroy runs from the attributes in state, so the flag has to be set in
+  the configuration before the resource is removed from it. Deleting the block and the flag in one
+  version leaves the destroy unarmed, which surfaces only at destroy time.
 
 ### EC2
 
-- **`associate_public_ip_address` read-back fights an `aws_eip_association` forever.** With an Elastic IP
-  attached, the refresh reports the attribute from the instance's *current* public address, so the next
-  plan wants to destroy and recreate the instance on a ForceNew diff that nothing changed. Measured on
-  the first VPN apply, 2026-08-17; the fix is `ignore_changes` on the read-back while the argument stays
-  load-bearing at launch.
-- **Changing `instance_type` is a stop/modify/start, and user data does NOT re-run on it** — so a size
-  change that was made *because the build ran out of memory* leaves the bigger host still unbuilt. Only a
+- **`associate_public_ip_address` read-back fights an `aws_eip_association` forever.** With an
+  Elastic IP attached, the refresh reports the attribute from the instance's current public address,
+  so the next plan wants to destroy and recreate the instance on a ForceNew diff that nothing
+  changed. Measured on the first VPN apply, 2026-08-17; the fix is `ignore_changes` on the
+  read-back, while the argument stays load-bearing at launch.
+- **Changing `instance_type` is a stop/modify/start, and user data does not re-run on it**, so a
+  size change made because the build ran out of memory leaves the bigger host unbuilt. Only a
   replacement re-runs a first boot.
 
 ---

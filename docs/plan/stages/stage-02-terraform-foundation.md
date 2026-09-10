@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Status** | **DONE — 2026-08-16. Every step closed and all nine verifications answered**, (iii) last: read from Management as `AWS Control Tower Admin`, `driftStatus: IN_SYNC` with the delegation intact — **and with two limits stated rather than glossed: the landing-zone manifest has no concept of a resource policy, and the landing zone has run exactly once (`CREATE`), so it has not yet had occasion to disagree.** *What follows is the history of the three sittings, kept because the order the work happened in is why several things were caught.* **Steps 5.0, 5.1, 1, 6, 9, 2 and 3 closed 2026-08-15** — the delegation applied and *exercised* (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into **`make check`** and into the commit gate, each demonstrated failing on purpose — **and the project's first `terraform apply`**: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans. **Step 3 applied the same slice in the four remaining accounts** — **five state buckets now exist**, `production/` carries 3.4's second key, every second plan is empty, and the copy's failure mode is guarded by a fifth check (3.5). **Step 4 is a statement, not work.** **2026-08-16: step 5.1a closed** — the delegation is narrowed to the `InfrastructureAccess` role, verification (ix) answered in all three halves, `DEL-10` green; **decisions 4, 5 and 6 settled** (inline-only boundary, `replace(file(…))`, the CLI import); and **`terraform-live/identity/sso/` is written** — six persona sets, the shared deny fragment, ten enumerated assignments, `InfrastructureAccess` **imported** (seven objects, `0 to change`) and the 22 creates **applied** — the next `plan` is empty, no provisioning failed, and the six sets reach exactly the accounts 1b step 3.1 assigns them. **Step 5 closed the same day with `org-policies/`** — ten documents and ten attachments **adopted, none created**, `0 to add / 10 to change / 0 to destroy` with not one `content` or `type` diff in it, second plan `No changes`, and the ceiling proven unrewritten by the bytes rather than by the plan. **Sitting C, 2026-08-16, closed the stage in three blocks.** *Step 8*: the layer table, `make up`/`down`/`status`/`slices`, all four refusals demonstrated (refusal 3 against a fixture that claimed `production/pki` was `[E]`), a sixth check in `make check` and in the commit gate. *The Validation*: `sandbox/scratch-test/` applied, destroyed and rebuilt — the destroy plan named one SSM parameter and `bootstrap/` sat in the refused list — then deleted, its orphan state object with it; **the run found that `awsds` is a reserved SSM Parameter Store prefix** and that the rebuild is proven by a restarted `Version`, not by the ARN. *The close-out*: **(ii), (iv), (v) and (viii) answered**, three of them by the step 5 applies and recorded here for the first time. **Step 7 left the stage** for Stage 3 step 1.1a. **Roteiro revised 2026-08-15 against the closed landing zone**, see the table below |
-| **Prerequisites** | **Stage 1a and Stages 1b, 1c and 1d**, all complete (the landing zone closed 2026-08-15). `Staging` is still unvended, so **step 3 skips `terraform-live/staging/bootstrap/`** and step 5 skips its Staging assignments — the same carve-out 1b steps 3 and 5 already carry, picked up at the vend |
-| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` deliberately carries nothing)* — **plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists** (D14, D18-D22, D31). They are written here and specified there; neither file restates the other |
-| **Proves** | [INT-20](../integrations.md) — the Organizations **policy** delegation into the Identity account, which step 5 assumes and no earlier stage creates |
+| **Status** | **DONE — 2026-08-16.** Every step closed and all nine verifications answered, (iii) last: read from Management as `AWS Control Tower Admin`, `driftStatus: IN_SYNC` with the delegation intact, with two limits — the landing-zone manifest has no concept of a resource policy, and the landing zone has run exactly once (`CREATE`), so it has not yet had occasion to disagree. The three sittings, in the order the work happened: **2026-08-15**, steps 5.0, 5.1, 1, 6, 9, 2 and 3 — the delegation applied and exercised (INT-20 answered: `identity/org-policies/` is scoped to all ten documents), the five `bootstrap/` slices created with the version pin and a committed multi-platform lock, the `pre-commit`/`tflint`/`checkov` chain passing end to end, the four checks written, wired into `make check` and the commit gate and each demonstrated failing on purpose, and the project's first `terraform apply`: `sandbox/bootstrap/` applied local, migrated into its own bucket, second plan empty, locking proven by two concurrent plans; step 3 applied the same slice in the four remaining accounts — five state buckets exist, `production/` carries 3.4's second key, every second plan is empty, and the copy's failure mode is guarded by a fifth check (3.5); step 4 is a statement, not work. **2026-08-16**, step 5.1a closed — the delegation narrowed to the `InfrastructureAccess` role, verification (ix) answered in all three halves, `DEL-10` green; decisions 4, 5 and 6 settled (inline-only boundary, `replace(file(…))`, the CLI import); `terraform-live/identity/sso/` written — six persona sets, the shared deny fragment, ten enumerated assignments, `InfrastructureAccess` imported (seven objects, `0 to change`) and the 22 creates applied; the next `plan` is empty, no provisioning failed, and the six sets reach exactly the accounts 1b step 3.1 assigns them. Step 5 closed the same day with `org-policies/`: ten documents and ten attachments adopted, none created, `0 to add / 10 to change / 0 to destroy` with no `content` or `type` diff, second plan `No changes`, the ceiling proven unrewritten by the bytes. **Sitting C, 2026-08-16**, closed the stage: step 8 — the layer table, `make up`/`down`/`status`/`slices`, all four refusals demonstrated (refusal 3 against a fixture that claimed `production/pki` was `[E]`), a sixth check in `make check` and in the commit gate; the Validation — `sandbox/scratch-test/` applied, destroyed and rebuilt, the destroy plan naming one SSM parameter with `bootstrap/` in the refused list, then deleted with its orphan state object; the run found that `awsds` is a reserved SSM Parameter Store prefix and that the rebuild is proven by a restarted `Version`, not by the ARN; the close-out — (ii), (iv), (v) and (viii) answered, three of them by the step 5 applies. Step 7 moved to Stage 3 step 1.1a |
+| **Prerequisites** | Stages 1a, 1b, 1c and 1d, all complete (the landing zone closed 2026-08-15). `Staging` is unvended, so step 3 skips `terraform-live/staging/bootstrap/` and step 5 skips its Staging assignments — the carve-out 1b steps 3 and 5 carry, picked up at the vend |
+| **Consumes** | [D3](../decisions/D03-terraform-state.md), [D10](../decisions/D10-identity-center-delegation.md), [D11](../decisions/D11-lab-lifecycle.md), [D16](../decisions/D16-break-glass.md), [D23](../decisions/D23-ou-structure.md), [D27](../decisions/D27-catalog-maintenance.md), [D30](../decisions/D30-scp-recovery.md) *(reverted; its surviving consequence is step 5's rationale)*, [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), [D37](../decisions/D37-nested-ou-inheritance.md) *(5.3/9.3 — `Sandboxes` carries nothing)* — plus, for step 5's six permission sets, the design of record in [Stage 1b step 3](stage-01b-identity-and-controls.md) and the decisions it lists (D14, D18-D22, D31): written here, specified there |
+| **Proves** | [INT-20](../integrations.md) — the Organizations policy delegation into the Identity account, which step 5 assumes and no earlier stage creates |
 
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, Terraform and IAM rules).*
 
@@ -14,101 +14,80 @@
 **Objective:** the repository can provision infrastructure reproducibly — and the policy set Stage 1c typed
 into a console acquires a diff, a review and a rollback.
 
-Everything built here is `[P]` (D11). Nothing in this stage is torn down between sessions, and `make down`
-must not be able to reach any of it — which is itself one of the deliverables.
+Everything built here is `[P]` (D11): nothing is torn down between sessions, and `make down` must not reach
+any of it — one of the deliverables.
 
 ## What the closed landing zone changed in this stage
 
-**Revised 2026-08-15, reading Stages 1b-1d's measurements against what was written here before any of them
-ran.** Each row is a *measurement*, not a preference, and each one changed a step rather than confirming it.
-The two that move work are the first and the last.
+Each row is a measurement from Stages 1b-1d, and each changed a step.
 
 | What was measured | Where | What it changes here |
 |---|---|---|
-| **Three project SCPs sit on the organization *root*** — `awsds-org-scp-baseline`, `awsds-org-scp-perimeter`, `awsds-org-scp-tag-enforcement` — **and so do the RCP, the tag policy and the declarative policy.** Only **four** documents are per-OU | 1c step 7, `aws/output/org-policies.txt` §1 | INT-20's sharp edge is now the stage's **first** action, not its fifth: six of the ten documents are reachable only if the delegation reaches **root** attachments. **5.0** is new |
-| **The per-OU documents are all different**, and three OUs carry none — `Policy Test`, `Security`, and `Sandboxes` **by decision** (D37) | 1c 7.6, D37, `org-policies.txt` §4 | **5.3 was wrong in shape.** Attachments cannot be discovered: a `for_each` that attaches "the OU document" to every discovered OU would put one on `Sandboxes` and silently reverse D37. Rewritten below |
-| **Organizations reads succeed from the Identity account under the Region ceiling** — `org-policies.py` runs as `awsds-infra-identity` and every call returns | 1d step 12, `org-policies.txt` §5 | Removes the fear that `CTMULTISERVICEPV1` blocks this slice outright (Organizations answers in `us-east-1`). **The write half is not proven by it** — verification (vii) below |
-| **A permission set provisioned into Management cannot be altered from Identity**, and the deny is anchored on the **permission set** ARN, so it covers that set in every account | 1b step 5.1 | Confirms 5.2's "leave `AWSAdministratorAccess` alone" is a *wall*, not a convention. `InfrastructureAccess` is not provisioned into Management and is unaffected |
-| **`awsds-org-scp-tag-enforcement` names `ec2:RunInstances` and nothing else** | 1c 7.8, the document | No create in this stage can be denied for a missing tag. The mandatory-tag *convention* still applies and 2.1 now says how it is satisfied once |
-| **`policies/*.json` are templates — eight placeholders across four files**: `<ORG_ID>` ×6 (the RCP ×4, the perimeter SCP ×2), `<ORG_PATH_DATA>` ×1 in the **baseline** document, `<ACCOUNT_ID_DATA>` ×1 in the `Data` document *(census corrected 2026-08-15; an earlier row counted `<ORG_ID>` ×8 and put `<ORG_PATH_DATA>` in the `Data` file)* | measured over `policies/`, `render.py` | 5.5's "the import compares a document against itself" needs a **mechanism**, and `templatefile()` is not it — the placeholder syntax is wrong for it. Written out below |
-| ~~**`tflint`, `checkov` and `pre-commit` are absent**~~; `terraform` is v1.15.8 and `uv` is present; the placeholder `terraform/` folder no longer exists | measured on this laptop, 2026-08-15 | 6.1 stands as written and 1.1 is **obsolete**. **All three installed the same day** (6.1 below); `tflint` **v0.64.0** by release download, the other two by `uv tool install` |
-| **A borrowed session outlives the command that needed it** (Lesson 25) | 1d step 9 | One rule, stated in "Who executes what": this stage uses `AWS_PROFILE` and never `eval $(aws sts assume-role …)` |
-| **Until 2026-08-15 no snapshot listed the policy id of the RCP, the tag policy or the declarative policy** — `org-policies.py` §1 read `SERVICE_CONTROL_POLICY` with ids and the RCP only as a presence check, so three of the ten ids existed only in the 1c log | `org-policies.txt` | The import needs all ten ids. The script is fixed, and `import-ids.py` emits every import string — see "The instruments this stage runs on" |
+| Three project SCPs — `awsds-org-scp-baseline`, `awsds-org-scp-perimeter`, `awsds-org-scp-tag-enforcement` — the RCP, the tag policy and the declarative policy sit on the organization root; four documents are per-OU | 1c step 7, `aws/output/org-policies.txt` §1 | Six of the ten documents are reachable only if the delegation reaches root attachments, so INT-20's question is the stage's first action: **5.0** |
+| The per-OU documents are all different, and three OUs carry none — `Policy Test`, `Security`, and `Sandboxes` by decision (D37) | 1c 7.6, D37, `org-policies.txt` §4 | Attachments cannot be discovered: a `for_each` attaching "the OU document" to every discovered OU would put one on `Sandboxes` and reverse D37. 5.3 authors the map |
+| Organizations reads succeed from the Identity account under the Region ceiling — `org-policies.py` runs as `awsds-infra-identity` and every call returns | 1d step 12, `org-policies.txt` §5 | `CTMULTISERVICEPV1` does not block this slice outright (Organizations answers in `us-east-1`). The write half is verification (vii) |
+| A permission set provisioned into Management cannot be altered from Identity; the deny is anchored on the permission set ARN, so it covers that set in every account | 1b step 5.1 | 5.2's "leave `AWSAdministratorAccess` alone" is enforced, not a convention. `InfrastructureAccess` is not provisioned into Management and is unaffected |
+| `awsds-org-scp-tag-enforcement` names `ec2:RunInstances` and nothing else | 1c 7.8, the document | No create in this stage can be denied for a missing tag. The mandatory-tag convention still applies; 2.1 satisfies it once |
+| `policies/*.json` are templates — eight placeholders across four files: `<ORG_ID>` ×6 (the RCP ×4, the perimeter SCP ×2), `<ORG_PATH_DATA>` ×1 in the baseline document, `<ACCOUNT_ID_DATA>` ×1 in the `Data` document (census of 2026-08-15) | measured over `policies/`, `render.py` | 5.5's "the import compares a document against itself" needs a mechanism, and `templatefile()` cannot read the placeholder syntax: 5.5a |
+| ~~`tflint`, `checkov` and `pre-commit` are absent~~; `terraform` is v1.15.8 and `uv` is present; the placeholder `terraform/` folder no longer exists | measured on this laptop, 2026-08-15 | 1.1 is obsolete. All three tools were installed the same day (6.1): `tflint` **v0.64.0** by release download, the other two by `uv tool install` |
+| A borrowed session outlives the command that needed it (Lesson 25) | 1d step 9 | This stage uses `AWS_PROFILE` and never `eval $(aws sts assume-role …)` ("Who executes what") |
+| Until 2026-08-15 no snapshot listed the policy id of the RCP, the tag policy or the declarative policy — `org-policies.py` §1 read `SERVICE_CONTROL_POLICY` with ids and the RCP only as a presence check, so three of the ten ids existed only in the 1c log | `org-policies.txt` | The import needs all ten ids. The script is fixed, and `import-ids.py` emits every import string ("The instruments this stage runs on") |
 
 ## Step numbers are identifiers, not an order
 
-`docs/plan/conventions.md` §6 already points at "Stage 2 step 9", so the ten numbers below are **stable
-addresses** and are kept as they are. They are not the sequence to work in. The sequence is:
+`docs/plan/conventions.md` §6 points at "Stage 2 step 9", so the ten step numbers are stable addresses, not
+the working order. The order is:
 
-1. **Step 5.0 and step 5.1 — the delegation, and the reachability question under it.** *(Moved to the front
-   on 2026-08-15; it was fourth.)* Two facts moved it, and either alone would be enough. **It can delete
-   scope**: INT-20 states plainly that the plausible outcome is not "the delegation is hard" but "the
-   delegation works and still cannot touch a root-attached document" — and the landing zone then attached
-   **six of ten documents to the root**, so that outcome now costs most of `org-policies/` rather than a
-   corner of it. **And it needs nothing this stage builds**: no repository, no state bucket, no Terraform,
-   no module — one console action on Management, plus two reads and one deliberate write from
-   `awsds-infra-identity`. Anything that can
-   remove half a stage's scope and costs nothing to try belongs before the half it removes, not after it
-   (Lesson 19: a blocking input is re-checked against the requirement, not against the mechanism).
-2. **Step 1** (repository skeleton) and **step 6** (tooling and hygiene) — nothing can be checked before the
-   checkers exist. Step 1 also **pins the provider**, which two verifications depend on.
-3. **Step 9** (the four CI-less checks) — step 5 writes and imports the very policies the wildcard-ARN check
-   guards, so the check has to exist *before* them, not four steps after.
+1. **Step 5.0 and step 5.1** — the delegation and its reachability question. It can delete scope: INT-20's
+   plausible outcome is a delegation that works and still cannot touch a root-attached document, and six
+   of ten documents sit on the root. It needs nothing this stage builds: one console action on Management,
+   plus two reads and one deliberate write from `awsds-infra-identity` (Lesson 19).
+2. **Step 1** (repository skeleton) and **step 6** (tooling and hygiene) — the checkers before the checks.
+   Step 1 also pins the provider, which two verifications depend on.
+3. **Step 9** (the four CI-less checks) — step 5 writes and imports the policies the wildcard-ARN check
+   guards, so the check exists before them.
 4. **Step 2** and **step 3** (the bootstrap slices).
 5. **Step 5** — `identity/sso/` first, `identity/org-policies/` second (5.5). **Step 4** is a rule these two
    obey, not work of its own.
-6. ~~**Step 7** (the three modules).~~ **Moved out of this stage entirely on 2026-08-16 — it is now Stage 3
-   work.** The reasoning is in step 7 below; the short form is that the argument which moved it to the end
-   of the stage on 2026-08-15 does not expire at the end of the stage.
+6. ~~**Step 7** (the three modules)~~ — Stage 3 work since 2026-08-16 (step 7 below).
 7. **Step 8** (the `Makefile`), the **Validation**, **step 10** (documentation), and the stage's own
    **close-out** — the status header and the verifications table.
 
-**What the reordering does not change:** step 5.1 is still the only Management action, and it is still
-performed by `AWS Control Tower Admin`. What changes is that the stage now learns its own scope on the first
-evening rather than on the fourth.
+Step 5.1 stays the only Management action, performed by `AWS Control Tower Admin`.
 
-**Three sittings, and the first seam is 5.0's answer** — the same shape Stage 1c used, and for the same
-reason. **Sitting A** is items 1-4 above: the delegation and its reachability question, the skeleton, the
-tooling, the checks, and the bootstrap slices. It ends with **state buckets that exist and a known scope for
-the second half** — which is a place the work can genuinely be put down. **Sitting B** is item 5, the two
-identity slices, and it is the one that **must not be split**: `sso/` and `org-policies/` are two applies,
-but an import left half-done is a state file that disagrees with the organization, and that is the one
-condition in this stage nobody wants to sleep on. *(Both closed 2026-08-16.)* **Sitting C is item 7** and is
-described next — it was called "the close-out" for a day, which under-counted it by three steps.
+The work is three sittings. **Sitting A** is items 1-4: the delegation and its reachability question, the
+skeleton, the tooling, the checks and the bootstrap slices; it ends with state buckets that exist and a
+known scope for the second half. **Sitting B** is item 5, the two identity slices, and is not split: `sso/`
+and `org-policies/` are two applies, but an import left half-done is a state file that disagrees with the
+organization. Both closed 2026-08-16. **Sitting C** is item 7.
 
-### Sitting C — what is actually left, in order *(written 2026-08-16)*
+### Sitting C — the closing blocks
 
-**The reason this needs writing down rather than being obvious:** on 2026-08-16 both `CLAUDE.md` and
-`docs/log/INDEX.md` said the stage had nothing left but its status header. Measured against the disk that
-was wrong in three places — `terraform-modules/` held only a `README.md`, the `Makefile` said in its own
-header that `up`/`down`/`status` were *"not here yet"*, and no `[E]` slice had ever existed, so the
-Validation had never run. **A stage is closed against its own file, not against a summary of it**, and the
-summary is what was current.
+On 2026-08-16 `CLAUDE.md` and `docs/log/INDEX.md` said the stage had nothing left but its status header;
+the disk disagreed in three places — `terraform-modules/` held only a `README.md`, the `Makefile`'s header
+said `up`/`down`/`status` were *"not here yet"*, and no `[E]` slice had existed, so the Validation had
+never run. A stage is closed against its own file, not against a summary of it.
 
 | Block | What | AWS? |
 |---|---|---|
-| ~~**1**~~ | ~~**Step 8**~~ — **DONE 2026-08-16**: the layer table as data, `up`/`down`/`status`, the four refusals of 8.3 each demonstrated, and 8.6's Studio hook | none |
-| ~~**2**~~ | ~~**The Validation**~~ — **DONE 2026-08-16**: `sandbox/scratch-test/` applied, torn down, rebuilt and deleted; **verification (iv) answered** in the same session; the `awsds`/SSM reserved-prefix collision found | one session as `awsds-infra-sandbox-1` |
-| ~~**3**~~ | ~~**Step 10** and the **close-out**~~ — **DONE 2026-08-16**, **(iii) included**: read from Management as `AWS Control Tower Admin` the same evening, through a third `aws/cloudshell/` script | one **Management** CloudShell run |
+| ~~1~~ | ~~Step 8~~ — done 2026-08-16: the layer table as data, `up`/`down`/`status`, the four refusals of 8.3 each demonstrated, and 8.6's Studio hook | none |
+| ~~2~~ | ~~The Validation~~ — done 2026-08-16: `sandbox/scratch-test/` applied, torn down, rebuilt and deleted; verification (iv) answered in the same session; the `awsds`/SSM reserved-prefix collision found | one session as `awsds-infra-sandbox-1` |
+| ~~3~~ | ~~Step 10 and the close-out~~ — done 2026-08-16, (iii) included: read from Management as `AWS Control Tower Admin` the same evening, through a third `aws/cloudshell/` script | one **Management** CloudShell run |
 
-**Block 1 has nothing to operate on, and that is the argument for doing it now rather than later.** All
-seven slices on disk are `[P]`, so `make up` and `make down` are no-ops until Stage 3's `egress/` — which is
-precisely why the machinery is written before the first `[E]` slice exists rather than after it. It is 8.6's
-own reasoning applied to the whole target: *a hook added later is a hook that is missing from the first
-teardown that needed it.*
+Block 1 has nothing to operate on: all seven slices on disk are `[P]`, so `make up` and `make down` are
+no-ops until Stage 3's `egress/`. The machinery is written before the first `[E]` slice exists (8.6's
+reasoning: a hook added later is missing from the first teardown that needed it).
 
-**Block 3 carries more than a header, because four verifications were answered by the step 5 applies and
-recorded nowhere.** (ii) — the pinned provider accepted `DECLARATIVE_POLICY_EC2`, since
-`awsds-org-declarative-ec2` is one of the ten imported. (viii) — zero `content` diff across all four policy
-types, the RCP and the declarative policy included, which is the round-trip the question asked for. (v) —
-answered **by reading**: the `for_each` keys come from `attachments.json`, which authors **names**, so an OU
-created later moves no key. Only (iv) still costs a call, and it costs exactly one: the descendant data
-source has to be seen returning `Sandboxes`, which sits at depth 2 — **the postconditions do not prove it**,
-because every name the map requires sits at depth 1.
+Block 3 records four verifications the step 5 applies answered. (ii): the pinned provider accepted
+`DECLARATIVE_POLICY_EC2`, since `awsds-org-declarative-ec2` is one of the ten imported. (viii): zero
+`content` diff across all four policy types, the RCP and the declarative policy included. (v), by reading:
+the `for_each` keys come from `attachments.json`, which authors names, so an OU created later moves no key.
+(iv) costs one call: the descendant data source has to be seen returning `Sandboxes`, at depth 2 — the
+postconditions do not prove it, because every name the map requires sits at depth 1.
 
 ## Who executes what
 
-Three identities, and confusing them produces an `AccessDenied` that reads like a policy bug (Lesson 17).
+Three identities; confusing them produces an `AccessDenied` that reads like a policy bug (Lesson 17).
 
 | Steps | Identity | How |
 |---|---|---|
@@ -117,45 +96,39 @@ Three identities, and confusing them produces an `AccessDenied` that reads like 
 | **5.1** | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management**. The only Management-account action in this stage |
 | 5.0, 5 (the rest) | **Infrastructure user** | `awsds-infra-identity` |
 
-**Nothing here is performed by root**, and the infrastructure user still holds no standing assignment on
-Management (1b step 4) — 5.1 is why that step matters in practice and not only in principle.
+Nothing here is performed by root, and the infrastructure user holds no standing assignment on Management
+(1b step 4).
 
-**And nothing here borrows `AWSControlTowerExecution`.** Stage 1d step 9 recorded the only sanctioned
-by-hand use of that role; a Terraform apply reaching for it would make every account's state file
-readable by whoever holds Management. **Every step in this stage authenticates through `AWS_PROFILE` and a
-named SSO profile, and never through `eval $(aws sts assume-role …)`** — Lesson 25: an exported credential
-is ambient state with no visible marker, it outlives the command that needed it, and the errors it causes
-afterwards name the wrong account. With one profile per slice the profile is on the command line, where it
-can be read.
+Nothing here borrows `AWSControlTowerExecution`: Stage 1d step 9 recorded the only sanctioned by-hand use
+of that role, and a Terraform apply reaching for it would make every account's state file readable by
+whoever holds Management. Every step authenticates through `AWS_PROFILE` and a named SSO profile on the
+command line, never through `eval $(aws sts assume-role …)` (Lesson 25).
 
 ## What this stage costs
 
-**Nothing new against the ceiling, and that is a finding rather than an absence.** Both lines Stage 2 adds
-are already inside `docs/plan/cost-model.md`'s floor:
+Nothing new against the ceiling: both lines Stage 2 adds are inside `docs/plan/cost-model.md`'s floor.
 
 - **KMS customer-managed keys, ~USD 1.00/key-month** — one per Terraform-managed account
   (`Sandbox` ×N, `Development`, `Data Governance`, `Staging`, `Production`, `Identity`), plus the key that
-  encrypts `production/pki/`'s **state** under D36. `docs/PRICING.md` §2 already carries the row and already
-  reads it as "one per Terraform-managed account", so **the key created in `bootstrap/` (2.4) is that key**
-  — not an extra one. **The number this stage actually creates is six, not seven**: `Staging` is unvended
-  (3.2), so its key arrives with the account.
-- **S3 state storage and its versions**, inside the ~USD 1.00 "S3 data + state + backups" row. Versioning on
-  a state bucket accumulates a version per apply; at lab scale it is noise, but 2.1 sets a lifecycle rule
-  anyway because a rule added later does not reach what already accumulated.
+  encrypts `production/pki/`'s state under D36. `docs/PRICING.md` §2 carries the row as "one per
+  Terraform-managed account", and the key created in `bootstrap/` (2.4) is that key. This stage creates six:
+  `Staging` is unvended (3.2), so its key arrives with the account.
+- **S3 state storage and its versions**, inside the ~USD 1.00 "S3 data + state + backups" row. Versioning
+  accumulates a version per apply; 2.1 sets a lifecycle rule, because a rule added later does not reach
+  what already accumulated.
 
-At **~USD 6-7/month these keys are most of the KMS row — the largest line in the floor**, so it is worth stating
-what it buys: the key policy is where "who can read this state" is expressed, which is the only mechanism
-D36 has (Lesson 18 — the infrastructure user authors it and is not constrained by it, so what is left is the
-CloudTrail record of a `kms:Decrypt`). **That record is narrower than the sentence sounds, and 2.7 measures
-exactly how narrow** — it names who, when and which key, and neither what was decrypted nor which object.
+At ~USD 6-7/month these keys are most of the KMS row, the largest line in the floor. They buy the key
+policy, where "who can read this state" is expressed — the only mechanism D36 has (Lesson 18: the
+infrastructure user authors it and is not constrained by it, so what is left is the CloudTrail record of a
+`kms:Decrypt`). That record names who, when and which key, and neither what was decrypted nor which object
+(2.7).
 
-## What this stage deliberately leaves outside Terraform
+## What this stage leaves outside Terraform
 
-Step 5's argument — *a policy whose only record is a browser tab is owned by nobody* — applies word for word
-to seven artefacts Stages 1b-1d also produced by hand. They stay outside anyway, and each reason is
-structural rather than an oversight. **Two different reasons, and the last three rows are the second one:**
-the first four *cannot* be in code (wrong account, or Control Tower's object); the last three *must not* be
-(the identity seam, a hand-managed-by-decision setting, a document that must not persist).
+Step 5's argument — a policy whose only record is a browser tab is owned by nobody — applies to seven
+artefacts Stages 1b-1d produced by hand. They stay outside for two reasons: the first four rows cannot be
+in code (wrong account, or Control Tower's object); the last three must not be (the identity seam, a
+hand-managed-by-decision setting, a document that must not persist).
 
 | Artefact | Where it lives | Why it cannot come into code here |
 |---|---|---|
@@ -163,13 +136,12 @@ the first four *cannot* be in code (wrong account, or Control Tower's object); t
 | The organization-level Access Analyzer (1b step 8.2) | **Audit** | Audit is not a Terraform-managed account: no bootstrap, no profile, no state. Bringing it in means a seventh state bucket and a seventh key |
 | Object Lock on `aws-controltower-logs-*` (1d step 9) | **Log Archive** | Same, plus the object is Control Tower's — managing it from Terraform is landing-zone drift |
 | The Control Tower **controls** — Region deny, the two root controls (1c step 7.7) | landing zone | Not policies but controls. If they are ever coded, the resource is `aws_controltower_control` (5.4) |
-| The four **users** and five **groups** (1b step 2) | the Identity Center directory | They are people, not entitlements. In a real deployment they arrive over SCIM from the corporate IdP, and nothing here should have an opinion about that (`docs/plan/conventions.md`, "The identity seam") |
-| **Account-level S3 Block Public Access** (1c step 7.4) | each member account | Hand-managed by decision — see 1c step 7.4. **The SCP would not stop the apply**: 1c step 7.5's deny carves out `InfrastructureAccess`, exactly the principal every slice applies as. The enforcement is step 9.1's repository grep |
-| **`org-policies/canary/`** — the inverted document the battery attaches to prove a deny fires | `Policy Canary`, and only during a battery run | It is a throwaway attached and detached in one sitting (`docs/plan/conventions.md`, the naming exception). A Terraform resource for it would make a document that must not persist into one that does. **It sits inside `terraform-live/` and is the row most likely to be swept in by a `for_each` over `policies/`** — so the configuration reads `policies/*.json` and never the parent folder |
+| The four **users** and five **groups** (1b step 2) | the Identity Center directory | They are people, not entitlements; in a real deployment they arrive over SCIM from the corporate IdP (`docs/plan/conventions.md`, "The identity seam") |
+| **Account-level S3 Block Public Access** (1c step 7.4) | each member account | Hand-managed by decision (1c step 7.4). The SCP would not stop an apply: 1c step 7.5's deny carves out `InfrastructureAccess`, the principal every slice applies as. The enforcement is step 9.1's repository grep |
+| **`org-policies/canary/`** — the inverted document the battery attaches to prove a deny fires | `Policy Canary`, and only during a battery run | A throwaway attached and detached in one sitting (`docs/plan/conventions.md`, the naming exception); a Terraform resource would make a document that must not persist into one that does. It sits inside `terraform-live/`, so the configuration reads `policies/*.json` and never the parent folder |
 
-And two accounts get **no state bucket at all, on purpose**: **`Policy Canary`** (`docs/plan/architecture.md` §3:
-"no Terraform slice, no state bucket" — an account whose point is to stay empty) and **Management**. Creating
-one for either is the kind of thing that looks like tidiness and is not.
+Two accounts get no state bucket: **`Policy Canary`** (`docs/plan/architecture.md` §3: "no Terraform slice,
+no state bucket") and **Management**.
 
 ---
 

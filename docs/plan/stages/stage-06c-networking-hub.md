@@ -2,89 +2,87 @@
 
 | | |
 |---|---|
-| **Status** | **DONE 2026-09-08, PASS 8 INCLUDED — the second client profile**, the **split-tunnel** profile beside the **monitored** one (the user's request, 2026-09-08; the names are `objectives.md`'s): laptop-only, **no host change**, written at 8.1-8.2, decisions due 5 and 6 taken, **measured at 8.3-8.4 the same night** — check 3 inverted, the persona pair explicit/implicit on one command, the host's `REJECT` counter flat across a deliberate burst — and restated at 8.5, its two consequences carried to 6d decision due 4 and Stage 11 step 3.4. *Passes 0-7:* **DONE 2026-09-08** ([log](../../log/log-stage-06c-networking-hub.md)) — every step executed and measured, and **decision due 4 taken as (c)** the same day with the rates measured first: the access log's export waits for Stage 11 step 5.1's centralized delivery, the organization trail records any deletion or retention change meanwhile, and `PX-4` says so as a note. Pass 6 closed on 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Pass 6 was re-cut into sub-steps on 2026-09-07. *The earlier position, kept as the record:* passes 0 and 1 DONE 2026-09-06. The three Production VPCs exist: `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. **Two module bumps, and each was forced by a capability its step did not enumerate** — `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is **abandoned** on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. **0.2 replaced `CIDRS` rather than sitting beside it** (no reader wanted a per-account answer); **0.4a is deferred to 5.1** because the step contradicts itself; **0.6 lands with 3.1**. **Three checks are corrected before being written** — 1.5, 2.4's `NT-12` and 3.7's `NT-11` would each be red for passes at a time as specified, which is 6b's `DT-8` recurring. **Created 2026-09-05**; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
+| **Status** | **Done 2026-09-08**, passes 0-8, every step executed and measured ([log](../../log/log-stage-06c-networking-hub.md)). Passes 0 and 1 were done 2026-09-06: the three Production VPCs exist — `foundation/` re-labelled **VPC-SharedServices**, plus **VPC-Networking** (10.31) and **VPC-Workloads** (10.32), with `workloads-egress/` written and applying nothing. Two module bumps, each forced by a capability its step did not enumerate: `vpc-v0.2.0`'s `name_suffix` and `vpc-v0.3.1`'s `public_internet_route`; `vpc-v0.3.0` is abandoned on origin, tagged onto the wrong commit by a failed-and-swallowed `git commit`. 0.2 replaced `CIDRS` rather than sitting beside it; 0.4a is deferred to 5.1; 0.6 lands with 3.1; 1.5, 2.4's `NT-12` and 3.7's `NT-11` were corrected before being written, since each would be red for passes at a time as specified (6b's `DT-8` recurring). Pass 6 closed 2026-09-08 with 6.5: the vending path re-measured from the new tunnel (**two doors, by service family**), the union trimmed, `sandbox/foundation` unfrozen and its anchors gone, `sandbox/vpn/` retired, `VP-3` widened to every account. Decision due 4 was taken as (c) the same day with the rates measured first. Pass 8, the **split-tunnel** profile beside the **monitored** one (the user's request, 2026-09-08; the names are `objectives.md`'s): laptop-only, no host change, written at 8.1-8.2, decisions due 5 and 6 taken, measured at 8.3-8.4 the same night — check 3 inverted, the persona pair explicit/implicit on one command, the host's `REJECT` counter flat across a deliberate burst — and restated at 8.5, its two consequences carried to 6d decision due 4 and Stage 11 step 3.4. Created 2026-09-05; it builds [D38](../decisions/D38-single-egress-hub.md) and repairs the client-plane DNS shadowing of Lessons 40-43 |
 | **Prerequisites** | [Stage 3](stage-03-networking.md) (the `vpc` and `vpc-egress` modules, the peering pattern in `production/foundation/peers.tf`, the `[P]`/`[E]` split), [Stage 4](stage-04-vpn.md) (the `wireguard` module and its `[P]` anchors), [6a](stage-06a-unified-studio.md) (the endpoint lists and what a Studio app needs), **[6b](stage-06b-development-becomes-staging.md)** (the account is already `staging`, and step 4.1 there freed `10.40.0.0/16` and re-pointed `CIDRS`) |
-| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05 — this stage builds it, it does not author it) |
+| **Consumes** | [D4](../decisions/D04-vpn-wireguard.md), [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** (written 2026-09-05; this stage builds it) |
 | **Proves** | [INT-05](../integrations.md) and [INT-06](../integrations.md) re-keyed on the hub; [INT-16](../integrations.md)'s closing choice becomes takeable because this stage owns the address it is keyed on; **INT-21** (every account's compute reaching a Production-owned proxy over peering) and **INT-22** (the `awsds.internal` zone × VPC association matrix) |
 
-*Read with [`docs/plan/conventions.md`](../conventions.md) §6 (the target slice tree — the authority when
+*Read with [`docs/plan/conventions.md`](../conventions.md) §6 (the target slice tree, the authority when
 this file and it disagree), [`docs/NETWORK.md`](../../NETWORK.md) §T (the target topology, re-measured in
 this stage's own sittings) and [`docs/plan/runbooks/vpn.md`](../runbooks/vpn.md), whose §S topology this
 stage rewrites.*
 
 ---
 
-**Objective:** one internet egress for the whole cloud, behind one HTTP/HTTPS proxy, with the VPN client
-treated as what it is — a client of the private network, which therefore reaches the internet the same way
-every other client does. Three VPCs in Production; five peerings; no NAT gateway anywhere; no default route
-in any spoke.
+**Objective:** one internet egress for the whole cloud, behind one HTTP/HTTPS proxy. The VPN client is a
+client of the private network and reaches the internet the same way every other client does. Three VPCs
+in Production; five peerings; no NAT gateway anywhere; no default route in any spoke.
 
-## The premise the whole design rests on, stated once
+## The design premise: peering shares an address, never a path
 
-**VPC peering shares an address, never a path** (Lesson 44). The AWS peering guide's *"Edge to edge routing
-through a gateway or private connection"* section says it four times — *"If VPC A has an internet gateway,
-resources in VPC B can't use the internet gateway in VPC A"*, the same for *"a NAT device"*, for a VPN or
-Direct Connect connection, and for *"a gateway endpoint that provides connectivity to Amazon S3"* — and
-adds that *"VPC peering does not support transitive peering relationships"*. Five consequences, none of
-them a preference:
+VPC peering shares an address, never a path (Lesson 44; [D38](../decisions/D38-single-egress-hub.md)).
+The AWS peering guide's *"Edge to edge routing through a gateway or private connection"* section says so
+for an internet gateway (*"If VPC A has an internet gateway, resources in VPC B can't use the internet
+gateway in VPC A"*), for *"a NAT device"*, for a VPN or Direct Connect connection and for *"a gateway
+endpoint that provides connectivity to Amazon S3"*, and adds that *"VPC peering does not support
+transitive peering relationships"*. Five consequences:
 
 1. **The single egress reaches a spoke only as an explicit proxy** — an ENI address inside
    `VPC-Networking` that clients are configured to use. There is no transparent path.
-2. **No spoke has a default route at all** — [D5](../decisions/D05-sagemaker-egress.md)'s design B. That is
-   what closes the two bypasses design A could not: a raw address and DNS-over-HTTPS to a public resolver
-   both need a route the spoke no longer has.
-3. **A NAT gateway would serve only the VPC it lives in.** Zero are built; one is priced below as the
+2. **No spoke has a default route** — [D5](../decisions/D05-sagemaker-egress.md)'s design B. A raw
+   address and DNS-over-HTTPS to a public resolver, the two bypasses design A could not close, both need
+   a route the spoke no longer has.
+3. **A NAT gateway would serve only the VPC it lives in.** Zero are built; one is priced in §Cost as the
    named contingency.
-4. **Each VPC keeps its own free S3 and DynamoDB gateway endpoints** — they do not cross a peering, and
+4. **Each VPC keeps its own free S3 and DynamoDB gateway endpoints**: they do not cross a peering, and
    they are the `aws:SourceVpce` anchors INT-05 names.
-5. **Interface endpoints stay per VPC and are never centralized in the hub.** Centralizing them would put
-   compute-plane private zones back on the resolver the VPN client uses (Lesson 43 at a new address) and
-   would make every spoke's AWS call carry the hub's `aws:SourceVpc`, satisfying the personas' VPN-only
+5. **Interface endpoints stay per VPC, never centralized in the hub.** Centralizing them would put
+   compute-plane private zones back on the resolver the VPN client uses (Lesson 43 at a new address), and
+   every spoke's AWS call would carry the hub's `aws:SourceVpc`, satisfying the personas' VPN-only
    condition from any account.
 
-A sixth limitation from the same page decides pass 2: **"You cannot connect to or query the Amazon DNS
-server in a peer VPC."** A spoke resolves at its own `.2` and nowhere else, so every name the spoke must
-resolve has to come from a zone **associated with the spoke's own VPC**. The association matrix is the
-design, not an afterthought.
+A sixth limitation from the same page decides pass 2: *"You cannot connect to or query the Amazon DNS
+server in a peer VPC."* A spoke resolves at its own `.2` only, so every name it must resolve has to come
+from a zone associated with the spoke's own VPC. The association matrix is the design.
 
-**The client plane is not special.** The VPN client sits inside the private network; its internet is the
-private network's internet. The enforcement lives on the WireGuard host, where the user cannot revert it:
-tunnel packets are forwarded to RFC1918 destinations only, everything else is dropped. A laptop with no
-proxy configured reaches the intranet and nothing beyond it.
+The VPN client sits inside the private network, and its internet is the private network's internet. The
+enforcement lives on the WireGuard host, where the user cannot revert it: tunnel packets are forwarded to
+RFC1918 destinations only, everything else is dropped. A laptop with no proxy configured reaches the
+intranet and nothing beyond it.
 
 ## What this builds, and in which account
 
 | Object | Slice | Layer | Note |
 |---|---|---|---|
-| `VPC-SharedServices` **10.30.0.0/16** | `production/foundation/` (exists) | `[P]` | GitLab, Pages, the runners, the build host. **No rebuild**: ids, both peering accepters and the four zone associations survive |
-| `VPC-Networking` **10.31.0.0/16** | `production/networking/` (new) | `[P]` | The only IGW; the estate's only internet-facing tier. **Also both hub hosts' `[P]` anchors** — two Elastic IPs, two security groups, the host-key secret, the proxy allow-list parameter |
+| `VPC-SharedServices` **10.30.0.0/16** | `production/foundation/` (exists) | `[P]` | GitLab, Pages, the runners, the build host. No rebuild: ids, both peering accepters and the four zone associations survive |
+| `VPC-Networking` **10.31.0.0/16** | `production/networking/` (new) | `[P]` | The only IGW; the estate's only internet-facing tier. Also both hub hosts' `[P]` anchors: two Elastic IPs, two security groups, the host-key secret, the proxy allow-list parameter |
 | `VPC-Workloads` **10.32.0.0/16** | `production/workloads/` (new) | `[P]` | The production SageMaker runtime, MWAA Serverless workers, production jobs |
-| WireGuard host | `production/vpn/` (new) | `[D]` | Instance only. Its Elastic IP is **transferred** from Sandbox, so no client `.conf` changes its `Endpoint` |
+| WireGuard host | `production/vpn/` (new) | `[D]` | Instance only. Its Elastic IP is transferred from Sandbox, so no client `.conf` changes its `Endpoint` |
 | Squid host | `production/proxy/` (new) | `[D]` | Instance only. The estate's single egress |
 | `awsds.internal` + three child zones + `awsds-pages.internal` | `production/foundation/` and each spoke | `[P]` | With the explicit association matrix (INT-22) |
 | Five peerings | requester per spoke, accepter in Production | `[P]` | Networking × 4, SharedServices × Sandbox |
-| Interface endpoints | every VPC **except** `VPC-Networking` | `[E]` | Single AZ (D9), private DNS on. **One `egress/`-shaped slice per VPC**: `sandbox/egress/`, `staging/egress/`, `production/egress/` (SharedServices) and the **new `production/workloads-egress/`** — a second Production VPC needing endpoints needs a second slice, because a slice reads one `foundation/` |
+| Interface endpoints | every VPC **except** `VPC-Networking` | `[E]` | Single AZ (D9), private DNS on. One `egress/`-shaped slice per VPC: `sandbox/egress/`, `staging/egress/`, `production/egress/` (SharedServices) and the new `production/workloads-egress/`, because a slice reads one `foundation/` |
 | DNS Firewall | every compute VPC | `[E]` | Re-cut to an intranet-and-AWS list |
 | **Zero** NAT gateways | — | — | Priced in §Cost as the contingency |
 
-**Both hosts' `[P]` anchors live in `networking/`, never in the `[D]` slice** — the Stage 4 rule
-(`conventions.md` §6): a `make down` that destroyed the `[D]` slice must not release an Elastic IP or the
+Both hosts' `[P]` anchors live in `networking/`, never in the `[D]` slice — the Stage 4 rule
+(`conventions.md` §6): a `make down` that destroys the `[D]` slice must not release an Elastic IP or the
 host key (Lesson 4).
 
 ## What the documentation changed in this plan
 
-Read before executing; each is a correction to what the 2026-09-05 draft assumed.
+Each row corrects an assumption of the 2026-09-05 draft.
 
 | Was assumed | What the documentation says | Where it lands |
 |---|---|---|
-| Three VPCs need `name_suffix` for tidy tags | The `vpc` module's **CloudWatch log group** `awsds-<env>-vpc-flow-logs` and the slice's flow-log **IAM role** of the same name are **account-unique** — three VPCs with `env = "prod"` is a hard conflict, not cosmetics | 0.4 |
-| `VPN_HOMES` resolves the new home by name | Each row becomes a `terraform_remote_state` read of that account's **`foundation/`** slice; the hub's EIP is in `networking/` | 0.5 |
-| MWAA Serverless is the first NAT contingency candidate | AWS documents a **private-routing** MWAA Serverless VPC with *"no route table to a NAT device… nor an internet gateway"*, three interface endpoints (`logs`, `monitoring`, `kms`) and a self-referencing SG. The requirements list that demands a NAT is the **public-routing** shape (Lesson 41 again) | 5.7, and D7/Stage 10 |
-| INT-16 fallback (i) is AWS's policy keyed on an address | AWS's `DenyUserAccessFromUnauthorizedVPCs` uses `StringNotEquals` on `aws:SourceVpc`, which **matches when the key is absent** — every browser-origin call. Verbatim, it denies the portal outright | 6.6 |
-| The proxy's allow-list is discovered by trial | The SMUS network-isolation guide **enumerates** the portal, IdC and console names that need public internet | 4.7 |
-| `production/egress/` is the last NAT to destroy after Sandbox's | **There are three**, not two: `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so `VPC-SharedServices` has a NAT gateway and a default route as well | 5.1 |
-| Only the `vpc` module has account-unique names | **`vpc-egress` does too**: its DNS-firewall CloudWatch log group `/awsds/<env>/dns-firewall` is account-unique, and its rule group, two domain lists and query-log config all collide by `Name` when two VPCs in one account both run a firewall. It takes the same `name_suffix` in the same version bump | 0.4, 5.1 |
-| `NO_PROXY` is `.us-west-2.amazonaws.com` | A blanket suffix sends every endpoint-less AWS service to a route that does not exist — a **timeout** (Lesson 42). Generated per VPC from that VPC's endpoint list, the same call is a proxy **403** | 5.6 |
+| Three VPCs need `name_suffix` for tidy tags | The `vpc` module's CloudWatch log group `awsds-<env>-vpc-flow-logs` and the slice's flow-log IAM role of the same name are account-unique: three VPCs with `env = "prod"` is a create-time conflict | 0.4 |
+| `VPN_HOMES` resolves the new home by name | Each row becomes a `terraform_remote_state` read of that account's `foundation/` slice; the hub's EIP is in `networking/` | 0.5 |
+| MWAA Serverless is the first NAT contingency candidate | AWS documents a private-routing MWAA Serverless VPC with *"no route table to a NAT device… nor an internet gateway"*, three interface endpoints (`logs`, `monitoring`, `kms`) and a self-referencing SG. The requirements list that demands a NAT is the public-routing shape (Lesson 41) | 5.7, and D7/Stage 10 |
+| INT-16 fallback (i) is AWS's policy keyed on an address | AWS's `DenyUserAccessFromUnauthorizedVPCs` uses `StringNotEquals` on `aws:SourceVpc`, which matches when the key is absent — every browser-origin call. Verbatim, it denies the portal outright | 6.6 |
+| The proxy's allow-list is discovered by trial | The SMUS network-isolation guide enumerates the portal, IdC and console names that need public internet | 4.7 |
+| `production/egress/` is the last NAT to destroy after Sandbox's | There are three, not two: `terraform-live/production/egress/main.tf` carries `egress_mode = "A"` today, so `VPC-SharedServices` has a NAT gateway and a default route as well | 5.1 |
+| Only the `vpc` module has account-unique names | `vpc-egress` does too: its DNS-firewall CloudWatch log group `/awsds/<env>/dns-firewall` is account-unique, and its rule group, two domain lists and query-log config all collide by `Name` when two VPCs in one account both run a firewall. It takes the same `name_suffix` in the same version bump | 0.4, 5.1 |
+| `NO_PROXY` is `.us-west-2.amazonaws.com` | A blanket suffix sends every endpoint-less AWS service to a route that does not exist — a timeout (Lesson 42). Generated per VPC from that VPC's endpoint list, the same call is a proxy 403 | 5.6 |
 
 ## Who executes each action
 

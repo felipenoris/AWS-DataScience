@@ -2,62 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **IN PROGRESS — 8.8 DONE AND APPLIED 2026-09-09, STEP 9 APPLIED AND READ BACK, STEP 8 CLOSED EXCEPT ITS DELIVERY, 3.2 AND 3.3 DONE, 3.1 HALF TAKEN** ([log](../../log/log-stage-06d-unified-studio-remainder.md)): the first working session under the proxy, from a JupyterLab terminal with the variables exported **by hand** (2.2 is still unapplied) and on the **stock** image. `NO_PROXY` held on two channels that do not share a failure mode (CloudTrail's `vpcEndpointId`, and the access log's *absence* of every AWS name); the allow-list enforced (`pypi.org` 200, `example.com` 403); **`conda` and CRAN refused by name — decision due 6's evidence**; the `codeload.github.com` redirect refused on a third source plane. **Owed**: `uv`, Julia and R, in the house image. **And one check was corrected by the user's own first command**: `--noproxy '*'` returning `000` measured a **DNS** refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). **A second sitting the same day added step 8 and one
-plane entry**: `sudo apt update` proved the variables stop at **`sudo`** (`env_reset`), so 2.2 owes two
-image-side files beside its `ContainerEnvironmentVariables`; and a **Code Editor** space failed to update
-**AWS's own two extensions** at startup with four `getaddrinfo ENOTFOUND open-vsx.org` — a **resolution**
-failure, so the VS Code server never saw a proxy and this plane was never consulted. `open-vsx.org` is
-authored onto `sandbox-foundation` (**unapplied**); **step 8** carries the rest — the delivery mechanism
-2.2 does not cover, and an asset host nobody has read yet. **A third sitting closed 8.2 and opened step 9.**
-The DNS Firewall log settled the attribution — `open-vsx.org` **BLOCK**, 8 queries, from a Sandbox address —
-and named **three more** the Code Editor needs: `idetoolkits.amazonwebservices.com` (**`amazonwebservices.com`
-is not `amazonaws.com`**), `api.github.com` and `raw.githubusercontent.com`, the last two uncovered because
-the plane's `github.com` is a **bare** name. And **D38 §6 was amended by the user**: `production-foundation`
-is **`open`**, not an allow-list — a build host's control is the reviewed Dockerfile, not a hostname list —
-so `proxy_allow_shared` and its CloudFront entry are deleted, a plane's mode is now decided by **which of two
-maps** it is in, and `DN-4` was rewritten to *"no plane is open except the ones a decision names"*.
-`terraform plan`: `0 to add, 1 to change` — **applied the same day**, re-plan `No changes`, `DN-1`..`DN-4`
-all pass. **Read back the same evening from the host**: the drop-in's own `Rendered` timestamp is after the
-parameter write, `sandbox-foundation` matches name for name, and the build plane renders as a **bare
-allow**, the tunnel's shape. **STEP 8 CLOSED EXCEPT ITS DELIVERY, 2026-09-09.** The gallery client honours
-`http_proxy`/`https_proxy` and ignores the `http.proxy` **setting**; its `403` was **Squid's**, naming the
-last unread host — **`open-vsx.org` serves the API, `openvsx.eclipsecontent.org` serves the bytes**, so
-8.1's single entry had authorised the question and refused the answer. **Decision due 6 taken in full and
-applied** (parameter 6 → 7, `DN-1`..`DN-4` and `PX-3` green): five names in, `api.github.com` and
-`raw.githubusercontent.com` refused, and **`github.com` REMOVED** — the first time this decision has
-subtracted, and `clone`/`fetch`/`push` from a Sandbox space now fail by design. **8.5 closed** on its own
-criterion (96.32 MiB of `.vsix` through the proxy, by the gallery client). **But the delivery is owed and
-belongs to step 2**: neither mechanism attaches to a *space*, only to the blueprint-provisioned domain, so
-8.4 waits on **2.4** — clicking Install in a space still fails. **8.8 DONE AND APPLIED 2026-09-09, AND IT WAS EIGHT TIMES ITS RECORDED SIZE**: `vpc-egress-v0.11.1`
-reads the **endpoint's** `dns_entry` rather than the **service's** one canonical name — **16 of 18**
-Sandbox endpoints answered for a name the list lacked, and the bypass list went **28 → 50** on a
-`0 to add, 1 to change` apply that re-plans `No changes`. The `403`s were loud only by luck of the
-domain family: **`streaming-logs.us-west-2.amazonaws.com`** was on the plane, so it was answered
-`200` and left as a **public** call with neither `aws:SourceVpc` nor `aws:SourceVpce`. The guard had
-the same blind spot, and pointing the new reading at it named **two endpoints the estate pays for
-hourly that were NXDOMAIN** — `app.aws` and `on.aws` joined both compute allow-lists (**14 domains
-live**), which is also **8.6's orphan attributed**: `dzd-<id>.…on.aws` was blocked by family.
-**`v0.11.0` is tagged and was never deployed** — its own measurement on torn-down `staging/egress`
-showed `dns_entry` is `(known after apply)`, so it had turned 5.7's plan-time guard into a mid-apply
-one (Lesson 39, produced by the repair); v0.11.1 splits the precondition into `declared` and
-`served`. Both halves carry a negative control. **Not closed: the other three `egress/` slices are
-down and take it on their next `make up`. **The in-space proof was taken the same night**: the name absent for the post-restart container, against `403` × 11 from an earlier one, with eight DataZone calls carrying the endpoint id in CloudTrail.** *Earlier:* **the setting
-route was measured 2026-09-08, and it works everywhere except the gallery.** `http.proxy` in the space's own settings moved `idetoolkits.amazonwebservices.com`,
-`api.github.com` and `raw.githubusercontent.com` **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to
-`200` — read as a **paired before/after**, because a restart gives the container a new address — while
-**`open-vsx.org` did not move**: 36 `BLOCK`s across two restarts and never once in the proxy log. So
-*"no proxy in the process"* is now false for this component and **(b)/(c) are no longer expected to reach
-it**; decision due 6's pre-packaged `.vsix` is the live option, and two cheap probes are named at 8.4.
-**8.7 closed** — `x86_64`/Noble, so `alpine-arm64` is retired. **8.6 half-arrived** (five allow-or-lose
-names, the asset host still unread) and **8.8 opened**: the generated bypass list carries **one name per
-endpoint** where AWS answers for several (`datazone` two, `studio` four), which broke DataZone in the
-space until the user patched it by hand — a patch that removed exactly one refusal and left five, which
-is the cause reproduced. *Earlier:* **9.5 AND 9.6 CLOSED THE SAME DAY — step 9 is done.** One full build and
-push (`default-v0.1.1` in both repositories) put **196 requests and 4.67 GiB** across the plane, and the
-measurement is that the design this replaced would have **refused this build**: `conda.anaconda.org`, 155
-requests and 368 MiB, is on no allow-list — the refusal would have landed one minute after the deleted
-CloudFront entry served 3.76 GiB. The deny list was looked at and **left empty**. *Earlier:* **3.6, 7.1 and 7.2 taken 2026-09-07**: the two portal surfaces read, the remote-IDE endpoint set derived (**nothing to add on either side**), and the `StartSession` pair found attached to a principal that never makes the call — so **the connection method decides the perimeter** (decision due 4), and step 7 was re-cut around that the same day. **Created 2026-09-05** by splitting the old Stage 6, revised the same day into the action-checklist format. It holds only what had not run, re-cut to the estate the split produces: **one** Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending — the design A / design B **comparison** (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26). **Step 7 added 2026-09-06**, from a reading of the plan against [`objectives.md`](../objectives.md): the local-VS-Code clause had its **policy** half applied at 6a step 3.2 and no step anywhere that opens the connection — so the endpoints it needs under design B were never derived (AWS's own two pages sit in `REFERENCES.md`, consumed by nothing), the two denies were never exercised, and **nothing had ever checked that the principal carrying them is the one that calls `sagemaker:StartSession`** |
-| **Prerequisites** | **[6c](stage-06c-networking-hub.md) pass 5** — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
+| **Status** | **In progress** ([log](../../log/log-stage-06d-unified-studio-remainder.md)). Done: 3.2, 3.3, 3.6, 7.1, 7.2, 8.1-8.3, 8.5, 8.7, 8.8 and step 9; 3.1 half taken; step 8 closed except its delivery; step 4 read from a run nobody submitted for it and closed as a decision. **The first working session under the proxy (2026-09-08)**: a JupyterLab terminal on the stock image, the variables exported by hand (2.2 unapplied). `NO_PROXY` held on two channels that do not share a failure mode — CloudTrail's `vpcEndpointId`, and the access log's absence of every AWS name; the allow-list enforced (`pypi.org` 200, `example.com` 403); `conda` and CRAN refused by name (decision due 6's evidence); the `codeload.github.com` redirect refused on a third source plane. Owed: `uv`, Julia and R, in the house image. The user's first command corrected one check: `--noproxy '*'` returning `000` measured a DNS refusal, not the absent route — the routing half stays 6c 6.3's probe (Lesson 42). The same day, `sudo apt update` proved the variables stop at `sudo` (`env_reset`), so 2.2 owes two image-side files beside its `ContainerEnvironmentVariables`; and a Code Editor space failed to update AWS's own two extensions at startup with four `getaddrinfo ENOTFOUND open-vsx.org`, a resolution failure: the VS Code server never saw a proxy and the plane was never consulted. Step 8 carries the repair. **8.2 (2026-09-08)**: the DNS Firewall log settled the attribution — `open-vsx.org` BLOCK, 8 queries, from a Sandbox address — and named three more names the Code Editor needs: `idetoolkits.amazonwebservices.com` (`amazonwebservices.com` is not `amazonaws.com`), `api.github.com` and `raw.githubusercontent.com`, the last two uncovered because the plane's `github.com` is a bare name. **Step 9 (2026-09-08)**: D38 §6 amended by the user — `production-foundation` is `open`, `proxy_allow_shared` and its CloudFront entry deleted, a plane's mode decided by which of two maps holds it, `DN-4` rewritten to *"no plane is open except the ones a decision names"*. `terraform plan` `0 to add, 1 to change`, applied the same day, re-plan `No changes`, `DN-1`..`DN-4` pass. Read back from the host the same evening: the drop-in's `Rendered` timestamp is after the parameter write, `sandbox-foundation` matches name for name, and the build plane renders as a bare allow, the tunnel's shape. 9.5 and 9.6 closed the same day: one full build and push (`default-v0.1.1` in both repositories) put 196 requests and 4.67 GiB across the plane, and the replaced design would have refused this build — `conda.anaconda.org`, 155 requests and 368 MiB, is on no allow-list, and the refusal would have landed one minute after the deleted CloudFront entry served 3.76 GiB. The deny list was looked at and left empty. **8.4's setting route (2026-09-08)**: `http.proxy` in the space's own settings moved `idetoolkits.amazonwebservices.com`, `api.github.com` and `raw.githubusercontent.com` from a DNS `BLOCK` to a Squid `403` and `pypi.org` to `200`, read as a paired before/after because a restart gives the container a new address; `open-vsx.org` did not move — 36 `BLOCK`s across two restarts, never in the proxy log. 8.7 closed (`x86_64`/Noble; `alpine-arm64` retired as a fact about the space). 8.6 half-arrived (five allow-or-lose names, the asset host unread). 8.8 opened: the generated bypass list carried one name per endpoint where AWS answers for several (`datazone` two, `studio` four), which broke DataZone in the space until the user patched it by hand — a patch that removed exactly one refusal and left five. **Step 8 closed except its delivery (2026-09-09)**: the gallery client honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting; its `403` was Squid's, naming the last unread host — `open-vsx.org` serves the API, `openvsx.eclipsecontent.org` serves the bytes, so 8.1's single entry had authorised the question and refused the answer. Decision due 6 taken in full and applied (parameter 6 → 7; `DN-1`..`DN-4` and `PX-3` green): five names in, `api.github.com` and `raw.githubusercontent.com` refused, and `github.com` removed — the decision's first subtraction; `clone`/`fetch`/`push` from a Sandbox space now fail by design. 8.5 closed on its own criterion (96.32 MiB of `.vsix` through the proxy, by the gallery client). The delivery is owed and belongs to step 2: neither mechanism attaches to a space, only to the blueprint-provisioned domain, so 8.4 waits on 2.4 — clicking Install in a space still fails. **8.8 done and applied (2026-09-09)**, eight times its recorded size: `vpc-egress-v0.11.1` reads the endpoint's `dns_entry` rather than the service's one canonical name — 16 of 18 Sandbox endpoints answered for a name the list lacked, and the bypass list went 28 → 50 on a `0 to add, 1 to change` apply that re-plans `No changes`. The `403`s were loud only by luck of the domain family: `streaming-logs.us-west-2.amazonaws.com` was on the plane, so it was answered `200` and left as a public call with neither `aws:SourceVpc` nor `aws:SourceVpce`. The guard had the same blind spot: the new reading named two endpoints the estate pays for hourly that were NXDOMAIN, so `app.aws` and `on.aws` joined both compute allow-lists (14 domains live), which attributes 8.6's orphan — `dzd-<id>.…on.aws` was blocked by family. `v0.11.0` is tagged and was never deployed: on torn-down `staging/egress`, `dns_entry` is `(known after apply)`, so it had turned 5.7's plan-time guard into a mid-apply one (Lesson 39); v0.11.1 splits the precondition into `declared` and `served`, each with a negative control. Not closed: the other three `egress/` slices are down and take it on their next `make up`. The in-space proof, the same night: the name absent for the post-restart container, against `403` × 11 from an earlier one, with eight DataZone calls carrying the endpoint id in CloudTrail. **3.6, 7.1 and 7.2 (2026-09-07)**: the two portal surfaces read, the remote-IDE endpoint set derived (nothing to add on either side), and the `StartSession` pair found attached to a principal that never makes the call — the connection method decides the perimeter (decision due 4), and step 7 was re-cut around that. **Step 4 (read 2026-09-09, re-run 2026-09-10)**: a workflow authored 2026-08-27 had run, unread, and failed on `DenySageMakerJobsOffVpc`; filling `compute` changes nothing, so it is a decision — recommended: do not use the portal's notebook operator. **Origin**: split from the old Stage 6 on 2026-09-05; it holds only what had not run, re-cut to the estate the split produces — one Interactive account (Sandbox), no NAT anywhere, every internet call through the institutional proxy. Two items the old stage carried are gone rather than pending: the design A / design B comparison (6c settles it by construction) and the derived-zone decision (dissolved 2026-08-26) |
+| **Prerequisites** | [6c](stage-06c-networking-hub.md) pass 5 — what a Studio app can reach changes there, so any measurement below taken earlier would have to be retaken. [6b](stage-06b-development-becomes-staging.md) only in that its instrument re-scoping removes the second Interactive account from the readings |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-01](../integrations.md) and [INT-17](../integrations.md) (the cross-account image pull and the selector — 6a built the repositories and pushed the image; nothing has consumed it), [INT-02](../integrations.md)'s consumer half under design B |
 
@@ -66,29 +12,28 @@ convention) and [`docs/plan/conventions.md`](../conventions.md).*
 
 ---
 
-**Objective:** finish the working environment. A data scientist opens a project in Sandbox, picks the house
-image, installs a package through the proxy, submits a job that is refused outside the VPC, authors a
-workflow that can be promoted, and leaves nothing running when the session ends.
+**Objective:** finish the working environment. A data scientist opens a project in Sandbox, picks the
+house image, installs a package through the proxy, submits a job that is refused outside the VPC,
+authors a workflow that can be promoted, and leaves nothing running when the session ends.
 
 ## Who executes each action
 
 | Marker | Meaning |
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
-| **[Claude⚡]** | `terraform apply` or any AWS write — run **only after the user authorizes that specific action in chat** |
+| **[Claude⚡]** | `terraform apply` or any AWS write — run only after the user authorizes that specific action in chat |
 | **[user]** | the portal, the JupyterLab terminal, and the provoking half of every measurement — the parts no AWS API performs |
 | **[Claude reads, user decides]** / **[Claude and user]** | a measurement Claude takes and a choice only the user can make, in the same sitting — the reading is written down whichever way the choice goes |
 
 ## Step numbers are identifiers, not an order
 
-Steps 1, 2 and 5 are independent. **Step 3 depends on step 2** (the friction reading is taken in the house
-image, not the stock one) and **step 4 depends on step 3** only for the session. Step 6 is the close.
+Steps 1, 2 and 5 are independent. Step 3 depends on step 2 (the friction reading is taken in the house
+image, not the stock one) and step 4 depends on step 3 only for the session. Step 6 is the close; step
+7's answers are read into it.
 
-**Step 7 needs a space to attach to**, so it follows 2.3 — its own is a **Code Editor** space at
-`ml.t3.large`, not the JupyterLab one 2.3 creates. **7.1 was taken first (2026-09-07) and needs no slice
-edit**; what now precedes 7.3 is **decision due 4**, the connection method, because it decides which
-principal the repair goes on. Step 7 is numbered after the close because numbers here are identifiers: step 6
-remains the close, and 7's answers are read into it.
+Step 7 needs a space to attach to, so it follows 2.3; its own space is a Code Editor at `ml.t3.large`,
+not the JupyterLab one 2.3 creates. 7.1 (2026-09-07) needed no slice edit. Decision due 4, the
+connection method, precedes 7.3 because it decides which principal the repair goes on.
 
 ---
 
