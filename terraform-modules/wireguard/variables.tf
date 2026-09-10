@@ -79,21 +79,21 @@ variable "peer_cidr_v6" {
   description = <<-EOT
     The tunnel's IPv6 ULA prefix, or "" for an IPv4-only tunnel (the shape until 2026-09-07).
 
-    WHY IT EXISTS, AND IT IS NOT TO CARRY IPv6 TRAFFIC. This estate has no IPv6 anywhere: all five
-    VPCs are IPv4-only, measured, so this host has no IPv6 uplink and nothing it forwards could
-    reach an IPv6 destination. What the prefix buys is that `AllowedIPs = ::/0` in a client config
-    becomes REAL. Measured 2026-09-07 on a live client: `wg-quick` installs routes only for the
-    address families the interface HAS AN ADDRESS IN, so with an IPv4-only `Address` line the
-    `::/0` was inert - no IPv6 route into the tunnel, and every IPv6-capable application on the
-    device went straight out of its own uplink, outside the tunnel, outside the proxy, outside the
-    access log. Nine established connections were doing exactly that when it was found.
+    The prefix does not carry IPv6 traffic. This estate has no IPv6 anywhere: all five VPCs are
+    IPv4-only, measured, so this host has no IPv6 uplink and nothing it forwards could reach an
+    IPv6 destination. What the prefix buys is that `AllowedIPs = ::/0` in a client config becomes
+    real. Measured 2026-09-07 on a live client: `wg-quick` installs routes only for the address
+    families the interface has an address in, so with an IPv4-only `Address` line the `::/0` was
+    inert - no IPv6 route into the tunnel, and every IPv6-capable application on the device went
+    straight out of its own uplink, outside the tunnel, outside the proxy, outside the access log.
+    Nine established connections were doing exactly that when it was found.
 
-    SO THE EFFECT IS TO CLOSE A LEAK, NOT TO OPEN A PATH: with the prefix set, IPv6 enters the
-    tunnel and is REJECTED here, beside the IPv4 that is not RFC1918. That is what the client-side
+    The effect is to close a leak, not to open a path: with the prefix set, IPv6 enters the tunnel
+    and is rejected here, beside the IPv4 that is not RFC1918. That is what the client-side
     documentation had claimed was already happening.
 
-    IT IS NOT A CONTROL AGAINST THE DEVICE'S OWNER, and saying so is the honest half. `AllowedIPs`
-    on the CLIENT side is a routing directive: whoever holds the laptop can delete the IPv6
+    It is not a control against the device's owner, and saying so is the honest half. `AllowedIPs`
+    on the client side is a routing directive: whoever holds the laptop can delete the IPv6
     `Address` line and have IPv6 leave the tunnel again. Nothing on a WireGuard server can compel a
     peer to send it traffic. The estate's enforcement points are `DenyControlPlaneOffVpn` (which
     fails closed) and the proxy's allow-lists; the institutional answer to the client half is an

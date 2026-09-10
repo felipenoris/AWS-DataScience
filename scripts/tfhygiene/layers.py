@@ -430,9 +430,10 @@ SLICES = [
     # nothing in it is metered by the hour. Storage is metered by the GB-month and grows without
     # bound by design (there is no expiry rule - that is the requirement), so this row's 0.0 is
     # true and incomplete at once, and the bill this slice does generate is docs/PRICING.md's
-    # and the stage's Cost section rather than `make status`'s. Sandbox only today: Development
-    # has no S3 Access Grants instance, so the same slice there would have nothing to register
-    # a location against.
+    # and the stage's Cost section rather than `make status`'s. Sandbox only today: an S3 Access
+    # Grants instance needs a SMUS member account to be born in, and Sandbox is the only one since
+    # Stage 6b step 1.2, so the same slice elsewhere would have nothing to register a location
+    # against.
     Slice("sandbox", "lake", PERSISTENT, "permanent per-group artifacts + their AG grants"),
 ]
 

@@ -667,7 +667,7 @@ the command that needed it and every later error then names the wrong account
 # Import the FIRST one, run `terraform plan`, and only then the rest - if the
 # for_each key is wrong the import succeeds and the plan proposes a create.
 #
-# The key's target half is the authored map's vocabulary, not the API's. The slice
+# THE KEY'S TARGET HALF IS THE AUTHORED MAP'S VOCABULARY, NOT THE API'S. The slice
 # builds its for_each from attachments.json, where the root is the literal key
 # `root` and an OU is its NAME - so the composed key is `<document>:root` or
 # `<document>:<OU name>`. The Organizations API calls the root `Root`, and that is
@@ -732,7 +732,7 @@ the command that needed it and every later error then names the wrong account
 # The principal id is the GUID; the CONFIGURATION resolves the same group by display
 # name through data.aws_identitystore_group (section 3).
 #
-# The address key is the account folder of terraform-live/, because that is what the
+# THE ADDRESS KEY IS THE ACCOUNT FOLDER of terraform-live/, because that is what the
 # configuration computes - locals.accounts in terraform-live/identity/sso/, keyed on
 # the same vocabulary as scripts/tfhygiene/backend.py. It is resolved here through the
 # account NAME, which is the only handle the API offers, and the five rows of that map
