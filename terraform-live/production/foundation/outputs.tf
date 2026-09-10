@@ -60,12 +60,9 @@ output "tier_security_group_ids" {
   value       = module.vpc.tier_security_group_ids
 }
 
-# Stage 6c pass 2 - read by every slice that associates a VPC into them, and by 2.5's
-# authorizations. The old two above stay until step 2.6 retires their zones.
-# `prod_internal_zone_id` AND `pages_internal_zone_id` STOOD HERE UNTIL STEP 2.6 (2026-09-07) and
-# went with the zones. Their one consumer outside this slice was `production/probes/`, whose two
-# `[E]` records now live in the apex below - and the apex is what a spoke associates with, so this
-# is the only zone id that crosses an account boundary from here.
+# Stage 6c pass 2 - read by every slice that associates a VPC into these zones, and by 2.5's
+# authorizations. `production/probes/`'s two `[E]` records live in the apex, and the apex is what a
+# spoke associates with, so this is the only zone id that crosses an account boundary from here.
 output "awsds_internal_zone_id" {
   description = "The awsds.internal apex - the shared names, associated into all five VPCs (INT-22)."
   value       = aws_route53_zone.awsds_internal.zone_id

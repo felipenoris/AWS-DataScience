@@ -86,11 +86,11 @@ variable "account_folder" {
   nullable    = false
 }
 
-# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from ONE list in
+# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from one list in
 # scripts/tfhygiene/backend.py so a requester and an accepter can never disagree about which
 # peerings exist. A slice can hold both roles: production/foundation requests one and accepts
-# another. `same_account` decides the SHAPE - within an account a single resource with
-# auto_accept is the whole handshake; across one it is a requester, an accepter and two applies.
+# another. `same_account` decides the shape: within an account a single resource with auto_accept
+# is the whole handshake, across one it is a requester, an accepter and two applies.
 variable "peerings" {
   description = "The peering matrix, projected onto this slice. Generated - never authored here."
   type = list(object({

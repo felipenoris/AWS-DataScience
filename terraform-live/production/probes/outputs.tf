@@ -1,6 +1,6 @@
-# Outputs - for reading the probe, never for anchoring. Everything in this slice is [E] and
-# is gone by the end of the sitting; the two addresses below are new on every apply, which is
-# exactly why the source slice reaches this host BY NAME and not by any value here.
+# Outputs - for reading the probe, never for anchoring. Everything in this slice is [E] and is gone
+# by the end of the sitting; the two addresses below are new on every apply, which is why the
+# source slice reaches this host by name and not by any value here.
 
 output "instance_id" {
   description = "The target's instance id - the argument to `aws ec2 get-console-output --latest`, which is the only reading path: no SSM endpoints exist in this account (step 8.7 lists them as not-here-yet), so Session Manager is not available."
