@@ -1,18 +1,18 @@
 # Lessons carried forward
 
-**The one file here whose content is not recoverable from anywhere else.** These are findings from the
-planning period that re-reading the plan will not give back. Add to this list only what would otherwise
-be relearned the hard way.
+These are findings from the planning period that re-reading the plan will not give back. Add to this
+list only what would otherwise be relearned the hard way.
 
-Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the titles so a
-lesson can be *recognised* without opening this file; the reasoning that makes each one usable is here.
+Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the titles so a lesson
+can be recognised without opening this file; the reasoning that makes each one usable is here.
 
 ---
 
 1. **A copy of governed data landing somewhere less governed is not a hole to be closed.** It is a
    property of every SageMaker installation, not something D18 introduced. The control is the data
-   perimeter (`docs/plan/architecture.md` §4.2), which stops the copy leaving the organization; preventing the copy was never the
-   control. The first answer given on this got it wrong and treated it as a newly opened gap.
+   perimeter (`docs/plan/architecture.md` §4.2), which stops the copy leaving the organization;
+   preventing the copy was never the control. The first answer given on this treated it as a newly
+   opened gap.
 2. **A stand-in that shares an account with the thing it de-risks proves nothing about permissions.** A
    `staging` Glue namespace *inside* Production was once invented to substitute for a Staging account: it
    shared an IAM surface and a blast radius with its own subject, so it could catch a schema error and
@@ -23,9 +23,10 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    pinned the Data Governance bucket policies to the consumers' `aws:SourceVpce`, but interface endpoints
    are `[E]` (new IDs on every `make up`) and since D22 live in a *different* account, so nothing would
    ever repair them. Anchor on the `[P]` S3 **gateway** endpoint, or on `aws:SourceVpc`.
-4. **State that lives only inside an `[E]` resource is this design's recurring failure mode** (`docs/plan/conventions.md` §5.1 rule
-   2). Three hits already — EFS, the Studio domain, MWAA's metadata database — and it will recur for
-   every stateful service considered for the `make up`/`make down` cadence. Check it before adopting one.
+4. **State that lives only inside an `[E]` resource is this design's recurring failure mode**
+   (`docs/plan/conventions.md` §5.1 rule 2). Three hits already — EFS, the Studio domain, MWAA's
+   metadata database — and it will recur for every stateful service considered for the `make up`/`make
+   down` cadence. Check it before adopting one.
 5. **An intention is not a control.** "No compute in Data Governance" was written down for a whole
    revision before anyone noticed the `Data` OU SCP never denied Glue jobs (D25). Likewise the three Lake
    Formation shares assumed organization-wide RAM sharing and cross-account version 3+ that no stage
@@ -49,11 +50,12 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
 9. **The axis question applies to people as well as to resources.** The same pass that moved the domain
    onto the ownership axis split the `Manager` persona along it: **Deployment Manager** (lifecycle —
    approves releases) and **Governance Manager** (ownership — approves data access). This had been
-   written into `docs/plan/institutional-delta.md` as "what an institution would do, notational here" a few hours earlier, and that was
-   wrong: with one persona, a single human writes a job that reads restricted data, approves its release
-   **and** approves its access to that data. Three acts, one signature. Never assign one person to both
-   groups. The related trap: the governance manager must **not** have blanket read on the data they gate
-   — an approver who can already read everything is not exercising a control.
+   written into `docs/plan/institutional-delta.md` as "what an institution would do, notational here" a
+   few hours earlier, and that was wrong: with one persona, a single human writes a job that reads
+   restricted data, approves its release and approves its access to that data. Three acts, one
+   signature. Never assign one person to both groups. The related trap: the governance manager must not
+   have blanket read on the data they gate — an approver who can already read everything is not
+   exercising a control.
 10. **Before placing a new resource in an account, ask which axis it is on — and check whether a
    *registry* is being confused with a *runtime*.** D26's first draft put the Unified Studio domain in
    Development because that is where people work. Wrong: a domain holds projects, profiles, blueprints
@@ -76,16 +78,17 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    tier of every product feature a *control* depends on, separately from the features the workflow merely
    prefers.
 13. **A verification command that returns empty on both success and failure is not a verification.** Stage
-   1d's deliverable (Stage 1b's, when it was written) proposed `aws ram get-resource-share-associations` as the proof that organization-wide
-   sharing was enabled; with no share yet created it returns an empty list in both cases. This is the
-   detection-side twin of Lesson 5: an intention is not a control, and a command that cannot fail is not a
-   check. Before writing a deliverable, ask what its output looks like when the thing is *broken*.
+   1d's deliverable (Stage 1b's, when it was written) proposed `aws ram get-resource-share-associations`
+   as the proof that organization-wide sharing was enabled; with no share yet created it returns an
+   empty list in both cases. This is the detection-side twin of Lesson 5: an intention is not a control,
+   and a command that cannot fail is not a check. Before writing a deliverable, ask what its output
+   looks like when the thing is *broken*.
 
-    **ITS QUIETER HALF, MEASURED 2026-09-06 AND WRITTEN OUT AS LESSON 48**: the resource
+    Its quieter half, measured 2026-09-06 and written out as Lesson 48: the resource
     need not move at all — its **name** moving is enough, when another account resolves it by
     tag, alias or path rather than by id. Stage 6c step 1.1 re-labelled a VPC, every id was
-    unchanged, its gate passed, and two other accounts broke until somebody happened to run a
-    plan in one of them.
+    unchanged, its gate passed, and two other accounts broke until somebody ran a plan in one
+    of them.
 
 14. **A condition that has to appear in N places by hand is a control that will be missing from one of
    them.** The case that produced this was D30's blanket carve-out — a principal exempt from every custom
@@ -116,93 +119,93 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
      turns out not to exist where X assumes it does".
 16. **A manual step delegated to a console wizard is only as specified as the fields it names — and an
    unnamed field that grants permissions is a permission decision made by whoever is at the keyboard.**
-   This one was caught by execution rather than by review, which is the point of writing it down. Stage 1a
-   step 4 read "create the accounts through Account Factory, using the e-mails in `secrets/emails.md`" —
-   complete-sounding, and wrong: the wizard asks for a **second** address under **Access configuration**,
-   and AWS's wording for it is that the user *"will have administrative access to the account you're
-   provisioning"*. The plan named one e-mail and the form has two, so the obvious answer — reuse the
-   account's own address — would have made a root e-mail a federated administrator on every vended account, two
-   steps before the same stage removes root credentials centrally. D32 settles the value. **The general
-   form:** for every manual step, write down **every required field and the value it takes**, not only the
-   fields the plan already has an opinion about. The unnamed ones do not stay unanswered; they get answered
-   by whoever is executing, at the moment they least want to be designing identity. The tell is a step
-   whose verb is "create X **using** Y" — `using` almost always hides a form.
+   This one was caught by execution rather than by review. Stage 1a step 4 read "create the accounts
+   through Account Factory, using the e-mails in `secrets/emails.md`" — complete-sounding, and wrong: the
+   wizard asks for a **second** address under **Access configuration**, and AWS's wording for it is that
+   the user *"will have administrative access to the account you're provisioning"*. The plan named one
+   e-mail and the form has two, so the obvious answer — reuse the account's own address — would have made
+   a root e-mail a federated administrator on every vended account, two steps before the same stage
+   removes root credentials centrally. D32 settles the value. The general form: for every manual step,
+   write down every required field and the value it takes, not only the fields the plan already has an
+   opinion about. The unnamed ones do not stay unanswered; they get answered by whoever is executing, at
+   the moment they least want to be designing identity. The tell is a step whose verb is "create X
+   **using** Y" — `using` almost always hides a form.
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next
    step depends on one.** Lesson 16 is about fields a wizard *asks* about; this is the class it does not
    cover, because the wizard never asks. Enabling Control Tower created an Identity Center user,
-   `AWS Control Tower Admin`, holding administrative access to the Management account under the **root
-   account's e-mail address** — the very collision D32 refuses for vended accounts, arrived at from the
-   other side, and it surfaced only because an invitation e-mail landed in an inbox. Its twin finding is the
-   opposite shape: the root user, which had done every step so far, **cannot use Account Factory at all**
+   `AWS Control Tower Admin`, holding administrative access to the Management account under the root
+   account's e-mail address — the collision D32 refuses for vended accounts, arrived at from the other
+   side, and it surfaced only because an invitation e-mail landed in an inbox. Its twin finding is the
+   opposite shape: the root user, which had done every step so far, cannot use Account Factory at all
    (documented), so a step written as "create the accounts through Account Factory" was not executable by
-   the identity that was executing the stage. **The general form:** after enabling any service that
-   provisions identity or federation, list the principals that now exist and ask of each one *which of this
-   plan's personas is it* — the honest answer is often "none, and it is an administrator". And for any
-   manual step, say **which identity performs it**, not only what it does; "whoever has the console" is not
-   an identity, and the console the previous step accepted is not evidence about the next one. D33 settles
+   the identity that was executing the stage. The general form: after enabling any service that provisions
+   identity or federation, list the principals that now exist and ask of each one *which of this plan's
+   personas is it* — the honest answer is often "none, and it is an administrator". And for any manual
+   step, say which identity performs it, not only what it does; "whoever has the console" is not an
+   identity, and the console the previous step accepted is not evidence about the next one. D33 settles
    both halves.
-   **The expensive part is downstream, and it is what makes this worth a lesson of its own.** Stage 1a step
-   3 described what Control Tower creates on the *account* axis — the Organization, Log Archive, Audit,
-   CloudTrail, Config — and said nothing on the *identity* axis. So two later steps were written against a
-   state that was never going to hold: 1b step 2 said "create the users and the groups" and 1b step 3 said
-   "create permission sets: `AdministratorAccess`, …" **in a directory that already contains Control Tower's
-   groups and a permission set named `AWSAdministratorAccess`** — four characters away, also granting
-   administrator, and an assignment against the wrong one still works, so nothing would have reported it.
-   A missing enumeration does not stay local: it becomes a wrong assumption in every step that reads the
-   same resource later. **When a step ends with "X now exists", enumerate what X *contains*, on every axis,
-   not only the one the step was about.**
-18. **A policy never constrains the principal that authors it.** Lesson 11 says that changing *who authors*
-   an IAM policy invalidates every claim made about that policy; this is the same fact from the other side,
-   and it holds permanently rather than being triggered by a change. Every control in this design — the two
-   approvers' denials, the derived zone's CMK, the OU policy sets, the permissions boundaries — is written by
-   the infrastructure user and applied under its credentials. "Can a data scientist read the derived zone?"
-   has an answer; the same question about the identity that owns the key policy does not, and it went unasked
-   until someone read `docs/ORGANIZATION.md` and noticed that the persona with the thinnest description was the
-   one holding administrator everywhere. **The general form:** for each control, name the principal that
-   authors it, exclude that principal from the claim, and then ask what is *left* holding it. The answer is
-   almost always detective — a log that principal cannot edit, an alarm on the membership that would grant
-   the reach, an object lock its own administrator cannot lift — and the useful move is to enumerate those
-   three rather than to attempt a preventive control that the author would simply rewrite. **The tell** is a
-   separation-of-duties table whose rows are all *approvers*: the builder is missing from it not because it
-   was cleared, but because the table was written about approval and the builder does not approve. The
-   related tell, cheaper to spot: **the persona with the shortest section in the document is usually the one
-   with the widest reach**, because reach that nobody had to argue for is reach nobody wrote down.
+   The expensive part is downstream. Stage 1a step 3 described what Control Tower creates on the *account*
+   axis — the Organization, Log Archive, Audit, CloudTrail, Config — and said nothing on the *identity*
+   axis. So two later steps were written against a state that was never going to hold: 1b step 2 said
+   "create the users and the groups" and 1b step 3 said "create permission sets: `AdministratorAccess`, …"
+   in a directory that already contains Control Tower's groups and a permission set named
+   `AWSAdministratorAccess` — four characters away, also granting administrator, and an assignment against
+   the wrong one still works, so nothing would have reported it. A missing enumeration does not stay
+   local: it becomes a wrong assumption in every step that reads the same resource later. When a step ends
+   with "X now exists", enumerate what X *contains*, on every axis, not only the one the step was about.
+18. **A policy never constrains the principal that authors it.** Lesson 11 says that changing *who
+   authors* an IAM policy invalidates every claim made about that policy; this is the same fact from the
+   other side, and it holds permanently rather than being triggered by a change. Every control in this
+   design — the two approvers' denials, the derived zone's CMK, the OU policy sets, the permissions
+   boundaries — is written by the infrastructure user and applied under its credentials. "Can a data
+   scientist read the derived zone?" has an answer; the same question about the identity that owns the key
+   policy does not, and it went unasked until someone read `docs/ORGANIZATION.md` and noticed that the
+   persona with the thinnest description was the one holding administrator everywhere. The general form:
+   for each control, name the principal that authors it, exclude that principal from the claim, and ask
+   what is *left* holding it. The answer is almost always detective — a log that principal cannot edit, an
+   alarm on the membership that would grant the reach, an object lock its own administrator cannot lift —
+   so enumerate those three rather than attempt a preventive control the author would simply rewrite. The
+   tell is a separation-of-duties table whose rows are all *approvers*: the builder is missing because the
+   table was written about approval and the builder does not approve. The related tell, cheaper to spot:
+   the persona with the shortest section in the document is usually the one with the widest reach, because
+   reach that nobody had to argue for is reach nobody wrote down.
 19. **A blocking input has to be re-checked against the requirement it actually serves, not against the
-   mechanism that was chosen for it.** D15 needed *a certificate a client would trust*. The mechanism chosen
-   was *a public domain*, and from then on the plan tracked the mechanism: "the domain name" sat for weeks as
-   the one input needed from the user, blocking Stage 7, listed in `CLAUDE.md`, in `open-questions.md` and in
-   two stage files. It survived because it was never re-derived — nobody asked again what the certificate was
-   *for*, and the answer, once asked, was "three clients we build ourselves", which needs no public trust
-   chain at all. The trigger that exposed it was unrelated: `CLAUDE.md` gained a line saying GitLab is
-   intranet-only, and the mechanism's whole premise went with it. **The general form:** when a requirement is
-   restated — especially when it is *narrowed* — walk the decisions downstream of it and ask which of them
-   were solving the old, wider version. And there is a second half worth the same attention: deferring the
-   mechanism turned out to *improve* the design rather than merely postpone it, because a public certificate
-   publishes its names to Certificate Transparency logs. **A prerequisite that has quietly become optional is
-   usually also carrying a cost nobody has priced**, since nothing was forcing anyone to look at it.
+   mechanism that was chosen for it.** D15 needed *a certificate a client would trust*. The mechanism
+   chosen was *a public domain*, and from then on the plan tracked the mechanism: "the domain name" sat
+   for weeks as the one input needed from the user, blocking Stage 7, listed in `CLAUDE.md`, in
+   `open-questions.md` and in two stage files. It survived because it was never re-derived — nobody asked
+   again what the certificate was *for*, and the answer, once asked, was "three clients we build
+   ourselves", which needs no public trust chain at all. The trigger that exposed it was unrelated:
+   `CLAUDE.md` gained a line saying GitLab is intranet-only, and the mechanism's premise went with it. The
+   general form: when a requirement is restated — especially when it is *narrowed* — walk the decisions
+   downstream of it and ask which of them were solving the old, wider version. The second half deserves
+   the same attention: deferring the mechanism improved the design rather than merely postponing it,
+   because a public certificate publishes its names to Certificate Transparency logs. A prerequisite that
+   has quietly become optional is usually also carrying a cost nobody has priced, since nothing was
+   forcing anyone to look at it.
 
 20. **When several policies deny the same call, only one of them is proven — the others are attached, not
    exercised.** Stage 1c step 7.6 parked all four per-OU documents on `Policy Test` at once and ran the
    battery there. Every probe was denied and every denial named a policy id in the API error itself, so the
    run looked complete. It was not: `awsds-org-scp-ou-interactive`'s two actions are also denied by the
-   `Workloads` document and matched by the `Identity` document's `sagemaker:Create*`, and AWS names **one**
-   matching policy — so that document decided nothing, and a document that never decides is a document whose
-   condition, `Sid` and action spelling have never been evaluated. **The tell is cheap and worth looking for
-   by name: a candidate that appears in *no* probe's attribution column.** The fix is not more probes but the
-   right target — moved to `Interactive`, where nothing else denies `CreateNotebookInstance`, it was proven
-   in one call. **The general form:** overlapping denies compose into a *result* that is indistinguishable
-   from any one of them working, which is Lesson 13's shape moved from the verification into the policy set —
-   and the same argument applies to a deny you inherit from the root while testing an OU-level candidate.
-   **The other half, and it is the reason to keep doing it this way:** the composed run was still worth
-   running, because the *must still succeed* half only gets stricter under composition, and the denial
-   message naming the policy id is what let the gap be spotted at all rather than assumed away.
-   **A second instance arrived at 7.7 and it is sharper than the first, because there the attribution
-   answered a question nobody had asked.** `Sandboxes` was given its own enabled control, and the probe run
+   `Workloads` document and matched by the `Identity` document's `sagemaker:Create*`, and AWS names one
+   matching policy — so that document decided nothing, and a document that never decides is a document
+   whose condition, `Sid` and action spelling have never been evaluated. The tell is cheap and worth
+   looking for by name: a candidate that appears in *no* probe's attribution column. The fix is not more
+   probes but the right target — moved to `Interactive`, where nothing else denies `CreateNotebookInstance`,
+   it was proven in one call. The general form: overlapping denies compose into a *result* that is
+   indistinguishable from any one of them working, which is Lesson 13's shape moved from the verification
+   into the policy set, and the same argument applies to a deny you inherit from the root while testing an
+   OU-level candidate. The composed run was still worth running: the *must still succeed* half only gets
+   stricter under composition, and the denial message naming the policy id is what let the gap be spotted
+   at all rather than assumed away.
+   A second instance arrived at 7.7, where the attribution answered a question nobody had asked.
+   `Sandboxes` was given its own enabled control, and the probe run
    in `awsds-infra-sandbox-1` came back denied — naming `Interactive`'s policy, not the new one. The
    question under test was *is this nested OU a registered target*, and what the probe measured was
    *coverage*, which inheritance had already guaranteed and which would have looked identical had the
-   enablement silently failed. **A probe cannot distinguish a control you just added from a deny you
-   already had**; the OU's attached-policy list is what answered it. Read the *configuration* when the
+   enablement silently failed. A probe cannot distinguish a control you just added from a deny you
+   already had; the OU's attached-policy list is what answered it. Read the *configuration* when the
    question is about configuration, and keep probes for behaviour.
 
 21. **"The service validates before authorizing" is a property of the *action*, not of the service — so a
@@ -210,54 +213,54 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    already met the wall twice and generalised it one step too far: `ec2:ModifySnapshotAttribute` and
    `datazone:CreateDomain` both rejected invented inputs before authorization, so the amendment of 7.5a was
    written expecting the same of every EC2 and RDS probe. In one run, in one account, three different
-   answers came back: `ec2:ExportImage` and `ec2:CreateInstanceExportTask` authorized against a **malformed**
+   answers came back: `ec2:ExportImage` and `ec2:CreateInstanceExportTask` authorized against a malformed
    AMI id and returned the deny; `ec2:CreateStoreImageTask` rejected that same id shape and only reached
-   authorization once a **real public AMI** was passed; `ec2:StartInstances` never reached it at any id
+   authorization once a real public AMI was passed; `ec2:StartInstances` never reached it at any id
    length. `ec2:CreateFleet` had been predicted untestable for want of a launch template and was denied
-   anyway, because `--dry-run` authorizes before resolving the template. **The cost of the wrong default is
-   asymmetric and that is what makes this a lesson**: recording *untested* too early leaves a statement that
-   is in fact exercised carried in the notes as unproven, and the next reader either re-tests it or, worse,
-   trusts the note and treats a live control as a gap. **The general form:** a negative result from a probe
-   is only a result once the probe has been given inputs that exist — the public AMI from SSM, a subnet from
-   `describe-subnets`, the account's own id in an ARN — and "the API validates first" is a claim about one
-   API call, to be re-established each time rather than inherited from the last one.
+   anyway, because `--dry-run` authorizes before resolving the template. The cost of the wrong default is
+   asymmetric: recording *untested* too early leaves a statement that is in fact exercised carried in the
+   notes as unproven, and the next reader either re-tests it or, worse, trusts the note and treats a live
+   control as a gap. The general form: a negative result from a probe is only a result once the probe has
+   been given inputs that exist — the public AMI from SSM, a subnet from `describe-subnets`, the account's
+   own id in an ARN — and "the API validates first" is a claim about one API call, to be re-established
+   each time rather than inherited from the last one.
 
 22. **A control whose principal the harness cannot produce is verified by *reading* the deployed document,
    not by attempting the call — and a green battery is silent about that whole class.** Stage 1c step 7.7
    enabled `AWS-GR_RESTRICT_ROOT_USER` on `Policy Test` without `ExemptAssumeRoot`, which denies
    `sts:AssumeRoot` into every account beneath it — 1a step 6's only member-account recovery path, since
-   6.4 had established that no member account holds root credentials at all. The battery ran **61 of 61 as
-   expected** in the same sitting and could not have found it: every principal this project can obtain is
+   6.4 had established that no member account holds root credentials at all. The battery ran 61 of 61 as
+   expected in the same sitting and could not have found it: every principal this project can obtain is
    an Identity Center role, and the statement's condition is `ArnLike aws:PrincipalArn = arn:*:iam::*:root`,
-   which no such role matches. The defect was found by reading `p-kve97k0o`. **The discriminator, to apply
-   while *writing* a verification rather than after:** can this harness produce a principal that satisfies
-   the condition? If not, the plan must state what to **read** and which string proves it, never what to
+   which no such role matches. The defect was found by reading `p-kve97k0o`. The discriminator, to apply
+   while *writing* a verification rather than after: can this harness produce a principal that satisfies
+   the condition? If not, the plan must state what to read and which string proves it, never what to
    attempt. Three statements in this project are already in that class — the root control
    (`aws:AssumedRoot`), the positive half of D27's catalog-maintenance carve-out (needs Stage 5's role to
    exist), and the positive half of the `aws:PrincipalIsAWSService` guard (needs a service principal) —
    and the counter-example proves the discriminator does work: decision 7's BPA carve-out names
    `InfrastructureAccess`, a principal that *does* exist, and was measured in both directions.
-   **What makes this worse than Lesson 21 rather than a variant of it:** a probe given a bad id at least
+   This is worse than Lesson 21 rather than a variant of it: a probe given a bad id at least
    reports `UNTESTED`, which is visible. A probe that structurally cannot exist reports nothing at all, and
    nothing reads as *fine* — the absence is indistinguishable from the case being covered. So the battery
    needs a companion list of what it cannot see, which is why
-   [`docs/plan/runbooks/scp-battery.md`](runbooks/scp-battery.md) now carries one. **The last half is a warning
-   against relief:** the omission cost almost nothing only because of an unrelated earlier decision — with
+   [`docs/plan/runbooks/scp-battery.md`](runbooks/scp-battery.md) now carries one. The omission cost almost
+   nothing only because of an unrelated earlier decision — with
    no root credentials anywhere, the unexempted control denied exactly and only the thing it was meant to
    exempt. That alignment was luck, not design, and will not repeat.
 23. **When a managed service creates artifacts on your behalf, the container is its implementation detail —
    bind to contents, never to the id or to the job the artifact was created for.** Control Tower emits each
    enabled control as an ordinary SCP, which is what made verification (vii) readable at all. But its
    *packing* is per enablement and is not consistent: in one console session, on the same day, the two
-   root-user controls were folded into the **original guardrail** document on `Policy Test`, `Workloads`
-   and `Interactive`, and into the **`CT.MULTISERVICE.PV.1`** document on `Identity` (`p-fw2pctqw`) and
+   root-user controls were folded into the original guardrail document on `Policy Test`, `Workloads`
+   and `Interactive`, and into the `CT.MULTISERVICE.PV.1` document on `Identity` (`p-fw2pctqw`) and
    `Data` (`p-pk85fvr1`). Nothing distinguished those two OUs; the same clicks produced two shapes. The
-   damage is not to the controls — they all work — but to **every record that named a document by its
-   job**: the log had those two ids written down as "the Region policy" for those OUs, and that sentence
-   became half-false the moment a second control was enabled. **The general form:** an artifact created for
+   damage is not to the controls — they all work — but to every record that named a document by its
+   job: the log had those two ids written down as "the Region policy" for those OUs, and that sentence
+   became half-false the moment a second control was enabled. The general form: an artifact created for
    you has an identity the service owns, may re-use, and may repack; its id, name and reason for existing
    are all outside your control, and only its *contents* are what you asserted. Read the `Sid` list.
-   **The tell** is prose that refers to a managed document by the job it was created for rather than by
+   The tell is prose that refers to a managed document by the job it was created for rather than by
    what is in it — and the same caution applies to anything else a service names for you, from
    `AWSReservedSSO_*` role suffixes to service-linked roles.
 24. **A harness authenticates through the mechanism it is measuring, so the one result it cannot report is
@@ -266,102 +269,97 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    statement naming `sts:AssumeRoleWithSAML` and `sts:TagSession`. Those are the only two actions the
    trust policy of an `AWSReservedSSO_*` role permits, so the deny did not restrict a perimeter — it made
    every permission-set role in all six member accounts unreachable, from the CLI and the access portal
-   alike. The battery contained **six probes written for exactly this** (`rcp floor: credentials still
+   alike. The battery contained six probes written for exactly this (`rcp floor: credentials still
    vend in …`), and not one of them could run: `ensure_session` tested credentials with a bare exit-code
    check and aborted the run as a *dead SSO session*, which is the hardening added after two mid-battery
    token expiries. The earlier lesson's fix produced this lesson's blindness, and it did so silently,
-   because at the exit code an expired token and a denied sign-in are the same event. **The discriminator,
-   to apply while writing a verification rather than after:** what does the harness itself need in order
+   because at the exit code an expired token and a denied sign-in are the same event. The discriminator,
+   to apply while writing a verification rather than after: what does the harness itself need in order
    to report at all — credentials, a network path, a role — and can the change under test reach it? If it
    can, the verification cannot live inside that path. Here the outside instruments were the two that do
-   not depend on it: **Management, which RCPs do not affect by construction**, and reading the trust
-   policy of the role. **A second trap sits behind the first, and it is what makes a bad attach look
-   fine:** a vended role credential lives four hours in `~/.aws/cli/cache`, so nothing fails at attach
+   not depend on it: Management, which RCPs do not affect by construction, and reading the trust
+   policy of the role. A second trap sits behind the first and makes a bad attach look
+   fine: a vended role credential lives four hours in `~/.aws/cli/cache`, so nothing fails at attach
    time — the probes run against a session minted before the policy existed and pass. Anything touching
    the sign-in path has to be tested against a *fresh* vend, which means invalidating that cache first.
-   **Against Lesson 22**, which is its neighbour and not its twin: there the harness cannot *produce* the
+   Against Lesson 22, its neighbour and not its twin: there the harness cannot *produce* the
    principal a control names, and the silence is a row that was never written; here the harness cannot
    *survive* the control, and the silence is an abort that confidently names the wrong cause — the worse
    of the two, because it comes with an explanation. The script now reads the error wording, stops only
    on an expiry, and records anything else as a floor breach with every probe behind it marked untested;
-   the general form outlives this project, and applies to any test rig that signs in through the system
-   it is testing.
+   the general form applies to any test rig that signs in through the system it is testing.
 
-   **AMENDED 2026-08-20 — the wording fork above is necessary and it is not sufficient, and the missing
-   half is where to look rather than how to read.** The fix this lesson produced classifies by error
-   text: expiry stops the run, anything else is recorded as a floor breach. Then a sitting arrived where
-   `aws sso login` reported success and every `awsds-*` profile failed with
-   `ForbiddenException … GetRoleCredentials … No access` — **the exact wording of 2026-08-14**, and this
-   time nothing was wrong with the organization: the browser had silently re-approved a live portal
-   session belonging to a *different* human, and the token cache is keyed by **sso-session name, never by
-   user**, so the wrong identity's token had come to occupy the right identity's slot. One wording, two
-   causes, and they demand opposite handling — record the most serious finding the harness can produce,
-   or stop and record nothing. **Adding a second text rule would have repeated this lesson in reverse**:
-   any pattern narrow enough to recognise the operator's mistake also matches the real breach, because
-   the two produce the same sentence *by construction* — the ceiling denies the sign-in flow, and a
-   sign-in flow with no assignment behind it is refused by the same call for the same reason shape.
-   **So the discriminator cannot be a better reading of the answer; it has to be a different question,
-   put to a system whose path does not traverse the mechanism under measurement.** Here that is Identity
-   Center's own listing of what the token is assigned (`sso:ListAccountRoles` against the cached token):
-   it never reaches STS, so no SCP and no RCP can shape it. Assigned but refused is the ceiling and the
-   finding stands; not assigned is an operator's click and nothing about the estate. **The third state
-   is the one that makes it safe to use** — "could not tell" must keep the finding, because a hidden
-   breach costs an incident and a spurious one costs an investigation. Note the continuity with the
-   parent lesson: its instruments were also chosen for being *outside* the path (Management, which RCPs
-   cannot reach; the role's trust policy, which is a read of configuration rather than an exercise of
-   it). The amendment only names the rule those choices were already following, and generalises it past
-   sign-in: **whenever a negative result has more than one origin, the separating evidence must come from
-   a channel the tested mechanism cannot influence.** A corollary worth carrying on its own: an
+   **The wording fork above is necessary and not sufficient; the missing half is where to look, not how
+   to read.** The fix this lesson produced classifies by error text: expiry stops the run, anything else
+   is recorded as a floor breach. On 2026-08-20 `aws sso login` reported success and every `awsds-*`
+   profile failed with `ForbiddenException … GetRoleCredentials … No access` — the exact wording of
+   2026-08-14, and this time nothing was wrong with the organization: the browser had silently
+   re-approved a live portal session belonging to a *different* human, and the token cache is keyed by
+   **sso-session name, never by user**, so the wrong identity's token had come to occupy the right
+   identity's slot. One wording, two causes, and they demand opposite handling — record the most serious
+   finding the harness can produce, or stop and record nothing. A second text rule would repeat this
+   lesson in reverse: any pattern narrow enough to recognise the operator's mistake also matches the
+   real breach, because the two produce the same sentence *by construction* — the ceiling denies the
+   sign-in flow, and a sign-in flow with no assignment behind it is refused by the same call for the same
+   reason shape. So the discriminator cannot be a better reading of the answer; it has to be a different
+   question, put to a system whose path does not traverse the mechanism under measurement. Here that is
+   Identity Center's own listing of what the token is assigned (`sso:ListAccountRoles` against the cached
+   token): it never reaches STS, so no SCP and no RCP can shape it. Assigned but refused is the ceiling
+   and the finding stands; not assigned is an operator's click and nothing about the estate. The third
+   state is what makes it safe to use: "could not tell" must keep the finding, because a hidden breach
+   costs an incident and a spurious one costs an investigation. The parent lesson's instruments were
+   chosen the same way, for being *outside* the path (Management, which RCPs cannot reach; the role's
+   trust policy, which is a read of configuration rather than an exercise of it). The rule generalises
+   past sign-in: **whenever a negative result has more than one origin, the separating evidence must come
+   from a channel the tested mechanism cannot influence.** A corollary: an
    operator-side mistake can present as an estate-wide finding, so before a harness writes down a breach
-   in *every* account at once, it is worth asking what single local thing could produce that same
-   uniformity.
+   in *every* account at once, ask what single local thing could produce that same uniformity.
 
-   **WIDENED THE SAME DAY, by a second instance that arrived within the hour and did not fit the sentence
-   above.** Pass 4e denied `athena:StartQueryExecution` and probed it. The refusal has exactly **one**
-   origin — the SCP — so "more than one origin" does not describe it; what it has is **no attribution in
-   its own text**: Athena answers with a bare *"You are not authorized to perform: … on the resource"*,
-   naming no policy and no id. The battery's `classify()` has read wording since Stage 1c and files a
-   policy-less `AccessDenied` as `DENY-NOT-SCP`, *"an IAM/permission-set deny, not the ceiling"* — sound
-   reasoning, wrong here, and **unfixable by any pattern, because the service never emits the string the
-   pattern would need.** Every probe written before this one happened to hit a service that names the
-   document, so the assumption was invisible for eleven weeks. The remedy was the same one and it was
-   reached faster for having been written down: attribution by a **contrast probe** — the same call, same
-   principal type, same region, one session, from an account in an OU the amendment does not reach; it
-   passed authorization, so the two refusals can only be the ceiling. **So the rule is not about
-   ambiguity, it is about locus**: *when a result cannot be attributed from its own text — because the
-   text is ambiguous OR because it is silent — the attribution must come from a channel the tested
-   mechanism cannot influence.* Two consequences worth acting on. **A probe's expected wording is an
-   assumption about the SERVICE, not about the control**, and it is worth stating when writing the probe,
-   because it is the kind that holds for years and then does not. And **do not fix this by loosening the
-   classifier**: teaching it to read a policy-less deny as the ceiling would misread every genuine IAM
-   deny in the battery, so those two rows are left reporting `note` rather than `ok`, permanently and on
-   purpose, with the contrast probe beside them carrying the meaning.
+   A second instance the same day did not fit the sentence above. Pass 4e denied
+   `athena:StartQueryExecution` and probed it. The refusal has exactly one origin — the SCP — so
+   "more than one origin" does not describe it; what it has is no attribution in its own text: Athena
+   answers with a bare *"You are not authorized to perform: … on the resource"*, naming no policy and no
+   id. The battery's `classify()` has read wording since Stage 1c and files a policy-less `AccessDenied`
+   as `DENY-NOT-SCP`, *"an IAM/permission-set deny, not the ceiling"* — sound reasoning, wrong here, and
+   unfixable by any pattern, because the service never emits the string the pattern would need. Every
+   probe written before this one happened to hit a service that names the document, so the assumption was
+   invisible for eleven weeks. The remedy was the same one, reached faster for having been written down:
+   attribution by a **contrast probe** — the same call, same principal type, same region, one session,
+   from an account in an OU the amendment does not reach; it passed authorization, so the two refusals
+   can only be the ceiling. The rule is about locus, not ambiguity: *when a result cannot be
+   attributed from its own text — because the text is ambiguous or because it is silent — the attribution
+   must come from a channel the tested mechanism cannot influence.* Two consequences worth acting on. A
+   probe's expected wording is an assumption about the service, not about the control, worth stating
+   when writing the probe, because it is the kind that holds for years and then does not. And do not
+   fix this by loosening the classifier: teaching it to read a policy-less deny as the ceiling would
+   misread every genuine IAM deny in the battery, so those two rows are left reporting `note` rather than
+   `ok`, permanently and on purpose, with the contrast probe beside them carrying the meaning.
 
-   **A THIRD OCCURRENCE (2026-08-22, Stage 6's trust defect) EXTENDED THE PROGRESSION ONE STEP: ambiguous
-   text → silent text → ABSENT EVENT.** Both SMUS service-role trusts pinned the member account where the
+   A third occurrence — Stage 6's trust defect, 2026-08-22 — extends the progression one step: ambiguous
+   text → silent text → absent event. Both SMUS service-role trusts pinned the member account where the
    documented guard wants the domain account, so the service could never assume them — and the observation
-   channel itself was empty: a cross-account service `AssumeRole` denial leaves **no CloudTrail event in
-   the target account**. There was no wording to read, no exit code to misread, nothing. The outside
-   channel that carried the attribution was the **documentation** — the published trust contract for
+   channel itself was empty: a cross-account service `AssumeRole` denial leaves no CloudTrail event in
+   the target account. There was no wording to read, no exit code to misread, nothing. The outside
+   channel that carried the attribution was the documentation — the published trust contract for
    `AmazonSageMakerProvisioning-<domainAccountId>` names `aws:SourceAccount = the domain account` — read
-   against the deployed trust, Lesson 22's remedy arriving through Lesson 24's rule. The consequence worth
-   acting on: **when the failing principal is another account's service, plan the attribution as a reading
-   from the start**, because the trail on your side will structurally never carry the denial.
+   against the deployed trust, Lesson 22's remedy arriving through Lesson 24's rule. When the failing
+   principal is another account's service, plan the attribution as a reading from the start, because the
+   trail on your side will structurally never carry the denial.
 
-   **AMENDED 2026-08-23 — the same shape without a harness in it, and the instrument was a LOG.** Stage 6
+   The same shape without a harness in it, and the instrument was a log (2026-08-23). Stage 6
    step 4.3's session found the SMUS notebook unable to resolve `files.pythonhosted.org` while
    `pythonhosted.org` answered. The Resolver query log was read for attribution and reported, for every
-   failing name, `BLOCK` against **the queried name** with the catch-all list id — which reads, exactly
+   failing name, `BLOCK` against the queried name with the catch-all list id — which reads, exactly
    and only, as *"that name is not on the allow-list"*. It was not: the name was on the list, and what
-   the catch-all had matched was a **CNAME target one hop further down**, a name the log never prints. The
+   the catch-all had matched was a CNAME target one hop further down, a name the log never prints. The
    log also populates no `firewall_rule_action` on an ALLOW, so the allowed names looked un-evaluated
-   too — two ambiguities in one field, pointing the same wrong way. **A correct hypothesis was abandoned
-   on the strength of that reading**, which is this lesson's cost measured on its own terms. The
-   discriminator was again not a better reading but a different question: a **paired probe under an
-   identical rule shape**, run from a second host in the same VPC — `blobs.duckdb.org` (A records) against
+   too — two ambiguities in one field, pointing the same wrong way. A correct hypothesis was abandoned
+   on the strength of that reading, which is this lesson's cost measured on its own terms. The
+   discriminator was again not a better reading but a different question: a paired probe under an
+   identical rule shape, run from a second host in the same VPC — `blobs.duckdb.org` (A records) against
    `index.crates.io` (CNAME to a CDN), both under a wildcard of the same depth. Same rule, opposite
-   outcomes, one variable. **The general form for any log: a field naming the object you asked about is
-   not evidence about the object that matched**, and when a system resolves through a chain, indirection,
+   outcomes, one variable. The general form for any log: a field naming the object you asked about is
+   not evidence about the object that matched, and when a system resolves through a chain, indirection,
    or redirect, the log will name the entry point every time.
 
 25. **A borrowed session outlives the command that needed it, and every later error then describes the
@@ -369,99 +367,97 @@ lesson can be *recognised* without opening this file; the reasoning that makes e
    alone, so the credentials were assumed from Management and exported into the shell. The write was not
    made in that sitting. In the next one, three commands ran as that role without anybody choosing it:
    `list-accounts` was denied — correctly, since it is a management-account API and the caller was now in
-   Log Archive — and because the `&&` chain stopped there, the account variable stayed **empty** and the
+   Log Archive — and because the `&&` chain stopped there, the account variable stayed empty and the
    following command built `arn:aws:iam:::role/AWSControlTowerExecution`, producing a second
-   `AccessDenied` about the role failing to assume *itself*. **Two authorization errors, neither of them
-   an authorization problem, and both naming an account the operator had not selected.** The general form
-   has two halves and they compound. First: **an exported credential is ambient state with no visible
-   marker** — the prompt, the console tab and the CLI profile all still say what they said before, so the
+   `AccessDenied` about the role failing to assume *itself*. Two authorization errors, neither of them
+   an authorization problem, and both naming an account the operator had not selected. The general form
+   has two halves and they compound. First: an exported credential is ambient state with no visible
+   marker — the prompt, the console tab and the CLI profile all still say what they said before, so the
    only instrument is `get-caller-identity`, and `unset` of the three variables is the *pair* of assuming
-   them, not an optional tidy-up. Second: **a `&&` chain that carries an empty value forward converts a
-   missing input into an authorization failure**, which is strictly worse than crashing, because the error
+   them, not an optional tidy-up. Second: a `&&` chain that carries an empty value forward converts a
+   missing input into an authorization failure, which is strictly worse than crashing, because the error
    text is plausible and sends the reader to the policy instead of to the variable. Resolution steps abort
    on empty; borrowed sessions are unset in the same block that used them. Against Lesson 24, its
    neighbour: there the harness could not survive the control it measured; here the operator could not
    *see* the identity they were using, and the wrong identity was one they had legitimately created.
 
-   **The same blindness has a second entrance, and it is not duration but GRANULARITY** (2026-08-17,
-   caught by the user in review before it cost anything, while preparing Stage 4 step 8.3's
-   control-plane pair). Above, a credential *outlives* the command that needed it. Here the operator
-   performs the switch and the switch does not happen: **the AWS CLI caches an SSO token under the
-   `sso-session` NAME**, so profiles sharing a session share one identity, however many different
-   people those profiles were written for. Switching `AWS_PROFILE` changes the account and the role
-   being *requested* and changes nothing about *who is asking*. It does not vend the wrong credential
-   — `sso:GetRoleCredentials` is refused, because the token's user holds no such assignment — but it is
-   refused **by the portal at vending time**, which is a third failure mode dressed as the two the
-   reading was built to tell apart (Lesson 13's shape, arriving through the harness rather than through
-   the check). The rule that prevents it is one `sso-session` per **person**, which
-   [`aws/AWS-CLI.md`](../../aws/AWS-CLI.md) already stated and which this drafted config had quietly
-   broken by giving four different persona users one shared session. **The general form, and it is the
-   reason this sits under 25 rather than beside it:** ambient identity is invisible in exactly the
-   places that look authoritative — here the profile name, there the shell prompt — so the discriminator
-   is the same in both, `get-caller-identity` and the assumed-role ARN it prints, read *before* the
-   call that matters and not after it fails. **The corollary for anything shared by name:** ask what the
-   cache is keyed on, not what the flag you typed is named.
+   The same blindness has a second entrance: granularity, not duration (2026-08-17, caught by the
+   user in review while preparing Stage 4 step 8.3's control-plane pair). Above, a credential
+   *outlives* the command that needed it. Here the operator performs the switch and the switch does not
+   happen: the AWS CLI caches an SSO token under the `sso-session` name, so profiles sharing a session
+   share one identity, however many different people those profiles were written for. Switching
+   `AWS_PROFILE` changes the account and the role being *requested* and changes nothing about *who is
+   asking*. It does not vend the wrong credential — `sso:GetRoleCredentials` is refused, because the
+   token's user holds no such assignment — but it is refused by the portal at vending time, a third
+   failure mode dressed as the two the reading was built to tell apart (Lesson 13's shape, arriving
+   through the harness rather than through the check). The rule that prevents it is one `sso-session` per
+   person, which [`aws/AWS-CLI.md`](../../aws/AWS-CLI.md) already stated and which this drafted config had
+   quietly broken by giving four different persona users one shared session. The general form: ambient
+   identity is invisible in exactly the places that look authoritative — here the profile name, there the
+   shell prompt — so the discriminator is the same in both, `get-caller-identity` and the assumed-role
+   ARN it prints, read *before* the call that matters and not after it fails. The corollary for anything
+   shared by name: ask what the cache is keyed on, not what the flag you typed is named.
 
 26. **An "already exists" error is the cheapest authorization probe there is — and it proves nothing until
-   an unprivileged principal has been shown to get a different one.** Stage 2 step 5.0 had to establish that
-   the organization delegation reached its `Resource` list's **target** entries, and could not: the write it
-   had already run, `UpdatePolicy`, authorizes against the *policy* ARN alone, and the stage's only other
-   contact with attachments is an **import**, which calls nothing. The move was to attach a policy that was
-   **already attached** — `DuplicatePolicyAttachmentException` if authorization passed, `AccessDenied` if it
-   did not, and no possible mutation either way, because the end state is the state that already held. The
-   general form: **any create/attach/put with an idempotency conflict can be aimed at an existing object and
-   read as an authorization test**, which is how a preventive grant gets measured without exercising it for
-   real. **The half that is easy to skip is the one that makes it a measurement.** The reading holds only if
+   an unprivileged principal has been shown to get a different one.** Stage 2 step 5.0 had to establish
+   that the organization delegation reached its `Resource` list's target entries, and could not: the write
+   it had already run, `UpdatePolicy`, authorizes against the *policy* ARN alone, and the stage's only
+   other contact with attachments is an import, which calls nothing. The move was to attach a policy that
+   was already attached — `DuplicatePolicyAttachmentException` if authorization passed, `AccessDenied` if
+   it did not, and no possible mutation either way, because the end state is the state that already held.
+   The general form: any create/attach/put with an idempotency conflict can be aimed at an existing object
+   and read as an authorization test, which is how a preventive grant gets measured without exercising it
+   for real. The half that is easy to skip is what makes it a measurement. The reading holds only if
    IAM authorization runs *before* the service's own conflict check, and that ordering is a property of the
    action, not of AWS (Lesson 21, from the other side) — if it were reversed, a principal with no permission
    at all would receive the same conflict, and the probe would return the same answer on success and failure
-   (Lesson 13). So the probe is a **pair**: the call from the principal under test, and the same call from
+   (Lesson 13). So the probe is a pair: the call from the principal under test, and the same call from
    one known to hold nothing. Here the canary returned `AccessDeniedException`, which is what converted the
-   two conflicts into evidence. **And the shape has a boundary worth recognising rather than working
-   around:** an entry with no existing object to aim at — `account/…/*`, since nothing in this design is
+   two conflicts into evidence. The shape has a boundary: an entry with no existing object to aim at —
+   `account/…/*`, since nothing in this design is
    attached to an account — cannot be probed inertly at all, and stays a reading. That is the honest
    outcome, not a reason to create an object so the probe becomes available.
 
 27. **A declarative plan is silent about the values the provider owns — so the setting that has to be
    right *before anything else exists* is precisely the one Terraform will not promise.** Stage 5 step
-   5.2 rests entirely on D13: the lake's databases must be **born** without the `IAM_ALLOWED_PRINCIPALS`
+   5.2 rests entirely on D13: the lake's databases must be born without the `IAM_ALLOWED_PRINCIPALS`
    default grants, because those act at creation time and clearing them afterwards does not reach a
    database that already exists. That obligation is an *emptying*, and
    `aws_lakeformation_data_lake_settings` offers no way to write it. Three forms were tried against the
-   pinned provider and none of them states it: omitting both blocks plans as **`after_unknown: true`**,
+   pinned provider and none of them states it: omitting both blocks plans as `after_unknown: true`,
    which is Terraform declaring *no intention*; `create_database_default_permissions = []` is refused,
-   because they are blocks and not arguments; a `{}` block would declare **one** entry with computed
+   because they are blocks and not arguments; a `{}` block would declare one entry with computed
    fields, which is not zero. So the security property the stage exists to establish could not be
-   expressed at all, and the plan rendered **identically** in the case where the apply would clear the
-   defaults and the case where it would leave them standing. **That is Lesson 13's shape moved into the
-   plan itself** — the artifact you read *before* acting cannot distinguish the two outcomes, which is
+   expressed at all, and the plan rendered identically in the case where the apply would clear the
+   defaults and the case where it would leave them standing. That is Lesson 13's shape moved into the
+   plan itself: the artifact you read *before* acting cannot distinguish the two outcomes, which is
    worse than a verification that cannot, because the plan is what authorises the apply.
-   **The discriminator is one command on a plan you already have**, and the obvious route does not work:
-   `terraform providers schema -json` marks `computed` on attributes and **never on `block_types`**, so
+   The discriminator is one command on a plan you already have, and the obvious route does not work:
+   `terraform providers schema -json` marks `computed` on attributes and never on `block_types`, so
    the schema cannot answer it for blocks. The plan can:
 
    ```bash
    terraform show -json <plan>.tfplan | jq '.resource_changes[] | select(.address=="<addr>") | .change.after_unknown'
    ```
 
-   Anything coming back `true` is decided by the **provider**, not by your configuration. Ask it on a
+   Anything coming back `true` is decided by the provider, not by your configuration. Ask it on a
    create-or-update plan — on a `no-op` everything is known from state and the answer is `{}`. If the
-   cleared state of one of those is load-bearing, the apply must be **split so the result can be read
-   before anything depends on it**, which is why [Recipe D](runbooks/terraform-changes.md) now exists.
-   **The class is recognisable in advance, and that is the half worth carrying.** The exposed resources
-   are the **account-level settings singletons** — the ones that create nothing and overwrite
+   cleared state of one of those is load-bearing, the apply must be split so the result can be read
+   before anything depends on it, which is why [Recipe D](runbooks/terraform-changes.md) now exists.
+   The class is recognisable in advance. The exposed resources are the account-level settings singletons
+   — the ones that create nothing and overwrite
    server-side state that AWS, not you, initialised: `aws_lakeformation_data_lake_settings` here, and by
    the same shape `aws_s3_account_public_access_block`, `aws_ebs_encryption_by_default`, and most things
    named `*_default_*`. They have no create, only a put, so whatever you omit either keeps what was
    there before you existed or does not, and only the provider's implementation says which.
-   **And the good outcome is a measurement of one provider version, not a property of Terraform.**
+   The good outcome is a measurement of one provider version, not a property of Terraform.
    Omission turned out to clear (`DbDefaults: []`, then verified per database: no `IAMAllowedPrincipals`
    grant anywhere). That was obtained by looking, the plan still does not state it, and the next
    provider version can change it in silence with nothing failing — so the read-back is kept rather than
-   the split being collapsed. **Against Lesson 5**, its nearest neighbour: there a property was written
+   the split being collapsed. Against Lesson 5, its nearest neighbour: there a property was written
    down and no policy line enforced it; here the property could not be *written down at all*, and the
-   tell is different — not a stated intention missing its enforcing line, but a `plan` that renders the
-   same text whether the intention will hold or not.
+   tell is a `plan` that renders the same text whether the intention will hold or not, rather than a
+   stated intention missing its enforcing line.
 
 28. **When a service keeps its own permission layer above IAM, a principal's reach is the
    *intersection* — and this repository's layout puts the two halves in different slices, so a slice

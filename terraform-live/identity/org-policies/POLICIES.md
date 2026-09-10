@@ -1,17 +1,16 @@
 # Organization policies — every statement in `policies/`, and what it is for
 
-**The index of every document in [`policies/`](policies/), of all four policy types.** One section per file,
-one row per `Sid` — or per tag key, or per declarative attribute: what it denies, why the statement exists,
-and what it actually does once attached.
-The documents themselves carry no comments — JSON has none — so this file is where their reasoning lives.
+One section per file in [`policies/`](policies/), one row per `Sid` — or per tag key, or per declarative
+attribute: what it denies, why the statement exists, and what it does once attached. The documents
+themselves carry no comments — JSON has none — so this file is where their reasoning lives.
 
 > ## Review this file at every policy change — in the same sitting
 >
-> **A statement added, removed, renamed or re-conditioned in `policies/` is a change to this file**, and so
-> is attaching a document to a new target or detaching it. The check is mechanical: **the rows in a section
-> must be the `Sid`s in that file, in the same order, and nothing else.** It compares both sides and prints
-> `OK` per document — a version that only listed the `Sid`s would leave the comparison to a reader who
-> already believes the file is right. It needs no AWS session and changes nothing:
+> A statement added, removed, renamed or re-conditioned in `policies/` is a change to this file, and so
+> is attaching a document to a new target or detaching it. The check is mechanical: **the rows in a
+> section must be the `Sid`s in that file, in the same order, and nothing else.** It compares both sides
+> and prints `OK` per document; a version that only listed the `Sid`s would leave the comparison to a
+> reader who already believes the file is right. It needs no AWS session and changes nothing:
 >
 > ```bash
 > ./scripts/check-index.py
@@ -24,32 +23,31 @@ The documents themselves carry no comments — JSON has none — so this file is
 > file asks for, and the script exists so that the reading is spent on the part that needs judgement.
 >
 > A statement whose reasoning is only in the sitting that wrote it is a statement the next reader either
-> deletes or works around. **What is *not* here**: policy ids and attachment dates — those are in
-> [`docs/log/log-stage-01c-preventive-policies.md`](../../../docs/log/log-stage-01c-preventive-policies.md), recorded as each
-> document is attached, and duplicating them here would produce a second, staler answer.
+> deletes or works around. Policy ids and attachment dates are **not** here: they are in
+> [`docs/log/log-stage-01c-preventive-policies.md`](../../../docs/log/log-stage-01c-preventive-policies.md),
+> recorded as each document is attached, and duplicating them here would produce a second, staler answer.
 
-**Scope: every document in [`policies/`](policies/), of all four policy types — widened 2026-08-13 when
-step 7.8 wrote the other three, and the file was renamed from `SCPs.md` on 2026-08-15 to stop the name
-contradicting the scope.** The split the old name described was not worth keeping: a second index is a
-second place to forget an amendment (Lesson 14), and "why does this statement exist" is the same question
-whatever the type. **What differs is what plays the part of a `Sid`**, and
-`check-index.py` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a tag policy, the
-**attribute names** under `ec2_attributes` for a declarative policy. A document of a type it does not
-recognise stops the run rather than being skipped.
+**Scope: every document in [`policies/`](policies/), of all four policy types.** One index rather than one
+per type: a second index is a second place to forget an amendment (Lesson 14), and "why does this
+statement exist" is the same question whatever the type. **What differs is what plays the part of a
+`Sid`**, and `check-index.py` knows all four: the `Sid` list for an SCP or an RCP, the **tag keys** for a
+tag policy, the **attribute names** under `ec2_attributes` for a declarative policy. A document of a type
+it does not recognise stops the run rather than being skipped.
 
 **The four types do not compose the same way, and reading a row without knowing which type it is on will
 mislead you.** An SCP bounds what a *principal in this organization* may do and never applies to the
-management account. An **RCP** bounds who may reach a *resource in this organization* — including principals
-outside it — and also never applies to the management account. A **tag policy** enforces nothing at all
-unless `enforced_for` is set, which it is not here; it reports. A **declarative policy** is not a permission
-boundary in either direction: it sets a service attribute that an account administrator then cannot change.
+management account. An **RCP** bounds who may reach a *resource in this organization* — including
+principals outside it — and also never applies to the management account. A **tag policy** enforces
+nothing at all unless `enforced_for` is set, which it is not here; it reports. A **declarative policy** is
+not a permission boundary in either direction: it sets a service attribute that an account administrator
+then cannot change.
 
 The throwaway documents in [`canary/`](canary/) are never attached to anything real and are described in
 [`README.md`](README.md).
 
-**Reading the whole ceiling:** every account is governed by the root documents **plus** its OU's, and denies
-only ever compose. A call that fails may be failing on a statement in a different file — the CloudTrail
-`errorMessage` names the policy id, which is the only reliable way to tell them apart.
+**Reading the whole ceiling:** every account is governed by the root documents **plus** its OU's, and
+denies only ever compose. A call that fails may be failing on a statement in a different file — the
+CloudTrail `errorMessage` names the policy id, which is the only reliable way to tell them apart.
 
 ---
 
@@ -62,11 +60,11 @@ The statements that must reach every account, including the ones that do not exi
 | `DenyLeaveOrganization` | Denies `organizations:LeaveOrganization`. Every vended account carries `AWSOrganizationsFullAccess` → `AWSControlTowerAdmins` (measured, `docs/AWS_STATE.md` A.1), so this is one of the few Organizations calls a *member* account can really make — and one call drops every SCP and every Control Tower control for that account at once. **Effect:** no principal in any governed account can detach it from the organization. **Deliberately never probed:** its "allowed" outcome *is* the damage |
 | `DenyIamUserCreation` | Denies `iam:CreateUser` and `iam:CreateAccessKey`. Principle 2 — *no IAM Users, no long-lived keys* — is otherwise a convention with nothing enforcing it. **Effect:** humans and machines can only obtain credentials by assuming a role. Break-glass (D16) is untouched: the Management account is exempt from SCPs by AWS's design |
 | `DenyAccountBpaChangeExceptInfrastructure` | Denies `s3:PutAccountPublicAccessBlock` unless the principal ARN matches the `InfrastructureAccess` Identity Center role. **One action covers both directions** — the `DeletePublicAccessBlock` API is governed by the `Put` permission, so a `Delete…` action string would be a statement that silently does nothing. Protects the account-level Block Public Access set in step 7.4. **The carve-out is decision 7 and is the single wildcard-account ARN in this design**, because it must reach accounts that do not exist yet and whose role suffix is unknowable; Stage 2 step 9.2's check whitelists this `Sid` by name. **Effect, proven in both directions:** the canary (`AWSAdministratorAccess`) is denied, an `awsds-infra-*` profile still sets it |
-| `DenySnapshotAndImageSharing` | Denies `ec2:ModifySnapshotAttribute`, `ec2:ModifyImageAttribute`, `rds:ModifyDBSnapshotAttribute`, `rds:ModifyDBClusterSnapshotAttribute`. **This is an exfiltration route that bypasses every other control here**: a Studio space's volume becomes an outside account's in two API calls with **no network path**, so NAT, the DNS firewall, endpoint policies and the `aws:ResourceOrgID` deny are all irrelevant to it — and no RCP reaches EC2 or RDS. Denied outright rather than conditioned on the destination: nothing in this design shares a snapshot at all. **It is half of the route and the other half is the row below** — this one is *granting someone else access to the image where it sits*; the sibling is *writing the image somewhere else*. **Effect:** the sharing route is closed for every principal, the builder included. The EC2 snapshot action is **attached but unexercised** — an invented snapshot id is rejected before authorization, `--dry-run` included — while its AMI sibling *was* denied; the RDS pair stays untested until an RDS exists |
-| `DenyImageAndSnapshotExport` | Denies `ec2:CreateStoreImageTask`, `ec2:ExportImage`, `ec2:CreateInstanceExportTask` and `rds:StartExportTask`. **Added 2026-08-13, by re-reading the row above against AWS's action list rather than against its own claim.** That statement said it closed "the one exfiltration route that bypasses every other control", and it did not: sharing an attribute is one way an image leaves, and **writing it into a bucket is another** — `CreateStoreImageTask` stores an AMI into an S3 bucket that may belong to another account, `ExportImage`/`CreateInstanceExportTask` export a VM image, and `rds:StartExportTask` writes a DB snapshot out as Parquet. Both routes move the *same* bytes and neither needs a network path from the instance. **Why a separate `Sid` and not four more actions in the row above:** they are two different mechanisms, they will be exercised by different probes, and the log already records the original statement under its own name — a renamed `Sid` would make that entry describe something that no longer exists. **Effect:** unconditional, like its sibling; nothing in this design exports an image or a snapshot. **Revision trigger, and it is a plausible one:** exporting an RDS snapshot to S3 as Parquet is a real ingestion pattern, so the first time a relational source has to reach the lake, `rds:StartExportTask` is the action to reconsider — deliberately, with a named principal, not by deleting the statement |
+| `DenySnapshotAndImageSharing` | Denies `ec2:ModifySnapshotAttribute`, `ec2:ModifyImageAttribute`, `rds:ModifyDBSnapshotAttribute`, `rds:ModifyDBClusterSnapshotAttribute`. This is an exfiltration route that bypasses every other control here: a Studio space's volume becomes an outside account's in two API calls with **no network path**, so NAT, the DNS firewall, endpoint policies and the `aws:ResourceOrgID` deny are all irrelevant to it — and no RCP reaches EC2 or RDS. Denied outright rather than conditioned on the destination: nothing in this design shares a snapshot at all. It is half of the route: this one is *granting someone else access to the image where it sits*, and the row below is *writing the image somewhere else*. **Effect:** the sharing route is closed for every principal, the builder included. The EC2 snapshot action is **attached but unexercised** — an invented snapshot id is rejected before authorization, `--dry-run` included — while its AMI sibling *was* denied; the RDS pair stays untested until an RDS exists |
+| `DenyImageAndSnapshotExport` | Denies `ec2:CreateStoreImageTask`, `ec2:ExportImage`, `ec2:CreateInstanceExportTask` and `rds:StartExportTask`. The row above closes only the sharing half: writing an image into a bucket is the other — `CreateStoreImageTask` stores an AMI into an S3 bucket that may belong to another account, `ExportImage`/`CreateInstanceExportTask` export a VM image, and `rds:StartExportTask` writes a DB snapshot out as Parquet. Both routes move the *same* bytes and neither needs a network path from the instance. **A separate `Sid` rather than four more actions in the row above:** they are two different mechanisms, they will be exercised by different probes, and the log already records the original statement under its own name — a renamed `Sid` would make that entry describe something that no longer exists. **Effect:** unconditional, like its sibling; nothing in this design exports an image or a snapshot. **Revision trigger:** exporting an RDS snapshot to S3 as Parquet is a real ingestion pattern, so the first time a relational source has to reach the lake, `rds:StartExportTask` is the action to reconsider — deliberately, with a named principal, not by deleting the statement |
 | `DenyEcrPublicEntirely` | Denies `ecr-public:*`. Publishing to ECR Public is the case the perimeter document cannot reach: the repository is *inside* the organization, so `aws:ResourceOrgID` matches correctly and says nothing about the gallery being world-readable. The **whole namespace** rather than the publish actions, so it cannot fall one AWS release behind. **Effect:** no account can create or push to a public repository. **Anonymous pulls from `public.ecr.aws` are unaffected** — they involve no IAM action, so no SCP evaluates. Amendment trigger: an authenticated pull taken for the higher rate limit |
-| `DenyGuardDutyTampering` | Denies `guardduty:DeleteDetector`, `UpdateDetector`, `DeleteMembers`, `DisassociateMembers`, `StopMonitoringMembers`, `DisassociateFromMasterAccount`, `DisassociateFromAdministratorAccount`, `DeletePublishingDestination` and `UpdatePublishingDestination`. Measured gap: **no Control Tower guardrail covers GuardDuty**, while Config already is covered (which is why no Config statement is written here). **Five of those nine were added 2026-08-13 and the reason is worth keeping: the statement had been written against the API's old vocabulary.** GuardDuty renamed master→administrator and **both spellings still exist as actions** — denying only `DisassociateFromMasterAccount` left the modern call open, which is a statement that reads as protection and is not (verified against the machine-readable list, where both names appear). `DisassociateMembers`/`StopMonitoringMembers` are the current member-detach pair, and the publishing-destination pair kills or redirects the export of findings without touching a detector at all. **Effect:** inert until Stage 15 turns GuardDuty on (Stage 4 until the 2026-08-18 split) — deliberately dormant, not an oversight. The battery probe is what says the statement is nonetheless live |
-| `DenyDataZoneDomainOutsideDataOu` | Denies `datazone:CreateDomain` unless the principal's org path is the `Data` OU's. D26 says there is **one** unified domain; without this, a second domain anywhere reintroduces a second interactive entry point with its own blueprints and project roles. Three mechanics carry it and each fails toward a deny that never lifts: `aws:PrincipalOrgPaths` is multi-valued, so `ForAllValues:StringNotLike`; `ForAllValues` is vacuously true over an empty set, so `BoolIfExists: aws:PrincipalIsAWSService=false` is required; the path is the **full path with a trailing slash**. **`CreateDomain` alone, never `datazone:*` at the root** — Sandbox and Development need `PutEnvironmentBlueprintConfiguration`. **Effect: EXERCISED IN BOTH DIRECTIONS, 2026-08-21 — Stage 6 step 0.1a, and this row read *attached but unexercised* from 1c until that day.** *Positive:* `terraform apply` of `data-governance/governance/` created the domain (`awsds-studio`, V2) from the `Data` OU — the carve-out admits the account it was written for. *Negative:* the **identical request shape**, replayed as `awsds-policy-canary`, returned `AccessDeniedException … not authorized to perform: `datazone:CreateDomain` … **with an explicit deny in a service control policy**`, naming this document's policy id. So `aws:PrincipalOrgPaths` **does** populate for DataZone, the `ForAllValues` failure mode did not fire, and INT-12's forbidden one-domain-per-account fallback is **closed rather than merely intended**. **And the 2026-08-20 wall is explained, by measurement rather than by inference:** those four shapes passed `--domain-execution-role` and **no** `--service-role`; the replay passed both and reached authorization from the same CLI. `Cross-account pass role is not allowed` was DataZone complaining about the *missing service role* — a message that names neither the field nor the account, which is Lesson 24's shape and why the contrast was needed to see it. Both throwaway roles were deleted in the same sitting and the canary holds no domain and no `awsds-*` role |
+| `DenyGuardDutyTampering` | Denies `guardduty:DeleteDetector`, `UpdateDetector`, `DeleteMembers`, `DisassociateMembers`, `StopMonitoringMembers`, `DisassociateFromMasterAccount`, `DisassociateFromAdministratorAccount`, `DeletePublishingDestination` and `UpdatePublishingDestination`. Measured gap: **no Control Tower guardrail covers GuardDuty**, while Config already is covered (which is why no Config statement is written here). The action list carries both of GuardDuty's vocabularies: the service renamed master→administrator and both spellings still exist as actions, so denying only `DisassociateFromMasterAccount` leaves the modern call open — a statement that reads as protection and is not (verified against the machine-readable list, where both names appear). `DisassociateMembers`/`StopMonitoringMembers` are the current member-detach pair, and the publishing-destination pair kills or redirects the export of findings without touching a detector at all. **Effect:** inert until Stage 15 turns GuardDuty on (Stage 4 until the 2026-08-18 split) — deliberately dormant, not an oversight. The battery probe is what says the statement is nonetheless live |
+| `DenyDataZoneDomainOutsideDataOu` | Denies `datazone:CreateDomain` unless the principal's org path is the `Data` OU's. D26 says there is **one** unified domain; without this, a second domain anywhere reintroduces a second interactive entry point with its own blueprints and project roles. Three mechanics carry it and each fails toward a deny that never lifts: `aws:PrincipalOrgPaths` is multi-valued, so `ForAllValues:StringNotLike`; `ForAllValues` is vacuously true over an empty set, so `BoolIfExists: aws:PrincipalIsAWSService=false` is required; the path is the **full path with a trailing slash**. **`CreateDomain` alone, never `datazone:*` at the root** — Sandbox and Development need `PutEnvironmentBlueprintConfiguration`. **Effect: exercised in both directions, 2026-08-21** (Stage 6 step 0.1a). *Positive:* `terraform apply` of `data-governance/governance/` created the domain (`awsds-studio`, V2) from the `Data` OU — the carve-out admits the account it was written for. *Negative:* the **identical request shape**, replayed as `awsds-policy-canary`, returned `AccessDeniedException … not authorized to perform: `datazone:CreateDomain` … **with an explicit deny in a service control policy**`, naming this document's policy id. So `aws:PrincipalOrgPaths` **does** populate for DataZone, the `ForAllValues` failure mode did not fire, and INT-12's forbidden one-domain-per-account fallback is **closed rather than merely intended**. The 2026-08-20 wall is explained by measurement: those four shapes passed `--domain-execution-role` and **no** `--service-role`; the replay passed both and reached authorization from the same CLI. `Cross-account pass role is not allowed` was DataZone complaining about the *missing service role* — a message that names neither the field nor the account, which is Lesson 24's shape and why the contrast was needed to see it. Both throwaway roles were deleted in the same sitting and the canary holds no domain and no `awsds-*` role |
 
 **Not in this document, and each absence is a decision:** no Config statement (Control Tower's guardrail
 already denies the recorder, with the `AWSControlTowerExecution` carve-out that keeps the landing zone able
@@ -74,11 +72,12 @@ to update itself) and **no CloudTrail statement** (measured: nothing denies it a
 organization-level and lives in Management, which is SCP-exempt, so a member-account deny would bind
 nothing reachable. Revision trigger: the first trail this project creates in a member account).
 
-**`guardduty:UpdateDetector` collides with [Stage 15](../../../docs/plan/stages/stage-15-guardduty.md) first
-and [Stage 11 step 4](../../../docs/plan/stages/stage-11-dlp.md) after it, and both collisions are deliberate
-rather than unnoticed.** *(2026-08-18: the first is Stage 15's decision 1 — the protection plans arrive ON,
-so the switch-OFF on Audit's own detector meets this deny before Stage 11's switch-on does.)* The deny is unconditional and this document sits on the
-root, so it reaches **Audit** — the GuardDuty administrator — as hard as any member. Org-wide administration
+**`guardduty:UpdateDetector` collides with [Stage 15](../../../docs/plan/stages/stage-15-guardduty.md)
+first and [Stage 11 step 4](../../../docs/plan/stages/stage-11-dlp.md) after it, and both collisions are
+deliberate.** The first is Stage 15's decision 1: the protection plans arrive on, so the switch-off on
+Audit's own detector meets this deny before Stage 11's switch-on does. The deny is unconditional and this
+document sits on the root, so it reaches **Audit** — the GuardDuty administrator — as hard as any
+member. Org-wide administration
 is unaffected, because turning a feature on across the organization goes through
 `UpdateOrganizationConfiguration` and `UpdateMemberDetectors`, neither of which is denied; what *is* denied
 is changing **Audit's own detector**, which is exactly what enabling S3 Protection and Malware Protection
@@ -88,8 +87,8 @@ there will try to do. **The procedure is the same shape as the `s3:DeleteBucket`
 named administration role instead is the alternative, and it is Stage 15's decision 1 — whose candidate
 question that stage's step 5 settles: GuardDuty creates only the service-linked role, so the only nameable
 principal is Audit's own administrator role, and the carve-out is option (c), recommended against.
-**What is not acceptable is discovering this at the console on the evening of Stage 11**, which is the
-only reason it is written here.
+Discovering this at the console on the evening of Stage 11 is the failure this note exists to
+prevent.
 
 ## `awsds-org-scp-perimeter.json` → organization **root**
 
@@ -135,14 +134,15 @@ This is the one OU where a `Create*` wildcard is the correct instrument.
   the real action names against the machine-readable Glue action list, as 7.6a did for the EC2 siblings,
   and decide in writing whether they join `DenyUserCompute` behind the same `ArnNotEquals` carve-out.
 
-Athena headed this list until 2026-08-20 (Stage 5 pass 4e). The allow existed for Stage 5's Iceberg
-maintenance, expected to run `OPTIMIZE`/`VACUUM` through Athena, a reason decision 4 withdrew on 2026-08-18
-by choosing Glue automatic compaction, which needs no Athena. The 12 sample rows were loaded by in-account
-Athena `INSERT` on 2026-08-20 and the amendment went in the same day, in both documents. The cost: this was
-the only in-account way to query the lake, so the `count(*)` that proved those 12 rows exist is no longer
-reproducible from here; the equivalent runs from a consumer account over the share, which is D13 working
-as designed and still a diagnostic given up. A reader debugging the lake meets this deny first. Stage 11's
-`awsds-data-athena` rule was written conditional on which way this row read; it now reads *closed*.
+Athena was an exception to `DenyUserCompute` until 2026-08-20 (Stage 5 pass 4e). The allow existed for
+Stage 5's Iceberg maintenance, expected to run `OPTIMIZE`/`VACUUM` through Athena, a reason decision 4
+withdrew on 2026-08-18 by choosing Glue automatic compaction, which needs no Athena. The 12 sample rows
+were loaded by in-account Athena `INSERT` on 2026-08-20 and the amendment went in the same day, in both
+documents. The cost: this was the only in-account way to query the lake, so the `count(*)` that proved
+those 12 rows exist is no longer reproducible from here; the equivalent runs from a consumer account over
+the share, which is D13 working as designed and still a diagnostic given up. A reader debugging the lake
+meets this deny first. Stage 11's `awsds-data-athena` rule was written conditional on which way this row
+read; it now reads *closed*.
 
 Also outside any SCP's reach: an Auto Scaling group launches through a service-linked role, which AWS
 exempts from SCPs, so `autoscaling:CreateAutoScalingGroup` is the residual EC2 path, governed by the
@@ -174,7 +174,7 @@ Identity Center. The tier exists to make its blast radius smaller.
 The trusted-*identities* axis (`docs/plan/architecture.md` §4.2), the mirror of the SCP perimeter above:
 that one stops *our* principals writing *outside*, this one stops *outside* principals reaching *our*
 resources. Seven services, because seven is what RCPs support: S3, STS, KMS, SQS, Secrets Manager, DynamoDB
-and ECR (widened from five by the user, 2026-08-12). EC2, RDS and EFS are outside RCP reach entirely, which
+and ECR. EC2, RDS and EFS are outside RCP reach entirely, which
 is why the snapshot route is an SCP deny in `awsds-org-scp-baseline.json`; EFS stopped mattering on
 2026-08-17, when the NFS requirement was withdrawn and D24's filesystem with it.
 
