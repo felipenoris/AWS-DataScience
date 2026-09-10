@@ -1,13 +1,12 @@
-
 # General Objective
 
 A Data Science environment on AWS, in one personal account tree: VPN-only access, SageMaker Unified Studio
 as the workbench, a governed Iceberg lake, GitLab and its pipelines promoting artifacts along
 **Sandbox → Development → Staging → Production**, and data-leakage protection as its own requirement.
 
-**The requirements brief is [`docs/plan/objectives.md`](docs/plan/objectives.md)** — the full list, in the
-user's words. **It is the specification a stage is measured against, so it is summarised nowhere**: the
-paragraph above is an orientation, not a substitute. Read it before planning or reviewing a stage.
+The requirements brief is [`docs/plan/objectives.md`](docs/plan/objectives.md), in the user's words. It is
+the specification a stage is measured against and is summarised nowhere: the paragraph above is an
+orientation, not a substitute. Read it before planning or reviewing a stage.
 
 ## How this will be done
 
@@ -36,7 +35,7 @@ write anything into it. Claude can read the files in this folder to gather infor
 
 **Never read the file `secrets/prompts.md`!**
 
-**Never copy or reproduce any email addresses, telephone numbers, account IDs contained in this folder into any other project files.**.
+**Never copy or reproduce any email addresses, telephone numbers, account IDs contained in this folder into any other project files.**
 
 ## Organization
 
@@ -51,9 +50,8 @@ write anything into it. Claude can read the files in this folder to gather infor
 - All infrastructure code will be in Terraform.
 
 - Two trees: `terraform-live/` (one subfolder per controlled account, sliced by lifecycle layer) and
-  `terraform-modules/` (reusable modules, consumed by git tag). **The authoritative layout, with every
-  slice's `[P]`/`[D]`/`[E]` layer, is [`docs/plan/conventions.md`](docs/plan/conventions.md) §6** — one copy, so two
-  cannot drift.
+  `terraform-modules/` (reusable modules, consumed by git tag). The authoritative layout, with every
+  slice's `[P]`/`[D]`/`[E]` layer, is [`docs/plan/conventions.md`](docs/plan/conventions.md) §6.
 
 - never run `terraform apply` (or scripts that perform infrastructure changes), unless explicitly authorized. You are free to run *read-only* operations.
 
@@ -71,35 +69,31 @@ The folder `terraform-reference` is in `.gitignore` and contains an alternative 
 
 - all scripts inside `aws/*` should perform only read-only operations. You are free to run them to gather information.
 
-- **The first exception, and it is fenced: [`aws/probes/`](aws/probes/README.md)** — the SCP battery has to
-  *attempt* the calls a policy forbids, because that is the only way to measure a preventive control. It
-  creates nothing and attaches nothing; the probes that would act without a deny are refused anywhere but
-  `Policy Canary`. **Run it deliberately, not to gather information** — the difference from every other
-  script in that folder.
+- The fenced exception is [`aws/probes/`](aws/probes/README.md): the SCP battery attempts the calls a
+  policy forbids, the only way to measure a preventive control. It creates nothing and attaches nothing,
+  and the probes that would act without a deny are refused anywhere but `Policy Canary`. Run it
+  deliberately, never to gather information.
 
-- **The second exception is a flag, not a script: `./aws/vpn.py --on-host`** (2026-08-17) — SSM Run Command
-  reading *inside* the WireGuard host, the only way to learn which peers the running interface actually
-  holds. Every command it carries is a read, but `ssm:SendCommand` is a write API, so it is **off by
-  default**: without the flag `vpn.py` is read-only like everything else, and with it the rule above is
-  the battery's — run deliberately.
+- The second exception is the flag `./aws/vpn.py --on-host`: SSM Run Command reads inside the WireGuard
+  host, the only way to learn which peers the running interface holds. Every command it carries is a
+  read, but `ssm:SendCommand` is a write API, so the flag is off by default and is run deliberately.
 
 - before running `aws` commands, check if the current session uses the correct `sso` user using `aws sts get-caller-identity`.
 
-- **Whenever an SSO login is needed — asked for, or implied by a command Claude is about to hand over —
-  Claude states three things, every time and without being asked**: the **SSO user** to sign in as, the
-  **account** the work lands in, and the **permission set** behind it. Never "log in and run this".
+- Whenever an SSO login is needed, asked for or implied by a command Claude hands over, Claude states the
+  **SSO user** to sign in as, the **account** the work lands in (by name, never by id) and the
+  **permission set** behind it, every time. Never "log in and run this".
 
   | Say | Example |
   |---|---|
-  | SSO user | the infrastructure user (`felipenoris+infrastructure_user@…`) — behind every `awsds-infra-*` and `awsds-policy-canary` profile; `AWS Control Tower Admin` is a *different* user, console-only **until the `awsds-ctadmin-orgfull-*` profiles of 2026-08-15**, which are the only CLI it has |
-  | Account | `Policy Canary`, `Development`, `Management`, … — by **name**, never by id |
-  | Permission set | `InfrastructureAccess`, `AWSAdministratorAccess` — and the profile that reaches it |
+  | SSO user | the infrastructure user (`felipenoris+infrastructure_user@…`), behind every `awsds-infra-*` and `awsds-policy-canary` profile. `AWS Control Tower Admin` is a different user, console-only except the `awsds-ctadmin-orgfull-*` profiles |
+  | Account | `Policy Canary`, `Development`, `Management`, … by name |
+  | Permission set | `InfrastructureAccess`, `AWSAdministratorAccess`, and the profile that reaches it |
 
-  **"Role" and "permission set" are two views of one object** — what it provisions, and why its ARN is
-  never hard-coded, are in [`docs/GLOSSARY.md`](docs/GLOSSARY.md), "Permission set". **One login covers every profile
-  on its `sso-session`** — `awsds` and `awsds-ctadmin` for the identities in the table above; the persona
-  sessions are [`aws/AWS-CLI.md`](aws/AWS-CLI.md) "Signing in"'s, the roster's owner — so the answer is
-  never *which profile do I log in with*: it is which identity to pick in the browser.
+  "Role" and "permission set" are two views of one object ([`docs/GLOSSARY.md`](docs/GLOSSARY.md),
+  "Permission set"). One login covers every profile on its `sso-session`: `awsds` and `awsds-ctadmin`
+  for the identities above, the persona sessions per [`aws/AWS-CLI.md`](aws/AWS-CLI.md) "Signing in".
+  The question is which identity to pick in the browser, never which profile to log in with.
 
 ## Writing style
 
@@ -137,15 +131,15 @@ are never cut; the words around them are.
 
 | File | What it holds, and the rule |
 |---|---|
-| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/` — **the same slug as the stage file, with a `log-` prefix**, so the two never share a filename. **Written cooperatively — Claude only when the user asks, in that sitting, and never on its own initiative** (revised 2026-08-17). **Provenance is not optional**: every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. **English, Markdown**, no account ids, concise. The two modes and the full rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
-| [`docs/log/INDEX.md`](docs/log/INDEX.md) | The one exception under `docs/log/`: **Claude maintains it.** After reading a stage log, bring its `Records` cell to what the file now contains — a cell saying less than the file is what the index exists to prevent. Never restate a step there: the cell says *what is inside*, in one line |
+| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix. Written cooperatively; Claude writes only when the user asks, in that sitting, never on its own initiative. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
+| [`docs/log/INDEX.md`](docs/log/INDEX.md) | The one file under `docs/log/` Claude maintains on its own. After reading a stage log, bring its `Records` cell to what the file contains: one line saying what is inside, never a restated step |
 | [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
-| [`README.md`](README.md) | How the AWS resources are structured, and the project layout, so people can understand the components |
-| [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes — **never a copy of the slice tree**, which lives in `docs/plan/conventions.md` §6 |
-| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in **every** document in `policies/`, all four policy types. **Reviewed in the same sitting as any policy change**, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still *true* is the reading. What each row says: the routing table below |
-| [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) **and** [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) | The same discipline for the lake, producer side and consumer side — one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute; the module README is what its two calling slices (`sandbox/data/`, `development/data/`) point at. **Reviewed in the same sitting as a change to the `.tf` files.** No mechanical check exists; the `.tf` comments carry the reasoning, these files carry the index |
-| [`docs/NETWORK.md`](docs/NETWORK.md) | **The network as built** — addresses, routes, both egress paths, VPN, DNS, security groups, and the two reach questions. **Reviewed in the same sitting as any change to a network-bearing slice or module** (its §2.1 names which those are), so a stage putting a host on the wire updates it as part of the stage. `./scripts/check-network-doc.py` is the mechanical half; whether a sentence is still **true** is the reading, and a moved `[P]` fact is **re-measured** with the `aws/` instruments, never re-imagined |
+| [`README.md`](README.md) | How the AWS resources are structured, and the project layout |
+| [`terraform-live/README.md`](terraform-live/README.md) | How the deployed tree is organised. Updated when an account folder or a top-level rule changes; never a copy of the slice tree, which lives in `docs/plan/conventions.md` §6 |
+| [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) | One row per entry in every document in `policies/`, all four policy types. Reviewed in the same sitting as any policy change, attachments included. `./scripts/check-index.py` decides the mechanical half; whether a row is still true is the reading |
+| [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) and [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) | The same discipline for the lake, producer and consumer side: one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute; the module README is what its calling slice (`sandbox/data/`) points at. Reviewed in the same sitting as a change to the `.tf` files. No mechanical check exists; the `.tf` comments carry the reasoning, these files the index |
+| [`docs/NETWORK.md`](docs/NETWORK.md) | The network as built: addresses, routes, both egress paths, VPN, DNS, security groups, the two reach questions. Reviewed in the same sitting as any change to a network-bearing slice or module (its §2.1 names them). `./scripts/check-network-doc.py` is the mechanical half; whether a sentence is still true is the reading, and a moved `[P]` fact is re-measured with the `aws/` instruments |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
 
 # Claude memory
@@ -178,238 +172,170 @@ When I authorize you, you can commit, push and open Pull Requests on GitHub. I'l
 For every project step, review this section and add your own LOG, so that you can remember the current
 stage of this project.
 
-Stage numbers refer to `docs/plan/stages/`. **Always read `docs/GENERAL_PLAN.md` before planning or executing a
-step** — it is the plan core and carries both indexes — then read only the stage file and the decisions
-its `Consumes` row lists.
+Stage numbers refer to `docs/plan/stages/`. Always read `docs/GENERAL_PLAN.md` before planning or executing
+a step; it is the plan core and carries both indexes. Then read only the stage file and the decisions its
+`Consumes` row lists.
 
 ### What to read, and when
 
-**This table is the only routing map — every other file points here rather than repeating it.**
+This table is the only routing map; every other file points here rather than repeating it.
 
 | Task | Read |
 |---|---|
-| Anything | this file + [`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md) (plan core: principles, the account map, the route) |
-| **What the project must achieve** — before planning or reviewing a stage | [`docs/plan/objectives.md`](docs/plan/objectives.md) — the requirements brief in the user's words. **The specification, summarised nowhere** |
+| Anything | this file + [`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md): principles and the route |
+| What the project must achieve, before planning or reviewing a stage | [`docs/plan/objectives.md`](docs/plan/objectives.md), the requirements brief in the user's words |
 | Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
-| Design, or reason about where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md) — target architecture, region portability, the data perimeter, the two egress designs |
-| A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md) — also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
-| **The data-governance model** — the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions, the drop-box and derived-zone contracts | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) — Stage 5 decisions 1-3 as revised, the one copy; applied grants live in `docs/AWS_STATE.md`'s grant register |
-| **Anything touching the SMUS surface** — a blueprint (enable, or a new one appears), the network mode, a Stage 6 cost question, or a domain/project/profile concept | [`docs/SMUS.md`](docs/SMUS.md) — the object model (domain, project, the two profile kinds, environment configurations, the project S3 path), the blueprint list with the user's three categories (2026-08-19) and billing shapes, `VpcOnly`, and the **custom-image (BYOI) tag convention** (`<flavour>-v<semver>`, 2026-08-22 — the one copy; `images/README.md` points at it). Review it whenever SageMaker changes |
-| **How the deployed tree is organised, and what is in it today** | [`terraform-live/README.md`](terraform-live/README.md) — **the slice-by-slice layout itself stays in `docs/plan/conventions.md` §6**, the authority when the two disagree |
-| **What a given policy statement denies, and why that statement exists** | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md) — one row per `Sid`, per document, all four types. Policy ids and attachment dates are **not** there: those are in the stage log |
-| **What governs the LAKE** — a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Two files, `POLICIES.md`'s discipline applied per slice: [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) for the **producer** side, [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) for the **consumer** half its two calling slices point at (derived bucket, account data CMK, `DataLakeSettings`, the re-grants). They say what the **code** declares; **applied** triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's §"A permission here is the intersection of two systems" before claiming what any principal can do (Lesson 28) |
-| What was actually done by hand in a stage | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` — **the stage file's slug, prefixed `log-`**; [`docs/log/INDEX.md`](docs/log/INDEX.md) first, so only one log is opened |
-| **What is deployed right now** — accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md) — read-only scripts and their snapshots in `aws/output/` (untracked). **Regenerate rather than trust a stale file, and never copy an account id or email out of one** |
-| **Whether something a snapshot shows is expected** — before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md) — the invariants (`INV-nn`), the known exceptions (`EXC-nn`), and what a later stage will change anyway. **Read it whenever a snapshot is read** |
+| Design, or where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md): target architecture, region portability, the data perimeter, the two egress designs |
+| A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md): also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
+| The data-governance model: the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions, the drop-box and derived-zone contracts | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
+| Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
+| How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
+| What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
+| What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
+| What was done by hand in a stage | [`docs/log/INDEX.md`](docs/log/INDEX.md) first, then the one `log-stage-NN-*.md` |
+| What is deployed right now: accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md): read-only scripts and their snapshots in `aws/output/` (untracked). Regenerate rather than trust a stale file; never copy an account id or email out of one |
+| Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes. Read it whenever a snapshot is read |
 | Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
-| Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md) first — open a decision file only for its reasoning |
-| Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md) — measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
+| Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md); open a decision file only for its reasoning |
+| Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
 | Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
 | An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
-| Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md) — the recipes, and which identity runs them |
-| **A Terraform change by hand** — the two-commit tag order, blocked commits, **the staged apply (Recipe D — the only sanctioned `-target`)** | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
-| "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) — so a lab compromise is not learned as a pattern |
+| Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md): the recipes, and which identity runs them |
+| A Terraform change by hand: the two-commit tag order, blocked commits, the staged apply (Recipe D, the only sanctioned `-target`) | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
+| "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) |
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
-| **Anything VPN** — the pieces, starting/stopping the hub, connecting a device, a tunnel that will not come up, a key event (loss, revocation, rotation), or a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md) — one runbook, three parts. **REWRITTEN 2026-09-06 for the Production home**: the host is `production/vpn/` in `VPC-Networking`, profile `awsds-infra-prod`, and **`make hub-up` / `make hub-down`** start and stop it *with the proxy* — never `make up ENV=…`, which raises endpoint sets a tunnel does not use and now **refuses** while the hub is down. **The Elastic IP and the host key did NOT move** (transferred, and copied by hand), so **the only client edit is `DNS = 10.31.0.2`** — and without it the tunnel comes up and nothing resolves. **§S** the system: the FORWARD chain is the perimeter (RFC1918 accepted, the rest REJECTED), the masquerade has a deliberate hole so Squid sees a per-device address, and the isolated-tier NAT job is **gone**. **§C** the client: what it may reach and when it does not work — **the procedure itself moved to the row below on 2026-09-07**. **§K** the keys — loss is recovery, never rotation, and the account move is that rule's strongest evidence — and **§K0a is the SSM session** |
-| **Connecting a LAPTOP** — the session's up/down order, the `.conf` and its four checks, and the proxy on macOS (system, terminal, Chrome) and Linux | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) — **new 2026-09-07**, the procedures moved out of `vpn.md` §S5 and §C0-§C3; four short sections, the reasoning stays in `vpn.md`. **macOS's system proxy is NOT the path** (issue #67 — ignored while the tunnel is up, and it breaks the `aws` CLI when the tunnel is down): the terminal's variables and Chrome's `--proxy-server` flag are. **Nothing private goes through the proxy, and everything public does — AWS included**. **Two profiles since 2026-09-08** (§3.3; `vpn.md` §C7): *monitored* (full tunnel, the institution's) and *split-tunnel* (the private ranges only, internet direct and unmonitored — for building the plan; persona work still through the proxy, the infrastructure user proxy-free) |
-| **The PROXY inside a SageMaker space** — the `NO_PROXY` value, `apt`, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md) — **the space side**, as `client-vpn-proxy-configuration.md` is the laptop side. **§Installing an extension is the working procedure** (the `Install` button does not work until 6d step 2): the six variables, `unset VSCODE_IPC_HOOK_CLI`, `--extensions-dir "$PERSISTENT_VOLUME_EXTENSIONS_DIR"`, then Reload Window. `NO_PROXY` is **generated** (`terraform output -raw no_proxy` on `sandbox/egress`), never transcribed. **The variables stop at `sudo`** — `apt` needs `-o Acquire::http::Proxy` or the image's own file — and **the VS Code server never had them at all** (6d step 8) |
-| **Anything EGRESS, PROXY or the hub topology** — where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) (the decision, closing OQ 23) + [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) (the build). **Peering shares an address, never a path** (Lesson 44): no spoke has a default route, the single egress is an **explicit proxy**, and the hub carries no interface endpoint with private DNS |
-| **The NETWORK as built** — VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, every internal address; **how a SageMaker app sees the internet, and what can reach one** | [`docs/NETWORK.md`](docs/NETWORK.md) — code plus measurement, with diagrams. **Its first section now names the six facts Stage 6c replaces**; until that apply the tables below it are current, and they are **re-measured** then, never edited ahead. The runbooks stay the procedures, `AWS_STATE.md` stays what is *expected* |
-| **Anything BUILDBOX** — the `[E]` `amd64` build host of St.6 5.0, now `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) — seven short sections: what it is, why it exists (**the images are `amd64`, the laptop is `arm64`**), the components, `up`, **§S space** (the 64 GiB root against two images that share layers — prune before recreating), **§P push** (**build and push are ONE session** — the volume dies with the host; the identity arrives as an ECR **token**, never as a permission), `down`. **It MOVED at 6c 5.8**: `VPC-SharedServices` private tier, **no route at all** — the internet is the proxy and the host is told in **four** places; `production/egress/` is now a **prerequisite** (its SSM endpoints are the only door), the `probes/` exclusion is **deleted**, and the far-end ECR refusal no longer applies because the host is in the registry's own account |
-| **Anything SANDBOX LAKE** — the ungoverned fourth Sandbox bucket (`awsds-sandbox-lake`, St.16), a per-group prefix, wiring or unwiring a project's S3 connection, either read/write test, or **code that lists/reads/writes it** | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) — six short sections, **exercised 2026-08-26** (except §R's trust half — a real project's death): what it is and is not (**not the governed lake**), **§G** the prefix contract, **§W** wire a project (a grant + a trust entry + the portal form), **§T** the two tests (the in-image direct-refusal test is UNRUNNABLE — the laptop is that control's home), **§P** the Python examples (notebook = plain boto3, the plugin vends; laptop = explicit vend, the only door), **§R** revoke — an orphaned grant is `SL-4`'s finding |
-| **A LOG has to be read — a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something** | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) — **new 2026-09-09**, written from the commands Stages 4, 5, 6a, 6c and 6d actually ran. The **map** (six logs, their accounts, their retention — plus the three families AWS creates on its own, one at **731 days**), the **three commands** (`--start-time` is **ms** for `logs` and **ISO** for `cloudtrail`), then a section per event type: **§P** the Squid access log with its declared `logformat` (`%<st` is **bytes**; a `403` over https reads `000` at the client), **§D** the resolver query log (`firewall_rule_action` **absent** ≠ allowed; a missing plane name can fail with **no `403` at all**), **§C** CloudTrail — **the only instrument that answers WHICH DOOR** (`vpcEndpointId`), **§F/§V/§S**, and **§W** an MWAA Serverless run — where the **service's own API**, not the log group, holds the verdict: the **task**'s `DurationInSeconds` is a first-cut diagnosis, every run is **two attempts**, and an update that drops `LoggingConfiguration` re-points the logs at an orphan group. **§7 is the part worth reading twice**: two channels that do not share a failure mode, *the loud failure is the lucky one*, a restart cuts the log into paired windows, and absence is a verdict **only with a positive control** |
-| **A policy is about to be attached, or was amended** | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md) — the probes, and the two distinguishable outcomes of each. **Running them is `./aws/probes/scp-battery.py`** ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
-| Explaining the design to someone | [`README.md`](README.md) — the argument for the account split and the three distinctions |
-| How the plan got here | [`docs/plan/history.md`](docs/plan/history.md) — almost never |
+| Anything VPN: the pieces, starting and stopping the hub, a tunnel that will not come up, a key event, a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md): §S the system, §C the client, §K the keys, §K0a the SSM session. The hub is started and stopped with `make hub-up` / `make hub-down`, never `make up ENV=…` |
+| Connecting a laptop: the session's up/down order, the `.conf` and its checks, the proxy on macOS and Linux, the two client profiles | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) |
+| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`), never transcribed |
+| Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
+| The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
+| Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
+| Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
+| A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
+| A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
+| Explaining the design to someone | [`README.md`](README.md): the argument for the account split and the three distinctions |
+| How the plan got here | [`docs/plan/history.md`](docs/plan/history.md), almost never |
 
-Reference things by **stable ID** — `D26`, `INT-11`, `Stage 1c step 7` — never by section or row number.
+Reference things by stable ID (`D26`, `INT-11`, `Stage 1c step 7`), never by section or row number.
 The `§` numbers inside `docs/plan/` files are historical anchors, not addresses.
 
 ### Current position
 
-- **STAGE 6c DONE (2026-09-08), PASS 8 INCLUDED — two client profiles.** The **split-tunnel** profile
-  beside the **monitored** one (*open* is the proxy plane's `mode`, not a profile): same key, same `DNS`,
-  `AllowedIPs` = the five VPC CIDRs + `10.90.0.0/24`; laptop-only, **no host change**; `vpn.md` §C7.
-  **The reach difference is by IDENTITY, never by network** — a persona's call direct is an *explicit*
-  deny, through the proxy an *implicit* one or a success. The App Store client sends **every DNS query**
-  through the tunnel. Decision due 4 taken as **(c)**; 6.6 as **(ii)**, a recorded acceptance Stage 11
-  step 3.4 re-takes. **A space started while `sandbox/egress` is down HANGS** at "IDE configuration in
-  progress"; the no-internet timeout is the host's per-destination **ICMP rate limit** (Lesson 55); a
-  laptop call takes **two doors by service family**. **`aws sso logout` invalidates EVERY cached session's
-  token; a browser sign-out invalidates none.**
-- **6d STEP 4 HAD ALREADY RUN, UNREAD, SINCE 2026-08-27 — found 2026-09-09 in a log-group inventory.**
-  One MWAA Serverless workflow, `READY`, `manual_only`; one run, two attempts, **both failed**. **4.1: the
-  surface needs NOTHING** — 6a's eleven configurations unchanged, no `Workflows` blueprint. **4.4: the
-  vendor's *"its own execution role"* is FALSE** — it runs as the **project role**
-  (`datazone_usr_role_*`, session `AmazonMWAAServerless`), which is blueprint-authored and therefore
-  **inside the D13 boundary**. **4.6 measured**: workers in **two AZs**, this estate's private subnets,
-  CMK `alias/awsds-sandbox-project`. **It failed on our own control**: `DenySageMakerJobsOffVpc` in
-  `awsds-sandbox-project-boundary`, naming the policy. **A "Notebook task" IS a `CreateTrainingJob`** —
-  which is how a *compute* control reaches the *orchestration* surface — and **the portal emits
-  `compute: {}`**, so **every default notebook workflow is dead on arrival**
-  (4.5's sharpest lint rule; a Stage 10 input). **Step 1 is exercised in SUBSTANCE only**: the refusal came
-  from the **boundary**, not from the six persona sets' copy (Lesson 20).
-  **FILLING `compute` WAS AUTHORIZED AND RUN 2026-09-10, AND IT CHANGES NOTHING — SO THIS IS A DECISION,
-  NOT A DEFECT.** `compute` takes only instance type, volume size and image, and
-  `SageMakerNotebookHook.start_notebook_execution()` has **no parameter** for `VpcConfig`, network
-  isolation, volume KMS or inter-container encryption: **four of the boundary's five conditions have
-  nowhere to come from**, and with the ceiling satisfied **four denies match at once** while AWS names only
-  the policy. **The scope is every SMUS notebook-execution task in every project here** (role and boundary
-  are both blueprint-authored); other task types **unmeasured**; everything else on the surface works —
-  authoring, versioning, triggering, logging, the workers' network, the identity — and **one act fails**.
-  **Recommended: do not use the portal's notebook operator**; Stage 10's own DAGs can pass a full
-  `VpcConfig`. **Also read back**: `update-workflow` is a full replace (**Lesson 60** — it cost the
-  workers' subnets and the log group, and the tell was **no CloudTrail event at all**), the portal injects
-  domain/project into the worker **environment** and an API update severs it, every update mints a
-  `WorkflowVersion`, and every run is **two attempts** — so read the **task**'s duration, never the run's.
-- **D38 §6 AMENDED (2026-09-08, the user): THE BUILD PLANE IS `open`, NOT AN ALLOW-LIST.**
-  `production-foundation` (= all of `VPC-SharedServices`) reaches **any** public name through the proxy,
-  everything logged. **A build host's control is the reviewed Dockerfile, not a hostname list.**
-  `proxy_allow_shared` and `d5l0dvt14r5h8.cloudfront.net` **deleted**; a plane's mode is now decided by
-  **which of two maps** it is in (`proxy_allow_by_plane` / `proxy_deny_by_plane`), preconditions on both.
-  **`sandbox-foundation` is untouched** — source-scoping earning its keep in the *permissive* direction.
-  Unchanged: the three global denies, the absent default route, the 3128-only SG. **A plane is a CIDR, not
-  a host** (Lesson 29). `DN-4` is now *"no plane is `open` except the ones a decision names"*
-  (`OPEN_BY_DECISION`). **APPLIED and read back on the host 2026-09-08.**
-  **9.5/9.6 CLOSED 2026-09-08 — AND THE OLD LIST WOULD HAVE REFUSED THE BUILD**: `default-v0.1.1` pushed
-  to both repositories; **196 requests, 4.67 GiB**, plane matched **by CIDR**; the deleted CloudFront entry
-  served **3.76 GiB** unnamed — but **`conda.anaconda.org` (155 req, 368 MiB) is on NO allow-list**, so the
-  refusal would have landed a minute after the pull. **The old list had only ever been exercised to its
-  first step** (its CloudFront entry came from a failed pull). **The rebuild is the same recipe** (no
-  `images/` commit between tags; delta = upstream drift) → **not reproducible byte-for-byte**. Deny list
-  **stays empty**. **An `open` plane emits NO `dstdeny_` ACL and an empty `allowlist` plane emits
-  NOTHING** — the file cannot separate *refuses everything* from *does not exist*.
-- **SQUID MATCHES THE NAME THE CLIENT REQUESTED, AND NEVER A DNS ANSWER** (measured 2026-09-08). **A CNAME
-  is INVISIBLE** (`static.crates.io` works with no CDN entry); **an HTTP redirect is a NEW name**
-  (`codeload.github.com`, the ECR CloudFront); **a bare entry matches EXACTLY** — `github.com` covers
-  neither `api.github.com` nor `raw.githubusercontent.com`. **`amazonwebservices.com` is NOT
-  `amazonaws.com`** (`idetoolkits.*` refused beside `idetoolkits-hostedfiles.amazonaws.com` allowed).
-- **THE CODE EDITOR'S GALLERY: THE CHAIN IS SOLVED (2026-09-09), AND IT IS TWO SMALL ACTS.** The client
-  **honours `http_proxy`/`https_proxy` and ignores the `http.proxy` SETTING** — `code-editor-server
-  --install-extension` with the variables exported reached `Installing extensions...` and returned an
-  **HTTP** `403`, never `getaddrinfo`. And the `403` is **Squid's**: `open-vsx.org` serves the API (`200`,
-  on the plane) and **`openvsx.eclipsecontent.org` serves the `.vsix` bytes** (`403`, **not** on the
-  plane) — the redirect shape of `public.ecr.aws` → CloudFront, and why 8.1's single name was never
-  enough. **Repair: deliver the ENVIRONMENT to the `codeeditorserver` supervisord program + add that one
-  name.** The tunnel plane reaching the same host with `200` is the negative control.
-- **THE SETTING ROUTE WAS MEASURED FIRST, TWICE, 2026-09-08.** The space's own
-  setting moved `idetoolkits.amazonwebservices.com`, `api.github.com` and `raw.githubusercontent.com`
-  **from a DNS `BLOCK` to a Squid `403`** and `pypi.org` to `200` — a **paired before/after**, because a
-  space restart renames the container and cuts the log into non-overlapping windows — while
-  **`open-vsx.org` never reached the proxy** (36 `BLOCK`s, two restarts, three addresses). So *"no proxy
-  in the process"* is **false for that one component**: env vars (a lifecycle config, or
-  `ContainerEnvironmentVariables`) deliver the same fact by another route and are not expected to reach a
-  client that ignores the setting — the pre-packaged `.vsix` is the live option. The terminal **is** the
-  server's environment (`SUPERVISOR_PROCESS_NAME=codeeditorserver`). **`alpine-arm64` is the REGISTRY's**, not either
-  client's detection (2026-09-09: Open VSX returns that variant when no platform is named and VS Code
-  echoes it) — a **second, independent** defect that survives a working proxy, but only for
-  **target-platform-specific** extensions. The space is `x86_64`/Ubuntu Noble.
-- **8.8 FIXED AND APPLIED 2026-09-09 (`vpc-egress-v0.11.1`), AND IT WAS EIGHT TIMES ITS RECORDED SIZE.**
-  `no-proxy.tf` now reads the **endpoint's** `dns_entry` (a list) instead of the **service's**
-  `private_dns_name` (a string): **16 of 18** Sandbox endpoints answered for a name the list lacked, so
-  `sandbox/egress` went **28 → 50 entries** on `0 to add, 1 to change`, re-plan `No changes`. **The `403`s
-  were loud only by luck of the family** — `streaming-logs.<region>.amazonaws.com` **is** on the plane, so
-  it was answered `200` and left as a **public** call with neither `aws:SourceVpc` nor `aws:SourceVpce`.
-  **The GUARD had the same blind spot**: pointing the new reading at the DNS Firewall coverage
-  precondition named two endpoints the estate pays for hourly that were **NXDOMAIN**, so `app.aws` and
-  `on.aws` joined both compute allow-lists (**14 domains live**) — which **attributes 8.6's orphan**,
-  `dzd-<id>.…on.aws`, blocked by family. **`v0.11.0` is tagged and was never deployed**: `dns_entry` is a
-  resource attribute, so on a torn-down VPC it is `(known after apply)` and the precondition silently
-  moved from plan to apply (**Lesson 59**); v0.11.1 splits it into `declared` and `served`. Both halves
-  carry a negative control. **Still `.api.aws`/`.app.aws`/`.on.aws`/`.aws.dev` are separate AWS families**,
-  and **the first question about a `403` is whether the name has an ENDPOINT**, never whether to allow it.
-  **PROVEN IN A SPACE THE SAME NIGHT, ON TWO CHANNELS**: after a restart (CloudTrail-dated), the name is
-  **absent** from the proxy log for the new container — which made 76 other proxied requests — against
-  **`403` × 11** from an earlier space container that day, while CloudTrail shows **eight** DataZone calls
-  from it **all carrying the endpoint's `vpcEndpointId`**. **`streaming-logs` has NEVER appeared in the
-  proxy log**, so that entry is preventive and **unexercised**. **Not closed**: the other three `egress/`
-  slices are `[E]` and down — they take v0.11.1 on their next `make up`. **Idle shutdown observed unasked**
-  (both spaces, service-deleted; 5.1's threshold half still open).
-- **6d STEP 3 RUN, STEP 8 MEASURED, STEP 9 DONE (2026-09-08).** The proxy works from a space with the
-  variables exported by hand. **Two components failed for ONE cause — no proxy IN THE PROCESS**: `sudo`
-  strips the variables (`apt` needs `-o Acquire::http::Proxy`, or the image's own file) and a **Code
-  Editor**'s VS Code server never had them — **AWS's own two extensions**, at every space start. That
-  cause now covers only the first (see above). `open-vsx.org` is on `proxy_allow_sandbox` (**21**,
-  applied). **A missing plane name can fail WITHOUT a `403`** — the second instrument is
-  `/awsds/sandbox/dns-firewall`; **the hub carries no DNS Firewall**, so an `ENOTFOUND` can only come from
-  a compute VPC. `--noproxy '*'` → `000` measured **DNS**, not the absent route. Measured on the plane: **Python and
-  Rust work**; `uv`/Julia/R still owed. **`github.com` clone worked on 2026-09-08 and the name was
-  REMOVED 2026-09-09 by the user** — source control is how code leaves a governed environment, so an
-  interactive compute plane does not carry it; the BUILD plane, being `open`, still does. **Owed in step 8**: five
-  allow-or-lose names, the unread asset host, and `dzd-<id>.sagemaker.us-west-2.on.aws`, DNS-blocked
-  throughout and attributed to nothing.
-- **STAGE 6d STEP 7 RE-CUT 2026-09-07 — THE CONNECTION METHOD DECIDES THE PERIMETER.** 7.1: **nothing to
-  add on either side**. The deep link's `StartSession` is made **server-side by the project role**, scoped
-  by two DataZone tags and usable **off-VPN**; SSH/Toolkit use the laptop's credentials, but persona sets
-  hold **no Allow** and carry **no DataZone tag**, so 6a's pair would **deny every space, not scope** —
-  decision due 4 (recommended: Method 3 + an `IDC_UserName` Allow + `StartSession` denied on the D13
-  boundary). A remote space needs **≥ 8 GB** (`ml.t3.large` **0.100/h**); **the space path carries NO
-  instance ceiling since 2026-09-07** (`sagemaker-denies-v0.2.0`, applied, read back) — jobs keep the
-  list. **The VS Code server is downloaded by the SPACE** (`remote.SSH.localServerDownload=always`,
-  decision due 5). The `session-manager-plugin` honours `HTTPS_PROXY` only if the env reaches it: a
-  browser-launched VS Code on macOS has none → direct dial → REJECT → **timeout**. **Portal Query Editors
-  has NO endpoint in any VPC** (3.6). **`conda` and CRAN are not on the compute plane** (3.1).
-- **THE CLIENT PLANE IS `open`, NOT AN ALLOW-LIST (2026-09-07).** The client's internet is **monitored**;
-  the restriction belongs to the **compute** plane (`sandbox-foundation`, **21 names**) —
-  **and since 2026-09-08 the BUILD plane is `open` too**, so `allowlist` is now the compute planes' mode,
-  not every spoke's. Each plane carries a
-  `mode`; **empty means OPPOSITE things** — allow-list empty = refuse everything, deny-list empty = permit
-  everything. **The parameter is DATA (30 min); the renderer is CODE (a new host)** — a State Manager
-  `Success` only proves the script the host already has ran.
-- **THE TUNNEL IS DUAL-FAMILY SINCE 2026-09-07** (`wireguard-v0.6.0`, `fd90::/64`): it carries no IPv6 —
-  it **rejects** it — because `AllowedIPs = ::/0` was **inert** without a matching `Address` (Lesson 56).
-  Not a control against the device's owner. **macOS: the system proxy is NOT consulted while the tunnel is
-  primary** (issue #67): Chrome's `--proxy-server` flag or Firefox; with the tunnel **down** the same
-  setting breaks the `aws` CLI — `NO_PROXY='*'` is the override. **The no-internet check times out OR refuses fast — the host's per-destination ICMP rate limit
-  decides** (Lesson 55, mechanism corrected 2026-09-07): the evidence is the counter on the refusing side.
-- **Pass 5 made design B real:** zero NAT as code; endpoint sets **counted** — Sandbox **18**, Staging
-  **11**, SharedServices **13**, Workloads **0**; estate fixed rate **0.390/h**; `optional_service_groups`
-  behind `make up ENV=<x> GROUPS=…` (empty by default); DNS Firewall **63 → 10**. **Pass 7:** `make
-  hub-up` / `hub-down`; a spoke's `make up` **REFUSES** while a hub host is stopped; `./aws/proxy.py`
-  `PX-1`..`PX-5`; `NT-11`/`NT-12` (two-sided, by CIDR).
-- **`NO_PROXY` is GENERATED, never written** (`vpc-egress` output): 8 of 29 service names are not
-  derivable from the token and a gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named
-  in **both** spellings — and see the one-name-per-endpoint defect above. A refusal over `https` reads
-  `000`. **`production/egress/` is a PREREQUISITE of a build** (the buildbox's SSM door).
-- **Module tags: `vpc-egress-v0.10.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`** (`vpc-egress-v0.9.0` and
-  `vpc-v0.3.0` ABANDONED on origin — Lesson 46). **`-input=false` on every plan AND apply** (Lesson 47);
-  **never pipe a command whose exit code matters**. **`10.40.0.0/16` stays unallocated.**
-- **STAGE 6b DONE.** `Development` → **`Staging`**; the provisioned product does not follow an
-  out-of-band rename. **The chain is `Sandbox → Staging → Production`** — no Development account, ever;
-  interactive compute is **Sandbox only**. **D38:** peering shares an **address, never a path** (Lesson
-  44); one explicit Squid proxy, **zero NAT**, no spoke default route, **five peerings**; the hub carries
-  no interface endpoint.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour); workers accept no proxy — two AZs, a
-  priced D9 exception; the `Workflows` blueprint is the **provisioned** shape, not this one. **The SMUS
-  CI/CD tool deploys only into EXISTING projects**; the pipeline stays the deployer (D26/D28).
-- **Landing zone closed — Stages 0-1d DONE.** Battery **100**. **Stages 2, 3, 4, 5, 16, 6a, 6b DONE.**
-  Stage 5 register **13 rows / 24 triples**. Gates: `make check`, `check-ou`. Standing from Stage 5: no
-  principal can start the crawlers (**OQ 19**); `EXC-02`'s uncollectable object; no Athena in Data
-  Governance.
-- **Standing SMUS mechanics:** a blueprint configuration is applied **from the member account**; an
-  existing one is **immutable via `awscc`**; the D13 boundary field is **write-only** (**always
-  `get-role`**); an incomplete configuration pins its projects **both** ways. **SMUS is a Lake Formation
-  admin in Sandbox** (OQ 24); `-refresh=false` forbidden on that slice. **A cached SSO token is keyed by
-  `sso-session` name, NEVER by user.** **A denied call does not always name the policy** — attribution is
-  a **contrast probe**.
-- **Standing rules:** never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
-  note; **resolve an account by exact vended name**; subnets anchor on AZ `zone_id`; read the denial
-  **wording**, never the exit code; account-level BPA is hand-managed; **Log Archive and Audit hold no CLI
-  profile**; auto-enrollment is ON; `INV-09` is **ten** principals. **Before reporting a gap, read the file
-  that owns it:** unexercised denies → `POLICIES.md`; "expected" readings → `AWS_STATE.md`; SMUS findings
-  → OQ 12-15, 20, 21. **Deferred by decision — do not offer to close:** the USD 50 budget notifies nobody
-  (D12); OQ 10 waits for N=2; the Config recorder is left alone. **All 38 decisions closed; D38 §6 amended 2026-09-08.** Still needed
-  from the user: **the domain name** (blocks Stage 13). **Every script is Python 3 on `uv`;
-  `aws/cloudshell/` is shell.**
+- **Stages 0-1d, 2, 3, 4, 5, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5 register 13 rows / 24
+  triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
+  Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
+  was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
+- **Stage 6d is in progress.** Steps 3, 8 (measured) and 9 done 2026-09-08; step 4 exercised
+  2026-09-09/10; step 7 re-cut 2026-09-07. Owed in step 8: five allow-or-lose names, the unread asset
+  host, and `uv`/Julia/R on the compute plane (Python and Rust work). Idle shutdown was observed
+  unasked; 5.1's threshold half is open.
+- **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
+  proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44).
+  Endpoint sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS
+  Firewall 63 → 10. `make hub-up` / `hub-down` start and stop the two hub hosts; a spoke `make up`
+  refuses while a hub host is stopped. Optional endpoint families: `make up ENV=<x> GROUPS=…`, empty by
+  default. `./aws/proxy.py` PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `production/egress/` is a
+  prerequisite of a build (the buildbox's SSM door). `10.40.0.0/16` stays unallocated.
+- **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map it is in
+  (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
+  plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged; a
+  build host's control is the reviewed Dockerfile. The compute plane `sandbox-foundation` is an
+  allow-list of 21 names; `github.com` was removed 2026-09-09 by the user, because source control is how
+  code leaves a governed environment. Empty means opposite things: an empty allow-list refuses
+  everything, an empty deny-list permits everything; an `open` plane emits no `dstdeny_` ACL and an empty
+  allow-list plane emits nothing. The deny list stays empty. `DN-4` reads "no plane is `open` except the
+  ones a decision names" (`OPEN_BY_DECISION`). The parameter is data (30 min); the renderer is code (a
+  new host). Unchanged: the three global denies, the absent default route, the 3128-only SG.
+- **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is
+  invisible, an HTTP redirect is a new name, a bare entry matches exactly (`github.com` covers neither
+  `api.github.com` nor `raw.githubusercontent.com`), `amazonwebservices.com` is not `amazonaws.com`. A
+  refusal over https reads `000` at the client. A missing plane name can fail without a `403`: the
+  second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
+  `ENOTFOUND` comes from a compute VPC.
+- **9.5/9.6 closed 2026-09-08**: `default-v0.1.1` pushed to both repositories, 196 requests, 4.67 GiB,
+  plane matched by CIDR. `conda.anaconda.org` (155 requests, 368 MiB) was on no allow-list, so the old
+  list would have refused the build a minute after the pull. A rebuild is the same recipe and not
+  byte-reproducible.
+- **`NO_PROXY` is generated** (`vpc-egress` output), never written: 8 of 29 names are not derivable and a
+  gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named in both spellings. 8.8 fixed
+  2026-09-09 (`vpc-egress-v0.11.1`, applied on `sandbox/egress`, 28 → 50 entries): `no-proxy.tf` reads
+  the endpoint's `dns_entry` list, not the service's `private_dns_name`; the DNS Firewall coverage
+  precondition is split into `declared` and `served`, each with a negative control; `app.aws` and
+  `on.aws` joined both compute allow-lists (14 domains), which attributes
+  `dzd-<id>.sagemaker.us-west-2.on.aws`. `v0.11.0` is tagged and never deployed (Lesson 59). The other
+  three `egress/` slices are `[E]` and down; they take v0.11.1 on their next `make up`. The first
+  question about a `403` is whether the name has an endpoint. `streaming-logs` has never appeared in the
+  proxy log: that entry is unexercised.
+- **Inside a space** (6d steps 3 and 8): the proxy works with the variables exported by hand; `sudo`
+  strips them (`apt` needs `-o Acquire::http::Proxy`); the VS Code server never had them. The Code Editor
+  client honours `http_proxy`/`https_proxy` and ignores the `http.proxy` setting. `open-vsx.org` serves
+  the API (`200`, on the plane); `openvsx.eclipsecontent.org` serves the `.vsix` bytes (`403`, not on the
+  plane). Repair: deliver the environment to the `codeeditorserver` supervisord program and add that
+  name. `alpine-arm64` is the registry's detection when no platform is named, a second defect for
+  target-platform-specific extensions. A space started while `sandbox/egress` is down hangs at "IDE
+  configuration in progress". `conda` and CRAN are not on the compute plane (3.1); Portal Query Editors
+  has no endpoint in any VPC (3.6).
+- **6d step 4, MWAA Serverless** (measured 2026-09-09/10). One workflow, `READY`, `manual_only`; every
+  run is two attempts, so read the task's `DurationInSeconds`, never the run's. The surface needs
+  nothing: 6a's eleven configurations unchanged, no `Workflows` blueprint. It runs as the project role
+  (`datazone_usr_role_*`, session `AmazonMWAAServerless`), blueprint-authored and therefore inside the
+  D13 boundary; workers in two AZs, this estate's private subnets, CMK `alias/awsds-sandbox-project`. A
+  "Notebook task" is a `CreateTrainingJob`, and it fails on `DenySageMakerJobsOffVpc` in
+  `awsds-sandbox-project-boundary` (the boundary's copy, not the persona sets': Lesson 20). The portal
+  emits `compute: {}`, and filling it (authorized and run 2026-09-10) changes nothing: the notebook
+  operator has no parameter for four of the boundary's five conditions, so four denies match at once.
+  Scope: every SMUS notebook-execution task in every project here; other task types unmeasured.
+  Recommended: do not use the portal's notebook operator; Stage 10's own DAGs can pass a full
+  `VpcConfig`. `update-workflow` is a full replace (Lesson 60): it dropped the workers' subnets and the
+  log group with no CloudTrail event, and an API update severs the domain/project the portal injects
+  into the worker environment.
+- **6d step 7**: the connection method decides the perimeter. The deep link's `StartSession` is made
+  server-side by the project role, scoped by two DataZone tags, usable off-VPN; SSH/Toolkit use the
+  laptop's credentials, and the persona sets hold no Allow and no DataZone tag, so 6a's pair would deny
+  every space. Decision due 4 is open (recommended: Method 3 + an `IDC_UserName` Allow + `StartSession`
+  denied on the D13 boundary). A remote space needs ≥ 8 GB (`ml.t3.large`, 0.100/h); the space path
+  carries no instance ceiling since `sagemaker-denies-v0.2.0` (jobs keep the list). The VS Code server is
+  downloaded by the space (decision due 5). `session-manager-plugin` honours `HTTPS_PROXY` only if the
+  environment reaches it: a browser-launched VS Code on macOS has none and times out.
+- **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
+  the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only. The reach difference is by
+  identity, never by network: a persona's direct call is an explicit deny, through the proxy an implicit
+  one or a success. The App Store client sends every DNS query through the tunnel. The tunnel is
+  dual-family (`wireguard-v0.6.0`, `fd90::/64`) and rejects IPv6 (Lesson 56). macOS's system proxy is not
+  consulted while the tunnel is primary (issue #67), and with the tunnel down it breaks the `aws` CLI:
+  `NO_PROXY='*'` is the override. The no-internet check times out or refuses fast; the host's
+  per-destination ICMP rate limit decides (Lesson 55). 6c decision due 4 taken as (c); 6.6 as (ii), an
+  acceptance Stage 11 step 3.4 re-takes. `aws sso logout` invalidates every cached session's token, a
+  browser sign-out invalidates none, and a cached token is keyed by `sso-session` name, never by user.
+- **Module tags**: `vpc-egress-v0.11.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
+  (`vpc-egress-v0.9.0`, `vpc-egress-v0.11.0` and `vpc-v0.3.0` are abandoned on origin, Lesson 46).
+  `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters.
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour); workers accept no proxy: two AZs, a
+  priced D9 exception; the `Workflows` blueprint is the provisioned shape, not this one. The SMUS CI/CD
+  tool deploys only into existing projects; the pipeline stays the deployer (D26/D28).
+- **SMUS mechanics**: a blueprint configuration is applied from the member account; an existing one is
+  immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
+  configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);
+  `-refresh=false` is forbidden on that slice. A denied call does not always name the policy:
+  attribution is a contrast probe.
+- **Standing rules**: never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
+  note; resolve an account by exact vended name; subnets anchor on AZ `zone_id`; read the denial wording,
+  never the exit code; account-level BPA is hand-managed; Log Archive and Audit hold no CLI profile;
+  auto-enrollment is on; `INV-09` is ten principals. Before reporting a gap, read the file that owns it:
+  unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
+  21. From Stage 5: no principal can start the crawlers (OQ 19); `EXC-02`'s uncollectable object; no
+  Athena in Data Governance. Deferred by decision, do not offer to close: the USD 50 budget notifies
+  nobody (D12); OQ 10 waits for N=2; the Config recorder is left alone. Every script is Python 3 on `uv`;
+  `aws/cloudshell/` is shell.
 
-**Budget: ~8 KB** (raised from 4 KB by the user, 2026-08-19). State, not reasoning — **a bullet here that explains *why*, or that a stage file should
-be carrying, is a stale copy of something that already lives elsewhere.** Re-trim whenever a stage closes.
+Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a
+stale copy of something that lives elsewhere. Re-trim whenever a stage closes.
 
 ### Lessons carried forward
 
-**Read [`docs/plan/lessons.md`](docs/plan/lessons.md) before planning, reviewing, or settling a decision.**
-These are recognition keys, not the lessons: each one is a title trimmed to what makes it identifiable, and
-the reasoning that makes it *usable* is in the file. Recognising one is the signal to open it.
+Read [`docs/plan/lessons.md`](docs/plan/lessons.md) before planning, reviewing, or settling a decision.
+These are recognition keys, not the lessons: each is a title trimmed to what makes it identifiable, and
+the reasoning that makes it usable is in the file. Recognising one is the signal to open it.
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
 2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
