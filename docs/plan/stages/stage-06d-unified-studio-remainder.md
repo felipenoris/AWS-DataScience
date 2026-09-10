@@ -116,7 +116,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md), 2026-09-08.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
   result: `pip`, `uv`, `conda`, `Pkg` (Julia) and R. Read against the compute plane's list
-  (`hub-anchors.tf`, `proxy_allow_sandbox`, 20 names) before running, so a refusal is expected rather than
+  (`hub-anchors.tf`, `proxy_allow_sandbox`) before running, so a refusal is expected rather than
   diagnosed: `pip`/`uv` (`pypi.org`, `files.pythonhosted.org`, `astral.sh`), Julia (five `julialang` names)
   and Rust (`crates.io`, `rust-lang.org`) **are on it**; **`conda` (`repo.anaconda.com`,
   `conda.anaconda.org`) and CRAN (`cloud.r-project.org`) are not** — each is a `403` naming the host in

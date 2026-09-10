@@ -225,10 +225,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
   Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
-- **Stage 6d is in progress.** Steps 3, 8 (measured) and 9 done 2026-09-08; step 4 exercised
-  2026-09-09/10; step 7 re-cut 2026-09-07. Owed in step 8: five allow-or-lose names, the unread asset
-  host, and `uv`/Julia/R on the compute plane (Python and Rust work). Idle shutdown was observed
-  unasked; 5.1's threshold half is open.
+- **Stage 6d is in progress.** Step 9 and most of 3 and 8 done 2026-09-08; step 4 exercised
+  2026-09-09/10; 7.1/7.2 read 2026-09-07. Decision due 6 was taken in full 2026-09-09 — five names in,
+  `api.github.com` and `raw.githubusercontent.com` refused — and the asset host read
+  (`openvsx.eclipsecontent.org`), so step 8 is closed but for its delivery, which belongs to 2.4:
+  neither proxy mechanism attaches to a space, only to the blueprint-provisioned domain. Owed: step 2
+  whole (the house image) and behind it 3.1's `uv`/Julia/R (Python and Rust work); 1.2/1.3, 3.4, 3.5,
+  3.7; step 5 beyond the idle shutdown observed unasked; step 6; and 7.3-7.9, which wait on decision
+  due 4.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44).
   Endpoint sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS
@@ -240,8 +244,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
   plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged; a
   build host's control is the reviewed Dockerfile. The compute plane `sandbox-foundation` is an
-  allow-list of 21 names; `github.com` was removed 2026-09-09 by the user, because source control is how
-  code leaves a governed environment. Empty means opposite things: an empty allow-list refuses
+  allow-list (`docs/NETWORK.md` counts it, dated); `github.com` was removed 2026-09-09 by the user,
+  because source control is how code leaves a governed environment. Empty means opposite things: an empty allow-list refuses
   everything, an empty deny-list permits everything; an `open` plane emits no `dstdeny_` ACL and an empty
   allow-list plane emits nothing. The deny list stays empty. `DN-4` reads "no plane is `open` except the
   ones a decision names" (`OPEN_BY_DECISION`). The parameter is data (30 min); the renderer is code (a
