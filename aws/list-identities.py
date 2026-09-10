@@ -2,7 +2,7 @@
 # list-identities.py - snapshot of the Organization tree and of the IAM Identity Center
 # directory, as seen from the Identity account.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -21,11 +21,11 @@
 #
 # Identity: the `awsds-infra-identity` SSO profile, i.e. the Identity account acting as the
 # IAM Identity Center delegated administrator (D10). Reads are not restricted from there -
-# only *writes* against Management-targeted objects are - which is why the Organizations
-# calls below answer even though only Management could change what they return
+# only *writes* against Management-targeted objects are - so the Organizations calls below
+# answer even though only Management could change what they return
 # (docs/log/log-stage-01b-identity-and-controls.md, step 4).
 #
-# Two call styles, on purpose:
+# Two call styles:
 #   show  - prints the command and the CLI's own `--output table` under it. What a reader
 #           sees is exactly what the CLI returned.
 #   run   - captures `--output text` for values that later commands need as arguments, or
@@ -95,8 +95,8 @@ def main() -> int:
         rep = Report(stream)
 
         def detail(tolerate, label: str, *args: str) -> None:
-            """One labelled detail block, indented under a permission set. Distinguishes a
-            failed call from a genuinely empty one, which is the whole point."""
+            """One labelled detail block, indented under a permission set. It distinguishes
+            a failed call from a genuinely empty one."""
             rep.line(f"  {label}")
             res = cli.run(*args, tolerate=tolerate)
             if not res.ok:
@@ -150,9 +150,8 @@ AND EMAIL ADDRESSES. Do not copy either into a tracked file.""")
 
         rep.h2("2.1 ORG_ID and MGMT_ID - the organization, and the account that manages it")
 
-        # ORG_ID is not a curiosity: it is the value both data-perimeter condition keys
-        # take, so it is printed as a named variable rather than left as an unlabelled row
-        # of the table below.
+        # ORG_ID is the value both data-perimeter condition keys take, so it is printed as
+        # a named variable rather than left as an unlabelled row of the table below.
         res = cli.run(
             "organizations",
             "describe-organization",

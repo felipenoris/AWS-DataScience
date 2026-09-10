@@ -2,7 +2,7 @@
 # AZs.py - the availability-zone name -> zone ID mapping, one listing per account, plus the
 # comparison across them.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -15,20 +15,18 @@
 #   reads:    ec2:DescribeAvailabilityZones and sts:GetCallerIdentity. This script never
 #             creates, updates or deletes anything.
 #
-# WHY THIS EXISTS. AWS maps AZ *names* (`us-west-2a`) to physical datacenters independently
-# per account, so the same name can be a different datacenter in two accounts. The AZ *ID*
-# (`usw2-az1`) is the stable identifier. The distinction has a bill attached: the two
-# peerings into Production (D14, D21) are free within an AZ and USD 0.01/GB each way across
-# AZs, and the divergence produces no error - only a line on the invoice. Measured first in
-# Stage 1b step 6; the outcome is in docs/plan/architecture.md §4.1 and docs/plan/open-questions.md
-# item 3, and is not repeated here (aws/INDEX.md: a snapshot is evidence, not intent).
+# AWS maps AZ *names* (`us-west-2a`) to physical datacenters independently per account, so the
+# same name can be a different datacenter in two accounts. The AZ *ID* (`usw2-az1`) is the
+# stable identifier. The distinction has a bill attached: the two peerings into Production
+# (D14, D21) are free within an AZ and USD 0.01/GB each way across AZs, and the divergence
+# produces no error - only a line on the invoice. Measured first in Stage 1b step 6; the
+# outcome is in docs/plan/architecture.md §4.1 and docs/plan/open-questions.md item 3.
 #
-# ONE DELIBERATE DEVIATION from aws/INDEX.md's "one profile per script": this script runs
-# every profile it is given, because the comparison *between* accounts is the whole
-# measurement. A single-profile version of it would answer nothing. Section 1 names the
-# identity behind each block, which is what the one-profile rule exists to make visible.
+# This script deviates from aws/INDEX.md's "one profile per script": it runs every profile it
+# is given, because the comparison *between* accounts is the measurement. Section 1 names the
+# identity behind each block.
 #
-# WHAT IT CANNOT SEE, stated because an empty column and a missing account look alike:
+# What it cannot see, since an empty column and a missing account look alike:
 #   - An account with no profile in ~/.aws/config is invisible here. `Staging` is the open
 #     case - not vended, so not measured - and every Sandbox vended under Stage 14 will be
 #     too until its profile exists.

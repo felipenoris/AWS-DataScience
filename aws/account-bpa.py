@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
-# account-bpa.py - the ACCOUNT-level S3 Block Public Access setting, one row per account.
+# account-bpa.py - the account-level S3 Block Public Access setting, one row per account.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -15,44 +15,41 @@
 #                                                       have none
 #   writes:   aws/output/account-bpa.txt   (untracked - see .gitignore)
 #   reads:    s3control:GetPublicAccessBlock and sts:GetCallerIdentity. This script never
-#             creates, updates or deletes anything - the `put` command is PRINTED, not run.
+#             creates, updates or deletes anything - the `put` command is printed, not run.
 #
-# WHY THIS EXISTS, and why it is worth a script rather than a loop typed once. There are two
-# Block Public Access settings and they are not the same control: the BUCKET-level one, which
-# Stage 2's s3-bucket module sets on every bucket IT creates, and the ACCOUNT-level one below,
-# which also covers the bucket somebody creates outside that module. Only the second is a
-# blanket, and it has no cross-account API: it is set from inside each account, so "every
-# member account" has to be a LIST or the one account nobody had a profile for is the one
-# that keeps the hole.
+# There are two Block Public Access settings, and they are not the same control: the
+# bucket-level one, which Stage 2's s3-bucket module sets on every bucket it creates, and the
+# account-level one below, which also covers a bucket created outside that module. Only the
+# second is a blanket, and it has no cross-account API: it is set from inside each account, so
+# "every member account" has to be a list, or the account nobody had a profile for keeps the
+# hole.
 #
-# It is read three times, which is what makes it a script:
-#   - BEFORE 7.4 step 1, as Stage 1c step 7.0 step 4: the plan assumes BPA is off everywhere
-#     and that assumption had never been measured. Where the Account Factory blueprint
-#     already set it, half of 7.4 is a no-op.
-#   - AFTER 7.4 step 1, as the confirmation that every row now reads four times `true` -
-#     BEFORE 7.5 attaches the SCP that denies changing it. In the other order the deny blocks
-#     the very call that enables the setting it protects, in every account at once, and the
-#     repair is a detach from the management account.
-#   - AT EVERY VEND, forever (D34, D35). A new account lands with BPA unset and inherits the
-#     root deny the moment it enters a governed OU; from then on only the carved-out
+# When it is read:
+#   - Before 7.4 step 1, as Stage 1c step 7.0 step 4: the plan assumes BPA is off everywhere.
+#     Where the Account Factory blueprint already set it, half of 7.4 is a no-op.
+#   - After 7.4 step 1, confirming that every row now reads four times `true`, and before 7.5
+#     attaches the SCP that denies changing it. In the other order the deny blocks the call
+#     that enables the setting it protects, in every account at once, and the repair is a
+#     detach from the management account.
+#   - At every vend (D34, D35). A new account lands with BPA unset and inherits the root deny
+#     the moment it enters a governed OU; from then on only the carved-out
 #     InfrastructureAccess role can set it (Stage 1c decision 7). Stage 14 owes a step for
-#     this, and this script is how that step is checked.
+#     this, checked with this script.
 #
-# ONE DELIBERATE DEVIATION from aws/INDEX.md's "one profile per script", the same one AZs.py
-# takes and for the same reason: the subject is a per-account setting compared ACROSS
-# accounts, so a single-profile version answers nothing. Section 1 names the identity behind
-# every row, which is what the one-profile rule exists to make visible.
+# This script deviates from aws/INDEX.md's "one profile per script", as AZs.py does: the
+# subject is a per-account setting compared across accounts, so a single-profile version
+# answers nothing. Section 1 names the identity behind every row.
 #
-# WHAT IT CANNOT SEE, stated because an empty column and a missing account look alike:
-#   - MANAGEMENT, LOG ARCHIVE and AUDIT have no profile on this laptop and never will
+# What it cannot see, since an empty column and a missing account look alike:
+#   - `Management`, `Log Archive` and `Audit` have no profile on this laptop and never will
 #     (guiding principle 1; docs/ORGANIZATION.md). They are invisible here. Run this script
 #     with `-` inside CloudShell in each of them, as `AWS Control Tower Admin`, and record
 #     the three answers by hand - section 4 prints the exact command.
 #   - `Staging` is not vended, and every Sandbox beyond the first has no profile until
 #     Stage 14 gives it one. Absent, not reassuring.
-#   - EXC-01, the SUSPENDED `Sandbox` at the organization root, is not this project's and
+#   - EXC-01, the suspended `Sandbox` at the organization root, is not this project's and
 #     cannot be acted on. It has no profile and belongs in no list here.
-#   - This is the ACCOUNT setting only. A bucket may still be public-blocked or not on its
+#   - This is the account setting only. A bucket may still be public-blocked or not on its
 #     own; that is a different call (s3api get-public-access-block --bucket).
 
 from __future__ import annotations
@@ -150,7 +147,7 @@ stay empty, and it still has an S3 API.""")
                 "--output",
                 "json",
             )
-            # cli.echo drops the --profile flag on an ambient (`-`) run, as the shell did.
+            # cli.echo drops the --profile flag on an ambient (`-`) run.
             rep.line(cli.echo(("s3control", "get-public-access-block", "--account-id", c.account)))
             rep.line()
             rep.line(res.merged)

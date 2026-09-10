@@ -1,10 +1,8 @@
-"""IPv4 CIDR overlap, the one piece of arithmetic the networking scripts share.
+"""IPv4 CIDR overlap, shared by the networking scripts.
 
-The shell versions carried this as an awk function computing the base and last address of
-each block; :mod:`ipaddress` does the same computation. Host bits are masked rather than
-rejected (``strict=False``), matching the awk, and anything that is not an IPv4 CIDR - an
-IPv6 block, a prefix-list id, ``-`` - reports "no overlap", because the callers pass route
-destinations of every shape and only the IPv4 question is being asked.
+Host bits are masked rather than rejected (``strict=False``). Anything that is not an IPv4
+CIDR - an IPv6 block, a prefix-list id, ``-`` - reports "no overlap", because the callers pass
+route destinations of every shape and only the IPv4 question is being asked.
 """
 
 from __future__ import annotations

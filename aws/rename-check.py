@@ -2,31 +2,28 @@
 # rename-check.py - Stage 6b's instrument: is the account that used to be `Development`
 # a Workload account yet, and is anything left stranded on the way?
 #
-# WHY THIS EXISTS AS ITS OWN FILE. Stage 6b converts one account from an Interactive
-# member of the SageMaker Unified Studio domain into the headless `Staging` deployment
-# target: a rename, an OU move, an SMUS unwind, a Lake Formation share revocation and a
-# persona swap, in that order and across four accounts. Each half is already visible in
-# some other instrument - studio.py sees the blueprint configurations, datalake.py the
-# grants, list-identities.py the assignments - and NONE of them answers the only question
-# an operator has mid-conversion: which side of the cut is this account on, and did
-# anything fail to cross? Reading six files and holding the answer in your head is exactly
-# how a stranded object survives (Lesson 31: a check inherits the scope of the account it
-# was written in).
+# Stage 6b converts one account from an Interactive member of the SageMaker Unified Studio
+# domain into the headless `Staging` deployment target: a rename, an OU move, an SMUS
+# unwind, a Lake Formation share revocation and a persona swap, in that order and across
+# four accounts. Each half is visible in some other instrument - studio.py sees the
+# blueprint configurations, datalake.py the grants, list-identities.py the assignments -
+# and none of them answers the question an operator has mid-conversion: which side of the
+# cut is this account on, and did anything fail to cross (Lesson 31)?
 #
-# THE THREE ANSWERS IT GIVES, and the middle one is the reason for the file:
+# The three readings, of which the last is why the file exists:
 #
-#   BEFORE   the roster still shows the old name in `Interactive`, the domain still has
+#   Before   the roster still shows the old name in `Interactive`, the domain still has
 #            two associated accounts, the share still exists. Nothing has run. Every
 #            check `note`s; nothing fails.
-#   AFTER    the new name in `Workloads`, no DataZone object, no share, no vending
+#   After    the new name in `Workloads`, no DataZone object, no share, no vending
 #            policy, the Staging persona set. Every check passes.
-#   MIXED    any combination of the two - and this is a FINDING, not a phase. The one
-#            that costs a sitting: an account already in `Workloads` that still holds
-#            blueprint configurations, which can no longer be deleted from inside it
-#            (the OU denies `datazone:*`). Stage 6b's step order exists to make that
-#            impossible; this file is what proves the order was followed.
+#   Mixed    any combination of the two, which is a finding rather than a phase. The
+#            expensive one: an account already in `Workloads` that still holds blueprint
+#            configurations, which can no longer be deleted from inside it (the OU denies
+#            `datazone:*`). Stage 6b's step order exists to make that impossible, and this
+#            file proves the order was followed.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -40,12 +37,12 @@
 #             sts:GetCallerIdentity.  It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing read look alike:
-#   - The Account Factory PROVISIONED PRODUCT's parameters. Whether Service Catalog's
+# What it cannot see, since an empty listing and a missing read look alike:
+#   - The Account Factory provisioned product's parameters. Whether Service Catalog's
 #     `AccountName` follows an out-of-band `PutAccountName` is undocumented, and the
 #     answer is only visible from Management, which holds no profile here. Read it in
 #     that account's console after step 3 and write what it says into the stage log.
-#   - The account's OU as CONTROL TOWER sees it. This file reads Organizations; a
+#   - The account's OU as Control Tower sees it. This file reads Organizations; a
 #     `Moved member account` drift is a Control Tower concept and shows in its console.
 #   - The state migration (Recipe E). `./scripts/slices.py check` and an empty plan are
 #     that half's evidence, not an AWS read.
@@ -61,9 +58,9 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "rename-check.txt"
 
-# The account under conversion, by both of its names. Resolution is by EXACT vended name
+# The account under conversion, by both of its names. Resolution is by exact vended name
 # (every Account Factory account carries an ` Account` suffix) and never by a prefix
-# match: a SUSPENDED `Sandbox` that predates this project sits in the same roster, and a
+# match: a suspended `Sandbox` that predates this project sits in the same roster, and a
 # loose match finds it.
 OLD_NAME = "Development Account"
 NEW_NAME = "Staging Account"
@@ -75,11 +72,11 @@ NEW_OU = "Workloads"
 # (D10), and every read below is a describe.
 ORG_PROFILE = "awsds-infra-identity"
 
-# The member profile. Both spellings are tried on purpose: the ~/.aws/config edit (step 5.0)
-# and the AWS-side rename do not happen in the same second, and this file has to keep reading
-# across that gap. The old row is still here for that reason and NOT because it resolves -
-# it stopped resolving on 2026-09-06, when the user renamed the profile; it is the tolerated
-# miss that lets the file be run from a machine whose config has not been edited yet.
+# The member profile. Both spellings are tried: the ~/.aws/config edit (step 5.0) and the
+# AWS-side rename do not happen in the same second, and this file has to keep reading across
+# that gap. The old row stopped resolving on 2026-09-06, when the profile was renamed; it is
+# the tolerated miss that lets the file run from a machine whose config has not been edited
+# yet.
 MEMBER_PROFILES = ("awsds-infra-dev", "awsds-infra-staging")
 
 # The producer of the lake share, and the account that owns the registry policies.
@@ -88,7 +85,7 @@ PRODUCER_PROFILE = "awsds-infra-data"
 # What D18 says the account may hold once it is a Workload deployment target. A set
 # rather than a list: the order permission sets come back in is the API's business.
 STAGING_SETS = {"InfrastructureAccess", "DataScientistStagingAccess", "DeploymentManagerAccess"}
-# What it must NOT hold. `DataScientistAccess` is read-write; `DevEnvStewardAccess` is an
+# What it must not hold. `DataScientistAccess` is read-write; `DevEnvStewardAccess` is an
 # image steward's, and a headless account has no images to steward.
 FORBIDDEN_SETS = {"DataScientistAccess", "DevEnvStewardAccess"}
 
@@ -231,10 +228,10 @@ def main(argv: list) -> int:
             tolerate="AccessDenied",
         )
         if dom.tolerated:
-            # The Workloads OU denies datazone:* outright, so a refusal HERE is the
-            # strongest evidence the move landed - and it is the reading that flips
-            # RC-3 from "no configurations" to "cannot even ask", which are different
-            # facts (Lesson 13).
+            # The Workloads OU denies datazone:* outright, so a refusal here is the
+            # strongest evidence the move landed, and it flips RC-3 from "no
+            # configurations" to "cannot even ask", which are different facts
+            # (Lesson 13).
             blueprints = "(datazone denied - the Workloads ceiling is in force)"
         elif dom.ok:
             ids = json.loads(dom.stdout or "[]")
@@ -292,12 +289,11 @@ def main(argv: list) -> int:
     if PRODUCER_PROFILE in live and acct_id:
         cli = cli_for(PRODUCER_PROFILE)
         note(f"reading the lake's grants as {PRODUCER_PROFILE} ...")
-        # THE PRINCIPAL IS A FILTER HERE, NOT A PARAMETER, AND THE FIRST RUN IS WHY
-        # (2026-09-05, Stage 6b step 0.4). `list-permissions --principal <account>` without
-        # `--resource` is refused outright - "Resource is mandatory if Principal is set in
-        # the input" - so this check could never have answered: it returned `(call failed)`
-        # in the BEFORE state and would have returned it identically in the AFTER one, which
-        # is Lesson 13's shape. The catalog is listed whole instead and the account matched
+        # The principal is a filter here, not a parameter. Measured 2026-09-05 (Stage 6b
+        # step 0.4): `list-permissions --principal <account>` without `--resource` is
+        # refused - "Resource is mandatory if Principal is set in the input" - so the call
+        # answers `(call failed)` in the before state and identically in the after one
+        # (Lesson 13). The catalog is listed whole instead and the account matched
         # client-side; the estate holds tens of permissions, not thousands.
         r = cli.run(
             "lakeformation",
@@ -320,9 +316,9 @@ def main(argv: list) -> int:
 
     # -------------------------------------------------------------------------- the checks
     #
-    # Every check below reads three ways on purpose: the BEFORE state notes, the AFTER
-    # state passes, and the combination that should not exist fails. A `note` here is a
-    # statement that the stage has not run - never that it does not apply.
+    # Every check below reads three ways: the before state notes, the after state passes,
+    # and the combination that should not exist fails. A `note` here says the stage has not
+    # run, never that it does not apply.
 
     # RC-1: the name.
     if acct_name == OLD_NAME:
@@ -354,8 +350,8 @@ def main(argv: list) -> int:
     else:
         checks.note("RC-2", "the account's OU", acct_ou)
 
-    # RC-3: THE ORDERING CHECK, and the reason this file exists. Blueprint configurations
-    # are deleted by the MEMBER, and the destination OU denies datazone:* on arrival.
+    # RC-3: the ordering check. Blueprint configurations are deleted by the member, and the
+    # destination OU denies datazone:* on arrival.
     in_workloads = acct_ou == NEW_OU
     if blueprints == "(not read)":
         checks.note("RC-3", "the SMUS surface", "no member profile authenticated")
@@ -381,12 +377,11 @@ def main(argv: list) -> int:
     else:
         checks.note("RC-3", "the SMUS surface", f"{blueprints} - step 1 has not run")
 
-    # RC-4: the RAM share the association rides on - and it is NOT the only share this
-    # account holds (measured 2026-09-05, first run: three, from two different steps). The
-    # `DataZone-*` share is the association's and goes at step 1; the two `LakeFormation-V4-*`
-    # shares are the lake's and go at step 2.3. Reporting them as one number would say
-    # "step 1 has not run" for two months after step 1 ran, which is the failure mode this
-    # whole file exists to catch in the estate rather than commit in its own output.
+    # RC-4: the RAM share the association rides on, which is not the only share this
+    # account holds (measured 2026-09-05: three, from two different steps). The `DataZone-*`
+    # share is the association's and goes at step 1; the two `LakeFormation-V4-*` shares are
+    # the lake's and go at step 2.3. Reporting them as one number would say "step 1 has not
+    # run" long after step 1 ran.
     if ram_shares == "(not read)":
         checks.note("RC-4", "the domain's RAM share", "no member profile authenticated")
     elif ram_shares == "(none)":
@@ -433,12 +428,10 @@ def main(argv: list) -> int:
         held = set(sets_on_account)
         wrong = sorted(held & FORBIDDEN_SETS)
         missing = sorted(STAGING_SETS - held)
-        # BEFORE IS NOT MIXED, AND THIS BRANCH WAS MISSING UNTIL THE FIRST RUN (2026-09-05).
-        # The two forbidden sets are the account's STARTING state - the header above promises
-        # that everything notes before the stage runs, and RC-5 was failing on the untouched
-        # estate, which is a check crying wolf at its own baseline. What makes the same
-        # reading a FINDING is the account having already been renamed or moved while still
-        # holding them: that is the mixed state, and it is what the fail branch now says.
+        # The before state is not the mixed one. The two forbidden sets are the account's
+        # starting state, so holding them is a note while the account still carries its old
+        # name and OU. The same reading is a finding once the account has been renamed or
+        # moved and still holds them - the mixed state the fail branch below names.
         converted = acct_name == NEW_NAME or acct_ou == NEW_OU
         if wrong and not converted:
             checks.note(

@@ -2,7 +2,7 @@
 # declarative-ec2.py - the four EC2 settings awsds-org-declarative-ec2 declares, read back
 # from each account, one row per account per attribute.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -19,39 +19,34 @@
 #   exits:    0 every measured account matches the document | 1 a call failed or a value
 #             does not match
 #
-# WHY THIS EXISTS AND THE BATTERY DOES NOT COVER IT. A declarative policy is enforced in the
-# SERVICE's control plane, not in authorization - so it produces no "explicit deny", names no
-# policy id, and governs service-linked roles, which no SCP does. The SCP battery can only
-# show that an account is REFUSED when it tries to change one of these settings. It cannot
-# show what the setting IS, and the setting is the control. That is this script.
+# A declarative policy is enforced in the service's control plane, not in authorization: it
+# produces no "explicit deny", names no policy id, and governs service-linked roles, which no
+# SCP does. The SCP battery shows only that an account is refused when it tries to change one
+# of these settings; it cannot show what the setting is, and the setting is the control.
 #
-# The two instruments answer different questions and both are needed:
+# The two instruments answer different questions:
 #
 #   ./aws/probes/scp-battery.py --phase decl   does the account get refused, and does it
-#                                              receive OUR exception message?
+#                                              receive our exception message?
 #   ./aws/declarative-ec2.py                   is the value actually what the document says?
 #
-# WHAT MAKES THE SECOND QUESTION NON-OBVIOUS: attaching this policy CHANGES EXISTING STATE in
-# every account it reaches, which none of 7.5/7.6/7.7's documents do - those only constrain
-# future calls. Detaching rolls each attribute back to whatever it was before the attach
-# (AWS Organizations user guide). So "attached" and "in effect" are two facts here, and only
-# the second one is a control.
+# Attaching this policy changes existing state in every account it reaches, which none of
+# 7.5/7.6/7.7's documents do - those only constrain future calls. Detaching rolls each
+# attribute back to whatever it was before the attach (AWS Organizations user guide). So
+# "attached" and "in effect" are two facts here, and only the second is a control.
 #
-# TWO VOCABULARIES, and they do not match, which is the trap this script exists to absorb:
-# the policy document writes `block_all_sharing` and `disabled`; the EC2 API answers
-# `block-all-sharing` and `false`. The expected values below are therefore written in the
-# API's spelling and mapped by hand - deriving them from the JSON would be a translation
-# nobody reviews.
+# The two vocabularies do not match: the policy document writes `block_all_sharing` and
+# `disabled`; the EC2 API answers `block-all-sharing` and `false`. The expected values below
+# are written in the API's spelling and mapped by hand.
 #
-# WHAT IT CANNOT SEE, stated because an empty column and a missing account look alike:
-#   - MANAGEMENT, LOG ARCHIVE and AUDIT have no profile on this laptop and never will
+# What it cannot see, since an empty column and a missing account look alike:
+#   - `Management`, `Log Archive` and `Audit` have no profile on this laptop and never will
 #     (guiding principle 1). Run this with `-` in CloudShell inside each and record the three
-#     answers by hand. MANAGEMENT MATTERS HERE IN A WAY IT DOES NOT ELSEWHERE: it is exempt
-#     from SCPs and RCPs, but AWS documents no such exemption for declarative policies, so a
-#     root attach is expected to reach it. That expectation is UNMEASURED until someone runs
-#     this there, and it is the one reading that decides it.
+#     answers by hand. `Management` is the one that matters: it is exempt from SCPs and RCPs,
+#     but AWS documents no such exemption for declarative policies, so a root attach is
+#     expected to reach it. That expectation is unmeasured until someone runs this there.
 #   - `Staging` is not vended; every Sandbox beyond the first has no profile until Stage 14.
-#   - EXC-01, the SUSPENDED `Sandbox` at the organization root, is not this project's.
+#   - EXC-01, the suspended `Sandbox` at the organization root, is not this project's.
 
 from __future__ import annotations
 
@@ -67,9 +62,8 @@ OUT_NAME = "declarative-ec2.txt"
 #
 # name | the aws ec2 sub-command | the --query that isolates the value | expected (API spelling)
 #
-# The expected column is the DOCUMENT translated into what the API answers. Change the
-# document and this list has to change with it - which is deliberate: the translation is
-# where a mistake would otherwise hide, so it is written where a reviewer will see it.
+# The expected column is the document translated into what the API answers: change the
+# document and this list changes with it, where a reviewer will see the translation.
 ATTRS = [
     (
         "image_block_public_access",
@@ -207,12 +201,10 @@ Before the attach this is the expected answer; after it, it is a finding.
                         ("organizations", "describe-effective-policy"), res.merged, c.profile
                     )
             elif not res.stdout or res.stdout in ("{}", "None"):
-                # Measured 2026-08-14: with the policy type ENABLED but nothing attached,
+                # Measured 2026-08-14: with the policy type enabled but nothing attached,
                 # Organizations answers `{}` rather than raising
                 # EffectivePolicyNotFoundException. An empty object and a missing policy are
-                # the same fact and neither is an error - which is worth saying, because a
-                # script that only handled the exception would print `{}` as if it were
-                # content.
+                # the same fact, and neither is an error.
                 rep.text("""{}  - no EC2 declarative policy reaches this account.
 Before the attach this is the expected answer; after it, it is a finding.
 

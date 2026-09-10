@@ -9,33 +9,33 @@
 #   exit:     0 when every probe met its expectation; 1 on a regression, an overreach or
 #             a broken floor; 2 when the run could not be trusted (dead SSO session).
 #
-# WHAT THIS SCRIPT IS NOT ALLOWED TO DO, and the seam is deliberate: it never attaches,
-# detaches, creates or updates a policy. The human attaches from the Management console;
-# the script only measures what the attached ceiling does. A script that could both change
-# the ceiling and report on it would be able to report on a ceiling it had just changed.
+# This script never attaches, detaches, creates or updates a policy. The human attaches
+# from the Management console; the script only measures what the attached ceiling does. A
+# script that could both change the ceiling and report on it would be able to report on a
+# ceiling it had just changed.
 #
-# WHETHER ANYTHING IS CREATED IS A DECLARED FIELD, NOT A JUDGEMENT. Every probe in probes.py
+# Whether anything is created is a declared field, not a judgement. Every probe in probes.py
 # carries a mandatory `safety` value and the driver refuses to run one that does not:
 #   ro       read-only; changes nothing even if fully allowed
 #   dryrun   carries --dry-run, which the driver verifies is actually there
 #   blocked  mutating, but a prerequisite named in the command does not exist, so removing
 #            the deny only moves the failure one step later
-#   creates  would really do something if the deny lifted. SEVEN probes - three in the root
-#            phase, four in `decl` - and the driver REFUSES to run them outside Policy Canary,
-#            which is the one place this project accepts the residual risk of an "allowed".
+#   creates  would really do something if the deny lifted. Three probes in the root phase
+#            and four in `decl`, and the driver refuses to run them outside Policy Canary,
+#            the one place this project accepts the residual risk of an "allowed".
 #
-# THE THREE THINGS THIS ENCODES THAT A HAND-RUN BATTERY KEPT GETTING WRONG:
-#   1. A dead SSO session makes every probe come back looking exactly like a deny. It
-#      happened twice in one sitting. So the session is checked per account per phase, and
-#      a non-answer ABORTS the run instead of being recorded (exit 2). But ONLY an expired
-#      token aborts: credentials can also fail to vend because the ceiling denied the
-#      sign-in, and that is the most serious finding this battery can make rather than a
-#      reason to stop - so ensure_session reads the wording too (Lesson 24).
-#   2. The outcome is read from the error WORDING, never from the exit code - and an
+# What the driver encodes, against a hand-run battery:
+#   1. A dead SSO session makes every probe come back looking exactly like a deny, so the
+#      session is checked per account per phase and a non-answer aborts the run instead of
+#      being recorded (exit 2). Only an expired token aborts: credentials can also fail to
+#      vend because the ceiling denied the sign-in, which is the most serious finding this
+#      battery can make rather than a reason to stop, so ensure_session reads the wording
+#      too (Lesson 24).
+#   2. The outcome is read from the error wording, never from the exit code, and an
 #      explicit-deny message names the policy id, which is the attribution.
-#   3. "The service validates before authorizing" is a property of the ACTION, not of the
+#   3. "The service validates before authorizing" is a property of the action, not of the
 #      service (Lesson 21), so each probe declares the wording that proves authorization
-#      was reached for that action. Anything else is UNTESTED - never silently "allowed".
+#      was reached for that action. Anything else is untested - never silently "allowed".
 
 from __future__ import annotations
 
@@ -51,8 +51,8 @@ from pathlib import Path
 import probes as probes_data
 import readback
 
-# The one recognizer for "a token vended, just not for this human". It lives in awslib
-# because three callers now need it and the wording is the datum in all three.
+# The recognizer for "a token vended, just not for this human". It lives in awslib because
+# three callers need it and the wording is the datum in all three.
 from awslib.profiles import wrong_identity
 
 HERE = Path(__file__).resolve().parent
@@ -73,8 +73,8 @@ PROFILES = {
 }
 
 # The one place that decides "this is an expired token, not an answer". Shared by
-# ensure_session and classify on purpose: two copies of this regex would drift, and the
-# direction they drift in is silent - a real deny read as a dead session, or the reverse.
+# ensure_session and classify: two copies of this regex would drift, and the direction they
+# drift in is silent - a real deny read as a dead session, or the reverse.
 EXPIRY_RE = re.compile(
     "SSO session associated with this profile has expired|ExpiredToken"
     "|InvalidGrantException|Error loading SSO Token|Unable to locate credentials"
@@ -105,22 +105,20 @@ def aws(argv: list) -> tuple[str, int]:
 
 
 def assignment_exists(profile: str) -> bool | None:
-    """Does Identity Center itself say the CACHED TOKEN is assigned this profile's role?
+    """Does Identity Center say the cached token is assigned this profile's role?
 
-    WHY THIS EXISTS, AND WHY IT IS NOT A SHORTCUT - Lesson 24, arriving from the other
-    side. `ForbiddenException ... GetRoleCredentials` has ONE wording and TWO causes:
+    `ForbiddenException ... GetRoleCredentials` has one wording and two causes (Lesson 24):
 
       - the ceiling denied the sign-in flow itself. `awsds-org-rcp-perimeter` did this on
         2026-08-14 in all six member accounts - the most serious finding this battery can
-        produce, and the reason ensure_session stopped treating that wording as expiry.
-      - a valid token cached for a DIFFERENT human, who holds no such role. Measured
+        produce, and the reason ensure_session does not treat that wording as expiry.
+      - a valid token cached for a different human, who holds no such role. Measured
         2026-08-20: a browser silently re-approved a live portal session, `aws sso login`
         reported success, and every `awsds-infra-*` profile failed exactly like a breach.
 
-    Suppressing the second BY ITS WORDING would suppress the first with it - which is the
-    failure ensure_session's docstring is already about, run in reverse. So ask the system
-    that answers a different question: IdC's own listing of what this token is assigned.
-    That path never traverses STS, so no SCP and no RCP can shape its answer.
+    Suppressing the second by its wording would suppress the first with it, so this asks
+    the system that answers a different question: IdC's own listing of what this token is
+    assigned. That path never traverses STS, so no SCP and no RCP can shape its answer.
 
     True  - the assignment exists, so a refusal to vend is the ceiling. The finding stands.
     False - this token's user has no such role. Operator error, and nothing about the org.
@@ -184,21 +182,17 @@ class Battery:
     # ---------------------------------------------------------------- session
     def ensure_session(self, acct: str, phase: str) -> bool:
         """The session is checked once per account per phase - "immediately before each
-        block of probes", which is what the runbook asks for and what the two mid-battery
-        expiries taught.
+        block of probes", as the runbook asks.
 
-        WHY THIS READS THE WORDING INSTEAD OF THE EXIT CODE (Lesson 24, 2026-08-14). There
-        are two reasons credentials fail to vend, they are indistinguishable by exit code,
-        and they need opposite handling:
+        It reads the wording rather than the exit code (Lesson 24). Two reasons credentials
+        fail to vend are indistinguishable by exit code and need opposite handling:
           - the SSO token expired. Nothing can be measured, and continuing would record
             every probe as a deny. Stop the run.
           - the ceiling denied the sign-in itself. `awsds-org-rcp-perimeter` did exactly
             that on 2026-08-14: its STS statement named the actions Identity Center's SAML
             flow needs, so `GetRoleCredentials` returned `ForbiddenException ... No access`
             in all six member accounts. That is the single most serious finding the battery
-            can produce - and the old code aborted with "dead SSO session" before recording
-            it, so the six `rcp` floor probes written to catch it could never run. The
-            defence against the first case swallowed the second.
+            can produce, and the six `rcp` floor probes exist to catch it.
         So: expiry stops the run, anything else is recorded as a floor breach and the run
         continues to the accounts that still answer. Returns False when the account is
         unusable, and the caller records the probes it could not run rather than dropping
@@ -228,7 +222,7 @@ class Battery:
             )
 
         # The wording below is the ceiling's, but it is also the wrong human's. Ask IdC
-        # which, and stop ONLY when IdC says the role was never this token's to vend -
+        # which, and stop only when IdC says the role was never this token's to vend -
         # otherwise fall through and record the breach, including when it cannot answer.
         if wrong_identity(out) and assignment_exists(profile) is False:
             die(
@@ -317,7 +311,7 @@ class Battery:
 
     # ---------------------------------------------------------------- classify
     def classify(self, out: str, allowed_re: str, rc: int) -> tuple[str, str]:
-        """Reads the WORDING. The order matters: a dead session and an IAM-level deny both
+        """Reads the wording. The order matters: a dead session and an IAM-level deny both
         contain "AccessDenied", and only the SCP wording names a policy."""
         if EXPIRY_RE.search(out):
             return "NOANSWER", ""
@@ -327,20 +321,18 @@ class Battery:
         if "explicit deny in a resource control policy" in out:
             m = re.search(r"p-[a-z0-9]{8,}", out)
             return "DENY-RCP", m.group(0) if m else ""
-        # A DECLARATIVE policy is enforced in the SERVICE's control plane, not in
-        # authorization (AWS Organizations user guide, "How declarative policies work"). So
+        # A declarative policy is enforced in the service's control plane, not in
+        # authorization (AWS Organizations user guide, "How declarative policies work"), so
         # it names no policy id and produces no "explicit deny" wording: the attribution is
-        # the EXCEPTION MESSAGE, which is why this project sets a custom one. Matching our
-        # own marker first is what distinguishes "the policy fired and delivered our
-        # message" from "the policy fired with AWS's default" - and the second is a
-        # finding, because the custom message is half the point of the document.
-        # ...with one correction, measured 2026-08-14: the custom message is ALSO echoed
-        # back by a SUCCESSFUL read of a setting the policy manages.
-        # `ec2 get-instance-metadata-defaults` returns rc=0 with "ManagedBy":
-        # "declarative-policy" and "ManagedExceptionMessage": <our text>, so matching the
-        # marker alone classified the two decl FLOOR probes - the ones whose whole job is
-        # to prove the read still works - as denials. Enforcement arrives as an API error;
-        # an echo arrives as a result, and the exit code is the only thing separating them.
+        # the exception message, and this project sets a custom one. Matching that marker
+        # first distinguishes "the policy fired and delivered our message" from "the policy
+        # fired with AWS's default", and the second is a finding.
+        # Measured 2026-08-14: the custom message is also echoed back by a SUCCESSFUL read
+        # of a setting the policy manages. `ec2 get-instance-metadata-defaults` returns
+        # rc=0 with "ManagedBy": "declarative-policy" and "ManagedExceptionMessage": <our
+        # text>, so matching the marker alone classified the two decl floor probes - the
+        # ones whose job is to prove the read still works - as denials. Enforcement arrives
+        # as an API error, an echo as a result, and the exit code separates them.
         if rc != 0 and "organization EC2 declarative policy" in out:
             return "DENY-DECL", "custom-message"
         if rc != 0 and re.search("denied due to an organizational policy|declarative policy", out):
@@ -352,8 +344,7 @@ class Battery:
         if rc == 0:
             return "ALLOWED", "succeeded"
         # An AccessDenied that names no policy is an IAM/permission-set deny, not the
-        # ceiling - worth separating, because it answers a different question from the one
-        # being asked.
+        # ceiling, and it answers a different question from the one being asked.
         if re.search("AccessDenied|UnauthorizedOperation|not authorized", out):
             return "DENY-NOT-SCP", ""
         return "UNTESTED", ""
@@ -374,9 +365,8 @@ class Battery:
             ("allow", "DENY-NOT-SCP"): "BAD",
             ("allow", "UNTESTED"): "NOTE",
             # Credentials that do not vend at all. Against an `allow` expectation this is
-            # the floor itself giving way - the most serious row the battery can print -
-            # and it is BAD even though nothing was measured, because what failed is the
-            # measurement's precondition.
+            # the floor itself giving way, and it is BAD even though nothing was measured:
+            # what failed is the measurement's precondition.
             ("allow", "NO-CREDENTIALS"): "BAD",
         }.get((expect, outcome), "NOTE")
 
@@ -432,8 +422,7 @@ class Battery:
 
         # An account that cannot vend credentials has already been recorded as a floor
         # breach. Its probes are marked untested rather than skipped: a probe that vanishes
-        # from the count reads as one that passed, and the whole point of this run is that
-        # the totals mean something.
+        # from the count reads as one that passed.
         if not self.ensure_session(acct, phase):
             self.record(phase, acct, expect, label, "UNTESTED", f"no credentials in {acct}")
             return
@@ -445,14 +434,13 @@ class Battery:
             if "@AMI@" in arg or "@SUBNET@" in arg or "@ACCT@" in arg:
                 region = REGION_DEFAULT
                 if "--region" in argv:
-                    # the LAST --region wins, matching the shell's grep -A1 | tail -1
+                    # the last --region wins
                     idxs = [i for i, a in enumerate(argv) if a == "--region"]
                     region = argv[idxs[-1] + 1]
                 # An id that could not be resolved must stop the probe, not be substituted
                 # as an empty string: the call would then fail on a malformed argument and
                 # be classified UNTESTED with no hint of why. Resolution itself can be
-                # *denied* - a region control denies the ssm:GetParameter that finds the
-                # AMI - and that is worth saying out loud.
+                # *denied*: a region control denies the ssm:GetParameter that finds the AMI.
                 if "@AMI@" in arg:
                     ami = self.resolve_ami(acct, region)
                     if not ami:
@@ -488,15 +476,14 @@ class Battery:
 
     # ------------------------------------------------------- deployed vs repository
     def run_readback(self) -> None:
-        """Answers "is the thing being probed the thing in policies/?" before a single
-        probe runs. Every amendment this project has made was uploaded by hand, and a
-        battery run against the previous content looks exactly like a battery run against
-        the current one."""
+        """Answers "is the thing being probed the thing in policies/?" before any probe
+        runs. Every amendment here is uploaded by hand, and a battery run against the
+        previous content looks exactly like one against the current content."""
         bold("Read-back: what is attached, against terraform-live/.../policies/")
-        # If Identity cannot vend credentials the read-back cannot run - but that is itself
+        # If Identity cannot vend credentials the read-back cannot run, but that is itself
         # the finding, and the probes below still discriminate *which* accounts are locked
-        # out. Say plainly that what follows is measured against unverified policy content,
-        # and continue.
+        # out. Say that what follows is measured against unverified policy content, and
+        # continue.
         if not self.ensure_session("identity", "readback"):
             print(
                 "  SKIPPED - no credentials in Identity, so the deployed policies were never read."
@@ -523,7 +510,7 @@ def main(argv: list) -> int:
         elif a == "--no-readback":
             do_readback = False
         elif a in ("-h", "--help"):
-            # The header comment is the manual, exactly as the shell printed it.
+            # The header comment is the manual; the slice below is lines 2-39.
             header = Path(__file__).read_text(encoding="utf-8").splitlines()[1:39]
             print(
                 "\n".join(

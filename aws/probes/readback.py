@@ -3,21 +3,19 @@
 
     readback.py <policy-dir> <profile>
 
-Run by scp-battery.py before a single probe fires, and answering one question: is the thing
-about to be measured the thing in the repository? Every amendment this project has made was
-uploaded by hand into a console, and a battery run against the previous content is
-indistinguishable from a battery run against the current one - it passes, and it proves the
-old ceiling. Reads only; needs the Identity profile, where Organizations reads answer.
+Run by scp-battery.py before any probe fires: is the thing about to be measured the thing in
+the repository? Every amendment here is uploaded by hand into a console, and a battery run
+against the previous content passes, proving the old ceiling. Reads only; needs the Identity
+profile, where Organizations reads answer.
 
 It compares entries in order and the total action count, not the whole document: the rendered
 copy carries substituted ids the template still holds as placeholders, so a byte comparison
-would report a difference on every run and be ignored by the second week.
+would report a difference on every run.
 
-FOUR POLICY TYPES SINCE 7.8, and the type is derived from the DOCUMENT rather than from the
-filename. A `list-policies` call takes exactly one --filter, so a version that listed only
-SERVICE_CONTROL_POLICY reported every RCP, tag policy and declarative policy as "no policy of
-that name in the organization" - which is indistinguishable from "not attached yet" and stays
-that way forever after it is attached. That is a read-back that reassures without measuring.
+The type is derived from the document, not from the filename. A `list-policies` call takes
+exactly one --filter, so listing only SERVICE_CONTROL_POLICY reports every RCP, tag policy and
+declarative policy as "no policy of that name in the organization" - indistinguishable from
+"not attached yet", and it stays that way forever after the policy is attached.
 """
 
 import glob
@@ -26,8 +24,8 @@ import os
 import subprocess
 import sys
 
-# The one place the four types are enumerated. `list-policies` accepts a single --filter, so
-# this is also the list of calls made.
+# The four types, enumerated once. `list-policies` accepts a single --filter, so this is also
+# the list of calls made.
 POLICY_TYPES = [
     "SERVICE_CONTROL_POLICY",
     "RESOURCE_CONTROL_POLICY",
@@ -46,10 +44,10 @@ def aws_json(args, profile):
 
 
 def kind(doc):
-    """The policy TYPE, read off the document's shape.
+    """The policy type, read off the document's shape.
 
-    An RCP is an SCP that carries `Principal` - that element is mandatory in an RCP and
-    forbidden in an SCP, which makes it the discriminator rather than a heuristic.
+    `Principal` is mandatory in an RCP and forbidden in an SCP, so it is the discriminator
+    between the two.
     """
     if "Statement" in doc:
         if any("Principal" in s for s in doc["Statement"]):
@@ -84,8 +82,8 @@ def counts(doc):
 
 
 def run(policy_dir, profile):
-    """The comparison, importable by scp-battery.py (which used to shell out to this
-    file); `main()` below keeps the standalone command-line form working."""
+    """The comparison, importable by scp-battery.py; `main()` below keeps the standalone
+    command-line form working."""
     # name -> (id, type). Built from all four listings, because a document's type is not
     # knowable from its name and a missing listing reads exactly like a missing policy.
     deployed = {}

@@ -1,14 +1,14 @@
 #!/usr/bin/env -S uv run --quiet
 # sandboxlake.py - Stage 16's evidence: the sandbox lake (awsds-sandbox-lake) and the
 # register of who can reach it. The bucket's shape (versioning, SSE-KMS under the account
-# data CMK, BPA, the TLS-only statement, NO expiry on current objects - permanence is the
+# data CMK, BPA, the TLS-only statement, no expiry on current objects - permanence is the
 # design), the access role and its trust (enumerated, never a wildcard), the S3 Access
-# Grants location and EVERY grant on the bucket classified by SHAPE against the contract
+# Grants location and every grant on the bucket classified by shape against the contract
 # (group folders, the two grantee classes, orphans) - a grant whose project role no
 # longer exists is a dead project that skipped runbook §R. The preflight for Stage 16,
 # and the standing regression after it.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -25,31 +25,31 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# ONE PROFILE, and why it can see what it sees: every object this stage builds lives in
-# the Sandbox account - the bucket, the access role, the Access Grants instance and its
-# grants - so awsds-infra-sandbox-1 (the infrastructure user, InfrastructureAccess in
-# Sandbox) reads all of it. The domain lives in Data Governance, but nothing here needs
-# it: project roles are classified by reading IAM in THIS account.
+# One profile: every object this stage builds lives in the Sandbox account - the bucket,
+# the access role, the Access Grants instance and its grants - so awsds-infra-sandbox-1
+# (the infrastructure user, InfrastructureAccess in Sandbox) reads all of it. The domain
+# lives in Data Governance, and nothing here needs it: project roles are classified by
+# reading IAM in this account.
 #
-# THE ONE CHECK TO KNOW BY NAME: SL-4. Access is vended-only by design, so the whole
-# entitlement is the grant list - an enumerable register. Every grant on the bucket must
-# classify as either a standing per-group grant (grantee = a reserved persona role, scope
-# = one sso-group folder) or a per-project grant (grantee = a live datazone_usr_role_*).
+# SL-4 is the check to know by name. Access is vended-only, so the whole entitlement is
+# the grant list - an enumerable register. Every grant on the bucket must classify as
+# either a standing per-group grant (grantee = a reserved persona role, scope = one
+# sso-group folder) or a per-project grant (grantee = a live datazone_usr_role_*).
 # Anything else - a directory grantee nobody decided (Stage 16 decision 2), an unknown
-# principal, an orphaned project role - is a FAIL to attribute, never a row to tidy.
+# principal, an orphaned project role - is a fail to attribute, never a row to tidy.
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the in-project read/write through the S3 connection, the
 #     s3-read-write vend, the two refusals - are the stage's own (Lesson 20).
-#   - Policy readings are PRESENCE, never sufficiency (the TLS statement, the trust).
-#   - Whether a well-shaped grant was AUTHORIZED: SL-4 reads shape and orphans; the
-#     authorized-or-not half is a HUMAN diff against AWS_STATE.md, which this script
+#   - Policy readings are presence, never sufficiency (the TLS statement, the trust).
+#   - Whether a well-shaped grant was authorized: SL-4 reads shape and orphans; the
+#     authorized-or-not half is a human diff against AWS_STATE.md, which this script
 #     does not read.
-#   - SL-5's wildcard nuance: a literal bucket name in an Allow is a FAIL; a wildcard
-#     resource that merely COVERS the bucket surfaces as a note to read, never a pass.
+#   - SL-5's wildcard nuance: a literal bucket name in an Allow is a fail; a wildcard
+#     resource that merely covers the bucket surfaces as a note to read, never a pass.
 #   - The portal's connection objects (DataZone-side) are read at the stage, not here:
 #     the grant register is the entitlement; a connection without a grant reaches nothing.
-#   - "Not built yet" is a note, never a fail - the first run predates pass 1.
+#   - "Not built yet" is a note, never a fail.
 
 from __future__ import annotations
 
@@ -73,20 +73,16 @@ GROUP_PREFIX = "sso-group-"  # every lake prefix is one SSO group's folder
 PROJECT_ROLE_PREFIX = "datazone_usr_role_"  # SMUS project user roles
 PERSONA_MARK = "AWSReservedSSO_"  # reserved roles = permission-set principals
 
-# The checker's copy of var.tenants (terraform-live/sandbox/lake/variables.tf) - the group
-# name IS the prefix, and the pairing is the whole standing-grant contract. A checker
-# necessarily restates what it checks, and this divergence is LOUD by construction: a tenant
-# added to the slice without a mirror row here makes SL-4 FAIL on the new legitimate grant,
-# which is the direction that gets a human to read both files. What the pre-2026-08-26 shape
-# got wrong (found by step 6.1's sacrificial grant, the detector's first live anomaly): ANY
-# AWSReservedSSO_* grantee classified as standing - the operator's own role included - and
-# the detail printed '<group>/*' whatever the real sub-prefix was.
+# The checker's copy of var.tenants (terraform-live/sandbox/lake/variables.tf): the group
+# name is the prefix, and the pairing is the whole standing-grant contract. A tenant added
+# to the slice without a mirror row here makes SL-4 fail on the new legitimate grant, which
+# is the direction that gets a human to read both files.
 TENANTS = {
     "sso-group-data-scientists": "DataScientistAccess",
     "sso-group-deployment-managers": "DeploymentManagerAccess",
     "sso-group-dev-env-stewards": "DevEnvStewardAccess",
 }
-PERSONA_SET = "DataScientistAccess"  # SL-5: the set that must NOT allow the bucket directly
+PERSONA_SET = "DataScientistAccess"  # SL-5: the set that must not allow the bucket directly
 
 ABSENT = (
     "NoSuchBucket|NoSuchPublicAccessBlockConfiguration|NoSuchLifecycleConfiguration"
@@ -200,8 +196,8 @@ def main(argv: list) -> int:
             )
             if doc:
                 persona_docs.append((f"inline:{pname}", doc.get("PolicyDocument", {})))
-        # The attached half is where persona S3 access actually arrives now (the vending
-        # policy is a customer-managed attachment) - inline-only would be Lesson 31's gap.
+        # The attached half is where persona S3 access arrives: the vending policy is a
+        # customer-managed attachment, so inline-only would be Lesson 31's gap.
         attached = run_json("iam", "list-attached-role-policies", "--role-name", persona_role) or {}
         for ap in attached.get("AttachedPolicies", []):
             arn = ap.get("PolicyArn", "")
@@ -220,7 +216,7 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------------------------ checks
 
-    # SL-1: the bucket's shape - and its PERMANENCE, which is the stage's whole point.
+    # SL-1: the bucket's shape, and its permanence.
     if not bucket_exists:
         checks.note("SL-1", f"bucket {BUCKET}", "not built yet - expected before Stage 16 pass 1.")
     else:
@@ -323,10 +319,10 @@ def main(argv: list) -> int:
             arns = [arns] if isinstance(arns, str) else arns
             for arn in arns:
                 if PROJECT_ROLE_PREFIX in arn:
-                    # DISTINCT roles, not statements: each wired project contributes THREE
-                    # statements (Assume / SetSourceIdentity / TagSession) naming one role,
-                    # and a statement count read as a role count says "3 projects" where
-                    # one is wired (found on the first wiring, 2026-08-26).
+                    # Distinct roles, not statements: each wired project contributes
+                    # three statements (Assume / SetSourceIdentity / TagSession) naming one
+                    # role, so a statement count read as a role count says "3 projects"
+                    # where one is wired (measured 2026-08-26).
                     project_roles.add(arn.split("/")[-1])
                 else:
                     problems.append(f"unexpected AWS principal {arn.split('/')[-1]}")
@@ -381,7 +377,7 @@ def main(argv: list) -> int:
             "treating the lake's register as complete.",
         )
 
-    # SL-4: THE REGISTER. Every grant on the bucket classifies, or it is a finding.
+    # SL-4: the register. Every grant on the bucket classifies, or it is a finding.
     if not lake_grants:
         checks.note("SL-4", "lake grants", "none - expected before Stage 16 pass 3.")
     for g in lake_grants:
@@ -445,8 +441,8 @@ def main(argv: list) -> int:
                 "a grant nobody authorized is a finding; attribute it before touching it.",
             )
 
-    # SL-5: vended-only means the persona holds NO direct allow on the bucket - read off
-    # the role's inline AND attached documents. A literal bucket name is decisive (fail);
+    # SL-5: vended-only means the persona holds no direct allow on the bucket, read off
+    # the role's inline and attached documents. A literal bucket name is decisive (fail);
     # a wildcard that merely covers it is surfaced to be read (note), because deciding it
     # here would need the action-by-action reasoning a human owes the statement.
     if persona_role is None:

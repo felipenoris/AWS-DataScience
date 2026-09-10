@@ -2,8 +2,8 @@
 
 The snapshot scripts have two homes. Normally they run from a clone of this repository and
 write to ``aws/output/`` (untracked). The ``-`` fallback runs them in CloudShell, which may
-hold only the ``aws/`` folder - so the repository root is *located* rather than assumed, and
-when there is none the report lands beside the script, where the operator can download it.
+hold only the ``aws/`` folder, so the repository root is *located* rather than assumed; with
+no repository the report lands beside the script, where the operator can download it.
 """
 
 from __future__ import annotations
@@ -12,16 +12,14 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-# The three constants every script in aws/ shares. The region is the one deliberate literal:
-# these scripts REPORT on infrastructure and are not infrastructure code, so the "region is a
-# variable" rule for .tf files (docs/plan/architecture.md) does not reach them - same as the
-# shell versions, which carried REGION="us-west-2" at the top of every file.
+# The three constants every script in aws/ shares. The region is a deliberate literal: these
+# scripts report on infrastructure and are not infrastructure code, so the "region is a
+# variable" rule for .tf files (docs/plan/architecture.md) does not reach them.
 REGION = "us-west-2"
 SSO_SESSION = "awsds"
 PROFILE_PREFIX = "awsds-"
 
-# The marker that identifies the repository root. CLAUDE.md sits only there, which is what
-# the shell versions tested with `[ -f "$SCRIPT_DIR/../CLAUDE.md" ]`.
+# The marker that identifies the repository root: CLAUDE.md sits only there.
 _ROOT_MARKER = "CLAUDE.md"
 
 
@@ -61,8 +59,8 @@ def locate(script_file: str, levels_up: int = 1) -> Context:
             out_dir=candidate / "aws" / "output",
             standalone=False,
         )
-    # CloudShell: no repository. The report lands beside the script - writing to a path
-    # relative to a home directory that is not the repo is how a snapshot gets lost.
+    # CloudShell: no repository. The report lands beside the script, never under a home
+    # directory, where a snapshot would be lost.
     return Context(
         script_dir=script_dir,
         repo_root=script_dir,
@@ -72,7 +70,7 @@ def locate(script_file: str, levels_up: int = 1) -> Context:
 
 
 def utc_stamp() -> str:
-    """The report timestamp, exactly as the shell's ``date -u +%Y-%m-%dT%H:%M:%SZ``."""
+    """The report timestamp: ``%Y-%m-%dT%H:%M:%SZ``, UTC."""
     from datetime import datetime, timezone
 
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -89,12 +87,10 @@ def short_svc(svc: str) -> str:
     """``com.amazonaws.us-west-2.ecr.api`` -> ``ecr.api``; ``aws.sagemaker.us-west-2.studio``
     -> ``aws.sagemaker.studio``.
 
-    Lives here rather than in a script because it is a pure function of a service name and
-    ``REGION``, which this module owns, and because two scripts now need it: ``egress.py``
-    labels its endpoint checks with it, and ``networking.py`` (NT-10) labels the collisions
-    between a deployed endpoint's seized DNS names and the portal's public-required ones.
-    Moved out of ``egress.py`` on 2026-08-25 rather than copied - one intent enforced in two
-    places diverges (Lesson 33).
+    A pure function of a service name and ``REGION``, which this module owns, so it lives
+    here rather than in either caller: ``egress.py`` labels its endpoint checks with it, and
+    ``networking.py`` (NT-10) labels the collisions between a deployed endpoint's seized DNS
+    names and the portal's public-required ones.
     """
     out = svc.replace(f".{REGION}", "")
     if out.startswith("com.amazonaws."):

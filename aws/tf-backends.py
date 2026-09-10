@@ -2,7 +2,7 @@
 # tf-backends.py - the Terraform state buckets and their keys, one row per account, side by
 # side. The preflight for Stage 2 steps 2 and 3, and the standing regression after them.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -16,32 +16,31 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject is a
-# PER-ACCOUNT fact whose meaning is the comparison BETWEEN accounts: a state bucket that is
+# This script is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a
+# per-account fact whose meaning is the comparison between accounts. A state bucket that is
 # versioned, encrypted under a customer-managed key and closed to the public in five accounts
 # and merely versioned in the sixth is the sixth account's hole, and a single-profile version
-# would answer nothing. Same shape as account-bpa.py and AZs.py, and it pays the rule back
-# the same way - section 1 prints the caller ARN of every profile.
+# would answer nothing. Same shape as account-bpa.py and AZs.py; section 1 prints the caller
+# ARN of every profile.
 #
-# WHAT IT IS FOR, IN TWO PHASES.
+# What it is for:
 #
-#   BEFORE Stage 2 steps 2 and 3: "is anything already there". A bucket that already exists
+#   Before Stage 2 steps 2 and 3: "is anything already there". A bucket that already exists
 #   under the name the bootstrap slice is about to claim turns the first apply into either a
 #   BucketAlreadyOwnedByYou or - worse, if somebody else owns the name - a create that fails
-#   after the KMS key was made. Reading first costs seconds.
+#   after the KMS key was made.
 #
-#   AFTER them: "did every bootstrapped account get the same treatment". That is otherwise
-#   one `terraform plan` per account, in six directories, with six profiles - which is the
-#   kind of check that gets done once.
+#   After them: "did every bootstrapped account get the same treatment". That is otherwise
+#   one `terraform plan` per account, in six directories, with six profiles.
 #
-# THE THING IT MAKES VISIBLE THAT NOTHING ELSE DOES - Stage 2 step 3.4's two keys. "The PKI
-# key" is two different objects: the key that encrypts the production/pki/ STATE FILE, and
-# whatever key the CA itself uses. Only the first belongs to Stage 2, and it cannot be created
-# by the pki/ slice, because a backend is configured at `init` - before the slice has ever
-# applied. So production/bootstrap/ creates TWO keys and Production is the one account whose
-# alias list should read two rather than one. Section 4 is where that is either true or not.
+# Stage 2 step 3.4's two keys are visible here and nowhere else. "The PKI key" is two
+# different objects: the key that encrypts the production/pki/ state file, and whatever key
+# the CA itself uses. Only the first belongs to Stage 2, and it cannot be created by the pki/
+# slice, because a backend is configured at `init` - before the slice has ever applied. So
+# production/bootstrap/ creates two keys, and Production is the one account whose alias list
+# should read two rather than one. Section 4 is where that is either true or not.
 #
-# BUCKET NAMES ARE DISCOVERED, NEVER ASSUMED. The convention is awsds-<env>-tfstate
+# Bucket names are discovered, never assumed. The convention is awsds-<env>-tfstate
 # (docs/plan/conventions.md), but the <env> token for the Identity account is not settled in
 # any plan file, and a script that hardcodes a guess reports a correctly-named bucket as
 # missing. So it lists what is there and matches on `tfstate`, which also catches the failure
@@ -80,8 +79,8 @@ def main(argv: list) -> int:
 
     def alias_of(profile: str, key: str) -> str:
         """Resolve a KMS key ARN or id back to its alias, so the table says
-        `alias/awsds-prod-tfstate` rather than a uuid. The alias is the thing a human
-        recognises and the thing 3.4's split is expressed in."""
+        `alias/awsds-prod-tfstate` rather than a uuid. Step 3.4's split is expressed in
+        aliases."""
         if not key:
             return "-"
         kid = key.rsplit("/", 1)[-1]
@@ -116,9 +115,9 @@ def main(argv: list) -> int:
         all_buckets[p] = names
 
         # Match on `tfstate` rather than on a composed name - see the header. The
-        # per-attribute calls below tolerate failure silently on purpose, exactly as the
-        # shell did: a NoSuchBucket-shaped error reads as "not set/none/off", which the
-        # checks then judge; only the two listings above are logged as failures.
+        # per-attribute calls below tolerate failure silently: a NoSuchBucket-shaped error
+        # reads as "not set/none/off", which the checks then judge; only the two listings
+        # above are logged as failures.
         for b in (n for n in names if "tfstate" in n.lower()):
             res = cli.run(
                 "s3api",
@@ -176,7 +175,7 @@ def main(argv: list) -> int:
                 bpa = f"{n_true}/4"
 
             # The TLS-only statement checkov requires in Stage 2 step 2.1. Matching on the
-            # CONDITION rather than on a Sid: the statement's name is the author's, the
+            # condition rather than on a Sid: the statement's name is the author's, the
             # condition is the control.
             res = cli.run(
                 "s3api",
