@@ -1,22 +1,19 @@
 #!/usr/bin/env -S uv run --quiet
-# Generate a slice's backend.hcl - Stage 2 step 2.5.
+# gen-backend-hcl.py - Stage 2 step 2.5. Writes one slice's backend.hcl.
 #
 #   ./scripts/gen-backend-hcl.py <account-folder> <slice>
 #   ./scripts/gen-backend-hcl.py production pki
 #
-# WHY THIS FILE IS GENERATED AND NOT WRITTEN. A `backend` block cannot interpolate anything -
-# no var, no local - so the bucket, the key and the REGION have to be literals somewhere.
-# docs/plan/architecture.md forbids region literals in .tf files, and step 9's check scans for
-# them. Partial backend configuration is the reconciliation: `backend "s3" {}` stays in
-# providers.tf and the literals live in a per-slice backend.hcl, which is not a .tf file and
-# is gitignored. The content itself is scripts/tfhygiene/backend.py, the ONLY place that
-# knows how to build one - step 8's Makefile calls this script rather than growing a second
-# copy (Lesson 14: two mechanisms for one file is a defect waiting).
+# A `backend` block interpolates nothing, no var and no local, so the bucket, the key and the region
+# have to be literals somewhere. docs/plan/architecture.md forbids a region literal in a .tf file and
+# step 9's check scans for one. Partial backend configuration reconciles the two: `backend "s3" {}`
+# stays in providers.tf and the literals live in a per-slice backend.hcl, which is not a .tf file and
+# is gitignored. scripts/tfhygiene/backend.py is the only place that knows how to build one, and
+# step 8's Makefile calls this script rather than growing a second copy (Lesson 14).
 #
-# It writes a file. It makes no AWS call, and it does not create the bucket it names - that
-# is the bootstrap slice's job, and until that slice has applied, `terraform init` against
-# the output of this script fails with NoSuchBucket. That order is step 2.2's
-# chicken-and-egg, not a fault here.
+# It writes a file, makes no AWS call, and does not create the bucket it names: that is the bootstrap
+# slice's job, and until that slice has applied, `terraform init` against this output fails with
+# NoSuchBucket (step 2.2).
 
 from __future__ import annotations
 

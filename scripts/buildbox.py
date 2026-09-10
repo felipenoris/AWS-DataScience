@@ -2,59 +2,52 @@
 # buildbox.py - the [E] build host of Stage 6 step 5.0: bring it up, put the build context on
 # it, open a shell, tear it down.
 #
-# WHY IT IS A SCRIPT OF ITS OWN AND NOT `make up ENV=production`. That target acts on EVERY [E]
-# slice in an account, which for Production means egress/, workloads-egress/, probes/ AND this one
+# A script of its own rather than `make up ENV=production`, because that target acts on every [E]
+# slice in an account, which for Production means egress/, workloads-egress/, probes/ and this one
 # - nothing in layers.py refuses it, so `make up` raises the build host too. A build session needs
-# exactly two of the four - egress/, for the SSM endpoints that are the only door into the host,
-# and this slice - and paying for the other two while a build runs is money for nothing.
-# `scripts/slices.py up --only <names>` can narrow an apply since 6c step 7.1 (2026-09-07; it is
-# what `make hub-up` is built on, and the Makefile exposes it for the hub pair alone), which
-# retired the sentence that stood here until then - "slices.py has no per-slice targeting". What
-# a narrowed apply still cannot do is the rest of a build session: the two prerequisite checks
-# below (one of them in another account, which no rank can express), the context sync, the shell
-# and the teardown. So this file drives the slice, deliberately, and says why.
+# exactly two of the four: egress/, for the SSM endpoints that are the only door into the host,
+# and this slice. `scripts/slices.py up --only <names>` can narrow an apply since 6c step 7.1, and
+# is what `make hub-up` is built on. What a narrowed apply still cannot do is the rest of a build
+# session: the two prerequisite checks below (one of them in another account, which no rank can
+# express), the context sync, the shell and the teardown.
 #
-# IT MOVED ACCOUNTS AT 6c STEP 5.8 (2026-09-06), AND BOTH ITS REFUSALS CHANGED WITH THE DESIGN.
-# The host used to live in `sandbox/buildbox/` and reach the internet through a default route at
-# the WireGuard host's ENI, in the Sandbox isolated tier. D38 removed every default route and put
-# the WireGuard host in another VPC, where a route cannot point at it. What replaced that one
-# dependency is two, and neither is in this slice:
+# It moved accounts at 6c step 5.8, and both its refusals changed with the design. D38 removed
+# every default route and put the WireGuard host in another VPC, where a route cannot point at
+# it. What replaced that one dependency is two, and neither is in this slice:
 #
-#   the SHELL     `production/egress/`'s `ssm` / `ssmmessages` / `ec2messages` endpoints (5.5).
-#                 Without them the agent cannot register and there is NO way into the host - not
-#                 a degraded way, none. This is the refusal that used to be about a route.
-#   the INTERNET  `production/proxy/` in VPC-Networking, reached over a peering. A build that
+#   the shell     `production/egress/`'s `ssm` / `ssmmessages` / `ec2messages` endpoints (5.5).
+#                 Without them the agent cannot register and there is no way into the host.
+#   the internet  `production/proxy/` in VPC-Networking, reached over a peering. A build that
 #                 cannot reach it fails on every package source at once.
 #
-# WHAT IT REFUSES, AND WHY EACH REFUSAL IS HERE RATHER THAN IN A COMMENT (Lesson 5):
+# What it refuses, each refusal here rather than in a comment (Lesson 5):
 #
 #   1. `up` with `production/egress/` down. The SSM endpoints are this host's only management
 #      path, and their absence produces the most misleading symptom in the set: the apply
-#      SUCCEEDS, the instance runs, and `ssm start-session` says it is not connected - which
+#      succeeds, the instance runs, and `ssm start-session` says it is not connected, which
 #      reads as a slow boot for as long as anyone is willing to wait (Lesson 52).
-#   2. `up` with the proxy host not RUNNING. `up` starts it rather than failing - the [D]
+#   2. `up` with the proxy host not running. `up` starts it rather than failing: the [D]
 #      contract is stop/start, so starting one is not a change of state anybody has to approve.
 #   3. `sync` and `ssm` against a host that is not `Online` in Session Manager, with the
 #      PingStatus printed. An empty answer and a failed answer are different things
 #      (Lesson 13).
 #
-# THE REFUSAL THAT WAS DELETED RATHER THAN RETARGETED: `sandbox/probes/`. It existed because that
-# slice's perimeter probe measures the Sandbox ISOLATED tier's absence of a default route while
-# this slice's whole mechanism was adding one there. This slice creates no route anywhere now and
-# is not in that account. A guard that no longer guards anything is worse than no guard - it is
-# the one a later reader trusts by mistake.
+# There is no refusal about `sandbox/probes/`. It existed because that slice's perimeter probe
+# measures the Sandbox isolated tier's absence of a default route while this slice's mechanism
+# was adding one there; this slice creates no route anywhere now and is not in that account. A
+# guard that no longer guards anything is the one a later reader trusts by mistake.
 #
-# WHAT `down` DELIBERATELY DOES NOT DO: stop the proxy, or tear down `egress/`. This script owns
-# one [E] slice; the proxy is [D], it is the whole estate's single egress, and stopping it because
-# a build finished would cut off every other account. `make hub-down` is what stops it, and it is
+# What `down` does not do: stop the proxy, or tear down `egress/`. This script owns one [E]
+# slice; the proxy is [D], it is the whole estate's single egress, and stopping it because a
+# build finished would cut off every other account. `make hub-down` is what stops it, and it is
 # the user's call.
 #
-# THE ONE WRITE THAT IS NOT TERRAFORM - `sync`, and it is fenced the way ./aws/vpn.py
-# --on-host is: ssm:SendCommand is a WRITE API. It is used here to place a tar of images/ on
-# the host, because the build context has to get there somehow and every alternative was
-# worse - a 27 KB base64 blob does not fit user data's 16 KB, a git clone needs a credential
-# on a throwaway host, and an S3 hop needs a bucket and a grant for a file that lives for an
-# hour. It sends no credential and reads nothing back but the command's own status.
+# The one write that is not terraform is `sync`, fenced the way ./aws/vpn.py --on-host is:
+# ssm:SendCommand is a write API. It is used here to place a tar of images/ on the host, because
+# the build context has to get there somehow and every alternative was worse - a 27 KB base64
+# blob does not fit user data's 16 KB, a git clone needs a credential on a throwaway host, and an
+# S3 hop needs a bucket and a grant for a file that lives for an hour. It sends no credential and
+# reads nothing back but the command's own status.
 #
 #   run:   ./scripts/buildbox.py up         # apply the slice (starts the proxy host first)
 #          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
@@ -111,8 +104,8 @@ def aws(*args: str) -> list:
 def instance(name: str) -> tuple[str, str] | None:
     """(id, state) of a running-or-stopped instance by Name tag, or None if there is none.
 
-    None means NOT PRESENT. A read that FAILED raises instead of returning None - the two
-    must not collapse into one answer (Lesson 13), because "no buildbox" and "cannot see the
+    None means not present. A read that failed raises instead of returning None: the two must
+    not collapse into one answer (Lesson 13), because "no buildbox" and "cannot see the
     account" lead to opposite next moves.
     """
     res = sh(
@@ -145,8 +138,8 @@ def proxy_name() -> str:
     return f"awsds-{backend.env_token(ACCOUNT)}-proxy"
 
 
-# The endpoint whose ABSENCE is the failure this script exists to make loud. `ssmmessages` rather
-# than `ssm`: `ssm` carries the API and `ssmmessages` carries the SESSION channel, so it is the
+# The endpoint whose absence is the failure this script exists to make loud. `ssmmessages` rather
+# than `ssm`: `ssm` carries the API and `ssmmessages` carries the session channel, so it is the
 # one whose absence produces "the instance is not connected" on a host that is otherwise perfect.
 SSM_SESSION_ENDPOINT = "ssmmessages"
 
@@ -157,11 +150,10 @@ SSM_SESSION_ENDPOINT = "ssmmessages"
 def refuse_if_no_ssm_endpoints() -> None:
     """Refusal 1 - the SSM endpoints in this VPC are the only door into the host.
 
-    THE SYMPTOM THIS REPLACES IS THE MISLEADING KIND. With `production/egress/` down the apply
-    succeeds, the instance reaches `running`, and `ssm start-session` reports it as not
-    connected - which is indistinguishable from a slow boot for as long as anyone is willing to
-    wait (Lesson 52: a wait whose only exit is success waits forever once its subject is gone).
-    Read the endpoints instead, before the apply, where the answer is a yes or a no.
+    With `production/egress/` down the apply succeeds, the instance reaches `running`, and
+    `ssm start-session` reports it as not connected, which is indistinguishable from a slow
+    boot for as long as anyone is willing to wait (Lesson 52). Read the endpoints instead,
+    before the apply, where the answer is a yes or a no.
     """
     print(f"\n  {BOLD}refusal 1: the shell's path{RESET}")
     res = sh(
@@ -193,7 +185,7 @@ def ensure_proxy_running() -> str:
     """Refusal 2 - the internet on this host is a proxy, and a stopped one has no fallback.
 
     Under design B there is no route to fail over to: every package source, every base image
-    and every `RUN` step in a build goes through this one host. `up` STARTS it rather than
+    and every `RUN` step in a build goes through this one host. `up` starts it rather than
     refusing, because [D] is a stop/start contract (D11) and starting one is not a change of
     state anybody has to approve.
     """
@@ -252,11 +244,11 @@ def require_buildbox() -> str:
 
 
 def row() -> layers.Slice:
-    """This slice's row in the ONE layer table - never a second copy of its path or its rate.
+    """This slice's row in the one layer table - never a second copy of its path or its rate.
 
-    It raises if the row is missing, and that is right: a slice this script can drive but
-    `make status` cannot see would be an [E] host outside D11's accounting, which is the
-    exact failure the table exists to prevent.
+    It raises if the row is missing: a slice this script can drive but `make status` cannot
+    see would be an [E] host outside D11's accounting, the failure the table exists to
+    prevent.
     """
     for sl in layers.all_slices():
         if sl.account == ACCOUNT and sl.name == SLICE:
@@ -287,14 +279,13 @@ def terraform(action: str, auto: bool) -> int:
 
 
 def wait_for_docker(iid: str) -> bool:
-    """The SECOND readiness question, and `up` used to answer only the first (2026-08-21).
+    """The second readiness question: the agent being reachable is not the box being usable.
 
     The SSM agent registers while cloud-init is still running, so `Online` arrives a minute or
-    so BEFORE `dnf install docker` finishes - measured, not guessed: a `docker --version` taken
-    the moment `up` returned came back EMPTY, with `systemctl is-active docker` saying
-    `inactive` and the boot log mid-install. Printing "up. next: sync, ssm" at that instant is
-    a readiness claim about the wrong thing - the agent being reachable and the box being
-    usable are two different measurements, and one was standing in for the other (Lesson 13).
+    so before `dnf install docker` finishes - measured 2026-08-21, not guessed: a
+    `docker --version` taken the moment `up` returned came back empty, with `systemctl
+    is-active docker` saying `inactive` and the boot log mid-install. Printing "up. next: sync,
+    ssm" at that instant is a readiness claim about the wrong thing (Lesson 13).
     """
     for attempt in range(20):
         res = sh(
@@ -395,9 +386,9 @@ def cmd_sync(args) -> int:
     if not CONTEXT.is_dir():
         raise SystemExit(f"{RED}{CONTEXT}/ does not exist{RESET} - run from the repository root.")
 
-    # A DETERMINISTIC TAR: sorted names and zeroed mtimes, so re-syncing an unchanged tree
-    # produces an identical payload. It costs nothing and it makes "did my edit land?"
-    # answerable by comparing two command ids rather than by trusting a timestamp.
+    # A deterministic tar: sorted names and zeroed mtimes, so re-syncing an unchanged tree
+    # produces an identical payload, and "did my edit land?" is answerable by comparing two
+    # command ids rather than by trusting a timestamp.
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
         for f in sorted(CONTEXT.rglob("*")):
@@ -480,7 +471,7 @@ def cmd_ssm(args) -> int:
     print("\n  You land as ssm-user with passwordless sudo. The docker group belongs to")
     print("  ec2-user, so:  sudo docker ...   or   sudo -iu ec2-user")
     print(f"  Build context (after `sync`): {REMOTE_DIR}\n")
-    # NOT captured: this is an interactive terminal, and the session-manager-plugin needs the
+    # Not captured: this is an interactive terminal, and the session-manager-plugin needs the
     # real stdin/stdout. It is also the one command in this file that does not return until
     # the user exits.
     return subprocess.run(aws("ssm", "start-session", "--target", iid)).returncode

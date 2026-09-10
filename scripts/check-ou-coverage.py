@@ -13,30 +13,28 @@
 #             creates, updates, attaches or detaches anything.
 #   exit:     0 clean | 1 a check FAILED | 2 could not run (no session, or a call failed)
 #
-# WHY THIS CHECK CARRIES MORE THAN ITS SIZE. Accounts and OUs are vended from the console, by
-# decision and permanently (D34), so nothing in Terraform declares them and they cannot drift.
-# The risk runs the other way and it is silent: a new OU with no document attached, and
-# `terraform plan` reporting "No changes" because a state file tracks only what a configuration
-# declares. Step 5.3 moved the per-OU coverage guarantee out of the apply and into here, so
-# this script is where that risk is actually paid for.
+# Accounts and OUs are vended from the console, by decision and permanently (D34), so nothing in
+# Terraform declares them and they cannot drift. The risk runs the other way and it is silent: a
+# new OU with no document attached, and `terraform plan` reporting "No changes" because a state
+# file tracks only what a configuration declares. Step 5.3 moved the per-OU coverage guarantee
+# out of the apply and into here.
 #
-# THE TWO-LIST SHAPE IS THE POINT. attachments.json lists the OUs that carry a document AND the
-# OUs that deliberately carry none, with the reason. A check that treated "absent" and
-# "deliberately absent" alike would either fail forever or pass on a real gap - the same answer
-# on success and on failure, which is not a check (Lesson 13). `Sandboxes` is the entry that
-# has to be named: it is the only OU whose emptiness a future reader will try to fix (D37).
+# attachments.json lists the OUs that carry a document and the OUs that deliberately carry none,
+# with the reason. A check that treated "absent" and "deliberately absent" alike would either
+# fail forever or pass on a real gap, giving the same answer on success and on failure
+# (Lesson 13). `Sandboxes` is the entry that has to be named: it is the only OU whose emptiness
+# a future reader will try to fix (D37).
 #
-# THREE THINGS IT DOES NOT LOOK AT, so a green run is not read as more than it is:
+# What it does not look at:
 #
-#   - CONTROL TOWER'S OWN DOCUMENTS. Every governed OU carries aws-guardrails-* documents that
+#   - Control Tower's own documents. Every governed OU carries aws-guardrails-* documents that
 #     this project neither wrote nor may edit. A document counts as ours only when a file of
-#     that name exists in policies/, which is a stronger binding than a name prefix and the
-#     reason the map may hold names at all (Lesson 23 warns against naming a document whose
-#     PACKING somebody else owns - these are the ones we own).
-#   - ACCOUNT-LEVEL ATTACHMENTS. This design has none: the census is the root plus four OUs,
+#     that name exists in policies/, a stronger binding than a name prefix and the reason the
+#     map may hold names at all (Lesson 23).
+#   - Account-level attachments. This design has none: the census is the root plus four OUs,
 #     and the delegation's account/* entry is an unexercised over-grant (step 5.0). The full
-#     per-node census is ./aws/org-policies.py section 1, which is the instrument for that.
-#   - WHETHER A DOCUMENT'S CONTENT IS RIGHT. That is POLICIES.md and check-index.py.
+#     per-node census is ./aws/org-policies.py section 1.
+#   - Whether a document's content is right. That is POLICIES.md and check-index.py.
 
 from __future__ import annotations
 
@@ -68,8 +66,8 @@ def main(argv: list) -> int:
     os.chdir(Path(__file__).resolve().parents[1])
 
     profile = argv[0] if argv else "awsds-infra-identity"
-    # This script inherits the caller's region resolution, exactly as the shell version
-    # passed no --region: Organizations is global and the profile's own region applies.
+    # This script inherits the caller's region resolution: Organizations is global, so the
+    # profile's own region applies.
     cli = AwsCli(profile=profile, region="")
 
     fail = 0
@@ -94,9 +92,9 @@ def main(argv: list) -> int:
         say(f"{MAP} does not parse")
         return 2
 
-    # The session is checked before anything else and its failure is exit 2, never exit 0. A
-    # coverage check reporting "clean" because it could not reach AWS is the worst output this
-    # script could produce (CLAUDE.md: check the caller identity before running aws commands).
+    # The session is checked before anything else and its failure is exit 2, never exit 0: a
+    # coverage check reporting "clean" because it could not reach AWS is worse than no check
+    # (CLAUDE.md: check the caller identity before running aws commands).
     res = cli.call("sts", "get-caller-identity", "--query", "Arn", "--output", "text")
     if not res.ok:
         suffix = f" for profile {profile}" if cli.profile else ""
@@ -104,7 +102,7 @@ def main(argv: list) -> int:
         say(f"  {res.merged}")
         say("  sign in as the INFRASTRUCTURE USER, Identity account, InfrastructureAccess:")
         if wrong_identity(res.merged):
-            # Naming the right identity is not enough when a token for the WRONG one is
+            # Naming the right identity is not enough when a token for the wrong one is
             # already cached under this sso-session: the login below finds it valid and
             # returns success without asking the browser anything (measured 2026-08-20).
             say("      aws sso logout && aws sso login --sso-session awsds")
@@ -127,9 +125,8 @@ def main(argv: list) -> int:
         return 2
 
     # Breadth-first over the whole tree, not one level. The nesting is two deep today
-    # (Sandboxes under Interactive, D23) and a single ListOrganizationalUnitsForParent over
-    # the root's children would enumerate neither the nested OU nor anything below it - the
-    # same silent under-reach step 5.3 refuses in a for_each.
+    # (Sandboxes under Interactive, D23), and a single ListOrganizationalUnitsForParent over
+    # the root's children would enumerate neither the nested OU nor anything below it.
     ous = []  # (id, name), every depth, in discovery order
     queue = deque([root_id])
     while queue:

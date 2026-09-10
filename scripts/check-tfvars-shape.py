@@ -6,31 +6,29 @@
 #             roster on disk. No AWS session, no side effect, nothing written.
 #   exit:     0 clean | 1 at least one violation
 #
-# WHY THIS EXISTS. The wholesale `*.tfvars` ignore has ONE deliberate exception: the WireGuard
-# peers roster is tracked (`git add -f`), because a map of who may enter the network benefits
-# from review and history. The exception's failure mode is exactly one line - the host's
-# PRIVATE key landing in the tracked file - and no content scanner can catch it, because a
-# WireGuard private key and a public key are INDISTINGUISHABLE by format (44 chars of base64
-# ending in '='), and pre-commit's detect-private-key knows only PEM armor. So this gate
-# checks STRUCTURE, the thing that can be checked:
+# The wholesale `*.tfvars` ignore has one deliberate exception: the WireGuard peers roster is
+# tracked (`git add -f`), because a map of who may enter the network benefits from review and
+# history. The exception's failure mode is one line, the host's private key landing in the
+# tracked file, and no content scanner can catch it: a WireGuard private key and a public key
+# are indistinguishable by format (44 chars of base64 ending in '='), and pre-commit's
+# detect-private-key knows only PEM armor. So this gate checks structure:
 #
-#   A. Every TRACKED *.tfvars / *.tfvars.json is in the allowlist below and assigns only the
+#   A. Every tracked *.tfvars / *.tfvars.json is in the allowlist below and assigns only the
 #      top-level keys its row permits. A tracked tfvars nobody allowlisted fails: committing
 #      one is a decision, and the table is where the decision is recorded. A tracked
-#      host-key.auto.tfvars fails by name - since the third design review (decision 4) that
-#      filename should not exist AT ALL, the key lives in Secrets Manager - so tracking one
-#      is the pre-review design coming back with its worst failure mode attached.
-#   B. The roster file - tracked or not yet - assigns nothing but `peers` at the top level,
+#      host-key.auto.tfvars fails by name: since the third design review (decision 4) that
+#      filename should not exist at all, the key lives in Secrets Manager.
+#   B. The roster file, tracked or not yet, assigns nothing but `peers` at the top level,
 #      nothing but `public_key` and `host` inside it, and `host_private_key` nowhere.
 #
-# WHAT IT DELIBERATELY DOES NOT SEE (Lesson 13 - a check is honest about its blind side):
+# What it does not see (Lesson 13):
 #
 #   - Untracked, git-ignored tfvars: the generated terraform.auto.tfvars. That is the ignore
 #     rule's job; this gate exists for the exception to it.
-#   - Attributes inside ONE-LINE entries (`"x" = { public_key = "..", host = 2 }`) are not
-#     individually inspected - assignments are read at line starts. The top-level rule still
-#     holds, and a private key smuggled as a one-line attribute still needs a name this file
-#     may not assign to be consumed by Terraform at all.
+#   - Attributes inside one-line entries (`"x" = { public_key = "..", host = 2 }`) are not
+#     individually inspected, because assignments are read at line starts. The top-level rule
+#     still holds, and a private key smuggled as a one-line attribute still needs a name this
+#     file may not assign to be consumed by Terraform at all.
 #   - The brace count is textual: a `{` inside a quoted string would skew the depth. Nothing
 #     a tfvars in this repository holds writes braces into strings.
 
@@ -42,11 +40,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# A LIST SINCE 6c step 4.7 (2026-09-06), and the plural is not speculative: the tunnel moves
-# account in pass 4 and BOTH rosters exist at once until 4.13 destroys the Sandbox slice. A
-# constant that named one file would have gone on passing about the old one while the roster
-# that matters went unchecked - Lesson 31, in a gate written to defend the one thing no content
-# scanner can (a private key pasted where a public one belongs).
+# A list, not one path: the tunnel moves account in 6c pass 4, and both rosters exist at once
+# until step 4.13 destroys the Sandbox slice. A constant naming one file would go on passing
+# about the old one while the roster that matters went unchecked (Lesson 31).
 ROSTERS = [
     Path("terraform-live/sandbox/vpn/peers.auto.tfvars"),
     Path("terraform-live/production/vpn/peers.auto.tfvars"),
@@ -55,9 +51,9 @@ SIZES = [
     Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars"),
     Path("terraform-live/production/vpn/instance_type.auto.tfvars"),
 ]
-# The build host's copy of the same file (Stage 6 step 5.0). Two files with one shape:
-# same two keys, same mechanism, deliberately the same name - what differs is that this
-# host is [E], so its disk is not a standing commitment. The slice's own copy says so.
+# The build host's copy of the same file (Stage 6 step 5.0): same keys, same mechanism, same
+# name. This host is [E], so its disk is not a standing commitment, and the slice's own copy
+# says so.
 BUILDBOX_SIZE = Path("terraform-live/production/buildbox/instance_type.auto.tfvars")
 
 # path -> the top-level keys that tracked tfvars may assign. Growing this table is the
@@ -65,18 +61,14 @@ BUILDBOX_SIZE = Path("terraform-live/production/buildbox/instance_type.auto.tfva
 # `git add -f` and a reason", and the reason lands here, greppable.
 TRACKED_SHAPES: dict[str, set[str]] = {
     **{str(r): {"peers"} for r in ROSTERS},
-    # The VPN host's SHAPE, tracked since 2026-08-20 - the second exception, and the first one
-    # .gitignore names rather than leaving to `git add -f`. TWO keys since the same day, the
-    # disk having joined the instance type, and the row stays short for the reason it always
-    # did: both values are sizes, so the failure mode the roster's row defends against (key
-    # material arriving in a tracked tfvars) has no foothold here. What the row DOES defend is
-    # scope creep - the day somebody adds the zone_index or a CIDR "while they are in there",
-    # this gate says no, because a file that is committed on the strength of holding nothing
-    # sensitive stops deserving that the moment it holds something else. GROWING THIS SET IS
-    # THEREFORE THE DECISION, not a formality: a key belongs here only if it is a size, and a
-    # reader who has to ask why the file is still called instance_type.auto.tfvars is answered
-    # by the file's own header (renaming it costs the .gitignore negation and every path
-    # written about it, and buys a name).
+    # The VPN host's shape, tracked since 2026-08-20: the second exception, and the first one
+    # .gitignore names rather than leaving to `git add -f`. Both values are sizes, so the
+    # failure mode the roster's row defends against (key material arriving in a tracked tfvars)
+    # has no foothold here. What this row defends is scope creep: a file committed on the
+    # strength of holding nothing sensitive stops deserving that the moment it holds something
+    # else, so a key belongs in this set only if it is a size, and adding one is a decision.
+    # Why the file is still called instance_type.auto.tfvars is answered by the file's own
+    # header: renaming it costs the .gitignore negation and every path written about it.
     **{str(z): {"instance_type", "root_volume_size"} for z in SIZES},
     str(BUILDBOX_SIZE): {"instance_type", "root_volume_size"},
 }
@@ -91,7 +83,7 @@ def assignments(path: Path) -> list[tuple[int, int, str]]:
     """(line, brace depth before the line, identifier) for every bare assignment.
 
     Full-line comments are skipped, like check-tf-conventions.py: prose may name anything.
-    Quoted keys (`"felipe-laptop" = {`) are entry NAMES, not attributes, and do not match.
+    Quoted keys (`"felipe-laptop" = {`) are entry names, not attributes, and do not match.
     """
     out: list[tuple[int, int, str]] = []
     depth = 0

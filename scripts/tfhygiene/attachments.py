@@ -1,10 +1,9 @@
 """The authored per-OU attachment map (``org-policies/attachments.json``).
 
-The two-list shape is the point: OUs that carry a document AND OUs that deliberately carry
-none, with the reason - so "absent" and "deliberately absent" stay distinguishable
-(Lesson 13; ``Sandboxes`` is the entry a future reader will try to fix, D37). The map is
-read by ``check-ou-coverage.py`` and by the org-policies Terraform slice's ``for_each``;
-this module is the one loader.
+Two lists: OUs that carry a document, and OUs that deliberately carry none, with the reason, so
+"absent" and "deliberately absent" stay distinguishable (Lesson 13; ``Sandboxes`` is the entry a
+future reader will try to fix, D37). The map is read by ``check-ou-coverage.py`` and by the
+org-policies Terraform slice's ``for_each``; this module is the one loader.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from pathlib import Path
 
 
 class AttachmentsMap:
-    """The parsed map, with the three views the coverage check reads."""
+    """The parsed map, with the views the coverage check reads."""
 
     def __init__(self, raw: dict):
         self.root: list[str] = list(raw.get("root", []))

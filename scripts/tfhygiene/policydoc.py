@@ -1,11 +1,9 @@
 """Reading the repository's organization policy documents, one statement at a time.
 
-The extraction in :func:`entries` is deliberately the same as the one in
-``aws/awslib/policydoc.py`` - a SEPARATE COPY, on purpose: the ``aws/`` scripts must keep
-working in CloudShell with nothing but their own folder present, and this package must not
-import from ``aws/``. The property being extracted is "what does this document contain, in
-order", and a document whose type is not recognised is REPORTED rather than skipped: a
-checker that silently ignores a file is not a checker (Lesson 13).
+The extraction in :func:`entries` is a copy of the one in ``aws/awslib/policydoc.py``: the ``aws/``
+scripts must keep working in CloudShell with nothing but their own folder present, and this package
+must not import from ``aws/``. The property extracted is "what does this document contain, in
+order", and a document whose type is not recognised is reported rather than skipped (Lesson 13).
 """
 
 from __future__ import annotations
@@ -54,7 +52,7 @@ def is_policy_document(parsed: object) -> bool:
 
     A JSON file that is not a policy document (the tag policy, the declarative policy,
     attachments.json) is scanned as plain text by the wildcard check, with no exception
-    available - this predicate is where the two classes split.
+    available. This predicate is where the two classes split.
     """
     return isinstance(parsed, dict) and isinstance(parsed.get("Statement"), list)
 
