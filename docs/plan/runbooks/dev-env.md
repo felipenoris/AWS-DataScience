@@ -133,7 +133,11 @@ error would mention afterwards (Lesson 60). So read, edit, send back — never h
 aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/user-settings.json"
 ```
 
-Add to that file — `terraform output -json custom_images` on the slice prints both entries in the API's
+**That file is the rollback, so it is not the file you edit.** It holds the block as it was before the
+write, and it is the only copy of it: edit into a second file and keep this one until §C7's read-back
+has passed.
+
+Add to the copy — `terraform output -json custom_images` on the slice prints both entries in the API's
 own spelling, so nothing is retyped:
 
 ```json
@@ -149,8 +153,18 @@ added beside it, not in place of it. The Code Editor entry is the same three key
 `CodeEditorAppSettings`, naming `awsds-sandbox-dev-env-codeeditor`.
 
 ```bash
-aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/user-settings.json" --profile awsds-infra-sandbox-1
+aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/user-settings-with-images.json" --profile awsds-infra-sandbox-1
 ```
+
+**Then diff the whole block, not the key you added.** The hazard is a field that went missing, and
+`--query CustomImages` cannot see one. Read the block back and compare it against the file you kept:
+
+```bash
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/user-settings-after.json" && diff <(python3 -m json.tool "$HOME/tmp/user-settings.json") <(python3 -m json.tool "$HOME/tmp/user-settings-after.json")
+```
+
+The only differences must be the entries you added. Anything else — a missing mount, a dropped idle
+setting — is Lesson 60 having happened, and the kept file is what puts it back.
 
 **`ImageVersionNumber` is a decision, not a formality.** The API marks the field optional, and what an
 omitted version resolves to — the latest, by the vendor's description — is unread here. Name it: a
