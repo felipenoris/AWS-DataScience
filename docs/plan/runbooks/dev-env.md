@@ -119,7 +119,10 @@ aws sagemaker list-domains --profile awsds-infra-sandbox-1 --query 'Domains[].[D
 **The console route, and the one to prefer for a one-off.** SageMaker AI console → *Admin
 configurations* → *Domains* → the project's domain → *Environment* → *Custom images for personal Studio
 apps* → **Attach image** → *Existing image*, then the image and version this slice created, and the app
-type matching the Dockerfile. The console reads the domain's current settings and submits them back.
+type matching the Dockerfile. The wizard assembles the settings block itself, which is what makes it
+the safer route for a one-off — that it preserves every other field of `DefaultUserSettings` is the
+shape of the wizard rather than a reading of this domain, so `describe-domain` afterwards is still the
+proof (§C7).
 
 **The CLI route, for a scripted or repeated case.** `UpdateDomain` replaces `DefaultUserSettings` as a
 whole: every field not passed back is deleted, and this domain's block carries idle shutdown, the
@@ -149,9 +152,10 @@ added beside it, not in place of it. The Code Editor entry is the same three key
 aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/user-settings.json" --profile awsds-infra-sandbox-1
 ```
 
-**`ImageVersionNumber` is a decision, not a formality.** Named, the domain serves that version until
-somebody moves it; omitted, the domain follows the image's latest version, so §B's bump reaches every new
-space with no further act — and reaches it without review. Name it.
+**`ImageVersionNumber` is a decision, not a formality.** The API marks the field optional, and what an
+omitted version resolves to — the latest, by the vendor's description — is unread here. Name it: a
+version named is a version reviewed, and §B's bump then reaches a space only when somebody moves this
+number.
 
 **Which settings block governs a SMUS space is unmeasured.** `DefaultSpaceSettings.JupyterLabAppSettings`
 carries a `CustomImages` field of its own, and whether the portal's project spaces read the user-settings
