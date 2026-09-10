@@ -606,7 +606,7 @@ filters. Nothing was applied, and one plan that is ready was left unapplied.
   `terraform` process older than an hour, or for a `.tflock` with no live owner. The runbook says
   `-input=false` on every plan and apply; a check would have found this in minutes instead of hours.
   Recorded here rather than built mid-pass.
-- **[user⚡] 4.13's FIRST HALF — `sandbox/vpn/` destroyed, `8 destroyed`**, matching the plan
+- **[user⚡] 4.13's first half — `sandbox/vpn/` destroyed, `8 destroyed`**, matching the plan
   exactly (instance, role, its three policy attachments, instance profile, handshake log group,
   health alarm — every one `[D]`, no `[P]` anchor among them). The harness refused this apply to
   Claude as a destructive action, so the user ran it.
@@ -773,7 +773,7 @@ thing to run.
   `POLICIES.md` and the lake READMEs do for their subjects.
 ## 2026-09-06 — 5.3 and 5.4 taken: the optional endpoint groups
 
-- **[user] 5.3 — BOTH FAMILIES STAY ENABLED; the ENDPOINTS become the variable.** The step offered
+- **[user] 5.3 — both families stay enabled; the endpoints become the variable.** The step offered
   three shapes (always up / per-session / disable the blueprint) and the user took a fourth: nothing
   leaves the portal, and `make up ENV=<x> GROUPS=bedrock,emr` decides whether the endpoints exist for
   that apply. **Empty by default**, so a family nobody uses that day costs nothing.
@@ -916,7 +916,7 @@ thing to run.
   the buildbox in that VPC, and the slice is `[E]`, so nothing bills until a build session brings it
   up.
 - **[Claude] `VPC-Workloads` does not get it; the step disqualifies itself.** 5.5 says *every
-  INSTANCE-BEARING spoke*; that VPC bears none. Measured: Production's only two instances are
+  instance-bearing spoke*; that VPC bears none. Measured: Production's only two instances are
   `awsds-prod-vpn` and `awsds-prod-proxy`, both in `VPC-Networking`, which reaches SSM through the
   IGW and needs no endpoint. `workloads-egress` already carries the refusal in its own words,
   *"adding endpoints because the other egress slices have them would bill 0.010/h each for a VPC
@@ -1163,25 +1163,23 @@ thing to run.
   `production/egress` — so the estate is where it was, plus the code. `make check` OK.
 ## 2026-09-06 — 5.9, and pass 5 closes
 
-- **[Claude] The re-statement was already written; what 5.9 adds is a fallback that was MEASURED.**
+- **[Claude] 5.9 adds a measured fallback; the re-statement was already written.**
   [D38](../plan/decisions/D38-single-egress-hub.md) already struck MWAA Serverless (its private shape
   *forbids* a route to a NAT device; the requirements list demanding two NAT gateways belongs to the
   **public** shape on the same page — [Lesson 41](../plan/lessons.md)) and already named ECR's
-  pull-through cache as the candidate, with Stage 7 step 5.2 as the measurement. Restating that would
-  have been transcription.
-- **[Claude] So the amendment is what 5.8's run proved: pull-and-push through the proxy, ranked
-  first.** A full `docker pull public.ecr.aws/docker/library/alpine:3.20` completed through Squid once
-  the blob redirect's CloudFront distribution was on the build plane — token and manifest over the
-  proxy, **layers over the free S3 gateway**. It needs no host in `VPC-Networking`, no second build
-  environment and no route: it is the ordinary build path with one name added to one allow-list.
-- **[Claude] What it deliberately does NOT settle**, because the distinction is the whole of Stage 7
-  step 5.2: this is a **client** fetching an image. A pull-through *cache* is **AWS fetching from
-  upstream on the service's own behalf**, and no client-side proxy setting reaches that. So 5.2 still
-  measures whether the cache needs a route — the change is that the estate no longer *depends* on the
-  answer in order to obtain a public image. Ranking is now (i) pull-and-push through the proxy
+  pull-through cache as the candidate, with Stage 7 step 5.2 as the measurement.
+- **[Claude] The amendment is what 5.8's run proved: pull-and-push through the proxy, ranked first.**
+  A full `docker pull public.ecr.aws/docker/library/alpine:3.20` completed through Squid once the blob
+  redirect's CloudFront distribution was on the build plane — token and manifest over the proxy,
+  **layers over the free S3 gateway**. It needs no host in `VPC-Networking`, no second build
+  environment and no route: one name added to one allow-list.
+- **[Claude] What it does not settle.** This is a **client** fetching an image; a pull-through *cache*
+  is **AWS fetching from upstream on the service's own behalf**, which no client-side proxy setting
+  reaches. Stage 7 step 5.2 still measures whether the cache needs a route, but the estate no longer
+  *depends* on the answer to obtain a public image. Ranking is now (i) pull-and-push through the proxy
   (measured), (ii) prime from the hub's public tier, (iii) bake the images into `base`, and only then
   the estate's first NAT gateway.
-- **[Claude] PASS 5 IS CLOSED.** 5.1 and 5.2 as code, 5.3 and 5.4 as decisions, 5.5 the SSM trio with
+- **[Claude] Pass 5 is closed.** 5.1 and 5.2 as code, 5.3 and 5.4 as decisions, 5.5 the SSM trio with
   a written refusal, 5.6 `NO_PROXY` generated from names AWS returns, 5.6a Staging keeps its
   firewall, 5.7 sixty-three entries to ten with a precondition and a re-aimed instrument, 5.8 the
   build host moved **and exercised**, 5.9 the contingency. **Owed into pass 6:** the `VPN_HOMES` trim
@@ -1189,64 +1187,58 @@ thing to run.
   (3.6-3.7); 2.6's retirement of the old zone family; and 4.11's second half (the Log Archive export)
   as decision due #4.
 
-## 2026-09-06 — session audit: three things the log said less than it should
+## 2026-09-06 — session audit: what the log said less than it should
 
-- **[Claude] `EXC-04` STILL COULD NOT BE MEASURED, AND `production/egress` WAS APPLIED AFTER THE
-  SENTENCE THAT SAID SO.** The 5.7 entry above records that the churn could not be re-measured
+- **[Claude] `EXC-04` still could not be measured, and `production/egress` was applied after the
+  sentence that said so.** The 5.7 entry above records that the churn could not be re-measured
   because *"all four `egress/` slices are `[E]` and down"*. Hours later 5.8 **applied**
-  `production/egress` (13 endpoints), re-planned it — **`No changes`** — and destroyed it again. Left
-  alone, that reads as a counter-example and closes the row by accident. **It is not one:**
-  `production/egress` sets no `dns_firewall`, so it builds **no domain list at all**, and `EXC-04` is
-  a defect of `aws_route53_resolver_firewall_domain_list`. A clean re-plan there says nothing about
-  it. What settles the row is still the next `make up` of an **Interactive** slice — Sandbox or
-  Staging — and only those two. Recorded because a reading taken for one reason is exactly what gets
-  quoted later for another (Lesson 37).
-- **[Claude] What this session wrote that was NOT Terraform, named rather than left implicit.** Three
-  write APIs were called, all of them in the fenced class this repository already recognises:
+  `production/egress` (13 endpoints), re-planned it — **`No changes`** — and destroyed it again. That
+  is not a counter-example: `production/egress` sets no `dns_firewall`, so it builds **no domain list
+  at all**, and `EXC-04` is a defect of `aws_route53_resolver_firewall_domain_list`. A clean re-plan
+  there says nothing about it. What settles the row is still the next `make up` of an **Interactive**
+  slice — Sandbox or Staging — and only those two. Recorded because a reading taken for one reason is
+  what gets quoted later for another (Lesson 37).
+- **[Claude] What this session wrote that was not Terraform.** Three write APIs were called, all of
+  them in the fenced class this repository already recognises:
   - **`ssm:SendCommand`**, repeatedly, to read *inside* the build host — the boot log, `docker info`,
     the proxy probes, and the `docker build` that produced the three-outcome table. Every command it
     carried was a read; the API is a write. This is the same fence `./scripts/buildbox.py sync` and
     `./aws/vpn.py --on-host` sit behind, used deliberately rather than to gather information.
   - **`ssm:StartAssociationsOnce`** on `awsds-prod-proxy-reconfigure`, once, to make the allow-list
     edit reach the running proxy without waiting for the half-hour schedule. It is 4.10's own reload
-    path, run early rather than a new mechanism, and its `Success` is the evidence that the path
-    works at all — which nothing had exercised before today.
+    path, and its `Success` is the first evidence that the path works at all.
   - **`ec2:CreateTags`/instance lifecycle** through `terraform apply`, under the user's standing
     authorization for this stage's steps.
 - **[Claude] The instrument index moved with the instrument.** [`aws/INDEX.md`](../../aws/INDEX.md)'s
   `dns-allowlist.py` row described the DNS Firewall lists, the `EXC-05` flattening exposure and a
   `--from-api` that read `route53resolver`. All three were false after 5.7. The row now describes the
-  five Squid planes, `DN-2`'s two severities and the `ssm:GetParameter` read — and the page's own
-  paragraph about the one script that needs no AWS identity says *why* it moved. A routing file that
-  points at the old subject is worse than one that points nowhere.
+  five Squid planes, `DN-2`'s two severities and the `ssm:GetParameter` read, and the page's own
+  paragraph about the one script that needs no AWS identity says why it moved.
 
 ## 2026-09-06 — `EXC-04` closed, and 6.3 measured after a stale table surfaced as a timeout
 
-- **[Claude⚡] `EXC-04` IS CLOSED, AND THE CANDIDATE FIX IT CARRIED SINCE 2026-08-22 WAS RIGHT.**
+- **[Claude⚡] `EXC-04` is closed, and the candidate fix it had carried since 2026-08-22 was right.**
   Route 53 Resolver canonicalises a domain list as **FQDNs** — `list-firewall-domains` returns
   `pypi.org.`, `*.amazonaws.com.` and `*.` — while `vpc-egress` and its callers wrote them bare. The
   provider was comparing two **spellings** of the same list and re-issued `UpdateFirewallDomains` on
   every apply, so a plan read `0 to add, 2 to change` immediately after a successful apply of the
-  same code, forever. What that cost is the thing worth naming: **`re-plan reads No changes` is this
-  repository's closing check for every change**, and it was unavailable on the two slices carrying a
-  firewall.
-- **[Claude] Three readings, because the row itself said the fix was a HYPOTHESIS** — the provider
+  same code, forever. The cost: `re-plan reads No changes` is this repository's closing check for
+  every change, and it was unavailable on the two slices carrying a firewall.
+- **[Claude] Three readings, because the row itself said the fix was a hypothesis** — the provider
   could normalise the other way and produce the mirror diff:
   1. On the live Sandbox list, after the 5.7 apply: **`0 to add, 2 to change`**, reproduced with
-     **ten** entries where it was found with sixty-three. So it was never about list length.
+     **ten** entries where it was found with sixty-three. It was never about list length.
   2. With the caller's ten entries **dotted** and the module's catch-all still bare:
-     **`1 to change`** — the allow list settled and the catch-all did not. **That is the reading
-     that turned the hypothesis into a repair**, and it is why `vpc-egress-v0.10.0` dots `["*."]`.
-  3. With both dotted: **`No changes`** — and then again after a forced re-create of both lists
-     (`4 added, 4 destroyed`), so the **create** path is proven and not only convergence. A fix that
-     converges an existing list and fails a fresh one would have been the worse outcome.
-- **[Claude] Two controls landed in one sitting and the second misread the first (`v0.10.1`).** The
-  v0.8.0 endpoint-coverage precondition compares allow-list entries against `PrivateDnsName` values,
-  which come back **without** a trailing dot. With the dots in place it failed the plan naming **ten**
-  endpoints as uncovered, all ten of which were covered. Normalised on the allow-list side —
-  `trimsuffix(e, ".")` — rather than by dropping the dots, because the dots are the repair. Worth the
-  note: this is the shape where a new gate reports a defect that is its own.
-- **[Claude⚡] 6.3 measured, and TWO of the step's assumptions did not hold.**
+     **`1 to change`** — the allow list settled and the catch-all did not. That is why
+     `vpc-egress-v0.10.0` dots `["*."]`.
+  3. With both dotted: **`No changes`** — and again after a forced re-create of both lists
+     (`4 added, 4 destroyed`), so the **create** path is proven and not only convergence.
+- **[Claude] The v0.8.0 coverage precondition misread the repair (`v0.10.1`).** It compares
+  allow-list entries against `PrivateDnsName` values, which come back **without** a trailing dot. With
+  the dots in place it failed the plan naming **ten** endpoints as uncovered, all ten of which were
+  covered. Normalised on the allow-list side — `trimsuffix(e, ".")` — rather than by dropping the
+  dots, because the dots are the repair.
+- **[Claude⚡] 6.3 measured, and two of the step's assumptions did not hold.**
   - **The probes carry no IAM role at all.** They report to `/dev/console`, read back with
     `get-console-output` — which is exactly why they work in a tier with no SSM path. So the readings
     went into the **peering probe's user data** rather than being driven over Session Manager, which
@@ -1266,36 +1258,33 @@ thing to run.
   The second is the one D38 rests on: the proxy **can** route to every spoke, and
   `http_access deny to_private` refuses before any allow — so the isolation the absent peerings give
   for free is not quietly undone at layer 7 ([Lesson 44](../plan/lessons.md)).
-- **[Claude] The three ORIGINAL peering readings are `curl exit 6` and that is expected, not a
-  finding**: `production/probes/` is `[E]` and down, and `probe.prod.internal` belongs to the **old**
-  zone family that step 2.6 retires. A name that does not resolve is the honest answer while its
-  target does not exist.
-- **[Claude] AND 6.3 FOUND A STALE VOCABULARY ROW — AS A TIMEOUT, NOT AS A DIFF.** The first run
+- **[Claude] The three original peering readings are `curl exit 6`, expected rather than a finding**:
+  `production/probes/` is `[E]` and down, and `probe.prod.internal` belongs to the **old** zone family
+  that step 2.6 retires.
+- **[Claude] 6.3 found a stale vocabulary row, as a timeout rather than as a diff.** The first run
   could not reach the proxy at all (`curl exit 28`, after DNS had resolved). Cause:
   `PROBE_PEERS = {"sandbox": ["production"], "development": [...], ...}`, which scoped the probe's
   egress security group to `10.30.0.0/16` alone. Pass 3 added
   `sandbox/foundation ↔ production/networking` to `PEERINGS` and **nothing added `10.31.0.0/16`
   here** — one intent, *which VPCs does this account reach*, in two tables, and only one of them
-  moved ([Lesson 33](../plan/lessons.md)). The row was **also** stale from 6b: `development` is a key
-  no account has answered to since that rename.
-  **Its own comment had predicted the day** — *"the reading that will force PROBE_PEERS to name
-  slices rather than accounts"*. So it is **deleted rather than corrected**: `peer_cidrs` is derived
-  from `PEERINGS` through a new `probe_peer_cidrs()`, and the membership guard became *"this
-  account's `foundation/` must be an end of at least one peering"*, which is stricter than the test
-  it replaces. Sandbox now emits `["10.30.0.0/16", "10.31.0.0/16"]`, Production
+  moved ([Lesson 33](../plan/lessons.md)). The row was also stale from 6b: `development` is a key
+  no account has answered to since that rename. The row is **deleted rather than corrected**:
+  `peer_cidrs` is derived from `PEERINGS` through a new `probe_peer_cidrs()`, and the membership guard
+  became *"this account's `foundation/` must be an end of at least one peering"*, stricter than the
+  test it replaces. Sandbox now emits `["10.30.0.0/16", "10.31.0.0/16"]`, Production
   `["10.20.0.0/16", "10.31.0.0/16"]` — the second **drops Staging**, correctly, because Staging peers
   only with the hub.
-- **[Claude] A security-group change does NOT re-run user data**, and the first re-read after the fix
+- **[Claude] A security-group change does not re-run user data**, and the first re-read after the fix
   returned the **previous boot's** console verbatim — same timestamps, same failures. `-replace` on
   the instance is what took the new reading. A stale console is indistinguishable from an unchanged
-  result, which is the same shape as Lesson 52 one layer down.
+  result (Lesson 52 one layer down).
 - **[Claude⚡] Everything torn back down**: probes `4 destroyed`, `sandbox/egress` `27 destroyed`.
   `make check` **OK**.
 
 ## 2026-09-06 — 7.1 and 7.2: the hub gets a lifecycle, and a stopped one becomes an error
 
 - **[Claude] 7.1 — `make hub-up` / `make hub-down`, over a new `--only`.** The hub is one
-  account's pair of `[D]` hosts and **every other account's session depends on them**, while
+  account's pair of `[D]` hosts and every other account's session depends on them, while
   `make up` acts on one env and has no concept of that: `make up ENV=production` would also raise
   Production's `[E]` endpoint slices and its probes, which is money for a Sandbox session that
   needs none of it.
@@ -1304,22 +1293,21 @@ thing to run.
   run that does nothing and reports success (the shape `optional_service_groups` got a validation
   block for). It filters the `[D]` hook as well as the `[E]` loop, which is what makes `hub-up`
   touch the two hosts and no endpoint.
-  **No `ENV` argument, deliberately**: there is exactly one hub, so an ENV here would be a
-  parameter with one legal value — the shape that invites a second nobody meant.
-- **[Claude] 7.2 — the refusal goes BEFORE the `[D]` hook and before the first apply**, because a
-  refusal after either would leave the env half-raised, which is worse than not starting.
-- **[Claude] A direct `describe-instances`, and the step named `./aws/vpn.py`.** That instrument is
-  right for the **question** and wrong for this **moment**: it writes a nine-check report and is
-  what a person runs to find out *why* the tunnel is unhappy, whereas this needs one boolean before
-  an apply and must not turn `make up` into a report generator. The two cannot disagree, because
-  both find the host by the same Name tag — the contract `instance_name()` owns.
-- **[Claude] UNREADABLE IS WAIVED, NOT REFUSED, and it is the uncomfortable half of Lesson 13.**
-  A spoke operator may hold **no session on the Production account at all** — the profiles are per
-  account — so treating a failed read as a stopped hub would make a legitimate `make up ENV=sandbox`
-  impossible for exactly the person the check exists to protect. So the two nothings are told apart:
-  a read that **fails** is printed and waved through with the reason; a read that **succeeds** and
-  says `stopped` is what stops the apply.
-- **[Claude] All four outcomes exercised** rather than the happy one:
+  **No `ENV` argument**: there is exactly one hub, so an ENV here would be a parameter with one
+  legal value.
+- **[Claude] 7.2 — the refusal goes before the `[D]` hook and before the first apply.** A refusal
+  after either would leave the env half-raised.
+- **[Claude] A direct `describe-instances`, where the step named `./aws/vpn.py`.** That instrument
+  writes a nine-check report; this needs one boolean before an apply and must not turn `make up`
+  into a report generator. The two cannot disagree: both find the host by the same Name tag, the
+  contract `instance_name()` owns.
+- **[Claude] An unreadable hub is waived, not refused** ([Lesson 13](../plan/lessons.md)). A spoke
+  operator may hold no session on the Production account at all — the profiles are per account — so
+  treating a failed read as a stopped hub would make a legitimate `make up ENV=sandbox` impossible
+  for exactly the person the check exists to protect. The two nothings are told apart: a read that
+  **fails** is printed and waved through with the reason; a read that **succeeds** and says
+  `stopped` stops the apply.
+- **[Claude] Every outcome exercised, not only the happy one:**
 
   | case | result |
   |---|---|
@@ -1328,17 +1316,16 @@ thing to run.
   | neither readable (no session) | proceed, with the waiver printed |
   | the hub's own env | never checked — `up` is what starts it |
 
-- **[Claude] `make help` carries a `THE HUB` section**, because a refusal a person meets for the
-  first time mid-apply should be explainable from the tool that refused. Gates: `ruff` clean,
-  `./scripts/slices.py check` 29/29, `make check` **OK**, both targets dry-run in both directions.
+- **[Claude] `make help` carries a `THE HUB` section**, so a refusal met mid-apply is explainable
+  from the tool that refused. Gates: `ruff` clean, `./scripts/slices.py check` 29/29, `make check`
+  **OK**, both targets dry-run in both directions.
 
-## 2026-09-06 — 7.3: `./aws/proxy.py`, and the two defects it found were its own
+## 2026-09-06 — 7.3: `./aws/proxy.py`, and the defects it found were its own
 
-- **[Claude] Shaped after `vpn.py` deliberately.** Same two-profile default, same typed
-  `--on-host` fence around `ssm:SendCommand`, same *an empty answer and a failed answer are
-  different things* discipline. The two files are the instruments for D38's two hosts — one way
-  in, one way out — and a reader who knows one should not have to learn the other.
-- **[Claude] The five checks, first full run:**
+- **[Claude] Shaped after `vpn.py`.** Same two-profile default, same typed `--on-host` fence around
+  `ssm:SendCommand`, same *an empty answer and a failed answer are different things* discipline. The
+  two files are the instruments for D38's two hosts, one way in and one way out.
+- **[Claude] The checks, first full run:**
 
   | check | verdict | reading |
   |---|---|---|
@@ -1348,56 +1335,51 @@ thing to run.
   | `PX-4` the access log group, with its Log Archive export | **note** | the group exists (365 days) and has **no export** |
   | `PX-5` the perimeter names the exit address | **pass** | `184.33.8.126` in `DenyControlPlaneOffVpn` on all six persona sets |
 
-- **[Claude] `PX-4` IS A `note` AND NOT A `fail`, AND THE DISTINCTION IS THE POINT.** 4.11's
-  second half — the export to Log Archive — is an **open decision** (this stage's decision due #4)
-  between a subscription filter into a Firehose and a scheduled `CreateExportTask`, with different
-  cost shapes. A `fail` would report a gap the plan is deliberately holding open, and a checklist
-  that is red for a decision nobody has taken is a checklist people learn to skim
-  ([Lesson 50](../plan/lessons.md)). It says instead what standing without it costs: the author of
-  the allow-list also owns its record (Lesson 18).
-- **[Claude] TWO DEFECTS, BOTH THE INSTRUMENT'S OWN, BOTH FOUND BY RUNNING IT** — `validate` and a
+- **[Claude] `PX-4` is a `note` and not a `fail`.** 4.11's second half — the export to Log Archive —
+  is an **open decision** (this stage's decision due #4) between a subscription filter into a Firehose
+  and a scheduled `CreateExportTask`, with different cost shapes. A `fail` would report a gap the plan
+  is deliberately holding open ([Lesson 50](../plan/lessons.md)). It says instead what standing
+  without it costs: the author of the allow-list also owns its record (Lesson 18).
+- **[Claude] Two defects, both the instrument's own, both found by running it** — `validate` and a
   reading would have found neither ([Lesson 54](../plan/lessons.md)):
   1. **The per-plane lists are an `include`d drop-in, not part of `squid.conf`.** The main file is
-     owned by Terraform because the ORDER of its `http_access` lines is the security property;
+     owned by Terraform because the order of its `http_access` lines is the security property;
      the planes are rendered into `/etc/squid/conf.d/awsds-planes.conf` because their *content*
      changes without their *position* doing so. Read as one blob, the ordering check saw the
      drop-in's `allow` lines after `deny all` and reported a proxy that allows everything at the
      end, while PX-3 parsed **zero** planes from a host serving five.
   2. **`render-squid.sh` spells a plane `production_foundation` where the parameter says
      `production-foundation`** — `gsub("-"; "_")`, because that is what a Squid acl name takes.
-     Comparing the raw keys reported **every** plane as both missing and extra. Lesson 53 at its
-     smallest: one intent, two spellings, and the rule between them written down nowhere until now.
-- **[Claude] And a third, which is the kind worth naming separately: `PX-2` READ ITS OWN SUBJECT
-  AND THEN DID NOT USE IT.** The first version decided the verdict from the committed template
-  alone and merely *printed* the running one — so a host serving a file nobody committed would
-  have reported `pass` beside a detail string describing the problem. Both sources count now.
-- **[Claude] Negative controls, because a check that has only ever passed is a claim**: an
-  `http_access allow` moved above the deny → `1 allow(s) precede it: allow all_the_things`; the
-  deny deleted entirely → `no http_access deny to_private line at all`. Two distinguishable
-  outputs, plus the correct one.
+     Comparing the raw keys reported **every** plane as both missing and extra (Lesson 53 at its
+     smallest).
+- **[Claude] A third: `PX-2` read its own subject and then did not use it.** The first version
+  decided the verdict from the committed template alone and merely *printed* the running one, so a
+  host serving a file nobody committed would have reported `pass` beside a detail string describing
+  the problem. Both sources count now.
+- **[Claude] Negative controls**: an `http_access allow` moved above the deny →
+  `1 allow(s) precede it: allow all_the_things`; the deny deleted entirely →
+  `no http_access deny to_private line at all`. Two distinguishable outputs, plus the correct one.
 - **[Claude] Registered in [`aws/INDEX.md`](../../aws/INDEX.md)** with its write-API fence stated,
   as the folder's rules require for the two files that have one.
 
-## 2026-09-06 — 7.4: re-measuring found one wrong number, and it flattered a rejection
+## 2026-09-06 — 7.4: re-measuring found a wrong number that flattered a rejection
 
 - **[Claude] The three rows this step asked for were already in `PRICING.md`**, added at the
-  2026-09-05 review. Restating them would have been transcription, so they were **re-read** from the
-  Price List bulk API instead — offer files republished **2026-08-31**, `AmazonVPC` and
-  `AmazonRoute53`, `us-west-2` and `sa-east-1`.
+  2026-09-05 review, so they were **re-read** from the Price List bulk API — offer files republished
+  **2026-08-31**, `AmazonVPC` and `AmazonRoute53`, `us-west-2` and `sa-east-1`.
 - **[Claude] `us-west-2` held exactly**: Transit Gateway **0.05** per VPC-attachment-hour and
   **0.02**/GB processed; Route 53 Resolver endpoint **0.125** per ENI-hour, and an inbound or
   outbound endpoint needs at least two ENIs — so ≈ **USD 182/month standing** for the shape open
   question 23 priced and D38 declined.
-- **[Claude] ONE FIGURE WAS WRONG, AND IN THE DIRECTION THAT FLATTERED THE REJECTION**
+- **[Claude] One figure was wrong, in the direction that flattered the rejection**
   ([Lesson 7](../plan/lessons.md)). The table gave `sa-east-1` a Transit Gateway attachment of
   **0.05/h with a ratio of 1.00**; the offer file says **0.09**, ratio **1.80**. The five-attachment
   hub-and-spoke this estate does *not* build would be ≈ **USD 328/month** in São Paulo rather than
-  182. The rejection stands and is now stronger, which is exactly why a rejected-on-cost option has
-  to be re-read rather than remembered.
-- **[Claude] `cost-model.md`'s hourly table is REWRITTEN, not annotated.** The 2026-09-05 repricing
-  had left the table saying one thing and a block below it saying another — one intent in two
-  places, the shape that drifts ([Lesson 33](../plan/lessons.md)). Folded in, and the endpoint
-  counts are now **counted rather than ranged**, each from its own slice's plan:
+  182. The rejection stands and is now stronger.
+- **[Claude] `cost-model.md`'s hourly table is rewritten rather than annotated.** The 2026-09-05
+  repricing had left the table saying one thing and a block below it saying another
+  ([Lesson 33](../plan/lessons.md)). Folded in, and the endpoint counts are now **counted rather
+  than ranged**, each from its own slice's plan:
 
   | set | endpoints | USD/h |
   |---|---|---|
@@ -1407,20 +1389,19 @@ thing to run.
   | `VPC-Workloads` | **0** | 0.000 — a written refusal, not an omission |
 
   The row it replaces read *"NAT ~0.050 + endpoints ~0.100-0.120"* — a range over a set nobody had
-  counted. Three new rows carry what 6c actually built: the proxy at **0.0104/h with no per-GB
-  charge at all**, the optional endpoint groups at **zero unless named**, and the build host's
-  **three** bills.
-- **[Claude] `architecture.md` §4.3a now names the shape that EXISTS.** The cell had read
-  *"0.0052/h (`t3.nano`) or 0.0104/h (`t3.micro`)"* — a two-value range for a host that had not been
-  built. It is a **`t3.micro`**, sized up because `dnf` was OOM-killed on 415 MiB, which is a
-  measurement rather than a preference. And it gains the half the NAT comparison kept omitting:
-  **an EC2 proxy charges nothing per GB**, where a NAT gateway adds 0.045/GB of processing.
+  counted. Three new rows carry what 6c built: the proxy at **0.0104/h with no per-GB charge at
+  all**, the optional endpoint groups at **zero unless named**, and the build host's **three** bills.
+- **[Claude] `architecture.md` §4.3a now names the shape that exists.** The cell had read
+  *"0.0052/h (`t3.nano`) or 0.0104/h (`t3.micro`)"*, a two-value range for a host that had not been
+  built. It is a **`t3.micro`**, sized up because `dnf` was OOM-killed on 415 MiB. And it gains the
+  half the NAT comparison kept omitting: **an EC2 proxy charges nothing per GB**, where a NAT gateway
+  adds 0.045/GB of processing.
 - **[Claude] The two numbers that close the cost story.** Estate-wide the fixed rate fell
   **0.470 → 0.390/h** with the NAT. Sandbox's own idle floor **rose**, 0.160 → 0.180, because
-  design B has to enumerate what a NAT covered silently — **the only axis on which it rose**, since
+  design B has to enumerate what a NAT covered silently — the only axis on which it rose, since
   per gigabyte a NAT is 0.045 against an endpoint's 0.010. Break-even ≈ **0.57 GB/h**.
 
-## 2026-09-06 — 3.6 and 3.7 paid off: `NT-11` exists, and its two findings are two checks
+## 2026-09-06 — 3.6 and 3.7: `NT-11` exists, and its findings are two separate checks
 
 - **[Claude] 3.6 was already done in the code and stale in the legend.** `NT-4` was re-cut with 4.7
   and reads *"no route overlaps `10.90.0.0/24` **outside the hub**"*, paired with a **positive**
@@ -1438,72 +1419,68 @@ thing to run.
   | **declared but not routed** | an `active` peering with no route on one side, **named by side** | real, and the normal state for the minutes between creating a peering and adding its routes |
   | **routed but not active** | a route whose target is deleted, failed or pending, or an id no peering answered to | a **BLACKHOLE** — packets leave and nothing comes back, with no ICMP and no log line. The opposite finding, and the more urgent one |
 
-- **[Claude] Why it exists at all, and it is not hypothetical**: the reference implementation this
-  project keeps as a comparison has exactly this defect — an `active` peering whose route table on
-  one side never learned about it. Nothing *describes* that as an error. The attachment shows
-  healthy, the CIDRs look right in a diagram, and traffic in one direction dies silently. **Peering
-  shares an ADDRESS, never a PATH** ([Lesson 44](../plan/lessons.md)), and the path is this route.
+- **[Claude] The defect it looks for is not hypothetical**: the reference implementation this project
+  keeps as a comparison has exactly it — an `active` peering whose route table on one side never
+  learned about it. Nothing *describes* that as an error. The attachment shows healthy, the CIDRs look
+  right in a diagram, and traffic in one direction dies silently. Peering shares an address, never a
+  path ([Lesson 44](../plan/lessons.md)), and the path is this route.
 - **[Claude] It asserts only about accounts it actually read.** A VPC whose account holds no live
   profile is skipped and said so: *"no route found"* and *"no session"* are the same silence
   (Lesson 13), and a check that crosses accounts by construction meets that case as the norm.
 - **[Claude] Reading: `pass` — 5 active peerings, both sides routed, across 5 VPCs.** The estate's
-  sixth peering is `deleted` and nothing points at it, which is why it is silent rather than a
-  finding — and it is also the live proof that the second branch is looking at the right thing.
-- **[Claude] Both branches proven on synthetic inputs**, because a check that has only ever passed
-  on a healthy estate is a claim: one side unrouted → `pcx-1: vpc-b has no route to it`; a deleted
-  peering still routed → `is deleted and 2 side(s) still point at it`; a route to an id nobody read
-  → named; an unread account side → correctly silent.
+  sixth peering is `deleted` and nothing points at it, so it is silent rather than a finding, and it
+  is the live proof that the second branch is looking at the right thing.
+- **[Claude] Both branches proven on synthetic inputs**: one side unrouted →
+  `pcx-1: vpc-b has no route to it`; a deleted peering still routed →
+  `is deleted and 2 side(s) still point at it`; a route to an id nobody read → named; an unread
+  account side → correctly silent.
 
 ## 2026-09-06 — the VPN runbook rewritten, because two of its checks now read as failures
 
-- **[Claude] The file still described a host in Sandbox, and its banner said the move was in the
-  FUTURE.** Fifty-five stale identifiers — profile, Name tag, slice paths, log group, secret,
-  `make up ENV=sandbox` — but the expensive part was not staleness. **Two of Part C's three connection
-  checks now produce a "failure" when the design is working**, and the user was about to follow them:
+- **[Claude] The file still described a host in Sandbox.** Fifty-five stale identifiers — profile,
+  Name tag, slice paths, log group, secret, `make up ENV=sandbox` — and, more expensive than the
+  staleness, **two of Part C's three connection checks now produce a "failure" when the design is
+  working**, with the user about to follow them:
   - `curl https://checkip.amazonaws.com` *"must print `52.89.212.1`"* — there is no NAT on that host
     any more. The address the estate leaves under is the **proxy's**, and only through it.
   - `dig +short SOA sandbox.internal` *"must answer"* — that is the **old** zone family, associated
     with Sandbox alone. Once `DNS` points at the hub it must **not** answer.
-  Both are **struck through rather than deleted**, so a reader holding an older copy recognises them
-  instead of wondering which file is wrong.
-- **[Claude] The DNS check is now a PAIR, in opposite directions, and choosing it needed a
-  measurement.** `dig SOA prod.awsds.internal` must **answer** and `dig SOA sandbox.internal` must
-  **not**. Read the zone associations rather than the plan: `prod.awsds.internal` and
-  `awsds-pages.internal` are associated with `VPC-Networking` and **not** with Sandbox;
-  `sandbox.internal` is the reverse. **`awsds.internal` answers through both** and therefore
-  discriminates nothing — which is the trap a careless replacement walks into, since it is the obvious
-  name to reach for.
-- **[Claude] §C4's MTU proof had to be re-aimed, and the old form is now silently useless.** It was
+  Both are struck through rather than deleted, so a reader holding an older copy recognises them.
+- **[Claude] The DNS check is now a pair in opposite directions, chosen from a measurement.**
+  `dig SOA prod.awsds.internal` must **answer** and `dig SOA sandbox.internal` must **not**. Read from
+  the zone associations rather than from the plan: `prod.awsds.internal` and `awsds-pages.internal`
+  are associated with `VPC-Networking` and **not** with Sandbox; `sandbox.internal` is the reverse.
+  `awsds.internal` answers through both and therefore discriminates nothing, which is the trap a
+  careless replacement walks into.
+- **[Claude] §C4's MTU proof had to be re-aimed; the old form is now silently useless.** It was
   `ping -D -s 1372 1.1.1.1` against `-s 1200`, and the reading is *1200 passes while 1372 fails*. The
-  host now rejects every forwarded packet not bound for RFC1918, so **both sizes fail identically** and
-  the test says nothing at all. Re-aimed at **`10.90.0.1`** — `wg0`'s own address, the tunnel's far end
-  — which isolates the tunnel from everything beyond it and is reached by the host's INPUT path rather
-  than the FORWARD chain the rejection lives in. **Flagged in the file as not yet exercised**, because
-  a substituted test is a claim until somebody runs it.
+  host now rejects every forwarded packet not bound for RFC1918, so both sizes fail identically and
+  the test says nothing. Re-aimed at **`10.90.0.1`** — `wg0`'s own address, the tunnel's far end —
+  which isolates the tunnel from everything beyond it and is reached by the host's INPUT path rather
+  than the FORWARD chain the rejection lives in. Flagged in the file as not yet exercised.
 - **[Claude] §S2 re-drawn around three mechanisms that are easy to conflate.** The FORWARD chain is the
   perimeter and **not** a route — the host keeps an IGW default because *it* needs one (SSM, CloudWatch,
   `dnf`); what it will not do is carry a **tunnel** packet there, which is why the failure is a fast
   refusal rather than a timeout. The masquerade has a **deliberate hole** for the public tier so Squid
   sees `10.90.0.x`. And the estate's one sight of the tunnel range is a single route in one table.
-  **The warning that earns its place**: do not widen that hole to the VPC CIDR — the resolver at
+  The warning it carries: do not widen that hole to the VPC CIDR — the resolver at
   `10.31.0.2` sits inside `10.31.0.0/16` and is not in a public subnet, so the tunnel's DNS would die
   while everything else kept working.
 - **[Claude] §S3's NAT-instance job retired whole** — `vpc_nat_cidrs`, the disabled
-  `source_dest_check`, the isolated-tier route and the extra `[P]` ingress rule. Not because it was
-  disliked: the build host moved to Production and **a route target cannot live in another VPC**. What
-  is kept is the **lesson** rather than the mechanism — reach is an intersection, the three halves lived
-  in three slices, and the missing one made a build look like a broken package mirror. The same shape
-  now guards the proxy: a spoke its group admits and its allow-list has never heard of is **reachable
-  and mute**.
+  `source_dest_check`, the isolated-tier route and the extra `[P]` ingress rule. The build host moved
+  to Production and **a route target cannot live in another VPC**. What is kept is the lesson rather
+  than the mechanism: reach is an intersection, the three halves lived in three slices, and the
+  missing one made a build look like a broken package mirror. The same shape now guards the proxy: a
+  spoke its group admits and its allow-list has never heard of is reachable and mute.
 - **[Claude] Two honesty fixes made while in there, neither of them asked for:**
-  - `VP-3`'s *"the estate's only world-open rule"* is currently **one per ACCOUNT** — Sandbox's `[P]`
+  - `VP-3`'s *"the estate's only world-open rule"* is currently one per **account** — Sandbox's `[P]`
     anchors outlive the host that used them until 4.13's second half — and the instrument reads
     **Production**, so it says `pass` about one of two ([Lesson 31](../plan/lessons.md)). Recorded as a
     dated exception with the step that ends it.
-  - **The proxy's private address is deliberately NOT written down.** §C2 asserts that
+  - **The proxy's private address is not written down.** §C2 asserts that
     `dig proxy.awsds.internal` returns *a private address in `10.31.160.0/24`* rather than a literal,
-    because that value is `[D]` and moves on a replacement — this runbook's own rule. Its **Elastic IP**
-    stays literal, because it is `[P]` and is the address `DenyControlPlaneOffVpn` names.
+    because that value is `[D]` and moves on a replacement. Its **Elastic IP** stays literal, because
+    it is `[P]` and is the address `DenyControlPlaneOffVpn` names.
 - **[Claude] Every substituted identifier verified against AWS, not against the plan**:
   `awsds-prod-vpn-host-key`, `/awsds/prod/vpn`, `awsds-prod-vpn-health` all exist under those names.
   `check-tfvars-shape.py` already carried both tfvars paths, so nothing there had to move.
@@ -1524,7 +1501,7 @@ thing to run.
   184.33.8.126
   ```
 
-- **[Claude] Reading 1 — the resolver in use is the HUB's, and the pair is what says so.** One SOA
+- **[Claude] Reading 1 — the resolver in use is the hub's, and the pair is what says so.** One SOA
   line for `prod.awsds.internal` and **nothing** for `sandbox.internal`. `.internal` is not a public
   TLD, so an answer can only come from a private zone, and the hub is associated with the first and not
   the second. Had the check been the obvious `awsds.internal`, both resolvers would have answered and
@@ -1532,42 +1509,40 @@ thing to run.
 - **[Claude] Reading 2 — `proxy.awsds.internal` → `10.31.160.106`**, private, inside the hub's public
   tier. The record was **NXDOMAIN until 2026-09-06**: step 2.1 said pass 4 would write it and pass 4
   did not.
-- **[Claude] Reading 4 — `184.33.8.126`, the PROXY's Elastic IP.** One command proving the tunnel, the
+- **[Claude] Reading 4 — `184.33.8.126`, the proxy's Elastic IP.** One command proving the tunnel, the
   peering, the return route and the `tunnel` plane of the allow-list. It is also the address
   `DenyControlPlaneOffVpn` names since 4.12, so this is the perimeter's own premise, measured from the
   outside for the first time.
-- **[Claude] READING 3 CONTRADICTED THE RUNBOOK I HAD WRITTEN THE DAY BEFORE, and the host settled it
-  rather than a re-reading.** The file predicted *"a refusal, arriving fast, not a timeout"*, because
-  the `FORWARD` chain answers with `icmp-admin-prohibited` rather than dropping. The user got
+- **[Claude] Reading 3 contradicted the runbook written the day before, and the host settled it.**
+  The file predicted *"a refusal, arriving fast, not a timeout"*, because the `FORWARD` chain answers
+  with `icmp-admin-prohibited` rather than dropping. The user got
   `curl: (28) Connection timed out after 15006 milliseconds`. Measured on the host the same hour:
 
   ```
   4     8453  2104K  REJECT  all -- wg0 * 0.0.0.0/0 0.0.0.0/0  reject-with icmp-admin-prohibited
   ```
 
-  **Both are true.** The host refuses, 8453 times — and the counter is what proves the rule is *hit*
-  rather than merely present. macOS, like most modern stacks, **ignores an ICMP unreachable arriving
+  Both are true. The host refuses, 8453 times, and the counter proves the rule is *hit* rather than
+  merely present. macOS, like most modern stacks, **ignores an ICMP unreachable arriving
   mid-`connect()`** as hardening against off-path injection, so `curl` retransmits the SYN until
-  `--max-time` expires. **The refusal is real and the sender cannot see it.** That is
-  [Lesson 42](../plan/lessons.md) mirrored — there *is* a response and the receiver discards it, so
-  absence is observed anyway — and it is written up as **Lesson 55**: the discriminator is not a better
-  reading of the client's error, it is the counter on the **refusing** side. `§S2` and `§C2` of the
-  runbook corrected the same sitting.
-  **The rejected-packet count is also a number nobody had**: it is a live measure of how much a laptop
-  tries to send straight to the internet while a full tunnel is up.
-- **[Claude] AND THE RUN PROVED TWO THINGS 6.1 DID NOT ASK FOR.** The proxy's access log, read for the
+  `--max-time` expires. The refusal is real and the sender cannot see it —
+  [Lesson 42](../plan/lessons.md) mirrored, and written up as **Lesson 55**: the discriminator is the
+  counter on the **refusing** side, not a better reading of the client's error. `§S2` and `§C2` of the
+  runbook corrected the same sitting. The rejected-packet count is also a live measure of how much a
+  laptop tries to send straight to the internet while a full tunnel is up.
+- **[Claude] The run proved two things 6.1 did not ask for.** The proxy's access log, read for the
   same minutes:
 
   ```
   2026-09-07T02:58:26+0000 10.90.0.2 CONNECT checkip.amazonaws.com:443 200 4950 735 TCP_TUNNEL
   ```
 
-  **`10.90.0.2` — the DEVICE, not the WireGuard host.** That is 4.7's deliberate hole in the masquerade
-  and 4.11's access log working together, end to end, for the first time: the log carries a per-device
-  address instead of one indistinguishable blur, which is the whole reason the exemption exists and
-  costs the ENI's `source_dest_check`. The NAT table confirms it from the other side —
-  `RETURN … 10.90.0.0/24 → 10.31.160.0/24` counted **2** packets, exactly the user's two connections
-  (POSTROUTING sees only the first packet of each; conntrack carries the rest).
+  **`10.90.0.2` is the device, not the WireGuard host.** 4.7's deliberate hole in the masquerade and
+  4.11's access log working together for the first time: the log carries a per-device address instead
+  of one blur, which is why the exemption exists and costs the ENI's `source_dest_check`. The NAT
+  table confirms it from the other side — `RETURN … 10.90.0.0/24 → 10.31.160.0/24` counted **2**
+  packets, exactly the user's two connections (POSTROUTING sees only the first packet of each;
+  conntrack carries the rest).
 - **[Claude] What 6.1 leaves**: `6.2`, `6.4` and `6.6` are still the user's, and `6.4`'s premise — *with
   the laptop's proxy setting removed* — now has a documented shape, since this run confirms no such
   setting was ever needed for the `-x` form.
@@ -1590,15 +1565,13 @@ thing to run.
   What stood in the `tunnel` plane was a **23-name allow-list** of AWS console, portal and sign-in
   families — making the **client's** internet stricter than the **compute's**, which is the exact
   inversion of the requirement.
-- **[Claude] How it happened, because the mechanism is more useful than the mistake.** Step 4.9
-  wrote *"the tunnel range carries the institutional web filter — what a person on a company laptop
-  may reach"*, and told the executor to seed it from the SMUS network-isolation guide's tables.
-  `squid.conf` is default-deny, so *"filter"* was implemented as an **allow-list**. **An
-  institutional web filter is a DENY-list over an open default** — it blocks categories, it does not
-  enumerate the web. `CLAUDE.md` says the objectives are *"the specification a stage is measured
-  against, so it is summarised nowhere"*; the paraphrase in the stage file **became** the
-  specification. That is [Lesson 38](../plan/lessons.md) at a new address: a name travels further
-  than the sentence that carried it.
+- **[Claude] How it happened.** Step 4.9 wrote *"the tunnel range carries the institutional web
+  filter — what a person on a company laptop may reach"*, and told the executor to seed it from the
+  SMUS network-isolation guide's tables. `squid.conf` is default-deny, so *"filter"* was implemented
+  as an **allow-list**. An institutional web filter is a **deny-list over an open default**: it blocks
+  categories, it does not enumerate the web. `CLAUDE.md` says the objectives are *"the specification a
+  stage is measured against, so it is summarised nowhere"*; the paraphrase in the stage file **became**
+  the specification ([Lesson 38](../plan/lessons.md) at a new address).
 - **[Claude⚡] The repair is a `mode` per plane**, and both keys are always present so no downstream
   parser meets a missing field:
 
@@ -1607,21 +1580,21 @@ thing to run.
   | `allowlist` | `allow` | may reach these names and nothing else | the four spokes — `sandbox-foundation` is D5's *"short list"* for the compute |
   | `open` | `deny` | may reach anything **except** these | the `tunnel` plane, **deny list empty by decision** (the user, 2026-09-07) |
 
-  **Empty is not "no control"** for an open plane — the control is the access log, which is what the
-  objectives' word *monitored* names, and it already carries a per-device address. **The three
-  global denies are untouched**: private destinations, unsafe ports, CONNECT to anything but 443.
-  *Open* means open to the internet, never to the estate.
+  For an open plane the control is the access log, which is what the objectives' word *monitored*
+  names, and it already carries a per-device address. **The three global denies are untouched**:
+  private destinations, unsafe ports, CONNECT to anything but 443. *Open* means open to the internet,
+  never to the estate.
 - **[Claude] Two plan-time gates followed the shape.** The apex-beside-wildcard collision check now
   reads **both** kinds of list — a deny list is the one somebody will paste names into in a hurry,
   from a blocklist written for another syntax — and an unknown `mode` is a **plan failure**, because
   the render script branches on that string and a typo would emit no block at all: a source the
   security group admits and the config has never heard of, reachable and mute.
 
-### The finding that cost the most, and it is a property of the design
+### The parameter is data and the renderer is code
 
-- **[Claude⚡] THE PARAMETER IS DATA AND REACHES THE HOST IN THIRTY MINUTES; THE RENDERER IS CODE AND
-  NEEDS A NEW HOST.** After applying the new parameter and triggering the association by hand, it
-  reported **`Success`** — and the tunnel plane was still absent from the host. Read on the host:
+- **[Claude⚡] The parameter reaches the host in thirty minutes; the renderer needs a new host.**
+  After applying the new parameter and triggering the association by hand, it reported **`Success`**
+  and the tunnel plane was still absent from the host. Read on the host:
 
   ```
   55:    | select((.value.allow | length) > 0)
@@ -1630,14 +1603,14 @@ thing to run.
   the **old** jq, which skips a plane whose `allow` is empty. `/usr/local/sbin/awsds-render-squid` is
   written by **user data**, so it is `[D]` state on the disk; step 4.10 bought a reload path for the
   **list**, not for the **renderer**. The association ran the old script perfectly, which is what its
-  `Success` meant. **Two kinds of change with very different costs, and nothing had said so** — the
+  `Success` meant. Two kinds of change with very different costs, and nothing had said so: the
   proxy host was replaced (`2 to add, 2 to change, 2 to destroy`) and the new one renders
   `acl src_tunnel` + a bare `http_access allow src_tunnel`.
-- **[Claude] `PX-3` reported a false mismatch and it was the check's fault, not the estate's.** An
-  **empty `allowlist`** plane renders nothing — correct: no acl, no allow line, the source falls to
-  the backstop and is refused by name, which is what an empty allow-list means. The check read that
-  absence as a diff for `production-workloads` and `staging-foundation`. An empty **`open`** plane is
-  the opposite and must be present, so its absence stays a finding. Both cases are now explicit.
+- **[Claude] `PX-3` reported a false mismatch, and it was the check's fault.** An **empty
+  `allowlist`** plane renders nothing — no acl, no allow line, the source falls to the backstop and is
+  refused by name, which is what an empty allow-list means. The check read that absence as a diff for
+  `production-workloads` and `staging-foundation`. An empty **`open`** plane is the opposite and must
+  be present, so its absence stays a finding. Both cases are now explicit.
 - **[Claude] `./aws/dns-allowlist.py`'s parser met a form it did not know, and failed as a
   `KeyError` traceback rather than the loud refusal its own docstring promises.**
   `proxy_allow_shared` had become `concat(<comprehension>, <literal>)` on 2026-09-06 — one
@@ -1647,10 +1620,9 @@ thing to run.
   contents would now compare a **blocklist with a permit-list**, so it asks the shape question
   instead — *only the client plane is `open`; every compute plane is an allow-list* — and a compute
   plane that went `open` is a `fail`.
-- **[Claude] And a decision from 2026-09-06 was vindicated the next day.** The host replacement moved
-  the proxy's private address, and `proxy.awsds.internal` followed it: `10.31.160.106` →
-  **`10.31.160.181`**. Yesterday's runbook edit refused to write that literal into §C2 on the
-  grounds that it is `[D]` and moves on a replacement. It moved on a replacement.
+- **[Claude] The host replacement moved the proxy's private address**, and `proxy.awsds.internal`
+  followed it: `10.31.160.106` → **`10.31.160.181`**. The previous day's runbook edit had refused to
+  write that literal into §C2 because it is `[D]` and moves on a replacement.
 - **[Claude] Verified end to end**: `./aws/proxy.py --on-host` reads `PX-1`, `PX-2`, `PX-3`, `PX-5`
   **pass** (`PX-4` the standing note), and `./aws/dns-allowlist.py` reads `DN-1`, `DN-2`, `DN-4`
   pass with `tunnel — 0 entries, mode open`.
@@ -1683,38 +1655,34 @@ thing to run.
   By process: **`claude` ×5**, `Claude`, `OneDrive` ×2, `Spotify`, and three macOS services. **The
   session asking the question was one of them**, on IPv6, with no route into the tunnel at all —
   `utun4` had **no `inet6` address and no IPv6 default route**.
-- **[Claude] `AllowedIPs = ::/0` HAD BEEN INERT SINCE THE FIRST DAY, AND THREE DOCUMENTS SAID
-  OTHERWISE.** `wg-quick` installs routes only for the address families the interface **has an
+- **[Claude] `AllowedIPs = ::/0` had been inert since the first day, and three documents said
+  otherwise.** `wg-quick` installs routes only for the address families the interface **has an
   address in**, and `[Interface] Address` was IPv4-only. The runbook's §C4 said IPv6 was
-  *"deliberately black-holed"* — it was not black-holed, it was **not routed**, and the difference
-  is a leak. [Lesson 56](../plan/lessons.md): a configuration line naming a capability the
-  surrounding configuration does not have is inert and reads exactly like a working control; verify
-  a routing directive from the **routing table**, never from the config that was meant to produce it.
-- **[Claude] AND THE LEAK IS NOT AN AWS LEAK, which is worth being precise about.** Measured: `ec2`,
-  `ssm`, `logs` and `sts` in `us-west-2` have **no AAAA records** — AWS API endpoints are IPv4-only,
-  so they went into the tunnel and were rejected. The perimeter was never bypassed. What leaked was
-  ordinary internet traffic — Spotify, OneDrive, Apple's services and the Anthropic clients —
-  outside the proxy, outside the allow-list and outside the access log. For the objectives'
-  data-leakage requirement the honest sentence is that the full tunnel was, on this client, an
-  **IPv4-only** leakage control.
-- **[Claude⚡] `wireguard-v0.6.0`, and the point is what it does NOT do.** All five VPCs are
+  *"deliberately black-holed"*; it was **not routed**, and the difference is a leak.
+  [Lesson 56](../plan/lessons.md): a configuration line naming a capability the surrounding
+  configuration does not have is inert and reads exactly like a working control; verify a routing
+  directive from the **routing table**, never from the config that was meant to produce it.
+- **[Claude] The leak is not an AWS leak.** Measured: `ec2`, `ssm`, `logs` and `sts` in `us-west-2`
+  have **no AAAA records** — AWS API endpoints are IPv4-only, so they went into the tunnel and were
+  rejected. The perimeter was never bypassed. What leaked was ordinary internet traffic — Spotify,
+  OneDrive, Apple's services and the Anthropic clients — outside the proxy, outside the allow-list
+  and outside the access log. For the objectives' data-leakage requirement, the full tunnel was on
+  this client an **IPv4-only** leakage control.
+- **[Claude⚡] `wireguard-v0.6.0` carries no IPv6 traffic; it rejects it.** All five VPCs are
   IPv4-only (measured), so the host has no IPv6 uplink and the ULA carries nothing: IPv6 now
   **enters** the tunnel and is **rejected** there. One `ip6tables` rule rather than an allow-list,
-  because there is one answer — and explicit rather than left to routing (forwarding is already `0`)
-  so the refusal is **counted**, which [Lesson 55](../plan/lessons.md) established two days earlier
-  as the only place a refusal the sender cannot see is legible.
-  **`fd90::<n>` mirrors `10.90.0.<n>`** — a deliberate departure from RFC 4193's randomly generated
-  global ID, recorded as a departure: that rule guards against collisions when private networks
+  explicit rather than left to routing (forwarding is already `0`) so the refusal is **counted**,
+  which [Lesson 55](../plan/lessons.md) established two days earlier as the only place a refusal the
+  sender cannot see is legible. **`fd90::<n>` mirrors `10.90.0.<n>`**, a recorded departure from
+  RFC 4193's randomly generated global ID: that rule guards against collisions when private networks
   merge, this prefix never leaves the tunnel, and the roster, the handshake log and the access log
   all key on the host number.
-- **[Claude] THE HONEST HALF, WHICH CORRECTED THE USER'S PREMISE BEFORE THEY CONFIRMED.** The user
-  asked whether the ULA is a host-side control the client cannot bypass. **It is not.**
-  `AllowedIPs` on the *client* side is a routing directive: whoever holds the laptop deletes the
-  IPv6 `Address` line and IPv6 leaves the tunnel again. Nothing on a WireGuard server can compel a
-  peer to send it traffic. What this closes is an **accidental** leak and it makes the config honest;
-  enforcement is `DenyControlPlaneOffVpn` (which fails closed) and the proxy's lists, and the
-  institutional answer to the client half is an MDM profile the owner cannot edit. The user
-  confirmed knowing that.
+- **[Claude] The ULA is not a host-side control the client cannot bypass.** The user asked whether it
+  is; it is not. `AllowedIPs` on the *client* side is a routing directive: whoever holds the laptop
+  deletes the IPv6 `Address` line and IPv6 leaves the tunnel again. Nothing on a WireGuard server can
+  compel a peer to send it traffic. What this closes is an **accidental** leak; enforcement is
+  `DenyControlPlaneOffVpn` (which fails closed) and the proxy's lists, and the institutional answer to
+  the client half is an MDM profile the owner cannot edit. The user confirmed knowing that.
 - **[Claude⚡] Applied — `2 to add, 3 to change, 2 to destroy`** (the host is replaced; user data
   writes `wg0.conf`). Measured on the new host:
 
@@ -1733,11 +1701,11 @@ thing to run.
   the whole user data. `ip6tables` was confirmed present on the running host **before** the rule was
   written, because a failing `PostUp` on a host reachable only by SSM is an expensive way to learn.
 - **[Claude] The vocabulary carries the ULA to exactly one slice.** `WIREGUARD_PEER_CIDR_V6` reaches
-  `production/vpn` and **deliberately not** `production/networking`: the hub's consumers are a
-  security group and a route table, both IPv4 because the VPCs are, and an unused value in a
-  generated file is an invitation to find a use for it.
-- **[Claude] Client instruction: ONE line.** `Address = 10.90.0.2/32, fd90::2/128`. Same shape as the
-  `DNS` edit the account move needed, and for the same reason — everything else is `[P]`.
+  `production/vpn` and not `production/networking`: the hub's consumers are a security group and a
+  route table, both IPv4 because the VPCs are, and an unused value in a generated file is an
+  invitation to find a use for it.
+- **[Claude] Client instruction: one line.** `Address = 10.90.0.2/32, fd90::2/128`. Same shape as the
+  `DNS` edit the account move needed; everything else is `[P]`.
 
 ## 2026-09-07 — 2.6 and 2.4: the old zone family retired, and the obvious target was wrong
 
@@ -1746,28 +1714,27 @@ thing to run.
   exactly the old family and nothing else. The gate was **6.1's DNS pair**, which was built for this:
   it asks that `prod.awsds.internal` **answer** and `sandbox.internal` **not**, so passing it is the
   measurement 2.6 was waiting for.
-- **[Claude] THE OBVIOUS TARGET FOR THE PROBE RECORDS WAS WRONG, and the matrix is what says so.**
+- **[Claude] The obvious target for the probe records was wrong, and the matrix is what says so.**
   `probe.prod.internal` and `probe-isolated.prod.internal` look like they belong in
   `prod.awsds.internal` — same account, successor name. INT-22 associates that zone with
-  VPC-Workloads, VPC-SharedServices and VPC-Networking and **deliberately not with Sandbox**, which
-  is the one place those records are resolved **from**: their whole job is to be the cross-account
-  private-DNS Deliverable. In the child zone they would be NXDOMAIN at the only address that asks.
-  They went to the **apex**, the one zone all five VPCs share — joining `gitlab`, `proxy` and `vpn`,
-  and unlike those three they are `[E]`.
-- **[Claude] `sandbox.internal` STAYS, and the reason is another slice's freeze.**
+  VPC-Workloads, VPC-SharedServices and VPC-Networking and **not with Sandbox**, which is the one
+  place those records are resolved **from**: their job is to be the cross-account private-DNS
+  Deliverable. In the child zone they would be NXDOMAIN at the only address that asks. They went to
+  the **apex**, the one zone all five VPCs share, joining `gitlab`, `proxy` and `vpn`; unlike those
+  three they are `[E]`.
+- **[Claude] `sandbox.internal` stays, because another slice is frozen.**
   `sandbox/foundation` plans **`1 to add`** — an Elastic IP that would be a **second** allocation —
   until the `VPN_HOMES` trim, and that trim waits on step **6.5**, which is half the user's.
   `-target` would destroy just the zone and the runbook forbids it outside two recipes, neither of
-  which is this. So the zone stands, harmless (nothing resolves it, nothing points at it), and
-  leaves with the apply that unfreezes the slice. Recorded where it will be met: `NT-12` carries it
-  as a **dated note**, naming the step that ends it.
-- **[Claude] `NT-12` written at 2.6, exactly as 2.4's own correction predicted it would have to
-  be** — *"it cannot be written to the FINAL matrix and run before 2.6"*. Reading:
-  **5, 2, 2, 3, 2 associations, and no others.**
-  - **Two-sided, and that is the design.** A **missing** association is a name that NXDOMAINs where
-    the matrix says it resolves; an **extra** one is a spoke resolving into a plane INT-22 keeps it
-    out of — *the half no expected-direction test would find*. `prod.awsds.internal` not being in
-    Sandbox is a control, and only the second half measures it.
+  which is this. The zone stands, harmless (nothing resolves it, nothing points at it), and
+  leaves with the apply that unfreezes the slice. `NT-12` carries it as a **dated note**, naming the
+  step that ends it.
+- **[Claude] `NT-12` written at 2.6, as 2.4's own correction predicted** — *"it cannot be written to
+  the FINAL matrix and run before 2.6"*. Reading: **5, 2, 2, 3, 2 associations, and no others.**
+  - **Two-sided.** A **missing** association is a name that NXDOMAINs where the matrix says it
+    resolves; an **extra** one is a spoke resolving into a plane INT-22 keeps it out of, the half no
+    expected-direction test would find. `prod.awsds.internal` not being in Sandbox is a control, and
+    only the second half measures it.
   - **By CIDR, not by Name tag.** A range is this estate's identifier for a VPC and it does not move
     when a tag does — which it did at step 1.1, breaking both spokes while every id-shaped gate read
     clean ([Lesson 48](../plan/lessons.md)). The human names ride along as comments so the table can
@@ -1780,44 +1747,41 @@ thing to run.
     only hold while every account had exactly one, which Production stopped doing at pass 1.
 - **[Claude] Seven consumers followed the retirement**, found by grep before the destroy rather than
   after it: the three probe slices, `networking.py`, `supplychain.py`'s `ZONES`, `cicd.py`,
-  `orchestration.py`, `layers.py` and `aws/INDEX.md`. **Historical prose in Stages 3, 4 and 6a is
-  deliberately left alone** — those are records of what was true then, and rewriting them would be
-  editing a log.
+  `orchestration.py`, `layers.py` and `aws/INDEX.md`. Historical prose in Stages 3, 4 and 6a is left
+  alone: those are records of what was true then.
 
-## 2026-09-07 — 6.7: `docs/NETWORK.md` rewritten from the readings, not promoted
+## 2026-09-07 — 6.7: `docs/NETWORK.md` rewritten from the readings
 
 - **[Claude] The file had been describing an estate that stopped existing three passes ago** — three
   VPCs, a NAT gateway per account, a WireGuard host in Sandbox doubling as a NAT instance, and a DNS
   Firewall whose job was filtering the internet. It carried the target in a `§T` block marked
-  explicitly *as not built*, which is the discipline that made this rewrite cheap: the shape was
-  already argued, and what 6.7 owed was the **measurement**.
-- **[Claude] Rewritten FROM readings taken today, not promoted from `§T`.** `describe-vpcs`,
+  explicitly *as not built*, so the shape was already argued and what 6.7 owed was the
+  **measurement**.
+- **[Claude] Rewritten from readings taken today, not promoted from `§T`.** `describe-vpcs`,
   `describe-subnets`, `describe-route-tables` and `describe-vpc-peering-connections` across three
   profiles; `NT-1`..`NT-12`; `PX-1`..`PX-5`; `DN-1`..`DN-4`; `VP-1`..`VP-9`; and the SSM parameter
   the proxy renders. Where `§T` said *"five peerings"*, the body now says which five, by `pcx-` id
   and CIDR pair, and which five are **absent**.
 - **[Claude] Four rules head the file, and the third is the one this estate keeps needing:**
-  *what is ABSENT is often the control*. Five peerings where there could be ten; no default route in
-  any spoke; `prod.awsds.internal` deliberately not associated with Sandbox. A reader who only looks
-  for what is present will read every one of those as an omission.
+  *what is absent is often the control*. Five peerings where there could be ten; no default route in
+  any spoke; `prod.awsds.internal` not associated with Sandbox. A reader who only looks for what is
+  present will read every one of those as an omission.
 - **[Claude] The gate found two things a reading would not have.** `check-network-doc.py` requires
-  **every subnet CIDR literally** — the first draft used `x.0.0/18` placeholders, which is more
-  readable and unverifiable — and it requires **`sandbox/vpn/`** to be named, because the folder is
-  still on disk and the gate reads the disk. Both fixed: a per-VPC subnet table with the thirty
-  literal ranges, and a row for the slice whose host is already destroyed and whose folder waits on
-  6.5.
-- **[Claude] `docs/AWS_STATE.md`'s §C row restated as a RECORD rather than a prediction**, and one
-  of its predictions was wrong in an interesting way: it said *"zero NAT gateways (three destroyed,
-  not two)"*, and **none was ever destroyed** — every `egress/` slice was `[E]` and down when 5.1
-  removed the code, so the act was a code change and the count was zero all along.
-- **[Claude] A new §C row for what 6c LEAVES OWED**, because a frozen slice with an unapplied plan is
-  exactly the state that gets rediscovered as a finding: `sandbox.internal`, the Sandbox VPN anchors
+  **every subnet CIDR literally** — the first draft used `x.0.0/18` placeholders, readable and
+  unverifiable — and it requires **`sandbox/vpn/`** to be named, because the folder is still on disk
+  and the gate reads the disk. Both fixed: a per-VPC subnet table with the thirty literal ranges, and
+  a row for the slice whose host is already destroyed and whose folder waits on 6.5.
+- **[Claude] `docs/AWS_STATE.md`'s §C row restated as a record rather than a prediction.** One of its
+  predictions was wrong: it said *"zero NAT gateways (three destroyed, not two)"*, and **none was ever
+  destroyed** — every `egress/` slice was `[E]` and down when 5.1 removed the code, so the act was a
+  code change and the count was zero all along.
+- **[Claude] A new §C row for what 6c leaves owed**, because a frozen slice with an unapplied plan is
+  the state that gets rediscovered as a finding: `sandbox.internal`, the Sandbox VPN anchors
   and `sandbox/foundation`'s `1 to add` all wait on 6.5, **in that order**, and both `NT-12` and
   `VP-3` carry it as a dated note.
-- **[Claude] What 6.7 does NOT yet carry, said in the file rather than left to be noticed**: step
-  **6.2**'s reading — the portal opening from the tunnel with no browser grant, and the two
-  client-plane names resolving publicly. §10's shadowing paragraph is written from the design until
-  that measurement lands.
+- **[Claude] What 6.7 does not yet carry, said in the file**: step **6.2**'s reading — the portal
+  opening from the tunnel with no browser grant, and the two client-plane names resolving publicly.
+  §10's shadowing paragraph is written from the design until that measurement lands.
 
 ## 2026-09-07 — the client runbook, and `vpn.md` loses what moved
 
@@ -1831,8 +1795,8 @@ documentation work; nothing in this entry touched AWS.*
   (Lesson 54). Every value in it is `[P]` except the proxy's private address, looked up by name.
 - **[Claude] `vpn.md` lost what moved**: §S5's session order (it keeps the host-only start, the
   capacity signal and the floor), and §C0-§C3 whole, replaced by a stub; every internal pointer
-  re-aimed. **§K4 step 3 was stale and got fixed on the way**: it named account `Sandbox` and
-  `gen-tfvars.py sandbox vpn` for a slice that has been `production/vpn` since pass 4.
+  re-aimed. **§K4 step 3 was stale**: it named account `Sandbox` and `gen-tfvars.py sandbox vpn` for
+  a slice that has been `production/vpn` since pass 4.
 - **[Claude] The `proxy-on` shell function's first draft was wrong, and only running it said so** —
   `export https_proxy=… http_proxy=$https_proxy` in one statement expands the variable before the
   assignment, so `http_proxy` came out empty in **both** zsh and bash. Split into two statements and
@@ -1917,15 +1881,15 @@ documentation work; nothing in this entry touched AWS.*
   the private zones, `localhost`, `169.254.169.254`, `169.254.170.2`) — *are these private VPC routes,
   or the access control to external sites, the SageMaker restricted list? I saw none of the whitelist's
   sites.*
-- **[Claude] Neither is the list, and the list is in another account — three layers, three questions.**
-  The firewall list answers *does this name resolve?*: since pass 5 it closes the recursive resolver as an
+- **[Claude] Neither output is the allow-list; the allow-list is in another account.** The firewall
+  list answers *does this name resolve?*: since pass 5 it closes the recursive resolver as an
   exfiltration channel and allows only AWS's namespaces and the estate's zones; a notebook never
   resolves `pypi.org` itself, it sends `CONNECT` to the proxy and the **proxy** resolves, in
   `VPC-Networking`, which carries no firewall. `no_proxy` answers *which door?*: the names that must
   **not** cross the proxy from inside the VPC, generated per VPC from the endpoint catalogue. The
   twenty-name allow-list answers *is it permitted?* and lives on the **proxy** —
   `production/networking/hub-anchors.tf`'s `proxy_allow_sandbox`, rendered into the SSM parameter — which
-  is why a Sandbox plan cannot show it. And the firewall list was *created* because the slice is `[E]`:
+  is why a Sandbox plan cannot show it. The firewall list was *created* because the slice is `[E]`:
   every `make up` rebuilds it.
 - **[Claude] What closed**: **6.2 DONE** in the stage file, with the wrong-host turn and the hung space
   recorded under it; verification 3 answered; `docs/NETWORK.md` §10's shadowing paragraph and §13's owed
@@ -1945,11 +1909,11 @@ comandos necessários") and was signed in as the infrastructure user.*
   With the client runbook §4.1 [b]'s variables exported, both the credential fetch and the SSM read went
   through the proxy. **Git over SSH has no path at all**: the proxy allows `CONNECT` to 443 only, and
   macOS's `nc -X connect` refuses Squid's `HTTP/1.1 200 Connection established` reply — so this branch
-  is pushed over **HTTPS**, with `gh`'s credential helper, through the proxy. **The client runbook
-  gained §4.3 (GitHub) at the user's request the same hour**: push over HTTPS, never SSH, `gh auth
-  setup-git` once, either remote shape. Two observations kept rather than explained: `ssh` reported
-  *refused* where `curl` times out (§C2's Lesson 55 reading was taken with `curl`), and the ip6tables
-  counter below reads **0**.
+  is pushed over **HTTPS**, with `gh`'s credential helper, through the proxy. The client runbook
+  gained §4.3 (GitHub) at the user's request the same hour: push over HTTPS, never SSH, `gh auth
+  setup-git` once, either remote shape. Two observations kept: `ssh` reported *refused* where `curl`
+  times out (§C2's Lesson 55 reading was taken with `curl`), and the ip6tables counter below reads
+  **0**.
 - **[Claude] `./aws/vpn.py --on-host` at 16:36:41Z** — `VP-1`..`VP-9` pass, every call returned. The
   lines that matter, verbatim:
 
@@ -1971,7 +1935,7 @@ comandos necessários") and was signed in as the infrastructure user.*
   was attempted; `netstat -rn -f inet6` on the client — a default route through the `utun` — is the
   reading that separates them.
 
-## 2026-09-07 — 6.4 closes with reading B, and the timeout was the host's silence, not the client's deafness
+## 2026-09-07 — 6.4 closes with reading B, and the timeout was the host's ICMP rate limit
 
 *Claude's readings and the user's, the user's verbatim. The `--on-host` read is the one the user
 authorized earlier in the sitting; `aws/vpn.py` gained four ICMP reads for it first (`ruff` clean).*
@@ -2047,8 +2011,8 @@ authorized earlier in the sitting; `aws/vpn.py` gained four ICMP reads for it fi
 - **[Claude] `aws/vpn.py --on-host` reads the ICMP block from now on** — `/proc/net/snmp`'s `Icmp`
   line, three `Icmp6*` counters and the four `icmp_*` sysctls, all reads under the same ban list.
   **6.4 DONE** in the stage file; pass 6 keeps **6.6** and the user's half of **6.5**.
-- **[Claude] And one defect of my own, kept**: the script that first appended this entry failed on a
-  count assertion, and the commit chain behind it was not gated on the script's exit — so commit
+- **[Claude] One defect of the sitting's own**: the script that first appended this entry failed on a
+  count assertion, and the commit chain behind it was not gated on the script's exit, so commit
   `9316dc1` carried every correction and the index row's *"forty-nine sections"* without the entry
   they described (Lesson 46's shape). This commit is the entry.
 
@@ -2059,7 +2023,7 @@ marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
 
 - **[user] 6.6 — the closing choice of INT-16 is (ii), recorded acceptance**, in the user's words: *"vamos
   pela opção (ii). Revise o que for necessário no plano do estágio 11 para rever esta decisão"*.
-- **[Claude] Recorded as a DEVIATION, not a gap**, in nine files (the stage's 6.6 block and decision due 3,
+- **[Claude] Recorded as a deviation rather than a gap**, in nine files (the stage's 6.6 block and decision due 3,
   the INT-16 row, `README.md` item 3, `GENERAL_PLAN.md` principle 4, `architecture.md` §3 — which still
   placed the tunnel in Sandbox, corrected —, `open-questions.md`, the device-trust row of
   `institutional-delta.md`, `CLAUDE.md`). Fallback (i)'s condition shape stays written in 6.6 and is
@@ -2120,7 +2084,7 @@ marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
   | 23:53:47 | `GetDataAccess` | `10.31.160.181` | `vpce-043a6f047c31e06cc` | DataScientistAccess |
   | 23:53:48 | `GetCallerIdentity` | `184.33.8.126` | `-` | project role (vended) |
 
-  **Verification 4 answered: TWO DOORS, BY SERVICE FAMILY.** `sts` leaves the proxy for the public
+  **Verification 4 answered: two doors, by service family.** `sts` leaves the proxy for the public
   endpoint and arrives as the proxy's Elastic IP; `s3control` resolves inside the S3 prefix list and
   takes VPC-Networking's **gateway** endpoint, arriving as the proxy host's private address with the
   endpoint id — 4.12's prediction, measured. Both branches of `DenyControlPlaneOffVpn` are load-bearing,
@@ -2144,21 +2108,21 @@ marked. The sitting straddled midnight UTC: it began on 2026-09-07 evening.*
   `aws/INDEX.md`, the stage's status row, 4.13 and verification 4, `GENERAL_PLAN.md`, `CLAUDE.md`.
 - **[Claude] Re-measured.** `./aws/vpn.py`: `VP-1`..`VP-9` pass — `VP-3` *"UDP/51820 on
   sg-09308ebfd2da884eb in the VPN home, none in the 4 other account(s) read"*. `./aws/networking.py` on
-  the five infra profiles: all pass, `NT-12` five zones and no others. **And `NT-10` went red on the first
-  run**, with `sandbox/egress` still up from the 6.2 sitting: Sandbox's `datazone` endpoint seizes
+  the five infra profiles: all pass, `NT-12` five zones and no others. `NT-10` went red on the first
+  run, with `sandbox/egress` still up from the 6.2 sitting: Sandbox's `datazone` endpoint seizes
   `datazone.us-west-2.api.aws` and the check called that a shadowing of the portal's public name —
   written for the world in which the laptop resolved in Sandbox, red the first time an endpoint existed
   after 6.7 (Lesson 50). Re-cut: a seizure in a **compute** VPC is design B working (5.3 requires the
   endpoint there; the apps are not portal web clients), only one in the hub is the finding. Reads
   `pass` with the discriminator. The run before it also listed every persona profile's preflight failure,
-  which is what running the script with no profile named does while only two sessions are live — noise,
-  not findings.
-- **[Claude] One reading about tokens, two observations.** The infrastructure token was invalidated
-  earlier in the sitting and the Terraform plans failed with `GetRoleCredentials … 401`; the CLI kept
-  answering for profiles whose role credentials were already cached. This time the Data Scientist's
-  token **survived** the browser sign-out and the infrastructure login. So what kills a session's token
-  is **`aws sso logout`**, which logs every cached session out at once (the user ran it at 15:29); a
-  browser sign-out invalidates none.
+  which is what running the script with no profile named does while only two sessions are live — noise
+  rather than findings.
+- **[Claude] What kills a session's token is `aws sso logout`.** The infrastructure token was
+  invalidated earlier in the sitting and the Terraform plans failed with `GetRoleCredentials … 401`,
+  while the CLI kept answering for profiles whose role credentials were already cached. This time the
+  Data Scientist's token **survived** the browser sign-out and the infrastructure login.
+  `aws sso logout` logs every cached session out at once (the user ran it at 15:29); a browser sign-out
+  invalidates none.
 - **[Claude] What 6c leaves.** Pass 6 is closed; every pass is executed and measured. **Decision due 4**
   — the access log's export to Log Archive — is the stage's one open item, both rates to be measured
   before the user chooses. `sandbox/egress` is still up.
@@ -2181,10 +2145,10 @@ measurements are Claude's.*
   and offer pages in `REFERENCES.md`.
 - **[Claude] What decided it, since the money could not.** (a) and (b) both need objects built by hand in
   Log Archive — a CloudWatch Logs destination, a Firehose, a role and a bucket for (a); a bucket with a
-  policy for the `logs` service principal for (b) — in an account with no CLI profile and no IaC, which is
-  Lesson 35's shape. The record's destruction is not silent meanwhile: `DeleteLogGroup` and
+  policy for the `logs` service principal for (b) — in an account with no CLI profile and no IaC
+  (Lesson 35's shape). The record's destruction is not silent meanwhile: `DeleteLogGroup` and
   `PutRetentionPolicy` are management events on the organization trail, which already lands in Log
-  Archive. And Stage 11 step 5.1 decides once, for every log the author must not own, where it lands
+  Archive. Stage 11 step 5.1 decides once, for every log the author must not own, where it lands
   (its decision 7): `/awsds/prod/proxy` now joins that delivery by name. The author of the allow-list owns
   its record until then, knowingly — the same shape as 6.6: accept, watch, revisit in the stage that owns
   the answer.
@@ -2196,7 +2160,7 @@ measurements are Claude's.*
   NAT, no default route in any spoke, the client plane resolving in the hub, the perimeter re-keyed on the
   proxy's address and trimmed, the Sandbox home retired — every pass executed and every claim measured.
 
-## 2026-09-08 — pass 8 added: the split-tunnel profile beside the monitored one, the requirement amended, 8.1 and 8.2 done, and the user's first `.conf`
+## 2026-09-08 — pass 8: the split-tunnel profile beside the monitored one, the requirement amended, 8.1 and 8.2 done
 
 *Written by Claude at the user's request ("Suba no mesmo PR o log deste andamento"); the user's decisions,
 words and `.conf` are theirs, quoted. No AWS act in this entry beyond reads, and no reading of the new
@@ -2220,8 +2184,8 @@ profile yet — this sitting wrote it; 8.3 measures it.*
   `DenyOutsideTrustedNetworks`, with `InfrastructureAccess` outside by decision (OQ 17). The first two make
   *the internet through the proxy*; the third makes *AWS through the proxy*, and it does not depend on the
   tunnel at all.
-- **[Claude] The finding that shaped the pass: the reach difference between the profiles is by IDENTITY,
-  never by network.** A split-tunnel `.conf` is the monitored one with one line changed — same key, so the
+- **[Claude] The reach difference between the profiles is by identity, never by network.**
+  A split-tunnel `.conf` is the monitored one with one line changed — same key, so the
   host holds the same peer and nothing moves: no roster row, no Elastic IP, no instance, no apply. Nothing
   the monitored profile reaches is out of the other's reach; a persona's AWS work under split-tunnel needs
   the proxy pointed at by the *application*, because the perimeter accepts only the proxy's exit, and the
@@ -2248,8 +2212,8 @@ profile yet — this sitting wrote it; 8.3 measures it.*
   monitored, the compute plane restricted), *opened* collides with the proxy plane's `mode = open` — and
   the second, after the review, **monitored** / **split-tunnel**, the requirement's names since. The paste
   had replaced the monitored paragraph with the suggestion's placeholder; restored verbatim from the
-  previous commit, and the bullet given its date marker. The plan then followed the requirement, never
-  the other way round (Lesson 57).
+  previous commit, and the bullet given its date marker. The plan then followed the requirement
+  (Lesson 57).
 - **[Claude] 8.2 done on both halves, 8.1 written.** `institutional-delta.md`'s device-trust row gains a
   fourth instance — the configuration file itself, fixed by MDM in the institution and chosen by the owner
   here; `NETWORK.md` §7 a dated paragraph saying every reading there is the monitored profile's and the
@@ -2270,7 +2234,7 @@ profile yet — this sitting wrote it; 8.3 measures it.*
   PersistentKeepalive = 25
   ```
 
-  **The template, line for line.** Not yet brought up: 8.3's readings are the next act — the monitored
+  The template, line for line. Not yet brought up: 8.3's readings are the next act — the monitored
   tunnel down first — and 8.4's two on-host reads bracket them.
 - **Commits on PR #70**: `50b4440` (pass 8 and the first objectives draft), `474aa2c` (the vocabulary and
   8.2), `cbe23f6` (8.1), then this entry. **What 6c still holds open**: 8.3 (the user's readings), 8.4
@@ -2280,7 +2244,7 @@ profile yet — this sitting wrote it; 8.3 measures it.*
   decisões 5 e 6. Uma chave. DNS 10.31.0.2"*** — after asking where the two decisions were and how they
   read. Both struck in the stage file; §C7 and the 8.1 block no longer say *to be confirmed*.
 
-## 2026-09-08 — 8.3 and 8.4 measured: the split-tunnel profile from both ends, the persona pair on one command, and a counter that did not move
+## 2026-09-08 — 8.3 and 8.4 measured: the split-tunnel profile from both ends, the persona pair, and a counter that did not move
 
 *Written by Claude at the user's standing request in this sitting; the user's pastes are verbatim, and the
 laptop's own public address is never written. The user signed in as the Data Scientist and then as the
@@ -2312,7 +2276,7 @@ infrastructure user, and authorized the two `ssm:SendCommand`s in chat ("autoriz
   is the flag. The hub is still the resolver (`proxy.awsds.internal` → `10.31.160.181`, the SOA answered),
   and it is the resolver for **every** query: resolver #1, no domain restriction, order ahead of `en0`'s —
   **verification 5 answered from the reading**, the source's `matchDomains = [""]` measured.
-- **[user] The `curl` line, and a shell defect kept.** Pasted with `\;`, the line became ONE `curl` with
+- **[user] The `curl` line, and a shell defect kept.** Pasted with `\;`, the line became one `curl` with
   five arguments: `https://1.1.1.1;` and `https://checkip.amazonaws.com;` were *URL rejected: Bad hostname*
   (`000`); the two words `curl` became URLs fetched **through the proxy**, and Squid answered
   **`503 ERR_DNS_FAIL`** — *"Unable to determine IP address from host name curl"*, generated 02:33:57 GMT by

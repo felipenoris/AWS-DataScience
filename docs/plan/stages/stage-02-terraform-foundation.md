@@ -150,22 +150,19 @@ no state bucket") and **Management**.
 ### 1. Replace the placeholder tree
 
 1. ~~**Delete the empty `terraform/` folder.**~~ **Obsolete — measured 2026-08-15: there is no `terraform/`
-   folder on disk.** Git does not track empty directories, so it went away on its own. Kept struck through
-   rather than deleted, because a reader who remembers it should find out that it is gone rather than go
-   looking.
+   folder on disk.** Git does not track empty directories, so it went away on its own.
 2. **Create `terraform-live/` and `terraform-modules/`** exactly as `docs/plan/conventions.md` §6 lays them out.
-   That file is the authoritative layout **and it is the only copy** — if this stage needs the layout to
-   change, edit §6, do not restate it here. `terraform-live/identity/org-policies/` **already exists** and
-   holds 1c's documents; this step creates the rest around it.
-3. **Pin `hashicorp/aws` and `required_version`, and record both in the log.** This is a step rather than a
-   detail of 6.4 because **two of this stage's verifications are phrased "in the pinned provider version"**
-   — (ii), whether `aws_organizations_policy` accepts `DECLARATIVE_POLICY_EC2`, and (iv), whether the
-   descendant-OU data source really recurses — and a verification whose subject was never written down is a
-   verification nobody can repeat. `terraform` is **v1.15.8** on this laptop (measured 2026-08-15), which is
-   what `use_lockfile` needs (2.5); the provider version is chosen here.
+   That file is the authoritative layout: if this stage needs the layout to change, edit §6, do not restate
+   it here. `terraform-live/identity/org-policies/` **already exists** and holds 1c's documents; this step
+   creates the rest around it.
+3. **Pin `hashicorp/aws` and `required_version`, and record both in the log.** Two of this stage's
+   verifications are phrased *"in the pinned provider version"* — (ii), whether `aws_organizations_policy`
+   accepts `DECLARATIVE_POLICY_EC2`, and (iv), whether the descendant-OU data source really recurses — so
+   the version has to be written down to be repeatable. `terraform` is **v1.15.8** on this laptop (measured
+   2026-08-15), which is what `use_lockfile` needs (2.5); the provider version is chosen here.
 4. **`docs/log/log-stage-02-terraform-foundation.md` already exists** (header-only, created 2026-08-15) and its row
    in [`docs/log/INDEX.md`](../../log/INDEX.md) links it. Every decision this stage names as "record which way
-   it went" lands there. *(Written cooperatively since 2026-08-17 — Claude only on request; see
+   it went" lands there. *(Written cooperatively — Claude only on request; see
    [`docs/log/INDEX.md`](../../log/INDEX.md).)*
 
 ### 2. The first bootstrap slice: `terraform-live/sandbox/bootstrap/`
@@ -176,33 +173,31 @@ no state bucket") and **Management**.
 - `aws_s3_bucket` `awsds-sandbox-tfstate`, with **versioning on**, **SSE-KMS** against that key,
   **S3 Bucket Keys enabled** (`docs/plan/cost-model.md`), and `aws_s3_bucket_public_access_block` with all four
   flags true.
-- A **bucket policy denying `aws:SecureTransport = false`** — checkov requires it in step 6 anyway, and a
-  policy the linter adds for you is a policy nobody read.
+- A **bucket policy denying `aws:SecureTransport = false`** — checkov requires it in step 6 anyway.
 - A **noncurrent-version lifecycle rule** (expire after ~90 days). Every apply writes a version; a rule
   added later does not reach what has already accumulated.
 - `lifecycle { prevent_destroy = true }` and `force_destroy = false` — `docs/plan/conventions.md` §5.1 rule 1.
 - **`default_tags` in the provider block**, carrying the five mandatory tags of `docs/plan/conventions.md`
-  (`Project`, `Environment`, `ManagedBy=terraform`, `Owner`, `CostCenter`). Named here because this is the
-  first slice that could have got it wrong and because **nothing will stop it**: 1c's tag SCP names
-  `ec2:RunInstances` and nothing else (measured), so an untagged bucket is created happily and shows up
-  later as a cost report with a hole in it. `default_tags` makes the convention a property of the provider
-  rather than a line to repeat per resource — which is the Lesson 14 shape applied to tags.
+  (`Project`, `Environment`, `ManagedBy=terraform`, `Owner`, `CostCenter`). This is the first slice that
+  could have got it wrong and nothing will stop it: 1c's tag SCP names `ec2:RunInstances` and nothing else
+  (measured), so an untagged bucket is created happily and shows up later as a cost report with a hole in
+  it. `default_tags` makes the convention a property of the provider rather than a line to repeat per
+  resource (Lesson 14 applied to tags).
 
-**2.2 — The two-phase apply, which is the documented chicken-and-egg exception.**
+**2.2 — The two-phase apply, the documented chicken-and-egg exception.**
 
 1. `terraform apply` with **local state**, creating the bucket and the key.
 2. Add the `backend "s3"` block (2.5) and run `terraform init -migrate-state`.
-3. **Delete the local `terraform.tfstate` and `terraform.tfstate.backup` afterwards** — and note that
-   step 6.2's `.gitignore` has to cover them *before* phase 1 runs, not after. A state file carries account
-   IDs and resource ARNs, and this repository is hosted on GitHub.
+3. **Delete the local `terraform.tfstate` and `terraform.tfstate.backup` afterwards.** Step 6.2's
+   `.gitignore` has to cover them *before* phase 1 runs, not after: a state file carries account IDs and
+   resource ARNs, and this repository is hosted on GitHub.
 4. **The bucket now holds its own state**, so destroying it is a two-phase operation in reverse. That is
-   intended and is what `prevent_destroy` says out loud.
+   what `prevent_destroy` states.
 
-**2.3 — Bootstrap consumes no module, deliberately.** Step 7 creates `s3-bucket` and `kms-key`, and
-`docs/plan/conventions.md` requires modules to be consumed **by git tag** — which cannot exist before the module
-does. Beyond the ordering, bootstrap is the slice that makes every other slice possible; giving it a
-dependency on the tree it bootstraps is how a repository acquires a cycle nobody can unwind at 23:00. Write
-it as plain resources and leave it that way.
+**2.3 — Bootstrap consumes no module.** Step 7 creates `s3-bucket` and `kms-key`, and
+`docs/plan/conventions.md` requires modules to be consumed **by git tag**, which cannot exist before the
+module does. Bootstrap is also the slice that makes every other slice possible, so a dependency on the tree
+it bootstraps is a cycle. Write it as plain resources and leave it that way.
 
 **2.4 — Which KMS key this is, since `docs/plan/conventions.md` §6 puts "KMS keys" in `foundation/`.** It is not
 that key and it cannot be: `foundation/` does not exist yet at bootstrap time, and **`identity/` and
@@ -232,22 +227,20 @@ not let step 9's grep discover it:
   installed and supports it.
 - `key` is `<account>/<slice>/terraform.tfstate`, one state file per slice, one bucket per account (D3).
 
-**2.6 — The second generated file, which the step needed and did not name** *(added on execution,
-2026-08-15)*. `backend.hcl` is not the only value a slice cannot write down: the **provider's `region`** may
-not be a literal either (9.1 scans for it), and 3.3 forbids hardcoding `sandbox` when D35 vends one Sandbox
-per business unit. So `region`, the `<env>` **name token** and the `Environment` **tag value** arrive as
-variables with no defaults, from a generated, gitignored **`terraform.auto.tfvars`** —
-`./scripts/gen-tfvars.py <account> <slice>`, written from `scripts/tfhygiene/backend.py`, the same table
-`gen-backend-hcl.py` reads. **One vocabulary, two writers**: the region the backend records and the region
-the provider uses cannot disagree, which they could the moment the second one was typed (Lesson 14). It
-carries no `zone_ids` — those are per-environment and belong to a network slice's own tfvars, and a
-generator emitting an unused list sends the next reader looking for the resource that consumes it.
+**2.6 — The second generated file, `terraform.auto.tfvars`.** `backend.hcl` is not the only value a slice
+cannot write down: the **provider's `region`** may not be a literal either (9.1 scans for it), and 3.3
+forbids hardcoding `sandbox` when D35 vends one Sandbox per business unit. So `region`, the `<env>` **name
+token** and the `Environment` **tag value** arrive as variables with no defaults, from a generated,
+gitignored **`terraform.auto.tfvars`** — `./scripts/gen-tfvars.py <account> <slice>`, written from
+`scripts/tfhygiene/backend.py`, the same table `gen-backend-hcl.py` reads. **One vocabulary, two writers**:
+the region the backend records and the region the provider uses cannot disagree (Lesson 14). It carries no
+`zone_ids` — those are per-environment and belong to a network slice's own tfvars, and a generator emitting
+an unused list sends the next reader looking for the resource that consumes it.
 
-**2.7 — What the `kms:Decrypt` record actually contains, measured rather than assumed** *(added on
-execution, 2026-08-16)*. This stage leans on that record twice — in "What this stage costs" above and in
-D36 — because Lesson 18 leaves nothing else: the infrastructure user authors the key policy. So the record
-was read, from the trail of this slice's own applies and its lock test, and it is **narrower on two axes
-than "the CloudTrail record of a `kms:Decrypt`" suggests**:
+**2.7 — What the `kms:Decrypt` record contains, measured 2026-08-16.** This stage leans on that record
+twice — in "What this stage costs" above and in D36 — because Lesson 18 leaves nothing else: the
+infrastructure user authors the key policy. Read from the trail of this slice's own applies and its lock
+test, the record is **narrower on two axes** than *"the CloudTrail record of a `kms:Decrypt`"* suggests:
 
 - **It never carries plaintext, and no setting makes it.** `GenerateDataKey`'s `responseElements` **is** the
   data key, and KMS logs it as `null`; `Decrypt` logs neither the ciphertext in nor the plaintext out. The
@@ -263,16 +256,15 @@ than "the CloudTrail record of a `kms:Decrypt`" suggests**:
 - **The call is made by S3 under the caller's identity** — `invokedBy: fas.s3.amazonaws.com`, a forward
   access session — so reading a state file requires `s3:GetObject` **and** `kms:Decrypt`, and denying only
   the second is enough. That is what makes the key policy load-bearing rather than decorative.
-- **D36's alarm survives the coarsening, for a reason worth writing down before 3.4 relies on it**: it is
-  scoped to the *key*, which the event names in `resources`, and the PKI state key encrypts exactly one
-  file — so there the key **is** the object. What 3.4 still has to measure, next to verification (i), is
-  whether a bucket key applies to a per-slice `kms_key_id` override at all or only to the bucket default.
-  The two questions are one read, on the same apply.
+- **D36's alarm survives the coarsening**: it is scoped to the *key*, which the event names in `resources`,
+  and the PKI state key encrypts exactly one file, so there the key **is** the object. What 3.4 still has to
+  measure, next to verification (i), is whether a bucket key applies to a per-slice `kms_key_id` override at
+  all or only to the bucket default. The two questions are one read, on the same apply.
 
-The trade is accepted as it stands: at lab scale the bucket key is a real line in `docs/plan/cost-model.md`
-and the lost axis is recoverable at Stage 11. It is recorded because **a control whose record is thinner
-than the sentence describing it is Lesson 5's shape** — an intention is not a control — and the thinning
-here happened for a cost reason two subsections away from the claim.
+The trade is accepted: at lab scale the bucket key is a real line in `docs/plan/cost-model.md` and the lost
+axis is recoverable at Stage 11. It is recorded because a control whose record is thinner than the sentence
+describing it is Lesson 5's shape, and the thinning here happened for a cost reason two subsections away
+from the claim.
 
 ### 3. The remaining bootstrap slices
 
@@ -288,19 +280,18 @@ account expensive.
 here: [Stage 14](stage-14-sandbox-vending.md) owns it. What this step owes Stage 14 is that nothing in the
 bootstrap slice is written as *the* sandbox — no hardcoded `awsds-sandbox-tfstate` outside a variable.
 
-**3.4 — `production/pki/` needs its state under the PKI key, not the account state key (D36).** This is the
-detail that decides whether D36 is a control or a folder:
+**3.4 — `production/pki/` needs its state under the PKI key, not the account state key (D36).**
 
 - D36 puts the CA **root private key in a state file**. If every Production slice shares one bucket
   encrypted with one key, then "who can read Production state" and "who can mint a certificate for any
-  internal name" are the same permission — which is exactly the merge D36 exists to prevent.
-- **"The PKI key" is two different objects and the step used to name only one.** There is the key that
-  encrypts the **`production/pki/` state file** and there is whatever key the CA itself uses operationally
-  later. Only the first belongs to this stage, and **it cannot be created by the `pki/` slice**: a backend
-  is configured at `init`, before the slice has ever applied, so a key the slice creates does not exist when
-  the backend needs it. **So `production/bootstrap/` creates two keys** — `alias/awsds-prod-tfstate` and
-  `alias/awsds-prod-tfstate-pki` — and D36's `kms:Decrypt` alarm hangs on the second. This is the chicken-
-  and-egg of 2.2 in a second place, and it is cheaper to see it here than at `terraform init`.
+  internal name" are the same permission, the merge D36 exists to prevent.
+- **"The PKI key" is two different objects.** There is the key that encrypts the **`production/pki/` state
+  file** and there is whatever key the CA itself uses operationally later. Only the first belongs to this
+  stage, and **it cannot be created by the `pki/` slice**: a backend is configured at `init`, before the
+  slice has ever applied, so a key the slice creates does not exist when the backend needs it. **So
+  `production/bootstrap/` creates two keys** — `alias/awsds-prod-tfstate` and
+  `alias/awsds-prod-tfstate-pki` — and D36's `kms:Decrypt` alarm hangs on the second. This is 2.2's
+  chicken-and-egg in a second place.
 - **The S3 backend accepts `kms_key_id` per slice**, and a per-object SSE-KMS key overrides the bucket
   default. So `production/pki/backend.hcl` names the PKI state key; every other Production slice names the
   account state key. One bucket, two keys, two answerable questions.
@@ -309,15 +300,14 @@ detail that decides whether D36 is a control or a folder:
   somebody reads to change a subnet.
 - **Verify while executing (i):** that the bucket's default-encryption setting and its TLS-only policy do
   not force a single key and reject the override. If they do, `pki/` gets its **own bucket**, which costs
-  nothing and is the honest fallback.
+  nothing and is the fallback.
 
-**3.5 — The five slices are one slice, copied — and the copy needs an instrument** *(added on execution,
-2026-08-15)*. Step 2.3 already ruled out the obvious alternative: a module is consumed **by git tag**, a tag
-cannot exist before `terraform-modules/` does, and bootstrap is the slice that makes every other slice
-possible — a relative-path module inside `terraform-live/` would dodge the tag rule and keep the cycle. So
-the copy stands, by decision. What the step owes in exchange is an answer to the copy's own failure mode,
-which is **Lesson 14 in its purest form: a bucket setting changed in four places out of five, with the fifth
-still applying and nothing announcing that the copy stopped being one.**
+**3.5 — The five slices are one slice, copied, and the copy needs an instrument.** Step 2.3 ruled out the
+alternative: a module is consumed **by git tag**, a tag cannot exist before `terraform-modules/` does, and a
+relative-path module inside `terraform-live/` would dodge the tag rule and keep the cycle. The copy stands
+by decision, and what the step owes in exchange is an answer to the copy's failure mode: a bucket setting
+changed in four places out of five, with the fifth still applying and nothing announcing that the copy
+stopped being one (Lesson 14).
 
 - **`./scripts/check-bootstrap-parity.py`, in `make check` and in the commit gate** — the fifth check of a
   stage that had four. `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and
@@ -341,29 +331,26 @@ still applying and nothing announcing that the copy stopped being one.**
 they are independent, so the order is a convenience: `development`, `data-governance`, `production`,
 `identity`. Each runs as the **infrastructure user** on **that account** through **`InfrastructureAccess`**
 (`awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-prod`, `awsds-infra-identity`), and `AWS_PROFILE` is set
-on every command rather than exported once — **Lesson 25**, a borrowed session outlives the command that
-needed it and every later error names the wrong account. `./aws/tf-backends.py` is the read-back, and its
-section 5 already states the expected shape: **five state buckets** — and it stays five after
+on every command rather than exported once (**Lesson 25**). `./aws/tf-backends.py` is the read-back, and its
+section 5 states the expected shape: **five state buckets**, and it stays five after
 [Stage 6b](stage-06b-development-becomes-staging.md), which creates `awsds-staging-tfstate`, migrates
-every surviving slice into it and destroys `awsds-dev-tfstate`. *(This sentence read "six once `Staging`
-is vended" until 2026-09-05; the account is renamed, not vended.)*
+every surviving slice into it and destroys `awsds-dev-tfstate`.
 
 ### 4. Backends for every other slice
 
-**The previous wording of this step ("migrate every subsequent slice") described work that does not exist.**
 Only `bootstrap/` migrates, because only `bootstrap/` has to run before its own backend exists. **Every other
-slice declares the backend from its first `init` and never holds local state at all.** Say it that way so
-nobody goes looking for a migration to perform.
+slice declares the backend from its first `init` and never holds local state at all**, so there is no
+migration to perform.
 
 ### 5. `terraform-live/identity/` — where the entitlement plane acquires an owner
 
-This is the substance of the stage, and **it is two different jobs that the previous version of this step
-described as one**: the six persona permission sets are **written here, from the design in Stage 1b step 3**,
-having never been typed into a console; the organization's policy set is **imported**, because prevention had
-to precede it (principle 9) and 1c therefore attached it by hand. Both end in the same place — an artefact
-with a diff, a review and a rollback, which is what neither has while its only record is a browser tab. That
-matters most for the policy half: since D30 was reverted there is **no principal inside a governed account
-that can work around a mistake in it** (D16 — the Management root is the whole recovery path).
+This is the substance of the stage, and it is two jobs: the six persona permission sets are **written here,
+from the design in Stage 1b step 3**, having never been typed into a console; the organization's policy set
+is **imported**, because prevention had to precede it (principle 9) and 1c therefore attached it by hand.
+Both end in the same place — an artefact with a diff, a review and a rollback, which neither has while its
+only record is a browser tab. That matters most for the policy half: since D30 was reverted there is **no
+principal inside a governed account that can work around a mistake in it** (D16 — the Management root is the
+whole recovery path).
 
 **Written here, not imported (1b step 3.9):** `DataScientistAccess`, `DataScientistStagingAccess`,
 `DataScientistProdAccess`, `DeploymentManagerAccess`, `GovernanceManagerAccess`, `DevEnvStewardAccess`, and
@@ -374,12 +361,11 @@ with a gate in the middle that fails on JSON whitespace.
 **Imported:** the `InfrastructureAccess` set and its assignments (1b step 3), and the whole
 `org-policies/` set (1c step 7).
 
-*(This consequence arrived with D30 and outlived it. D30's own reason was narrower — a carve-out condition
-repeated across several policies has to be generated, not typed — and that reason went away with the
-decision. The ownership hole it happened to close did not.)*
+*(The consequence arrived with D30 and outlived it: D30's own reason was a carve-out condition repeated
+across several policies, which went away with the decision; the ownership hole it closed did not.)*
 
-**It is two slices, not one, and the seam is not a matter of taste.** `docs/plan/conventions.md` §6 carries the
-layout; the reasoning belongs here, because it is what the rest of this step is organised around:
+**It is two slices, not one.** `docs/plan/conventions.md` §6 carries the layout; the reasoning belongs here,
+because it is what the rest of this step is organised around:
 
 | | `identity/sso/` | `identity/org-policies/` |
 |---|---|---|
@@ -391,31 +377,26 @@ layout; the reasoning belongs here, because it is what the rest of this step is 
 | **D34's rule** | grants are **enumerated** | the floor is **discovered** |
 | **A mistake costs** | a person cannot sign in | the organization can be locked out of itself |
 
-Four separations in one folder split, and any one of them would justify it:
+The separations, any one of which would justify the split:
 
 1. **Two different delegations, granted by two different mechanisms.** Nothing about the first implies the
    second works, and 5.1 is the one that has never been exercised.
 2. **They fail independently, so they should not stall together.** If 5.1 turns out to be incompatible with
-   the landing zone (5.6), the SSO half still lands — with the boundary already drawn, rather than as a state
-   move performed under the disappointment.
+   the landing zone (5.6), the SSO half still lands, with the boundary already drawn.
 3. **Opposite rules under D34** — `for_each` on one side, written-out lists on the other. A single slice
-   invites the discovered form to leak into assignments, which is exactly the failure this design exists to
-   prevent.
+   invites the discovered form to leak into assignments, the failure this design exists to prevent.
 4. **Very different blast radius.** An `apply` against `org-policies/` can deny the organization its own
-   repair path; an `apply` against `sso/` cannot. Different risk deserves a different plan output to read
-   before saying yes.
+   repair path; an `apply` against `sso/` cannot.
 
 Both are applied with **`awsds-infra-identity`**, both keep their state in the Identity bootstrap bucket
-under separate keys, and `sso/` reads nothing from `org-policies/` — there is no `terraform_remote_state`
-between them, which is what keeps the independence real rather than nominal.
+under separate keys, and `sso/` reads nothing from `org-policies/`: there is no `terraform_remote_state`
+between them.
 
 **5.0 — The reachability preflight, which runs before anything else in this stage and can delete half of
-it.** *(New 2026-08-15. It exists because the landing zone put most of the policy set somewhere the
-delegation may not reach.)*
+it.** The landing zone put most of the policy set somewhere the delegation may not reach.
 
-INT-20 already said the plausible failure is not "the delegation is hard" but "**the delegation works and
-still cannot touch a root-attached document**". What 1c then did makes that failure expensive rather than
-awkward — measured from `aws/output/org-policies.txt`:
+INT-20's plausible failure is **a delegation that works and still cannot touch a root-attached document**.
+What 1c did makes that failure expensive — measured from `aws/output/org-policies.txt`:
 
 | Attached to | Documents |
 |---|---|
@@ -436,10 +417,10 @@ order, and record all three** (the reads cost nothing, and the first is informat
    `awsds-infra-identity`, `organizations update-policy` on the **least dangerous** document with its own content — the tag policy,
    whose enforcement is off (`enforced_for` unset), so an identical rewrite changes nothing even if it lands
    in a way nobody expected. Not `awsds-org-scp-baseline`; not from the canary, which has no delegation.
-   **"Its own content" needs a mechanism, the same way 5.5's import does** *(added 2026-08-15)*: read the
-   document back with `describe-policy --query 'Policy.Content' --output text` into a file, and feed **that
-   file** to `update-policy --content file://…`. Retyping it is a different test — a document differing by a
-   byte measures the delegation *and* edits the policy, and the two are no longer separable in the result.
+   **"Its own content" needs a mechanism, the same way 5.5's import does**: read the document back with
+   `describe-policy --query 'Policy.Content' --output text` into a file, and feed **that file** to
+   `update-policy --content file://…`. Retyping it is a different test — a document differing by a byte
+   measures the delegation *and* edits the policy, and the two are no longer separable in the result.
    `update-policy` leaves `Name` and `Description` unchanged when neither is passed, so `--content` alone is
    the whole call.
 
@@ -455,7 +436,7 @@ exactly like "all refused". `DEL-9` is the check.
 designed with all ten documents.** The write landed on `awsds-org-tag-policy`, a **root-attached** document,
 from `awsds-infra-identity`. INT-20's predicted failure did not occur.
 
-**But it settled less than "a root attachment is manageable", and the gap is a Lesson 20 gap.**
+**It settled less than "a root attachment is manageable", and the gap is a Lesson 20 gap.**
 `UpdatePolicy` authorizes against the **policy** ARN alone; only `AttachPolicy`/`DetachPolicy` authorize
 against the **target** as well. So the successful write proves the `policy/o-<org>/<type>/*` half of the
 `Resource` list and proves the condition does not block — it says **nothing** about the `root/…` and `ou/…`
@@ -465,7 +446,7 @@ calls no `AttachPolicy` at all. The delegation's target half therefore stays att
 the end of this stage, and the first call that needs it — Stage 3 attaching a new document, or any
 re-attachment — is where a denial would surface, far from anything that would explain it.
 
-4. **Closing the target half, non-mutating and worth the two minutes** *(added 2026-08-15)*: from
+4. **Closing the target half, non-mutating**: from
    `awsds-infra-identity`, `organizations attach-policy` for a pair that is **already attached** — the tag
    policy on the root, read out of `aws/output/org-delegation.txt` §5 immediately before, never from memory.
    The two outcomes are distinguishable and neither changes anything: `DuplicatePolicyAttachmentException`
@@ -480,7 +461,7 @@ re-attachment — is where a denial would surface, far from anything that would 
    wildcard was closed the same way, against an already-attached per-OU pair: same exception, so the
    wildcard matches a real call.
 
-   **And this reading needs a negative control, which is Lesson 21 arriving from the other side.** It is
+   **This reading needs a negative control (Lesson 21 from the other side).** It is
    only evidence if IAM authorization runs *before* the service's duplicate check; if the order were
    reversed, an unauthorized principal would get `DuplicatePolicyAttachmentException` too and the reading
    would be worth nothing. The discriminator costs one command and cannot mutate anything either: **the same
@@ -523,8 +504,8 @@ AWS Organizations objects, and by default only the Management account can touch 
   `ListPolicies`, `ListPoliciesForTarget`, `ListTargetsForPolicy`, `ListTagsForResource`) **plus**
   `CreatePolicy` / `UpdatePolicy` / `DeletePolicy` / `AttachPolicy` / `DetachPolicy`, each scoped by a
   `organizations:PolicyType` condition to the four types this project writes.
-  **Four reads this list omitted, added after reading the examples rather than paraphrasing them**
-  *(corrected 2026-08-15)*: `DescribeOrganizationalUnit`, `DescribeAccount`, `DescribeEffectivePolicy` and
+  **Four reads this list omitted**, added from AWS's examples rather than paraphrased:
+  `DescribeOrganizationalUnit`, `DescribeAccount`, `DescribeEffectivePolicy` and
   `ListAccountsForParent` appear in **every** AWS example, and — the load-bearing one —
   **`DescribePolicy`**, which is what the provider calls on every refresh of an
   `aws_organizations_policy`: without it 5.5's import succeeds and the next `plan` fails. Add
@@ -532,18 +513,16 @@ AWS Organizations objects, and by default only the Management account can touch 
   Identity account *today* with no delegation at all (that is how 5.0's reading 1 ran), and if creating the
   policy were to change that, `org-delegation.py` would report `DEL-1` as *denied* and every check below it
   would go vacuous — the instrument blinding itself at the moment it starts being useful.
-- **The condition operator is `StringLikeIfExists`, not `StringEquals`** *(corrected 2026-08-15; every AWS
-  example uses it and the earlier wording named no operator at all)*. The difference is the failure this
-  whole step is built to avoid: with a bare `StringEquals`, any call that does **not** carry
-  `organizations:PolicyType` in its request context fails the condition and is **denied** — which arrives at
-  the keyboard as *"every write refused"*, indistinguishable from 5.0's "the delegation cannot reach a root
-  attachment", the one outcome 5.0 exists to measure. `IfExists` makes the condition act only when the key
-  is present, and confinement to the four types is still carried by the policy ARN path in `Resource`.
-  ~~**`DEL-8` cannot catch this**~~ — **it can, since 2026-08-15.** The check used to iterate the operator
-  and discard it, so a `StringEquals` document passed and failed every apply; it now reports the operator
-  and **fails** on any form without an `IfExists` suffix. Demonstrated against the live document with the
-  operator name as the only edit.
-- **Tagging is a third statement, unconditioned and policy-scoped** *(added 2026-08-15)*.
+- **The condition operator is `StringLikeIfExists`**, the operator every AWS example uses. With a bare
+  `StringEquals`, any call that does **not** carry `organizations:PolicyType` in its request context fails
+  the condition and is **denied**, which arrives at the keyboard as *"every write refused"*,
+  indistinguishable from 5.0's "the delegation cannot reach a root attachment", the one outcome 5.0 exists
+  to measure. `IfExists` makes the condition act only when the key is present, and confinement to the four
+  types is still carried by the policy ARN path in `Resource`.
+  **`DEL-8` catches it.** The check used to iterate the operator and discard it, so a `StringEquals`
+  document passed and failed every apply; it now reports the operator and **fails** on any form without an
+  `IfExists` suffix. Demonstrated against the live document with the operator name as the only edit.
+- **Tagging is a third statement, unconditioned and policy-scoped.**
   `organizations:TagResource` / `UntagResource` do **not** accept the `organizations:PolicyType` condition —
   AWS's tagging example puts them in a separate statement with no condition for exactly that reason — so
   folding them into the write statement grants nothing. The ten attached documents carry **no tags today**
@@ -552,8 +531,8 @@ AWS Organizations objects, and by default only the Management account can touch 
   denial would land on the import rather than on the delegation. Scope the `Resource` list to the four
   **policy** ARN classes only — not to accounts, OUs or the root, which would hand the Identity account
   re-tagging of the organization's structure for no benefit here.
-- **The `Resource` list is four ARN classes — targets *and* policies — and the earlier wording named only
-  the targets** *(corrected 2026-08-15)*. The targets: `arn:aws:organizations::<mgmt>:ou/o-<org>/*` (the
+- **The `Resource` list is four ARN classes, targets *and* policies.** The targets:
+  `arn:aws:organizations::<mgmt>:ou/o-<org>/*` (the
   wildcard OU form), the `root/o-<org>/r-<root>` ARN and the account wildcard. AWS documents that naming a
   **single** OU *"excludes child OUs and accounts under child OUs"*, and this organization is **two levels
   deep** (D23: `Sandboxes` under `Interactive`). The same nesting that breaks a single-level `for_each` in
@@ -567,15 +546,15 @@ AWS Organizations objects, and by default only the Management account can touch 
   exactly this: no policy-type ARN class in the `Resource` list is a **fail**, not a note.
 - **Exclude `DisablePolicyType` and `EnablePolicyType`.** They act on the root and turning a policy type off
   detaches every policy of that type at once. Nothing in this design needs them after 1c step 7.2.
-- **Two AWS-side constraints on the *shape* of this document, neither of which is a choice**
-  *(found 2026-08-15, on the procedure page)*. **`NotAction` and `NotResource` are rejected outright since
+- **Two AWS-side constraints on the shape of this document** (AWS's procedure page).
+  **`NotAction` and `NotResource` are rejected outright since
   2026-06-30** — AWS calls them incompatible with the delegation allowlist model — so the exemption-shaped
   idiom used throughout `policies/` is unavailable here even in principle, and a document written that way
   fails at creation rather than at use. And **the delegable actions are a published closed list**: an action
   absent from it cannot be delegated however the document is written, which is the first thing to check if a
   later stage wants to widen this grant.
 
-**The blast radius this creates, stated rather than discovered.** AWS's own note is that the delegation
+**The blast radius this creates.** AWS's own note is that the delegation
 *"allows delegated administrators to perform the specified actions on policies created by any account in the
 organization, including the management account"* — which includes **Control Tower's own guardrail SCPs**.
 Scoping by policy ARN would fix it, and cannot: this project's policies have no ARNs until they are created.
@@ -583,9 +562,8 @@ So this is the **second** widening of the Identity account's blast radius, after
 1b step 1 records — and its control is the same one: 1b step 8.3's alarm, plus the CloudTrail record. Write
 it into `docs/ORGANIZATION.md`'s description of that account rather than leaving it here.
 
-**5.1a — Narrowing the delegation to one role.** *(New 2026-08-15, from
-[open question 11](../open-questions.md). The second Management action of this stage, and the only one 5.1
-did not anticipate.)*
+**5.1a — Narrowing the delegation to one role**, from
+[open question 11](../open-questions.md). The second Management action of this stage.
 
 5.1's `Principal` is `arn:aws:iam::<Identity>:root` — the **account**, because a resource policy's
 principal *is* an account and there is no narrower one to write. Measured the same day: that reaches
@@ -616,7 +594,7 @@ suffix is minted per account — observed 2026-08-15 as `3e25cf051c1ea198` in Id
 `ae101c6e565bd25b` in Development — so an exact ARN breaks the first time Identity Center re-provisions
 the role.
 
-**Three costs, stated before the keyboard rather than after:**
+**Three costs:**
 
 1. **It is a second place a principal is enumerated** (Lesson 14). Anything else that must ever write an
    organization policy — a Stage 8 pipeline role is the candidate — has to be added here, and forgetting
@@ -633,11 +611,10 @@ the role.
 3. **If the condition is wrong, every write against `org-policies/` stops** — and the repair is the
    Management console, which is D16's design rather than a surprise.
 
-~~**Unverified, and cheap to find out: whether this document accepts a `Condition` on `aws:PrincipalArn` at
-all.**~~ **Answered 2026-08-16: it does.** It already rejects `NotAction`/`NotResource` (5.1), so a refusal
-was a live possibility — and a safe one, since `put-resource-policy` would have errored and left the
-existing document standing. It did not: the amended document was accepted on the first paste. **The two
-rejections are therefore not one rule with two instances** — the allowlist model refuses
+**This document accepts a `Condition` on `aws:PrincipalArn` — answered 2026-08-16.** It already rejects
+`NotAction`/`NotResource` (5.1), so a refusal was a live possibility, and a safe one: `put-resource-policy`
+would have errored and left the existing document standing. The amended document was accepted on the first
+paste. The two rejections are therefore not one rule with two instances — the allowlist model refuses
 `NotAction`/`NotResource` because they are exemption-shaped, and a `Condition` narrowing an allow is not.
 
 **Verification (ix), which reuses open question 11's harness and is the whole of it.** Both halves, because
@@ -668,7 +645,7 @@ idiom — and the reading is the **wording** of the error, never the exit code. 
 unchanged**: cost 1 (a second place a principal is enumerated) is now live, and the candidate that will hit
 it is a Stage 8 pipeline role.
 
-**5.2 — What is written, what is imported, and — the half that is easiest to get wrong — what is neither.**
+**5.2 — What is written, what is imported, and what is neither.**
 
 | Object | How it gets into state | Left alone |
 |---|---|---|
@@ -679,14 +656,13 @@ it is a Stage 8 pipeline role.
 | The **direct Account Factory assignments** (D32, 1b step 3.8/5.1) | **Neither** — and if 1b's verification (vi) found they are re-created, they are a permanent property of a vended account rather than something to model | — |
 | The **org-root SCP set** (1c step 7.5), the **per-OU sets** (7.6), the **RCPs**, the **tag policy** and the **declarative EC2 policy** (7.8) | **Imported** | The **Control Tower controls** (7.7) — see 5.4 |
 
-- **Why the four users and five groups stay out, since everything else identity-shaped is coming in.** It is
-  the seam in `docs/plan/conventions.md`, "The identity seam": a permission set and an assignment are
-  *entitlements*, and their number is fixed by the design; a user and a group membership are *people*, and
-  their number grows with headcount — hundreds of data scientists, a dozen stewards. Putting people in
-  Terraform makes the repository an HR system, puts personal data in a state file, and turns joiners and
-  leavers into merge requests. In a real deployment they arrive over SCIM from the corporate IdP, and this
-  slice is unchanged by that — **which is exactly why an assignment must resolve its group by display name
-  and never by GUID**: a replaced directory re-creates the groups with new IDs.
+- **Why the users and groups stay out.** It is the seam in `docs/plan/conventions.md`, "The identity seam":
+  a permission set and an assignment are *entitlements*, and their number is fixed by the design; a user and
+  a group membership are *people*, and their number grows with headcount. Putting people in Terraform makes
+  the repository an HR system, puts personal data in a state file, and turns joiners and leavers into merge
+  requests. In a real deployment they arrive over SCIM from the corporate IdP, and this slice is unchanged
+  by that — **which is why an assignment must resolve its group by display name and never by GUID**: a
+  replaced directory re-creates the groups with new IDs.
 - **The permissions boundary is the one thing here that cannot be finished inside this slice** (1b step
   3.4). A customer-managed boundary referenced from a permission set must exist as an `aws_iam_policy` with
   the same name and path **in every account the set is provisioned into**, and those accounts' policies
@@ -715,14 +691,14 @@ it is a Stage 8 pipeline role.
   Neither is exploitable today — `iam:CreateRole` lives with `InfrastructureAccess`, which is already the
   exempted identity, and the maintenance role does not exist yet. **Both become exploitable the moment this
   step creates a set that is neither**, which is why the requirement is recorded against the boundaries and
-  not against the SCPs: a carve-out cannot defend itself. **And the two denies are written once, not N
+  not against the SCPs: a carve-out cannot defend itself. **The two denies are written once, not N
   times** (Lesson 14): one shared fragment — a `locals`/`jsonencode` block, or step 7's `iam-role` module
   boundary input once it exists — referenced by every boundary, never retyped per set.
 - **There is a size cap on a permission set's inline policy**, and three of these sets are long enumerated
   denies (1b step 3.5). Count before writing, the same discipline 1c step 7.1 applies to SCPs; the way out
   is a customer-managed policy, which lands back on the paragraph above.
-- **The declarative policy was missing from every earlier version of this step.** 1c step 7.8 creates one
-  (IMDSv2 and EC2 public-access defaults) and it is an Organizations policy like the others.
+- **The declarative policy is an Organizations policy like the others.** 1c step 7.8 creates one
+  (IMDSv2 and EC2 public-access defaults).
   **Verify while executing (ii):** that `aws_organizations_policy` accepts `type =
   "DECLARATIVE_POLICY_EC2"` in the pinned provider version. If it does not, that one policy stays console
   managed and is recorded as such (Lesson 5 — an unowned artefact is worse when nobody wrote down that it is
@@ -747,16 +723,15 @@ inconsistent** — nothing here declares `aws_organizations_account` or
 is the opposite of drift and it is silent: a new OU with no attachment, or a new account outside every
 enumerated ARN condition, with `terraform plan` reporting **"No changes"** in both cases.
 
-**The rule: the floor is discovered, the grants are enumerated — and the slice split runs along that same
-seam**, which is the fourth reason to have made it. **But 1c's execution changed what "discovered" can mean
-on the policy side, and the previous wording of this step would now produce a wrong apply.** Read point 1
-and its second half together:
+**The rule: the floor is discovered, the grants are enumerated, and the slice split runs along that same
+seam.** 1c's execution narrowed what *discovered* can mean on the policy side; read point 1 and its second
+half together:
 
-1. **The floor is discovered — and it turns out to be *inherited*, not attached per node.** Everything that
-   must cover everything went onto the **organization root** (5.0's table: six of ten documents). A new OU
-   or a new account inherits all six the moment it exists, with no attachment to create and no `for_each` to
-   run. So the coverage guarantee is real and it is bought by the *attachment point*, not by discovery.
-   **And the per-OU documents cannot be discovered — writing them as if they could is the failure this
+1. **The floor is discovered, and it turns out to be *inherited* rather than attached per node.** Everything
+   that must cover everything went onto the **organization root** (5.0's table: six of ten documents). A new
+   OU or a new account inherits all six the moment it exists, with no attachment to create and no `for_each`
+   to run. The coverage guarantee is bought by the *attachment point*, not by discovery.
+   **The per-OU documents cannot be discovered, and writing them as if they could is the failure this
    step exists to prevent.** The four are **different documents**, one per OU, and **three OUs carry none**
    — `Policy Test`, `Security`, and `Sandboxes` **by decision** (D37). A `for_each` over the discovered OUs
    attaching "the OU document" therefore does two wrong things at once: it has nothing to attach for three
@@ -806,8 +781,8 @@ resource whose attributes Terraform normalises differently — and the first of 
 not say what you think it says.
 
 **Read it against 5.2's first column, because the gate now applies to one half of the stage and not the
-other.** The six written permission sets plan a *creation* on their first apply — that is the point of them,
-and an empty plan there would mean nothing was written. The gate is for the imported objects: the
+other.** The six written permission sets plan a *creation* on their first apply, and an empty plan there
+would mean nothing was written. The gate is for the imported objects: the
 administrator set and its assignments in `sso/`, and everything in `org-policies/`.
 
 **The cheap way to make the policy import land empty, which costs 1c nothing.** The usual failure is
@@ -819,20 +794,18 @@ ids landed in the 1c log, and come from `import-ids.py` now). The import then co
 substituted the same way. **The groundwork is in place** — but "the same way" needs one more step than the
 sentence implies, and that step is below.
 
-**5.5a — The three mechanical facts this step used to leave to the keyboard.** *(Added 2026-08-15; each one
-is a place an import silently produces a diff.)*
+**5.5a — Three mechanical facts, each a place an import silently produces a diff.**
 
 **(i) The tracked documents are templates, and `templatefile()` cannot read them.** Eight placeholders
 across four files, measured 2026-08-15: `<ORG_ID>` ×6 (`awsds-org-rcp-perimeter.json` ×4,
 `awsds-org-scp-perimeter.json` ×2); `<ORG_PATH_DATA>` ×1 in **`awsds-org-scp-baseline.json`** — the
 `DenyDataZoneDomainOutsideDataOu` condition, so the org-path substitution belongs to the **root-attached
 baseline**, and in 5.0's "root refused, OU allowed" outcome it stays with the console-managed half;
-`<ACCOUNT_ID_DATA>` ×1 in `awsds-org-scp-ou-data.json`. *(An earlier version of this step counted
-`<ORG_ID>` ×8 and put `<ORG_PATH_DATA>` in the `Data` document — a substitution wired from that map would
-have left the baseline's placeholder literal, a deny that never fires.)* The placeholders are
-angle-bracketed on purpose — `render.py` explains why,
-and it explicitly anticipated this stage — but they are **not** `${…}`, so Terraform's `templatefile()` does
-not substitute them. The configuration therefore reads the same tracked file and substitutes explicitly:
+`<ACCOUNT_ID_DATA>` ×1 in `awsds-org-scp-ou-data.json`. A substitution map that put `<ORG_PATH_DATA>` in the
+`Data` document would leave the baseline's placeholder literal, a deny that never fires. The placeholders
+are angle-bracketed on purpose — `render.py` explains why — but they are **not** `${…}`, so Terraform's
+`templatefile()` does not substitute them. The configuration therefore reads the same tracked file and
+substitutes explicitly:
 
 ```
 jsonencode(jsondecode(replace(file("policies/awsds-org-scp-perimeter.json"), "<ORG_ID>", data.aws_organizations_organization.this.id)))
@@ -879,10 +852,10 @@ only in `docs/log/log-stage-01c-preventive-policies.md`; a fresh snapshot now ca
 If the groundwork above was somehow not done, expect an iteration or two here and **do not "converge" by
 applying** — read the diff first (see the Risks).
 
-**Do `sso/` first and `org-policies/` second**, and not for convenience: `sso/` exercises the import
-mechanism against objects whose worst failure is somebody being unable to sign in, so any misunderstanding
-about how a faithful import behaves surfaces where it is cheap. `org-policies/` is the same mechanism
-against the set that can lock the organization out of itself.
+**Do `sso/` first and `org-policies/` second.** `sso/` exercises the import mechanism against objects whose
+worst failure is somebody being unable to sign in, so any misunderstanding about how a faithful import
+behaves surfaces where it is cheap. `org-policies/` is the same mechanism against the set that can lock the
+organization out of itself.
 
 **5.6 — The fallback, if 5.1 turns out to be incompatible with the Control Tower landing zone.** Same family
 of question as the Identity Center delegation in 1b step 1, and the split above is what makes the answer
@@ -895,30 +868,27 @@ cheap:
   them. Step 9.2's wildcard check degrades from a script to a manual review — strictly worse, and
   **recorded as such in `docs/log/log-stage-02-terraform-foundation.md`**, not absorbed (Lesson 5: an unowned artefact
   is worse when nobody wrote down that it is unowned).
-- **Keep the empty slice, with a `README.md` naming INT-20 as the blocker.** An empty folder that says why is
-  the only thing that will make somebody retry this; a deleted folder is a plan that quietly gave up.
+- **Keep the empty slice, with a `README.md` naming INT-20 as the blocker.** An empty folder that says why
+  is what makes somebody retry this.
 
 ### 6. Repository hygiene
 
-**6.1 — Install the tooling first, because none of it is present.** **Re-measured on this laptop
-2026-08-15 and the sentence still holds exactly:** `terraform` is **v1.15.8** (`darwin_arm64`), `aws` and
-`uv` are present; **`tflint`, `checkov` and `pre-commit` are all absent.** Install them, pin the versions,
-and add them to `CLAUDE.md`'s "Tools installed in the current environment" list — a gate that depends on a
-tool nobody recorded installing is a gate the next machine does not have.
+**6.1 — Install the tooling first, because none of it is present.** Measured on this laptop
+2026-08-15: `terraform` is **v1.15.8** (`darwin_arm64`), `aws` and `uv` are present; **`tflint`, `checkov`
+and `pre-commit` are all absent.** Install them, pin the versions, and add them to `CLAUDE.md`'s "Tools
+installed in the current environment" list — a gate that depends on a tool nobody recorded installing is a
+gate the next machine does not have.
 
-**Done 2026-08-15, and the machine split the three tools into two classes the step had not
-distinguished.** `pre-commit` **4.6.2** and `checkov` **3.3.11** are Python and went in with
-`uv tool install`, one command each. **`tflint` is a Go binary, and this laptop has no `brew`, no `go`, no
-`npm` and no `docker`** — every packaged route is absent, so it is a signed release download plus a
-checksum check, performed deliberately. **The user installed it the same day: `tflint` v0.64.0, in
-`~/local/bin`.** All three are now in `CLAUDE.md`'s tool list, and the tool list is the deliverable here —
-a gate that depends on a tool nobody recorded installing is a gate the next machine does not have.
+**Done 2026-08-15, and the machine split the three tools into two classes.** `pre-commit` **4.6.2** and
+`checkov` **3.3.11** are Python and went in with `uv tool install`, one command each. **`tflint` is a Go
+binary, and this laptop has no `brew`, no `go`, no `npm` and no `docker`**, so every packaged route is
+absent and it is a signed release download plus a checksum check. **The user installed it the same day:
+`tflint` v0.64.0, in `~/local/bin`.** All three are in `CLAUDE.md`'s tool list, which is the deliverable
+here.
 
-**One thing the install leaves behind, and it is not the binary.** `tflint`'s rulesets are **plugins,
-downloaded on demand**, so a fresh clone with `tflint` on its `PATH` still fails until `tflint --init` has
-been run against `.tflint.hcl`. That is a second setup step with no announcement of its own — it belongs in
-the same sentence as the install, and it is why `.tflint.hcl` carries it as a comment at the top of the
-file rather than leaving it to be rediscovered from an error message.
+**`tflint`'s rulesets are plugins, downloaded on demand**, so a fresh clone with `tflint` on its `PATH`
+still fails until `tflint --init` has been run against `.tflint.hcl`. That second setup step has no
+announcement of its own, which is why `.tflint.hcl` carries it as a comment at the top of the file.
 
 **6.2 — `.gitignore`, and it has to be right before step 2 runs.**
 
@@ -926,9 +896,8 @@ file rather than leaving it to be rediscovered from an error message.
   `.terraform.tfstate.lock.info` — the previously listed `.terraform.lock.info` is a name Terraform never
   writes), `crash.log`, `*.tfvars` that carry account IDs, and `backend.hcl` — unconditionally, whichever
   mechanism generates it (2.5).
-- **`*.tfstate` was missing from the previous version of this step**, which listed only `.terraform/` and
-  `*.tfstate.backup` — so the local bootstrap state from 2.2, the one file this stage most insists must never
-  be committed, was not covered by the rule meant to cover it.
+- **`*.tfstate` is the entry that covers the local bootstrap state from 2.2**, the one file this stage most
+  insists must never be committed.
 - **Do not ignore `.terraform.lock.hcl`** — it is committed on purpose (6.3).
 
 **6.3 — The lock file is committed, and it needs more than one platform in it.** The laptop is
@@ -940,7 +909,7 @@ file rather than leaving it to be rediscovered from an error message.
 terraform providers lock -platform=darwin_arm64 -platform=linux_amd64 -platform=linux_arm64
 ```
 
-**Run it once and copy the result, rather than once per slice** *(added 2026-08-15)*. The lock file is a
+**Run it once and copy the result, rather than once per slice.** The lock file is a
 function of the version constraint and the platform list, nothing else — and `versions.tf` is identical in
 every slice by construction — so the five files are identical, and generating them separately downloads the
 provider three times per slice for no additional information. `md5` across the five is the check that the
@@ -949,17 +918,15 @@ pre-commit hook runs `init` per slice, and without a shared cache each one fetch
 
 **6.4 — `pre-commit` with `terraform fmt`, `terraform validate` and `tflint`.**
 
-**6.5 — `checkov` as a required gate, not an optional one** — a policy check that can be skipped is a policy
-check that will be skipped on the day it would have mattered. Any suppression is an inline
-`# checkov:skip=CKV_...` with a reason on the same line, never a global exclusion.
+**6.5 — `checkov` is a required gate.** Any suppression is an inline `# checkov:skip=CKV_...` with a reason
+on the same line, never a global exclusion.
 
 **Expect the first run against `bootstrap/` to fail, and decide the suppressions rather than discover
 them.** A state bucket trips the checks for **server access logging** and **cross-region replication** by
 construction, and neither is an oversight: a log destination for the state bucket is a second bucket in the
 same account holding the same secrets, and replication is a Stage 12 item (`docs/plan/cost-model.md` has no line
-for it). **Record which suppressions were taken and why in the log at the first run** — the point of an
-inline skip with a reason is that the reason was thought about once, and a stage that lets them accumulate
-silently has a gate in name only (Lesson 5).
+for it). **Record which suppressions were taken and why in the log at the first run**; a stage that lets
+them accumulate silently has a gate in name only (Lesson 5).
 
 **Measured 2026-08-15 against `sandbox/bootstrap/`: 30 passed, 3 failed, and the three are the two
 predicted plus one.** `CKV_AWS_18` (access logging) and `CKV_AWS_144` (replication) arrived as written, and
@@ -969,7 +936,7 @@ skips with a reason. **The mechanical detail that cost the first run:** checkov 
 `# checkov:skip=<ID>:<reason>` only **inside** the resource block; above it the line is an ordinary comment
 and the check fails anyway, with nothing saying the suppression was ignored.
 
-### 7. The first reusable modules — **moved to Stage 3 on 2026-08-16**
+### 7. The first reusable modules — moved to Stage 3 on 2026-08-16
 
 `terraform-modules/`: **`s3-bucket`, `iam-role`, `kms-key`** — **no longer built here.** They are written in
 [Stage 3](stage-03-networking.md) step 1.1, in the same sitting as `vpc/`, and the requirements below travel
@@ -983,15 +950,14 @@ with them unchanged:
 - **`kms-key`** with rotation on and a deletion window, because both are easier to set than to change.
 - **Tag every module release; callers pin the tag** (`docs/plan/conventions.md` §6) — never a branch.
 
-**Why it moved, and it is the same argument twice rather than a new one.** On 2026-08-15 this step was moved
-to the *end* of the stage because nothing in Stage 2 consumes a module: `bootstrap/` is forbidden one (2.3),
-and `sso/` and `org-policies/` declare `aws_ssoadmin_*` and `aws_organizations_*` resources directly.
-**That argument does not expire when the stage does.** At the end of Stage 2 there is still no caller, so
-writing the three interfaces here is guessing — the thing `docs/plan/conventions.md` already refuses to do
-for the `sandbox-unit` module. The first caller is Stage 3's `foundation/`, and Stage 3 **already writes a
-module of its own** (`vpc/`), so the move costs that stage a sitting's structure rather than a new one.
+**Why it moved.** Nothing in Stage 2 consumes a module: `bootstrap/` is forbidden one (2.3), and `sso/` and
+`org-policies/` declare `aws_ssoadmin_*` and `aws_organizations_*` resources directly. At the end of Stage 2
+there is still no caller, so writing the three interfaces here is guessing — the thing
+`docs/plan/conventions.md` already refuses to do for the `sandbox-unit` module. The first caller is Stage
+3's `foundation/`, and Stage 3 **already writes a module of its own** (`vpc/`), so the move costs that stage
+a sitting's structure rather than a new one.
 
-**And it un-blocks an input this stage cannot settle.** A module is consumed **by git tag**, and this is a
+**It also un-blocks an input this stage cannot settle.** A module is consumed **by git tag**, and this is a
 monorepo: the reference is `…/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v1.0.0` against
 a host that is GitHub today and **GitLab from Stage 7** (D8). Choosing the tag scheme and the source host
 with no caller in hand is choosing them twice. Stage 3 settles both against a real `foundation/`, which is
@@ -1009,7 +975,7 @@ executable.
 **8.2 — `make up ENV=<env>` / `make down ENV=<env>`.** `down` destroys the `[E]` slices in reverse dependency
 order and stops the `[D]` instances; `up` starts the `[D]` instances and applies the `[E]` slices.
 
-**8.3 — Four refusals, each of which is a bug if it is missing.**
+**8.3 — The refusals; a missing one is a bug.**
 
 1. **Never touch a `[P]` slice** — the general rule.
 2. **`make down` with no `ENV` must fail**, not default to everything.
@@ -1018,8 +984,8 @@ order and stops the `[D]` instances; `up` starts the `[D]` instances and applies
 4. **`bootstrap/` is unreachable from either target**, which is the specific case the Validation below tests.
 
 **8.4 — `make status`** reports what is running and the estimated hourly burn. **The rates come from a static
-table sourced from `docs/PRICING.md`**, not from a live pricing call: a status command that needs the network is a
-status command that fails when you most want it (and prices are measured, not reasoned — Lesson 6).
+table sourced from `docs/PRICING.md`**, not from a live pricing call: a status command that needs the network
+fails when it is most wanted, and prices are measured rather than reasoned (Lesson 6).
 
 **8.5 — `ENV` names a business unit's sandbox, not *the* sandbox (D35).** Stage 14 step 6 makes the same
 pair work against a generated unit; write nothing here that assumes N=1.
@@ -1032,8 +998,7 @@ and leave it empty — a hook added later is a hook that is missing from the fir
 **Built 2026-08-16, offline, with no AWS call in the sitting.** Two files own it and the `Makefile` owns
 none of it — the division step 9 established: [`scripts/tfhygiene/layers.py`](../../../scripts/tfhygiene/layers.py)
 is the table, [`scripts/slices.py`](../../../scripts/slices.py) is `list`/`check`/`up`/`down`/`status`, and
-`make up`/`make down`/`make status`/`make slices` call it. **Five things the step decided while being
-written, each of which it had left open:**
+`make up`/`make down`/`make status`/`make slices` call it. **What the step decided while being written:**
 
 - **8.1's table is a `dataclass` list, and the *rank* is not one of its fields.** Order is read from a
   `RANKS` map keyed by **slice name** — `bootstrap` 0, `sso` 10, `org-policies` 11, `foundation` 20, `pki`
@@ -1045,8 +1010,8 @@ written, each of which it had left open:**
   `.tf`. **The expensive direction is a slice on disk with no row**: `make down` skips what it has never
   heard of, in silence, and for an `[E]` slice that is a bill. **Both directions were demonstrated failing**
   before being believed. It is `attachments.json`'s two-list shape (9.3) one target over.
-- **8.4's `status` distinguishes "nothing is declared" from "everything is down", and that is the whole of
-  what it can honestly say today.** It prints the empty set and *why* it is empty rather than `USD 0.00/h`,
+- **8.4's `status` distinguishes "nothing is declared" from "everything is down".** It prints the empty set
+  and *why* it is empty rather than `USD 0.00/h`,
   which is the answer a broken read would also produce (Lesson 13). Once a `[D]`/`[E]` slice exists it reads
   `terraform show -json` per slice and multiplies by that row's `usd_per_hour` — a **static** rate from
   `docs/PRICING.md` §3 — and a slice it could not read is reported as `UNREADABLE` and makes the total a
@@ -1060,10 +1025,9 @@ written, each of which it had left open:**
   `make down` must not fail on credentials it never needed.
 - **The `[D]` half is a stub that refuses to be reached silently.** Nothing on disk is `[D]` — **the first
   is Stage 4's WireGuard `vpn/`**, and `docs/plan/conventions.md` §5.1 names only two dormant things ever,
-  that instance and Stage 7's GitLab EC2 with its EBS volume — **everything else stateful is `[P]` by
-  rule 2**, the distinction worth keeping, because "stateful" is what makes a slice `[D]`
-  *or* `[P]` and the two readings diverge exactly there. So `up`/`down` print *"none declared"*, and a `[D]`
-  row arriving before the hook has a body raises, naming 8.2 — the same shape as 8.6, for the same reason.
+  that instance and Stage 7's GitLab EC2 with its EBS volume; **everything else stateful is `[P]` by
+  rule 2**. So `up`/`down` print *"none declared"*, and a `[D]` row arriving before the hook has a body
+  raises, naming 8.2, the same shape as 8.6.
 
 **All four refusals demonstrated in the same sitting** — 2 with `make down` and no `ENV` (exit 2, from the
 `Makefile` guard *and* from `argparse`, two independent guards for the one refusal whose failure mode is
@@ -1085,7 +1049,7 @@ that file is already the one keyed by account folder (Lesson 14), and because th
 remembered. `--dry-run` prints every command and runs none, which is also how the Validation reads a plan
 instead of trusting a target list.
 
-### 9. The checks that keep the conventions honest — four of them since 2026-08-15
+### 9. The checks that keep the conventions honest
 
 **None of these run in "CI", because there is no CI.** GitLab arrives at Stage 7 and `.gitlab-ci.yml` at
 Stage 8. Until then the enforcement surfaces are **`pre-commit`** and a **`make check`** target calling
@@ -1107,7 +1071,7 @@ same scripts, so a gate and a target cannot disagree.**
 | 3.5 | [`scripts/check-bootstrap-parity.py`](../../../scripts/check-bootstrap-parity.py) | `make check` + `pre-commit` on `terraform-live/*/bootstrap/` — **a fifth, added by step 3** rather than by this step, because it guards a rule step 3 creates |
 | 8.1 | [`scripts/slices.py`](../../../scripts/slices.py)` check` | `make check` + `pre-commit` on any `terraform-live/**/*.tf` — **a sixth, added by step 8** (2026-08-16), same reason: it guards a rule step 8 creates. A slice with no layer row is skipped by `make down` in silence |
 
-**Four things settled while writing them, none of which the step had decided:**
+**What was settled while writing them:**
 
 - **9.3's authored map is a file, and it is the file step 5 will read** —
   [`terraform-live/identity/org-policies/attachments.json`](../../../terraform-live/identity/org-policies/attachments.json).
@@ -1150,9 +1114,9 @@ enforcement the rule has.
 if any policy document in `terraform-live/identity/` — either slice — carries `arn:aws:iam::*:role/...`.
 That pattern means
 "any principal of this name, in **any** account", so a condition meant to name one role silently names a role
-anybody can create. It is invisible in a `plan` and cheap in a script. *(This check used to also require an
-`awsds-scp-recovery` carve-out in every `Deny`; that half went away with D30. The wildcard half did not,
-because it applies to the per-function carve-outs the design still has — D26, D27.)*
+anybody can create. It is invisible in a `plan` and cheap in a script. *(The check's `awsds-scp-recovery`
+half went away with D30; the wildcard half applies to the per-function carve-outs the design still has,
+D26 and D27.)*
 **One `Sid` is whitelisted by name, and the whitelist is part of the check rather than a loosening of it**
 (1c decision 7, 2026-08-13): `DenyAccountBpaChangeExceptInfrastructure` in `awsds-org-scp-baseline.json`
 carves the `InfrastructureAccess` Identity Center role out of the account-level BPA deny, and it *must*
@@ -1160,8 +1124,8 @@ carry a wildcard account because its whole purpose is to reach accounts that do 
 ARN suffix is minted per account. **Whitelist that one `Sid` explicitly and fail on every other match**; a
 check that is relaxed to accommodate its one exception stops being a check (`docs/plan/conventions.md`, IAM rules).
 
-**9.3 — Every OU is accounted for** (5.3, as corrected). **This check carries more weight than the earlier
-wording gave it, because point 1 of 5.3 moved the per-OU coverage guarantee out of the apply and into here.**
+**9.3 — Every OU is accounted for** (5.3). **Point 1 of 5.3 moved the per-OU coverage guarantee out of the
+apply and into this check.**
 Enumerate the organization's OUs **at both levels** and fail if one appears neither in the authored
 OU→document map nor in the map's explicit *no document* list. The two-list shape is the point: `Policy
 Test`, `Security` and `Sandboxes` carry nothing **on purpose**, and a check that treats "absent" and
@@ -1169,7 +1133,7 @@ Test`, `Security` and `Sandboxes` carry nothing **on purpose**, and a check that
 `Sandboxes` is the one that must be listed by name with D37 beside it, because it is the only OU whose
 emptiness a future reader will try to fix.
 
-**As written it does four things, and the last two were not in the step.** The OU walk is
+**As written it does four things.** The OU walk is
 **breadth-first over the whole tree**, not two levels, so a depth nobody planned is enumerated rather than
 missed. Then: (1) every OU is in one of the two lists; (2) every OU the map names still exists — a map entry
 for a deleted OU is a `for_each` key that fails an apply; (3) every document the map names is a file in
@@ -1179,11 +1143,11 @@ testing for `policies/<name>.json` — a stronger binding than a name prefix, an
 "never bind to a name" does not apply: these are the documents this project owns. It looks at **no
 account-level attachment**, because this design has none; that census is `./aws/org-policies.py` §1.
 
-**9.4 — `check-index.py` joins `make check`.** It already exists, it already decides the mechanical half of
+**9.4 — `check-index.py` joins `make check`.** It already decides the mechanical half of
 "does `POLICIES.md` still describe `policies/`", it needs no AWS session and it exits non-zero when it
-drifts — and it is run by hand today, which is exactly the state 6.4 and 9 exist to end. Once
-`org-policies/` manages those documents, a statement added in Terraform with no row in `POLICIES.md` is a
-control nobody can explain, and this is the script that catches it.
+drifts, and until now it was run by hand. Once `org-policies/` manages those documents, a statement added
+in Terraform with no row in `POLICIES.md` is a control nobody can explain, and this is the script that
+catches it.
 
 ### 10. Documentation
 
@@ -1193,13 +1157,12 @@ decisions listed below.
 
 ---
 
-## The instruments this stage runs on — written 2026-08-15, before the stage
+## The instruments this stage runs on
 
-**This stage is the first that must feed AWS-generated identifiers back into a command**, and that is a
-different job from every snapshot `aws/` held before it: a snapshot is read by a human who tolerates a stale
-line, an import id is pasted into a state file and a wrong one produces an orphan and a create rather than
-an error. Four scripts were written for that, and one existing defect fixed. **They exist now, so this stage
-starts with its instruments rather than building them.**
+**This stage is the first that must feed AWS-generated identifiers back into a command**, a different job
+from every snapshot `aws/` held before it: a snapshot is read by a human who tolerates a stale line, while
+an import id is pasted into a state file and a wrong one produces an orphan and a create rather than an
+error. Four scripts were written for that on 2026-08-15, and one existing defect fixed.
 
 | Instrument | What it answers here | Run it at |
 |---|---|---|
@@ -1209,7 +1172,7 @@ starts with its instruments rather than building them.**
 | [`./aws/cloudshell/management-quotas.sh`](../../../aws/cloudshell/management-quotas.sh) | Whether the account-cap increase has landed — the number **3.2** is waiting on. Refuses to interpret the value outside Management, where the same quota reads `0.0` | before **3.2**, whenever it is worth re-asking |
 | [`./aws/org-policies.py`](../../../aws/org-policies.py) | **Fixed 2026-08-15**: §1 listed ids for `SERVICE_CONTROL_POLICY` only, so **three of the ten attached documents had no id in any snapshot**. All four types now carry theirs | after any attach, and at every vend |
 
-**Two disciplines these carry that this stage depends on, and neither is a detail of the scripts.**
+**Two disciplines these carry that this stage depends on.**
 
 - **`import-ids.py` owns the right-hand side and not the left.** The id is measured; the Terraform
   *address* is a suggestion, because only the configuration knows whether a resource is `.baseline` or
@@ -1251,8 +1214,8 @@ Each is written so its output differs between working and broken (Lesson 13):
 - **The two slices are independent, which is why they are two:** `terraform state list` in `sso/` names no
   `aws_organizations_*` **managed resource**, and `org-policies/` names no `aws_ssoadmin_*` one. Neither
   reads the other through `terraform_remote_state`.
-  **The word "managed" is doing work and was added on execution, 2026-08-16, rather than discovered as a
-  failed check.** `sso/` *does* read `data.aws_organizations_organization` — one data source, and there is
+  **The word "managed" is doing work.** `sso/` *does* read
+  `data.aws_organizations_organization` — one data source, and there is
   no second way to turn an authored account **name** into the id `aws_ssoadmin_account_assignment` requires
   while `aws/INDEX.md` rule 1 keeps ids out of tracked files. That is the same shape `attachments.json`
   already uses on the other side: names in the file, ids resolved by the consumer. **The independence the
@@ -1270,7 +1233,7 @@ Each is written so its output differs between working and broken (Lesson 13):
   duplicate answers evidence at all. **Step 5.0 is closed**; only `account/…/*` is unexercised, and it is
   an over-grant nothing here needs.
 - **The checks fail on purpose:** a commit introducing `us-west-2` in a `.tf` file, and one introducing
-  `arn:aws:iam::*:role/x`, are both rejected. A check nobody has seen fail is a hypothesis.
+  `arn:aws:iam::*:role/x`, are both rejected.
   **Met 2026-08-15**, with both violations staged together: `pre-commit` exits 1 and three hooks go red —
   9.1 on the region literal, 9.2 on the wildcard, and 9.4 on the document with no row in `POLICIES.md`.
   Each of 9.1's three rules was also fired separately against a fixture, **and so was the failure mode
@@ -1293,13 +1256,12 @@ Each is written so its output differs between working and broken (Lesson 13):
 
 1. **Reproducibility:** create a throwaway `[E]` slice — `sandbox/scratch-test/`, holding one SSM parameter
    and nothing else, so it is free and instant — then `make down`, then `make up`, and confirm it comes back
-   identical. Naming it here rather than leaving "a throwaway slice" to the keyboard is Lesson 16.
+   identical. The slice is named here rather than left to the keyboard (Lesson 16).
 2. **Isolation:** confirm `make down` leaves `bootstrap/` untouched — by reading the plan output, not by
    trusting the target list.
 3. **Delete the throwaway slice** when both pass.
 
-**The recipe, written out 2026-08-16 so the sitting is a paste rather than a design** *(step 8 exists now,
-so the Validation has something to validate)*. **Who:** the infrastructure user on `Sandbox Account 1`
+**The recipe.** **Who:** the infrastructure user on `Sandbox Account 1`
 through `InfrastructureAccess` — profile `awsds-infra-sandbox-1`, and `AWS_PROFILE` is on each command
 because `slices.py` puts it there (Lesson 25). One `aws sso login --sso-session awsds` first.
 
@@ -1326,9 +1288,9 @@ because `slices.py` puts it there (Lesson 25). One `aws sso login --sso-session 
    measurement, not a fixture: an `[E]` slice left behind would be the first row in a table whose whole
    claim is that it matches the disk.
 
-**RAN 2026-08-16 — both halves pass, and the slice is gone.** Infrastructure user on `Sandbox Account 1`
-through `InfrastructureAccess` (`awsds-infra-sandbox-1`). **Four things the run produced that the recipe had
-not, and the first is the one that outlives this stage:**
+**Ran 2026-08-16 — both halves pass, and the slice is gone.** Infrastructure user on `Sandbox Account 1`
+through `InfrastructureAccess` (`awsds-infra-sandbox-1`). **What the run produced that the recipe had
+not:**
 
 - **`awsds` is a reserved prefix in SSM Parameter Store, and the repository's own naming convention walked
   straight into it.** The first apply used `/awsds/sandbox/scratch-test/validation` and AWS refused at
@@ -1345,7 +1307,7 @@ not, and the first is the one that outlives this stage:**
 - **The rebuild is proven by the `Version`, not by the ARN.** After `down` then `up` the parameter reads
   back with the same name and value at **`Version 1`**, not 2 — SSM's version counter restarts, so the
   object is demonstrably **new** rather than a survivor. The ARN is derived from the name and would have
-  been identical either way, which is exactly why `outputs.tf` says so in the file.
+  been identical either way, which is why `outputs.tf` says so in the file.
 - **The Validation leaves an orphan state object and it was deleted deliberately.**
   `sandbox/scratch-test/terraform.tfstate` (540 bytes, an empty resource list) survives a `destroy` because
   a destroy empties a state, it does not remove it. Left behind, it is a state key for a slice that no
@@ -1407,9 +1369,9 @@ into `docs/log/log-stage-02-terraform-foundation.md` rather than left to whoever
    generator in the same commit that first compares against what it generated makes the reference and the
    comparison move together — the shape 5.0's "its own content" rule already refuses for `update-policy`.
    The wrapper is what makes the choice safe rather than merely available: it normalises both sides
-   identically, so what is compared is content and not whitespace. **Re-openable, and the trigger is
-   named:** if a later stage needs `templatefile()` for something else in `policies/`, convert then — with
-   the documents already imported, a normalising diff is a `plan`, not a leap.
+   identically, so what is compared is content and not whitespace. **Re-openable:** if a later stage needs
+   `templatefile()` for something else in `policies/`, convert then — with the documents already imported, a
+   normalising diff is a `plan`, not a leap.
 6. **`import {}` blocks or `terraform import` on the command line** (the `aws/` section above). Blocks are
    reviewable and live in git — which is the problem: their `id` is an account id or a policy id, and no
    account id enters a tracked file. Record the choice and, if it is the CLI, that the manifest lives in
@@ -1426,10 +1388,9 @@ into `docs/log/log-stage-02-terraform-foundation.md` rather than left to whoever
    **What replaces the reviewability:** `./aws/import-ids.py` is the record — regenerable, dated, and it
    owns the right-hand side while the configuration owns the address.
 
-*(One more used to be here — whether to split `terraform-live/identity/`. It was settled on 2026-08-09,
-before execution: the split is the design, its reasoning is in step 5 and the layout is in
-`docs/plan/conventions.md` §6. Splitting afterwards would have been a state move, which is the whole reason it
-could not be left open.)*
+*(Whether to split `terraform-live/identity/` was settled on 2026-08-09, before execution: the split is the
+design, its reasoning is in step 5 and the layout is in `docs/plan/conventions.md` §6. Splitting afterwards
+would have been a state move.)*
 
 ## Risks
 
@@ -1445,12 +1406,12 @@ could not be left open.)*
   pipeline.
 - **The apply that reverses a decision is worse than the apply that fails, and 5.3 had one in it.** A
   `for_each` attaching a per-OU document to every discovered OU would have put one on `Sandboxes` and undone
-  D37 with `terraform plan` reading like ordinary coverage. It is corrected above; the general form is worth
-  carrying — **a rule written as "cover everything" meets a decision written as "this one is deliberately
-  empty", and the rule wins silently.**
+  D37 with `terraform plan` reading like ordinary coverage. Corrected above; the general form is that **a
+  rule written as "cover everything" meets a decision written as "this one is deliberately empty", and the
+  rule wins silently.**
 - **Six of the ten documents are on the organization root, so 5.0 can remove most of `org-policies/`.**
-  That is a scope risk rather than a technical one, and the mitigation is entirely in the ordering: it is now
-  the first thing the stage does, so the answer arrives before anything has been written against it.
+  That is a scope risk rather than a technical one, and the mitigation is the ordering: it is the first
+  thing the stage does, so the answer arrives before anything has been written against it.
 
 ## Verifications to answer while executing
 
