@@ -386,7 +386,7 @@
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
 
-- SageMaker Pipelines (a D7 option the first draft omitted): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
+- SageMaker Pipelines (a D7 option): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
 
 - SageMaker Model Registry (model promotion, Stage 10): <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html>.
 
