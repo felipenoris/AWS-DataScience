@@ -1201,5 +1201,5 @@ inside an `[E]`/`[D]` resource).
 ---
 
 *Stage: [stage-04-vpn.md](../stages/stage-04-vpn.md) · Decision: [D4](../decisions/D04-vpn-wireguard.md) ·
-Slice: [`terraform-live/production/vpn/`](../../../terraform-live/production/vpn/README.md) ·
+Slice: [`terraform-live/production/vpn/`](../../../terraform-live/production/vpn/) ·
 By-hand changes: [terraform-changes.md](terraform-changes.md)*
