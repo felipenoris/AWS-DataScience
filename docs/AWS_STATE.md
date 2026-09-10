@@ -1,29 +1,29 @@
-# AWS_STATE.md — what to expect from this environment
+# AWS_STATE.md — the expected state of the environment
 
-**Read this next to a snapshot, never instead of one.** A snapshot says what AWS reports; this file says
-what a snapshot is *expected* to report, and which differences are already accounted for. Without it, a
-reading of `aws/output/` produces false alarms — and, worse, makes a real one indistinguishable from the
-six that were already known.
+This file is read next to a snapshot, never instead of one. A snapshot says what AWS reports; this file
+says what a snapshot is expected to report, and which differences are already accounted for, so that a
+reading of `aws/output/` raises no false alarm and a real finding stays distinguishable from the known
+ones.
 
-Four files answer four different questions. Keeping them apart is what keeps any of them true:
+Each file answers one question:
 
 | Question | Where |
 |---|---|
 | What should exist, and why | [`docs/GENERAL_PLAN.md`](GENERAL_PLAN.md), `docs/plan/`, [`docs/ORGANIZATION.md`](ORGANIZATION.md) — and, for the network, [`docs/NETWORK.md`](NETWORK.md) |
 | What was typed by hand, and when | [`docs/log/`](log/INDEX.md) |
 | What AWS reports right now | `aws/output/` — regenerate it, see [`aws/INDEX.md`](../aws/INDEX.md) |
-| **Whether the difference between those is expected** | **this file** |
+| Whether the difference between those is expected | this file |
 
-Two rules keep this file from becoming a stale copy of the three above:
+Two rules keep this file from becoming a stale copy of the other three:
 
 - **No identifiers.** Names only. Account ids, OU ids, ARNs, instance ids and email addresses live in the
-  snapshot, which is regenerated on demand. A file that carries no identifier cannot be wrong about one.
-- **No reasoning.** *Why* something is so belongs in [`docs/plan/decisions/`](plan/decisions/INDEX.md); *what was
-  done* belongs in `docs/log/`. Here: only what is expected, and what a deviation from it means.
+  snapshot, which is regenerated on demand.
+- **No reasoning.** Why something is so belongs in [`docs/plan/decisions/`](plan/decisions/INDEX.md); what
+  was done belongs in `docs/log/`. This file holds what is expected, and what a deviation from it means.
 
-Everything below was measured from a script in [`aws/`](../aws/INDEX.md). **A bare section number refers to
-`aws/output/list-identities.txt`** (first run 2026-08-11); a reference prefixed with a file name, such as
-`AZs.txt` 3, refers to that snapshot instead (`aws/AZs.py`, 2026-08-12).
+Everything below was measured by a script in [`aws/`](../aws/INDEX.md). A bare section number refers to
+`aws/output/list-identities.txt` (first run 2026-08-11); a reference prefixed with a file name, such as
+`AZs.txt` 3, refers to that snapshot (`aws/AZs.py`, 2026-08-12).
 
 ## A. Invariants — what a snapshot must show
 

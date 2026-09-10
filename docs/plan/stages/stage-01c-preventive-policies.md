@@ -1,140 +1,30 @@
-# Stage 1c — Preventive policies: SCP, RCP, tag and declarative
+# AWS_STATE.md — the expected state of the environment
 
-| | |
+This file is read next to a snapshot, never instead of one. A snapshot says what AWS reports; this file
+says what a snapshot is expected to report, and which differences are already accounted for, so that a
+reading of `aws/output/` raises no false alarm and a real finding stays distinguishable from the known
+ones.
+
+Each file answers one question:
+
+| Question | Where |
 |---|---|
-| **Status** | **DONE — 2026-08-14, 7.0 through 7.8.** Ten documents attached across four policy types, full battery **93 as expected, 0 unexpected, 0 untested**, read-back clean. The one thing that went wrong is worth carrying at the top: **7.8's RCP locked every SSO user out of all six member accounts** by naming `sts:AssumeRoleWithSAML`/`TagSession`, the only actions an `AWSReservedSSO_*` trust policy permits — rescoped to `sts:AssumeRole` + `sts:SetContext` after AWS's `CT.STS.PV.1`, and **no `sts:` action is added to that document without reading that control's exclusion note** (Lesson 24). *What follows is the history of the sittings, kept because the order the work happened in is the reason several things were caught.* **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`docs/log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md); what each statement does is in [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md) |
-| **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
-| **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
-| **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
-| **Log** | [`docs/log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md) — **it exists and carries 7.0**; the policy IDs recorded there as each one is attached are what makes the detach command executable |
+| What should exist, and why | [`docs/GENERAL_PLAN.md`](GENERAL_PLAN.md), `docs/plan/`, [`docs/ORGANIZATION.md`](ORGANIZATION.md) — and, for the network, [`docs/NETWORK.md`](NETWORK.md) |
+| What was typed by hand, and when | [`docs/log/`](log/INDEX.md) |
+| What AWS reports right now | `aws/output/` — regenerate it, see [`aws/INDEX.md`](../aws/INDEX.md) |
+| Whether the difference between those is expected | this file |
 
-*Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
+Two rules keep this file from becoming a stale copy of the other three:
 
----
+- **No identifiers.** Names only. Account ids, OU ids, ARNs, instance ids and email addresses live in the
+  snapshot, which is regenerated on demand.
+- **No reasoning.** Why something is so belongs in [`docs/plan/decisions/`](plan/decisions/INDEX.md); what
+  was done belongs in `docs/log/`. This file holds what is expected, and what a deviation from it means.
 
-**This stage is one step, and it keeps its number: step 7.** The landing zone's second half was one stage
-until 2026-08-09; the split gave step 7 a stage of its own because it is the only part of it that is
-neither fast nor freely reversible. Every other file's
-`Stage 1b step 7` reference is now `Stage 1c step 7` — the same step, a different prefix, and nothing else
-moved. Navigate by **7.0-7.8**.
+Everything below was measured by a script in [`aws/`](../aws/INDEX.md). A bare section number refers to
+`aws/output/list-identities.txt` (first run 2026-08-11); a reference prefixed with a file name, such as
+`AZs.txt` 3, refers to that snapshot (`aws/AZs.py`, 2026-08-12).
 
-**Two sittings, not one, and the boundary is stated rather than left to stamina** (revised 2026-08-09).
-This file used to ask for "an uninterrupted sitting", which is not a thing the work supports: 7.7 alone is
-a dozen Control Tower control operations, serialized, minutes each, blocking other landing-zone operations
-while they run; the battery of 7.3 is per policy and reads CloudTrail, which lags. So:
-
-| Sitting | Covers | Ends with |
-|---|---|---|
-| **A — DONE 2026-08-13** | 7.0 (preflight), 7.2 (policy types), 7.3 (the battery, phases 0-3), 7.4 step 1 (account-level BPA everywhere), 7.5 (the organization-root set) | The root set attached and exercised — it is |
-| **B** | 7.6 (per-OU sets), 7.7 (the managed controls), 7.8 (RCP, tag, declarative) | The whole ceiling attached |
-
-**What is genuinely uninterruptible is one attachment, not one stage.** The precondition below — Management
-console open, detach command written down — is per attach, and it holds identically in both sittings. Do
-not start an attachment you do not have time to test.
-
-**Why it comes this early:** prevention has precedence over detection (principle 9), and a guardrail
-written after the thing it guards has already been used is a guardrail that arrives late. That is the whole
-argument for attaching policy over accounts that are still empty.
-
-## Before you start — the three things this stage may not begin without
-
-Step 7 has no in-account repair. A bad `Deny` is undone from the Management account, which is exempt from
-SCPs by AWS's design (D16), and that is the *whole* recovery path since D30 was reverted. So:
-
-1. **The Management console is open, signed in as `AWS Control Tower Admin`, before the first attach** —
-   a precondition, not a precaution. If the policy you are about to attach locks you out of the account you
-   attached it from, the console you needed is the one you can no longer reach.
-2. **The detach command is written down before it is needed**, with the policy ID left blank to fill in:
-
-   ```bash
-   aws organizations detach-policy --policy-id <POLICY_ID> --target-id <OU_OR_ACCOUNT_ID>
-   ```
-
-   Record the ID of every policy **as you attach it**, in `docs/log/log-stage-01c-preventive-policies.md`. Reading
-   an ID back out of a console you have just denied yourself access to is the failure this line exists to
-   prevent.
-3. **The break-glass chain is live.** Built in 1a and **tested 2026-08-09 on both channels** (e-mail and
-   SMS) — that test is what this stage may not start without, and it is already done. It is not a mitigation
-   for a bad policy; it is what tells you a root session happened at all.
-
-Also required, and it is the control rather than the backup: **7.3's `Policy Canary` battery runs before
-anything reaches a real OU** (D29). The battery is a procedure, not a property — it only works if it is
-actually done.
-
-## What changed since this file was last written, and what it changes here
-
-Stage 1b closed on 2026-08-12 and `CLAUDE.md`'s objectives were revised on 2026-08-13. Six things now
-enter this stage as **measurement** rather than as assumption — which is the difference between a plan that
-can be executed and one that has to be re-derived at the keyboard.
-
-| What 1b or the revision established | What it changes in this stage |
-|---|---|
-| **Only `SERVICE_CONTROL_POLICY` is `ENABLED` on the root** — measured 2026-08-11, `aws/list-identities.py` §2.2 | 7.2 precondition 1 is confirmed, not assumed. All three other types still have to be enabled, and half of this stage has nowhere to attach until they are |
-| **The six SSO profiles all resolve**, and `awsds-policy-canary` is bound to `AWSAdministratorAccess` **permanently** (1b 3.1, 5, 5.1) | The canary has a profile of its own: 7.4's BPA call there is a CLI call like the other five, not a console visit. The battery runs from the laptop |
-| **The Organizations *read* surface answers from the Identity account** (1b step 4 and `aws/org-trusted-access-services.py`, 2026-08-12) | 7.0's preflight reads can run under `awsds-infra-identity` without touching Management. **Writes cannot** — every `create-policy`, `attach-policy` and `enable-policy-type` here is CT Admin on Management |
-| **A permission set provisioned into Management cannot be altered from Identity** (1b 5.1) | Nothing in this stage alters a permission set — stated so it is not re-discovered. It does mean that if a policy attached here breaks `awsds-policy-canary`, the repair is CT Admin on Management, not the Identity profile |
-| **`AWSOrganizationsFullAccess` → `AWSControlTowerAdmins` reaches every vended account** (measured 2026-08-11; `docs/AWS_STATE.md` A.1) | 7.5's `organizations:LeaveOrganization` deny stops being hygiene and becomes the answer to a measured path. Its reach is [`docs/plan/open-questions.md`](../open-questions.md) item 11, and this stage is where it gets answered |
-| **`CLAUDE.md` now names six SageMaker Unified Studio features as objectives** (2026-08-13) | 7.6 settles decision 1 **against the verified API surface** rather than against the feature names, and verification (viii) becomes a named list of actions instead of a question. See the box in 7.6 |
-
-One thing that is *not* a change and is listed so it is not read as one: **`EXC-01`** — the `SUSPENDED`
-account named `Sandbox` sitting directly on the organization root ([`docs/AWS_STATE.md`](../../AWS_STATE.md)).
-It is not this project's, it runs nothing, and **it is not in any list in this stage**: no BPA, no profile,
-no attachment. A suspended account cannot be acted on anyway.
-
-## What 7.0 measured on 2026-08-13, and the five places it changes what is left
-
-**The preflight did the thing it was added to do: four of these were assumptions this file stated as
-fact.** The evidence is in the log and in the snapshots; what follows is only the consequence for the steps
-that have not run. Each row is settled where it lands, not here.
-
-| What was assumed | What was measured | Where it lands |
-|---|---|---|
-| Control Tower already denies changes to **CloudTrail and Config** on every registered OU | **Config yes, CloudTrail nowhere** — no `cloudtrail:` action appears in any of the six guardrail documents | **7.5**, and the user settled it the same day: **no CloudTrail deny is written**, deliberately |
-| `Identity` "carries no policy set until code attaches one", being outside Control Tower's own flow | **False — it carries the standard 8-statement guardrail.** The only OU that differs is `Security`, by three statements about the log-archive and audit buckets | **7.6**: the `Security`/`Identity` diff it asks for is *done* for the SCP half; only the enabled-control half is left |
-| All six non-foundational OUs are registered, because each received an Account Factory vend | **`Sandboxes` is the one OU with no guardrail policy at all**, and `Sandbox Account 1` is inside it | **7.7**: whether `CT.MULTISERVICE.PV.1` can be enabled there at all. Verification (xi) |
-| 7.0 step 5 measures the policy quota | **Service Quotas publishes no policy quota for `organizations`** — only account counts | **7.1**: the budget is the documentation's number. The count fits regardless, and the documents are now written and sized |
-| The Organizations read surface may not reach the *policy* calls | **It does** — every policy read answered from Identity; only `controltower list-enabled-controls` needs Management | **7.0 step 3** is the only part of the preflight still owed, and it is a CloudShell run |
-
-**One thing 7.0 did *not* change, stated because it is the load-bearing one:** account-level BPA is
-**unset in all six accounts** that have a profile, exactly as 7.4 assumed. Nothing there is a no-op, and
-the interlock with 7.5 is unaffected.
-
-## The stage at a glance
-
-| # | What | Identity | Sitting |
-|---|---|---|---|
-| 7.0 | **Preflight — measure the ground before writing a line of JSON** — **DONE 2026-08-13**, step 3 included | Infra user (`awsds-infra-identity`) + CT Admin @ Management | A |
-| 7.1 | What makes this step different, and the two rules that survive from D30 | — (read first) | both |
-| 7.2 | Preconditions, in this order — **DONE** | CT Admin @ Management | A |
-| 7.3 | The battery, against `Policy Canary` before anything real (D29) — **phases 0-3 done; it runs again per 7.6 document** | Infra user, laptop (`awsds-policy-canary`) | both — it runs per policy |
-| 7.4 | The order of attachment — an instruction, not a listing order — **step 1 DONE in all nine accounts** | CT Admin @ Management; step 1 of 7.4 also in each member account | A |
-| 7.5 | The organization-root SCP set — **DONE, both documents attached and exercised** | CT Admin @ Management | A |
-| 7.6 | The per-OU sets, one tier per OU policy set (D23) | CT Admin @ Management | B |
-| 7.7 | The Control Tower managed controls — use theirs | CT Admin @ Management | B |
-| 7.8 | RCPs, tag policies, declarative policies | CT Admin @ Management | B |
-
-## Who executes what
-
-| Part | Identity | Sign-in path |
-|---|---|---|
-| Policy-type enablement, org-root attachments, per-OU attachments, managed controls (7.2, 7.4-7.8) | **`AWS Control Tower Admin`** (D33/D34) | access portal → `AWSAdministratorAccess` on **Management** |
-| 7.4 step 1 — account-level BPA on Log Archive and Audit | **`AWS Control Tower Admin`** | access portal → `AWSAdministratorAccess` on **Log Archive** / **Audit**. Both are reachable: `AWSControlTowerAdmins` carries `AWSAdministratorAccess` on each (`docs/AWS_STATE.md` A.1, measured) |
-| 7.0's reads, 7.3 (the battery), 7.4 step 1 in the other member accounts | **Infrastructure user**, from the laptop | the five `awsds-infra-*` profiles and `awsds-policy-canary` (1b step 5) |
-
-## What this stage costs
-
-**Nothing.** SCPs, RCPs, tag policies, declarative policies and Control Tower controls are all free. The
-one cost this stage *creates* lands elsewhere: 7.8's tag-forcing SCP is paid for at Stage 6, in the time
-it takes to make every creation path carry the tags.
-
----
-
-## To execute
-
-### Step 7 — Preventive policies
-
-The one step in the landing zone that is neither fast nor freely reversible from inside a governed
-account. Read all of 7.0 and 7.1 before attaching anything.
 
 #### 7.0 — Preflight: measure the ground, then write
 

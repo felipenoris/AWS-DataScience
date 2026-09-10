@@ -1,79 +1,60 @@
 # Runbook — The VPN
 
-> **THE HOME MOVED ON 2026-09-06 ([Stage 6c](../stages/stage-06c-networking-hub.md) pass 4), and this
-> file is rewritten to the host as it stands NOW — in Production.** What moved, what did not, and the
-> two things that changed meaning rather than address:
->
-> | | |
-> |---|---|
-> | **moved** | the host, to `VPC-Networking`'s public tier in **Production** — profile **`awsds-infra-prod`**, tag **`awsds-prod-vpn`**. With it: the `[P]` security group, the host-key secret, the log group `/awsds/prod/vpn`, and the `production/vpn/` slice |
-> | **did NOT move** | the **Elastic IP** — it was *transferred* between accounts, so `52.89.212.1` is still the address and **no client's `Endpoint` line changes** — and the **host key**, copied by hand at step 4.3, so **no client's `PublicKey` line changes and no peer was re-enrolled** |
-> | **changed meaning** | the host **stops being a NAT instance** (`vpc_nat_cidrs` is gone at `wireguard-v0.5.0`) and starts **rejecting every tunnel packet not bound for an RFC1918 address**. A client's internet is now the **proxy's**, by name, and `DenyControlPlaneOffVpn` is anchored on the **proxy's** address rather than this host's |
-> | **the one client edit** | `DNS =` → **`10.31.0.2`**, `VPC-Networking`'s resolver (the client runbook, §3.3). It is the *only* line that changes, and it is not optional: the tunnel comes up without it and then **nothing resolves**, because a VPC's `.2` resolver answers only queries born inside that VPC and never across a peering |
->
-> **Two of the old three client checks were retired by the move**; the four that replaced them are the
-> client runbook's §3.4. Following the old ones literally produces two "failures" that are the design
-> working.
->
-> **AND TWO THINGS CHANGED AGAIN ON 2026-09-07, both found by the user rather than by a gate.** The
-> client plane's proxy list was an **allow**-list and the objectives ask for the opposite — it is now
-> `open` with an empty deny list, everything permitted and everything logged (**§C5a**, with SageMaker's
-> list beside it). And the tunnel gained an **IPv6 ULA**, which closes a leak rather than opening a path:
-> `AllowedIPs = ::/0` had been inert without a matching `Address` line, and every IPv6-capable
-> application was leaving outside the tunnel (**§C6**). An existing config gains one line.
->
-> **SPLIT 2026-09-07, at the user's request: the procedures a device's owner follows — the session up
-> and down (§S5's `make` order), the `.conf`, up with its four checks, down, and the proxy on macOS and
-> Linux — are [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md).** This file keeps the system, the failure
-> modes, the two planes, the IPv6 reasoning and the keys; where a section moved, a stub says where.
->
-> **A SECOND CLIENT PROFILE SINCE 2026-09-08 — §C7, Stage 6c pass 8.** `objectives.md` names two types of
-> VPN access, **monitored** and **split-tunnel**; every reading in this file was taken under the monitored
-> one, and *"full tunnel, never split"* is now that profile's rule rather than the estate's. The other
-> profile is the same device, the same key and one `AllowedIPs` line; the cloud side is identical under
-> both. **Measured the same night** (6c 8.3, 8.4): check 3 inverted, the persona pair explicit/implicit on
-> one command, the host's `REJECT` counter flat across a deliberate burst.
+The WireGuard host runs in `VPC-Networking`'s public tier in **Production** since
+[Stage 6c](../stages/stage-06c-networking-hub.md) pass 4 (2026-09-06): profile `awsds-infra-prod`, tag
+`awsds-prod-vpn`, slice `production/vpn/`, with the `[P]` security group, the host-key secret and the log
+group `/awsds/prod/vpn` beside it. The Elastic IP `52.89.212.1` was transferred between accounts and the
+host key was copied by hand (step 4.3), so no client's `Endpoint` or `PublicKey` line changed and no peer
+was re-enrolled. The one client edit the move needed is `DNS = 10.31.0.2`, `VPC-Networking`'s resolver
+(client runbook §3.3); without it the tunnel comes up and nothing resolves, because a VPC's `.2` resolver
+answers only queries born inside that VPC, never across a peering. The host is not a NAT (`vpc_nat_cidrs`
+is gone at `wireguard-v0.5.0`): it rejects every tunnel packet not bound for an RFC1918 address, a
+client's internet is the proxy's, by name, and `DenyControlPlaneOffVpn` is anchored on the proxy's
+address ([D38](../decisions/D38-single-egress-hub.md)).
+
+Every reading in this file was taken under the **monitored** profile; the split-tunnel profile is §C7.
+The procedures a device's owner follows — the session up and down, the `.conf`, up with its four checks,
+down, and the proxy on macOS and Linux — are
+[`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md).
 
 | | |
 |---|---|
-| **Scope** | The whole VPN surface, in three parts. **Part S — the system**: what the pieces are, which slice owns each, how a packet actually travels, what the VPN is *not* (the NAT), the host-only start and stop (§S5 — the session order itself is the client runbook's), and how its size is switched (§S6). **Part C — the client**: **what an enrolled device may reach** (§C5a's two tables), the failure modes WireGuard is silent about (§C4), the cost (§C5) and **why it carries an IPv6 address that routes nowhere** (§C6), and **the two profiles** (§C7, 2026-09-08) — the procedure (the `.conf`, up, the four checks, down) is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3 since 2026-09-07. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the four procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
-| **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`) — plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the **device's owner, on the device** — no AWS profile and no SSO session: nothing in that part calls an AWS API |
-| **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once — each one pins the server's public key. Rotate for *compromise* (§K3), recover for *loss* (§K1); the mechanised violation is Secrets Manager's own rotation feature, off forever (§K5, `VP-9`). **Full tunnel in the monitored profile; the split-tunnel profile is §C7** (Part C; the rule read *"full tunnel, never split"* until 2026-09-08): under monitored, `AllowedIPs = 0.0.0.0/0, ::/0`, both families — **and the reason changed with the estate on 2026-09-06 while the rule did not.** It used to be that `DenyControlPlaneOffVpn`'s `aws:SourceIp` matched only traffic exiting through *this host's* Elastic IP. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address at all: a persona's control-plane call travels tunnel → **proxy** → AWS, and the address the deny names is the **proxy's**. A split tunnel would send that call out of the laptop's own uplink, where it wears neither address — still a lockout with the tunnel up, by a longer path. **That is exactly what §C7's split-tunnel profile does, on purpose**, and why persona work under it is pointed at the proxy by the *application* rather than by the tunnel |
-| **The picture around it** | **[`docs/NETWORK.md`](../../NETWORK.md)** — every VPC, subnet, route table and address in the estate, and where this host sits in them. This file stays the **procedure**; that one is what a packet's whole path looks like |
-| **Written** | **§C7 added 2026-09-08** (the two profiles — 6c pass 8, from the design and the client's source, and measured the same night at 8.3/8.4). §S6 added 2026-08-20 (the size becoming a slice parameter). The keys half 2026-08-16 (Stage 4's third design review; rewritten the same day when the host key moved into the `[P]` secret), the client half 2026-08-17 (the first handshake). **Unified 2026-08-19, at the user's request, replacing `vpn-keys.md` and `vpn-client.md`** — their content is Parts K and C, kept whole; Part S is new, written from the topology readings of Stage 5 pass 4d's first sitting. **Rewritten 2026-09-06 for the Production home** — the banner above lists what moved, and every reading in Part S was re-taken rather than re-worded. **Split 2026-09-07**: §S5's session order and §C0-§C3 moved to `client-vpn-proxy-configuration.md` |
+| **Scope** | The whole VPN surface. **Part S — the system**: the pieces and which slice owns each, how a packet travels, what the VPN is not (the `egress/` slices, the NAT), the host-only start and stop (§S5; the session order is the client runbook's §1 and §2) and the host's shape (§S6). **Part C — the client**: what an enrolled device may reach (§C5a), the failure modes WireGuard is silent about (§C4), the cost (§C5), the IPv6 address that routes nowhere (§C6) and the two profiles (§C7); the procedure itself (the `.conf`, up, the four checks, down) is [`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3. **Part K — the server**: the shell on the host (§K0a), the two kinds of key pair, and the procedures — recovery, revocation, host rotation, device rotation (the last also being how a device is *added*) |
+| **Operator** | Parts S and K: the **infrastructure user**, profile `awsds-infra-prod` (`InfrastructureAccess` in `Production`), plus `awsds-infra-identity` for §K6's fragment toggles. Part C: the device's owner, on the device — no AWS profile and no SSO session; nothing in that part calls an AWS API |
+| **The two rules** | **Loss is answered by recovery, never by rotation** (Part K): a new host key forces an instance replacement and breaks every client config at once, because each pins the server's public key. Rotate for compromise (§K3), recover for loss (§K1); Secrets Manager's own rotation feature is the mechanised violation, off forever (§K5, `VP-9`). **Full tunnel in the monitored profile** (Part C): `AllowedIPs = 0.0.0.0/0, ::/0`, both families. Under [D38](../decisions/D38-single-egress-hub.md) the tunnel host reaches no public address: a persona's control-plane call travels tunnel → proxy → AWS, and `DenyControlPlaneOffVpn` names the proxy's address. A call leaving by the laptop's own uplink wears neither address and is denied with the tunnel up. The split-tunnel profile (§C7) sends the internet that way on purpose, so persona work under it is pointed at the proxy by the application |
+| **The picture around it** | [`docs/NETWORK.md`](../../NETWORK.md) — every VPC, subnet, route table and address in the estate, and where this host sits. This file is the procedure; that one is a packet's whole path |
 
 ---
 
 ## Part S — the system: components, topology, and the host's power state
 
-*New 2026-08-19. Everything in this part was measured in the account (route tables, endpoint ids,
-bucket-policy conditions read back), not inferred from the code — the two dates below mark the readings.*
+*Everything in this part was measured in the account (route tables, endpoint ids, bucket-policy
+conditions read back), not inferred from the code; the dates mark the readings.*
 
 ### S1. The components, and which slice owns each
 
-The VPN is two slices plus a tracked roster, split exactly along the `[P]`/`[D]` line — what must
-survive forever versus what is powered off between sessions (D11). **Since 2026-09-06 all of it is in
-Production, in `VPC-Networking`**, and it has a sibling that did not exist before: the proxy.
+The VPN is two slices plus a tracked roster, split along the `[P]`/`[D]` line — what must survive
+forever versus what is powered off between sessions (D11). All of it is in Production, in
+`VPC-Networking`, beside the proxy.
 
 | Piece | Where · layer | What it is |
 |---|---|---|
-| The **Elastic IP** allocation | `production/networking/` · `[P]` | `52.89.212.1` — the one stable address, and the reason no client config moved when the host changed accounts: it was **transferred**, not reallocated. Every client pins it (`Endpoint =`). It survives every host stop, start and replacement — only its *association* follows the instance. **It is no longer what the perimeter names**: `DenyControlPlaneOffVpn` is anchored on the **proxy's** address (§S4) |
-| The **security group** `awsds-prod-vpn` | `production/networking/` · `[P]` | carries **the only world-open rule this account has**: UDP/51820 (`VP-3`). It no longer carries the second, private ingress rule the isolated tier needed — that died with the buildbox's move (§S3). **DATED EXCEPTION: the estate currently has TWO**, one per account, because Sandbox's `[P]` VPN anchors outlive the host that used them until step 4.13's second half. The Sandbox one now guards **no listener at all**, and `VP-3` reads `pass` because the instrument reads Production — a check inheriting the scope of the account it was pointed at (Lesson 31). Until that cleanup, *one per account* is the true claim |
-| The **host-key secret** `awsds-prod-vpn-host-key` | `production/networking/` · `[P]` | the container for the host's private key — **the value was copied by hand from the Sandbox secret at step 4.3**, which is exactly why every client's `PublicKey` line still matches. Read by the instance at boot; resource-policy deny on every other reader (§K0) |
-| The **WireGuard host** | `production/vpn/` · `[D]` | one **x86_64** burstable instance in `VPC-Networking`'s **public** subnet, `usw2-az1`. `t3.nano` by default, the size a slice parameter (§S6), tag `Name=awsds-prod-vpn` — the tag is the contract everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, MTU 1280, IMDSv2 required, no port 22, no key pair — the shell is SSM (§K0a) |
-| Its **name** `vpn.awsds.internal` | `production/vpn/` · `[D]` | an A record at the host's **private** address, in the `[P]` apex zone. **It did not exist until 2026-09-06** — step 2.1 said pass 4 would write it and pass 4 did not (§S2) |
+| The **Elastic IP** allocation | `production/networking/` · `[P]` | `52.89.212.1`, the one stable address. It was transferred between accounts, not reallocated, so no client config moved with the host. Every client pins it (`Endpoint =`). It survives every host stop, start and replacement; only its *association* follows the instance. It is no longer what the perimeter names: `DenyControlPlaneOffVpn` is anchored on the proxy's address (§S4) |
+| The **security group** `awsds-prod-vpn` | `production/networking/` · `[P]` | carries the only world-open rule this account has, UDP/51820 (`VP-3`). The private ingress rule the isolated tier needed is gone with the buildbox's move (§S3). Dated exception: the estate has two such groups, one per account, because Sandbox's `[P]` VPN anchors outlive the host until step 4.13's second half. The Sandbox one guards no listener, and `VP-3` reads `pass` because the instrument reads Production (Lesson 31). Until that cleanup, *one per account* is the true claim |
+| The **host-key secret** `awsds-prod-vpn-host-key` | `production/networking/` · `[P]` | the container for the host's private key. The value was copied by hand from the Sandbox secret at step 4.3, which is why every client's `PublicKey` line still matches. Read by the instance at boot; resource-policy deny on every other reader (§K0) |
+| The **WireGuard host** | `production/vpn/` · `[D]` | one **x86_64** burstable instance in `VPC-Networking`'s public subnet, `usw2-az1`. `t3.nano` by default, the size a slice parameter (§S6), tag `Name=awsds-prod-vpn` — the tag is what everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, MTU 1280, IMDSv2 required, no port 22, no key pair; the shell is SSM (§K0a) |
+| Its **name** `vpn.awsds.internal` | `production/vpn/` · `[D]` | an A record at the host's private address, in the `[P]` apex zone. It did not exist until 2026-09-06: step 2.1 said pass 4 would write it and pass 4 did not (§S2) |
 | The **handshake log + alarm** | `production/vpn/` · `[D]` | log group `/awsds/prod/vpn` (30 days) with per-peer named lines, and the health alarm `awsds-prod-vpn-health` |
-| The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's *public* key and `host` number. Public halves only — the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
-| **The proxy**, and it is not part of the VPN | `production/proxy/` · `[D]` + `production/networking/` · `[P]` | a **second** `[D]` host in the same subnet: Squid, at `proxy.awsds.internal:3128`, wearing its own `[P]` Elastic IP. **It is the estate's only way to the internet**, and therefore the client's — but it is a separate slice with a separate runbook surface (`./aws/proxy.py`, `PX-1`..`PX-5`). It is listed here because a VPN session that cannot reach it has no internet at all, and because `make hub-up` starts **both** (§S5) |
+| The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's public key and `host` number. Public halves only; the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
+| **The proxy** — not part of the VPN | `production/proxy/` · `[D]` + `production/networking/` · `[P]` | a second `[D]` host in the same subnet: Squid, at `proxy.awsds.internal:3128`, wearing its own `[P]` Elastic IP. It is the estate's only way to the internet, and therefore the client's; it is a separate slice with its own instrument (`./aws/proxy.py`, `PX-1`..`PX-5`). It is listed here because a VPN session that cannot reach it has no internet, and because `make hub-up` starts both (§S5) |
 
-`./aws/vpn.py` reads all of it — `VP-1` through `VP-9` — and is the first thing to run when any
-question about this system comes up. **It reads Production since 2026-09-06** (step 4.7 re-homed
-`VPN_HOME_PROFILE`); before that it kept reporting `pass` about the account the host had left.
+`./aws/vpn.py` reads all of it, `VP-1` through `VP-9`, and is the first thing to run when a question
+about this system comes up. It reads Production (step 4.7 re-homed `VPN_HOME_PROFILE`).
 
-### S2. How a packet travels — the topology, measured (re-taken 2026-09-06)
+### S2. How a packet travels — the topology
 
-The host sits in the **public subnet** of `VPC-Networking`, and that placement decided everything —
-but what it decides changed on 2026-09-06, because the host stopped being a way out.
+Measured 2026-09-06 (Stage 6c pass 4). The host sits in the public subnet of `VPC-Networking`, and since
+that date it is no longer a way out.
 
 ```
 laptop 10.90.0.2 ──wg0──▶ host 10.31.160.x  (wg0 at 10.90.0.1)
@@ -91,255 +72,225 @@ laptop 10.90.0.2 ──wg0──▶ host 10.31.160.x  (wg0 at 10.90.0.1)
                                                                              reaches it)
 ```
 
-**Three mechanisms, and confusing them is the expensive mistake.**
+Three mechanisms, which must not be confused:
 
 - **The FORWARD chain is the perimeter, not a route.** `wg0`'s `PostUp` accepts forwarded packets bound
-  for **RFC1918** and rejects the rest with `icmp-admin-prohibited`. There is no route to remove and no
-  default to delete: the host *has* an IGW default in its subnet, because it needs one itself — the SSM
-  agent, the CloudWatch agent, its own `dnf`. What it does not have is any willingness to carry a
-  **tunnel** packet there.
-  **THE HOST REFUSES AND THE CLIENT SEES A TIMEOUT, and those are not in conflict** (measured
-  2026-09-07). The rejection is real — `FORWARD` rule 4 counted **8453** rejected packets in its first
-  hours — but the host **rate-limits the ICMP errors it sends, per destination** (`icmp_ratelimit`,
-  1000 ms), and a laptop whose background applications are refused several times a second drains the
-  bucket: step 6.4 read **23318** of 27681 refusals silenced (`OutRateLimitHost`), so the sender
-  usually retransmits until it gives up, and fails fast (`curl: (7) … after 194 ms`) when a token
-  happens to be free — macOS honours the ICMP the moment it arrives. *This paragraph first blamed the
-  client's stack; the host's own counters corrected it the same day.* **The counters are the only
-  place the refusal is legible** — the rule's, and `/proc/net/snmp`'s `Icmp` line — which is why
-  §C4's escalation path is `iptables -L FORWARD -n -v` over an SSM session rather than a better reading
-  of the client's error. The rejected-packet count also doubles as a live measure of *how much the
-  laptop tries to send straight to the internet* while a full tunnel is up — a number nobody had before.
-- **The masquerade has a hole in it, deliberately.** Everything forwarded is source-NATed to the host's
-  own address *except* traffic bound for the public tier — so **Squid sees `10.90.0.x`**, and the proxy's
-  access log carries a **per-device** address instead of one indistinguishable blur. That is what makes
-  4.11's log worth keeping. It costs the ENI's `source_dest_check`, which is off, and it needs the one
-  route below.
-  **Do not "tidy" the exemption to the whole VPC CIDR.** The resolver at `10.31.0.2` lives inside
-  `10.31.0.0/16` and is *not* in a public subnet; exempting the `/16` would stop masquerading DNS, the
-  resolver would see a `10.90.0.x` source it does not serve, and **the tunnel's DNS would die** — with
-  everything else still working, which is the worst possible shape of a failure.
-- **One route, in one table, and it is the estate's only sight of `10.90.0.0/24`.**
-  `10.90.0.0/24 → the host's ENI` in `VPC-Networking`'s **public** route table, so the proxy's replies
-  find their way back. It is safe there and nowhere else because it never leaves the VPC — `NT-4` asserts
-  both halves: no route overlapping the tunnel range **outside** the hub, and exactly one **inside** it.
+  for RFC1918 and rejects the rest with `icmp-admin-prohibited`. There is no route to remove: the host
+  has an IGW default in its subnet because it needs one itself (the SSM agent, the CloudWatch agent, its
+  own `dnf`), and it carries no tunnel packet there.
+  The host refuses and the client sees a timeout, and the two agree (measured 2026-09-07). The rejection
+  is real — `FORWARD` rule 4 counted **8453** rejected packets in its first hours — but the host
+  rate-limits the ICMP errors it sends, per destination (`icmp_ratelimit`, 1000 ms), and a laptop whose
+  background applications are refused several times a second drains the bucket: step 6.4 read **23318**
+  of 27681 refusals silenced (`OutRateLimitHost`). The sender usually retransmits until it gives up, and
+  fails fast (`curl: (7) … after 194 ms`) when a token happens to be free; macOS honours the ICMP the
+  moment it arrives. The counters are the only place the refusal is legible — the rule's, and
+  `/proc/net/snmp`'s `Icmp` line — which is why §C4's escalation path is `iptables -L FORWARD -n -v`
+  over an SSM session rather than a better reading of the client's error. The rejected-packet count also
+  measures how much the laptop tries to send straight to the internet while a full tunnel is up.
+- **The masquerade has a hole in it.** Everything forwarded is source-NATed to the host's own address
+  except traffic bound for the public tier, so Squid sees `10.90.0.x` and the proxy's access log (6c step
+  4.11) carries a per-device address. It costs the ENI's `source_dest_check`, which is off, and it needs
+  the route below.
+  Do not widen the exemption to the whole VPC CIDR. The resolver at `10.31.0.2` lives inside
+  `10.31.0.0/16` and is not in a public subnet; exempting the `/16` would stop masquerading DNS, the
+  resolver would see a `10.90.0.x` source it does not serve, and the tunnel's DNS would die with
+  everything else still working.
+- **One route, in one table — the estate's only sight of `10.90.0.0/24`.** `10.90.0.0/24 → the host's
+  ENI` in `VPC-Networking`'s public route table, so the proxy's replies find their way back. It never
+  leaves the VPC; `NT-4` asserts both halves: no route overlapping the tunnel range outside the hub, and
+  exactly one inside it.
 
-**What a client can reach, then, is exactly three things**: RFC1918 addresses the peerings carry, the
-private zones the hub's resolver answers for, and **whatever the proxy's `tunnel` plane allows**. The
-third is a policy list, not a network fact, and it lives in `production/networking/`'s SSM parameter —
-`./aws/dns-allowlist.py` resolves every name on it.
+A client can reach three things: RFC1918 addresses the peerings carry, the private zones the hub's
+resolver answers for, and whatever the proxy's `tunnel` plane allows. The third is a policy list in
+`production/networking/`'s SSM parameter; `./aws/dns-allowlist.py` resolves every name on it.
 
-**What this replaced, so that an older reading is not mistaken for a current one:** until 2026-09-06 the
-host masqueraded everything and tunnel traffic left through **its** Elastic IP, so `curl checkip` from a
-client printed `52.89.212.1` and the lake's bucket policies named that `/32`. Both are now the
-**proxy's** — the address moved in the policy, not in the config file.
+Until 2026-09-06 the host masqueraded everything and tunnel traffic left through its Elastic IP, so
+`curl checkip` from a client printed `52.89.212.1` and the lake's bucket policies named that `/32`. Both
+are now the proxy's: the address moved in the policy, not in the config file.
 
-### S3. What the VPN is *not*: the endpoints, and the NAT that no longer exists anywhere
+### S3. What the VPN is not — the `egress/` slices, and the retired NAT
 
-**No `egress/` slice is part of the VPN path, and starting one for a VPN session is pure cost.** The
-confusion is natural — both look like "how traffic gets out" — and the split is topological:
+No `egress/` slice is part of the VPN path, and starting one for a VPN session is pure cost. The split
+is topological:
 
 | | The VPN host (`production/vpn/`, `[D]`) | An `egress/` slice (`[E]`) |
 |---|---|---|
 | Serves | devices **outside** AWS, over the tunnel | resources **inside** a private subnet, with no public address |
-| Exit | it has **no exit for tunnel traffic at all** — the client's internet is the **proxy**, a separate `[D]` host | nothing. **There are zero NAT gateways in this estate** (D38); an `egress/` slice is now interface endpoints and, in the two compute VPCs, a DNS firewall |
+| Exit | none for tunnel traffic: the client's internet is the **proxy**, a separate `[D]` host | none. There are zero NAT gateways in this estate (D38); an `egress/` slice is interface endpoints and, in the two compute VPCs, a DNS firewall |
 | Endpoints | the `[P]` **gateway** endpoints of the hub (free, always there) | the `[E]` **interface** endpoints, billed hourly, new ids every `make up` |
-| Who needs it | every proof run from the laptop | Stage 6's notebooks, Stage 7's runners, the build host — anything that *lives* in a private subnet, whose **only** management path is the `ssm` trio |
+| Who needs it | every proof run from the laptop | Stage 6's notebooks, Stage 7's runners, the build host — anything that lives in a private subnet, whose only management path is the `ssm` trio |
 | At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 | 0.180 (Sandbox) · 0.110 (Staging) · 0.130 (`VPC-SharedServices`) · 0 (`VPC-Workloads`) |
 
-A session that needs only the tunnel starts only the hub (§S5): **`make hub-up`**, which is 0.0156/h
-against the 0.19+/h an account's `make up` would raise.
+A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0156/h against the
+0.19+/h an account's `make up` would raise.
 
-**AND THE HOST'S SECOND JOB IS GONE, which this section used to spend a page on.** From 2026-08-21 to
-2026-09-06 it was also a **NAT instance for the Sandbox isolated tier** — `vpc_nat_cidrs`, a
-`source_dest_check` turned off, a masquerade for those ranges, and a `0.0.0.0/0` route that the `[E]`
-build host created and destroyed with its session. All of it retired at once, and not because it was
-disliked: the build host moved to `production/buildbox/` and **a route target cannot live in another
-VPC**. The input is deleted at `wireguard-v0.5.0`. What survives from that episode is the lesson rather
-than the mechanism — **reach is an intersection** (Lesson 28): the route, the masquerade and the security
-group lived in three slices, and the one that was missing made a build look like a broken package mirror.
-The same shape now protects the proxy: a spoke its security group admits and its allow-list has never
-heard of is **reachable and mute**.
+The host's second job is gone. From 2026-08-21 to 2026-09-06 it was also a NAT instance for the Sandbox
+isolated tier — `vpc_nat_cidrs`, `source_dest_check` off, a masquerade for those ranges, and a
+`0.0.0.0/0` route the `[E]` build host created and destroyed with its session. All of it was retired
+when the build host moved to `production/buildbox/`: a route target cannot live in another VPC. The
+input is deleted at `wireguard-v0.5.0`. What the episode left is Lesson 28, reach is an intersection:
+the route, the masquerade and the security group lived in three slices, and the missing one made a
+build look like a broken package mirror. The same shape now applies to the proxy: a spoke its security
+group admits and its allow-list has never heard of is reachable and mute.
 
-### S4. Why persona work needs the tunnel at all
+### S4. Why persona work needs the tunnel
 
 Two independent controls, either alone sufficient:
 
-1. **All six persona permission sets carry `DenyControlPlaneOffVpn`** (`VP-7`) — off the tunnel, a
-   persona can make no control-plane call at all. `InfrastructureAccess` is deliberately *outside*
-   the deny (open question 17): it is the recovery path, and the identity that starts the very host
-   the tunnel runs on (§S5's loop).
-   **THE ADDRESS THE STATEMENT NAMES CHANGED ON 2026-09-06 AND THE STATEMENT DID NOT.** Under D38 a
-   VPN client is a *private-network* client: its whole internet crosses Squid, so a persona's
-   control-plane call leaves the estate wearing the **proxy's** Elastic IP and never this host's. Step
-   4.12 added the proxy's address to all six sets **as a union** — both addresses stand until pass 6's
-   readings justify trimming the old one — so a reader comparing the policy with this file will find two
-   `/32`s where the design needs one.
-   **The statement still tests three conditions, and the third is the one to understand before touching
-   it**: tunnel traffic splits by destination. S3 and DynamoDB leave through the hub's `[P]` gateway
+1. **All six persona permission sets carry `DenyControlPlaneOffVpn`** (`VP-7`): off the tunnel, a
+   persona can make no control-plane call. `InfrastructureAccess` is outside the deny (open question
+   17): it is the recovery path, and the identity that starts the host the tunnel runs on (§S5).
+   The address the statement names is the proxy's since 2026-09-06 (D38): a VPN client is a
+   private-network client whose whole internet crosses Squid, so a persona's control-plane call leaves
+   the estate wearing the proxy's Elastic IP, never this host's. Step 4.12 added the proxy's address to
+   all six sets as a union — both addresses stand until pass 6's readings justify trimming the old one —
+   so the policy carries two `/32`s where the design needs one.
+   The statement tests three conditions, and the third is the one to understand before touching it:
+   tunnel traffic splits by destination. S3 and DynamoDB leave through the hub's `[P]` gateway
    endpoints — their prefix-list routes beat any default — and arrive wearing a private address plus
    `aws:SourceVpce`; everything else goes to the proxy and arrives as `aws:SourceIp`. An address-only
-   test therefore denied every direct S3 call a persona made from **inside** the perimeter, which was the
-   Stage 5 pass 4d defect. The fix is `StringNotEqualsIfExists aws:SourceVpce` over the trusted endpoint
-   ids — **which since 4.12 include `VPC-Networking`'s S3 gateway**, because S3 *from the proxy* still
-   leaves through that gateway. Consequence for this runbook's readers: **a persona whose S3 calls fail
-   while Glue and Athena work is this statement, not the network** — and the diagnostic that separates
-   them is `InfrastructureAccess` making the same call over the same tunnel.
-   **Under the split-tunnel profile (§C7, 2026-09-08) the tunnel no longer makes this happen — the
-   application does**: a persona's terminal or browser is pointed at the proxy explicitly, and a persona
-   call refused with an *explicit* deny under split-tunnel is one that went out the laptop's own uplink.
+   test denied every direct S3 call a persona made from inside the perimeter (the Stage 5 pass 4d
+   defect). The fix is `StringNotEqualsIfExists aws:SourceVpce` over the trusted endpoint ids, which
+   since 4.12 include `VPC-Networking`'s S3 gateway, because S3 from the proxy still leaves through that
+   gateway. A persona whose S3 calls fail while Glue and Athena work is this statement, not the network;
+   the diagnostic that separates them is `InfrastructureAccess` making the same call over the same
+   tunnel.
+   Under the split-tunnel profile (§C7) the application, not the tunnel, points a persona's terminal or
+   browser at the proxy; a persona call refused with an *explicit* deny under split-tunnel went out the
+   laptop's own uplink.
 2. **The lake's bucket policies admit only §S2's two branches** — the Elastic IP and the consumers'
-   gateway endpoints (D18, INT-05). Off the tunnel, even a call that IAM would allow dies at the
-   resource.
+   gateway endpoints (D18, INT-05). Off the tunnel, even a call IAM would allow dies at the resource.
 
 ### S5. Start and stop the host
 
-**The session lifecycle — `make hub-up`, a spoke's `make up ENV=…`, and the order down — moved to
-[`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §1 and §2 on 2026-09-07 and is not
-repeated here.** This section keeps what that file does not: what `[D]` means for this host, the
-host-only start for when the tooling is unavailable, the capacity signal, and the floor that bills
-while everything is stopped.
+The session lifecycle — `make hub-up`, a spoke's `make up ENV=…`, and the order down — is
+[`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §1 and §2. This section keeps
+what `[D]` means for this host, the host-only start for when the tooling is unavailable, the capacity
+signal, and the floor that bills while everything is stopped.
 
-`[D]` means the host is **stopped between sessions and started for one** — never destroyed, never
-re-applied by a lifecycle target (refusal 5 in `scripts/tfhygiene/layers.py`). Across stop/start
-nothing moves: the Elastic IP stays associated (Stage 4 verification (ii); re-measured 2026-08-19,
-`VP-2`), the EBS volume keeps `/etc/wireguard/`, and every client config stays valid. What bills
-while stopped is the monthly floor — EIP ~USD 3.65 + secret ~USD 0.40 + 8 GB gp3 — not the hourly
-rate.
+`[D]` means the host is stopped between sessions and started for one — never destroyed, never re-applied
+by a lifecycle target (refusal 5 in `scripts/tfhygiene/layers.py`). Across stop/start nothing moves: the
+Elastic IP stays associated (Stage 4 verification (ii); re-measured 2026-08-19, `VP-2`), the EBS volume
+keeps `/etc/wireguard/`, and every client config stays valid.
 
-**The host-only start**, when the tooling is unavailable or the question is exactly one host. Two
-commands as the **infrastructure user in Production** (`InfrastructureAccess` — the set that works
-off-VPN, which is what makes this the way back in). The instance id is `[D]` state: it survives
-stop/start but **a roster change replaces the host and the id with it** (§K2/§K4), so it is looked up
-at the moment of use, by the Name-tag contract, and written down nowhere:
+**The host-only start**, when the tooling is unavailable or the question is exactly one host: two
+commands as the infrastructure user in Production (`InfrastructureAccess`, the set that works off-VPN,
+which is what makes this the way back in). The instance id is `[D]` state: it survives stop/start, but a
+roster change replaces the host and the id with it (§K2/§K4), so it is looked up at the moment of use by
+the Name tag and written down nowhere:
 
 ```bash
 AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text
 ```
 
-No state filter, on purpose: a `stopped` row is D11 working; **no row at all is a finding** (the
-slice was never applied, or the host is gone). Then, with the id the read printed:
+No state filter, on purpose: a `stopped` row is D11 working; no row at all is a finding (the slice was
+never applied, or the host is gone). Then, with the id the read printed:
 
 ```bash
 AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids <INSTANCE_ID>
 ```
 
-The guarded one-liner, for when the lookup must be programmatic — the guard is the point: a
-`&&`-chain that carries an empty id forward converts "no host" into a confusing downstream error
-(Lesson 25):
+The guarded one-liner, for when the lookup must be programmatic — a `&&`-chain that carries an empty id
+forward converts "no host" into a confusing downstream error (Lesson 25):
 
 ```bash
 ID=$(AWS_PROFILE=awsds-infra-prod aws ec2 describe-instances --region us-west-2 --filters 'Name=tag:Name,Values=awsds-prod-vpn' --query 'Reservations[0].Instances[0].InstanceId' --output text); if [ -z "$ID" ] || [ "$ID" = "None" ]; then echo "no VPN host found - a finding, not a retry"; else AWS_PROFILE=awsds-infra-prod aws ec2 start-instances --region us-west-2 --instance-ids "$ID"; fi
 ```
 
-**Starting only the WireGuard host is half a session.** The tunnel will come up and the client will
-have no internet, because the internet is the proxy — `awsds-prod-proxy`, the same two commands with
-the other tag. `make hub-up` is the form that cannot forget one of them.
+Starting only the WireGuard host is half a session: the tunnel comes up and the client has no internet,
+because the internet is the proxy — `awsds-prod-proxy`, the same two commands with the other tag. `make
+hub-up` is the form that cannot forget one of them.
 
 §K0a's other two lookups — `./aws/vpn.py` and `terraform output -raw instance_id` — answer the same
 question with more context around it.
 
-**`InsufficientInstanceCapacity` on start is transient until proven otherwise — retry, change
-nothing (measured 2026-08-19).** A stopped instance holds no hardware: every start re-contests
-capacity like a fresh launch, and a nano pinned to one AZ is where the pool runs dry first.
-The first-ever start after a `make down` returned exactly this —
-`An error occurred (InsufficientInstanceCapacity) … reached max retries: 2` — with the instance left
-cleanly `stopped` (nothing to undo), the type confirmed *offered* in the AZ (so not a
-configuration problem), and the retry succeeded minutes later. If it persists for ~30 minutes, the
-documented fallback is **`t3.micro`, an admitted value of the slice's `instance_type` parameter
-(§S6)** — a known-survivable change: the interface key comes from the `[P]` secret and the address
-from the `[P]` allocation, so client configs do not move (measured at Stage 4 step 4.2). **Never an
-AZ change** — the subnets anchor on `zone_id` in `[P]` `foundation/` — and never a configuration change
-on the first transient signal.
+**`InsufficientInstanceCapacity` on start is transient until proven otherwise: retry, change nothing**
+(measured 2026-08-19). A stopped instance holds no hardware, so every start re-contests capacity like a
+fresh launch, and a nano pinned to one AZ is where the pool runs dry first. The first start after a
+`make down` returned exactly this — `An error occurred (InsufficientInstanceCapacity) … reached max
+retries: 2` — with the instance left cleanly `stopped`, the type confirmed *offered* in the AZ (so not a
+configuration problem), and the retry succeeding minutes later. If it persists for ~30 minutes, the
+fallback is `t3.micro`, an admitted value of the slice's `instance_type` parameter (§S6): the interface
+key comes from the `[P]` secret and the address from the `[P]` allocation, so client configs do not move
+(measured at Stage 4 step 4.2). Never an AZ change — the subnets anchor on `zone_id` in `[P]`
+`foundation/` — and never a configuration change on the first transient signal.
 
-> **That measurement was taken on Graviton** (`t4g.nano`, the family this host carried until
-> 2026-08-20), and it is quoted above with the family filed off on purpose: what it establishes is
-> that a *start* re-contests capacity and that the first signal is transient, which is EC2 behaviour
-> and not a property of an architecture. What it does **not** establish is that the x86_64 pool
-> behaves the same way in this zone. Carry the procedure — retry, then `t3.micro`; never an AZ
-> change — and do not carry "the nano pool here runs dry" as a measured claim about `t3`.
+> That measurement was taken on Graviton (`t4g.nano`, the family this host carried until 2026-08-20). It
+> establishes that a start re-contests capacity and that the first signal is transient, which is EC2
+> behaviour and not a property of an architecture; it does not establish that the x86_64 pool behaves
+> the same way in this zone. Carry the procedure — retry, then `t3.micro`, never an AZ change — and not
+> "the nano pool here runs dry" as a measured claim about `t3`.
 
-**After the start**: `./aws/vpn.py` must read `running` with everything passing; the SSM agent needs
-a further minute before a shell works (§K0a's `Online` check); the tunnel itself needs only the
-handshake (the client runbook, §3.4).
+**After the start**: `./aws/vpn.py` must read `running` with everything passing; the SSM agent needs a
+further minute before a shell works (§K0a's `Online` check); the tunnel itself needs only the handshake
+(client runbook §3.4).
 
-**The direct stop**, when the tooling is unavailable — after the tunnel is down on every device (the
-client runbook's §2 order; with a full tunnel up, a stopped host strands the laptop's default route
-until `wg-quick down` runs):
+**The direct stop**, when the tooling is unavailable — after the tunnel is down on every device (client
+runbook §2; with a full tunnel up, a stopped host strands the laptop's default route until `wg-quick
+down` runs):
 
 ```bash
 AWS_PROFILE=awsds-infra-prod aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
 ```
 
-**What bills while everything is stopped** is the monthly floor, not an hourly rate: **two** Elastic IPs
-now (~USD 3.65 each — the tunnel's and the proxy's), the host-key secret ~0.40, and the two 8 GB gp3
-volumes. `make status` sums the hourly side; this floor is `docs/plan/cost-model.md`'s.
+**What bills while everything is stopped** is the monthly floor, not an hourly rate: two Elastic IPs
+(~USD 3.65 each, the tunnel's and the proxy's), the host-key secret ~0.40, and the two 8 GB gp3 volumes.
+`make status` sums the hourly side; the floor is `docs/plan/cost-model.md`'s.
 
-### S6. Switch the host's shape — the `instance_type` and `root_volume_size` parameters
+### S6. Switch the host's shape — `instance_type` and `root_volume_size`
 
-*New 2026-08-20, extended the same day with the disk. The host's shape is **two parameters of
-`production/vpn/`, both held in one tracked tfvars**, not a property of the design: `instance_type` —
-`t3.nano` (D4's shape, the default) for a tunnel that only forwards, `t3.medium` (2 vCPU, 4 GiB) when
-the host needs room to work in, `t3.micro` as §S5's capacity fallback — and `root_volume_size`, GiB of
-gp3 root disk, `8` by default. **The one thing to carry out of this section is that they are not
-symmetrical**: the type switches in both directions, the disk only grows. What follows is common to
-both down to the pre-flight reads; the disk's own asymmetries have their own subsection, and the
-switch procedure at the end is written for the type, with the disk's differences called out where
-they land.*
+The host's shape is two parameters of `production/vpn/`, both held in one tracked tfvars:
+`instance_type` — `t3.nano` (D4's shape, the default) for a tunnel that only forwards, `t3.medium`
+(2 vCPU, 4 GiB) when the host needs room to work in, `t3.micro` as §S5's capacity fallback — and
+`root_volume_size`, GiB of gp3 root disk, `8` by default. They are not symmetrical: the type switches in
+both directions, the disk only grows. The pre-flight reads are common to both; the disk's own
+asymmetries have their own subsection, and the switch procedure is written for the type, with the disk's
+differences called out where they land.
 
-**The AMI decides the family. The parameter decides only the size within it.** The `wireguard`
-module pins the Amazon Linux 2023 **x86_64** image by SSM parameter —
-`/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` — and an AMI is specific to
-its processor architecture, so every value the variable admits is an Intel/AMD one. This is the trap
-worth naming, because the two names look like siblings: **`t3.medium` and `t4g.medium` are the same
-2 vCPU / 4 GiB shape and are NOT interchangeable here** — `t4g` is arm64, and EC2 **refuses** the
-request rather than handing back a host that boots badly. Wanting Graviton is therefore not a value
-of this parameter at all: it is an **AMI change inside the module** (a different SSM parameter),
-which replaces the instance and re-runs its user data — a host replacement, subject to Part K's rules
-rather than to this section. The variable's `validation` block encodes the closed list for exactly
-this reason; widening it is a decision taken with the two pre-flight reads below, never a
-convenience.
+**The AMI decides the family; the parameter decides only the size within it.** The `wireguard` module
+pins the Amazon Linux 2023 x86_64 image by SSM parameter —
+`/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` — and an AMI is specific to its
+processor architecture, so every value the variable admits is an Intel/AMD one. `t3.medium` and
+`t4g.medium` are the same 2 vCPU / 4 GiB shape and are not interchangeable here: `t4g` is arm64, and EC2
+refuses the request rather than handing back a host that boots badly. Graviton is not a value of this
+parameter: it is an AMI change inside the module (a different SSM parameter), which replaces the
+instance and re-runs its user data — a host replacement, under Part K's rules. The variable's
+`validation` block encodes the closed list; widening it is a decision taken with the two pre-flight
+reads below.
 
-#### The architecture move of 2026-08-20 — this section's own rule, exercised
+#### The architecture move of 2026-08-20
 
-**This host was arm64 from D4 until 2026-08-20**, when the user moved it to amd64: the module's SSM
-parameter went `…-arm64` → `…-x86_64` (`wireguard-v0.3.0`), and every admitted value of
-`instance_type` went `t4g.*` → `t3.*` **as a consequence, not as a choice** — the list follows the
-image, in that direction and never the other. Read that as the worked example of the paragraph above
-rather than as an exception to it, and take three things from it:
+The host was arm64 from D4 until 2026-08-20, when the user moved it to amd64: the module's SSM parameter
+went `…-arm64` → `…-x86_64` (`wireguard-v0.3.0`), and every admitted value of `instance_type` went
+`t4g.*` → `t3.*` as a consequence — the list follows the image, never the other way. Three things follow
+from it:
 
-- **It is a REPLACEMENT, not a switch.** Everything below this heading — "a stop and a start, not a
-  rebuild", `~ instance_type` with `1 to change`, "the instance id survives" — describes moving
-  *within* a family and describes **none** of that move. The plan reads `must be replaced`, which
-  everywhere else in this section is the signal to stop and read §K2/§K4. Here it is the expected
-  reading.
-- **What survives is nevertheless the same list**, and for the same `[P]` reasons: the **address**
-  (the Elastic IP is `foundation/`'s), and the **server's public key** (its private half is
-  `foundation/`'s secret, re-fetched at first boot by the new host). So **no client `.conf` changes**
-  and no device is re-enrolled — the one thing an architecture change might have been expected to
-  cost, and does not.
-- **What does not survive is the root volume**, and with it anything ever put on the host by hand.
-  `/etc/wireguard/` is rebuilt by the user data from the `[P]` secret and the tracked roster, which
-  is why that costs nothing; a working copy, a capture or a container image on the old disk is
-  simply gone. A `root_volume_size` already grown is re-created at its assigned size — the disk's
-  "up only" rule is about `ModifyVolume`, and a replacement is not one.
+- **It is a replacement, not a switch.** "A stop and a start", `~ instance_type` with `1 to change` and
+  "the instance id survives" all describe moving within a family, and none of that move. The plan reads
+  `must be replaced`, which everywhere else in this section is the signal to stop and read §K2/§K4.
+- **What survives is the same list**, for the same `[P]` reasons: the address (the Elastic IP is
+  `foundation/`'s) and the server's public key (its private half is `foundation/`'s secret, re-fetched
+  at first boot by the new host). No client `.conf` changes and no device is re-enrolled.
+- **The root volume does not survive**, nor anything ever put on the host by hand. `/etc/wireguard/` is
+  rebuilt by the user data from the `[P]` secret and the tracked roster; a working copy, a capture or a
+  container image on the old disk is gone. A `root_volume_size` already grown is re-created at its
+  assigned size: the disk's "up only" rule is about `ModifyVolume`, and a replacement is not one.
 
-**What did NOT have to be re-measured, and why:** the user data names no architecture anywhere. It
-installs `wireguard-tools`, `iptables-nft` and `amazon-cloudwatch-agent` **by name** from the AL2023
-repository, derives the uplink interface (`ip route`) instead of assuming `ens5`/`enX0` per
-generation, and downloads no binary of its own. The 2026-08-16 package measurement was itself read
-off the repository's **`/x86_64/` mirror path** (`docs/REFERENCES.md`), so it applies to the new host
-directly. What *is* worth a fresh read is §S5's capacity note, which was measured on the Graviton
-pool — the box there says so.
+Nothing had to be re-measured: the user data names no architecture. It installs `wireguard-tools`,
+`iptables-nft` and `amazon-cloudwatch-agent` by name from the AL2023 repository, derives the uplink
+interface (`ip route`) instead of assuming `ens5`/`enX0` per generation, and downloads no binary of its
+own. The 2026-08-16 package measurement was read off the repository's `/x86_64/` mirror path
+(`docs/REFERENCES.md`), so it applies to the new host directly. §S5's capacity note was measured on the
+Graviton pool; its box says so.
 
-#### How the shape is selected — one tracked file, two keys, one of them reversible
+#### How the shape is selected — `instance_type.auto.tfvars`
 
-**`terraform-live/production/vpn/instance_type.auto.tfvars`** — committed to the repository, and the
-only tfvars in this tree a person edits to change what is *running*. **Its name is now narrower than
-its contents**: the disk key joined it on 2026-08-20 and the file was not renamed, because a rename
-costs the `.gitignore` negation, `check-tfvars-shape.py`'s `SIZE` constant and every path written
-about the file, and buys a name. The file's own header says so, which is where a puzzled reader
-lands anyway.
+`terraform-live/production/vpn/instance_type.auto.tfvars` is committed to the repository, and is the
+only tfvars in this tree a person edits to change what is running. Its name is narrower than its
+contents: the disk key joined it on 2026-08-20 and the file was not renamed, because a rename costs the
+`.gitignore` negation, `check-tfvars-shape.py`'s `SIZE` constant and every path written about the
+file. The file's own header says so.
 
 | To | Do | Then |
 |---|---|---|
@@ -348,81 +299,74 @@ lands anyway.
 | **Grow the disk** | assign it: `root_volume_size = 64` | `terraform apply` on the slice |
 | **~~Shrink the disk~~** | **not this file, and not an apply** | EBS cannot shrink a volume — see below |
 
-With nothing assigned, `variables.tf`'s defaults govern — `t3.nano`, D4's shape, on 8 GiB — so for
-the **type** commenting the line out *is* the way back, and the plan reads `~ instance_type` with
-`1 to change` in that direction exactly as it did on the way up. Both of those readings were
-measured 2026-08-20, on a bare `plan` with no flags of any kind. **For the disk the same act does
-not do the same thing**, and the next subsection is that difference.
+With nothing assigned, `variables.tf`'s defaults govern — `t3.nano`, D4's shape, on 8 GiB — so for the
+type, commenting the line out is the way back, and the plan reads `~ instance_type` with `1 to change`
+in that direction as it did on the way up (both readings measured 2026-08-20, on a bare `plan` with no
+flags). For the disk the same act does not do the same thing; the next subsection is that difference.
 
-**Three properties of this arrangement, each chosen against a specific failure:**
+Three properties of this arrangement, each chosen against a specific failure:
 
-- **The `.auto.` in the filename is load-bearing.** Terraform auto-loads any `*.auto.tfvars` in
-  the working directory, so the file is read by a bare apply:
+- **The `.auto.` in the filename is load-bearing.** Terraform auto-loads any `*.auto.tfvars` in the
+  working directory, so the file is read by a bare apply:
 
   ```bash
   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/vpn apply
   ```
 
-  Named `instance_type.tfvars` instead, it would have to be passed on **every** plan and apply —
-  `-var-file` being an option of those subcommands, after the subcommand, where `-chdir` is an
+  Named `instance_type.tfvars` instead, it would have to be passed on every plan and apply —
+  `-var-file` is an option of those subcommands and goes after the subcommand, where `-chdir` is an
   option of `terraform` itself and goes before it:
 
   ```bash
   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/vpn apply -var-file=instance_type.tfvars
   ```
 
-  Forgetting that flag once plans the host back to the default with nothing to warn you — the plan
-  reads `1 to change` either way. There is no flag to forget here, which is the point.
-- **It is TRACKED, and `.gitignore` names it** rather than leaving it to a `git add -f` (the peers
-  roster's older arrangement). A `git add -f` works, but says nothing to whoever creates the file
-  the next time this pattern reaches another account's `vpn/` slice — and the way *back* to the
-  default is a commented-out line, a change that has to reach the repository as reliably as the one
-  that set it. The negation names the file in full so it cannot admit the generated
-  `terraform.auto.tfvars` beside it, which does hold the region and the CIDR.
-- **`./scripts/check-tfvars-shape.py` allows it exactly the two keys above.** The file is
-  committable because both of them are *sizes* — no id, no address, no key material; the gate is
-  what keeps that true when somebody adds `zone_index` or a CIDR "while they are in there". Growing
-  that set is the decision, not the formality: a key belongs in this file only if it is a size.
+  Forgetting that flag once plans the host back to the default with nothing to warn you; the plan reads
+  `1 to change` either way. Here there is no flag to forget.
+- **It is tracked, and `.gitignore` names it** rather than leaving it to a `git add -f` (the peers
+  roster's older arrangement). A `git add -f` says nothing to whoever creates the file the next time
+  this pattern reaches another account's `vpn/` slice, and the way back to the default is a
+  commented-out line, a change that has to reach the repository as reliably as the one that set it. The
+  negation names the file in full so it cannot admit the generated `terraform.auto.tfvars` beside it,
+  which holds the region and the CIDR.
+- **`./scripts/check-tfvars-shape.py` allows it exactly the two keys above.** The file is committable
+  because both are sizes — no id, no address, no key material; the gate keeps that true when somebody
+  adds `zone_index` or a CIDR. A key belongs in this file only if it is a size.
 
-**What `make up` / `make down` do with all this: nothing.** A `[D]` slice is started and stopped,
-never applied (refusal 5), so the machinery cannot switch the size in either direction — every
-change here is a deliberate apply.
+`make up` / `make down` do nothing with this: a `[D]` slice is started and stopped, never applied
+(refusal 5), so every change here is a deliberate apply.
 
+#### The disk — `root_volume_size`, and how it differs from the type
 
-#### The disk — `root_volume_size`, and the three ways it is not the type
+**It only goes up.** An EBS volume is grown in place — the provider issues `ModifyVolume`, without even
+stopping the instance — but EBS cannot shrink a volume. Commenting the assignment out asks for a shrink
+the API refuses. Going smaller is a host replacement — a new instance on a new root volume,
+`/etc/wireguard/` rebuilt from the `[P]` secret and the roster — which is Part K's territory. Assign the
+disk expecting to keep it.
 
-**One: it only goes up.** An EBS volume is *grown* in place — the provider issues `ModifyVolume`,
-and unlike a type change it does not even stop the instance — but **EBS cannot shrink a volume**.
-Commenting the assignment out therefore does not walk the disk back the way it walks the type back:
-it asks for a shrink the API refuses. Going smaller is a **host replacement** — a new instance on a
-new root volume, `/etc/wireguard/` rebuilt from the `[P]` secret and the roster — which is Part K's
-territory, not this section's. Assign the disk expecting to keep it.
+> Documented, not measured (Lesson 30, in reverse): the shrink rule is EBS's, and what `plan` prints
+> before such an apply fails has not been read here, because nothing in this repository should ever
+> produce it. Carry "down is a replacement" as the rule; do not carry any particular error text.
 
-> **Documented, not measured, and marked so rather than left to be assumed** (Lesson 30, in
-> reverse): the shrink rule above is EBS's, and *what `plan` prints before such an apply fails* has
-> not been read here — because nothing in this repository should ever produce it. Carry "down is a
-> replacement" as the rule; do not carry any particular error text as a promise.
-
-**Two: growing the volume is not growing the filesystem.** `ModifyVolume` hands the instance more
-block device; the partition and the XFS filesystem on top of it are untouched until something grows
-them, and on AL2023 that something is **cloud-init's `growpart`, which runs at BOOT**:
+**Growing the volume is not growing the filesystem.** `ModifyVolume` hands the instance more block
+device; the partition and the XFS filesystem on top of it are untouched until something grows them, and
+on AL2023 that something is cloud-init's `growpart`, which runs at boot:
 
 | If the disk change… | The filesystem… |
 |---|---|
 | rides along with an `instance_type` switch | grows by itself — that apply stops and starts the host, so `growpart` runs |
 | goes out **alone**, host left running | does **not** grow, until a reboot or until the pair below is run by hand |
 
-The by-hand pair, in an SSM session (§K0a), for the case where the volume grew and the host was not
-restarted:
+The by-hand pair, in an SSM session (§K0a), when the volume grew and the host was not restarted:
 
 ```bash
 sudo growpart /dev/nvme0n1 1 && sudo xfs_growfs -d /
 ```
 
-**Three: it is a standing cost, where the type is an hourly one.** A stopped instance bills nothing
-per hour; its EBS volume bills every hour of the month regardless — the deal a `[D]` slice makes,
-and the thing `scripts/tfhygiene/layers.py`'s own comment already says about the volume and the
-Elastic IP. At the `us-west-2` gp3 rate of **0.08 USD/GB-mo** (`docs/PRICING.md` §8):
+**It is a standing cost, where the type is an hourly one.** A stopped instance bills nothing per hour;
+its EBS volume bills every hour of the month — the deal a `[D]` slice makes, which
+`scripts/tfhygiene/layers.py`'s own comment says about the volume and the Elastic IP. At the `us-west-2`
+gp3 rate of **0.08 USD/GB-mo** (`docs/PRICING.md` §8):
 
 | `root_volume_size` | USD/month, standing, tunnel up or down |
 |---|---|
@@ -430,42 +374,36 @@ Elastic IP. At the `us-west-2` gp3 rate of **0.08 USD/GB-mo** (`docs/PRICING.md`
 | 64 GiB — assigned 2026-08-20 | ~5.12 |
 | 128 GiB — the validation's ceiling | ~10.24 |
 
-The ceiling is where a fat-fingered `640` — ~51 USD/month, **D12's whole budget**, on a host that
-may never be started — is caught at *plan* time rather than on a bill. Raising it is a decision
-taken against that budget, with this table in hand.
+The ceiling is where a fat-fingered `640` — ~51 USD/month, D12's whole budget, on a host that may never
+be started — is caught at plan time rather than on a bill. Raising it is a decision taken against that
+budget, with this table in hand.
 
-#### What is *not* coupled to these parameters — deliberately
+#### What is not coupled to these parameters
 
 **The cost model stays written against `t3.nano` on 8 GiB.** `scripts/tfhygiene/layers.py` carries
-`0.0052` for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows
-the parameter. The consequence, stated plainly so nobody reports it as a defect: **while a larger
-host runs, `make status` understates the burn** — a `t3.medium` is **0.0416 USD/h**, eight times the
-figure quoted (measured 2026-08-20; `docs/PRICING.md` §8's `t3.medium` row is the same reading).
-That is the accepted trade: one baseline in the cost tables beats a table that drifts with a knob.
+`0.0052` for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows the
+parameter. While a larger host runs, `make status` understates the burn: a `t3.medium` is
+**0.0416 USD/h**, eight times the figure quoted (measured 2026-08-20; `docs/PRICING.md` §8's `t3.medium`
+row is the same reading). One baseline in the cost tables beats a table that drifts with a knob.
 
-**Both of those figures moved with the architecture, and by exactly the same fraction.** The amd64
-host is **+23.8%** on the Graviton one it replaced at every size measured — `0.0052` against
-`0.0042` at the nano, `0.0416` against `0.0336` at the medium (`docs/PRICING.md` §8, both regions,
-one sitting). So the *ratio* this section quotes is untouched: the medium is still eight times the
-nano, and the disk table below is unaffected — EBS is priced per GB, not per architecture.
+Both figures moved with the architecture, by the same fraction: the amd64 host is **+23.8%** on the
+Graviton one it replaced at every size measured — `0.0052` against `0.0042` at the nano, `0.0416`
+against `0.0336` at the medium (`docs/PRICING.md` §8, both regions, one sitting). The ratio this section
+quotes is untouched, and the disk table is unaffected: EBS is priced per GB, not per architecture.
 
-**The same holds for the disk, and it understates in a worse direction.** `docs/PRICING.md` §2's
-`WireGuard EBS (8 GB) + CloudWatch logs` row prices the default, and does not follow this file
-either — so at 64 GiB the monthly floor is understated by **~4.50 USD**, and unlike the hourly gap
-above **that one accrues while the lab is shut down**. Stated here rather than fixed in the table
-for the same reason: `docs/PRICING.md` prices what a fresh clone builds. What a *particular* host was
-grown to is this section's table, and the log's.
+The disk understates in a worse direction. `docs/PRICING.md` §2's `WireGuard EBS (8 GB) + CloudWatch
+logs` row prices the default and does not follow this file either, so at 64 GiB the monthly floor is
+understated by **~4.50 USD**, and that gap accrues while the lab is shut down. `docs/PRICING.md` prices
+what a fresh clone builds; what a particular host was grown to is this section's table, and the log's.
 
-**`./aws/vpn.py` reports the size, it does not judge it.** `VP-1` passes at any admitted type and,
-when the host is not the `BASELINE_INSTANCE_TYPE` baseline, **names the type it found** and says the
-hourly figures understate the burn. A check that failed here would go red about a change somebody
-made on purpose, which is how a check stops being read (Lesson 31) — and a check that stayed silent
-would leave the cost gap above with nowhere to surface. Report, not verdict.
+**`./aws/vpn.py` reports the size, it does not judge it.** `VP-1` passes at any admitted type and, when
+the host is not the `BASELINE_INSTANCE_TYPE` baseline, names the type it found and says the hourly
+figures understate the burn. A check that failed here would go red about a change somebody made on
+purpose (Lesson 31); a check that stayed silent would leave the cost gap with nowhere to surface.
 
-#### Before the switch — two reads, both cheap, both answering a question the plan will not
+#### Before the switch — the pre-flight reads
 
-As the **infrastructure user** in **Sandbox** (`InfrastructureAccess`, profile
-`awsds-infra-prod`):
+As the infrastructure user in Production (`InfrastructureAccess`, profile `awsds-infra-prod`):
 
 ```bash
 AWS_PROFILE=awsds-infra-prod aws ec2 describe-instance-types --region us-west-2 --instance-types t3.medium --query 'InstanceTypes[].[InstanceType,ProcessorInfo.SupportedArchitectures[0],VCpuInfo.DefaultVCpus,MemoryInfo.SizeInMiB]' --output text
@@ -475,87 +413,83 @@ AWS_PROFILE=awsds-infra-prod aws ec2 describe-instance-types --region us-west-2 
 AWS_PROFILE=awsds-infra-prod aws ec2 describe-instance-type-offerings --region us-west-2 --location-type availability-zone-id --filters 'Name=instance-type,Values=t3.medium' --query 'InstanceTypeOfferings[].Location' --output text
 ```
 
-The first is the architecture check — `x86_64`, or stop here. The second is the one people skip: the
-host is pinned to **one** zone id by `zone_index`, and the subnets it may use are `[P]` in
-`foundation/`, so **a type not offered in that zone is a type this host cannot have** — and the
-symptom arrives later, as an `InsufficientInstanceCapacity` that looks like §S5's transient one and
-never clears. `t4g.medium` was read as offered in all four `us-west-2` zone ids on 2026-08-20, **on the Graviton family the host carried that morning** — the amd64 move of the same day makes that reading history, so run this one again for the `t3` size being selected rather than inheriting it.
+The first is the architecture check: `x86_64`, or stop here. The second is the one people skip: the host
+is pinned to one zone id by `zone_index`, and the subnets it may use are `[P]` in `foundation/`, so a
+type not offered in that zone is a type this host cannot have — the symptom arrives later, as an
+`InsufficientInstanceCapacity` that looks like §S5's transient one and never clears. `t4g.medium` was
+read as offered in all four `us-west-2` zone ids on 2026-08-20, on the Graviton family the host carried
+that morning; run this read again for the `t3` size being selected rather than inheriting it.
 
-The price, when the size being selected has no row yet — `us-east-1` regardless of where the
-instance runs, that being where the endpoint lives, and it needs a session like any other call
+The price, when the size being selected has no row yet — `us-east-1` regardless of where the instance
+runs, because that is where the endpoint lives, and it needs a session like any other call
 (`docs/PRICING.md` §0's `curl` against the bulk endpoint is the credential-free alternative):
 
 ```bash
 AWS_PROFILE=awsds-infra-prod aws pricing get-products --region us-east-1 --service-code AmazonEC2 --filters 'Type=TERM_MATCH,Field=instanceType,Value=t3.medium' 'Type=TERM_MATCH,Field=regionCode,Value=us-west-2' 'Type=TERM_MATCH,Field=operatingSystem,Value=Linux' 'Type=TERM_MATCH,Field=tenancy,Value=Shared' 'Type=TERM_MATCH,Field=preInstalledSw,Value=NA' 'Type=TERM_MATCH,Field=capacitystatus,Value=Used' --query 'PriceList' --output text | jq -r '.terms.OnDemand|to_entries[0].value.priceDimensions|to_entries[0].value.pricePerUnit.USD'
 ```
 
-#### The switch itself — a stop and a start, not a rebuild, and Terraform performs it
+#### The switch itself — a stop and a start, performed by Terraform
 
-EC2 requires the instance to be **stopped** before its type changes; the AWS provider does the stop,
-the modify and the start itself, in one apply. Read the plan and confirm which of the two shapes it
-is:
+EC2 requires the instance to be stopped before its type changes; the AWS provider does the stop, the
+modify and the start itself, in one apply. Read the plan and confirm which of the two shapes it is:
 
 ```bash
 AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/vpn plan
 ```
 
 That command is complete as written — no `-var 'instance_type=…'` and no
-`-var-file=instance_type.tfvars` appended after `plan`, because the tfvars is auto-loaded. A plan
-that needed a flag would be a plan somebody could run without one.
+`-var-file=instance_type.tfvars` appended after `plan`, because the tfvars is auto-loaded.
 
-- **`~ instance_type` with `Plan: 0 to add, 1 to change, 0 to destroy`** — the switch. This is the
-  expected reading, in either direction.
-- **`~ root_block_device[0].volume_size`, and still `1 to change`** — the disk. `root_block_device`
-  is a block *inside* `aws_instance`, not a resource of its own, so moving both keys in one apply
-  still counts **one** changed resource. `1 to change` is therefore not by itself proof that only
-  the type moved: read the attribute lines, not the tally.
-- **anything `must be replaced`** — *not* a shape change. Something else moved with it (the AMI
-  parameter, the user data, the roster), and the consequences are §K2/§K4's, not this section's. On
-  a disk change specifically, `must be replaced` is the reading that says the plan is **shrinking**
-  the volume rather than growing it.
+- **`~ instance_type` with `Plan: 0 to add, 1 to change, 0 to destroy`** — the switch, the expected
+  reading in either direction.
+- **`~ root_block_device[0].volume_size`, and still `1 to change`** — the disk. `root_block_device` is a
+  block inside `aws_instance`, not a resource of its own, so moving both keys in one apply still counts
+  one changed resource. `1 to change` is not by itself proof that only the type moved: read the
+  attribute lines, not the tally.
+- **anything `must be replaced`** — not a shape change. Something else moved with it (the AMI parameter,
+  the user data, the roster), and the consequences are §K2/§K4's. On a disk change, `must be replaced`
+  says the plan is shrinking the volume rather than growing it.
 
-Then the apply, in the order §S5's teardown already establishes:
+Then the apply, in the order the session teardown establishes:
 
-1. **Tunnel down on each device first** ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.5). The host is about to stop; with a full tunnel up, a
-   stopped host strands the laptop's default route until `wg-quick down` runs.
+1. **Tunnel down on each device first**
+   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.5). With a full tunnel
+   up, a stopped host strands the laptop's default route until `wg-quick down` runs.
 2. `terraform apply` on the slice — a deliberate, authorized apply
-   (`docs/plan/runbooks/terraform-changes.md`). Nothing to pass: the file is already what the plan
-   just read.
-3. Bring the tunnel back up (the client runbook, §3.4) and read the three proofs.
+   (`docs/plan/runbooks/terraform-changes.md`). Nothing to pass: the file is already what the plan just
+   read.
+3. Bring the tunnel back up (client runbook §3.4) and read its checks.
 
-**What survives, and why each one is safe** — the same in both directions:
+**What survives** — the same in both directions:
 
 | Survives | Because |
 |---|---|
 | The **instance id** | it is a modify, not a replacement — the same instance restarts |
-| `/etc/wireguard/`, so the **host's private key and the peer roster** | the EBS root volume is kept across stop/start, and a `ModifyVolume` that grows it keeps its contents too — growing a disk is not reformatting one. Note that the **user data does NOT re-run** — it is first-boot only — so nothing re-fetches the `[P]` secret, and nothing needs to |
+| `/etc/wireguard/`, so the **host's private key and the peer roster** | the EBS root volume is kept across stop/start, and a `ModifyVolume` that grows it keeps its contents too. The user data does **not** re-run — it is first-boot only — so nothing re-fetches the `[P]` secret, and nothing needs to |
 | The **address**, so **every client `.conf` stays valid** | the public IPv4 is the `[P]` **Elastic IP**. The documented "we release the public address on stop/start" warning applies to *auto-assigned* addresses; this host has none (`associate_public_ip_address = false`) |
 | The **private IPv4**, and with it the security group, the subnet and the AZ | stop/start keeps the primary ENI |
 
-**After — the readings, in the order they become answerable.** `./aws/vpn.py` first: `VP-1` must
-name the **new** type with `state running`, and `VP-2` must still read the Elastic IP **associated**
-(the one thing whose loss would be silent until a client tried to connect). The SSM agent needs a
-further minute before a shell works (§K0a's `Online` check). The tunnel itself needs only the
-handshake (the client runbook, §3.4). `make status` will keep quoting the nano rate — expected, per the coupling note
-above.
+**After — the readings, in the order they become answerable.** `./aws/vpn.py` first: `VP-1` must name the
+new type with `state running`, and `VP-2` must still read the Elastic IP associated (the one loss that
+would be silent until a client tried to connect). The SSM agent needs a further minute before a shell
+works (§K0a's `Online` check). The tunnel itself needs only the handshake (client runbook §3.4). `make
+status` keeps quoting the nano rate — expected, per the coupling note above.
 
-**If the disk moved, one more reading, and `./aws/vpn.py` is not it** — `VP-1` reports the instance
-type and says nothing about the volume, so the disk is confirmed in a shell (§K0a) or not at all:
+**If the disk moved, one more reading, and `./aws/vpn.py` is not it**: `VP-1` reports the instance type
+and says nothing about the volume, so the disk is confirmed in a shell (§K0a) or not at all:
 
 ```bash
 lsblk && df -h /
 ```
 
-`lsblk` must show the **new** size on the device, and `df -h /` the new size on the **filesystem**.
-They can disagree, and the disagreement is the whole point of the `growpart` note above: a device
-that grew under a filesystem that did not is a host with the space it was billed for and none of the
-space it was given. Read both, not one.
+`lsblk` must show the new size on the device, and `df -h /` the new size on the filesystem. They can
+disagree (the `growpart` note above): a device that grew under a filesystem that did not is a host with
+the space it was billed for and none of the space it was given. Read both.
 
-**If the start fails with `InsufficientInstanceCapacity`, §S5's rule holds unchanged — retry, change
-nothing.** A stopped instance holds no hardware, and a switch re-contests the pool at the new size in
-the same pinned AZ. The distinction that matters is the one §S5 already draws: transient until
-proven otherwise, and the `describe-instance-type-offerings` read above is what proves it is not a
-configuration problem. §S5's documented fallback is `t3.micro` — an admitted value of this
+**If the start fails with `InsufficientInstanceCapacity`, §S5's rule holds: retry, change nothing.** A
+stopped instance holds no hardware, and a switch re-contests the pool at the new size in the same pinned
+AZ. Transient until proven otherwise, and the `describe-instance-type-offerings` read above is what
+proves it is not a configuration problem. §S5's fallback is `t3.micro`, an admitted value of this
 parameter, so the fallback is this same procedure with a different value in the same file.
 
 ---

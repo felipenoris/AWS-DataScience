@@ -14,7 +14,7 @@ ARN becomes that user's role — with the substitutions declared once per entry.
 
 ---
 
-## 2026-08-18 — The stage opened: the INT-11 before-reading, and what the same call says about the order of the first apply
+## 2026-08-18 — The stage opened: the INT-11 before-reading and the order of the first apply
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting, and it is
 readings and repository edits only — **no AWS write, and nothing applied**. Every measurement below comes
@@ -22,18 +22,18 @@ from a read-only run of `./aws/datalake.py` (snapshot `2026-08-18T12:43:28Z`) or
 analysis around them is marked where it is analysis. Redactions per `scripts/check-identifiers.py`:
 accounts are named, never numbered.*
 
-**No AWS call in this entry changes anything.** The stage has not started building; what it has done is
-take the reading that must exist *before* the first apply, while there is still nothing to overwrite.
+No AWS call in this entry changes anything. The stage has not started building; this entry takes the
+reading that must exist before the first apply, while there is still nothing to overwrite.
 
-### Stage 4 was read as closed before this file was opened
+### Stage 4 read as closed before this file was opened
 
-`./aws/vpn.py`: **all `VP-*` pass**, including `VP-7` in its inverted direction (the seventh set carrying
-no `DenyControlPlaneOffVpn` is the *pass*, open question 17 option a). The stage file's Status row records
-the 2026-08-18 close by the GuardDuty split. **Two residuals, neither blocking this stage and neither
-this file's to fix:** the WireGuard host was left `running` by the MTU rebuild, and Stage 4's close-out log
+`./aws/vpn.py`: all `VP-*` pass, including `VP-7` in its inverted direction (the seventh set carrying
+no `DenyControlPlaneOffVpn` is the pass, open question 17 option a). The stage file's Status row records
+the 2026-08-18 close by the GuardDuty split. Two residuals, neither blocking this stage and neither this
+file's to fix: the WireGuard host was left `running` by the MTU rebuild, and Stage 4's close-out log
 entry — the user's — is still owed.
 
-### The three-reading bracket has its first reading (step 5.4-pre, pass 0)
+### The first reading of the three-reading bracket (step 5.4-pre, pass 0)
 
 `DL-5`, from `awsds-infra-data`:
 
@@ -41,15 +41,14 @@ entry — the user's — is still owed.
 Parameters       : {"CROSS_ACCOUNT_VERSION": "4", "SET_CONTEXT": "TRUE"}
 ```
 
-**This is the "before" of INT-11's bracket**, taken while `data-governance/` still holds only `bootstrap/`
-— so it is a reading of a value no Terraform of ours has ever touched. It confirms for the **third** time
-what `docs/AWS_STATE.md` §C recorded on 2026-08-14 and again on 2026-08-17. The remaining two readings are
+This is the "before" of INT-11's bracket, taken while `data-governance/` still holds only `bootstrap/`,
+so it reads a value no Terraform of ours has ever touched. It confirms for the third time what
+`docs/AWS_STATE.md` §C recorded on 2026-08-14 and again on 2026-08-17. The remaining two readings are
 owed after 5.4's apply and after the first share.
 
-### The same call carries the finding that decides the ORDER of the first apply
+### The finding that decides the order of the first apply
 
-The rest of section 6 is not a footnote to the line above — it is the reason step 5.2 has to happen in one
-particular order, and it is measured rather than assumed:
+The rest of section 6, from the same call:
 
 ```
 DataLakeAdmins   : (none)
@@ -59,16 +58,16 @@ Registered locations: (none)
 LF-Tags: (none)
 ```
 
-**Lake Formation in Data Governance is not enforcing anything today, and nobody can change that yet** —
-the admin list is empty. *Analysis:* the two `ALL`-to-`IAM_ALLOWED_PRINCIPALS` defaults act **at creation
-time**, so clearing them after a database exists does not reach what already exists. Combined with the
-`Parameters` map that `aws_lakeformation_data_lake_settings` **replaces wholesale**, the first apply of
-`data-governance/data/` owes three things in one order, all in the same resource: name the admins,
-carry `parameters` explicitly written from the reading above, and empty both default-permission blocks —
-**before any database is created**. Getting the third one late is D13 reduced to decoration with no error
-anywhere; getting the second one wrong is INT-11's silent share failure.
+Lake Formation in Data Governance is not enforcing anything today, and nobody can change that yet: the
+admin list is empty. *Analysis:* the two `ALL`-to-`IAM_ALLOWED_PRINCIPALS` defaults act at creation
+time, so clearing them after a database exists does not reach what already exists. Combined with the
+`Parameters` map that `aws_lakeformation_data_lake_settings` replaces wholesale, the first apply of
+`data-governance/data/` owes three things in one resource, before any database is created: name the
+admins, carry `parameters` explicitly written from the reading above, and empty both default-permission
+blocks. The third one late is D13 reduced to decoration with no error anywhere; the second one wrong is
+INT-11's silent share failure.
 
-### The rest of the baseline, so a later reading has a "before" to differ from
+### The rest of the baseline
 
 | Check | Reading | Why it is a note and not a failure |
 |---|---|---|
@@ -79,102 +78,100 @@ anywhere; getting the second one wrong is INT-11's silent share failure.
 | `DL-10` | no EFS in the VPN home | a **pass**: the withdrawn NFS requirement staying withdrawn |
 | — | RAM: no share owned by Data Governance | expected before step 7 |
 
-`0 check(s) FAILED`. **The banner reads `some calls FAILED` and it is not the verdict** — the failures are
-seven profiles across six SSO sessions with no token (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`,
-`awsds-governance`, `awsds-scientist`), which is the same footprint Stage 4's entry ten named. Read the
-check table, never the banner.
+`0 check(s) FAILED`. The banner reads `some calls FAILED` and is not the verdict: the failures are seven
+profiles across six SSO sessions with no token (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`,
+`awsds-governance`, `awsds-scientist`), the same footprint Stage 4's entry ten named. Read the check
+table, never the banner.
 
-### Does this stage need the Sandbox environment up? — asked by the user, answered by reading
+### Whether this stage needs the Sandbox environment up — asked by the user
 
-*Analysis, not a measurement.* **`make down ENV=sandbox` does not stand in this stage's way**, and the
-reason is the `[P]`/`[D]`/`[E]` split doing exactly what it was built for:
+*Analysis, not a measurement.* `make down ENV=sandbox` does not stand in this stage's way; the
+`[P]`/`[D]`/`[E]` split is why:
 
-- **Passes 0-3 touch Sandbox not at all.** They run in Data Governance as `awsds-infra-data`. The one
-  Sandbox input they consume — the `s3_gateway_endpoint_id` output of `sandbox/foundation/` for step 1.3's
-  `aws:SourceVpce` branch, plus the WireGuard Elastic IP for the `aws:SourceIp` branch — are both `[P]`,
-  which `make down` never reaches. **That is INT-05's rule arriving as a consequence rather than as a
-  warning:** the branch was written against gateway endpoints in `foundation/` *because* the `[E]`
-  interface endpoints in `egress/` change ID on every cycle, and this is the first stage where that choice
-  pays.
-- **Pass 4's applies do not need the tunnel either.** `sandbox/data/` is `[P]`, applied as
-  `awsds-infra-sandbox-1` — `InfrastructureAccess`, the one set deliberately left off-VPN (open question
-  17, option a).
-- **What does need the host back is the behavioural half**: the pandas pair, the classification pair, the
-  workgroup boundary and the drop-box asymmetry are all run as **persona** sessions, and every persona set
-  carries `DenyControlPlaneOffVpn`. Those need `make up ENV=sandbox` first, in the same sitting.
+- Passes 0-3 do not touch Sandbox. They run in Data Governance as `awsds-infra-data`. The Sandbox inputs
+  they consume — the `s3_gateway_endpoint_id` output of `sandbox/foundation/` for step 1.3's
+  `aws:SourceVpce` branch, and the WireGuard Elastic IP for the `aws:SourceIp` branch — are both `[P]`,
+  which `make down` never reaches. INT-05's rule arrives as a consequence: the branch was written against
+  gateway endpoints in `foundation/` because the `[E]` interface endpoints in `egress/` change ID on
+  every cycle.
+- Pass 4's applies do not need the tunnel either. `sandbox/data/` is `[P]`, applied as
+  `awsds-infra-sandbox-1` — `InfrastructureAccess`, the one set left off-VPN (open question 17,
+  option a).
+- The behavioural half needs the host back: the pandas pair, the classification pair, the workgroup
+  boundary and the drop-box asymmetry are all run as persona sessions, and every persona set carries
+  `DenyControlPlaneOffVpn`. Those need `make up ENV=sandbox` first, in the same sitting.
 
-**One cost consequence, named now rather than met later:** `scripts/slices.py` takes `--env` and no slice
-target, so `make up ENV=sandbox` also applies `egress/` and `probes/` — **~USD 0.17/h against the
-~USD 0.0042/h the tunnel alone costs**. For a session that only needs the tunnel, that is a fortyfold
-difference and it is worth a decision at the time, not a shrug.
+One cost consequence: `scripts/slices.py` takes `--env` and no slice target, so `make up ENV=sandbox`
+also applies `egress/` and `probes/` — ~USD 0.17/h against the ~USD 0.0042/h the tunnel alone costs, a
+fortyfold difference worth a decision at the time.
 
 ### Estate state at the time of these readings
 
-`make status`: **only `sandbox/vpn` is up** — one instance, `0.0042 USD/h`; `sandbox/egress`,
+`make status`: only `sandbox/vpn` is up — one instance, `0.0042 USD/h`; `sandbox/egress`,
 `sandbox/probes`, `development/probes`, `production/egress` and `production/probes` all down. Total
 estimated burn `USD 0.0042/h`.
 
 ### Repository, in the same sitting
 
 - This file created, in the standard header shape.
-- `docs/log/INDEX.md`: the Stage 5 row pointed here; **the Stage 4 row corrected in two places** — its cell
-  opened "Ten entries" while its own text went on to describe the eleventh, twelfth and thirteenth, and it
-  did not say that the 2026-08-18 close has no log entry of its own yet.
+- `docs/log/INDEX.md`: the Stage 5 row pointed here; the Stage 4 row corrected in two places — its cell
+  opened "Ten entries" while its own text went on to describe the eleventh, twelfth and thirteenth, and
+  it did not say that the 2026-08-18 close has no log entry of its own yet.
 - `CLAUDE.md` → Claude LOG: the Stage 5 opening bullet.
 - `make check`: OK.
 
-## 2026-08-18 — Decision 4 taken: Iceberg maintenance is Glue automatic compaction, and the Athena closure it unlocks is now owed
+## 2026-08-18 — Decision 4 taken: Iceberg maintenance is Glue automatic compaction
 
 *Provenance: **the decision is the user's**, taken in chat before pass 1; the entry and the propagation
 are Claude's, written on the user's request in the same sitting. **No AWS call** — the SCP amendment this
 decision unlocks is NOT applied here; it is owed to battery phase 4b during this stage.*
 
-- **The path**: Glue automatic compaction — the table-optimizer runs the D27 carve-out already names —
+- The path: Glue automatic compaction — the table-optimizer runs the D27 carve-out already names —
   under `awsds-data-catalog-maintenance`. Athena scheduled `OPTIMIZE`/`VACUUM` declined: it would keep a
   scheduler and a standing query path alive in the one account whose policy set says nothing runs there.
   Cost row added to the stage table: USD 0.44/DPU-h, measured (`docs/PRICING.md` §5); config free at rest.
-- **The consequence, accepted with the choice (4.3)**: `athena:StartQueryExecution` loses its reason to
+- The consequence, accepted with the choice (4.3): `athena:StartQueryExecution` loses its reason to
   stay out of `DenyUserCompute`, so the amendment is owed — through battery phase 4b, never straight to
-  the OU — **sequenced late in the stage**: the amendment binds every principal in the account,
+  the OU — and sequenced late in the stage: it binds every principal in the account,
   `InfrastructureAccess` included, so if the 4.1 sample table is created or loaded through Athena in this
   account, that comes first. Until it lands, the full-lake read path stays open and stays declared.
-- **Propagated, four files**: the stage file (decision row 4, steps 4.2/4.3 marked decided, the cost
-  row); `POLICIES.md`'s "not covered" Athena bullet (the allowance stands in the attached document today,
-  its justification withdrawn — rewritten again when the amendment lands); Stage 1c's twin bullet
+- Propagated, four files: the stage file (decision row 4, steps 4.2/4.3 marked decided, the cost row);
+  `POLICIES.md`'s "not covered" Athena bullet (the allowance stands in the attached document today, its
+  justification withdrawn — rewritten again when the amendment lands); Stage 1c's twin bullet
   (annotated, not rewritten — it records why the absence was deliberate at attachment);
   `institutional-delta.md`'s Iceberg-operations row (the lab column now names the chosen path).
-  **[Stage 11](../plan/stages/stage-11-dlp.md) needed nothing**: its `awsds-data-athena` rule was already
+  [Stage 11](../plan/stages/stage-11-dlp.md) needed nothing: its `awsds-data-athena` rule was already
   written conditional on this decision's outcome, reading `POLICIES.md` for which way it went.
 
-## 2026-08-18 — Decisions 1-3 taken: the ontology renamed and extended, and `docs/GOVERNANCE.md` created as its one copy
+## 2026-08-18 — Decisions 1-3 taken: the ontology renamed and extended, and `docs/GOVERNANCE.md` created
 
 *Provenance: **the decisions and the governance model are the user's**, given in chat as rules plus a
 drafted `GOVERNANCE.md`; Claude authored the file from that draft on request — translated to English per
 the repository language rule — filled its gaps from the plan, and propagated. **No AWS call.***
 
-- **Decision 1 — the classification scheme**: values `public / internal / restricted / personal`; owner
+- Decision 1 — the classification scheme: values `public / internal / restricted / personal`; owner
   the governance manager; the default grant is read-only over `classification ∈ {public, internal}`,
-  everything else by explicit enumerated grant. **The `raw` database default is `internal` — fail-open,
-  the user's call against the fail-closed recommendation**, so ETL development is not gated per dataset;
+  everything else by explicit enumerated grant. The `raw` database default is `internal` — fail-open,
+  the user's call against the fail-closed recommendation — so ETL development is not gated per dataset;
   the consequence is named in `GOVERNANCE.md` (an unclassified arrival is readable until reclassified;
   Macie is the Stage 11 backstop). `curated` carries no database default — an untagged table there
   matches no TBAC expression: fail-closed by absence.
-- **Decision 2 — reframed by the user**: CMK granularity belongs to a new **`security-zone`** dimension,
-  decoupled from business segregation. One zone, `zn-lab`, the default everywhere **including the
-  drop-box** → one lake CMK, `alias/awsds-data-zn-lab`. The renames arrived with it: `zone` →
-  **`layer`** (gaining a `dropbox` value), `domain` → **`businessunit`** (reserved at N=1).
-- **Decision 3 — the drop-box container**: own bucket `awsds-data-dropbox`, **sharing the `zn-lab`
-  CMK** — the deviation from the own-CMK recommendation follows from the one-zone model. Its cost is
-  named in `GOVERNANCE.md` §`security-zone`: INT-10's key grants land on the zone key, so the KMS layer
-  separates zones, not buckets — the drop-box's isolation rests on the S3 statements and LF alone.
-  Revision trigger: the first dataset whose blast radius argues for its own zone.
-- **Repository, in the same sitting**: `docs/GOVERNANCE.md` created — the persistence table's two gaps
+- Decision 2 — reframed by the user: CMK granularity belongs to a new `security-zone` dimension,
+  decoupled from business segregation. One zone, `zn-lab`, the default everywhere including the
+  drop-box → one lake CMK, `alias/awsds-data-zn-lab`. The renames arrived with it: `zone` → `layer`
+  (gaining a `dropbox` value), `domain` → `businessunit` (reserved at N=1).
+- Decision 3 — the drop-box container: own bucket `awsds-data-dropbox`, sharing the `zn-lab` CMK — the
+  deviation from the own-CMK recommendation follows from the one-zone model. Its cost is named in
+  `GOVERNANCE.md` §`security-zone`: INT-10's key grants land on the zone key, so the KMS layer separates
+  zones, not buckets — the drop-box's isolation rests on the S3 statements and LF alone. Revision
+  trigger: the first dataset whose blast radius argues for its own zone.
+- Repository, in the same sitting: `docs/GOVERNANCE.md` created — the persistence table's two gaps
   answered from the plan (`awsds-data-logs` receives Stage 11's data-event trails; `awsds-data-artifacts`
-  has **no writer wired yet** — its first writer is named by Stage 8/9, and Stage 9's *model* artifacts
-  live in Production, not there). `docs/AWS_STATE.md` gained the **Lake Formation grant register**,
-  empty, one row per applied triple, written in the same sitting as the grant. Stage file decision rows
-  1-3 marked DECIDED with pointers; step 2 and 6.1 point at the ontology's one copy; the KMS cost row
-  settled at 3 CMKs (~USD 3/month). `CLAUDE.md` gained the routing row. `make check` OK.
+  has no writer wired yet — its first writer is named by Stage 8/9, and Stage 9's model artifacts live
+  in Production, not there). `docs/AWS_STATE.md` gained the Lake Formation grant register, empty, one
+  row per applied triple, written in the same sitting as the grant. Stage file decision rows 1-3 marked
+  decided with pointers; step 2 and 6.1 point at `GOVERNANCE.md`; the KMS cost row settled at 3 CMKs
+  (~USD 3/month). `CLAUDE.md` gained the routing row. `make check` OK.
 
 *Amended in the same sitting, by the user: **hyphens replace underscores in every LF-Tag key and
 value** — `security-zone`, `zn-lab` — so tag values and key aliases share one pattern
@@ -186,21 +183,20 @@ touched; the names above already read in the amended form.*
 *Provenance: **the decision is the user's** — the recommendation accepted as stated, in chat; the entry
 is Claude's on request. **No AWS call.***
 
-- **Admins (5.3): `InfrastructureAccess` only.** The governance manager is never an admin — an approver
-  who can already grant everything exercises no control (Lesson 9, D31's argument) — and receives
-  **specific grants** instead (LF-Tag association, per `GOVERNANCE.md`), each row in the grant register.
-  Named revision trigger: Stage 6, when the DataZone fulfilment principal joins the permission plane
-  (D26).
-- **Consumers (7.2): the two named accounts** — `Sandbox Account 1` and `Development`. The OU grant buys
+- Admins (5.3): `InfrastructureAccess` only. The governance manager is never an admin (Lesson 9, D31's
+  argument) and receives specific grants instead (LF-Tag association, per `GOVERNANCE.md`), each row in
+  the grant register. Named revision trigger: Stage 6, when the DataZone fulfilment principal joins the
+  permission plane (D26).
+- Consumers (7.2): the two named accounts — `Sandbox Account 1` and `Development`. The OU grant buys
   nothing at N=1 and is revisited at Stage 14; per-account is INT-11's fallback shape anyway, and the
   enumerated form is what the register records.
-- **Method (6.1): LF-TBAC as the default**, exactly as `GOVERNANCE.md` writes it — the
+- Method (6.1): LF-TBAC as the default, exactly as `GOVERNANCE.md` writes it — the
   `classification ∈ {public, internal}` read-only default expression; `restricted`/`personal` only as
-  enumerated TBAC grants — with **7.1's prerequisite read before the first grant** (the Data Catalog
+  enumerated TBAC grants — with 7.1's prerequisite read before the first grant (the Data Catalog
   resource-policy additions, whose absence fails exactly like a working share that never arrives), and
   named-resource reserved for recorded hybrid-mode exceptions (6.3).
 
-## 2026-08-18 — Decision 6 taken: the grain reframed to roles and projects — and pass 0 closes
+## 2026-08-18 — Decision 6 taken: the grain reframed to roles and projects; pass 0 closes
 
 *Provenance: **the decision is the user's**, in chat; the entry is Claude's on request. **No AWS
 call.***
@@ -209,20 +205,20 @@ call.***
   by users and services, the way IAM works; this project holds **no strong restriction on per-user
   attribution**; the aim is to **experiment with what the tools allow** (Lake Formation + SageMaker +
   S3 + the rest) — understanding the AWS good practice matters more than hitting a per-user target.
-- **What it settles:** the objective's grain is the **assumable role/project** — the outcome 6.4
+- What it settles: the objective's grain is the assumable role/project — the outcome 6.4
   pre-contemplated, now chosen rather than discovered, which closes the stage risk row's failure mode
   (an objective invalidated by discovery). Stated in `docs/GOVERNANCE.md` §"The grain".
-- **What survives into pass 2:** verification (viii) becomes a **mapping** — which per-user expressions
-  exist (SQL-path LF filters; TIP, priced against its documented remote-access cost, open question 13;
-  9.2's `${aws:userid}` `GetObject` scoping) and what each costs. The written map is the deliverable;
-  the per-user `GetObject` scoping moves from conditional obligation to mapped option; step 8's `min()`
+- What survives into pass 2: verification (viii) becomes a mapping — which per-user expressions exist
+  (SQL-path LF filters; TIP, priced against its documented remote-access cost, open question 13; 9.2's
+  `${aws:userid}` `GetObject` scoping) and what each costs. The written map is the deliverable; the
+  per-user `GetObject` scoping moves from conditional obligation to mapped option; step 8's `min()`
   ceiling stays as recorded fact.
-- **Pass 0 closes with this entry — all six decisions taken, all on 2026-08-18.** Propagated: decision
-  row 6 and step 6.4 marked; `GOVERNANCE.md` gained §"The grain"; open question 13's Stage 5 half
-  answered in place, its Stage 6 half (TIP versus remote access) now weighed against a mapped option
-  with remote access favoured by default.
+- Pass 0 closes with this entry — all six decisions taken, all on 2026-08-18. Propagated: decision row
+  6 and step 6.4 marked; `GOVERNANCE.md` gained §"The grain"; open question 13's Stage 5 half answered
+  in place, its Stage 6 half (TIP versus remote access) now weighed against a mapped option with remote
+  access favoured by default.
 
-## 2026-08-18 — Pass 1 authored: `data-governance/data/`, `58 to add` — and the one obligation the plan cannot state
+## 2026-08-18 — Pass 1 authored: `data-governance/data/`, `58 to add`
 
 *Provenance: **this entry is Claude's**, written on the user's request. **NOTHING IS APPLIED** — the
 work is repository authoring plus read-only Terraform (`init`, `validate`, `fmt`, `plan`, `console`,
@@ -232,113 +228,111 @@ to the session scratchpad, never into the repository (it carries account ids).*
 ### What was authored
 
 `terraform-live/data-governance/data/` — eleven files, the slice registered in the D11 machinery in the
-same authoring (`./scripts/slices.py check`: **18 declared, 18 on disk**). `plan`: **58 to add, 0 to
-change, 0 to destroy** — one CMK + alias, five buckets with their six per-bucket resources, the LF
-settings, two registrations, three LF-Tags, three databases, five tag assignments, the sample Iceberg
-table, its optimizer, two IAM roles with their policies, four LF permissions, two crawlers.
+same authoring (`./scripts/slices.py check`: 18 declared, 18 on disk). `plan`: 58 to add, 0 to change,
+0 to destroy — one CMK + alias, five buckets with their six per-bucket resources, the LF settings, two
+registrations, three LF-Tags, three databases, five tag assignments, the sample Iceberg table, its
+optimizer, two IAM roles with their policies, four LF permissions, two crawlers.
 
-Two things the plan proves incidentally, both firsts: **the cross-account remote-state reads resolved** —
-each consumer's `foundation/` for its `[P]` S3 gateway-endpoint id (INT-05's anchor, never the `[E]`
-interface endpoints) and the VPN home's for the Elastic IP — and the **data lake administrator resolved
-by pattern**, `one()` over the `AWSReservedSSO_InfrastructureAccess_*` roles, so the per-account suffix
+Two firsts the plan proves incidentally: the cross-account remote-state reads resolved — each
+consumer's `foundation/` for its `[P]` S3 gateway-endpoint id (INT-05's anchor, never the `[E]`
+interface endpoints) and the VPN home's for the Elastic IP — and the data lake administrator resolved
+by pattern, `one()` over the `AWSReservedSSO_InfrastructureAccess_*` roles, so the per-account suffix
 is never written down.
 
-### The finding, and it changed how the stage is applied
+### The finding: the 5.2 obligation cannot be stated in the plan
 
-**The 5.2 obligation — empty both `IAM_ALLOWED_PRINCIPALS` default blocks before any database exists —
-cannot be stated in the plan at all**, measured in the pinned provider (`aws ~> 6.60`) rather than
-assumed:
+The 5.2 obligation — empty both `IAM_ALLOWED_PRINCIPALS` default blocks before any database exists —
+cannot be stated in the plan at all, measured in the pinned provider (`aws ~> 6.60`):
 
 | What was tried | What came back |
 |---|---|
-| omitting both blocks | `after_unknown: true` for each — **Terraform states no intention about them** |
+| omitting both blocks | `after_unknown: true` for each — Terraform states no intention about them |
 | `create_database_default_permissions = []` | refused: *"An argument named … is not expected here. Did you mean to define a block?"* |
-| a `{}` block | would declare **one** entry with computed fields, which is not zero |
-| the provider schema | both are `nesting_mode: list` **blocks**, `max_items: 3` — *and that is all it says*. **Amended in the eighth entry**, where it was checked: the JSON schema marks `computed` on attributes and **never on `block_types`**, so "the provider decides this" is carried by the `after_unknown` reading above, not by the schema |
+| a `{}` block | would declare one entry with computed fields, which is not zero |
+| the provider schema | both are `nesting_mode: list` blocks, `max_items: 3`, and nothing more: the JSON schema marks `computed` on attributes and never on `block_types`, so "the provider decides this" is carried by the `after_unknown` reading above, not by the schema |
 
-So omission is the only expressible form, and whether it **clears** or merely **leaves alone** is a
-provider property the plan does not state. The consequence is the expensive, silent one: a database
-created while the defaults still stand is born deferring to IAM — D13 as decoration — and clearing them
-afterwards does not reach it.
+So omission is the only expressible form, and whether it clears or merely leaves alone is a provider
+property the plan does not state. A database created while the defaults still stand is born deferring
+to IAM — D13 as decoration — and clearing them afterwards does not reach it.
 
-**The apply therefore became two steps** (written into the stage file's 5.2 as a callout, into the
-slice's `README.md`, and beside the resource in `lakeformation.tf`): apply
-`aws_lakeformation_data_lake_settings` **alone** with `-target`; read `./aws/datalake.py` (`DL-5`
-parameters, `DL-6` defaults); revoke and re-read if `IAM_ALLOWED_PRINCIPALS` is still named; only then
-apply the rest, which is where the first database is created. The graph orders the two correctly —
-every database `depends_on` the settings — but a graph cannot pause to be read (Lesson 13).
+The apply therefore became two steps (written into the stage file's 5.2 as a callout, into the slice's
+`README.md`, and beside the resource in `lakeformation.tf`): apply `aws_lakeformation_data_lake_settings`
+alone with `-target`; read `./aws/datalake.py` (`DL-5` parameters, `DL-6` defaults); revoke and re-read
+if `IAM_ALLOWED_PRINCIPALS` is still named; only then apply the rest, which is where the first database
+is created. The graph orders the two correctly — every database `depends_on` the settings — but a graph
+cannot pause to be read (Lesson 13).
 
 ### One module change, so the two-commit order applies
 
-`terraform-modules/s3-bucket`'s `additional_policy_statements` was `list(any)`, which **cannot hold this
-stage's statements**: `list(any)` unifies to a single element type, and a Deny carrying three condition
+`terraform-modules/s3-bucket`'s `additional_policy_statements` was `list(any)`, which cannot hold this
+stage's statements: `list(any)` unifies to a single element type, and a Deny carrying three condition
 operators does not unify with an Allow carrying one (`validate` refused the conditional that mixed
 them). Changed to `any` — the module only `concat()`s and `jsonencode()`s them — and the caller pins
-**`s3-bucket-v0.2.0`**. Per the terraform-changes runbook §3 this is Recipe B: **the module commit and
-its pushed tag must land before the caller's commit**, or the commit hook's `init` fails on `invalid
-ref`. The tag does not exist yet; the plan above was produced against a temporary local module path,
-which was reverted to the pinned ref before `make check` (OK).
+`s3-bucket-v0.2.0`. Per the terraform-changes runbook §3 this is Recipe B: the module commit and its
+pushed tag must land before the caller's commit, or the commit hook's `init` fails on `invalid ref`.
+The tag does not exist yet; the plan above was produced against a temporary local module path, reverted
+to the pinned ref before `make check` (OK).
 
-### Decisions rendered, so the code and `GOVERNANCE.md` can be read against each other
+### Decisions rendered in the code
 
 The ontology is the file's rendering, value for value: `classification` (4 values), `layer`
-(`dropbox`/`raw`/`curated`), `security-zone` (`zn-lab`); `businessunit` is **absent on purpose** — an
+(`dropbox`/`raw`/`curated`), `security-zone` (`zn-lab`); `businessunit` is absent on purpose — an
 LF-Tag needs at least one value and the dimension has none at N=1. Decision 1's asymmetry is in the tag
 assignments: `raw` and `dropbox` databases carry `classification=internal` (fail-open, the user's call),
-`curated` carries **none** — an untagged table there matches no TBAC expression, fail-closed by absence.
+`curated` carries none — an untagged table there matches no TBAC expression, fail-closed by absence.
 One thing `GOVERNANCE.md` left open was fixed here as pass 1 said it would be: the drop-box crawler
-writes into **its own `dropbox` database**, so inferred tables inherit `layer=dropbox` instead of
-wearing raw's value wrongly.
+writes into its own `dropbox` database, so inferred tables inherit `layer=dropbox` instead of wearing
+raw's value wrongly.
 
-Two shapes worth naming because they are not obvious: **a bucket policy validates its `Principal`**, so
-statements for roles that do not exist yet (`awsds-prod-job-exec` — Stage 9's contract — and the Stage 6
-project execution roles) name the **account root** as Principal and narrow with an `ArnLike` condition;
-and the perimeter deny's third branch is `aws:PrincipalAccount` = this account rather than the
-maintenance role alone — the stage's own "looser and easier to get right" option, taken deliberately,
-because a role-only branch would lock out both the crawler (no VPC, no tunnel) and the infrastructure
-user working off-VPN by decision (open question 17).
+Two shapes that are not obvious: a bucket policy validates its `Principal`, so statements for roles
+that do not exist yet (`awsds-prod-job-exec` — Stage 9's contract — and the Stage 6 project execution
+roles) name the account root as Principal and narrow with an `ArnLike` condition; and the perimeter
+deny's third branch is `aws:PrincipalAccount` = this account rather than the maintenance role alone —
+the stage's own "looser and easier to get right" option, because a role-only branch would lock out both
+the crawler (no VPC, no tunnel) and the infrastructure user working off-VPN by decision (open
+question 17).
 
 ### Not done
 
-- **Nothing is applied.** The two-step apply, both readings, and the SCP amendment of 4.3 are all still owed.
-- **`checkov` and `tflint` were not run** over the new slice — they run in the commit hooks, which cannot
+- Nothing is applied. The two-step apply, both readings, and the SCP amendment of 4.3 are all still owed.
+- `checkov` and `tflint` were not run over the new slice — they run in the commit hooks, which cannot
   pass until the module tag is pushed.
 - The plan could not render the bucket policies (`known after apply` — the module's TLS statement uses
-  the bucket's own computed ARN), so **the perimeter conditions were read structurally, not by value**.
+  the bucket's own computed ARN), so the perimeter conditions were read structurally, not by value.
 
-## 2026-08-18 — Pass 1 APPLIED: the lake exists, and the two-step apply earned its keep
+## 2026-08-18 — Pass 1 applied: the lake exists
 
 *Provenance: **Claude's**, on the user's explicit authorisation of the commit procedure and the apply.
 Applied as the **infrastructure user**, account **Data Governance**, permission set
 **`InfrastructureAccess`**, profile `awsds-infra-data`. Every plan was written to the session scratchpad
 and applied from the saved file (Recipe A step 6). Redactions as this file's header states.*
 
-### The commit procedure ran first, and the tag order is not ceremony
+### The commit procedure ran first
 
-Recipe B, in order: commit 1 the module alone (`s3-bucket` `list(any)` → `any`), tag **`s3-bucket-v0.2.0`**,
-push branch and tags, and **ask origin for the tag** — `9dd35db…  refs/tags/s3-bucket-v0.2.0`, the same
-hash as the local tag. Then commit 2, the callers. **The order proved itself twice**: commit 1 was
-blocked by `checkov` (below), and commit 2 was blocked by `terraform_validate` with **`Module source has
-changed`** — the working `.terraform/` still recorded the temporary local path used for the authoring
-plan. A re-init pulled the module from the pushed tag and the commit passed. That is the runbook's
-`invalid ref` hazard arriving in its other form: not a missing tag, but a stale local install.
+Recipe B, in order: commit 1 the module alone (`s3-bucket` `list(any)` → `any`), tag `s3-bucket-v0.2.0`,
+push branch and tags, and ask origin for the tag — `9dd35db…  refs/tags/s3-bucket-v0.2.0`, the same
+hash as the local tag. Then commit 2, the callers. The order proved itself twice: commit 1 was blocked
+by `checkov` (below), and commit 2 was blocked by `terraform_validate` with `Module source has changed`
+— the working `.terraform/` still recorded the temporary local path used for the authoring plan. A
+re-init pulled the module from the pushed tag and the commit passed. That is the runbook's `invalid
+ref` hazard in its other form: a stale local install rather than a missing tag.
 
-### Two gate findings, and one of them is a real control the stage text did not have
+### Two gate findings
 
-- **`CKV_TF_1`** (module pinned by tag, not commit hash) — the repository's established answer: a
+- `CKV_TF_1` (module pinned by tag, not commit hash) — the repository's established answer: a
   `checkov:skip` naming the convention, added to all four module calls.
-- **`CKV_AWS_195`: the crawlers had no Glue security configuration** — and this one is not a default
-  worth skipping. D27's own honest sentence is that a crawler **samples object contents** to infer
-  schema, so what it writes to CloudWatch is closer to data than to metadata, and everything else here
-  encrypts under the zone CMK. So `awsds-data-catalog-maintenance` (a security configuration of the
-  same name) was added and attached to both crawlers, with a fourth statement on the zn-lab key policy
-  for `logs.us-west-2.amazonaws.com`, scoped by the log-group encryption context. **A second gate
-  finding corrected the first fix**: the draft declared `s3_encryption` and `job_bookmarks_encryption`
-  `DISABLED` (a crawler writes neither), and `CKV_AWS_99` refused it — rightly, because a configuration
-  naming the key for one mode and "off" for two is a statement about what happens to exist rather than
-  about this lake. All three modes now name the key.
+- `CKV_AWS_195`: the crawlers had no Glue security configuration, and this one is a real control. A
+  crawler samples object contents to infer schema (D27), so what it writes to CloudWatch is closer to
+  data than to metadata, and everything else here encrypts under the zone CMK. So
+  `awsds-data-catalog-maintenance` (a security configuration of the same name) was added and attached
+  to both crawlers, with a fourth statement on the zn-lab key policy for `logs.us-west-2.amazonaws.com`,
+  scoped by the log-group encryption context. A second gate finding corrected the first fix: the draft
+  declared `s3_encryption` and `job_bookmarks_encryption` `DISABLED` (a crawler writes neither), and
+  `CKV_AWS_99` refused it — rightly, because a configuration naming the key for one mode and "off" for
+  two is a statement about what happens to exist rather than about this lake. All three modes now name
+  the key.
 
-### The apply, in the two steps the plan could not state
+### The apply, in two steps
 
 | Step | What | Result |
 |---|---|---|
@@ -348,8 +342,7 @@ plan. A re-init pulled the module from the pushed tag and the commit passed. Tha
 | 3 | the crawler fix | `2 added, 1 changed` |
 | — | re-plan | **`No changes`, `-detailed-exitcode 0`** |
 
-**And the reading between steps 1 and 2 is the whole reason the split existed — it came back the good
-way, which is a measurement and not a relief:**
+The reading between steps 1 and 2 came back the good way:
 
 ```
 Parameters    : {"CROSS_ACCOUNT_VERSION": "4", "SET_CONTEXT": "TRUE"}
@@ -358,26 +351,26 @@ DbDefaults    : []
 TableDefaults : []
 ```
 
-**Omission clears.** The provider sends the empty structure and `PutDataLakeSettings` replaces
-server-side — so the behaviour the plan refused to state is now measured for this provider version. Two
-things follow: the split can, in principle, collapse back to one apply at pass 2 and beyond — and it
-**should not**, because what was measured is a provider behaviour that the plan still does not state,
-so the next version could change it silently. The read-back stays (`DL-6`), which is the cheap half.
+Omission clears. The provider sends the empty structure and `PutDataLakeSettings` replaces
+server-side, so the behaviour the plan refused to state is now measured for this provider version. The
+split could collapse back to one apply at pass 2 and beyond, and should not: what was measured is a
+provider behaviour the plan still does not state, so the next version could change it silently. The
+read-back stays (`DL-6`), the cheap half.
 
-**The claim that actually matters was then verified per database**, not inferred from the settings:
-`list-permissions` on `raw`, `curated` and `dropbox` returns **no `IAMAllowedPrincipals` grant at all** —
+The claim that matters was then verified per database, not inferred from the settings:
+`list-permissions` on `raw`, `curated` and `dropbox` returns no `IAMAllowedPrincipals` grant at all —
 only the maintenance role's operational grants and `InfrastructureAccess` as creator. The databases were
 born governed. Had the order been one apply, this reading would have been the discovery that D13 was
 decoration, days later and with the tables already created.
 
-### The one failure, and it was caused by the fix rather than by the design
+### The one failure, caused by the fix
 
 `CreateCrawler` returned `InvalidInputException: The role … is not authorized to perform
-glue:GetSecurityConfiguration` — **a role must be able to READ the security configuration it runs
-under**, which nothing in the stage text or the checkov guidance says. Added as its own statement
+glue:GetSecurityConfiguration` — a role must be able to read the security configuration it runs under,
+which nothing in the stage text or the checkov guidance says. Added as its own statement
 (`Resource: "*"` — Glue security configurations have no ARN to scope to). Both crawlers created on the
-retry. Worth keeping in mind as a shape: adding an encryption control added an IAM requirement to a
-principal that was already written, and the error named the missing action rather than the control.
+retry. The shape: adding an encryption control added an IAM requirement to a principal that was already
+written, and the error named the missing action rather than the control.
 
 ### What exists now
 
@@ -387,21 +380,21 @@ and `curated` registered through `awsds-data-lf-registration`; the three LF-Tag 
 `GOVERNANCE.md`'s values; three databases with decision 1's asymmetry applied (`raw` and `dropbox`
 tagged `classification=internal`, `curated` deliberately untagged at the database); the Iceberg table
 `curated.sample_trades` with its `restricted` column and its compaction optimizer;
-`awsds-data-catalog-maintenance` trusting `glue.amazonaws.com` alone, with two **unscheduled** crawlers.
-`./aws/datalake.py`: **`DL-1` through `DL-6` and `DL-10` all pass**; `DL-7`, `DL-8` and `DL-11` are the
+`awsds-data-catalog-maintenance` trusting `glue.amazonaws.com` alone, with two unscheduled crawlers.
+`./aws/datalake.py`: `DL-1` through `DL-6` and `DL-10` all pass; `DL-7`, `DL-8` and `DL-11` are the
 expected pre-pass notes.
 
 ### Not done
 
-- **Passes 2, 3, 4 and 6 are untouched**, and so is 4.3's SCP amendment (battery phase 4b).
-- **Nothing behavioural was proven.** Every claim above is a describe call or a policy read; the pandas
+- Passes 2, 3, 4 and 6 are untouched, and so is 4.3's SCP amendment (battery phase 4b).
+- Nothing behavioural was proven. Every claim above is a describe call or a policy read; the pandas
   pair, the classification pair, the drop-box asymmetry and the crawler pair are the stage's own probes
   and need the tunnel and the consumer side.
-- **The crawlers have never run.** `DL-3` reads their shape, not a run — verification (iii)'s positive
-  half (the SCP carve-out actually matching) is still owed, and it is the first thing that will exercise
-  the security configuration added here.
+- The crawlers have never run. `DL-3` reads their shape, not a run — verification (iii)'s positive half
+  (the SCP carve-out actually matching) is still owed, and it is the first thing that will exercise the
+  security configuration added here.
 
-## 2026-08-18 — Pass 1 merged and synchronised, and what the session was worth keeping
+## 2026-08-18 — Pass 1 merged and synchronised
 
 *Provenance: **the merge is the user's** (PR #18). The synchronisation, the post-merge reading and the
 documentation work are Claude's, on the user's request in the same sitting. **No AWS write** — the one
@@ -409,85 +402,71 @@ AWS call is a `plan`, which is read-only, run as the **infrastructure user**, ac
 Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`). The plan file was written
 to the session scratchpad, never into the repository.*
 
-### The synchronisation, and the one reading that makes it more than bookkeeping
+### The synchronisation
 
 `main` at `96639df`; the merged branch deleted locally and two stale remote branches pruned;
 `s3-bucket-v0.2.0` re-confirmed on origin at `9dd35db…`, the hash it was pushed with.
 
-Then the check that a fast-forward alone does not give: **`terraform plan` on
-`data-governance/data/` from the merged `main` returns `No changes`.** The merge preserved what was
-applied — worth one command, because the branch that was applied and the branch that was merged are
-only the same object until somebody rebases or squashes one of them.
+Then the check a fast-forward alone does not give: `terraform plan` on `data-governance/data/` from the
+merged `main` returns `No changes`. The merge preserved what was applied.
 
-### A lesson: 27, the plan's silence
+### Lesson 27, the plan's silence
 
-**Added to [`docs/plan/lessons.md`](../plan/lessons.md)**, and it is pass 1's finding generalised rather
-than restated: *a declarative plan is silent about the values the provider owns — so the setting that
-has to be right before anything else exists is precisely the one Terraform will not promise.* What
-earns it a place is the shape rather than the incident: the plan **renders identically** whether the
-apply will clear the defaults or leave them standing, which is Lesson 13's failure moved out of the
-verification and into the artifact that *authorises* the apply. It carries the recognisable class —
-the account-level settings singletons, which create nothing and overwrite state AWS initialised
+Added to [`docs/plan/lessons.md`](../plan/lessons.md), pass 1's finding generalised: a declarative
+plan is silent about the values the provider owns, so the setting that has to be right before anything
+else exists is the one Terraform will not promise. The plan renders identically whether the apply will
+clear the defaults or leave them standing. The lesson names the class — the account-level settings
+singletons, which create nothing and overwrite state AWS initialised
 (`aws_s3_account_public_access_block`, `aws_ebs_encryption_by_default`, anything `*_default_*`) — and
-the warning against relief: omission clearing is a fact about one provider version, so the read-back
-stays.
+the read-back stays, since omission clearing is a fact about one provider version.
 
-**Writing it corrected the discriminator.** The natural instrument is the provider schema, and it does
-not work: `terraform providers schema -json` marks `computed` on **attributes and never on
-`block_types`**, checked here against the pinned provider — so for a block it reports `nesting_mode`
-and `max_items` and nothing about who decides the value. The instrument is the plan:
-`terraform show -json … | jq '… .change.after_unknown'`, and it is meaningful only on a create-or-update
-plan (a `no-op` returns `{}`, everything being known from state — also verified here, against the
-post-merge plan above). **This is the second time in this stage that the obvious place to look did not
-hold the answer**, and both times the plan JSON did.
+Writing it corrected the discriminator. The provider schema does not work as the instrument:
+`terraform providers schema -json` marks `computed` on attributes and never on `block_types`, checked
+here against the pinned provider, so for a block it reports `nesting_mode` and `max_items` and nothing
+about who decides the value. The instrument is the plan: `terraform show -json … | jq '…
+.change.after_unknown'`, meaningful only on a create-or-update plan (a `no-op` returns `{}`, everything
+being known from state — verified here against the post-merge plan above).
 
-### The runbook gained the recipe this stage invented
+### The runbook gained Recipe D
 
 [`terraform-changes.md`](../plan/runbooks/terraform-changes.md), four changes:
 
-- **A new Recipe D — the staged apply**, `-target` as a *measurement* rather than a shortcut: the two
+- A new Recipe D — the staged apply, `-target` as a measurement rather than a shortcut: the two
   preconditions, the `after_unknown` check, and five steps of which step 1 is "write down what reading
-  would make you stop" and step 4 is acting on it. It states what the recipe is **not** — never a way
-  around a dependency the graph should express, since `depends_on` already orders the halves; what it
-  buys is **a pause the graph cannot give you**.
-- **§8's prohibition reworded rather than contradicted.** It read "never `-target`", which this stage
-  deliberately did; it now forbids `-target` *as a convenience* and names Recipe D as its only
-  sanctioned use, so the two pages stop disagreeing.
-- **Recipe B gained the step that plants the landmine**: how to plan a caller against a module version
-  whose tag does not exist yet (point `source` at the local path), and that the revert is **two halves**
-  — revert *and* re-init, because only the second touches `.terraform/modules`. The blocked-commit table
-  gained the matching row, distinct from the one already there: same message, different cause.
-- **The `checkov` row strengthened** from "fix it or suppress it" to what pass 1 actually cost: an
-  accepted finding can pull in whole resources the stage text never had, each with its own requirements
-  — `CKV_AWS_195` cost a security configuration, a key-policy statement **and** a
-  `glue:GetSecurityConfiguration` that surfaced only at apply. **An accepted gate finding re-enters the
-  recipe.**
+  would make you stop" and step 4 is acting on it. It is never a way around a dependency the graph
+  should express (`depends_on` already orders the halves); what it buys is a pause the graph cannot
+  give.
+- §8's prohibition reworded: it read "never `-target`", which this stage did; it now forbids `-target`
+  as a convenience and names Recipe D as its only sanctioned use.
+- Recipe B gained how to plan a caller against a module version whose tag does not exist yet (point
+  `source` at the local path), and that the revert is two halves — revert and re-init, because only the
+  second touches `.terraform/modules`. The blocked-commit table gained the matching row, distinct from
+  the one already there: same message, different cause.
+- The `checkov` row strengthened from "fix it or suppress it" to what pass 1 cost: an accepted finding
+  can pull in whole resources the stage text never had, each with its own requirements — `CKV_AWS_195`
+  cost a security configuration, a key-policy statement and a `glue:GetSecurityConfiguration` that
+  surfaced only at apply.
 
 Section numbers 5-7 shifted to 6-8 by the insertion; internal references updated. Per `CLAUDE.md` the
 `§` numbers are historical anchors, so the stable references are the recipe letters.
 
-### Two findings deliberately NOT promoted, and the criterion
+### Two findings not promoted to lessons
 
-The lessons file admits only what would otherwise be relearned the hard way, so applying it means saying
-no twice here:
-
-- **`glue:GetSecurityConfiguration`** — a role must read the security configuration it runs under. Real,
-  and it cost an apply failure, but the error **names the missing action**; it is self-announcing and
-  costs one retry. It lives in the runbook's checkov row, where somebody about to accept a gate finding
-  will meet it.
-- **A bucket policy validates its `Principal`**, so a statement for a role a later stage will create
-  names the account root and narrows with `ArnLike`. This was **anticipated in authoring, not learned by
-  failing** — it was written that way the first time. Recorded in pass 1's entry; not a lesson.
+- `glue:GetSecurityConfiguration` — a role must read the security configuration it runs under. It cost
+  an apply failure, but the error names the missing action and costs one retry. It lives in the
+  runbook's checkov row.
+- A bucket policy validates its `Principal`, so a statement for a role a later stage will create names
+  the account root and narrows with `ArnLike`. Anticipated in authoring, not learned by failing;
+  recorded in pass 1's entry.
 
 ### Not done
 
-- **The stage itself did not advance.** Passes 2, 3, 4 and 6 are untouched, 4.3's SCP amendment is still
-  owed via battery phase 4b, and **the crawlers still have never run** — nothing behavioural is proven
-  that was not proven before this entry.
+- The stage itself did not advance. Passes 2, 3, 4 and 6 are untouched, 4.3's SCP amendment is still
+  owed via battery phase 4b, and the crawlers still have never run.
 - Stage 4's two residuals are unchanged and are not this stage's: the host left `running`, and the
   close-out log entry, which is the user's.
 
-## 2026-08-19 — Pass 2 authored: the governance manager's own grants, `9 to add` — and the reading that found a persona holding nothing
+## 2026-08-19 — Pass 2 authored: the governance manager's own grants, `9 to add`
 
 *Provenance: **this entry is Claude's**, written on the user's request. **NOTHING IS APPLIED.** The AWS
 calls are all reads — `iam list-roles`, `terraform plan`, `providers schema` — as the **infrastructure
@@ -497,91 +476,84 @@ states; the SSO role suffix is truncated wherever it appears.*
 
 ### What was authored
 
-`governance.tf` — the first grants this project makes to a **human persona**, and the delivery of
-decision 5's second half ("the governance manager is never an admin … and receives specific grants
-instead"). `plan`: **9 to add, 0 to change, 0 to destroy** — nothing of pass 1 is touched.
+`governance.tf` — the first grants this project makes to a human persona, delivering decision 5's
+second half ("the governance manager is never an admin … and receives specific grants instead").
+`plan`: 9 to add, 0 to change, 0 to destroy — nothing of pass 1 is touched.
 
 | Grant | Permission | Why |
 |---|---|---|
-| the three LF-Tag keys | `ASSOCIATE` | assigning tags to datasets — the job `GOVERNANCE.md` gives the persona. Values read **from the tag resources**, so an ontology value cannot go missing here (Lesson 14) |
-| the three databases | `DESCRIBE` | without it the persona sees an **empty catalog** |
+| the three LF-Tag keys | `ASSOCIATE` | assigning tags to datasets — the job `GOVERNANCE.md` gives the persona. Values read from the tag resources, so an ontology value cannot go missing here (Lesson 14) |
+| the three databases | `DESCRIBE` | without it the persona sees an empty catalog |
 | their tables, `wildcard` | `DESCRIBE` | covers the tables the crawlers have not inferred yet |
 
-**No `SELECT` and no grant option anywhere in the file.** The set implements the permission set's own
-one-line description, written back in Stage 2 and unread since: *"The catalog, never the rows."* The
-principal is resolved **by pattern** like the admin before it, and the role was confirmed to exist first
+No `SELECT` and no grant option anywhere in the file. The set implements the permission set's own
+one-line description from Stage 2: *"The catalog, never the rows."* The principal is resolved by
+pattern like the admin before it, and the role was confirmed to exist first
 (`AWSReservedSSO_GovernanceManagerAccess_…` is provisioned in this account by `identity/sso/`'s
 `governance-manager@data-governance` assignment — the only account that assignment names).
 
-### 6.2's reading, and it comes back in the strongest form the question has
+### 6.2's reading
 
 The step asks whether any of the six persona sets carries an S3 grant reaching this account's buckets.
-**Every single `s3:` mention across the four policy files is inside a `Deny`** — there is no `s3:Get*`
-**Allow** anywhere in the six sets, not scoped, not wildcarded, not on another account's buckets. The
-four are `DenyTerraformStateAccess` (`s3:*` on `awsds-*-tfstate` — the wildcard read in the closing
-direction), `DenyMakingStorageOrImagesPublic`, the scientists' `DenyEveryWrite`, and the approvers'
+Every `s3:` mention across the four policy files is inside a `Deny`; there is no `s3:Get*` Allow
+anywhere in the six sets, not scoped, not wildcarded, not on another account's buckets. The four are
+`DenyTerraformStateAccess` (`s3:*` on `awsds-*-tfstate` — the wildcard read in the closing direction),
+`DenyMakingStorageOrImagesPublic`, the scientists' `DenyEveryWrite`, and the approvers'
 `DenyReadingTheRows` (`s3:Get*` whole).
 
-*Analysis:* **D13's premise therefore holds by absence rather than by exclusion.** 6.1's "no S3
-permission of any kind on Data Governance buckets" needed no carve-out written anywhere, because there
-was never a grant to carve out of — which is what D22's account split bought and what the old
-same-account layout would have made a per-prefix exclusion problem. The drop-box `PutObject` exception
-6.1 names is granted by **bucket policy** to the Interactive-OU roles, so its absence from the permission
-sets is correct rather than missing.
+*Analysis:* D13's premise therefore holds by absence rather than by exclusion. 6.1's "no S3 permission
+of any kind on Data Governance buckets" needed no carve-out, because there was never a grant to carve
+out of — what D22's account split bought. The drop-box `PutObject` exception 6.1 names is granted by
+bucket policy to the Interactive-OU roles, so its absence from the permission sets is correct.
 
-### The finding, and it is a persona that held nothing while a file said otherwise
+### The finding: a persona that held nothing while a file said otherwise
 
-Writing the grants surfaced what the reading above cannot show on its own: **the IAM half already existed
-and grants the persona nothing.** `policies-approvers.tf` carries `AdministerLakeFormation` —
-`AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag` — which reads like the whole answer. Lake
-Formation authorizes **separately**: the IAM action permits the API *call*, an LF permission (`ASSOCIATE`)
-decides whether it *succeeds*. The two halves sit in different accounts, different slices and different
-stages, and the unit anyone opens is a slice.
+Writing the grants surfaced what the reading above cannot show: the IAM half already existed and grants
+the persona nothing. `policies-approvers.tf` carries `AdministerLakeFormation` — `AddLFTagsToResource`,
+`GrantPermissions`, `CreateLFTag` — which reads like the whole answer. Lake Formation authorizes
+separately: the IAM action permits the API call, an LF permission (`ASSOCIATE`) decides whether it
+succeeds. The two halves sit in different accounts, different slices and different stages, and the unit
+anyone opens is a slice.
 
-What makes it expensive is the failure shape: before this pass the persona could not tag a single
-dataset, and with Lake Formation enforcing, a missing grant makes `glue:GetDatabases` return an **empty
-list** rather than an error — so the wrong conclusion is drawn from a file that is accurate, and the
-symptom is an absence. The reverse direction has no symptom at all: revoke the LF grant and the IAM
-policy still describes the capability.
+The failure shape: before this pass the persona could not tag a single dataset, and with Lake Formation
+enforcing, a missing grant makes `glue:GetDatabases` return an empty list rather than an error, so the
+wrong conclusion is drawn from a file that is accurate. The reverse direction has no symptom at all:
+revoke the LF grant and the IAM policy still describes the capability.
 
-**Promoted to [Lesson 28](../plan/lessons.md)**, with the mitigation shipped beside it rather than left
-to memory: a comment at **each** end pointing at the other — in `policies-approvers.tf` beside the
-statement, and in the slice README's §"A permission here is the intersection of two systems".
+Promoted to [Lesson 28](../plan/lessons.md), with the mitigation shipped beside it: a comment at each
+end pointing at the other — in `policies-approvers.tf` beside the statement, and in the slice README's
+§"A permission here is the intersection of two systems".
 
 ### Verification (viii) answered as a map, per decision 6
 
-The grain question stops being an objective and becomes the written map decision 6 asked for, now in
-`docs/GOVERNANCE.md` §"The grain": **LF row/column filters** attach to a *role*, so per-user is not
-theirs to give; **TIP** is the only surface that makes Lake Formation see a person, reaches the SQL path
-and not JupyterLab, and costs remote access — reachable, **not adopted**; **`${aws:userid}` prefixes**
-are genuinely per-user but govern *copies*. Read together they are why the grain is the role.
-*Expressed* is answered; *observed* is not claimed — nothing was run.
+The map is in `docs/GOVERNANCE.md` §"The grain": LF row/column filters attach to a role, so per-user is
+not theirs to give; TIP is the only surface that makes Lake Formation see a person, reaches the SQL path
+and not JupyterLab, and costs remote access — reachable, not adopted; `${aws:userid}` prefixes are
+per-user but govern copies. Together they are why the grain is the role. *Expressed* is answered;
+*observed* is not claimed — nothing was run.
 
-### What was NOT established, and is deliberately unasserted
+### What was not established
 
-**What a non-administrator must hold in order to *grant* data permissions through an LF-Tag expression.**
+What a non-administrator must hold in order to grant data permissions through an LF-Tag expression.
 `ASSOCIATE`'s own semantics were confirmed (it permits assigning the tag to a catalog resource and
 implicitly grants `DESCRIBE`), but the complementary question was not: the Lake Formation pages are
-JavaScript-rendered and **returned no body to an automated fetch** — the first attempt answered from the
-model's own memory while admitting it had seen no content, and was discarded. What is recorded came from
-AWS's indexed text via search, and `docs/REFERENCES.md` carries that provenance explicitly so the row
-cannot be leaned on further than it earns.
+JavaScript-rendered and returned no body to an automated fetch — the first attempt answered from the
+model's own memory while admitting it had seen no content, and was discarded. What is recorded came
+from AWS's indexed text via search, and `docs/REFERENCES.md` carries that provenance explicitly.
 
-It is **Stage 6's to settle by measurement**, with a real governance-manager session, when the persona
-first has to grant rather than tag — decision 5's named revision trigger arriving on schedule. *Analysis,
-worth stating before it is met:* if granting does require holding the permission with the grant option,
-then the separation D31 asks for cannot live in Lake Formation and lives in the **IAM** deny
-(`DenyReadingTheRows`) instead — the approver would hold `SELECT` in the permission layer and still have
-no path to a row.
+It is Stage 6's to settle by measurement, with a real governance-manager session, when the persona
+first has to grant rather than tag — decision 5's named revision trigger. *Analysis:* if granting does
+require holding the permission with the grant option, then the separation D31 asks for cannot live in
+Lake Formation and lives in the IAM deny (`DenyReadingTheRows`) instead — the approver would hold
+`SELECT` in the permission layer and still have no path to a row.
 
 ### Repository, in the same sitting
 
-- **The slice README rewritten into an index of controls**, in `POLICIES.md`'s discipline and at the
+- The slice README rewritten into an index of controls, in `POLICIES.md`'s discipline and at the
   user's direction: one row per `Sid`, per tag assignment, per grant — the LF settings and ontology, the
-  four key-policy statements, the perimeter's two `Sid`s with their three branches and two carve-outs, the
-  drop-box's four, both service roles, and pass 2's grants. It says what the **code** declares;
-  `docs/AWS_STATE.md` keeps what is **deployed**, and the file names that split so a second staler answer
-  cannot grow.
+  four key-policy statements, the perimeter's two `Sid`s with their three branches and two carve-outs,
+  the drop-box's four, both service roles, and pass 2's grants. It says what the code declares;
+  `docs/AWS_STATE.md` keeps what is deployed.
 - `docs/REFERENCES.md`: the LF-Tag permissions row, with the provenance caveat above.
 - The stage file: 6.2 answered inline, verification (viii) answered, the pass table annotated.
 - `GOVERNANCE.md`: §"The grain" gained the map; §Grants' "empty until pass 2" line corrected — pass 1's
@@ -590,15 +562,15 @@ no path to a row.
 
 ### Not done
 
-- **Nothing is applied**, and the grant register in `docs/AWS_STATE.md` is therefore **unchanged** — its
-  rows are written in the same sitting as the grant, not in the sitting that authors it.
-- **No behavioural proof.** Whether the persona can in fact tag a dataset is a claim about the pair, and
+- Nothing is applied, and the grant register in `docs/AWS_STATE.md` is therefore unchanged — its rows
+  are written in the same sitting as the grant, not in the sitting that authors it.
+- No behavioural proof. Whether the persona can in fact tag a dataset is a claim about the pair, and
   measuring it needs a governance-manager session — which carries `DenyControlPlaneOffVpn`, so it needs
-  the tunnel up. It joins the stage's other owed proofs rather than forming a new class.
-- Pass 3, 4 and 6 untouched; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers still
-  have never run**.
+  the tunnel up.
+- Pass 3, 4 and 6 untouched; 4.3's SCP amendment still owed via battery phase 4b; the crawlers still
+  have never run.
 
-## 2026-08-19 — Pass 2 APPLIED: the persona now holds something, and the register says what
+## 2026-08-19 — Pass 2 applied: the governance manager's grants
 
 *Provenance: **Claude's**, on the user's explicit authorisation to proceed. **The commit is the
 user's** — `6440c6a "stage 5 review"`, made on `main` before this apply, so there was nothing for Claude
@@ -614,19 +586,18 @@ read and then applied from the saved file (Recipe A steps 5-6). Redactions as th
 | re-plan | **`No changes`**, `-detailed-exitcode 0` |
 | `./aws/datalake.py` | **`0 check(s) FAILED`** |
 
-A second `apply` of the same file was refused — *"Saved plan is stale"* — which is the runbook's own
-guard working rather than a problem: the first apply had moved the state serial, so the plan could not
-be replayed.
+A second `apply` of the same file was refused — *"Saved plan is stale"* — the runbook's own guard: the
+first apply had moved the state serial, so the plan could not be replayed.
 
-**`DL-5` re-read after this apply and the bracket holds**: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
-That is not ceremony — this pass applied into the *same slice* that owns
-`aws_lakeformation_data_lake_settings`, and INT-11's failure mode is precisely a parameter reset that
-nothing reports. `DL-6` still reads no `IAMAllowedPrincipals` default.
+`DL-5` re-read after this apply and the bracket holds: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`.
+This pass applied into the same slice that owns `aws_lakeformation_data_lake_settings`, and INT-11's
+failure mode is a parameter reset that nothing reports. `DL-6` still reads no `IAMAllowedPrincipals`
+default.
 
-### The claim verified against the API, not against the code
+### The claim verified against the API
 
-`list-permissions`, filtered on the governance-manager principal, returns **exactly nine rows and
-nothing else**:
+`list-permissions`, filtered on the governance-manager principal, returns exactly nine rows and nothing
+else:
 
 ```
 DESCRIBE  | grant_option=NONE | Database  curated / raw / dropbox
@@ -634,79 +605,77 @@ DESCRIBE  | grant_option=NONE | Table     ALL_TABLES (TableWildcard) in each of 
 ASSOCIATE | grant_option=NONE | LFTag     classification(4) / layer(3) / security-zone(1)
 ```
 
-Two things are established by that listing rather than asserted from the source: **`grant_option` is
-`NONE` on every one of the nine**, and the persona holds **no `SELECT` anywhere** — established by
-exhaustion, since the filter returns the principal's complete set. The permission set's own one-line
-description from Stage 2 — *"The catalog, never the rows"* — is now true of the Lake Formation half as
-well as the IAM half.
+Two things the listing establishes: `grant_option` is `NONE` on every one of the nine, and the persona
+holds no `SELECT` anywhere — by exhaustion, since the filter returns the principal's complete set. The
+permission set's description from Stage 2 — *"The catalog, never the rows"* — is now true of the Lake
+Formation half as well as the IAM half.
 
 ### Records, in the same sitting
 
-The **grant register** in `docs/AWS_STATE.md` gained three rows covering **nine triples** (three
-resources each), with the no-`SELECT`/no-grant-option finding stated as *verified against the API*. The
+The grant register in `docs/AWS_STATE.md` gained three rows covering nine triples (three resources
+each), with the no-`SELECT`/no-grant-option finding stated as *verified against the API*. The
 register's note was corrected while there: it said the first consumer grants arrive at pass 2, and they
-arrive at **pass 3**, with the shares they ride on.
+arrive at pass 3, with the shares they ride on.
 
-### Not done — and one of these is the point
+### Not done
 
-- **Nothing behavioural is proven, and it cannot be from here.** Whether the persona can in fact tag a
-  dataset is a claim about the *pair* (Lesson 28), and only a governance-manager session answers it. The
-  instrument run in this same sitting shows why the gap is structural rather than an oversight:
-  `awsds-governance-data` is one of the seven profiles reading `FAILED` for want of an SSO token, and the
-  set carries `DenyControlPlaneOffVpn` — so the proof needs the tunnel up **and** a sign-in as that
-  persona. It joins the stage's owed proofs.
-- **Passes 3, 4 and 6 untouched**; 4.3's SCP amendment still owed via battery phase 4b; **the crawlers
-  still have never run**.
+- Nothing behavioural is proven, and it cannot be from here. Whether the persona can in fact tag a
+  dataset is a claim about the pair (Lesson 28), and only a governance-manager session answers it. The
+  instrument run in this sitting shows the gap: `awsds-governance-data` is one of the seven profiles
+  reading `FAILED` for want of an SSO token, and the set carries `DenyControlPlaneOffVpn`, so the proof
+  needs the tunnel up and a sign-in as that persona.
+- Passes 3, 4 and 6 untouched; 4.3's SCP amendment still owed via battery phase 4b; the crawlers still
+  have never run.
 
-## 2026-08-19 — Pass 3 APPLIED: the lake is shared, and two things about the decided form were wrong
+## 2026-08-19 — Pass 3 applied: the lake is shared, with two corrections to the decided form
 
 *Provenance: **Claude's**, on the user's explicit authorisation to apply and to revise the project's
 artifacts against this session's findings. Applied as the **infrastructure user**, account **Data
 Governance**, permission set **`InfrastructureAccess`** (`awsds-infra-data`), from a plan read and then
 applied from the saved file (Recipe A steps 5-6). Redactions as this file's header states.*
 
-### The sitting opened by closing the previous one
+### The previous sitting closed
 
-**PR #19 — pass 2's records — is the user's merge**, and the local repository was synchronised onto it:
-`main` fast-forwarded `6440c6a` → `7814c75`, the merged branch deleted. Unlike PR #18 (entry eight)
-this one carried **no `.tf` file**, only records, so no post-merge re-plan was owed and none was run —
-the deployed state and `main` had not been able to diverge.
+PR #19 — pass 2's records — is the user's merge, and the local repository was synchronised onto it:
+`main` fast-forwarded `6440c6a` → `7814c75`, the merged branch deleted. Unlike PR #18 this one carried
+no `.tf` file, only records, so no post-merge re-plan was owed and none was run.
 
-### The method changed first, and that is why the rest of the entry exists
+### The method changed first
 
 The previous entry recorded that AWS's Lake Formation pages "did not return a body to an automated
-fetch" and deferred a question because of it. **They read normally through a browser that renders
-JavaScript.** The limit was the fetcher's, not the pages'. Everything below comes from reading the
-rendered pages, and two things fell out immediately:
+fetch" and deferred a question because of it. They read normally through a browser that renders
+JavaScript; the limit was the fetcher's. Everything below comes from reading the rendered pages, and
+two things followed:
 
-- **the question pass 2 deliberately left unasserted is answered**, and in the design's favour: *"You
-  need to have `Grant with LF-Tag expressions` permission to grant data permissions… The data lake
-  administrator and the LF-Tag creator implicitly receive this permission."* The governance manager,
-  holding `ASSOCIATE` and `DESCRIBE` and no admin seat, **tags and does not grant** — decision 5's
-  intent, now established. **One ambiguity survives and stays Stage 6's:** the same sentence extends the
-  implicit permission to the *LF-Tag creator*, and the persona's IAM half carries `CreateLFTag`;
-- **the 7.1 prerequisite is conditional.** The considerations page states flatly that cross-account
-  LF-TBAC "requires additions to the Data Catalog resource policy"; the Prerequisites page scopes it to
-  an account **already** sharing through a Glue resource policy. Measured here: `glue:GetResourcePolicy`
-  → `EntityNotFoundException`. No policy written, nothing set to `EnableHybrid`.
+- the question pass 2 left unasserted is answered, in the design's favour: *"You need to have `Grant
+  with LF-Tag expressions` permission to grant data permissions… The data lake administrator and the
+  LF-Tag creator implicitly receive this permission."* The governance manager, holding `ASSOCIATE` and
+  `DESCRIBE` and no admin seat, tags and does not grant — decision 5's intent. One ambiguity survives
+  and stays Stage 6's: the same sentence extends the implicit permission to the LF-Tag creator, and the
+  persona's IAM half carries `CreateLFTag`;
+- the 7.1 prerequisite is conditional. The considerations page states flatly that cross-account LF-TBAC
+  "requires additions to the Data Catalog resource policy"; the Prerequisites page scopes it to an
+  account already sharing through a Glue resource policy. Measured here: `glue:GetResourcePolicy` →
+  `EntityNotFoundException`. No policy written, nothing set to `EnableHybrid`.
 
-This became **Lesson 30** — a tool's failure recorded as a property of the world.
+This became Lesson 30.
 
 ### The two corrections to the decided form, both found before applying
 
 | What `GOVERNANCE.md` said | What it had to become | Why |
 |---|---|---|
-| the grant option is "used only on the cross-account share to Production" | **every** cross-account grant carries it | the share lands on the *account*; its own data lake administrator must pass it on, and can only pass on what it received with the option. AWS states it as an imperative. Omitting it fails **mutely and late** — the apply succeeds, RAM shows the share, and every later grant to a person fails in another account |
-| the default expression is `classification ∈ {public, internal}` alone, "both layers" | a `layer` gate on **both** grants | applied against the catalog *as tagged*, the classification-only form matched the **drop-box** database, which carries `classification=internal` for decision 1's fail-open reason. The letterbox whose contract is *write, never read back* would have been shared read-only to both consumers |
+| the grant option is "used only on the cross-account share to Production" | every cross-account grant carries it | the share lands on the account; its own data lake administrator must pass it on, and can only pass on what it received with the option. AWS states it as an imperative. Omitting it fails mutely and late — the apply succeeds, RAM shows the share, and every later grant to a person fails in another account |
+| the default expression is `classification ∈ {public, internal}` alone, "both layers" | a `layer` gate on both grants | applied against the catalog as tagged, the classification-only form matched the drop-box database, which carries `classification=internal` for decision 1's fail-open reason. The letterbox whose contract is *write, never read back* would have been shared read-only to both consumers |
 
 No row would have travelled from that near-miss — the drop-box bucket is unregistered, so a query falls
-back to plain IAM and no consumer holds `s3:Get` on it — but the **metadata** would have, and a second
-control catching a first one's miss is not a reason to leave the first wrong. It became **Lesson 29**.
+back to plain IAM and no consumer holds `s3:Get` on it — but the metadata would have. It became
+Lesson 29.
 
-The applied form is deliberately two different expressions: `DESCRIBE` on databases matching
-`layer ∈ {raw, curated}`, and `SELECT`+`DESCRIBE` on tables matching that **AND**
-`classification ∈ {public, internal}`. The database grant may not carry the classification gate, because
-`curated`'s database has none by design and a database that does not match cannot be resource-linked.
+The applied form is two different expressions: `DESCRIBE` on databases matching
+`layer ∈ {raw, curated}`, and `SELECT`+`DESCRIBE` on tables matching that and
+`classification ∈ {public, internal}`. The database grant may not carry the classification gate,
+because `curated`'s database has none by design and a database that does not match cannot be
+resource-linked.
 
 ### The apply
 
@@ -718,63 +687,62 @@ The applied form is deliberately two different expressions: `DESCRIBE` on databa
 | `list-permissions` | four rows, both accounts, **grant option on every one**, the `AND` present on the table rows — verified against the API, not the code |
 | `./aws/datalake.py` | **`0 check(s) FAILED`** |
 
-### The three readings of 7.3, and the third one changed the instrument
+### The three readings of 7.3
 
-- **the parameters bracket holds**: `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` after the shares exist
-  — the third of the three readings verification (i) asks for, so **(i) is answered**;
-- **the shares travelled**: four `LakeFormation-V4-*` shares owned here, all `ACTIVE`, each consumer's
-  own RAM holding its two, **zero invitations anywhere**. INT-11's fallback tax is not being paid, and
-  the row is closed. This is also the falsifier for the conditional reading above **not** firing;
-- **the consumer catalogs are empty, and that is correct.** `glue:GetDatabases` and `list-lf-tags` return
-  nothing in either account because **neither has a data lake administrator** (`DataLakeAdmins: []`), and
+- the parameters bracket holds: `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` after the shares exist —
+  the third of the three readings verification (i) asks for, so (i) is answered;
+- the shares travelled: four `LakeFormation-V4-*` shares owned here, all `ACTIVE`, each consumer's own
+  RAM holding its two, zero invitations anywhere. INT-11's fallback tax is not being paid, and the row
+  is closed. This is also the falsifier for the conditional reading above not firing;
+- the consumer catalogs are empty, and that is correct. `glue:GetDatabases` and `list-lf-tags` return
+  nothing in either account because neither has a data lake administrator (`DataLakeAdmins: []`), and
   AWS requires one before a shared resource is visible there at all.
 
-**1d step 11.4's two owed items resolved without adding anything**, which is worth saying because both
-were on this step's list: the grantor needs `AWSLakeFormationCrossAccountManager`, and it is
-`InfrastructureAccess` — i.e. `AdministratorAccess` — so the managed policy is a strict subset of what
-the principal already holds and attaching it would be decoration; and `ram:AcceptResourceShareInvitation`
-on the consumer roles was the *only-if-the-org-path-fails* half, and there was no invitation to accept.
+1d step 11.4's two owed items resolved without adding anything: the grantor needs
+`AWSLakeFormationCrossAccountManager`, and it is `InfrastructureAccess` — i.e. `AdministratorAccess` —
+so the managed policy is a strict subset of what the principal already holds; and
+`ram:AcceptResourceShareInvitation` on the consumer roles was the only-if-the-org-path-fails half, and
+there was no invitation to accept.
 
-That last reading exposed a defect in this stage's own instrument: **`DL-7` reported one verdict for two
-opposite causes** — "step 8 has not run" and "the share never arrived" — which is Lesson 13's family.
-The discriminator is now measured: `./aws/datalake.py` reads each consumer's **held** shares and its
-**data lake admin count**, and `DL-7` reports the branches separately. It currently reads a *note*: the
-share travelled, no link yet, admins `[dev:0, sandbox-1:0]` — the expected state between passes 3 and 4.
+That last reading exposed a defect in this stage's own instrument: `DL-7` reported one verdict for two
+opposite causes — "step 8 has not run" and "the share never arrived" (Lesson 13). The discriminator is
+now measured: `./aws/datalake.py` reads each consumer's held shares and its data lake admin count, and
+`DL-7` reports the branches separately. It currently reads a note: the share travelled, no link yet,
+admins `[dev:0, sandbox-1:0]` — the expected state between passes 3 and 4.
 
-### What that means for pass 4, written down before it is forgotten
+### What this means for pass 4
 
-Step 8 now opens with a prerequisite it did not have: **each consumer account needs its own
-`DataLakeSettings`**, carrying both hazards the producer side already met — `Parameters` replaced
-wholesale (INT-11), and `Create*DefaultPermissions` cleared **before** the first local database, which
+Step 8 now opens with a prerequisite it did not have: each consumer account needs its own
+`DataLakeSettings`, carrying both hazards the producer side already met — `Parameters` replaced
+wholesale (INT-11), and `Create*DefaultPermissions` cleared before the first local database, which
 there is the first resource link (Lesson 27, Recipe D).
 
 ### Records
 
-**Code:** `shares.tf` (new — the four grants and the reasoning beside them) and `locals.tf`
+Code: `shares.tf` (new — the four grants and the reasoning beside them) and `locals.tf`
 (`consumer_accounts`, resolved from the aliased providers so no account id enters a tracked file);
 `aws/datalake.py` (the consumer-side receipt read, and `DL-7` split into its two branches).
 
-**Records:** `GOVERNANCE.md` (§Grants' default expressions and the grant-option rule, §`classification`,
+Records: `GOVERNANCE.md` (§Grants' default expressions and the grant-option rule, §`classification`,
 §`layer`'s wrong sentence, §Drop-box's new three-control table), the stage file (7.1, 7.2, 7.3, step 8,
 verifications i / ii / v, and 6.1's decided form marked superseded), `AWS_STATE.md` (the register at
-**nine rows / 17 triples**, §C's Lake Formation row), `integrations.md` (INT-03 applied, INT-11 closed),
+nine rows / 17 triples, §C's Lake Formation row), `integrations.md` (INT-03 applied, INT-11 closed),
 `REFERENCES.md` (the rendered pages and the superseded provenance note), the slice `README.md` (a
-`shares.tf` section), `lessons.md` (**29** and **30**), `open-questions.md` (**item 18** — the LF-Tag
-creator ambiguity, with its settling mechanism), `CLAUDE.md` and this file's `INDEX.md`.
+`shares.tf` section), `lessons.md` (29 and 30), `open-questions.md` (item 18 — the LF-Tag creator
+ambiguity, with its settling mechanism), `CLAUDE.md` and this file's `INDEX.md`.
 
-**Not committed by Claude.** The working tree also carries the user's own uncommitted edits to
+Not committed by Claude. The working tree also carries the user's own uncommitted edits to
 [Stage 6's file](../plan/stages/stage-06a-unified-studio.md) — the two 2026-08-19 decisions about the
 permissions boundary and about not pulling the Athena Spark amendment into Stage 5's phase-4b sitting —
-so **the commit is the user's**, and this line is what a later reader needs to know that the mixture was
-deliberate rather than accidental.
+so the commit is the user's, and the mixture was deliberate.
 
 ### Not done
 
-- **`sts:SetContext` is half-tested.** The metadata path travelled with the RCP in place; version 4 vends
-  *data* credentials through that action and nothing has read a row yet, so verification (ii) closes at
+- `sts:SetContext` is half-tested. The metadata path travelled with the RCP in place; version 4 vends
+  data credentials through that action and nothing has read a row yet, so verification (ii) closes at
   pass 4's first query.
-- **Pass 2's behavioural half is still owed** (can the persona actually tag — needs the tunnel and a
-  governance-manager sign-in), **the crawlers have still never run**, and 4.3's SCP amendment is still
+- Pass 2's behavioural half is still owed (can the persona actually tag — needs the tunnel and a
+  governance-manager sign-in), the crawlers have still never run, and 4.3's SCP amendment is still
   owed via battery phase 4b.
 
 ## 2026-08-19 — Passes 0-3 propagated: what the findings cost the stages that had not run yet
@@ -787,41 +755,39 @@ findings travelled, because there is no other file that records what a finding d
 
 ### Why a sitting with no apply has an entry
 
-Passes 1-3 produced four findings, and each was written down where it was found. **That is not the same
-as the plan having absorbed them.** A finding recorded only in the stage that produced it is a finding
-the next stage meets again at the keyboard — which is the shape this project keeps calling Lesson 14.
-The sitting went looking for where each one lands, and two of the landings were defects rather than
-additions.
+Passes 1-3 produced four findings, each written down where it was found. A finding recorded only in
+the stage that produced it is one the next stage meets again at the keyboard (Lesson 14). The sitting
+went looking for where each one lands, and two of the landings were defects.
 
 ### The two defects, both in stages that have not started
 
 | Where | What was wrong | What it would have cost |
 |---|---|---|
-| **[Stage 9](../plan/stages/stage-09-deployment-targets.md) step 2.2** | it instructed a post-grant reading of "the shared databases visible" from Production — but Production gets its first data lake administrator at **1.3**, which is a *later pass* | the reading would have come back empty and been diagnosed as INT-11 failing. The same empty catalog both Stage 5 consumers show today, met without the discriminator that explains it. 2.2 now reads the **RAM** side; the catalog confirmation moved to 2.3 |
-| **This stage's own pass table** | three owed acts had **no owning pass** — the crawler pair of 3.3 (verification (iii)), the drop-box asymmetry halves, and 4.3's `athena:StartQueryExecution` amendment | an act with no pass is an act that does not happen. Pass 4's row now carries a numbered debt list, with 4.3's amendment **last** — it binds every principal in this account, and nothing in pass 4 that runs *here* may follow it |
+| [Stage 9](../plan/stages/stage-09-deployment-targets.md) step 2.2 | it instructed a post-grant reading of "the shared databases visible" from Production — but Production gets its first data lake administrator at 1.3, a later pass | the reading would have come back empty and been diagnosed as INT-11 failing: the same empty catalog both Stage 5 consumers show today, met without the discriminator that explains it. 2.2 now reads the RAM side; the catalog confirmation moved to 2.3 |
+| This stage's own pass table | three owed acts had no owning pass — the crawler pair of 3.3 (verification (iii)), the drop-box asymmetry halves, and 4.3's `athena:StartQueryExecution` amendment | an act with no pass is an act that does not happen. Pass 4's row now carries a numbered debt list, with 4.3's amendment last — it binds every principal in this account, and nothing in pass 4 that runs here may follow it |
 
 ### The finding that was in the applied state all along, unread
 
-`curated.sample_trades` was created through the Glue API's Iceberg path — deliberately, so no Athena DDL
-would exist in this account and 4.3's amendment could sequence freely. **The table therefore has no
-rows**, and nothing had said what that costs:
+`curated.sample_trades` was created through the Glue API's Iceberg path, so no Athena DDL would exist
+in this account and 4.3's amendment could sequence freely. The table therefore has no rows, and nothing
+had said what that costs:
 
-- **verification (x) survives** — it reads the *column list*, which distinguishes all three states
+- verification (x) survives — it reads the column list, which distinguishes all three states
   (`counterparty` absent, present, or the table not resolving). The stage text said "absent from the
   result and from the column list"; the result half was always going to be empty and said nothing;
-- **[Stage 11](../plan/stages/stage-11-dlp.md)'s row-filter proof does not survive.** A row filter over
-  an empty table returns nothing whether it works or is absent — Lesson 13 exactly. That proof now has a
-  written dependency on **Stage 9's producer path having written real rows**, which is the designed way
-  data enters `curated` at all (D22). The alternative — loading rows by hand through Athena here, before
-  the amendment closes that door — is recorded at 4.1 and **not recommended**: it would use the one write
-  path the design does not have.
+- [Stage 11](../plan/stages/stage-11-dlp.md)'s row-filter proof does not survive. A row filter over an
+  empty table returns nothing whether it works or is absent (Lesson 13). That proof now has a written
+  dependency on Stage 9's producer path having written real rows, the designed way data enters
+  `curated` (D22). The alternative — loading rows by hand through Athena here, before the amendment
+  closes that door — is recorded at 4.1 and not recommended: it would use the one write path the
+  design does not have.
 
-### The instrument gap, which is the most dangerous item on this list
+### The instrument gap
 
-**`DL-6` is scoped to Data Governance alone** (`DATA_PROFILE`) — it was written when one account had a
+`DL-6` is scoped to Data Governance alone (`DATA_PROFILE`) — it was written when one account had a
 `DataLakeSettings`. It is the check that decides whether the create-defaults were cleared, and those
-defaults act at **creation time**, so there is no second reading later. Pass 4 gives Sandbox and
-Development that resource and **nothing would be reading it there**. Recorded at step 8 and in
+defaults act at creation time, so there is no second reading later. Pass 4 gives Sandbox and
+Development that resource and nothing would be reading it there. Recorded at step 8 and in
 [`aws/INDEX.md`](../../aws/INDEX.md), to be extended in the same sitting that writes those settings.
 No code was changed here.
 
@@ -829,25 +795,25 @@ No code was changed here.
 
 | Finding | Propagated to |
 |---|---|
-| the create-defaults are not expressible in a plan and act at creation time (**Lesson 27**) | Stage 9's 1.3 (a two-step callout) and 4.1; Stage 6 (blueprint-created catalog objects); Stage 14 (the vend); Recipe D gained the four accounts it is already scheduled to run in |
-| the grant option is mandatory on **every** cross-account grant | Stage 9's 2.1 — it stopped being that stage's peculiarity; `GLOSSARY.md` gained the *data lake administrator* entry that explains why |
-| a TBAC expression on `classification` alone reaches the drop-box (**Lesson 29**) | Stage 9's 2.1 (with a recommendation: named-resource for the write, which decision 5 reserves for enumerated exceptions); Stage 6's new verification (xvi), for grants **DataZone** writes rather than this repository |
-| a receiving account with no administrator shows an empty catalog while holding the share | Stage 9's 2.2 and its risks; Stage 6 (pass 4 became a **hard predecessor**); Stage 14 item 5, split into *plumbing* (the module's) and *entitlement* (the governance manager's); `GOVERNANCE.md` §Grants |
+| the create-defaults are not expressible in a plan and act at creation time (Lesson 27) | Stage 9's 1.3 (a two-step callout) and 4.1; Stage 6 (blueprint-created catalog objects); Stage 14 (the vend); Recipe D gained the four accounts it is already scheduled to run in |
+| the grant option is mandatory on every cross-account grant | Stage 9's 2.1 — it stopped being that stage's peculiarity; `GLOSSARY.md` gained the *data lake administrator* entry that explains why |
+| a TBAC expression on `classification` alone reaches the drop-box (Lesson 29) | Stage 9's 2.1 (with a recommendation: named-resource for the write, which decision 5 reserves for enumerated exceptions); Stage 6's new verification (xvi), for grants DataZone writes rather than this repository |
+| a receiving account with no administrator shows an empty catalog while holding the share | Stage 9's 2.2 and its risks; Stage 6 (pass 4 became a hard predecessor); Stage 14 item 5, split into *plumbing* (the module's) and *entitlement* (the governance manager's); `GOVERNANCE.md` §Grants |
 
-### One correction made to my own text, after the fact
+### One correction to the Stage 6 callout
 
-The Stage 6 callout was written while the user was editing the same file with decisions 4 and 5. It said
-"the Lakehouse blueprints", plural, which decision 4 then made wrong: **only `LakeHouseDatabase`
-(`DataLake`) is enabled**, and it is precisely the Glue/Athena form whose output is per-project Glue
-databases and Lake Formation permissions. The callout now names it — which made the point stronger, not
-merely accurate: that blueprint does not touch this stage's surface, it writes on it. `LakehouseCatalog`,
-disabled, provisions on Redshift-managed storage and none of this reaches it.
+The Stage 6 callout was written while the user was editing the same file with decisions 4 and 5. It
+said "the Lakehouse blueprints", plural, which decision 4 then made wrong: only `LakeHouseDatabase`
+(`DataLake`) is enabled, and it is the Glue/Athena form whose output is per-project Glue databases and
+Lake Formation permissions. The callout now names it: that blueprint does not touch this stage's
+surface, it writes on it. `LakehouseCatalog`, disabled, provisions on Redshift-managed storage and none
+of this reaches it.
 
 ### Records
 
-**No code.** No `.tf` file, no script, no AWS resource.
+No code. No `.tf` file, no script, no AWS resource.
 
-**Records:** [Stage 5](../plan/stages/stage-05-data-foundation.md) (the pass-4 debt list, 4.1's
+Records: [Stage 5](../plan/stages/stage-05-data-foundation.md) (the pass-4 debt list, 4.1's
 empty-table callout, step 8's instrument note, verifications iii / x, the classification-pair
 deliverable), [Stage 6](../plan/stages/stage-06a-unified-studio.md) (1.4's callout, prerequisites,
 verifications xiv-xvi), [Stage 9](../plan/stages/stage-09-deployment-targets.md) (status, pass ordering,
@@ -861,24 +827,24 @@ so the count moved 9 → 10), [the terraform-changes runbook](../plan/runbooks/t
 slice, absent from a file whose rule is to carry account-folder changes), [`aws/INDEX.md`](../../aws/INDEX.md)
 and `CLAUDE.md`.
 
-**Gates:** `make check` **OK** — 19048 relative links resolve, no broken `D`/`INT` reference, no
-identifier. `make check-docs` stays red on its two pre-existing counts: hard-coded account numbers in
-pre-Stage-2 prose, and `CLAUDE.md` over the 20 KB budget (it was already over before this sitting).
+Gates: `make check` OK — 19048 relative links resolve, no broken `D`/`INT` reference, no identifier.
+`make check-docs` stays red on its two pre-existing counts: hard-coded account numbers in pre-Stage-2
+prose, and `CLAUDE.md` over the 20 KB budget (already over before this sitting).
 
-**Not committed by Claude**, and the tree is mixed on purpose: it also carries the user's own work on
+Not committed by Claude; the tree is mixed on purpose: it also carries the user's own work on
 [`docs/SMUS.md`](../SMUS.md) and on Stage 6's decisions 4 and 5, written during this sitting.
 
 ### Not done
 
-- **Nothing was measured.** Every claim here is a reading of the repository or of a prior entry; the
-  three questions this sitting *raised* — Stage 6's (xiv), (xv), (xvi) — are all settled by a session
-  nobody has run yet.
-- **`DL-6` was not extended**, only the debt written down. It belongs to the sitting that writes the
-  consumer settings, so that the check and the resource arrive together (Lesson 14's good direction).
+- Nothing was measured. Every claim here is a reading of the repository or of a prior entry; the three
+  questions this sitting raised — Stage 6's (xiv), (xv), (xvi) — are all settled by a session nobody
+  has run yet.
+- `DL-6` was not extended, only the debt written down. It belongs to the sitting that writes the
+  consumer settings, so that the check and the resource arrive together (Lesson 14).
 - The debts the previous entry left are unchanged: the crawlers have still never run, the persona-tagging
   proof still needs a governance-manager sign-in with the tunnel up, and 4.3's amendment is still owed.
 
-## 2026-08-19 — Pass 4a/4b APPLIED: the consumer side exists, and the check that was passing was reading the wrong account
+## 2026-08-19 — Pass 4a/4b applied: the consumer side exists, and `DL-6` was reading the wrong account
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting, and unlike
 every entry since pass 3 it **does change AWS**: two `terraform apply` runs per consumer account, on the
@@ -886,14 +852,14 @@ user's explicit authorization given mid-sitting. Every measurement below is a re
 the write it reports on. Redactions per `scripts/check-identifiers.py`: accounts are named, never
 numbered.*
 
-### What the sitting was asked for, and what it turned into
+### What the sitting was asked for
 
-It opened as *prepare the next step*. The preparation itself produced the finding, before a line of
-Terraform was written — which is the whole argument for taking the before-reading first.
+It opened as *prepare the next step*. The preparation produced the finding before a line of Terraform
+was written.
 
-### The before-reading, and the reason it stopped being a formality
+### The before-reading
 
-`get-data-lake-settings` in **both** consumer accounts, taken before authoring:
+`get-data-lake-settings` in both consumer accounts, taken before authoring:
 
 | | Sandbox | Development |
 |---|---|---|
@@ -901,80 +867,77 @@ Terraform was written — which is the whole argument for taking the before-read
 | `Parameters` | `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` | idem |
 | `Create{Database,Table}DefaultPermissions` | `IAM_ALLOWED_PRINCIPALS: ALL` | idem |
 
-**Both hazards are symmetric, and nothing in the plan said so.** INT-11 was written about the producer:
-an apply that names admins and omits `parameters` resets `CROSS_ACCOUNT_VERSION` to 1 and every share
-fails silently afterwards. The consumer accounts turn out to carry the same two values — set by nobody in
-this repository, defended by nobody until this pass — so the same resource in the same stage would have
-reset them one account further from where anyone looks. And Lesson 27's create-defaults are live in both,
-with the first local catalog object being the **resource link** rather than a database somebody notices.
+Both hazards are symmetric, and nothing in the plan said so. INT-11 was written about the producer: an
+apply that names admins and omits `parameters` resets `CROSS_ACCOUNT_VERSION` to 1 and every share
+fails silently afterwards. The consumer accounts carry the same two values — set by nobody in this
+repository, defended by nobody until this pass — so the same resource in the same stage would have
+reset them one account further from where anyone looks. Lesson 27's create-defaults are live in both,
+with the first local catalog object being the resource link rather than a database somebody notices.
 
 ### The instrument gap was worse than "not extended yet"
 
-`DL-6` was reporting **`pass`** while two accounts sat in exactly the state it exists to fail. It was
+`DL-6` was reporting `pass` while two accounts sat in exactly the state it exists to fail. It was
 scoped to `DATA_PROFILE` because Data Governance was the only account with a `DataLakeSettings` when it
-was written; pass 3 wrote the debt down precisely so it would be paid in the sitting that writes the
-consumer settings, and this is that sitting. Extended both checks per account. **In a consumer, `DL-6`
-deliberately carries no *databases exist* guard** — the producer-side version has one — because the
-defaults act at creation time and the reading is only actionable *before* the first link, which is
-exactly when a guard would silence it.
+was written; pass 3 wrote the debt down to be paid in the sitting that writes the consumer settings.
+Extended both checks per account. In a consumer, `DL-6` carries no *databases exist* guard — the
+producer-side version has one — because the defaults act at creation time and the reading is only
+actionable before the first link, which is exactly when a guard would silence it.
 
-`DL-5` was extended the same way, for the symmetry above. The report's admin table now carries
-`Parameters` and both default blocks per consumer, so the discriminator is visible and not only checked.
+`DL-5` was extended the same way. The report's admin table now carries `Parameters` and both default
+blocks per consumer, so the discriminator is visible and not only checked.
 
 ### What was built
 
-`terraform-modules/consumer-data/` (**v0.1.0**, new) and two thin slices calling it —
+`terraform-modules/consumer-data/` (v0.1.0, new) and two thin slices calling it —
 `terraform-live/sandbox/data/` and `terraform-live/development/data/`, both `[P]`, registered at rank
-`data`. `s3-bucket` went to **v0.3.0** for one reason: it could expire only *noncurrent* versions, which
+`data`. `s3-bucket` went to v0.3.0 for one reason: it could expire only noncurrent versions, which
 reaches nothing that was never overwritten, and `DL-9` fails a `*-derived` bucket with no `Expiration`
-rule. Recipe B ran as a **chain of three commits** — `s3-bucket` tagged and pushed before
-`consumer-data` could even `init`, then `consumer-data` tagged and pushed before the slices could.
+rule. Recipe B ran as a chain of three commits — `s3-bucket` tagged and pushed before `consumer-data`
+could `init`, then `consumer-data` tagged and pushed before the slices could.
 
-**The module nests another module by tag, which this repository had not done before.** It resolves
-exactly as the flat case does; the note is in the module rather than in a lesson, because the only new
-fact is that the tag order has one more link in it.
+The module nests another module by tag, a first in this repository. It resolves exactly as the flat
+case does; the note is in the module, since the only new fact is that the tag order has one more link.
 
 ### Three design points settled in the authoring, one of them by the user
 
-**1. `scratch` is a prefix, not a bucket** — and the plan says both. `D13` is the origin and it is
-unambiguous: *"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* —
-`scratch` there is the CLASS of everything Lake Formation does not govern, listed beside `artifacts` and
-`model outputs`. Every line on the **IAM** side says *prefixes* (`identity/sso/`'s owed-grants note,
-1b step 3.4, the set's own description); the three lines calling it a **bucket** are all on the topology
-side (`architecture.md`, `conventions.md` §6, this stage's own table) and all credit **D19**, which does
-not mention `scratch` anywhere. Both spellings entered in the same commit, so it is original ambiguity
+**1. `scratch` is a prefix, not a bucket** — and the plan said both. D13 is the origin:
+*"non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access"* — `scratch`
+there is the class of everything Lake Formation does not govern, listed beside `artifacts` and `model
+outputs`. Every line on the IAM side says *prefixes* (`identity/sso/`'s owed-grants note, 1b step 3.4,
+the set's own description); the three lines calling it a bucket are all on the topology side
+(`architecture.md`, `conventions.md` §6, this stage's own table) and all credit D19, which does not
+mention `scratch` anywhere. Both spellings entered in the same commit, so it is original ambiguity
 rather than drift. The derived bucket carries three prefix families instead — `results/`,
 `derived/${aws:userid}/`, `scratch/` — which is what the IAM side always described.
 
-**2. The CMK is per (zone × account)** — **the user's call, and it changed the shape.** The question
+**2. The CMK is per (zone × account)** — the user's call, and it changed the shape. The question
 reached the user as *scratch needs a key and only one is budgeted*; the answer reframed it: encryption
 granularity is the `security-zone` dimension's job everywhere, not only inside the lake, so the consumer
 key is `alias/awsds-<env>-zn-lab` rather than `alias/awsds-<env>-derived`. Same zone, different account.
 
-The variant considered and declined in the same exchange was **the lake's own key**, and the reason it
-was declined is a measurement rather than a preference: `AllowProductionPickupDecryptViaS3` on
-`alias/awsds-data-zn-lab` grants `kms:Decrypt` to `awsds-prod-job-exec` with **no bucket scoping** — only
-`kms:ViaService=s3` and the role ARN. Encrypting a consumer's derived zone with that key would put
-Production's job role over this account's materialised `restricted` copies with the S3 layer as the only
-thing left standing, which is the state D31 exists to prevent. Two further consequences were named: a
-cross-account KMS dependency under a local working bucket, and a `security-zone` LF-Tag governing a bucket
-no LF-Tag can be assigned to.
+The variant declined in the same exchange was the lake's own key, on a measurement:
+`AllowProductionPickupDecryptViaS3` on `alias/awsds-data-zn-lab` grants `kms:Decrypt` to
+`awsds-prod-job-exec` with no bucket scoping — only `kms:ViaService=s3` and the role ARN. Encrypting a
+consumer's derived zone with that key would put Production's job role over this account's materialised
+`restricted` copies with the S3 layer as the only thing left standing, the state D31 exists to prevent.
+Two further consequences: a cross-account KMS dependency under a local working bucket, and a
+`security-zone` LF-Tag governing a bucket no LF-Tag can be assigned to.
 
-**3. The key policy delegates administration to root and no cryptographic action.** The module's default
-policy — and the lake key's first statement — grants the account root `kms:*`, which means *the account's
-IAM decides who may use this key*. Here that would undo D31 outright: any IAM policy in the account could
-then grant `kms:Decrypt`, which is how D31 was created in the first place. So root keeps every
-administrative action (the anti-lockout guarantee is intact, Terraform can re-policy and delete) and holds
-no `Encrypt`, `Decrypt`, `GenerateDataKey*` or `ReEncrypt*`. **What it does not close is stated in the
-file**: the administrator can call `kms:PutKeyPolicy` and rewrite the statement (Lesson 18). What the
-shape buys is that widening it is an edit with a diff, not a side effect of some other grant.
+**3. The key policy delegates administration to root and no cryptographic action.** The module's
+default policy — and the lake key's first statement — grants the account root `kms:*`, which means the
+account's IAM decides who may use this key. Here that would undo D31 outright: any IAM policy in the
+account could then grant `kms:Decrypt`. So root keeps every administrative action (the anti-lockout
+guarantee is intact, Terraform can re-policy and delete) and holds no `Encrypt`, `Decrypt`,
+`GenerateDataKey*` or `ReEncrypt*`. What it does not close is stated in the file: the administrator can
+call `kms:PutKeyPolicy` and rewrite the statement (Lesson 18). Widening it is an edit with a diff, not
+a side effect of some other grant.
 
 ### The apply, in Recipe D's two steps, per account
 
-**The precondition was re-measured rather than assumed**, on the create plan:
-`create_database_default_permissions` and `create_table_default_permissions` both come back
-`after_unknown: true` — the plan states no intention about either, exactly as at pass 1 and in the same
-pinned provider. Lesson 27 says a good reading does not retire the split, and it did not.
+The precondition was re-measured on the create plan: `create_database_default_permissions` and
+`create_table_default_permissions` both come back `after_unknown: true` — the plan states no intention
+about either, exactly as at pass 1 and in the same pinned provider. Lesson 27 says a good reading does
+not retire the split, and it did not.
 
 | | Sandbox | Development |
 |---|---|---|
@@ -983,25 +946,24 @@ pinned provider. Lesson 27 says a good reading does not retire the split, and it
 | step 3, the remainder | `15 added` | `15 added` |
 | re-plan | `No changes` | `No changes` |
 
-**The reading between the halves did something a green check usually does not: it failed, correctly.**
-After Sandbox's step 1 and before Development's, the run reported `DL-6` **FAILED** for
-`awsds-infra-dev` — the pre-apply state, in the account whose turn had not come. That is the extended
-check working on its first outing, and it is the reading the old single-account version could not have
-produced.
+The reading between the halves failed, correctly. After Sandbox's step 1 and before Development's, the
+run reported `DL-6` `FAILED` for `awsds-infra-dev` — the pre-apply state, in the account whose turn had
+not come. That is the extended check working on its first outing, a reading the old single-account
+version could not have produced.
 
 ### What exists now, measured after the fact
 
 Per consumer account: the zone CMK, `awsds-<env>-derived` under it with a 30-day expiry, the Athena
-workgroup `awsds-<env>-athena` **enforcing** its configuration into `s3://awsds-<env>-derived/results/`
+workgroup `awsds-<env>-athena` enforcing its configuration into `s3://awsds-<env>-derived/results/`
 with a 10 GiB per-query scan cap, a `DataLakeSettings` naming `InfrastructureAccess`, two resource links
 (`raw`, `curated`) and four grants to `DataScientistAccess`.
 
-`./aws/datalake.py`: **0 check(s) FAILED**, and `DL-7` moved off its between-passes note to
-*"4 share(s) out, 4 resource link(s) on the consumer side, no pending invitation"* — **verification (v)
-is now answered in both halves**.
+`./aws/datalake.py`: 0 check(s) FAILED, and `DL-7` moved off its between-passes note to *"4 share(s)
+out, 4 resource link(s) on the consumer side, no pending invitation"* — verification (v) is now
+answered in both halves.
 
-**The grants verified against the API rather than the code**, `list-permissions` in each account, four
-rows for the persona and nothing else:
+The grants verified against the API, `list-permissions` in each account, four rows for the persona and
+nothing else:
 
 | Resource | Expression | Permissions | Grant option |
 |---|---|---|---|
@@ -1012,15 +974,14 @@ rows for the persona and nothing else:
 
 No grant option anywhere on the persona, which is 1b step 3.7 holding: the reader is never the grantor.
 
-**One applied triple nobody wrote**, and it belongs in the register for exactly that reason: the
-resource links carry `ALL, DESCRIBE, DROP` **with grant option** for `InfrastructureAccess` in each
-account. Lake Formation gives the creator of a catalog object full permission on it; the code granted
-none of it. Expected, undeclared, and now recorded.
+One applied triple nobody wrote, recorded in the register for that reason: the resource links carry
+`ALL, DESCRIBE, DROP` with grant option for `InfrastructureAccess` in each account. Lake Formation
+gives the creator of a catalog object full permission on it; the code granted none of it.
 
 ### Verification (x), answered earlier in the chain than the plan expected
 
-The plan frames the classification pair as a persona-session test. It is enforced one layer sooner, and
-the column list says so with a negative control in the same reading:
+The plan frames the classification pair as a persona-session test. It is enforced one layer sooner,
+and the column list says so with a negative control in the same reading:
 
 | Read as `InfrastructureAccess` in | `sample_trades` columns |
 |---|---|
@@ -1028,109 +989,107 @@ the column list says so with a negative control in the same reading:
 | Sandbox, through the link | `trade_id, trade_date, instrument, quantity, price` |
 | Development, through the link | `trade_id, trade_date, instrument, quantity, price` |
 
-**The `restricted` column never crossed the account line.** The consumer's own data lake administrator
-cannot see it either — an account may pass on only what it received, and `classification=restricted` was
-never in the received expression. The share is doing column-level work before any persona exists, which
-is a stronger result than the deliverable asked for and a different claim from the one still owed: what a
-**persona** session sees is 4d's, and it needs the tunnel.
+The `restricted` column never crossed the account line. The consumer's own data lake administrator
+cannot see it either — an account may pass on only what it received, and `classification=restricted`
+was never in the received expression. The share is doing column-level work before any persona exists,
+a different claim from the one still owed: what a persona session sees is 4d's, and it needs the
+tunnel.
 
 ### Records
 
-**Code:** `terraform-modules/s3-bucket/` (v0.3.0), `terraform-modules/consumer-data/` (v0.1.0, new),
+Code: `terraform-modules/s3-bucket/` (v0.3.0), `terraform-modules/consumer-data/` (v0.1.0, new),
 `terraform-live/{sandbox,development}/data/` (new, 7 files each), `scripts/tfhygiene/backend.py`
 (the `DATA_LAKE` emission), `scripts/tfhygiene/layers.py` (two rows), `aws/datalake.py` (`DL-5`/`DL-6`
 per account), `aws/INDEX.md`.
 
-**AWS:** 32 resources created across two accounts. Nothing destroyed, nothing changed.
+AWS: 32 resources created across two accounts. Nothing destroyed, nothing changed.
 
-**Gates:** `make check` **OK**. `pre-commit` green on all three commits; one commit rejected first by
-tflint for two unused data sources in the slices, which were removed rather than suppressed.
+Gates: `make check` OK. `pre-commit` green on all three commits; one commit rejected first by tflint
+for two unused data sources in the slices, which were removed rather than suppressed.
 
-**Branch `claude/stage-05-pass-4`, four commits, pushed with both tags. [PR #20](https://github.com/felipenoris/AWS-DataScience/pull/20)
-opened on the user's authorization** — and its body says in the first line that the branch was **applied
-before it was merged**, which is this repository's normal order for a `[P]` slice but is not the order a
-reviewer assumes. The post-merge `plan` from the merge commit is owed, for the reason pass 1 recorded: a
-fast-forward proves the two branches are the same object only until somebody rebases one.
+Branch `claude/stage-05-pass-4`, four commits, pushed with both tags.
+[PR #20](https://github.com/felipenoris/AWS-DataScience/pull/20) opened on the user's authorization;
+its body says in the first line that the branch was applied before it was merged, this repository's
+normal order for a `[P]` slice but not the order a reviewer assumes. The post-merge `plan` from the
+merge commit is owed: a fast-forward proves the two branches are the same object only until somebody
+rebases one.
 
-### The merge, and the thing the rebase did to the tags
+### The merge, and what the rebase did to the tags
 
-**Merged and synchronised (the merge is the user's).** The re-plan owed above was run from the merge
-commit and comes back **`No changes` in all three slices** — both consumer slices and
-`data-governance/data/`, the last included because a merge that touched the modules could have moved the
-lake too. `./aws/datalake.py`: **all checks passed**. Local branch deleted, remote pruned.
+Merged and synchronised (the merge is the user's). The re-plan owed above was run from the merge
+commit and comes back `No changes` in all three slices — both consumer slices and
+`data-governance/data/`, the last included because a merge that touched the modules could have moved
+the lake too. `./aws/datalake.py`: all checks passed. Local branch deleted, remote pruned.
 
-**And the sentence that predicted this is the one that mattered: it was a REBASE merge, not a
-fast-forward.** Every commit hash was rewritten, so both tags — `s3-bucket-v0.3.0`,
-`consumer-data-v0.1.0` — still point at the pre-rebase commits, which are **no longer ancestors of
-`main`**:
+It was a rebase merge, not a fast-forward. Every commit hash was rewritten, so both tags —
+`s3-bucket-v0.3.0`, `consumer-data-v0.1.0` — still point at the pre-rebase commits, which are no longer
+ancestors of `main`:
 
 ```
 git merge-base --is-ancestor s3-bucket-v0.3.0 main   ->  orphaned
 ```
 
-**Nothing is broken, and doing nothing is the correct response** — but that is a conclusion, not an
-assumption, so it was measured: the *tree hash* of each module at its tag is **byte-identical** to the
-same path on `main` (`87a1b29…` for `s3-bucket`, `ef07de3…` for `consumer-data`). `terraform init`
-resolves a tag's **content**, not its position in a history, and the tagged commits survive garbage
-collection because a tag ref pins them. Re-tagging is forbidden by the runbook's own §8, and cutting a
-`v0.3.1` at the merge commit would mean a version bump on every merge for a diff of zero.
+Nothing is broken, and doing nothing is the correct response, measured rather than assumed: the tree
+hash of each module at its tag is byte-identical to the same path on `main` (`87a1b29…` for
+`s3-bucket`, `ef07de3…` for `consumer-data`). `terraform init` resolves a tag's content, not its
+position in a history, and the tagged commits survive garbage collection because a tag ref pins them.
+Re-tagging is forbidden by the runbook's own §8, and cutting a `v0.3.1` at the merge commit would mean
+a version bump on every merge for a diff of zero.
 
-**Recipe B gained the check**, because this recurs on every merge from now on and the reflex it needs is
-counter-intuitive: *expect `orphaned`, and verify the tree hash instead.* Two different tree hashes would
-be the real fault — deployed callers pinned to code the repository no longer has — and that one is fixed
-with a new version plus a caller bump, never with a moved tag.
+Recipe B gained the check, since this recurs on every merge from now on: *expect `orphaned`, and
+verify the tree hash instead.* Two different tree hashes would be the real fault — deployed callers
+pinned to code the repository no longer has — fixed with a new version plus a caller bump, never with a
+moved tag.
 
-### A second review pass, after the first propagation — seven things it had missed
+### A second review pass: what the first propagation missed
 
-The first pass propagated the findings into the stage files. Re-reading against the question *which file
-OWNS each claim that changed* found that two of them had been updated everywhere except in the row that
-asserts them:
+Re-reading against the question *which file owns each claim that changed* found two claims updated
+everywhere except in the row that asserts them:
 
 | Where | What was still wrong |
 |---|---|
-| **INT-11** | the row describes the `Parameters` reset as a property of **Data Governance** throughout — it is the row that owns the claim, and the symmetry finding had gone into Stage 9 and the checks but not into it |
-| **INT-03** | still read *"both consumers read `DataLakeAdmins: []` today … Stage 5 step 8 fixes it"*, of a thing done hours earlier; and it never said the re-grant is a **pair** |
-| `aws/INDEX.md` | the `DL-6` row was corrected in the first pass and the **`DL-5`** row beside it still said *"read it after every apply in `data-governance/data/`"* — the exact scoping the session had just proven wrong |
-| **Recipe D** | its forward schedule still listed all four accounts as pending. It is a live procedure; two of them ran, and *how* they ran (the precondition re-measured, the reading failing correctly once, the second value the split protected) is the part worth keeping |
-| **`GLOSSARY.md`** | no entry for **resource link**, a term this session made load-bearing twice — it needs its own `DESCRIBE`, and it is the first local catalog object a consumer account creates |
-| **D19** | the decision file records its own revisions inline (2026-08-08, 2026-08-12) and had none for the key's renaming or for `scratch` |
-| **`terraform-modules/README.md`** | opened with **"Empty on purpose today"** while seven modules sat beside it — stale since Stage 3, and the natural home for the nesting rule this session created |
+| INT-11 | the row describes the `Parameters` reset as a property of Data Governance throughout — it is the row that owns the claim, and the symmetry finding had gone into Stage 9 and the checks but not into it |
+| INT-03 | still read *"both consumers read `DataLakeAdmins: []` today … Stage 5 step 8 fixes it"*, of a thing done hours earlier; and it never said the re-grant is a pair |
+| `aws/INDEX.md` | the `DL-6` row was corrected in the first pass and the `DL-5` row beside it still said *"read it after every apply in `data-governance/data/`"* — the exact scoping the session had just proven wrong |
+| Recipe D | its forward schedule still listed all four accounts as pending. It is a live procedure; two of them ran, and how they ran (the precondition re-measured, the reading failing correctly once, the second value the split protected) is the part worth keeping |
+| `GLOSSARY.md` | no entry for resource link, a term this session made load-bearing twice — it needs its own `DESCRIBE`, and it is the first local catalog object a consumer account creates |
+| D19 | the decision file records its own revisions inline (2026-08-08, 2026-08-12) and had none for the key's renaming or for `scratch` |
+| `terraform-modules/README.md` | opened with "Empty on purpose today" while seven modules sat beside it — stale since Stage 3, and the natural home for the nesting rule this session created |
 
-**Two lessons came out of the re-reading rather than out of the apply**, and both are about the record
-rather than about AWS:
+Two lessons came out of the re-reading, both about the record rather than about AWS:
 
-- **[Lesson 31](../plan/lessons.md)** — a check inherits the scope of the account it was written in and
-  keeps reporting `pass` about that one. Deliberately *not* filed under Lesson 13: this check
-  discriminates perfectly and is pointed at the wrong set, which is worse, because Lesson 13's failure
-  looks empty and invites suspicion while this one looks like evidence. The cheap fix is printing the
-  scope in the line, and the trigger to re-read every instrument is a **topology** change, not a code one;
-- **[Lesson 32](../plan/lessons.md)** — two spellings of one object survive while nothing has to build it,
+- [Lesson 31](../plan/lessons.md) — a check inherits the scope of the account it was written in and
+  keeps reporting `pass` about that one. Not filed under Lesson 13: this check discriminates perfectly
+  and is pointed at the wrong set, which looks like evidence rather than inviting suspicion. The cheap
+  fix is printing the scope in the line, and the trigger to re-read every instrument is a topology
+  change, not a code one;
+- [Lesson 32](../plan/lessons.md) — two spellings of one object survive while nothing has to build it,
   and the side that has to build it is right. The tie-break that worked is *follow the citation*: all
   three "scratch bucket" lines credited D19, which never mentions it.
 
-**Second-pass records:** [`integrations.md`](../plan/integrations.md) (INT-03, INT-11),
+Second-pass records: [`integrations.md`](../plan/integrations.md) (INT-03, INT-11),
 [`aws/INDEX.md`](../../aws/INDEX.md) (`DL-5`), [the terraform-changes runbook](../plan/runbooks/terraform-changes.md)
 (Recipe D's schedule, now *where it has run* and *where it runs next*), [`GLOSSARY.md`](../GLOSSARY.md),
 [D19](../plan/decisions/D19-derived-zone.md), [`terraform-modules/README.md`](../../terraform-modules/README.md),
 [`lessons.md`](../plan/lessons.md) (31, 32) with their recognition keys in `CLAUDE.md`, and this stage's
-**Deliverables** — the share pair's metadata half landed, the classification pair's absent half answered.
+Deliverables — the share pair's metadata half landed, the classification pair's absent half answered.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-- **4c — the persona grants in `identity/sso/`.** Deliberately *after* this apply rather than with it:
-  the document is one object provisioned into many accounts, so the derived-bucket and workgroup ARNs
-  would have had to be wildcards; now they can be read from these two slices' state and enumerated
-  exactly. Without it the persona holds Lake Formation permission and no `athena:StartQueryExecution` and
-  no `s3:PutObject`, so nothing can be queried yet.
-- **4d — every behavioural proof**, which is all of them: the pandas pair, the persona half of the
-  classification pair, the workgroup boundary, the crawler pair, the drop-box asymmetry. All need a
-  persona sign-in with the tunnel up.
-- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last and still through battery phase 4b.
+- 4c — the persona grants in `identity/sso/`. After this apply rather than with it: the document is one
+  object provisioned into many accounts, so the derived-bucket and workgroup ARNs would have had to be
+  wildcards; now they can be read from these two slices' state and enumerated exactly. Without it the
+  persona holds Lake Formation permission and no `athena:StartQueryExecution` and no `s3:PutObject`, so
+  nothing can be queried yet.
+- 4d — every behavioural proof: the pandas pair, the persona half of the classification pair, the
+  workgroup boundary, the crawler pair, the drop-box asymmetry. All need a persona sign-in with the
+  tunnel up.
+- 4e — 4.3's `athena:StartQueryExecution` amendment, still last and still through battery phase 4b.
 - Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
 
 ---
 
-## 2026-08-19 — Pass 4c APPLIED: the persona can query, and the drop-box write turned out to have only half a permission
+## 2026-08-19 — Pass 4c applied: the persona can query, and the drop-box write had only half a permission
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting. It **does
 change AWS**: one `terraform apply` in the Identity account, on the user's explicit authorization
@@ -1140,75 +1099,73 @@ reports on. Redactions per `scripts/check-identifiers.py`: accounts are named, n
 ### Identity, stated before the calls
 
 Applied as the **infrastructure user** on the **Identity** account through **`InfrastructureAccess`**
-(profile `awsds-infra-identity`). The plan additionally *reads* state in **Sandbox Account 1**,
+(profile `awsds-infra-identity`). The plan additionally reads state in **Sandbox Account 1**,
 **Development** and **Data Governance**, each through that account's `InfrastructureAccess` — one
 sign-in covers all four, since every profile sits on the `awsds` sso-session. `aws sts
-get-caller-identity` was checked before the first call, as the rule requires.
+get-caller-identity` was checked before the first call.
 
-### The finding, which arrived while authoring rather than while applying
+### The finding, which arrived while authoring
 
 4c was scoped as *Athena + the derived zone*. Reading the drop-box's applied form to write the S3
-statements produced a third one, and it is a defect rather than an addition:
+statements produced a third one, a defect rather than an addition.
 
-**The drop-box write is cross-account, so the bucket policy alone was never a working permission.** The
+The drop-box write is cross-account, so the bucket policy alone was never a working permission. The
 persona's role lives in Sandbox or Development; `awsds-data-dropbox` lives in Data Governance. Access
-across an account line requires an allow in **both** the resource policy and the identity policy — and
-the persona sets carried no S3 allow at all. A 4d attempt would have returned `AccessDenied` with
-`AllowInteractiveWriterPutOnly` and `AllowDropBoxWritersViaS3` both correct, which is the expensive
-shape: the error points at the half that is right.
+across an account line requires an allow in both the resource policy and the identity policy — and the
+persona sets carried no S3 allow at all. A 4d attempt would have returned `AccessDenied` with
+`AllowInteractiveWriterPutOnly` and `AllowDropBoxWritersViaS3` both correct: the error points at the
+half that is right.
 
-**And the plan asserted the opposite in writing.** Step 6.2's reading, made on 2026-08-19 during pass 2,
-ends: *"The drop-box `PutObject` exception 6.1 names is granted by **bucket policy** … so it does not
-appear here, and that is correct rather than missing."* The reading itself was accurate — the sets held
-no S3 allow — but the conclusion drawn from it was wrong. What made it plausible is same-account
-intuition: within one account a bucket policy naming a role *is* sufficient, and the sentence was
-written by someone (me) reading a bucket policy that names roles.
+The plan asserted the opposite in writing. Step 6.2's reading, made on 2026-08-19 during pass 2, ends:
+*"The drop-box `PutObject` exception 6.1 names is granted by **bucket policy** … so it does not appear
+here, and that is correct rather than missing."* The reading itself was accurate — the sets held no S3
+allow — but the conclusion drawn from it was wrong, on same-account intuition: within one account a
+bucket policy naming a role is sufficient.
 
-It is **Lesson 28's shape** — reach is an intersection and the two halves sit in different slices — on
-plain S3 rather than on Lake Formation. Lesson 28 was written about a service *with its own permission
-layer*, which is why it did not fire here; the lesson has been generalised rather than duplicated (below).
+It is Lesson 28's shape — reach is an intersection and the two halves sit in different slices — on
+plain S3 rather than on Lake Formation. Lesson 28 was written about a service with its own permission
+layer, which is why it did not fire here; the lesson has been generalised rather than duplicated.
 
 ### What was applied
 
-Seven statements added to **`DataScientistAccess`** — one document, provisioned into Sandbox and
+Seven statements added to `DataScientistAccess` — one document, provisioned into Sandbox and
 Development:
 
-| Sid | What it grants | The scoping that is the point |
+| Sid | What it grants | Scoping |
 |---|---|---|
-| `RunQueriesInTheEnforcedWorkgroups` | the Athena run family (8 actions) | **the two workgroup ARNs, enumerated from the consumer slices' state** — `primary` is absent, and that absence is what denies it |
+| `RunQueriesInTheEnforcedWorkgroups` | the Athena run family (8 actions) | the two workgroup ARNs, enumerated from the consumer slices' state — `primary` is absent, and that absence is what denies it |
 | `UseDerivedZoneBuckets` | `ListBucket`, `GetBucketLocation`, multipart list | the two derived buckets |
-| `ReadDerivedZoneObjects` | `GetObject` | `results/`, `derived/`, `scratch/` — read at decision 6's **persona** grain |
-| `WriteDerivedZonePrefixes` | `PutObject` + the multipart pair | `results/`, **`derived/${aws:userid}/`** (per principal), `scratch/` |
-| `DeleteScratchObjects` | `DeleteObject` | **`scratch/` only** — `results/` and `derived/` are deleted by the 30-day lifecycle and by nothing else; `DeleteObjectVersion` is not granted anywhere |
+| `ReadDerivedZoneObjects` | `GetObject` | `results/`, `derived/`, `scratch/` — read at decision 6's persona grain |
+| `WriteDerivedZonePrefixes` | `PutObject` + the multipart pair | `results/`, `derived/${aws:userid}/` (per principal), `scratch/` |
+| `DeleteScratchObjects` | `DeleteObject` | `scratch/` only — `results/` and `derived/` are deleted by the 30-day lifecycle and by nothing else; `DeleteObjectVersion` is not granted anywhere |
 | `WriteIngestionDropBox` | `s3:PutObject` | `awsds-data-dropbox/incoming/*` — the identity half above, mirroring the bucket policy's asymmetry exactly: no read-back, no list, no delete |
 | `UseLakeZoneKeyViaS3` | `GenerateDataKey`, `Decrypt` | the lake's `zn-lab` CMK, `kms:ViaService = s3` — the same condition the key policy carries, each side scoping the other |
 
-**Why `results/` is writable by a human who never chooses to write there:** Athena stages query results
-**with the caller's credentials** into the workgroup's enforced location. No `PutObject` on `results/`
-means no output means no query — the grant is the engine's contract, not a convenience.
+Why `results/` is writable by a human who never chooses to write there: Athena stages query results
+with the caller's credentials into the workgroup's enforced location. No `PutObject` on `results/`
+means no output means no query — the grant is the engine's contract.
 
-**No KMS statement for the derived zone**, and its absence is deliberate: those keys are same-account, so
-the key policy — which names this role and nobody else — decides alone. That is D31 working as designed.
+No KMS statement for the derived zone: those keys are same-account, so the key policy — which names
+this role and nobody else — decides alone (D31).
 
 ### One ledger line corrected rather than delivered
 
 `policies-data-scientists.tf` has carried a `STILL OWED` ledger since Stage 2. One of its Stage 5 lines
-was *"s3:GetObject on the governed lake through the Lake Formation share"*. **No such grant will ever
-arrive.** Vended access hands the engine credentials through `lakeformation:GetDataAccess`, which the set
-already holds; a direct `s3:GetObject` on a registered prefix is precisely the bypass D13 exists to
-exclude. That line was Stage 2 guessing at Stage 5's interface — the exact failure the file's own opening
-comment warns against, caught by delivery rather than by review.
+was *"s3:GetObject on the governed lake through the Lake Formation share"*. No such grant will ever
+arrive. Vended access hands the engine credentials through `lakeformation:GetDataAccess`, which the
+set already holds; a direct `s3:GetObject` on a registered prefix is precisely the bypass D13 exists
+to exclude. That line was Stage 2 guessing at Stage 5's interface, caught by delivery rather than by
+review.
 
-### The plumbing, in one paragraph
+### The plumbing
 
-`backend.py` emits two new maps to `identity/sso` — `data_consumers` and `lake` — so the slice gained its
-**fifth and sixth** cross-account lookups, both `terraform_remote_state` reads with a profile, exactly
-like `vpn_home`. The workgroup and bucket ARNs come from the consumer slices' outputs; the drop-box ARN,
-its prefix and the key ARN from the lake's. **The key ARN carries the lake's account id**, which is why
-it is read from state and never written down — the same rule `aws/INDEX.md` rule 1 states for every
-identifier. `data_consumers` validates non-empty with the *opposite* polarity from `vpn_homes`, noted in
-the variable: an empty map there denies everything, here it renders three allows with no resource and
-fails at provisioning, per account.
+`backend.py` emits two new maps to `identity/sso` — `data_consumers` and `lake` — so the slice gained
+its fifth and sixth cross-account lookups, both `terraform_remote_state` reads with a profile, like
+`vpn_home`. The workgroup and bucket ARNs come from the consumer slices' outputs; the drop-box ARN, its
+prefix and the key ARN from the lake's. The key ARN carries the lake's account id, which is why it is
+read from state and never written down (`aws/INDEX.md` rule 1). `data_consumers` validates non-empty
+with the opposite polarity from `vpn_homes`, noted in the variable: an empty map there denies
+everything, here it renders three allows with no resource and fails at provisioning, per account.
 
 ### The apply, and the reading that proves it landed
 
@@ -1217,83 +1174,78 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 inline_policy_bytes: data_scientist 4285 -> 7036
 ```
 
-Applied; **re-plan `No changes`**. The 7036 is against the plan-time ceiling of 10240 — the precondition
-Stage 2 built for exactly this moment, and the first time it has had a real increase to measure.
+Applied; re-plan `No changes`. The 7036 is against the plan-time ceiling of 10240 — the precondition
+Stage 2 built for this moment, and the first time it has had a real increase to measure.
 
-**Then the reading that matters, because a permission set is not where the permission lives.** A set
+Then the reading that matters, because a permission set is not where the permission lives. A set
 becomes an IAM role in every account it is provisioned into, so `1 changed` in Identity proves nothing
-about Sandbox and Development. `get-role-policy` on `AWSReservedSSO_DataScientistAccess_*` in **both**
-accounts returns **all 18 statements**, the seven new ones included — so the reprovisioning happened
-rather than being assumed. And in the same reading, `WriteDerivedZonePrefixes` comes back carrying
-`.../derived/${aws:userid}/*` **as a literal policy variable**, not expanded and not mangled by the
-round trip through Terraform's `$${...}` escape.
+about Sandbox and Development. `get-role-policy` on `AWSReservedSSO_DataScientistAccess_*` in both
+accounts returns all 18 statements, the seven new ones included — so the reprovisioning happened. In
+the same reading, `WriteDerivedZonePrefixes` comes back carrying `.../derived/${aws:userid}/*` as a
+literal policy variable, not expanded and not mangled by the round trip through Terraform's `$${...}`
+escape.
 
-### The instrument gained the check that would have caught it — `DL-12`
+### The instrument gained `DL-12`
 
-The defect got past a review, a plan, a commit gate and three passes. What none of them had is a
-question that can be *asked mechanically*, so one was added: **`DL-12` reads the drop-box's identity
-half off the PROVISIONED role in each consumer account** — `WriteIngestionDropBox` and
-`UseLakeZoneKeyViaS3` present, or a `fail` naming what is missing. `DL-2` has always measured the
-resource half; the pair is now what "the drop-box write works" means to the instrument, which is the
-AND the evaluation rule actually is.
+The defect got past a review, a plan, a commit gate and three passes. None of them had a question that
+can be asked mechanically, so one was added: `DL-12` reads the drop-box's identity half off the
+provisioned role in each consumer account — `WriteIngestionDropBox` and `UseLakeZoneKeyViaS3` present,
+or a `fail` naming what is missing. `DL-2` has always measured the resource half; the pair is now what
+"the drop-box write works" means to the instrument, the AND the evaluation rule actually is.
 
-**It reads the role and not the permission set, deliberately.** A set lives in Identity and *becomes* a
-role in every account it reaches; the role is where the permission is, and it is also the object a
-half-finished reprovisioning would leave stale. `./aws/datalake.py`: **`DL-12` pass in both consumer
-accounts, 0 FAILED overall.** Its negative control is not hypothetical — the plan diff for this apply
-showed both statements as additions, so the check would have failed against the state that existed this
-morning.
+It reads the role and not the permission set: a set lives in Identity and becomes a role in every
+account it reaches; the role is where the permission is, and it is also the object a half-finished
+reprovisioning would leave stale. `./aws/datalake.py`: `DL-12` pass in both consumer accounts, 0 FAILED
+overall. Its negative control is real: the plan diff for this apply showed both statements as
+additions, so the check would have failed against the state that existed this morning.
 
 ### Records
 
-**Code:** `terraform-live/identity/sso/` (`variables.tf`, `data.tf`, `locals.tf`,
+Code: `terraform-live/identity/sso/` (`variables.tf`, `data.tf`, `locals.tf`,
 `policies-data-scientists.tf`), `scripts/tfhygiene/backend.py`, `aws/datalake.py` (`DL-12`, new).
 
-**Docs:** the stage file (status row, pass table, the 4c paragraph, **6.2's correction**),
+Docs: the stage file (status row, pass table, the 4c paragraph, 6.2's correction),
 `docs/GOVERNANCE.md` (§Drop-box: the writer's permission is two-sided),
 `terraform-live/data-governance/data/README.md` (the `AllowInteractiveWriterPutOnly` row says which half
-it is), **`docs/plan/integrations.md` (INT-10 amended — it described only the resource half)**,
-`docs/plan/lessons.md` (**Lesson 28 amended**, not duplicated), `CLAUDE.md` (the Stage 5 bullets
-consolidated in the same sitting — the section's own budget rule, and my additions had been growing it).
+it is), `docs/plan/integrations.md` (INT-10 amended — it described only the resource half),
+`docs/plan/lessons.md` (Lesson 28 amended, not duplicated), `CLAUDE.md` (the Stage 5 bullets
+consolidated in the same sitting).
 
-**The propagation sweep, and it came back closed.** Every resource policy in the applied estate that
-names a **foreign** principal was enumerated: four statements, all in the lake — the two writer ones
-(Sandbox + Development, on the bucket and on the key) and the two Production pickup ones. The writer's
-identity half is what this sitting applied; **the pickup's was already correctly specified**, in Stage 9
-step 3.1, which says in those words *"the identity half of Stage 5's statements"*. So the plan was right
-where the role is authored beside its grant and wrong only where the two halves sat five stages and two
-slices apart — the defect correlates with **distance**, not with the concept, and that is the useful
-half of the finding.
+The propagation sweep came back closed. Every resource policy in the applied estate that names a
+foreign principal was enumerated: four statements, all in the lake — the two writer ones (Sandbox +
+Development, on the bucket and on the key) and the two Production pickup ones. The writer's identity
+half is what this sitting applied; the pickup's was already correctly specified, in Stage 9 step 3.1,
+which says in those words *"the identity half of Stage 5's statements"*. The plan was right where the
+role is authored beside its grant and wrong only where the two halves sat five stages and two slices
+apart — the defect correlates with distance, not with the concept.
 
-**Two files were missed on the first pass and found by the user asking whether everything had been
-edited — both of them owners of the changed claim, which is Lessons 31-32 again.**
-`identity/sso/README.md` carries an **owed table**, one row per stage, and its Stage 5 row still
-promised the work this sitting delivered *and* repeated the corrected line (*"lake read through the
-Lake Formation share"*). `aws/INDEX.md`'s question table had a row for every `DL-` check except the new
-one. Neither is prose: the first is what a reader opens to learn what a persona is still missing, the
-second is how a check is found by the question it answers. The pattern to carry: **a delivery has to
-sweep the files that say the thing is still owed**, and an index of checks is one of them.
+Two files were missed on the first pass and found by the user asking whether everything had been
+edited — both owners of the changed claim (Lessons 31-32). `identity/sso/README.md` carries an owed
+table, one row per stage, and its Stage 5 row still promised the work this sitting delivered and
+repeated the corrected line (*"lake read through the Lake Formation share"*). `aws/INDEX.md`'s question
+table had a row for every `DL-` check except the new one. A delivery has to sweep the files that say
+the thing is still owed, and an index of checks is one of them.
 
-**AWS:** 1 resource changed, in the Identity account. Nothing created, nothing destroyed. The two
-provisioned roles were re-written by Identity Center as a consequence, which is the change that matters
-and is not what Terraform counted.
+AWS: 1 resource changed, in the Identity account. Nothing created, nothing destroyed. The two
+provisioned roles were re-written by Identity Center as a consequence, the change that matters and not
+what Terraform counted.
 
-**Gates:** `make check` **OK**; `pre-commit` green on the five changed files, including tflint, checkov
-and the 9.2 wildcard-account check — the last one is the one that would have fired had 4c been written
-before the consumer slices existed.
+Gates: `make check` OK; `pre-commit` green on the five changed files, including tflint, checkov and
+the 9.2 wildcard-account check — the last one would have fired had 4c been written before the consumer
+slices existed.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-- **4d — every behavioural proof**, unchanged in scope but no longer blocked by entitlement: the pandas
+- 4d — every behavioural proof, unchanged in scope but no longer blocked by entitlement: the pandas
   pair, the persona half of the classification pair, the workgroup boundary, the crawler pair, the
-  drop-box asymmetry. All need a persona sign-in with the tunnel up. **The drop-box half is now worth
-  more than it was**: it is the first exercise of a permission that was measured wrong on paper.
-- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last and still through battery phase 4b.
-  Note it binds Data Governance only; nothing applied today runs there.
+  drop-box asymmetry. All need a persona sign-in with the tunnel up. The drop-box half is the first
+  exercise of a permission that was measured wrong on paper.
+- 4e — 4.3's `athena:StartQueryExecution` amendment, still last and still through battery phase 4b.
+  It binds Data Governance only; nothing applied today runs there.
 - Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
-- **Not committed** — the working tree carries all nine files; the branch is the user's call.
+- Not committed — the working tree carries all nine files; the branch is the user's call.
 
-## 2026-08-19 — The `security-zone` dimension is WITHDRAWN and APPLIED away: one data CMK per account
+## 2026-08-19 — The `security-zone` dimension withdrawn and applied away: one data CMK per account
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **The
 decision is the user's**, and so is the authorization to apply ("pode fazer apply do terraform qdo
@@ -1301,38 +1253,38 @@ concluir"). It **changes AWS**: four `terraform apply` runs in four accounts, on
 LF-Tag and a grant. Every measurement below is a read-only call made after the write it reports on.
 Redactions per `scripts/check-identifiers.py`: accounts are named, never numbered.*
 
-### How the decision arrived, which is the part worth keeping
+### How the decision arrived
 
-**It came out of a conversation, not a review.** The user opened a discussion of the bucket layout, the
-CMK and the SMUS intersection, and worked through it as a series of verification questions — are LF-Tags
-attached to buckets, which CMK encrypts each bucket, how did you conclude `dropbox`/`artifacts`/`logs`
-sit under the `zn-lab` key when those buckets carry no `security-zone` assignment. That last question is
-the one that broke the model open, and the honest answer was that the conclusion came from
-`buckets.tf` — a single `kms_key_arn` on the `for_each` — and **not from any tag**.
+It came out of a conversation. The user opened a discussion of the bucket layout, the CMK and the SMUS
+intersection, and worked through it as a series of verification questions — are LF-Tags attached to
+buckets, which CMK encrypts each bucket, how did you conclude `dropbox`/`artifacts`/`logs` sit under
+the `zn-lab` key when those buckets carry no `security-zone` assignment. That last question broke the
+model open: the conclusion came from `buckets.tf` — a single `kms_key_arn` on the `for_each` — and not
+from any tag.
 
 The user then named it themselves, in one sentence: *"eu decidi errado: achei que a chave CMK estava
-associada a uma LF tag."* The mechanism does not exist. An LF-Tag attaches to a database, table or column
-and is read by Lake Formation when it evaluates a TBAC expression; a CMK is bound to a bucket by that
-bucket's default-encryption configuration, written by Terraform. **Nothing in AWS connects the two.**
-What connected them here was the shared spelling `zn-lab` in a tag value and a key alias, plus a review
-habit — and the tag appeared in **no TBAC expression at all**, so the dimension was carrying nothing.
+associada a uma LF tag."* The mechanism does not exist. An LF-Tag attaches to a database, table or
+column and is read by Lake Formation when it evaluates a TBAC expression; a CMK is bound to a bucket by
+that bucket's default-encryption configuration, written by Terraform. Nothing in AWS connects the two.
+What connected them here was the shared spelling `zn-lab` in a tag value and a key alias, plus a
+review habit — and the tag appeared in no TBAC expression at all, so the dimension was carrying
+nothing.
 
-So the dimension is withdrawn, one day after it was applied, and the rule that replaces it is simpler and
-is what the code already did: **one data CMK per account**, `alias/awsds-<env>-data`.
-[`docs/GOVERNANCE.md`](../GOVERNANCE.md) §Encryption is its one copy and carries the withdrawal note, so
-the correction is readable where the model is rather than only here.
+So the dimension is withdrawn, one day after it was applied, and the rule that replaces it is what the
+code already did: one data CMK per account, `alias/awsds-<env>-data`.
+[`docs/GOVERNANCE.md`](../GOVERNANCE.md) §Encryption carries the rule and the withdrawal note.
 
-**What survived the wrong premise, checked rather than assumed.** The (zone × account) decision of pass
-4a/4b rested on *two* arguments, and only the first was the premise that fell:
+What survived the wrong premise, checked rather than assumed. The (zone × account) decision of pass
+4a/4b rested on two arguments, and only the first was the premise that fell:
 
-- the framing — *a derived copy of a `zn-lab` table is still `zn-lab` data* — **is gone with the
-  dimension**;
-- the refusal to share the **lake's** key across the account line is a **measurement**, not a framing:
+- the framing — *a derived copy of a `zn-lab` table is still `zn-lab` data* — is gone with the
+  dimension;
+- the refusal to share the lake's key across the account line is a measurement, not a framing:
   `AllowProductionPickupDecryptViaS3` grants `kms:Decrypt` to `awsds-prod-job-exec` with no bucket
   scoping, so a consumer's derived zone under that key would put Production's job role over that
-  account's materialised `restricted` copies. **That stands verbatim**, and it is why the outcome — a
-  dedicated key per consumer account — did not move even though the reason for its *name* did. D31 is
-  untouched for the same reason: its control is the key policy's contents, never the alias.
+  account's materialised `restricted` copies. That stands, and it is why the outcome — a dedicated key
+  per consumer account — did not move even though the reason for its name did. D31 is untouched for
+  the same reason: its control is the key policy's contents, never the alias.
 
 ### Identity, stated before the calls
 
@@ -1342,23 +1294,23 @@ Account 1** (`awsds-infra-sandbox-1`), **Development** (`awsds-infra-dev`), **Id
 (`awsds-infra-identity`). `aws sts get-caller-identity` was checked before the first call — it came back
 `NoCredentials`, which is why the sitting opens with an `aws sso login` rather than with a plan.
 
-### The mechanic that made this cheap, and it was chosen rather than discovered
+### The mechanic that made this cheap
 
-**A CMK rename is an alias operation, and the alias is not the key.** The user chose *rename in place*
-over *new key*, so the three key objects never move and **no object is ever re-encrypted**: every S3
+A CMK rename is an alias operation, and the alias is not the key. The user chose *rename in place*
+over *new key*, so the three key objects never move and no object is ever re-encrypted: every S3
 object keeps pointing at the same key id, and the aliases that name it change. In Terraform that is a
 `moved {}` block per module address (`zn_lab_key` → `data_key`, `zone_key` → `data_key`) plus a new
-`alias_name`, and **the plan is the proof it worked**:
+`alias_name`, and the plan is the proof it worked:
 
 ```
 module.data_key.aws_kms_alias.this must be replaced
 module.data_key.aws_kms_key.this   will be updated in-place
 ```
 
-The **key** is `updated in-place` — not replaced, not destroyed, not re-created under a new id. Had the
-`moved` blocks been absent, the same rename would have read `destroy` + `create` on the key itself, which
-is a 7-day deletion window and an unreadable lake. The blocks are annotated as removable once every
-caller has applied, which they now have.
+The key is `updated in-place` — not replaced, not destroyed, not re-created under a new id. Had the
+`moved` blocks been absent, the same rename would have read `destroy` + `create` on the key itself,
+which is a 7-day deletion window and an unreadable lake. The blocks are annotated as removable once
+every caller has applied, which they now have.
 
 ### The four applies, in dependency order
 
@@ -1369,127 +1321,122 @@ caller has applied, which they now have.
 | `development/data/` | Development | `1 to add, 1 to change, 1 to destroy` | applied | **`No changes`** |
 | `identity/sso/` | Identity | `0 to add, 1 to change, 0 to destroy` | applied | **`No changes`** |
 
-**The producer's six destructions, named because one of them is a governance object and not a rename:**
+The producer's six destructions, one of them a governance object and not a rename:
 `aws_lakeformation_lf_tag.security_zone` (the dimension itself),
 `aws_lakeformation_permissions.gm_associate_security_zone` (the governance manager's `ASSOCIATE` on it),
-the three `aws_lakeformation_resource_lf_tags` assignments **replaced** to drop their `security-zone`
+the three `aws_lakeformation_resource_lf_tags` assignments replaced to drop their `security-zone`
 block, and the alias. The three changes are in-place: the key's description, and the two service roles'
 inline policies where the Sids were renamed (`UseZnLabKey` → `UseDataKey`, `KmsDecryptZnLab` →
 `KmsDecryptDataKey`).
 
-**Recipe D was not used here and that is deliberate**: the two-step apply exists to read
-`Create*DefaultPermissions` before a database is created, and nothing in these plans touches
-`aws_lakeformation_data_lake_settings` or creates a catalog object. `DL-5`/`DL-6` still bracket the
-sitting, per the standing rule, and both read clean before and after in all three Lake Formation
-accounts.
+Recipe D was not used here: the two-step apply exists to read `Create*DefaultPermissions` before a
+database is created, and nothing in these plans touches `aws_lakeformation_data_lake_settings` or
+creates a catalog object. `DL-5`/`DL-6` still bracket the sitting, per the standing rule, and both read
+clean before and after in all three Lake Formation accounts.
 
-**Recipe B ran and its documented failure fired once.** `consumer-data-v0.2.0` was tagged and pushed
-before either slice could resolve it, and the second commit was **blocked** by `Module source has
-changed` — the stale local module install, exactly the trap pass 1 recorded and the recipe warns about.
-`terraform get -update` in both slices cleared it. Worth noting the shape: the block came from the
-**commit gate**, not from an apply, which is the gate doing its job a step earlier than the runbook
-describes it.
+Recipe B ran and its documented failure fired once. `consumer-data-v0.2.0` was tagged and pushed before
+either slice could resolve it, and the second commit was blocked by `Module source has changed` — the
+stale local module install, the trap pass 1 recorded. `terraform get -update` in both slices cleared
+it. The block came from the commit gate, not from an apply — the gate doing its job a step earlier
+than the runbook describes it.
 
 ### What the estate reads now
 
-- **LF-Tags: `classification` (4 values), `layer` (3).** `security-zone` is gone from
-  `list-lf-tags` — the ontology is two keys plus the reserved `businessunit`;
-- **aliases: `alias/awsds-data-data`, `alias/awsds-sandbox-data`, `alias/awsds-dev-data`** — one data CMK
-  per account, and each account's `awsds-<env>-tfstate` key sits beside it untouched, which is the
-  distinction §Encryption insists on (one key per account **for data**, not one key per account);
-- **`DL-5`: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`** in Data Governance, Sandbox and Development,
+- LF-Tags: `classification` (4 values), `layer` (3). `security-zone` is gone from `list-lf-tags` — the
+  ontology is two keys plus the reserved `businessunit`;
+- aliases: `alias/awsds-data-data`, `alias/awsds-sandbox-data`, `alias/awsds-dev-data` — one data CMK
+  per account, and each account's `awsds-<env>-tfstate` key sits beside it untouched, the distinction
+  §Encryption insists on (one key per account for data, not one key per account);
+- `DL-5`: `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE` in Data Governance, Sandbox and Development,
   before and after;
-- **`DL-6`: no `IAMAllowedPrincipals` create-default** in all three;
-- **`DL-7`: 4 shares out, 4 resource links, no pending invitation** — the shares are indifferent to the
-  key rename, as they should be;
-- **`0 check(s) FAILED`** overall.
+- `DL-6`: no `IAMAllowedPrincipals` create-default in all three;
+- `DL-7`: 4 shares out, 4 resource links, no pending invitation — the shares are indifferent to the
+  key rename;
+- `0 check(s) FAILED` overall.
 
-### `DL-12` failed correctly in the before-reading, and that is a feature
+### `DL-12` failed correctly in the before-reading
 
-The pre-apply run reported **`DL-12` FAILED in both consumer accounts**, naming
+The pre-apply run reported `DL-12` FAILED in both consumer accounts, naming
 `UseLakeDataKeyViaS3 (GenerateDataKey/Decrypt via S3)` as missing. It was: the instrument had already
-been edited to look for the new Sid, and the provisioned roles still carried the old one. **The check was
-describing the estate accurately** — the identity half under its new name genuinely did not exist yet —
-and it went `pass` in both accounts after the fourth apply.
+been edited to look for the new Sid, and the provisioned roles still carried the old one. The check was
+describing the estate accurately — the identity half under its new name did not exist yet — and it
+went `pass` in both accounts after the fourth apply.
 
-This is the same shape as pass 4a/4b's `DL-6` reading FAILED for Development while its turn had not come,
-and it is worth writing down twice: **an instrument edited ahead of the apply it measures reports the
-truth about a state that is about to stop existing.** The failure mode to guard against is the opposite
-one — reading that red as a defect and "fixing" it — which is why the plan diff is the negative control
-in both cases.
+This is the same shape as pass 4a/4b's `DL-6` reading FAILED for Development while its turn had not
+come: an instrument edited ahead of the apply it measures reports the truth about a state that is
+about to stop existing. The failure mode to guard against is reading that red as a defect and "fixing"
+it, which is why the plan diff is the negative control in both cases.
 
-### The grant register loses a row's worth of triples — its first removal
+### The grant register loses its first triple
 
-`docs/AWS_STATE.md`'s Lake Formation grant register goes **25 → 24 applied triples**. The governance
-manager's `ASSOCIATE` row covered three tags and now covers two. **The row was annotated rather than
-rewritten**: it names the revoked `security-zone` triple and its date, because a register whose past
-silently matches its present cannot show that something was withdrawn. That is the same discipline
-`POLICIES.md` keeps, applied to the first grant this project has ever taken away.
+`docs/AWS_STATE.md`'s Lake Formation grant register goes 25 → 24 applied triples. The governance
+manager's `ASSOCIATE` row covered three tags and now covers two. The row was annotated rather than
+rewritten: it names the revoked `security-zone` triple and its date, because a register whose past
+silently matches its present cannot show that something was withdrawn — `POLICIES.md`'s discipline,
+applied to the first grant this project has taken away.
 
-### The second review pass, and it found the rows that own the claim — again
+### The second review pass found the rows that own the claim
 
-After the propagation was written, a **four-lens adversarial review** ran over the diff (stale
+After the propagation was written, a four-lens adversarial review ran over the diff (stale
 current-state claims; `GOVERNANCE.md` self-consistency; the two per-`Sid` READMEs against their `.tf`;
-forward-looking plan files), each finding then handed to a verifier prompted to **refute** it. Thirteen
-agents, nine confirmed findings, **six distinct fixes** — and the pattern is pass 4's, for the third
-time:
+forward-looking plan files), each finding then handed to a verifier prompted to refute it. Thirteen
+agents, nine confirmed findings, six distinct fixes — the pattern is pass 4's, for the third time:
 
 | What was missed | Why it matters |
 |---|---|
-| **`CLAUDE.md`'s routing table** still enumerated `security-zone` in the ontology **and** called the consumer key "zone CMK" | The two rows whose whole job is to say where the model lives — contradicting a bullet I had written into the same file minutes earlier |
-| **`AWS_STATE.md`** said the account holds the GM's **"nine grants"** | Its own register two screens below already counted eight |
-| **INT-10** pointed the Stage 9 executor at Sid **`UseLakeZoneKeyViaS3`** | The row that exists to name where the two halves are, naming a Sid that no longer exists. **This one no grep of mine would have caught** — it contains neither `zn-lab` nor `security-zone` |
-| **`GOVERNANCE.md` §Encryption** argued against a key "that also served state and **logs**" | The lake's own `awsds-data-logs` sits under the data key, so the new section's rationale indicted the applied design. Narrowed to Terraform state, with `logs` named as data |
-| **Stage 6** called the consumer CMK "the derived-zone key" in three forward-looking spots | The object a Stage 6 executor must edit is `alias/awsds-<env>-data` |
-| The lf-registration role's trust Sid **`LakeFormationService`** had no README row | Pre-existing gap in the one-row-per-`Sid` discipline, found in passing |
+| `CLAUDE.md`'s routing table still enumerated `security-zone` in the ontology and called the consumer key "zone CMK" | The two rows whose whole job is to say where the model lives — contradicting a bullet written into the same file minutes earlier |
+| `AWS_STATE.md` said the account holds the GM's "nine grants" | Its own register two screens below already counted eight |
+| INT-10 pointed the Stage 9 executor at Sid `UseLakeZoneKeyViaS3` | The row that exists to name where the two halves are, naming a Sid that no longer exists. No grep would have caught this one — it contains neither `zn-lab` nor `security-zone` |
+| `GOVERNANCE.md` §Encryption argued against a key "that also served state and logs" | The lake's own `awsds-data-logs` sits under the data key, so the new section's rationale indicted the applied design. Narrowed to Terraform state, with `logs` named as data |
+| Stage 6 called the consumer CMK "the derived-zone key" in three forward-looking spots | The object a Stage 6 executor must edit is `alias/awsds-<env>-data` |
+| The lf-registration role's trust Sid `LakeFormationService` had no README row | Pre-existing gap in the one-row-per-`Sid` discipline, found in passing |
 
-**The transferable half is the search method, not the findings.** A textual sweep finds the *word* that
-changed; it cannot find a claim that was made in the old model's vocabulary without using its terms — a
-count ("nine grants"), a renamed `Sid`, an argument whose example is now wrong. Those need a reader with
-the new model in hand, which is what the lenses were.
+The transferable half is the search method. A textual sweep finds the word that changed; it cannot
+find a claim made in the old model's vocabulary without using its terms — a count ("nine grants"), a
+renamed `Sid`, an argument whose example is now wrong. Those need a reader with the new model in hand,
+which is what the lenses were.
 
 ### Records
 
-**Code:** `terraform-live/data-governance/data/` (`kms.tf`, `lakeformation.tf`, `catalog.tf`,
+Code: `terraform-live/data-governance/data/` (`kms.tf`, `lakeformation.tf`, `catalog.tf`,
 `governance.tf`, `buckets.tf`, `maintenance.tf`, `outputs.tf`, `providers.tf`),
 `terraform-modules/consumer-data/` (`kms.tf`, `buckets.tf`, `athena.tf`, `outputs.tf`, README) at
-**v0.2.0**, `terraform-live/{sandbox,development}/data/` (`main.tf` pin, `outputs.tf`),
+v0.2.0, `terraform-live/{sandbox,development}/data/` (`main.tf` pin, `outputs.tf`),
 `terraform-live/identity/sso/` (`data.tf`, `locals.tf`, `variables.tf`,
 `policies-data-scientists.tf`), `aws/datalake.py` (`DL-12`'s Sid), `aws/deploytargets.py`
 (`PROD_CMK_ALIAS` → `alias/awsds-prod-data`), `scripts/tfhygiene/{layers,backend}.py` (descriptions).
 
-**Docs:** [`docs/GOVERNANCE.md`](../GOVERNANCE.md) — **§`security-zone` deleted, §Encryption written** as
-the one copy, plus the LF-Tags table, §Drop-box, §Derived zone and §Persistence;
+Docs: [`docs/GOVERNANCE.md`](../GOVERNANCE.md) — §`security-zone` deleted, §Encryption written, plus
+the LF-Tags table, §Drop-box, §Derived zone and §Persistence;
 [`docs/AWS_STATE.md`](../AWS_STATE.md) (the state row, the register preamble and its GM row);
 [`D19`](../plan/decisions/D19-derived-zone.md) (a second revision note — the zone framing kept as
 history); the stage file (build table, decisions 1/2/3, steps 1.4, 2, 6.2, 9.2, cost row); stage files
-**6, 9, 10, 14**; both lake READMEs; [`docs/plan/integrations.md`](../plan/integrations.md) (INT-10);
+6, 9, 10, 14; both lake READMEs; [`docs/plan/integrations.md`](../plan/integrations.md) (INT-10);
 `cost-model.md`, `architecture.md`, `conventions.md`, `SMUS.md`, `terraform-live/README.md`;
 [`docs/plan/history.md`](../plan/history.md) (the withdrawal, since provisioned objects changed);
 `CLAUDE.md` (routing table + a Current-position bullet).
 
-**AWS:** 6 added, 6 changed, 8 destroyed across four accounts — of which **exactly two destructions are
-governance objects** (the LF-Tag and its grant); everything else is an alias replacement or an in-place
-policy edit. **No key was created, none was deleted, no object was re-encrypted, and the monthly KMS cost
-is unchanged** at three data keys.
+AWS: 6 added, 6 changed, 8 destroyed across four accounts — of which exactly two destructions are
+governance objects (the LF-Tag and its grant); everything else is an alias replacement or an in-place
+policy edit. No key was created, none was deleted, no object was re-encrypted, and the monthly KMS cost
+is unchanged at three data keys.
 
-**Gates:** `make check` **OK** (twice — before the applies and after the review pass); `pre-commit` green
-on every commit, tflint/checkov/ruff included; `terraform validate` clean in all four slices.
+Gates: `make check` OK (twice — before the applies and after the review pass); `pre-commit` green on
+every commit, tflint/checkov/ruff included; `terraform validate` clean in all four slices.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-- **4d — every behavioural proof**, unchanged and still the real debt: the pandas pair, the classification
-  pair's persona half, the workgroup boundary, the crawler pair, the drop-box asymmetry. All need a
-  persona sign-in with the tunnel up. **This sitting added nothing to that list and removed nothing from
-  it** — a rename is invisible to every one of those proofs, which is the point of renaming rather than
-  re-keying.
-- **4e — 4.3's `athena:StartQueryExecution` amendment**, still last, still through battery phase 4b.
+- 4d — every behavioural proof, unchanged: the pandas pair, the classification pair's persona half,
+  the workgroup boundary, the crawler pair, the drop-box asymmetry. All need a persona sign-in with the
+  tunnel up. This sitting added nothing to that list and removed nothing from it — a rename is
+  invisible to every one of those proofs.
+- 4e — 4.3's `athena:StartQueryExecution` amendment, still last, still through battery phase 4b.
 - Pass 6 (Security Hub) untouched; `DL-11` still notes it enabled nowhere.
-- **The two `moved {}` blocks are now removable** — every caller has applied — but they were left in
-  place deliberately this sitting: removing them is a separate diff with nothing else in it, which is how
-  a state-address change should be reviewed.
+- The two `moved {}` blocks are now removable — every caller has applied — but were left in place this
+  sitting: removing them is a separate diff with nothing else in it, which is how a state-address
+  change should be reviewed.
 
-## 2026-08-19 — Pass 4d opened: the host's first start met a capacity wall, the topology was read, and the VPN runbooks were unified
+## 2026-08-19 — Pass 4d opened: the host's capacity wall, the topology reading, the VPN runbook unified
 
 *Provenance: **this entry is Claude's**, written on the user's request in the same sitting. **The one
 AWS write is the user's hand** — two `ec2:StartInstances` attempts, as the infrastructure user in
@@ -1500,13 +1447,12 @@ the user's paste, verbatim. No apply, no policy change, no grant.*
 
 Pass 4d's proofs all ride the tunnel, and the session opened with the question *"tenho que rodar o
 make up para sandbox?"*. The answer, measured against `scripts/tfhygiene/layers.py` and both
-dry-runs: **no** — `make up ENV=sandbox` would also apply the two `[E]` slices (`egress/` at
-USD 0.160/h, `probes/` at 0.0084/h) against the tunnel's own 0.0042/h, and **no 4d proof runs inside
-a VPC**: everything leaves the laptop, transits the host's masquerade and exits through the Elastic
-IP or the `[P]` gateway endpoints. The NAT and the interface endpoints serve the *private* subnets
-(their route is installed only in the private route tables), which nothing occupies until Stage 6.
-So the sitting used the host-only start — now §S5 of the unified runbook — and the `[E]` slices
-stayed down.
+dry-runs: no. `make up ENV=sandbox` would also apply the two `[E]` slices (`egress/` at USD 0.160/h,
+`probes/` at 0.0084/h) against the tunnel's own 0.0042/h, and no 4d proof runs inside a VPC:
+everything leaves the laptop, transits the host's masquerade and exits through the Elastic IP or the
+`[P]` gateway endpoints. The NAT and the interface endpoints serve the private subnets (their route is
+installed only in the private route tables), which nothing occupies until Stage 6. So the sitting used
+the host-only start — §S5 of the unified runbook — and the `[E]` slices stayed down.
 
 ### The start, and the first `InsufficientInstanceCapacity` this project has met
 
@@ -1517,61 +1463,59 @@ aws: [ERROR]: An error occurred (InsufficientInstanceCapacity) when calling the 
 ```
 
 The discriminating reads (Claude, read-only): the instance was left cleanly `stopped` — a failed
-start has no intermediate state to undo — and `describe-instance-type-offerings` shows **`t4g.nano`
-IS offered in the host's AZ**, so this was transient pool exhaustion, not a configuration defect. A
-stopped `[D]` instance holds no hardware; every start re-contests capacity like a fresh launch, and
-a one-AZ Graviton nano is where the pool runs dry first — the hidden price of D11's "pay nothing
-while idle", now measured rather than assumed. **The user's retry succeeded minutes later**:
-`running`, same type, same AZ, launch 23:04:41Z. `./aws/vpn.py` read **0 FAILED** with `VP-2`
-confirming the Elastic IP reassociated to the host — every client config untouched, which is what
-that `[P]` allocation exists to guarantee. The remediation ladder (retry; then `t4g.micro` by
-deliberate apply; never an AZ move) is written into §S5 rather than left here.
+start has no intermediate state to undo — and `describe-instance-type-offerings` shows `t4g.nano` is
+offered in the host's AZ, so this was transient pool exhaustion, not a configuration defect. A stopped
+`[D]` instance holds no hardware; every start re-contests capacity like a fresh launch, and a one-AZ
+Graviton nano is where the pool runs dry first — the hidden price of D11's "pay nothing while idle",
+now measured. The user's retry succeeded minutes later: `running`, same type, same AZ, launch
+23:04:41Z. `./aws/vpn.py` read 0 FAILED with `VP-2` confirming the Elastic IP reassociated to the host
+— every client config untouched, which is what that `[P]` allocation exists to guarantee. The
+remediation ladder (retry; then `t4g.micro` by deliberate apply; never an AZ move) is written into §S5.
 
-### The topology, read rather than believed — and one 4d probe corrected by it
+### The topology, read rather than believed, and one 4d probe corrected by it
 
 Three readings taken while answering *"o egress não é necessário para a VPN?"*, all now §S2/§S3 of
 the runbook:
 
-- the host sits in the **public** subnet; its route table sends `0.0.0.0/0` to the **IGW** — no NAT
-  anywhere on the path;
-- the same route table carries the **two `[P]` gateway endpoints** (S3, DynamoDB), so tunnel traffic
-  **splits by destination**: S3 arrives at a bucket as `aws:SourceVpce`, every other API as
-  `aws:SourceIp` = the Elastic IP. The drop-box bucket policy, read back, mirrors the split exactly —
-  its `DenyOutsideTrustedNetworks` names that gateway endpoint id and that `/32`, INT-05 restated as
+- the host sits in the public subnet; its route table sends `0.0.0.0/0` to the IGW — no NAT anywhere
+  on the path;
+- the same route table carries the two `[P]` gateway endpoints (S3, DynamoDB), so tunnel traffic
+  splits by destination: S3 arrives at a bucket as `aws:SourceVpce`, every other API as `aws:SourceIp`
+  = the Elastic IP. The drop-box bucket policy, read back, mirrors the split exactly — its
+  `DenyOutsideTrustedNetworks` names that gateway endpoint id and that `/32`, INT-05 restated as
   policy;
-- `source_dest_check` is **on**, deliberately, over a forwarding host — everything is masqueraded, so
-  the check stays as anti-spoofing and a broken masquerade fails visibly at the host.
+- `source_dest_check` is on, deliberately, over a forwarding host — everything is masqueraded, so the
+  check stays as anti-spoofing and a broken masquerade fails visibly at the host.
 
-**The finding that changes a 4d probe:** the same bucket-policy condition carries an
-`aws:PrincipalAccount` branch admitting the lake account's own principals **from any network** — so
-the carve-out pair's negative half ("a caller satisfying no branch is denied") proves nothing if run
-as that account's `InfrastructureAccess`. It must run as a principal from a **different** account,
-off-tunnel; the on-tunnel persona pandas probe then fails by *implicit* deny (D13, no S3 grant
-anywhere), and the two denials carry different wording — the pair Lesson 13 asks for.
+The finding that changes a 4d probe: the same bucket-policy condition carries an `aws:PrincipalAccount`
+branch admitting the lake account's own principals from any network — so the carve-out pair's negative
+half ("a caller satisfying no branch is denied") proves nothing if run as that account's
+`InfrastructureAccess`. It must run as a principal from a different account, off-tunnel; the on-tunnel
+persona pandas probe then fails by implicit deny (D13, no S3 grant anywhere), and the two denials
+carry different wording — the pair Lesson 13 asks for.
 
 ### The repository work, at the user's request
 
-`vpn-keys.md` and `vpn-client.md` **unified into [`runbooks/vpn.md`](../plan/runbooks/vpn.md)** —
-their content kept whole as Parts K and C (procedures keep their letters, sections gained `K`/`C`
-prefixes), plus a new **Part S** written from this sitting's readings: the components table, the
-measured topology, the VPN-vs-`egress/` split, why persona work needs the tunnel, and **§S5 —
-start/stop** with the Name-tag lookup (the id is never written down: a roster change replaces the
-host), the guarded one-liner (Lesson 25's empty-id trap named), and the capacity note above.
-References updated in `CLAUDE.md` (two routing rows merged into one), `README.md`,
-`docs/GENERAL_PLAN.md`, `docs/ORGANIZATION.md`, `stage-04-vpn.md` (historical mention annotated, not
-rewritten), `scripts/check-tfvars-shape.py` (two error strings), and one link target in the Stage 4
-log (text kept, href only). One gap written down for the next sitting: **no `awsds-scientist-dev`
-profile exists** in the local CLI config — the Development-side persona proofs need it, a local
-config edit, no AWS change.
+`vpn-keys.md` and `vpn-client.md` unified into [`runbooks/vpn.md`](../plan/runbooks/vpn.md) — their
+content kept whole as Parts K and C (procedures keep their letters, sections gained `K`/`C` prefixes),
+plus a new Part S written from this sitting's readings: the components table, the measured topology,
+the VPN-vs-`egress/` split, why persona work needs the tunnel, and §S5 — start/stop with the Name-tag
+lookup (the id is never written down: a roster change replaces the host), the guarded one-liner
+(Lesson 25's empty-id trap named), and the capacity note above. References updated in `CLAUDE.md`
+(two routing rows merged into one), `README.md`, `docs/GENERAL_PLAN.md`, `docs/ORGANIZATION.md`,
+`stage-04-vpn.md` (historical mention annotated, not rewritten), `scripts/check-tfvars-shape.py` (two
+error strings), and one link target in the Stage 4 log (text kept, href only). One gap written down
+for the next sitting: no `awsds-scientist-dev` profile exists in the local CLI config — the
+Development-side persona proofs need it, a local config edit, no AWS change.
 
-### Not done, and owed by name
+### Not done, owed by name
 
 Every 4d proof is still owed — the tunnel was not yet up when this entry was written; the host is
 `running` and waiting. Then 4e (the SCP amendment, last, through battery phase 4b) and pass 6
 (Security Hub). The stage's debt list is unchanged by this sitting except in one respect: the
 carve-out pair's negative half now has its correct principal written down.
 
-## 2026-08-19 — Pass 4d's first proof: the perimeter fires off the tunnel and stands down on it, in two different wordings
+## 2026-08-19 — Pass 4d's first proof: the perimeter fires off the tunnel and stands down on it
 
 *Provenance. **The `~/.aws/config` edit and every command below are the user's**, run from the laptop
 and pasted verbatim, with **one mechanical substitution, named here and made nowhere else: account ids
@@ -1582,9 +1526,9 @@ analysis around them and nothing else**, and made no AWS call in this sitting.*
 ### The prerequisite the previous entry left owed
 
 `awsds-scientist-dev`, added to `~/.aws/config` — a local file, no AWS change. It reaches
-`<Development Account>` through the **same `awsds-scientist` sso-session** as the Sandbox persona
-profile and the **same `DataScientistAccess` permission set**: person and role coincide, so the name
-carries no role segment (`aws/AWS-CLI.md`'s rule), and one sign-in covers both accounts.
+`<Development Account>` through the same `awsds-scientist` sso-session as the Sandbox persona profile
+and the same `DataScientistAccess` permission set: person and role coincide, so the name carries no
+role segment (`aws/AWS-CLI.md`'s rule), and one sign-in covers both accounts.
 
 ```
 [profile awsds-scientist-dev]
@@ -1594,11 +1538,11 @@ sso_role_name = DataScientistAccess
 region = us-west-2
 ```
 
-### The pair — one command, two networks, two wordings
+### The pair: one command, two networks, two wordings
 
-**Tunnel DOWN**, as the infrastructure user in `<Sandbox Account 1>` — a principal from an account
-**other** than the lake's, which is the correction the previous entry wrote down. `/dev/null` is the
-`OUTFILE` positional `get-object` requires; a denial is what the command is for, so nothing is written:
+Tunnel down, as the infrastructure user in `<Sandbox Account 1>` — a principal from an account other
+than the lake's, the correction the previous entry wrote down. `/dev/null` is the `OUTFILE` positional
+`get-object` requires; a denial is what the command is for, so nothing is written:
 
 ```
 ~ aws s3api get-object --bucket awsds-data-curated --key qualquer-coisa /dev/null --profile awsds-infra-sandbox-1
@@ -1606,8 +1550,8 @@ region = us-west-2
 aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d/<the infrastructure user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-data-curated" with an explicit deny in a resource-based policy
 ```
 
-**Tunnel UP**, credential cache cleared first so that no session minted off the tunnel could be
-replayed and turn a network reading into an identity one (Lesson 25), then the identical command:
+Tunnel up, credential cache cleared first so that no session minted off the tunnel could be replayed
+and turn a network reading into an identity one (Lesson 25), then the identical command:
 
 ```
 ~ rm -f ~/.aws/cli/cache/*.json
@@ -1618,34 +1562,34 @@ aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operat
 
 ### What the two wordings prove
 
-**The statement that fired is `DenyOutsideTrustedNetworks`** (`data-governance/data/buckets.tf`), read
+The statement that fired is `DenyOutsideTrustedNetworks` (`data-governance/data/buckets.tf`), read
 from the code rather than inferred from the message — IAM names neither the policy nor the `Sid` in a
 resource-policy denial. Its condition block is five tests ANDed, and off the tunnel every one of them
-held: no `aws:SourceVpce` key at all (a request over the public internet has none, and a *negated*
-operator on an absent key evaluates **true** — the mechanism the whole branch rests on), an
+held: no `aws:SourceVpce` key at all (a request over the public internet has none, and a negated
+operator on an absent key evaluates true — the mechanism the whole branch rests on), an
 `aws:PrincipalAccount` that is Sandbox rather than the lake, a source address outside both Elastic-IP
 `/32`s, and neither `aws:ViaAWSService` nor `aws:PrincipalIsAWSService` set.
 
-**`s3:ListBucket` in place of `s3:GetObject` is not a mismatch.** The key does not exist, and S3 decides
-between `404 NoSuchKey` and `403 AccessDenied` by evaluating `s3:ListBucket` on the *bucket*; that
+`s3:ListBucket` in place of `s3:GetObject` is not a mismatch. The key does not exist, and S3 decides
+between `404 NoSuchKey` and `403 AccessDenied` by evaluating `s3:ListBucket` on the bucket; that
 evaluation hit the deny first. The statement covers `[arn, arn/*]`, so it is the same statement either
 way — and a `NoSuchKey` here would have been the bad reading, since it would mean the call was
 authorized.
 
-**On the tunnel the wording changes to the implicit-deny form**, which is the half that makes this a
-verification rather than a single denial (Lesson 13): *"because no resource-based policy allows"* is
-what IAM says when **no explicit deny matched**. So the perimeter stood down — the request satisfied a
-trusted branch — and what refuses the call is now the absence of a grant. That absence is Lesson 28's
-shape from the far side: a cross-account read needs an allow in **both** the caller's identity policy
-and the bucket's resource policy, and the lake's policy grants this account nothing on `curated`.
+On the tunnel the wording changes to the implicit-deny form, the half that makes this a verification
+rather than a single denial (Lesson 13): *"because no resource-based policy allows"* is what IAM says
+when no explicit deny matched. So the perimeter stood down — the request satisfied a trusted branch —
+and what refuses the call is now the absence of a grant: a cross-account read needs an allow in both
+the caller's identity policy and the bucket's resource policy (Lesson 28), and the lake's policy grants
+this account nothing on `curated`.
 
-**One thing the pair does not settle, and it is worth not over-claiming.** The on-tunnel reading proves
-*a* trusted branch matched; it cannot say **which**, because `aws:SourceVpce` (the consumer gateway
-endpoint) and `aws:SourceIp` (the Elastic IP) are both trusted and the message names neither. What
-discriminates them is the route-table reading in the previous entry — the public subnet carries the two
-`[P]` gateway endpoints, and a prefix-list route is more specific than `0.0.0.0/0` — not this message.
-A future claim that "the `aws:SourceVpce` branch is proven end to end" needs the flow log or an S3 data
-event carrying `vpcEndpointId`, and neither was read here.
+One thing the pair does not settle. The on-tunnel reading proves a trusted branch matched; it cannot
+say which, because `aws:SourceVpce` (the consumer gateway endpoint) and `aws:SourceIp` (the Elastic
+IP) are both trusted and the message names neither. What discriminates them is the route-table reading
+in the previous entry — the public subnet carries the two `[P]` gateway endpoints, and a prefix-list
+route is more specific than `0.0.0.0/0` — not this message. A claim that "the `aws:SourceVpce` branch
+is proven end to end" needs the flow log or an S3 data event carrying `vpcEndpointId`, and neither was
+read here.
 
 ### The tunnel, in two readings
 
@@ -1658,22 +1602,22 @@ ns-1536.awsdns-00.co.uk. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
 ```
 
 The address is the `[P]` Elastic IP of `sandbox/foundation/`, unchanged across every host stop, start
-and replacement since 2026-08-17 — so the **full** tunnel is real and the laptop's non-S3 traffic
-leaves through the host's masquerade. The SOA answer is the second, different claim: `sandbox.internal`
-is a **private** hosted zone associated with the Sandbox VPC alone, so it NXDOMAINs from any public
-resolver — an answer means the VPC resolver was reached, i.e. DNS is inside the tunnel too. §C2's third
-check, the handshake, is not in this record; the two above carry the claim on their own, since neither
-can succeed without a live tunnel.
+and replacement since 2026-08-17 — so the full tunnel is real and the laptop's non-S3 traffic leaves
+through the host's masquerade. The SOA answer is a second, different claim: `sandbox.internal` is a
+private hosted zone associated with the Sandbox VPC alone, so it NXDOMAINs from any public resolver —
+an answer means the VPC resolver was reached, i.e. DNS is inside the tunnel too. §C2's third check,
+the handshake, is not in this record; the two above carry the claim on their own, since neither can
+succeed without a live tunnel.
 
-### Not done, and owed by name
+### Not done, owed by name
 
-Every **persona** proof of 4d is still owed, and none of them has run: the Athena query through the
+Every persona proof of 4d is still owed, and none of them has run: the Athena query through the
 resource link, the five-column read with `counterparty` absent, the pandas/S3 implicit-deny pair, the
 workgroup boundary, the drop-box asymmetry (`PutObject` yes, `GetObject` no) and the crawler pair — in
-**both** Sandbox and Development, which is what the new profile exists for. Then the explicit
-`restricted` grant and its revert, then **4e** (the `athena:StartQueryExecution` amendment, last,
-through battery phase 4b) and pass 6 (Security Hub). What this sitting closed is the carve-out pair
-alone — the one 4d proof that needed no persona.
+both Sandbox and Development, which is what the new profile exists for. Then the explicit `restricted`
+grant and its revert, then 4e (the `athena:StartQueryExecution` amendment, last, through battery
+phase 4b) and pass 6 (Security Hub). What this sitting closed is the carve-out pair alone — the one 4d
+proof that needed no persona.
 
 ## 2026-08-19 — Pass 4d, group A in Sandbox: five proofs land, and the drop-box write is broken by a deny nobody connected to the gateway endpoint
 
