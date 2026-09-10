@@ -6,41 +6,30 @@
 #   reads:    *.tf only. No AWS session, no side effect, nothing written.
 #   exit:     0 clean | 1 at least one violation
 #
-# THE THREE THINGS IT REFUSES, and each is a rule that has nothing else enforcing it:
+# The three things it refuses, each a rule nothing else enforces:
 #
-#   A. A REGION OR AZ LITERAL (docs/plan/architecture.md, region portability). The region is a
-#      variable, not an assumption - var.region everywhere, AMIs from SSM public parameters.
-#      backend.hcl is the ONE place a literal is allowed (step 2.5) and it is not a .tf file,
-#      so this check never sees it. That reconciliation is the whole reason the backend is
-#      partial configuration rather than a block.
+#   A. A region or AZ literal (docs/plan/architecture.md, region portability): var.region
+#      everywhere, AMIs from SSM public parameters. backend.hcl is the one place a literal is allowed
+#      (step 2.5) and is not a .tf file.
+#   B. An AZ selected by index. AZ names are per-account aliases over the physical zones, so
+#      `names[0]` is a different building in two accounts, and a subnet peered across accounts
+#      silently pays cross-AZ traffic. Subnets anchor on zone_id, from .tfvars (1b step 6).
+#   C. aws_s3_account_public_access_block, anywhere. The account-level setting is hand-managed (1c
+#      step 7.4), and the SCP that denies the API carves out `InfrastructureAccess`, the principal
+#      every slice applies as, so an apply that touched it would succeed. This script is the rule's
+#      only enforcement (step 5.2, terraform-live/README.md).
 #
-#   B. AN AZ SELECTED BY INDEX. `data.aws_availability_zones.this.names[0]` is portable-looking
-#      and wrong: AZ NAMES are per-account aliases over the physical zones, so the same [0]
-#      is a different building in two accounts, and a subnet peered across accounts silently
-#      pays cross-AZ traffic. Subnets anchor on zone_id, from .tfvars (settled 1b step 6).
+# Blind spots, so nobody reads more into a green run (Lesson 13):
 #
-#   C. aws_s3_account_public_access_block, ANYWHERE. The account-level setting is hand-managed
-#      by decision (1c step 7.4), and - the part that makes this scan load-bearing rather than
-#      tidy - the SCP that denies the API carves out `InfrastructureAccess`, which is exactly
-#      the principal every slice applies as. So an apply that touched it would SUCCEED. This
-#      script is the only enforcement the rule has (step 5.2, and terraform-live/README.md).
+#   - Full-line comments are skipped: a comment creates nothing, and forbidding the region's name in
+#     an explanation would buy vagueness and no safety. An inline trailing comment on a code line is
+#     still read, so prose about the region beside code goes on its own line.
+#   - B is a one-line pattern: an index split onto its own line, or hidden behind a local, walks
+#     past it.
+#   - .terraform/ is pruned: vendored provider and module code is not ours.
 #
-# WHAT IT DELIBERATELY DOES NOT SEE, said out loud so nobody reads more into a green run
-# (Lesson 13 - a check has to be honest about its blind side):
-#
-#   - FULL-LINE COMMENTS ARE SKIPPED. A comment creates nothing, and these files carry their
-#     reasoning in prose: a check that forbade naming us-west-2 in an explanation would buy
-#     vagueness and no safety. An inline trailing comment on a CODE line is still read, so the
-#     way to write about the region beside code is to give the prose its own line.
-#   - B is a ONE-LINE pattern. Splitting the index onto its own line, or hiding it behind a
-#     local, walks past it. It catches the shape that gets typed, not every shape that exists.
-#   - .terraform/ is pruned: it holds vendored provider and module code that is not ours.
-#
-# The shell version's two scars are structural here rather than remembered: line numbers
-# restart per file because the loop is per file, and a pattern that does not compile raises
-# before anything is scanned instead of reporting a clean tree (Lesson 13 - the `continue`
-# form of the old perl compiled to nothing and reported `none` over a file holding all three
-# violations).
+# Line numbers restart per file, and a pattern that does not compile raises before anything is
+# scanned instead of reporting a clean tree (Lesson 13).
 
 from __future__ import annotations
 
@@ -111,13 +100,10 @@ def main(argv: list) -> int:
 
     say()
     say("== A. region and AZ literals ==")
-    # The ONE sanctioned inline exception, and it is a marker with a reason, not a skip:
-    # a code line may carry `# region:aws-pinned <why>` when the literal is AWS's OWN
-    # single-Region pin (the page says "available only in us-east-1") - a fact var.region
-    # cannot express and D1's portability rule was never about. First users: the console's
-    # uxc/freetier endpoints and the measured account.us-east-1 host, on the Sandbox DNS
-    # allow-list (2026-08-25). The line is still
-    # printed, as `allow`, so the exception stays visible on every run.
+    # The one sanctioned inline exception, a marker with a reason: a code line may carry
+    # `# region:aws-pinned <why>` when the literal is AWS's own single-Region pin (a page saying
+    # "available only in us-east-1"), which var.region cannot express and D1's portability rule was
+    # never about. The line is still printed, as `allow`, so the exception stays visible.
     report(
         REGION_RE,
         "use var.region; the one allowed literal is backend.hcl (step 2.5)",

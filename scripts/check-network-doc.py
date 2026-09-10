@@ -7,49 +7,25 @@
 #             Touches nothing, needs no AWS session.
 #   exit:     0 when the document names everything below | 1 when it is behind the code.
 #
-# WHY THIS EXISTS. docs/NETWORK.md is the one picture of the whole network - the address plan,
-# every element that holds an internal address, the routes, both egress paths, the DNS layer.
-# It is written to be read INSTEAD of opening six slices, which is exactly what makes a stale
-# copy expensive: a reader who trusts it does not go and check. The failure is silent in the
-# direction that costs most - a slice added in Stage 7, 9, 13 or 14 puts a host on the wire and
-# nothing in the repository says the picture is now incomplete (Lesson 34: a deferred obligation
-# recorded only at the deferring end is a promise the receiving stage never gets).
-#
-# WHAT IT DECIDES, and all three are DERIVED rather than restated here (Lesson 14 - a second
-# copy of the arithmetic would be one more thing to keep in step):
+# docs/NETWORK.md is written to be read instead of opening six slices, so a stale copy is expensive
+# and silent: a slice added by a later stage puts a host on the wire and nothing says the picture is
+# incomplete (Lesson 34). The three rules are derived from the code, never restated here:
 #
 #   A. Every /16 in backend.CIDRS appears in the document, plus the WireGuard client range.
-#      This is what a `Staging` vend or a second Sandbox unit trips.
-#   B. For every account that HAS a foundation/ slice on disk, every per-tier subnet CIDR
-#      appears - RECOMPUTED from the `cidrsubnet` calls in terraform-modules/vpc/main.tf, so
-#      re-cutting the tiers there is what makes this fail rather than a number typed twice.
-#      An account with an allocation and no foundation/ is checked by rule A alone. That case has
-#      HAD NO EXAMPLE SINCE 2026-09-06 - it used to read "(Staging today)", meaning the unvended
-#      account whose 10.40 allocation had no VPC behind it. Stage 6b renamed `Development` into
-#      Staging, so all three allocated accounts now carry a foundation/, and 10.40 is unallocated
-#      rather than allocated-and-empty. The branch is kept: Stage 14 vends a Sandbox unit's CIDR
-#      row before its slices exist, which puts an account back in it.
-#      alone: its subnets do not exist, and demanding them would be demanding a fiction.
-#   C. Every NETWORK-BEARING slice is named, as `<account>/<slice>`. Three ways to be one, and
-#      the union is deliberate because each catches what the others miss:
-#        - it declares a resource that holds an address, carries traffic or filters it
-#        - it calls one of the network modules (a slice like sandbox/egress/ declares nothing
-#          itself - the whole slice is one module call)
-#        - its name is one of backend.NETWORK_SLICES (the allocation's own vocabulary)
+#   B. For every account with a foundation/ slice on disk, every per-tier subnet CIDR appears,
+#      recomputed from the `cidrsubnet` calls in terraform-modules/vpc/main.tf. An account with an
+#      allocation and no foundation/ (a Stage 14 vend before its slices exist) is checked by rule A
+#      alone: its subnets do not exist.
+#   C. Every network-bearing slice is named as `<account>/<slice>`. A slice is network-bearing when
+#      it declares a resource that holds an address, carries traffic or filters it; when it calls
+#      one of the network modules (sandbox/egress/ is one module call); or when its name is in
+#      backend.NETWORK_SLICES.
 #
-# WHAT IT DELIBERATELY DOES NOT DECIDE, said out loud because a check that hides its blind side
-# is not a check (Lesson 13):
-#
-#   - Whether a SENTENCE is still true. Nothing can. A route table that gained a route, a
-#     security group that gained a rule, a measured date that has gone stale: those are the
-#     reading, and the reading is what CLAUDE.md's upkeep row asks for. This decides the one
-#     property a machine can - that the document still NAMES what exists.
-#   - A slice that only REFERENCES a network (*/sagemaker/ hands the blueprint a VPC id and
-#     subnet ids, and creates no network object of its own). It is named in the document
-#     anyway, and its row says why - but nothing here would have noticed its absence.
-#   - Anything AWS reports. This file never opens a session; what is deployed right now is
-#     aws/networking.py and aws/egress.py, and whether a difference is expected is
-#     docs/AWS_STATE.md.
+# Not decided here (Lesson 13): whether a sentence is still true (a route gained, a rule added, a
+# stale measured date - that is the reading CLAUDE.md's upkeep row asks for); a slice that only
+# references a network (*/sagemaker/ hands the blueprint a VPC id and subnet ids); and anything AWS
+# reports (aws/networking.py and aws/egress.py read the estate; whether a difference is expected is
+# docs/AWS_STATE.md).
 
 from __future__ import annotations
 
@@ -65,10 +41,9 @@ DOC = Path("docs/NETWORK.md")
 VPC_MODULE = Path("terraform-modules/vpc/main.tf")
 LIVE = Path("terraform-live")
 
-# A resource that holds an address, moves a packet, or decides whether one passes. It is a
-# LIST rather than a prefix match on `aws_vpc`/`aws_route` because the interesting ones do not
-# share a prefix - an instance and a hosted zone are both network facts - and because a prefix
-# rule would drag in aws_vpc_endpoint_policy-style attachments that add nothing to the picture.
+# A resource that holds an address, moves a packet, or decides whether one passes. A list rather
+# than a prefix match: an instance and a hosted zone are both network facts, and a prefix rule would
+# drag in aws_vpc_endpoint_policy-style attachments that add nothing to the picture.
 NETWORK_RESOURCES = frozenset(
     {
         "aws_vpc",
@@ -102,18 +77,17 @@ NETWORK_RESOURCES = frozenset(
     }
 )
 
-# The modules whose whole content is network. A slice calling one of these IS network-bearing
-# even when it declares nothing itself, which is the ordinary shape here: egress/ and vpn/ are
-# one module call each.
+# The modules whose whole content is network. A slice calling one is network-bearing even when it
+# declares nothing itself: egress/ and vpn/ are one module call each.
 NETWORK_MODULES = frozenset({"vpc", "vpc-egress", "wireguard"})
 
 RESOURCE_RE = re.compile(r'^\s*resource\s+"([a-z0-9_]+)"', re.M)
 MODULE_SOURCE_RE = re.compile(r'source\s*=\s*"[^"]*terraform-modules/([a-z0-9-]+)\?ref=')
 
-# The three `cidrsubnet` calls the vpc module cuts a /16 with. Written to match the module's
-# actual shape - `[for i in range(2) : cidrsubnet(var.vpc_cidr, 4, 8 + i)]` - and to FAIL LOUDLY
-# rather than silently find nothing if that shape ever changes: a checker that quietly skips
-# what it cannot parse reports success about a file it never read.
+# The three `cidrsubnet` calls the vpc module cuts a /16 with, matching the module's shape
+# `[for i in range(2) : cidrsubnet(var.vpc_cidr, 4, 8 + i)]`. If the shape changes this fails loudly
+# rather than finding nothing: a checker that skips what it cannot parse reports success about a
+# file it never read.
 TIER_RE = re.compile(
     r"(\w+)_cidrs\s*=\s*\[for i in range\((\d+)\)\s*:\s*"
     r"cidrsubnet\(var\.vpc_cidr,\s*(\d+),\s*(?:(\d+)\s*\+\s*)?i\)\]"
@@ -179,9 +153,8 @@ def main() -> int:
         bad += 1
         print(f"MISSING {what}: {needle}")
 
-    # PER (ACCOUNT, SLICE) SINCE 6c step 0.7, because Production holds three VPCs from D38 and
-    # "the account's CIDR" stopped being a thing to ask for. Rule A is unchanged in intent: every
-    # /16 the address plan allocates has to be findable in the document.
+    # Per (account, slice): Production holds three VPCs (D38), so rule A asks for every /16 the
+    # address plan allocates, not for an account's CIDR.
     print("== the address allocation (backend.VPC_CIDRS + the WireGuard client range) ==")
     for (account, slice_name), cidr in sorted(backend.VPC_CIDRS.items()):
         require(cidr, f"{account}/{slice_name}'s VPC CIDR")
@@ -192,10 +165,8 @@ def main() -> int:
     print()
     print("== the per-tier subnets, recomputed from terraform-modules/vpc/main.tf ==")
     for (account, slice_name), cidr in sorted(backend.VPC_CIDRS.items()):
-        # A slice whose folder does not exist yet is checked by rule A alone - its subnets are
-        # not cut anywhere, so requiring them in the document would demand prose about a network
-        # nobody has built. 6c's `networking` and `workloads` rows are here BEFORE their folders
-        # (0.2 authors the plan ahead), and Stage 14 puts a vended Sandbox unit in the same state.
+        # A slice whose folder does not exist yet is checked by rule A alone: its subnets are not
+        # cut anywhere. Stage 14 puts a vended Sandbox unit in this state.
         if not (LIVE / account / slice_name).is_dir():
             print(
                 f"  {account}/{slice_name}: no slice on disk - its subnets do not exist, rule A only"

@@ -1,21 +1,16 @@
 # The uv project behind every Python script in this repository (aws/, scripts/,
 # terraform-live/identity/org-policies/, aws/probes/).
 #
-# HOW THE SCRIPTS RUN. Each script is executable and carries the shebang
-# `#!/usr/bin/env -S uv run --quiet`, so `./aws/org-policies.py` works exactly as the shell
-# version did: uv resolves this project (walking up from the working directory), pins the
-# interpreter to .python-version, installs the three packages below editable, and runs the
-# script inside that environment. Nothing is installed globally and no activation step exists.
+# Each script is executable and carries the shebang `#!/usr/bin/env -S uv run --quiet`: uv resolves
+# this project, pins the interpreter to .python-version, installs the three packages below editable
+# and runs the script in that environment. Nothing is installed globally; there is no activation step.
 #
-# WHY requires-python IS 3.9 WHILE .python-version PINS 3.14. The laptop always runs the
-# pinned interpreter through uv. CloudShell does not have uv, and the fallback there is the
-# system interpreter (`python3 aws/<script>.py -`), which is 3.9 on Amazon Linux 2023 - so the
-# code is written to the older floor while the environment everyone actually develops in is
-# the pinned one. Raising the floor means checking what CloudShell ships first.
+# requires-python is 3.9 while .python-version pins 3.14: CloudShell has no uv, and its fallback is
+# the system interpreter (`python3 aws/<script>.py -`), 3.9 on Amazon Linux 2023. Raising the floor
+# means checking what CloudShell ships first.
 #
-# ZERO RUNTIME DEPENDENCIES, deliberately. Everything is standard library + the aws CLI as a
-# subprocess. That is what keeps the CloudShell fallback a one-liner (nothing to pip-install
-# in a throwaway shell) and keeps uv sync instant. ruff is a dev tool, not a dependency.
+# Zero runtime dependencies: the standard library plus the aws CLI as a subprocess, which keeps the
+# CloudShell fallback a one-liner and `uv sync` instant. ruff is a dev tool, not a dependency.
 
 [project]
 name = "awsds-tools"
@@ -29,17 +24,16 @@ dev = [
     "ruff>=0.12",
 ]
 
-# The three packages, each living NEXT TO the scripts it serves so that the script's own
-# directory puts it on sys.path even without uv (that is the whole CloudShell story):
+# The three packages, each next to the scripts it serves so that the script's own directory puts it
+# on sys.path even without uv (the CloudShell case):
 #
-#   aws/awslib           shared plumbing for the aws/ snapshot scripts: repo/output location,
-#                        aws CLI subprocess wrapper, report writer, profile preflight, small
-#                        pure helpers (CIDR math, policy-document entries)
-#   scripts/repohygiene  regulates PROJECT files (markdown links, stable IDs, size budgets).
-#                        Independent: imports nothing from the other two, touches no AWS
-#   scripts/tfhygiene    regulates TERRAFORM files (convention greps, IAM wildcard walk,
-#                        backend.hcl generation, the authored attachments map).
-#                        Independent: imports nothing from the other two, touches no AWS
+#   aws/awslib           shared plumbing for the aws/ snapshot scripts: repo/output location, aws
+#                        CLI subprocess wrapper, report writer, profile preflight, CIDR math,
+#                        policy-document entries
+#   scripts/repohygiene  project files: markdown links, stable IDs, size budgets. Imports nothing
+#                        from the other two, touches no AWS
+#   scripts/tfhygiene    Terraform files: convention greps, IAM wildcard walk, backend.hcl
+#                        generation, the authored attachments map. Same independence
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -59,10 +53,10 @@ extend-exclude = [".venv", "terraform-live", "terraform-modules"]
 force-exclude = true
 
 [tool.ruff.lint]
-# An EXPLICIT select, so a ruff upgrade cannot widen the gate silently: pycodestyle errors,
+# An explicit select, so a ruff upgrade cannot widen the gate silently: pycodestyle errors,
 # pyflakes, warnings, import order, and pyupgrade (whose 3.10+ rewrites stay legal under
-# `from __future__ import annotations`, which every module carries). The scripts are
-# reports, not an API surface, so no docstring/annotation policing.
+# `from __future__ import annotations`, which every module carries). No docstring or annotation
+# policing: the scripts are reports, not an API surface.
 select = ["E4", "E7", "E9", "F", "W", "I", "UP"]
 
 [tool.ruff.format]

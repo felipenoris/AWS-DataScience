@@ -1,28 +1,19 @@
 #!/usr/bin/env -S uv run --quiet
-# No tracked file carries an AWS account id or an e-mail address.
-# Run from anywhere:  ./scripts/check-identifiers.py
+# check-identifiers.py - no tracked file carries an AWS account id or an e-mail address.
 #
+#   run:      ./scripts/check-identifiers.py
 #   reads:    every file `git ls-files` reports. No AWS session, no side effect.
 #   exit:     0 clean | 1 at least one identifier in a tracked file
 #
-# WHY THIS EXISTS (2026-08-17). `CLAUDE.md` says a stage log carries no account ids and
-# `aws/INDEX.md` rule 1 says never to copy an id or an address out of a snapshot into a tracked
-# file. Both rules were held by attention alone, and on the day this was written attention had
-# already missed three log files: eight ids pasted inside `sts get-caller-identity` output, a
-# dozen more inside policy ARNs, and one personal address inside an `UnauthorizedOperation`
-# error. Every one of them had a correctly-elided neighbour a few lines away - Lesson 14, a
-# condition that must appear in N places by hand will be missing from one of them.
+# CLAUDE.md says a stage log carries no account ids, and aws/INDEX.md rule 1 says never to copy an
+# id or an address out of a snapshot. Both rules were held by attention alone, and attention had
+# missed three log files (Lesson 14). The scope is the whole tracked tree, not docs/ alone: the
+# expensive leak is an id reaching a .tf or a .tfvars, copied forward by every consumer.
 #
-# WHAT TO DO WITH A HIT is a redaction, never a deletion: an account id becomes the account's
-# NAME in angle brackets (`<Audit Account>`, the AWS `Account.Name` of docs/ORGANIZATION.md),
-# an e-mail inside an ARN becomes that user's role (`<control tower admin user>`), and the
-# entry says once that the substitution was made. The pasted evidence stays otherwise verbatim
-# - suffixes, policy ids, error wording - because a log that has been tidied is not evidence.
-#
-# THE SCOPE IS THE WHOLE TRACKED TREE and not `docs/` alone. `docs/` is where the misses were,
-# but the rule is repository-wide and the expensive leak is a real id reaching a `.tf` or a
-# `.tfvars`, where it would be copied forward by every consumer. Narrowing it later is one
-# argument to `tracked_files`.
+# A hit is redacted, never deleted: an account id becomes the account's name in angle brackets
+# (`<Audit Account>`, the AWS `Account.Name` of docs/ORGANIZATION.md), an e-mail inside an ARN becomes
+# that user's role (`<control tower admin user>`), and the entry says once that the substitution was
+# made. The rest of the pasted evidence stays verbatim: a tidied log is not evidence.
 
 from __future__ import annotations
 

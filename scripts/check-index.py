@@ -1,33 +1,20 @@
 #!/usr/bin/env -S uv run --quiet
-# check-index.py - verify that POLICIES.md still describes the documents in policies/.
+# check-index.py - POLICIES.md still describes the documents in policies/.
 #
 #   run:      ./scripts/check-index.py
 #   reads:    terraform-live/identity/org-policies/{policies/*.json,POLICIES.md}.
 #             Touches nothing, needs no AWS session.
 #   exit:     0 when every document's section lists exactly its Sids, in order; 1 otherwise.
 #
-# IT LIVES IN scripts/ AND NOT BESIDE WHAT IT READS (moved 2026-08-16). It is one of the six
-# gates `make check` and `pre-commit` run, and a suite whose members sit in two places is a
-# suite nobody can enumerate by looking: somebody reading scripts/ was seeing five of six.
-# The folder it checks keeps `render.py`, which is not a gate - it writes pasteable copies of
-# those same documents and belongs to the people editing them.
+# POLICIES.md is the only place the reasoning behind each statement lives (the JSON carries no
+# comments), and the failure is silent both ways: a row with no statement describes a control that is
+# not attached, and a statement with no row is one nobody can explain later. This checks the one
+# property a machine can decide, that the two lists agree; whether a row's text is still true is the
+# reading.
 #
-# WHY THIS EXISTS AS A SCRIPT AND NOT AS A HABIT. POLICIES.md is the only place the reasoning
-# behind each statement lives - the JSON carries no comments - so a statement added or
-# renamed without its row leaves the next reader with a file that is confidently wrong.
-# The failure is silent in both directions: a row with no statement describes a control
-# that is not attached, and a statement with no row is one nobody can explain a year later.
-#
-# WHAT IT DOES NOT CHECK, deliberately: whether a row's *text* is still true. Nothing can.
-# It checks the one property a machine can decide - that the two lists agree - which is
-# what turns "review POLICIES.md at every change" from an intention into a step that fails.
-#
-# What plays the part of a `Sid` differs by policy TYPE, and step 7.8 put three types in
-# this folder. The property being checked is the same in all three - "the index lists
-# exactly what the document contains, in order" - so the extraction is what varies
-# (tfhygiene.policydoc.entries), and a document whose type is not recognised STOPS the run
-# rather than being skipped quietly: a checker that silently ignores a file is not a checker
-# (Lesson 13).
+# What plays the part of a `Sid` differs by policy type. The extraction is
+# tfhygiene.policydoc.entries, and a document whose type is not recognised stops the run rather than
+# being skipped (Lesson 13).
 
 from __future__ import annotations
 
@@ -38,9 +25,7 @@ from pathlib import Path
 
 from tfhygiene.policydoc import UnknownPolicyShape, entries, load
 
-# The one consequence of moving out of that folder: the two paths become explicit instead of
-# implicit in a chdir. Every other script under scripts/ chdirs to the repository root and
-# names what it reads from there, so this one now reads the same way.
+# Paths are named from the repository root, like every other script under scripts/.
 FOLDER = Path("terraform-live/identity/org-policies")
 
 
