@@ -17,8 +17,8 @@ edited: the policy ids, the organization and root ids and every policy document 
 
 ---
 
-- Started sitting A with step 7.0, the preflight. Nothing has been attached and nothing has been
-  changed in AWS as of this entry — everything below is measurement.
+- Started sitting A with step 7.0, the preflight. Nothing has been attached or changed in AWS as of this
+  entry; everything below is measurement.
 
 - 7.0 was run from the laptop as the **infrastructure user**, profile `awsds-infra-identity`, through
   two read-only scripts written for this step. Both write to `aws/output/`, which is untracked:
@@ -29,9 +29,9 @@ edited: the policy ids, the organization and root ids and every policy document 
 ```
 
 - **7.0 step 1 — the organization's coordinates.** `FeatureSet` reads `ALL`, so RCPs are possible.
-  Root is `r-zhj6`, organization is `o-4z1leiit0c`. The root's policy types:
-  **`SERVICE_CONTROL_POLICY` `ENABLED` and nothing else** — as `docs/AWS_STATE.md` section C expected.
-  Step 7.2 still has to enable the other three.
+  Root is `r-zhj6`, organization is `o-4z1leiit0c`. The root's policy types: `SERVICE_CONTROL_POLICY`
+  `ENABLED` and nothing else, as `docs/AWS_STATE.md` section C expected. Step 7.2 still has to enable
+  the other three.
 
 - The OU tree, ids as measured. Depth is 2 (`Sandboxes` nested under `Interactive`), which is INV-03.
   Every ARN is `arn:aws:organizations::<MGMT_ACCOUNT_ID>:ou/o-4z1leiit0c/<ou-id>`; the literal ARNs are
@@ -63,16 +63,16 @@ edited: the policy ids, the organization and root ids and every policy document 
   | Data | `aws-guardrails-IErlqi` | `p-5weyyc6d` |
   | **Sandboxes** | **none** | — |
 
-  No RCP, tag policy or declarative policy is attached anywhere — the listing returns
-  `(policy type not enabled)`, which is the same fact as step 1 read from the other side.
+  No RCP, tag policy or declarative policy is attached anywhere; the listing returns
+  `(policy type not enabled)`.
 
-- **Verification (iii), answered by reading the documents rather than by assuming.** Three findings, and
-  two of them contradict what the stage file assumed:
+- **Verification (iii), answered by reading the documents.** The findings, two of which contradict what
+  the stage file assumed:
 
   - **Config is already denied** on every OU that has a guardrail — `GRCONFIGENABLED` covers
     `config:DeleteConfigurationRecorder`, `PutConfigurationRecorder`, `StopConfigurationRecorder`,
     the delivery channel and the retention configuration, carved out for
-    `arn:*:iam::*:role/AWSControlTowerExecution`. **7.5 must not write a second one.**
+    `arn:*:iam::*:role/AWSControlTowerExecution`. 7.5 must not write a second one.
   - **CloudTrail is denied nowhere.** No `cloudtrail:` action appears in any of the six documents. The
     stage file assumed Control Tower covered it; it does not.
   - Also already covered, and therefore not to be duplicated: tampering with `aws-controltower-*` and
@@ -84,10 +84,10 @@ edited: the policy ids, the organization and root ids and every policy document 
 - **`Identity` carries the standard Control Tower guardrail** — the same 8 statements as Workloads,
   Data, Interactive and Policy Test — so it is registered, contrary to what the plan assumed about an OU
   created outside Control Tower's own flow. `Security` is the only different one: 11 statements, the
-  extra three (`CTSNSPV1`, `CTS3PV7`, `CTS3PV8`) being about the log-archive, access-logs and
-  cloudtrail buckets and the centralized-logging SNS topic. **This is the `Security` vs `Identity` diff
-  that 7.6 asks for, and it means nothing for an account that holds neither bucket** — so no elective
-  control is owed to `Identity` on that basis.
+  extra three (`CTSNSPV1`, `CTS3PV7`, `CTS3PV8`) covering the log-archive, access-logs and cloudtrail
+  buckets and the centralized-logging SNS topic. That is the `Security` vs `Identity` diff 7.6 asks
+  for, and it means nothing for an account holding neither bucket: no elective control is owed to
+  `Identity` on that basis.
 
 - **`Sandboxes` is the only OU with no guardrail policy**, and `Sandbox Account 1` is inside it. Either
   the nested OU is not registered with Control Tower, or Control Tower relies on inheritance from
@@ -108,8 +108,8 @@ AWS Control Tower cannot complete the operation, because you must create a landi
 
 - **Verification (x), answered: yes.** Every Organizations *policy* read — `ListPoliciesForTarget`,
   `DescribePolicy`, `DescribeOrganization`, `ListRoots`, `ListOrganizationalUnitsForParent` — answered
-  from the Identity account. So 7.0 is a script, except for its Control Tower section. This extends the
-  read boundary of Stage 1b step 4 once more.
+  from the Identity account. So 7.0 is a script, except for its Control Tower section, and the read
+  boundary of Stage 1b step 4 extends again.
 
 - **7.0 step 5 — the quota is not published.** `service-quotas list-service-quotas --service-code
   organizations --region us-east-1` returns only account-related quotas (`Maximum number of accounts`,
@@ -122,14 +122,13 @@ AWS Control Tower cannot complete the operation, because you must create a landi
 - **7.0 step 4 — account-level Block Public Access, before changing anything.** All six accounts with a
   profile — `awsds-infra-data`, `-dev`, `-identity`, `-prod`, `-sandbox-1` and `awsds-policy-canary` —
   return `NoSuchPublicAccessBlockConfiguration`, i.e. **NOT SET**. So 7.4 step 1 has real work in every
-  one of them; nothing is a no-op. Management, Log Archive and Audit have no profile and are still to be
-  read from CloudShell.
+  one of them. Management, Log Archive and Audit have no profile and are still to be read from
+  CloudShell.
 
 - **Decision recorded while executing: `awsds-org-scp-baseline.json` carries no CloudTrail deny.**
   Control Tower denies nothing about CloudTrail (above), and the deny was still not written: the trail
   is organization-level and lives in the Management account, which is exempt from SCPs by AWS's design,
-  so a member-account deny would protect nothing. Recorded as a measured, deliberate gap rather than as
-  an oversight.
+  so a member-account deny would protect nothing. The gap is deliberate.
 
 - **The 7.5 documents were written before anything was attached**, as templates with placeholders, in
   `terraform-live/identity/org-policies/`:
@@ -141,15 +140,15 @@ AWS Control Tower cannot complete the operation, because you must create a landi
   | `canary/awsds-canary-scp-perimeter-inverted.json` | `Policy Test`, throwaway | 724 characters |
 
   `./terraform-live/identity/org-policies/render.sh` substitutes the organization, root and `Data` OU
-  ids and writes the pasteable copies into `aws/output/rendered-policies/`. **The console paste comes
-  from there, not from the templates.** No policy has been created yet, so there is no policy id to
-  record in this entry.
+  ids and writes the pasteable copies into `aws/output/rendered-policies/`. The console paste comes from
+  there, not from the templates. No policy has been created yet, so there is no policy id to record in
+  this entry.
 
-- One rule was added to `docs/plan/conventions.md` while writing the perimeter document, because it decides
-  its shape: in a deny conditioned on a resource key, the action list must be enumerated —
-  `StringNotEqualsIfExists` evaluates *true* when the key is absent, so `s3:Put*` would reach the
-  account-level `s3:PutAccountPublicAccessBlock` and deny, in every account and for every principal, the
-  exact call 7.4 depends on. `ecr:GetAuthorizationToken` is left out of the ECR half for the same reason.
+- One rule was added to `docs/plan/conventions.md` while writing the perimeter document: in a deny
+  conditioned on a resource key, the action list must be enumerated — `StringNotEqualsIfExists`
+  evaluates *true* when the key is absent, so `s3:Put*` would reach the account-level
+  `s3:PutAccountPublicAccessBlock` and deny, in every account and for every principal, the exact call
+  7.4 depends on. `ecr:GetAuthorizationToken` is left out of the ECR half for the same reason.
 
 - **Still open in sitting A:** BPA in the six accounts, BPA in Management / Log Archive / Audit, the
   three `enable-policy-type` calls of 7.2, the 7.3 battery, and only then the two root attachments.
@@ -158,20 +157,18 @@ AWS Control Tower cannot complete the operation, because you must create a landi
   as the **infrastructure user**, one `s3control put-public-access-block` per account with all four
   flags `true`: `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data` and `-identity` through
   `InfrastructureAccess`, and `awsds-policy-canary` through its direct `AWSAdministratorAccess`
-  assignment (D32). There is no cross-account API for this setting — every call is made from *inside*
-  the account it configures, which is the reason 7.4 states a list rather than an organization-wide
-  action.
+  assignment (D32). There is no cross-account API for this setting: every call is made from *inside* the
+  account it configures, which is why 7.4 states a list rather than an organization-wide action.
 
 - `./aws/account-bpa.sh` re-run immediately afterwards: **6 of 6 measured accounts read `ALL FOUR
   true`**, where the same script had read `NOT SET` in all six a few hours earlier.
   `aws/output/account-bpa.txt` is the evidence. **Management, Log Archive and Audit are still unread
   and unset** — they hold no profile on this laptop — so 7.5 stays blocked.
 
-- **The same thing is doable entirely from the console**, recorded because that is the screen a future
-  reader will be looking at: *Console → Amazon S3 → Account and organization settings → Block Public
-  Access settings for this account → Edit → Block all public access*. It writes the same account-level
-  setting, one account at a time, and it is the path to use in Management, Log Archive and Audit if
-  CloudShell is inconvenient there.
+- The same setting is reachable from the console: *Console → Amazon S3 → Account and organization
+  settings → Block Public Access settings for this account → Edit → Block all public access*. One
+  account at a time, and the path to use in Management, Log Archive and Audit if CloudShell is
+  inconvenient there.
 
 - Login as CT Admin on Management account, AWSAdministratorAccess.
 
@@ -224,8 +221,8 @@ aws s3control put-public-access-block --account-id "$(aws sts get-caller-identit
 
 - **`Sandboxes` returned an empty list, not an error** — no controls, no guardrail SCP. The plan's
   discriminator is that an unregistered target *errors*, but no call in the report failed (section 7:
-  "None"), so it was never exercised in the failing direction. **Verification (xi) stays open; 7.7's
-  `enable-control` settles it.**
+  "None"), so it was never exercised in the failing direction. Verification (xi) stays open; 7.7's
+  `enable-control` settles it.
 
 - **The account quota reads 10, not the requested 15.** A member account reads 0.0, so only this
   Management run is evidence. The `Staging` vend stays held.
@@ -301,7 +298,7 @@ aws s3control put-public-access-block --account-id "$(aws sts get-caller-identit
 
 - **7.3 phase 1 — the inverted perimeter, `p-539eaz19` on `ou-zhj6-ebwso7wp` (`Policy Test`).**
   First run of both probes returned an **expired SSO session**, not a deny — discarded, re-logged in
-  and re-run. Reading the error *wording* rather than the exit code is what caught it.
+  and re-run. Reading the error *wording* rather than the exit code caught it.
 
 - Both probes then failed as required, and the message names the policy:
 
@@ -406,11 +403,10 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
   `ec2:ModifyImageAttribute`, `ecr-public:DescribeRegistries`, `guardduty:DeleteDetector`, and
   `s3control:PutAccountPublicAccessBlock` from a principal outside the carve-out.
 
-- **Decision 7 holds — the probe this phase was for.** The same `put-public-access-block` as
-  `awsds-infra-dev` (`InfrastructureAccess`) **succeeded** with the policy attached, so
-  `aws:PrincipalArn` names the right form: the `role/aws-reserved/sso.amazonaws.com/...` ARN, not the
-  `assumed-role` one `get-caller-identity` prints. Had it failed, every future account would be
-  permanently without account-level BPA and no principal could set it.
+- **Decision 7 holds.** The same `put-public-access-block` as `awsds-infra-dev`
+  (`InfrastructureAccess`) **succeeded** with the policy attached, so `aws:PrincipalArn` names the right
+  form: the `role/aws-reserved/sso.amazonaws.com/...` ARN, not the `assumed-role` one
+  `get-caller-identity` prints.
 
 - Must-still-succeed half re-run under the new ceiling: the five phase-0 reads plus both in-org writes,
   all still permitted.
@@ -486,12 +482,11 @@ ecr:InitiateLayerUpload  AccessDeniedException ... explicit deny in a service co
 - - **7.3 phase 3 / 7.5 complete — `awsds-org-scp-perimeter` (`p-4vs49ztw`) attached to the root.** The
   root now carries `FullAWSAccess`, `p-1fp032g8` and `p-4vs49ztw`. The direction phase 1 could not test:
   both in-org writes **still succeed** — `s3:PutObject` (7 bytes confirmed) and
-  `ecr:InitiateLayerUpload`. The statement does not over-reach, which was the expensive failure: it
-  would have broken `docker push` to our own registry and every Stage 2 module writing to our own
-  buckets.
+  `ecr:InitiateLayerUpload`. The statement does not over-reach: it would otherwise break `docker push`
+  to our own registry and every Stage 2 module writing to our own buckets.
 
 - Must-still-succeed re-run with **both** documents attached: the five reads from the canary, plus
-  `ec2:DescribeVpcs` and `s3 ls` from `awsds-infra-dev` — added outside the runbook, because a policy
+  `ec2:DescribeVpcs` and `s3 ls` from `awsds-infra-dev` — added outside the runbook, since a policy
   verified only in an empty account is verified against nothing.
 
 - **Cleanup, same sitting.** Deleted `probe.txt`, `probe3.txt`, `probe4.txt`, `probe5.txt`, the bucket
@@ -527,7 +522,7 @@ awsds-org-scp-ou-identity.json
   that path. So the `Data` OU keeps its `sagemaker:Create*` wildcard and **no carve-out was widened**;
   `Workloads` stays enumerated, because `CreateModel`/`CreateEndpoint`/`CreateTrainingJob` are its job.
 
-- Attach targets read from `awsds-infra-identity` (read-only), recorded here because 7.6 needs them:
+- Attach targets read from `awsds-infra-identity` (read-only):
   `Workloads ou-zhj6-hisvfbzq`, `Data ou-zhj6-z3drywoq`, `Interactive ou-zhj6-vn5q14hi`,
   `Identity ou-zhj6-hrcu9hog`, `Policy Test ou-zhj6-ebwso7wp`. `Sandboxes ou-zhj6-mojnh3rs` gets
   **nothing**: it inherits `Interactive`'s set.
@@ -698,8 +693,8 @@ awsds-org-scp-ou-identity.json
 
 - policy `awsds-org-scp-ou-data` created with ARN `arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-gl01bcdm`. Attached to `Policy Test` OU.
 
-- **7.6 — the four policies created (CT Admin @ Management, console) and all four attached to
-  `Policy Test` at once**, deliberately, for the battery's phase 4. None has moved to its target OU yet:
+- **7.6 — the four policies created (CT Admin @ Management, console), all four attached to
+  `Policy Test` at once** for the battery's phase 4. None has moved to its target OU yet:
 
 | Policy | Id | Target during the battery |
 |---|---|---|
@@ -733,8 +728,8 @@ awsds-org-scp-ou-identity.json
 | `s3:DeleteBucket` | **untested** — `NoSuchBucket`, before authorization | — |
 
 - **The API error carries the policy id** — `... with an explicit deny in a service control policy:
-  arn:aws:organizations::.../service_control_policy/p-xxxxxxxx` — no CloudTrail and no lag. That is what
-  makes it survivable to park four candidates on one target. **The limit:** when more than one attached
+  arn:aws:organizations::.../service_control_policy/p-xxxxxxxx` — no CloudTrail and no lag, which is
+  what makes parking four candidates on one target workable. **The limit:** when more than one attached
   policy denies the same call, AWS names **one** of them, so `p-tgda7n58` (interactive) decided no probe
   at all: it is **attached and unexercised**. It isolates itself in `Interactive`, where nothing else
   denies `CreateNotebookInstance`.
@@ -796,18 +791,18 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   matched by `Identity`'s `sagemaker:Create*`, and AWS names one policy per denial. In `Interactive`,
   nothing else denies `CreateNotebookInstance` and one call settled it. Written up as **Lesson 20**.
 
-- **Decision 1 costs no feature, and it is now measured rather than argued:** in Development and in
-  Sandbox Account 1, `sagemaker:CreateSpace` and `datazone:ListDomains` still work while the classic
-  notebook instance is denied.
+- **Decision 1 costs no feature**, now measured: in Development and in Sandbox Account 1,
+  `sagemaker:CreateSpace` and `datazone:ListDomains` still work while the classic notebook instance is
+  denied.
 
 - **`Sandboxes` is governed by inheritance** — the same deny fires in `awsds-infra-sandbox-1`, with no
   policy attached to that OU. This is the **SCP half** of verification (xi); whether the OU can carry an
   *enabled Control Tower control* is a different question and stays open for 7.7.
 
-- **The Data/Identity cross-check is the strongest single result of the sitting:** `glue:StartCrawler` and
-  `lakeformation:DeregisterResource` are denied in Data Governance and **allowed** in Identity. Those two
-  statements exist only in the `Data` document, so nothing is leaking from the root set and the two
-  documents differ exactly where they were written to differ.
+- **The Data/Identity cross-check:** `glue:StartCrawler` and `lakeformation:DeregisterResource` are
+  denied in Data Governance and **allowed** in Identity. Those two statements exist only in the `Data`
+  document, so nothing is leaking from the root set and the two documents differ exactly where they were
+  written to differ.
 
 - Still **untested**, unchanged by the move: `s3:DeleteBucket` (S3 answers `NoSuchBucket` before
   authorizing; its `Sid` is proven through `lakeformation:DeregisterResource`) and the **positive** half of
@@ -833,8 +828,8 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 | `glue:StartCrawler` | denied by `p-gl01bcdm` | **allowed** (`EntityNotFoundException`) |
 | floor: `sts`, `s3 ls`, `describe-vpcs`, `glue get-databases` | all OK | all OK |
 
-  The crawler row is the regression that mattered: the new service guard did **not** invert the carve-out —
-  a human principal still lands on the deny side in Data — and the Data/Identity asymmetry still holds.
+  The crawler row is the regression check: the new service guard did **not** invert the carve-out — a
+  human principal still lands on the deny side in Data — and the Data/Identity asymmetry holds.
 
 - **Phases 1-3 on `awsds-policy-canary`, for the root document. Seven probes, seven denies, every one
   naming `p-1fp032g8`:** `guardduty:DisassociateFromAdministratorAccount` (the spelling that was open
@@ -843,15 +838,15 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   Floor intact (`sts`, `s3 ls`, `describe-vpcs`).
 
 - **GuardDuty authorizes before validating the detector id**, so all three of its probes measured with an
-  invented id — which is what made the amendment provable while the service is still off everywhere.
+  invented id, which made the amendment provable while the service is still off everywhere.
 
-- **Two predictions in the runbook were wrong, both in the same direction, and the correction is the
-  finding worth keeping.** `ec2:CreateFleet` was expected to be untestable for want of a launch template
-  and was denied anyway — `--dry-run` authorizes before resolving the template — so the door this
-  amendment was written for is proven directly rather than by inference. And the EC2/RDS block was expected
-  to come back mostly *untested*: **the validation-before-authorization wall is per *action*, not per
-  service.** `ExportImage` and `CreateInstanceExportTask` authorized against a malformed AMI id;
-  `CreateStoreImageTask` rejected the same shape and only reached authorization with a real public AMI;
+- **Two predictions in the runbook were wrong, both in the same direction.** `ec2:CreateFleet` was
+  expected to be untestable for want of a launch template and was denied anyway — `--dry-run` authorizes
+  before resolving the template — so the door this amendment was written for is proven directly rather
+  than by inference. And the EC2/RDS block was expected to come back mostly *untested*: **the
+  validation-before-authorization wall is per *action*, not per service.** `ExportImage` and
+  `CreateInstanceExportTask` authorized against a malformed AMI id; `CreateStoreImageTask` rejected the
+  same shape and only reached authorization with a real public AMI;
   `StartInstances` never reached it. Written up as **Lesson 21**: a first-try validation error is a reason
   to retry with an id that exists, not a result.
 
@@ -898,7 +893,7 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   its two root-user controls were folded into its **existing** guardrail document rather than a new one, so
   Control Tower packs per enablement and counting policies is not counting controls.
 
-- **OPEN, and the one thing 7.7 leaves owed: `AWS-GR_RESTRICT_ROOT_USER` was enabled on `Policy Test`
+- **Open, and the one thing 7.7 leaves owed: `AWS-GR_RESTRICT_ROOT_USER` was enabled on `Policy Test`
   without `ExemptAssumeRoot`.** Read from `aws-guardrails-vldGRP` (`p-kve97k0o`): `GRRESTRICTROOTUSER` is
   `Deny *` on `ArnLike aws:PrincipalArn = arn:*:iam::*:root` with no second condition, and the string
   `aws:AssumedRoot` appears in no policy in this organization. So `sts:AssumeRoot` into the canary — 1a
@@ -933,8 +928,8 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   `GRRESTRICTROOTUSER`**, which is the whole test, on all five OUs that hold these controls
   (`Policy Test`, `Workloads`, `Data`, `Interactive`, `Identity`). The parameter was not missed anywhere.
 
-- **Control Tower's packing is inconsistent across OUs, and this is the finding that outlives the step.**
-  The two root statements were folded into the **original guardrail** on `Policy Test` (`p-kve97k0o`),
+- **Control Tower's packing is inconsistent across OUs.** The two root statements were folded into the
+  **original guardrail** on `Policy Test` (`p-kve97k0o`),
   `Workloads` (`p-xss3mf3w`) and `Interactive` (`p-o32xhs2d`), but into the **`CT.MULTISERVICE.PV.1`
   document** on `Identity` (`p-fw2pctqw`) and `Data` (`p-pk85fvr1`) — the same two ids this log records as
   "the Region policy" for those OUs. The battery's results stand, but **a document's id no longer says what
@@ -943,36 +938,35 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
 - **`Sandboxes` is back to `FullAWSAccess` and nothing else**, and `p-h7lc62d0` no longer exists in the
   organization — disabling the control deleted the document. **The rule this settles (user, 2026-08-13):
   nothing is attached or enabled on `Sandboxes` unless it is a configuration that *differs* from
-  `Interactive`'s.** Verification (xi) had already answered both halves, so this is a knowing decline, not
-  a limitation: the OU is a registered target and would take an enablement. What it costs is Control
-  Tower's reporting — an enablement is per OU and is not inherited, only the statements are — so
-  `Sandboxes` reads as zero controls while its accounts are fully governed.
+  `Interactive`'s.** Verification (xi) had already answered both halves, so this is a knowing decline: the
+  OU is a registered target and would take an enablement. What it costs is Control Tower's reporting — an
+  enablement is per OU and is not inherited, only the statements are — so `Sandboxes` reads as zero
+  controls while its accounts are fully governed.
 
 - **`Security` carries neither the Region control nor the root ones**, having never been a target of 7.7.
-  So `Log Archive` and `Audit` are the two accounts with no Region ceiling. Recorded, not acted on: that
-  OU is Control Tower's own and Stage 1d is where it gets touched.
+  So `Log Archive` and `Audit` are the two accounts with no Region ceiling. Not acted on: that OU is
+  Control Tower's own and Stage 1d is where it gets touched.
 
 - This closes 7.7.
 
 ### After 7.7 — the review pass, 2026-08-13
 
-- **Reviewed the section against plan, rules, decisions and lessons.** What came out of it that is not a
-  restatement of something already written: **Lesson 22** — a control whose principal the harness cannot
-  produce is verified by *reading*, and the `ExemptAssumeRoot` omission proved it by surviving a 61/61
-  battery; **Lesson 23** — Control Tower packs per enablement and inconsistently, so bind to the `Sid`;
-  **D37** — nothing on `Sandboxes` unless it differs from `Interactive`; and **open question 16** —
+- **Reviewed the section against plan, rules, decisions and lessons.** What came out of it:
+  **Lesson 22** — a control whose principal the harness cannot produce is verified by *reading*, and the
+  `ExemptAssumeRoot` omission proved it by surviving a 61/61 battery; **Lesson 23** — Control Tower
+  packs per enablement and inconsistently, so bind to the `Sid`; **D37** — nothing on `Sandboxes`
+  unless it differs from `Interactive`; and **open question 16** —
   `Log Archive` and `Audit` have no Region ceiling, addressed to Stage 1d.
 
 - **`./aws/org-policies.sh` written**, the post-attachment counterpart to `org-policy-baseline.sh`'s
   preflight: condensed by `Sid`, inheritance resolved per account, and it runs the checks no probe can
   reach — **exits 2 when one fails**. First run: 20 checks, 0 failures. Two bugs found by running it, both
-  worth recording because they produce *plausible* output rather than an error: a variable set inside a
-  command substitution never returns to the parent, and BSD `paste -sd ', '` reads the string as a rotating
-  list of delimiters.
+  producing *plausible* output rather than an error: a variable set inside a command substitution never
+  returns to the parent, and BSD `paste -sd ', '` reads the string as a rotating list of delimiters.
 
 ### 7.8 — the documents, none of them attached yet
 
-- **Decision 5 settled by measurement, and the measurement inverted this plan's own premise.** From the
+- **Decision 5 settled by measurement, which inverted this plan's own premise.** From the
   machine-readable service reference: **`s3:CreateBucket` does map `aws:RequestTag`/`aws:TagKeys`** (1 of 11
   S3 actions), so the 2026-08-09 reasoning that excluded S3 is stale — but the deciding question is now
   whether the Terraform provider sends the tags *on the create call*, and that is answered at Stage 2 for
@@ -989,13 +983,13 @@ aws ec2 run-instances --dry-run --image-id <AMI> --instance-type t3.micro --subn
   tag keys for a tag policy, `ec2_attributes` names for a declarative one, with an unrecognised document
   stopping the run rather than being skipped. Ten documents, `clean`.
 
-- Three choices made while writing, recorded because a later reader will otherwise assume the opposite:
-  **the tag policy enforces nothing** (no `enforced_for` — it reports); **`http_tokens_enforced` is
-  deliberately not set**, so IMDSv2 is the account default and not yet a ceiling, to be turned on once
-  Stage 4 and Stage 7 have launched successfully; and **`serial_console_access: disabled` is beyond what
-  7.8 listed**, added because the serial console reaches an instance without traversing any network.
+- Three choices made while writing: **the tag policy enforces nothing** (no `enforced_for` — it reports);
+  **`http_tokens_enforced` is not set**, so IMDSv2 is the account default and not yet a ceiling, to be
+  turned on once Stage 4 and Stage 7 have launched successfully; and **`serial_console_access: disabled`
+  is beyond what 7.8 listed**, added because the serial console reaches an instance without traversing
+  any network.
 
-### 7.8 — the probes, and two before-readings. 2026-08-14
+### 7.8 — the probes and the before-readings. 2026-08-14
 
 Nothing attached yet. This entry is preparation and the measurement of the prior state.
 
@@ -1018,13 +1012,12 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
   `AWS-default-msg` — the second means the `exception_message` did not survive the upload.
 
 - **Wrote `./aws/declarative-ec2.sh`**, which reads the four settings per account and compares them against
-  the document. It exists because the battery can only show that a *change* is refused, never what the
-  setting **is** — and the setting is the control. It is also the only instrument that can answer whether a
-  root-attached declarative policy reaches **Management**, which AWS documentation leaves undecided:
-  `./aws/declarative-ec2.sh -` in CloudShell there is the reading that settles it, and nobody else will
-  take it.
+  the document. The battery can only show that a *change* is refused, never what the setting **is**. It is
+  also the only instrument that can answer whether a root-attached declarative policy reaches
+  **Management**, which AWS documentation leaves undecided: `./aws/declarative-ec2.sh -` in CloudShell
+  there is the reading that settles it.
 
-#### The two before-readings
+#### The before-readings
 
 - **`./aws/declarative-ec2.sh`, five accounts** (`data`, `dev`, `identity`, `prod`, `sandbox-1`; the
   `awsds-policy-canary` profile's token had expired). Identical in all five: **`image_block_public_access`
@@ -1041,7 +1034,7 @@ Nothing attached yet. This entry is preparation and the measurement of the prior
   `DryRunOperation` — **a run where *every* row denies is the over-broad-`Resource` failure, not a strict
   pass.**
 
-- Measured in passing, because the documentation does not say and the two halves look alike:
+- Measured in passing, since the documentation does not say:
   `organizations describe-effective-policy --policy-type DECLARATIVE_POLICY_EC2` answers **`{}`** with the
   policy type enabled and nothing attached, rather than raising `EffectivePolicyNotFoundException`.
 
