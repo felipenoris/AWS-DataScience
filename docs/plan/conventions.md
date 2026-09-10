@@ -189,8 +189,12 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
-│   ├── dev-env/          # [P] the approved dev-env image registered for this account:
-│   │                     #     aws_sagemaker_image + image_version + app_image_config.
+│   ├── dev-env/          # [P] the approved dev-env image registered for this account
+│   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
+│   │                     #     image_version + one app_image_config per app type + the
+│   │                     #     image role. Reads production/registry/'s state for the
+│   │                     #     repository. The domain's CustomImages is NOT here - it is
+│   │                     #     the blueprint's field, attached by hand (runbooks/dev-env.md).
 │   │                     #     Applied by the Stage 8 step 1 pipeline after the dev-env
 │   │                     #     steward's approval, through awsds-deploy-devenv-sandbox -
 │   │                     #     the one slice written from Production into an Interactive

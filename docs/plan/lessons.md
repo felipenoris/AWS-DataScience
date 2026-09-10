@@ -1438,6 +1438,22 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   space is `getent hosts sts.us-west-2.amazonaws.com` (`10.20.x.x` with the endpoints, public
   without) and `curl` to the same name (`302` against a timeout). Where: `docs/SMUS.md` §`VpcOnly`,
   the client runbook §1, the 6c log.
+- **An app image configuration's environment caps each value at 256 characters, and no BYOI page says
+  so** (measured 2026-09-10, 6d step 2.2). `CreateAppImageConfig` refused this estate's six proxy
+  variables with `ValidationException … Member must have length less than or equal to 256`; the cap is
+  in the `ContainerConfig` API reference (25 entries, 256 per key and per value) and nowhere on the
+  pages that recommend `ContainerEnvironmentVariables` as the way to configure a custom image. A
+  generated `NO_PROXY` — 50 endpoint names, about 2,300 characters — does not fit, so the documented
+  mechanism cannot deliver the estate's own proxy contract. Where: `runbooks/dev-env.md` §E, and 6d
+  decision due 8.
+- **`CreateImageVersion` uses the image's `RoleArn` to read the repository, and resolves the tag to a
+  digest once** (measured 2026-09-10, 6d step 2.1). The role is documented as *"a role that enables
+  SageMaker to perform tasks on your behalf"* with a console hint to attach `AmazonSageMakerFullAccess`,
+  and what it actually does is `BatchGetImage` + `GetDownloadUrlForLayer` in the **registry account** —
+  visible in that account's CloudTrail as `userIdentity.type AWSAccount`, principal `<role-id>:SageMaker`,
+  from an AWS-internal address. Four ECR read actions are enough. The version's `ContainerImage` then
+  names a `sha256:` digest, so a registered version is pinned to bytes rather than to a tag, and
+  re-tagging upstream would not move it. Where: `runbooks/dev-env.md` §C5.
 
 ### Athena
 

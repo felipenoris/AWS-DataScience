@@ -485,10 +485,31 @@
   for Stage 6c step 5.6). A lifecycle configuration is created with the CLI and attached by updating
   the domain's or user profile's `UserSettings`, but for SageMaker Unified Studio, attaching it to the
   SageMaker AI domain and user profile through the CLI is documented as not supported: the console is
-  the path. A custom image avoids the question, carrying the variables as
-  `ContainerEnvironmentVariables` on its app image configuration:
+  the path. The sentence this row used to end on — that a custom image avoids the question by carrying
+  the variables as `ContainerEnvironmentVariables` — was **measured false on 2026-09-10** (Stage 6d step
+  2.2): the map's values cap at 256 characters and this estate's `NO_PROXY` is about 2,300, so the
+  lifecycle configuration is back as a candidate rather than as the alternative to one:
   <https://docs.aws.amazon.com/sagemaker/latest/dg/jl-lcc.html> and
   <https://docs.aws.amazon.com/sagemaker/latest/dg/jl-lcc-create.html>.
+
+- Bring your own image to SageMaker Unified Studio — the BYOI path Stage 6d step 2 walks (read
+  2026-09-10). The overview and its Dockerfile specifications (`FROM
+  public.ecr.aws/sagemaker/sagemaker-distribution` ≥ `2.6-cpu`, no `ENTRYPOINT`):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-specifications.html>. The
+  procedure hands the attach step to the SageMaker AI guide — *"you must attach your custom image to
+  your SageMaker AI domain"*, the per-project domain `Tooling` provisions:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-how-to.html> and
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-attach-to-domain.html>.
+  The CLI sequence behind the console wizard — `create-image` with a `--role-arn`, `create-image-version`
+  from the ECR URI, `create-app-image-config`, then `update-domain` with `CustomImages` — is written out
+  only on the Studio Classic page:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-byoi-create.html>.
+
+- `ContainerConfig` — the constraint that decided Stage 6d step 2.2 (read 2026-09-10).
+  `ContainerEnvironmentVariables` is *"Map Entries: … Maximum number of 25 items"* with *"Key Length
+  Constraints: … Maximum length of 256"* and the same cap on each value, which no BYOI page mentions:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ContainerConfig.html>.
 
 ## Data platform
 
