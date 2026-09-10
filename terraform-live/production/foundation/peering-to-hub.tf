@@ -1,21 +1,19 @@
-# production/foundation/peering-to-hub.tf - Stage 6c step 3.4, the SAME-ACCOUNT half.
+# production/foundation/peering-to-hub.tf - Stage 6c step 3.4, the same-account half.
 #
-# A PEERING INSIDE ONE ACCOUNT IS ONE RESOURCE, not the requester/accepter pair every other
-# peering in this estate needs. `auto_accept` works only when both VPCs belong to the same
-# account, and both of these do - so `same_account` in the generated row is what selects the
-# shape, and this file simply filters for it.
+# A peering inside one account is a single resource rather than the requester/accepter pair every
+# other peering in this estate needs. `auto_accept` works only when both VPCs belong to the same
+# account, and both of these do, so `same_account` in the generated row selects the shape and this
+# file filters for it.
 #
-# WHAT THE PEERING IS FOR, AND WHAT IT IS NOT. VPC-SharedServices reaches VPC-Networking for the
-# proxy AND for the VPN's reach to GitLab: the tunnel terminates in the hub, and GitLab answers
-# in this VPC's private tier, so this is the peering that makes `gitlab.awsds.internal` reachable
-# from a laptop at all (pass 4). It does NOT get an internet path by doing so:
-# peering shares an ADDRESS and never a PATH (Lesson 44) - the proxy is an application-layer hop
-# whose ACL decides what this VPC may fetch, which is the entire argument of D38.
+# VPC-SharedServices reaches VPC-Networking for the proxy and for the VPN's reach to GitLab: the
+# tunnel terminates in the hub and GitLab answers in this VPC's private tier, so this is the
+# peering that makes `gitlab.awsds.internal` reachable from a laptop (pass 4). It grants no
+# internet path: peering shares an address and never a path (Lesson 44), and the proxy is an
+# application-layer hop whose ACL decides what this VPC may fetch (D38).
 #
-# THE ROUTES ARE SUBNET-SCOPED ON BOTH SIDES, not `10.31.0.0/16`. A route table entry is the
-# cheapest place to be specific, and a whole-VPC route grants reach to every tier the peer will
-# ever add - including its public one, which is the only tier in the estate with an internet
-# gateway in front of it.
+# The routes are subnet-scoped on both sides, not `10.31.0.0/16`. A whole-VPC route would grant
+# reach to every tier the peer will ever add, including its public one - the only tier in the
+# estate with an internet gateway in front of it.
 
 locals {
   hub_peering = [for pr in var.peerings : pr if pr.same_account && pr.role == "requester"]
@@ -42,9 +40,9 @@ resource "aws_vpc_peering_connection" "to_peer" {
   }
 }
 
-# The peer's PRIVATE and PUBLIC subnets - private because that is where a service would answer,
-# public because that is where the proxy and the VPN host live (pass 4). The isolated tier is
-# never a destination: that is what makes it isolated.
+# The peer's private and public subnets - private because that is where a service would answer,
+# public because that is where the proxy and the VPN host live (pass 4). The isolated tier is never
+# a destination.
 data "aws_subnets" "peer_reachable" {
   for_each = { for pr in local.hub_peering : pr.key => pr }
 

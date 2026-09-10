@@ -1,4 +1,4 @@
-# THE TWO REPOSITORIES STAGE 6 STEP 5.0 PUSHES INTO (Stage 7 step 5.1, the 5.a half).
+# The two repositories Stage 6 step 5.0 pushes into (Stage 7 step 5.1, the 5.a half).
 #
 #   base      every application image is FROM base, so it gets a repository of its own even
 #             though nothing pulls it cross-account today - Stage 8 builds both.
@@ -6,15 +6,13 @@
 #             account without a pipeline, once, at Stage 6 step 5.0, and is replaced by Stage
 #             8's pipeline building the same Dockerfile.
 #
-# WHAT IS NOT HERE, AND IT IS 5.b's RATHER THAN AN OVERSIGHT: the pull-through cache rules
-# (registry-scoped, and priming one needs Production's NAT up) and awsds-prod-ecr-app-etl -
-# no application image exists before Stage 8, so it would be a repository nothing pushes to
-# for two stages.
+# 5.b adds what is not here: the pull-through cache rules (registry-scoped, and priming one needs
+# Production's NAT up) and awsds-prod-ecr-app-etl. No application image exists before Stage 8, so
+# that repository would have nothing pushing to it for two stages.
 #
-# BOTH CARRY THE CONSUMER PULL POLICY, and `base` carries it too on purpose: design B's
-# rebuild loop is `FROM base` on a runner in Production today, but the moment a project builds
-# its own image the missing grant would read as a network fault. It costs nothing and it is
-# one list (locals.tf).
+# Both carry the consumer pull policy. `base` carries it although design B's rebuild loop is `FROM
+# base` on a runner in Production today: the moment a project builds its own image, the missing
+# grant would read as a network fault. It is one list (locals.tf).
 
 module "ecr_base" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move

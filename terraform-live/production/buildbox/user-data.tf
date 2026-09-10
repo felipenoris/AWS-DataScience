@@ -1,73 +1,61 @@
-# The first boot. It installs a toolchain, TELLS EVERY CLIENT ON THE HOST ABOUT THE PROXY, and
-# runs nothing else - no build happens here.
+# The first boot. It installs a toolchain, tells every client on the host about the proxy, and runs
+# nothing else - no build happens here.
 #
-# WHY THE BUILD IS NOT IN THE USER DATA, which is the obvious thing to try: user data runs
-# once, unattended, with its output in a log nobody is watching, and a container build is an
-# iterative act whose whole value is watching it fail. This host is a place to build FROM a
-# session, not a build that happens to leave a host behind. The build context arrives with
-# `./scripts/buildbox.py sync`, which can be re-run against a running host; baking it in here
-# was measured and rejected - a gzip+base64 of images/ is ~27 KB against user data's 16 KB
-# ceiling, and it would make every Dockerfile edit REPLACE the host (user_data_replace_on_
-# change), which is the opposite of what iterating wants.
+# The build is not in the user data. User data runs once, unattended, with its output in a log
+# nobody is watching, and a container build is an iterative act. The build context arrives with
+# `./scripts/buildbox.py sync`, which can be re-run against a running host. Baking it in here was
+# measured and rejected: a gzip+base64 of images/ is ~27 KB against user data's 16 KB ceiling, and
+# it would make every Dockerfile edit replace the host (user_data_replace_on_change).
 #
-# THE SHELL LANDS AS ssm-user, NOT AS ec2-user, and that is the one surprise worth writing
-# into the banner rather than into a runbook nobody opens: Session Manager creates ssm-user on
-# its first connection - it does not exist while this script runs, so it cannot be added to
-# the docker group here - and it has passwordless sudo. So `sudo docker ...` works out of the
-# box, and `sudo -iu ec2-user` gets a shell in the docker group for anyone who prefers it.
+# The shell lands as ssm-user, not as ec2-user. Session Manager creates ssm-user on its first
+# connection - it does not exist while this script runs, so it cannot be added to the docker group
+# here - and it has passwordless sudo. `sudo docker ...` works out of the box, and `sudo -iu
+# ec2-user` gets a shell in the docker group.
 #
 # ---------------------------------------------------------------------------------------------
-# THE PROXY, AND WHY IT TAKES FOUR PLACES RATHER THAN ONE (6c step 5.8, 2026-09-06)
+# The proxy is configured in four places (6c step 5.8, 2026-09-06)
 #
 # There is no default route in this tier. An explicit proxy is not transparent: a client that has
-# not been told about it does not fail over to it, it simply hangs. Four different things on this
-# host open connections and each reads the setting from a different place - which is Lesson 14 in
-# its most literal form, one intent that must appear in four files or it is missing from one:
+# not been told about it does not fail over to it, it hangs. Four things on this host open
+# connections and each reads the setting from a different place (Lesson 14):
 #
 #   1. /etc/environment          every login shell and everything systemd starts with
 #                                EnvironmentFile. This is what `curl`, `git`, `pip` and `dnf`
-#                                read. BOTH CASES ARE WRITTEN - `http_proxy` and `HTTP_PROXY` -
+#                                read. Both cases are written - `http_proxy` and `HTTP_PROXY` -
 #                                because clients disagree about which they honour and the
 #                                disagreement is silent.
-#   2. the docker DAEMON         a systemd drop-in. The daemon is what pulls a base image, and it
-#                                is NOT a child of the shell, so it never sees /etc/environment.
+#   2. the docker daemon         a systemd drop-in. The daemon is what pulls a base image, and it
+#                                is not a child of the shell, so it never sees /etc/environment.
 #                                A `docker pull` from a shell with a perfect environment still
 #                                hangs without this file, and the symptom names the registry
 #                                rather than the proxy.
-#   3. the docker CLIENT's       ~/.docker/config.json `proxies` block, which is what injects
-#      BUILD containers          http_proxy into `RUN` steps. Without it the daemon can pull the
-#                                base image and every `pip install` inside the build hangs.
-#   4. dnf                       THE ENVIRONMENT, AND EXPLICITLY *NOT* `proxy=` IN dnf.conf. This
-#                                was written the other way round first and it broke the first boot
-#                                (measured 2026-09-06): `dnf.conf` has a `proxy=` setting and NO
-#                                exclusion setting to go with it, so setting it sends EVERYTHING at
-#                                the proxy - including the AL2023 repositories, which live on S3 and
-#                                must go direct through the gateway endpoint. The proxy refused them
-#                                with a 403 (this plane excluded `.amazonaws.com` then) and `dnf`
+#   3. the docker client's       ~/.docker/config.json `proxies` block, which injects http_proxy
+#      build containers          into `RUN` steps. Without it the daemon can pull the base image
+#                                and every `pip install` inside the build hangs.
+#   4. dnf                       the environment, and not `proxy=` in dnf.conf. `dnf.conf` has a
+#                                `proxy=` setting and no exclusion setting to go with it, so
+#                                setting it sends everything at the proxy - including the AL2023
+#                                repositories, which live on S3 and must go direct through the
+#                                gateway endpoint. Measured 2026-09-06: the proxy refused them with
+#                                a 403 (this plane excluded `.amazonaws.com` then) and `dnf`
 #                                reported `Failed to download metadata`, which reads as a broken
 #                                mirror. dnf goes through libcurl, which honours
-#                                `http_proxy`/`no_proxy` from the environment - so the environment
+#                                `http_proxy`/`no_proxy` from the environment, so the environment
 #                                is the only place that can express both halves.
-#                                THAT FAILURE IS NOW SILENT, AND THIS HALF MATTERS MORE THAN IT
-#                                DID (2026-09-08, D38 section 6 amended). The plane is `open`, so
-#                                the same mistake no longer produces a 403 and a loud `dnf`
-#                                error - the proxy would FETCH the AL2023 repositories, over the
-#                                internet, and everything would appear to work while S3 traffic
-#                                left the VPC, paid for bytes the free gateway endpoint carries,
-#                                and arrived without `aws:SourceVpce`. The failure that was ruled
-#                                out is now the one that succeeds. `no_proxy` is what stands
-#                                between the two, and it is GENERATED (5.6) rather than written
-#                                for exactly this reason.
+#                                Since 2026-09-08 (D38 section 6 amended) that failure is silent:
+#                                the plane is `open`, so the proxy would fetch the AL2023
+#                                repositories over the internet and everything would appear to work
+#                                while S3 traffic left the VPC, paid for bytes the free gateway
+#                                endpoint carries, and arrived without `aws:SourceVpce`. `no_proxy`
+#                                is what stands between the two, and it is generated (5.6).
 #
-# WHAT MUST NOT GO THROUGH IT, and this half is the one that fails quietly in the other
-# direction: `no_proxy` is GENERATED from this VPC's endpoint list (5.6) and carries the SSM
-# names. Session Manager is how anyone gets a shell here, so a `no_proxy` that missed
-# `ssmmessages.<region>.amazonaws.com` would send the agent's websocket at Squid and lock the
-# host out of its own management path - on a host whose only door that is. It also carries the
-# S3 and DynamoDB names IN BOTH SPELLINGS - plain and `dualstack` - which no endpoint list can
-# produce (a gateway endpoint has no private DNS at all) and which carry the LAYERS of every
-# image pull AND the AL2023 repositories. The dualstack form was added at
-# `vpc-egress-v0.9.1` after this host's first boot failed on precisely its absence.
+# `no_proxy` is generated from this VPC's endpoint list (5.6) and carries the SSM names. Session
+# Manager is how anyone gets a shell here, so a `no_proxy` that missed
+# `ssmmessages.<region>.amazonaws.com` would send the agent's websocket at Squid and lock the host
+# out of its only management path. It also carries the S3 and DynamoDB names in both spellings -
+# plain and `dualstack` - which no endpoint list can produce (a gateway endpoint has no private DNS
+# at all) and which carry the layers of every image pull and the AL2023 repositories. The dualstack
+# form was added at `vpc-egress-v0.9.1` after this host's first boot failed on its absence.
 # ---------------------------------------------------------------------------------------------
 
 locals {

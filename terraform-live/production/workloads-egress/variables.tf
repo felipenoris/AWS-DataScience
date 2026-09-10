@@ -1,8 +1,8 @@
 # Inputs. The first five arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py <account> egress) - region and env for Stage 2's standing
-# reasons, zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), and
-# account_folder because the remote-state key is keyed by the account FOLDER, which no .tf
-# file may re-derive from the env token (Lesson 14).
+# (./scripts/gen-tfvars.py <account> egress) - region and env for Stage 2's standing reasons,
+# zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), and account_folder
+# because the remote-state key is keyed by the account folder, which no .tf file may re-derive from
+# the env token (Lesson 14).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."

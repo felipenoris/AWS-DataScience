@@ -1,9 +1,8 @@
 # Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py production probes) - region and env for Stage 2's standing
-# reasons, zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9),
-# account_folder because the remote-state key is keyed by the account FOLDER, and peer_cidrs
-# because an address range written in a .tf file is a copy of the allocation table that
-# nothing keeps in step (Lesson 14).
+# (./scripts/gen-tfvars.py production probes) - region and env for Stage 2's standing reasons,
+# zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), account_folder because
+# the remote-state key is keyed by the account folder, and peer_cidrs because an address range
+# written in a .tf file is a copy of the allocation table that nothing keeps in step (Lesson 14).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -57,11 +56,9 @@ variable "listener_port" {
   default     = 443
 }
 
-# THERE IS NO blocked_port VARIABLE HERE, and tflint is why the reasoning is written down
-# rather than the variable kept: this slice admits exactly ONE port and denies everything
-# else by having no other rule, so a second port number would be a declaration nothing reads.
-# The blocked-port reading belongs to the side that attempts it - sandbox/probes/ - and what
-# makes any port other than listener_port serve is the ingress rule below being the only one.
+# There is no `blocked_port` variable here. This slice admits one port and denies everything else
+# by having no other rule, so a second port number would be a declaration nothing reads and tflint
+# rejects. The blocked-port reading belongs to the side that attempts it, sandbox/probes/.
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."

@@ -1,19 +1,13 @@
-# Inputs, from two files - the same split sandbox/vpn/ uses, and for the same reason.
+# Inputs, from two files - the same split sandbox/vpn/ uses.
 #
-# The first five arrive from the GENERATED, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py sandbox buildbox): region and env for Stage 2's standing reasons,
+# The first five arrive from the generated, untracked terraform.auto.tfvars
+# (./scripts/gen-tfvars.py production buildbox): region and env for Stage 2's standing reasons,
 # zone_ids because the AZ choice lives in scripts/tfhygiene/backend.py (D9), and account_folder
-# because a remote-state key is keyed by the account FOLDER.
+# because a remote-state key is keyed by the account folder.
 #
-# peer_cidr LEFT THIS FILE ON 2026-08-21, with the ingress rule it fed: the user withdrew the
-# "reachable only over the VPN" requirement once a measurement showed it was not true of the
-# shell, and an input with no consumer sends the next reader hunting for the resource that
-# uses it (the same argument that keeps zone_ids out of bootstrap/'s tfvars).
-#
-# The two SIZE knobs arrive from the TRACKED instance_type.auto.tfvars beside this file - the
-# second file in this repository to use that mechanism, deliberately mirroring the first so a
-# reader who knows one knows both. What is NOT mirrored is the meaning of the defaults, and
-# the difference is written on each of them below.
+# The two size knobs arrive from the tracked instance_type.auto.tfvars beside this file, mirroring
+# sandbox/vpn/'s mechanism. What is not mirrored is the meaning of the defaults, which each
+# variable below states.
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -69,9 +63,9 @@ variable "instance_type" {
   default     = "t3.xlarge"
 
   validation {
-    # A CLOSED LIST, like vpn/'s and unlike root_volume_size's band: what is being defended is
-    # an architecture (the AMI is x86_64; a t4g is a machine this image cannot run on and EC2
-    # refuses it) and a ceiling on an hourly rate that is already 32x the tunnel host's.
+    # A closed list. What it defends is an architecture (the AMI is x86_64; a t4g is a machine
+    # this image cannot run on and EC2 refuses it) and a ceiling on an hourly rate that is
+    # already 32x the tunnel host's.
     condition     = contains(["t3.large", "t3.xlarge", "t3.2xlarge"], var.instance_type)
     error_message = "instance_type must be t3.large, t3.xlarge or t3.2xlarge - x86_64, because the image being built is amd64 (docs/PRICING.md 8 carries the rates)."
   }
@@ -83,10 +77,10 @@ variable "root_volume_size" {
   default     = 64
 
   validation {
-    # FLOOR 32: below that the two images do not both fit and the failure arrives late.
-    # CEILING 256: at 0.08 USD/GB-mo that is ~20 USD/month IF it were standing - it is not,
-    # because this slice is [E], but a buildbox left up for a week at 256 GiB is still real
-    # money against D12, and this is where a fat-fingered 2560 is caught at PLAN time.
+    # Floor 32: below that the two images do not both fit and the failure arrives late.
+    # Ceiling 256: at 0.08 USD/GB-mo that is ~20 USD/month if it were standing. This slice is
+    # [E], but a buildbox left up for a week at 256 GiB is real money against D12, and a
+    # fat-fingered 2560 is caught here at plan time.
     condition     = var.root_volume_size >= 32 && var.root_volume_size <= 256
     error_message = "root_volume_size must be between 32 GiB (below this the two images do not both fit) and 256 GiB."
   }

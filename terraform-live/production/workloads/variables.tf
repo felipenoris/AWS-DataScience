@@ -1,8 +1,8 @@
 # Inputs. The first six arrive from the generated, untracked terraform.auto.tfvars
-# (./scripts/gen-tfvars.py production foundation) - region and env for Stage 2's standing
-# reasons, vpc_cidr and zone_ids because the address allocation lives in
-# scripts/tfhygiene/backend.py (Stage 3 decision 1) and may be a literal in no .tf file,
-# and peers because the profile names live in the same module's PROFILES table (pass 2).
+# (./scripts/gen-tfvars.py production workloads) - region and env for Stage 2's standing reasons,
+# vpc_cidr and zone_ids because the address allocation lives in scripts/tfhygiene/backend.py
+# (Stage 3 decision 1) and may be a literal in no .tf file, and peerings because the profile names
+# live in the same module's PROFILES table (pass 2).
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
@@ -44,10 +44,9 @@ variable "zone_ids" {
   nullable    = false
 }
 
-# NO `peers` VARIABLE YET, AND THAT IS STEP 3.1's (Stage 6c step 1.2). The hub accepts four
-# peerings, but the map it needs is the 3.1 MATRIX rather than "every VPC-bearing account" -
-# and a declared input nothing consumes is what tflint rejects and what teaches a reader to
-# skim past inputs.
+# There is no `peers` variable here; step 3.1 owns that map (Stage 6c step 1.2). The hub accepts
+# four peerings, but the map it needs is 3.1's matrix rather than "every VPC-bearing account", and
+# a declared input nothing consumes is what tflint rejects.
 
 
 variable "project" {
@@ -86,11 +85,11 @@ variable "account_folder" {
   nullable    = false
 }
 
-# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from ONE list in
+# Stage 6c steps 0.6 / 3.1 - every peering this slice is an end of, generated from one list in
 # scripts/tfhygiene/backend.py so a requester and an accepter can never disagree about which
 # peerings exist. A slice can hold both roles: production/foundation requests one and accepts
-# another. `same_account` decides the SHAPE - within an account a single resource with
-# auto_accept is the whole handshake; across one it is a requester, an accepter and two applies.
+# another. `same_account` decides the shape: within an account a single resource with auto_accept
+# is the whole handshake, across one it is a requester, an accepter and two applies.
 variable "peerings" {
   description = "The peering matrix, projected onto this slice. Generated - never authored here."
   type = list(object({

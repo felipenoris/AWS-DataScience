@@ -1,4 +1,4 @@
-# Outputs - what the helper script and a person diagnosing a build need, and nothing else.
+# Outputs for the helper script and for a person diagnosing a build.
 
 output "instance_id" {
   description = "The build host. ./scripts/buildbox.py finds it by Name tag rather than through this output - a script that needs terraform state to open a shell cannot help you when terraform is what is broken - so this is for a person: `aws ssm start-session --target <this>`, or `aws ec2 get-console-output --instance-id <this> --latest` when SSM itself is what failed."
