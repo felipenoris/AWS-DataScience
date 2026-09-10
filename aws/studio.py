@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --quiet
 # studio.py - Stage 6's evidence, registry and runtimes side by side: the one DataZone V2
-# domain in Data Governance (a REGISTRY - so also the negative reading: no SageMaker resource
+# domain in Data Governance (a registry, so also the negative reading: no SageMaker resource
 # may exist there), its blueprint configurations and project profiles, the blueprint-
 # provisioned SageMaker AI domain in each Interactive account (VPC-only, private subnets,
 # idle shutdown), the D13 permissions boundary on the project roles (INT-15's mechanical
@@ -8,7 +8,7 @@
 # mechanical half), and the running apps - the burn meter of the one [E] thing Terraform
 # does not own.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, and nothing else:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -25,22 +25,22 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The whole point of
-# D26 is that one account holds the registry and OTHER accounts hold the compute the registry
-# provisions: "the domain is a registry, not a runtime" is only readable with Data Governance
-# and the two Interactive accounts side by side - a SageMaker domain in the wrong column IS
-# the finding. Section 1 pays the rule back with the caller ARN of every profile.
+# The subject spans accounts, so this script is multi-profile: under D26 one account holds the
+# registry and other accounts hold the compute it provisions, so "the domain is a registry, not
+# a runtime" is only readable with Data Governance and the two Interactive accounts side by
+# side, and a SageMaker domain in the wrong column is the finding. Section 1 prints the caller
+# ARN of every profile.
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
-#   - the two project profiles are named `experimentation` and `engineering` (Stage 6 step 1)
+# The contracts it reads, each named in the stage file so a rename fails loudly:
+#   - the project profiles are named `experimentation` and `engineering` (Stage 6 step 1)
 #   - the step 3 deny Sids are DenySageMakerJobsOffVpc and DenySageMakerInstanceCeiling
 #   - the D13 boundary on project roles is named awsds-<env>-project-boundary (step 2)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the portal opening (INT-16), a notebook reading the lake
 #     through the LF share, the egress pair under designs A and B - are the stage's own,
 #     run from a browser and a notebook (Lesson 20).
-#   - Whether a boundary SURVIVES a blueprint reconciliation (INT-15) is answered by
+#   - Whether a boundary survives a blueprint reconciliation (INT-15) is answered by
 #     provisioning, waiting, and re-running this script - the diff is the evidence.
 #   - Whether the SCP carve-out lets Data Governance create a domain (step 0) is a probe,
 #     not a reading - a describe call cannot exercise a deny.
@@ -60,44 +60,28 @@ OUT_NAME = "studio.txt"
 DATA_PROFILE = "awsds-infra-data"
 INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1",)
 
-# THE THIRD STATE, AND THIS FILE HAD NO NAME FOR IT UNTIL STAGE 6b STEP 1.5 (2026-09-06).
-# An account can be a member whose association has been REMOVED ON PURPOSE: its blueprint
-# configurations are destroyed and the domain is no longer shared into it, but its OU has not
-# changed yet, so `datazone:*` is not denied and it is not HEADLESS either. Without this list
-# the two "nothing here" notes below read `correct BEFORE this account's association` - green,
-# and describing the wrong side of the event. An operator debugging an incident would be told
-# the association is pending when it was retired.
-#
-# THE LIST IS EMPTY AGAIN AS OF 2026-09-06, AND IT IS KEPT RATHER THAN DELETED. The one row it
-# ever held was the account this state was invented for, and it held it for the few hours
-# between step 1.5 (the association removed) and step 3.4 (the OU moved). The account is a
-# Workloads member now: `datazone:*` IS denied there, so it is genuinely HEADLESS and the row
-# below carries it. The state itself is not hypothetical - any future member retired the same
-# way passes through it, and re-deriving it under time pressure is how the wrong side of an
-# event gets reported green.
+# A member account whose association was removed on purpose: its blueprint configurations are
+# destroyed and the domain is no longer shared into it, but its OU has not changed yet, so
+# `datazone:*` is not denied and it is not headless either. Without this list the two "nothing
+# here" notes below read `correct BEFORE this account's association` - green, while describing
+# the wrong side of the event. The tuple is empty; the state is not hypothetical, since any
+# member retired this way passes through it.
 RETIRED_MEMBER_PROFILES: tuple[str, ...] = ()
 IDENTITY_PROFILE = "awsds-infra-identity"
-# Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment
-# targets stay headless). `awsds-infra-staging` is no longer a promise: the profile exists
-# since Stage 6b step 5.0, and the account behind it is the renamed `Development`.
+# Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment targets
+# stay headless). `awsds-infra-staging` resolves since Stage 6b step 5.0; the account behind it
+# is the renamed `Development`.
 HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 
 # The contracts (see header).
-# Decision 5's category 1 (2026-08-19; docs/SMUS.md is the reference table): the only
+# Decision 5's category 1 (2026-08-19; docs/SMUS.md carries the reference table): the only
 # blueprints that may be enabled. A category-2 blueprint (Workflows OnDemand, MLExperiments)
-# joins this tuple in the same commit that enables it (Lesson 14). The AmazonBedrock prefix
-# ENUMERATED, AND THE PREFIX RULE THAT USED TO STAND HERE IS GONE (2026-08-21). It read
-# BLUEPRINT_ALLOW_PREFIX = "AmazonBedrock" beside a three-name tuple, and it was carrying two
-# defects at once. The tuple named `EMRServerless`, which the API does not publish - the real name
-# is `EmrServerless` - so US-3 would have reported the CORRECT blueprint as outside category 1 the
-# moment 1.4 configured it; a latent false FAIL nobody could see while no blueprint was configured
-# anywhere. And the prefix silently admitted anything AWS might add under that namespace: a new
-# AmazonBedrock* blueprint appearing in a member account would have passed as expected rather than
-# surfacing as the finding it is. Both are the same failure - a name standing in for a reading
-# (Lesson 38) - so the list is now the thirteen the user categorised on 2026-08-21, spelled as
-# `datazone list-environment-blueprints` returns them.
+# joins this tuple in the same commit that enables it (Lesson 14). Names are spelled as
+# `datazone list-environment-blueprints` returns them - `EmrServerless`, not `EMRServerless` -
+# and the AmazonBedrock family is enumerated rather than matched by prefix, so a blueprint AWS
+# adds under that namespace surfaces as a finding instead of passing as expected (Lesson 38).
 #
-# THE SAME LIST LIVES IN THREE PLACES (Lesson 14): here, terraform-modules/sagemaker-prereqs/'s
+# The same list lives in three places (Lesson 14): here, terraform-modules/sagemaker-prereqs/'s
 # blueprint_names default, and data-governance/governance/locals.tf. One commit moves all three.
 BLUEPRINT_ALLOWLIST = (
     "Tooling",
@@ -112,11 +96,10 @@ BLUEPRINT_ALLOWLIST = (
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
 )
-# ONE PROFILE SINCE STAGE 6b STEP 1.1 (2026-09-06). It was two - `experimentation` into
-# Sandbox and `engineering` into Development - and the second went with the account's role:
-# Development becomes the headless `Staging`, so nothing provisions a Studio project there.
-# `engineering` REAPPEARING is now the finding, which is why the retired name is kept here
-# rather than deleted: a check that only knows what it expects cannot report what it found.
+# `experimentation` provisions into Sandbox. `engineering` was retired at Stage 6b step 1.1:
+# Development became the headless `Staging`, so nothing provisions a Studio project there. The
+# retired name is kept so that `engineering` reappearing reads as the finding it is, rather than
+# as a profile this file has no opinion about.
 PROJECT_PROFILE_NAMES = ("experimentation",)
 RETIRED_PROFILE_NAMES = ("engineering",)
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
@@ -151,22 +134,15 @@ def main(argv: list) -> int:
     def logerr(profile: str, what: str, err: str) -> None:
         errors.entries.append(f"[{profile}] aws {what}\n    {head2(err)}")
 
-    # -------------------------------------------- the DataZone domain, in EVERY account
-    # One listing everywhere, on purpose - and THE OWNER IS READ, NOT INFERRED FROM WHO IS
-    # ASKING (corrected 2026-08-21, the sitting that ran step 1.3). The original premise was
-    # that a domain listed in any account but Data Governance is either the INT-12 fallback
-    # happening by accident or the 1c root deny not holding. That was true only while no
-    # domain was SHARED: an associated account's ListDomains returns the domain it is a
-    # member of, so on the day 1.3 succeeded this check failed in both member accounts and
-    # was wrong in both. The tell is that the finding arrived from the act that was supposed
-    # to work. Lesson 31, arriving as a false FAIL rather than as a false pass.
-    #
-    # So the ARN is kept: it carries the OWNING account, which is what separates "a domain
-    # was created here" (the violation) from "this account can see the one domain" (1.3
-    # working). Reading the id alone cannot tell those apart, and never could.
-    # In the HEADLESS accounts the Workloads OU denies datazone:* in full (1c, D26), so an
-    # SCP denial THERE is the D28 control holding, not a failed call - measured on this
-    # script's first run, 2026-08-16.
+    # -------------------------------------------- the DataZone domain, in every account
+    # One listing everywhere, with the owner read from the ARN rather than inferred from who is
+    # asking: an associated account's ListDomains returns the domain it is a member of, so only
+    # the owning account separates "a domain was created here" (the violation) from "this
+    # account can see the one domain" (step 1.3 working). The id alone cannot tell those apart
+    # (Lesson 31).
+    # In the headless accounts the Workloads OU denies datazone:* in full (1c, D26), so an SCP
+    # denial there is the D28 control holding, not a failed call - measured on this script's
+    # first run, 2026-08-16.
     SCP_DENIED = "SCP_DENIED"
     dz_domains: dict = {}  # profile -> [(id, name, version, status, owner)] | None | SCP_DENIED
     for p in live:
@@ -196,8 +172,8 @@ def main(argv: list) -> int:
                 d.get("name", "?"),
                 d.get("domainVersion", "?"),
                 d.get("status", "?"),
-                # element 4 is the OWNER, split out of the ARN rather than assumed to be the
-                # caller. Positions 0-3 are unchanged so every other reader still works.
+                # element 4 is the owning account, split out of the ARN rather than assumed to
+                # be the caller; positions 0-3 keep their meaning.
                 (d.get("arn", "") or "").split(":")[4]
                 if len((d.get("arn", "") or "").split(":")) > 4
                 else "?",
@@ -209,13 +185,11 @@ def main(argv: list) -> int:
     data_live = DATA_PROFILE in live
     # profile -> [(blueprint name, enabled regions, provisioning role set?, manage-access set?)]
     #
-    # KEYED BY PROFILE SINCE 2026-08-21, AND THE REASON IS THE WHOLE POINT OF THE CHECK.
-    # PutEnvironmentBlueprintConfiguration takes a domainIdentifier and NO account parameter, so
-    # the account it configures is the CALLER'S - an associated account enabling blueprints
-    # against a shared domain (Stage 6, the sitting's finding 4). Reading only the domain account
-    # therefore cannot tell "no blueprint is configured anywhere" from "every blueprint is
-    # configured where it is supposed to be", which is Lesson 13 in its purest form: the same
-    # empty list on success and on failure, permanently.
+    # Keyed by profile: PutEnvironmentBlueprintConfiguration takes a domainIdentifier and no
+    # account parameter, so the account it configures is the caller's, and an associated account
+    # can enable blueprints against a shared domain. Reading only the domain account cannot tell
+    # "no blueprint is configured anywhere" from "every blueprint is configured where it is
+    # supposed to be" (Lesson 13).
     bp_configs: dict = {}
     project_profiles: list = []  # (name, id, status)
     projects: list = []  # (name, id, status)
@@ -260,12 +234,11 @@ def main(argv: list) -> int:
                         "yes" if c.get("manageAccessRoleArn") else "-",
                     )
                 )
-        # THE MEMBER ACCOUNTS' HALF (2026-08-21). Same domain id, each member's own session -
-        # which is what the read is for: the configuration belongs to the caller's account.
-        # `tolerate` matters here and is not politeness: between the domain's creation and the
-        # console account association the call legitimately fails, and a failing call must not
-        # flip this script's exit code for the whole of that window (the same seam
-        # list-project-profiles already uses below).
+        # The member accounts' half: same domain id, each member's own session, because the
+        # configuration belongs to the caller's account. Between the domain's creation and the
+        # console account association the call legitimately fails, so `tolerate` keeps that
+        # window from flipping this script's exit code (the seam list-project-profiles uses
+        # below).
         for member in INTERACTIVE_PROFILES:
             if member not in live:
                 continue
@@ -378,18 +351,15 @@ def main(argv: list) -> int:
                 .get("AppLifecycleManagement", {})
                 .get("IdleSettings", {})
             )
-            # THE CEILING IS READ SEPARATELY BECAUSE IT IS THE CONTROL, and this file
-            # reported `pass` for a week without it (2026-08-29). `IdleTimeoutInMinutes` is the
-            # DEFAULT, which a project member may change; `MaxIdleTimeoutInMinutes` is the most
-            # they may raise it to, and step 8.1 names THAT one - "the admin ceiling the user
-            # cannot raise". Both arrive in the same describe-domain response and only the first
-            # was ever looked at, so a domain whose ceiling had been raised to a day, or removed,
-            # read exactly like a compliant one.
+            # The ceiling is the control, so it is read separately. `IdleTimeoutInMinutes` is
+            # the default, which a project member may change; `MaxIdleTimeoutInMinutes` is the
+            # most they may raise it to, and step 8.1 names that one - "the admin ceiling the
+            # user cannot raise". Both arrive in the same describe-domain response, and a domain
+            # whose ceiling was raised or removed reads like a compliant one on the first alone.
             #
-            # THE VALUE IS REPORTED AND NEVER ASSERTED. It is declared once, in
-            # data-governance/governance/variables.tf, and a threshold copied here is the
-            # divergence Lesson 33 describes. What US-7 asserts is that the control EXISTS -
-            # the half no other file holds - and the number rides in the table, where a change
+            # The value is reported, never asserted: the threshold is declared once, in
+            # data-governance/governance/variables.tf, and a copy here would diverge (Lesson 33).
+            # US-7 asserts that the control exists; the number rides in the table, where a change
             # shows up in the diff two runs make.
             ceiling = lcm.get("MaxIdleTimeoutInMinutes")
             idle = f"{lcm.get('LifecycleManagement', 'absent')}" + (
@@ -423,29 +393,23 @@ def main(argv: list) -> int:
                 sm_images[p] = r.stdout.split()
 
     # ---------------- the project roles and their boundary (INT-15's mechanical half)
-    # WHICH ROLES ARE "BLUEPRINT-PROVISIONED" IS READ FROM THE TAG, NOT FROM THE NAME
-    # (2026-08-26). Until then this block matched 'datazone' in the role name, and the
-    # first real project showed what that misses: the Tooling stack created THREE roles
-    # in Sandbox - datazone_usr_role_<project>_<env> and two AmazonBedrock*Role-<project>-
-    # <env> - and the name filter saw one of them. All three happened to carry the
-    # boundary, so the check read `pass` about a third of its own subject. The sharp edge
-    # is ahead of us rather than behind: AWS's own Tooling template gives its two
-    # conditional EMR roles NO permissions boundary (recorded at the 2026-08-22 template
-    # reading), and those are named EMR-something - so the day `createEmrResourceInTooling`
-    # turns true, the name filter would report `pass` beside two unbounded roles. Lesson 31:
-    # a check inherits the scope it was written in and keeps reporting `pass` about that one.
+    # Which roles are blueprint-provisioned is read from the tag, not from the name. The Tooling
+    # stack creates three roles in Sandbox - datazone_usr_role_<project>_<env> and two
+    # AmazonBedrock*Role-<project>-<env> (measured 2026-08-26) - and AWS's own Tooling template
+    # gives its two conditional EMR roles no permissions boundary (read from the template,
+    # 2026-08-22), so a name filter would report `pass` beside two unbounded roles the day
+    # `createEmrResourceInTooling` turns true (Lesson 31).
     #
-    # THE TAG IS THE SERVICE'S OWN STAMP: every role the blueprint provisions carries
-    # AmazonDataZoneDomain / AmazonDataZoneProject / AmazonDataZoneBlueprint (measured on
-    # all three roles, 2026-08-26). The name match is kept as an OR so an untagged role
-    # named datazone* is still reported rather than silently dropped.
+    # The tag is the service's own stamp: every role the blueprint provisions carries
+    # AmazonDataZoneDomain / AmazonDataZoneProject / AmazonDataZoneBlueprint (measured on all
+    # three roles, 2026-08-26). The name match is kept as an OR so an untagged role named
+    # datazone* is still reported rather than silently dropped.
     #
-    # ListRoles returns neither Tags nor PermissionsBoundary - a documented API omission
-    # (both are GetRole-only, with RoleLastUsed), which is the same contract that produced
-    # this check's 2026-08-22 defect (Lesson 30). So the candidate set is enumerated and
-    # every candidate is read with GetRole, which returns both in one call.
+    # ListRoles returns neither Tags nor PermissionsBoundary - both are GetRole-only, with
+    # RoleLastUsed (Lesson 30) - so the candidate set is enumerated and every candidate is read
+    # with GetRole, which returns both in one call.
     #
-    # The candidate set excludes two IAM PATHS, and a path is not a name: /aws-service-role/
+    # The candidate set excludes two IAM paths, and a path is not a name: /aws-service-role/
     # holds service-linked roles, which a service creates for itself and a blueprint cannot
     # provision, and /aws-reserved/ holds Identity Center's. Everything a blueprint could
     # have made is at '/', so this costs ~14 GetRole calls per account rather than ~33.
@@ -590,9 +554,9 @@ def main(argv: list) -> int:
         else:
             checks.ok("US-1", f"one unified domain ({doms[0][0]})", f"version {doms[0][2]}")
 
-    # US-2: no DataZone domain OWNED anywhere else (1c's root deny holding), and NOTHING
+    # US-2: no DataZone domain owned anywhere else (1c's root deny holding), and nothing
     # SageMaker-shaped in Data Governance (the registry-not-runtime negative deliverable).
-    # OWNED, not visible - see the collection comment above.
+    # Owned, not visible - see the collection comment above.
     account_of = {c.profile: c.account for c in callers if c.live}
     for p in live:
         if p == DATA_PROFILE or dz_domains.get(p) is None:
@@ -660,15 +624,15 @@ def main(argv: list) -> int:
                 "the registry/runtime split holding (D26)",
             )
 
-    # US-3: blueprint configurations exist only for decision 5's category 1 - the
-    # allow-list above (step 1.4; docs/SMUS.md). Names are read, not assumed. The two
-    # Redshift-backed blueprints keep their own message: enabling either reopens D26/D12,
-    # not decision 5 (LakehouseCatalog is RMS-backed - the 2026-08-19 re-read, decision 4).
-    # THE VERDICT IS SPLIT BY COLUMN, and the two halves are opposite in sign (2026-08-21).
-    # In the DOMAIN account, zero configurations is the CORRECT state and a pass with its own
-    # message: D22 forbids enabling any blueprint there, and one appearing is US-2-shaped rather
-    # than an allow-list question. In each MEMBER account it is the allow-list that is measured -
-    # and `note` while the association does not exist yet, because before it the call cannot
+    # US-3: blueprint configurations exist only for decision 5's category 1 - the allow-list
+    # above (step 1.4; docs/SMUS.md). Names are read, not assumed. The Redshift-backed
+    # blueprints keep their own message: enabling either reopens D26/D12, not decision 5
+    # (LakehouseCatalog is RMS-backed - the 2026-08-19 re-read, decision 4).
+    # The verdict is split by column, and the two halves are opposite in sign. In the domain
+    # account, zero configurations is the correct state and passes with its own message: D22
+    # forbids enabling any blueprint there, so one appearing is US-2-shaped rather than an
+    # allow-list question. In each member account the allow-list is what is measured, and the
+    # verdict is a note while the association does not exist, since before it the call cannot
     # succeed at all.
     if data_live and domain_id:
         if bp_configs.get(DATA_PROFILE):
@@ -691,11 +655,10 @@ def main(argv: list) -> int:
                 continue
             rows = bp_configs.get(member)
             if not rows:
-                # WHICH GATE IS STILL SHUT IS MEASURED, NOT ASSUMED. Before 1.3 the call could
-                # not succeed at all; after it, an empty list means 1.4 has not run. The two
-                # are distinguished by whether the shared domain is visible here - a reading
-                # this script already has - rather than by importing the tfvars generator's
-                # SMUS_ASSOCIATED, which would report the intention instead of the state.
+                # Which gate is still shut is measured, not assumed: before 1.3 the call could
+                # not succeed at all; after it, an empty list means 1.4 has not run. The two are
+                # separated by whether the shared domain is visible here, rather than by the
+                # tfvars generator's SMUS_ASSOCIATED, which reports the intention.
                 associated = any(
                     d[4] != account_of.get(member) for d in (dz_domains.get(member) or [])
                 )
@@ -793,8 +756,8 @@ def main(argv: list) -> int:
                 "deployment targets are never associated and never carry a domain (D28).",
             )
 
-    # US-7: idle shutdown configured on every Interactive domain (step 8) - and the ADMIN
-    # CEILING beside it, because either half alone is a suggestion.
+    # US-7: idle shutdown configured on every Interactive domain (step 8), and the admin
+    # ceiling beside it, since either half alone is a suggestion.
     for p in INTERACTIVE_PROFILES:
         for did, _net, idle, _subnets, ceiling in sm_details.get(p, []):
             if not idle.startswith("ENABLED"):
@@ -821,10 +784,8 @@ def main(argv: list) -> int:
     # shape made visible.
     for p, rows in role_rows.items():
         if not rows:
-            # An account with no datazone roles yet is UNEXERCISED, not passing - and
-            # silence here is the exact shape that hid this check's list-roles defect
-            # until the first real role arrived (2026-08-22; Lesson 13: absence of a
-            # row reads the same as absence of a measurement).
+            # An account with no datazone roles yet is unexercised, not passing: absence of
+            # a row reads the same as absence of a measurement (Lesson 13).
             checks.note(
                 "US-8",
                 f"project-role boundary in {p}",

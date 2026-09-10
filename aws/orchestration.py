@@ -6,7 +6,7 @@
 # (the schedule evidence), the no-provisioned-environment reading (the burn), the
 # definitions home, and the registry's register/approve record (INT-04 consumed).
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, and nothing else:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -24,14 +24,13 @@
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject spans
-# accounts by design: the workflow is authored in Development's project (D21), runs in
-# Production (D17), and the provisioned-MWAA burn reading (OR-6) is only meaningful measured
-# in EVERY account - the OnDemand Workflows blueprint would create a fee-bearing environment
-# in a member account, not in Production. Section 1 pays the rule back with the caller ARN
-# of every profile.
+# The subject spans accounts, so this script is multi-profile: the workflow is authored in
+# Development's project (D21), runs in Production (D17), and the provisioned-MWAA burn
+# reading (OR-6) is only meaningful measured in every account, since the OnDemand Workflows
+# blueprint would create a fee-bearing environment in a member account rather than in
+# Production. Section 1 prints the caller ARN of every profile.
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
+# The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - workflow resources, roles and failure rules carry awsds-prod-wf- (steps 1A/1B/3)
 #   - log groups: /awsds/prod/wf/ (design A) and /aws/vendedlogs/states/awsds-prod-wf-
 #     (design B - the documented vended-logs prefix) (steps 1A.1, 1B.2)
@@ -39,10 +38,10 @@
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
 #   - the lake buckets carry awsds-data- (Stage 5), so OR-3 can read D13's absence
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, since an empty listing and a missing account look alike:
 #   - The Studio's serverless-Workflows surface (step 0.4) is console-recorded; no stable
 #     public API names it (research flag, 2026-08-16). The stage log carries it.
-#   - The behavioural proofs (an unattended SCHEDULED run, the failure rules firing, the
+#   - The behavioural proofs (an unattended scheduled run, the failure rules firing, the
 #     lint rejecting a bad artifact) are the stage's own (Lesson 20).
 #   - Whether the awscc apply lands under the deploy role's boundary (INT-14) is pass 2's
 #     pipeline run; this file only shows what exists afterwards.
@@ -583,8 +582,8 @@ def main(argv: list) -> int:
                     else:
                         checks.ok("OR-1", f"B: {name}", "STANDARD, schedule present")
 
-    # OR-2: every workflow/machine logs to a NAMED group with retention (D28 item 5);
-    # the auto-created /aws/mwaa-serverless/ group is exactly what the item forbids.
+    # OR-2: every workflow/machine logs to a named group with retention (D28 item 5);
+    # the auto-created /aws/mwaa-serverless/ group is what the item forbids.
     for name, d in wf_detail.items():
         lg = d["log_group"]
         if not lg:

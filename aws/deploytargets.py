@@ -1,13 +1,13 @@
 #!/usr/bin/env -S uv run --quiet
 # deploytargets.py - Stage 9's evidence, producer and targets side by side: the Production
-# data platform (buckets, CMK, the enforced workgroup), the runtime (the job role with D13's
-# absence, the model package groups with their resource policies), the Lake Formation
-# settings in every account that has any (DL-5's discipline extended - DT-5), the write
-# share with its links and invitations (INT-03), the drop-box contract from both sides
-# (INT-10), the Staging mirror and the ABSENCE that is a control (D20), the escape hatch
-# with its alarm, and the persona sets' owed allows read back through the delegated admin.
+# data platform (buckets, CMK, the enforced workgroup), the runtime (the job role under
+# D13, the model package groups with their resource policies), the Lake Formation settings
+# in every account that has any (DT-5), the write share with its links and invitations
+# (INT-03), the drop-box contract from both sides (INT-10), the Staging mirror and the
+# absence that is a control (D20), the escape hatch with its alarm, and the persona sets'
+# owed allows read back through the delegated admin.
 #
-#   needs:    a live SSO session - the ONLY prerequisite:
+#   needs:    a live SSO session, and nothing else:
 #
 #                 aws sso login --sso-session awsds
 #
@@ -24,28 +24,27 @@
 #             sts get-caller-identity. It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# WHY THIS IS MULTI-PROFILE, which aws/INDEX.md admits only for a reason. The subject is
-# the producer path BETWEEN accounts: the lake and the drop-box live in Data Governance
-# while the only principal allowed to write them lives in Production (D22, D25), Staging's
-# whole value is what it does NOT reach (D20), and the persona allows live in Identity.
-# Section 1 pays the rule back with the caller ARN of every profile.
+# The subject is the producer path between accounts, so this script is multi-profile: the
+# lake and the drop-box live in Data Governance while the only principal allowed to write
+# them lives in Production (D22, D25), Staging's value is what it does not reach (D20), and
+# the persona allows live in Identity. Section 1 prints the caller ARN of every profile.
 #
-# CONTRACTS THIS FILE READS, each named in the stage file so a rename fails loudly:
-#   - the job role is awsds-prod-job-exec (step 3.1 - the SAME name Stage 5 step 1.4's
-#     drop-box statement and key grant carry)
+# The contracts it reads, each named in the stage file so a rename fails loudly:
+#   - the job role is awsds-prod-job-exec (step 3.1 - the name Stage 5 step 1.4's drop-box
+#     statement and key grant carry)
 #   - the workgroup is awsds-prod-athena; Staging's is awsds-staging-athena (steps 1.2, 4.2)
 #   - the buckets are awsds-prod-outputs and awsds-prod-derived (step 1.1 - the derived
 #     zone arrives with the consumer-data call, so its policy is module-shaped: TLS-only
-#     plus the presigned cap, no perimeter branches - those are the lake's and outputs')
+#     plus the presigned cap, no perimeter branches - those belong to the lake and outputs)
 #   - the package groups match awsds-prod-model-* (step 3.2)
 #   - the debug role is awsds-prod-debug, its rule awsds-prod-debug-assume (step 6)
 #   - Staging's job role is awsds-staging-job-exec (step 4.3)
 #
-# WHAT IT CANNOT SEE, stated because an empty listing and a missing account look alike:
+# What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the LF write landing, the direct PutObject dying, the
 #     pickup emptying the letterbox, the console fraction (INT-06) - are the stage's own
-#     (Lesson 20): configuration for configuration questions, probes for behaviour.
-#   - Whether the write share WORKS is 2.4's job run; this file only shows it was granted.
+#     (Lesson 20).
+#   - Whether the write share works is 2.4's job run; this file only shows it was granted.
 #   - `Staging` rows appear only once the account is vended and holds a profile.
 
 from __future__ import annotations
@@ -73,16 +72,15 @@ PROD_WG = "awsds-prod-athena"
 STAGING_WG = "awsds-staging-athena"
 STAGING_JOB_ROLE = "awsds-staging-job-exec"
 OUT_BUCKET = "awsds-prod-outputs"
-# NOTE 2026-08-26: consumer-data v0.6.0 REMOVED the derived bucket + enforced workgroup
-# from the module (D19 revised - the Interactive derived zone re-homed onto the SMUS project
-# path). NEITHER deployment target has SMUS (D17/D28: the runtime, without the domain), so the
-# re-homed zone exists in neither - and the module now supplies one to nobody. Where Production's
-# AND Staging's results land is Stage 9's to re-decide at revision (STAGING_WG above is the
-# harder half: its result location was never named anywhere, even before the removal). Both
-# expectations stand as the stage file wrote them and are re-read there, not here.
+# consumer-data v0.6.0 (2026-08-26) dropped the derived bucket and the enforced workgroup from
+# the module: D19 was revised and the Interactive derived zone re-homed onto the SMUS project
+# path. Neither deployment target has SMUS (D17/D28), so the re-homed zone exists in neither.
+# Where Production's and Staging's results land is Stage 9's to re-decide at revision, and
+# STAGING_WG's result location was never named anywhere. Both expectations stand as the stage
+# file wrote them and are re-read there.
 RESULTS_BUCKET = "awsds-prod-derived"  # results/ is a prefix family in it, never a bucket
 MPG_PREFIX = "awsds-prod-model-"
-PROD_CMK_ALIAS = "alias/awsds-prod-data"  # renamed 2026-08-19 (twice): one data CMK per account
+PROD_CMK_ALIAS = "alias/awsds-prod-data"  # one data CMK per account
 DROPBOX_SUBSTR = "dropbox"
 LAKE_BUCKET_SUBSTR = "awsds-data-"
 MIRROR_DBS = ("raw", "curated")  # the lake databases the Staging catalog mirrors (4.1)
@@ -831,7 +829,7 @@ def main(argv: list) -> int:
                         f"{state} - a group without its policy is Stage 10 improvising one (D28).",
                     )
 
-    # DT-4: the job role - service-only trust, and NO s3 allow reaching a lake bucket (D13).
+    # DT-4: the job role - service-only trust, and no s3 allow reaching a lake bucket (D13).
     if prod_live:
         if job_role_state == "(absent)":
             (checks.fail if built else checks.note)(
@@ -939,20 +937,13 @@ def main(argv: list) -> int:
                 )
         else:
             checks.ok("DT-8", "staging isolation", "no resource link reaches Data Governance")
-        # THE THIRD STATE, AND IT ARRIVED THE DAY THIS CHECK COULD FIRST RUN (2026-09-06).
-        # The mirror rows were unreachable while `awsds-infra-staging` did not resolve - Stage 6b
-        # made that profile exist, and the first run reported
-        # `curated: DIVERGES (missing 1, extra 0)`. Nothing had drifted: Stage 9 has not built
-        # the mirror, so Staging holds zero tables and the lake holds one, which this comparison
-        # cannot tell from a mirror that fell behind. A check that reads the same on "not built
-        # yet" and on "drifted" is not a check (Lesson 13), and one that is red for several
-        # stages is a check nobody reads on the stage that matters.
-        #
-        # `built` IS THE DISCRIMINATOR AND IT ALREADY EXISTS - DT-9 uses it for exactly this.
-        # It is true once ANY Stage 9 object stands in the account (the job role, a model package
-        # group, the workgroup, a bucket). Until then a divergence is an absence and this notes
-        # it; from the first Stage 9 apply the same reading fails, without this file being edited
-        # again.
+        # `built` separates "not built yet" from "drifted" (Lesson 13): it is true once any
+        # Stage 9 object stands in the account - the job role, a model package group, the
+        # workgroup, a bucket. Until then Staging holds zero tables against the lake's, which
+        # reads exactly like a mirror that fell behind; the first run, 2026-09-06, reported
+        # `curated: DIVERGES (missing 1, extra 0)` with nothing drifted. So a divergence is a
+        # note until the first Stage 9 apply, and the same reading fails after it, with no edit
+        # here.
         for db, lake_n, staging_n, verdict in mirror_rows:
             if verdict == "mirrored":
                 checks.ok("DT-8", f"mirror {db}", f"{staging_n} table(s), names agree")
