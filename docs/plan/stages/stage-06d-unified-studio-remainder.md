@@ -102,6 +102,16 @@ measured nothing. **Explanation:** a statement that is attached but never exerci
 could be doing the work (Lesson 20), and this one is D13's perimeter for compute — so the pair is read as a
 contrast, and the **wording** is the evidence, not the exit code.
 
+- **1.1 IS ANSWERED IN SUBSTANCE, 2026-08-27, BY A WORKFLOW RATHER THAN BY A PERSONA — AND THE
+  DISTINCTION IS THE WHOLE OF LESSON 20.** The refusal wording exists and names its document:
+  `sagemaker:CreateTrainingJob … explicit deny in a permissions boundary:
+  arn:aws:iam::<acct>:policy/awsds-sandbox-project-boundary`, statement `DenySageMakerJobsOffVpc`
+  (`Null sagemaker:VpcSubnets = true`). **But that is the BOUNDARY's copy of the statement, not the six
+  persona sets' copy**, and this step was written for the second. One intent, two objects (Lesson 33's
+  shape): what is now proven is that the *statement* refuses a real off-VPC job and that the wording is
+  attributable; what is still unexercised is whether a **persona session** meets the same refusal. The
+  contrast still wants a persona-submitted job. Read from step 4's discovery, 2026-09-09.
+  *The original step follows:*
 - **1.1 — [user] Submit the refused job**: a processing job with **no** `VpcConfig`, from a data-scientist
   session in the Sandbox project. Read the refusal wording — it must name the policy.
 - **1.2 — [user] Submit the accepted job**: the same job with the project's subnets and an allowed instance
@@ -240,6 +250,46 @@ Unified Studio and MWAA Serverless is documented as a fact with no mechanism, an
 the future* at `CreateWorkflow`, so a YAML exported earlier fails at deploy. This was Stage 10's
 verification (i), pulled forward because Stage 10's design now depends on it.
 
+- **STEP 4 WAS ALREADY EXERCISED — ON 2026-08-27, AND NOBODY READ IT UNTIL 2026-09-09.** Writing the
+  log-debugging runbook required an inventory of log groups, and Sandbox holds
+  `/aws/mwaa-serverless/dzd-<domain>-<project>/MyWorkflow-<epoch-ms>` — retention **`None`**, which is
+  never expires. `aws mwaa-serverless list-workflows` returns **one workflow, `READY`**, created
+  2026-08-27, `TriggerMode: manual_only`. It **ran**, twice, and **failed both times**. Everything below
+  is read from that run; nothing was submitted to produce it.
+  - **4.1 IS ANSWERED, AND THE ANSWER IS "NOTHING".** The surface exists with 6a's **eleven blueprint
+    configurations unchanged** — no `Workflows` blueprint, no capability prompt, no connection. A
+    workflow was authored in the portal and the service created it. 6a's decision 5 does **not** re-open.
+  - **4.4 IS ANSWERED, AND THE VENDOR'S SENTENCE IS FALSE FOR ITS ROLE HALF.** The guide says every
+    serverless workflow *"runs with its own execution role and worker"*. `RoleArn` is
+    **`datazone_usr_role_<project>_<domain>`** — the **project user role**, with the session name
+    `AmazonMWAAServerless`. There is no per-workflow role. **That is the governance-favourable outcome**:
+    a blueprint-authored role is inside the D13 boundary's reach, and the run below proves the reach is
+    real rather than nominal. D28 item 3's shape is *the project role*, not a service-created one.
+  - **THE RUN FAILED ON THIS ESTATE'S OWN CONTROL, AND THE WORDING NAMES IT.** Both attempts:
+    `AccessDeniedException … not authorized to perform: sagemaker:CreateTrainingJob … with an explicit
+    deny in a permissions boundary: arn:aws:iam::<acct>:policy/awsds-sandbox-project-boundary`. The
+    statement is **`DenySageMakerJobsOffVpc`** (`Null sagemaker:VpcSubnets = true`).
+  - **AND THE MECHANISM UNDER IT IS NEW HERE: A "NOTEBOOK TASK" IS A SAGEMAKER TRAINING JOB.**
+    `SageMakerNotebookOperator` executes the notebook by calling `CreateTrainingJob`. That is why a
+    *compute* control reaches the *orchestration* surface at all, and it is not in any plan file.
+  - **THE PORTAL EMITS `compute: {}`.** The definition's compute block is **empty**, so the operator
+    supplies no `VpcConfig`, so `sagemaker:VpcSubnets` is null, so the boundary denies. **Every default
+    notebook workflow in this estate is dead on arrival** until the compute block carries subnets — which
+    makes this 4.5's sharpest lint rule and a Stage 10 input, not a curiosity.
+  - **4.6's NETWORK SHAPE IS MEASURED RATHER THAN READ FROM A PAGE, AND IT HOLDS.** The workflow's own
+    `NetworkConfiguration` carries **two subnets in two AZs** — `awsds-sandbox-private-usw2-az1` and
+    `-usw2-az2`, this estate's own private tier — and one security group. **The distinction to carry into
+    Stage 10**: the *worker* is VPC-attached by the service; the *job the worker submits* is not, and
+    nothing sets it. Encryption is `CUSTOMER_MANAGED_KEY` on **`alias/awsds-sandbox-project`**, the
+    blueprint-provisioned project CMK — ours, not an AWS-managed key.
+  - **ONE OBSERVATION THAT IS NOT YET A FINDING**: `TriggerMode` is `manual_only`, the definition carries
+    `is_paused_upon_creation: false`, and the run id is `scheduled__2026-08-27T00:00:00+00:00`. The
+    workflow-level trigger mode and the DAG's own pause state are two different switches; which one the
+    portal's *Run* button uses is unmeasured, and 4.2 is where to settle it.
+  - **WHAT STEP 4 STILL OWES**: 4.2's **two-task** workflow (this one has a single task, so nothing here
+    exercises a dependency, which is what a promotion lint is mostly about), 4.3's run of the definition
+    through D28's lint, and 4.5's rules — now including *reject an empty `compute`*.
+  *The original step follows:*
 - **4.1 — [user reads, Claude records] Find what enables the surface** — the vendor pages narrow it
   (read 2026-09-07): the **`Workflows` blueprint creates a provisioned MWAA environment**, the shape D7
   amended away, so enabling it is the *wrong* act; the user guide says SMUS *"supports serverless
