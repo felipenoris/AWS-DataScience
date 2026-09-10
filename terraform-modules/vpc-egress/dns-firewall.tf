@@ -1,113 +1,101 @@
-# ROUTE 53 RESOLVER DNS FIREWALL - design A's control, and the thing that makes "limited
-# internet" different from "internet" (Stage 6 step 4.1, D5(A), architecture.md 4.3).
+# Route 53 Resolver DNS Firewall - design A's control, and what makes "limited internet"
+# different from "internet" (Stage 6 step 4.1, D5(A), architecture.md 4.3).
 #
-# WHAT IT IS FOR. Until v0.6.0 a private subnet had a default route to a NAT
-# gateway, and a NAT is not a filter: anything in the subnet can reach any address on the
-# internet. The endpoint policies do not see that traffic (it is not going to an endpoint),
-# the bucket policies do not see it (it is not going to S3), and the flow logs record it after
-# the fact. DNS Firewall is the one cheap lever that acts BEFORE the connection: a name that
-# does not resolve is a host nobody reaches.
+# A private subnet used to have a default route to a NAT gateway, and a NAT is not a filter:
+# anything in the subnet can reach any address on the internet. The endpoint policies do not see
+# that traffic (it is not going to an endpoint), the bucket policies do not see it (it is not
+# going to S3), and the flow logs record it after the fact. DNS Firewall acts before the
+# connection: a name that does not resolve is a host nobody reaches.
 #
-# WHAT IT IS NOT, AND THIS BELONGS IN THE COMPARISON RATHER THAN IN A FOOTNOTE (step 6.1):
-# name filtering is bypassable by RAW IP. A process that already knows an address never asks
-# the resolver. So design A's exfiltration story is "inconvenient", and design B's is "there
-# is no path" - which is the actual difference D5 exists to price.
+# Name filtering is bypassable by raw IP (step 6.1). A process that already knows an address
+# never asks the resolver, so design A's exfiltration story is "inconvenient" and design B's is
+# "there is no path" - the difference D5 exists to price.
 #
-# COST: ~USD 0.03/month for the domain lists plus USD 0.60 per million queries (measured,
-# docs/PRICING.md 7). Cents. It is in this module rather than in foundation/ because it only
-# means anything while there IS a default route, and that route is [E].
+# Cost: ~USD 0.03/month for the domain lists plus USD 0.60 per million queries (measured,
+# docs/PRICING.md 7). It is in this module rather than in foundation/ because it only means
+# anything while there is a default route, and that route is [E].
 #
-# THE QUERY LOG IS [E] WITH THE REST OF THE SLICE, which has one consequence worth stating:
-# `make down` destroys the log group and the blocked-lookup evidence with it. Read 4.3's
-# findings during the session, not after it.
+# The query log is [E] with the rest of the slice: `make down` destroys the log group and the
+# blocked-lookup evidence with it. Read 4.3's findings during the session, not after it.
 
 locals {
-  # THE `&& var.egress_mode == "A"` CLAUSE CAME OFF HERE AT v0.6.0, IN THE SAME COMMIT AS THE NAT,
-  # AND THAT PAIRING IS THE WHOLE POINT (6c step 5.1). One condition was serving two intents
-  # (Lesson 51): *the firewall only matters where a default route exists* AND *the firewall is on*.
-  # Deleting mode A without touching this line would have made the first clause permanently false
-  # and **silently disabled the DNS Firewall in every VPC** - which is exactly what step 5.7 says
-  # must stay. Neither step would have read wrong; the two would simply have undone each other.
-  #
-  # AND THE FIRST INTENT IS NOW FALSE ANYWAY, which is why it is deleted rather than rewritten. The
-  # firewall's job stopped being *filter the internet* the moment the internet became the proxy's
-  # allow-list: what it does here is close the recursive resolver as an exfiltration channel, and
-  # that channel exists with or without a default route.
+  # The firewall is on where the caller says so, and nowhere else. This condition once carried a
+  # second clause, `&& var.egress_mode == "A"`, so one condition served two intents (Lesson 51):
+  # *the firewall only matters where a default route exists* and *the firewall is on*. The first
+  # is false under design B - the firewall's job stopped being *filter the internet* the moment
+  # the internet became the proxy's allow-list. What it does here is close the recursive resolver
+  # as an exfiltration channel, and that channel exists with or without a default route (6c step
+  # 5.1; step 5.7 is what says the firewall must stay).
   dns_firewall_enabled = var.dns_firewall
 
-  # AN EMPTY ALLOW-LIST IS A VALID AND MEANINGFUL CONFIGURATION - it is this module's
-  # DEFAULT since v0.3.0 - so the allow half is gated on the list having content rather
-  # than on the firewall being on. With no names, no ALLOW rule is created at all and the
-  # catch-all below is the only rule in the group: every lookup in the VPC returns
-  # NXDOMAIN. That is the intended default (a caller who forgets the list gets a closed
-  # door, not an open one), and it is built this way rather than by passing `domains = []`
-  # because a domain list with no entries is not something to rely on the API accepting.
+  # An empty allow-list is a valid configuration and this module's default, so the allow half
+  # is gated on the list having content rather than on the firewall being on. With no names, no
+  # ALLOW rule is created at all and the catch-all below is the only rule in the group: every
+  # lookup in the VPC returns NXDOMAIN, so a caller who forgets the list gets a closed door.
+  # Built this way rather than by passing `domains = []`, because a domain list with no entries
+  # is not something to rely on the API accepting.
   dns_firewall_allow_enabled = local.dns_firewall_enabled && length(var.dns_firewall_allow_domains) > 0
 }
 
-# The allow-list. THE NAMES ARE NOT HERE AND ARE NOT IN variables.tf EITHER (v0.3.0): the
-# default is EMPTY and every caller declares its own set. What each entry has to satisfy is
-# below, because it is the part that cannot be inferred from a hostname.
+# The allow-list. The names are not here and not in variables.tf: the default is empty and every
+# caller declares its own set. What each entry has to satisfy is below, because it is the part
+# that cannot be inferred from a hostname.
 #
-# HOW AN ENTRY IS MATCHED. A domain list entry matches the name EXACTLY; `*.name` matches
-# every nesting level beneath it (`*.example.com` matches `a.b.example.com`) and never the
-# apex, so a wildcard entry and its bare name are two different entries. The `*` must replace
-# a whole leftmost label: `*prod.example.com` is rejected. A wildcard never crosses into a
-# sibling registrable domain.
+# How an entry is matched. A domain list entry matches the name exactly; `*.name` matches every
+# nesting level beneath it (`*.example.com` matches `a.b.example.com`) and never the apex, so a
+# wildcard entry and its bare name are two different entries. The `*` must replace a whole
+# leftmost label: `*prod.example.com` is rejected. A wildcard never crosses into a sibling
+# registrable domain.
 #
-# THE RULE THAT USED TO GOVERN WHAT BELONGS ON A LIST, MEASURED 2026-08-23 (Stage 6 step
-# 4.3): DNS FIREWALL EVALUATES THE WHOLE RESOLUTION CHAIN, NOT THE QUERIED NAME. If a listed
-# name is a CNAME to a target that is not also listed, the lookup is blocked - and the log
-# reports the block against the ORIGINAL name with the catch-all list id, which reads exactly
-# like "that name was not on the allow-list" and is not. The proof is a pair measured under
-# the same wildcard shape: `blobs.duckdb.org` (A records) resolved while `index.crates.io`
-# (CNAME to Fastly) did not.
+# DNS Firewall evaluates the whole resolution chain, not the queried name (measured 2026-08-23,
+# Stage 6 step 4.3). If a listed name is a CNAME to a target that is not also listed, the lookup
+# is blocked - and the log reports the block against the original name with the catch-all list
+# id, which reads exactly like "that name was not on the allow-list" and is not. The proof is a
+# pair measured under the same wildcard shape: `blobs.duckdb.org` (A records) resolved while
+# `index.crates.io` (CNAME to Fastly) did not.
 #
-# THE CONSEQUENCE WAS NOT SMALL, and for one day it was read as design A's ceiling: every
-# package ecosystem serves its ARTIFACTS from a shared CDN, so an allow-list could carry
-# every index and still have no download path, and the only apparent repair was to allow
-# `*.fastly.net`, `*.cloudfront.net`, `*.cdn.cloudflare.net` and friends - self-service
-# namespaces anyone can publish into, so allowing them ends this control.
+# The consequence was read for a day as design A's ceiling: every package ecosystem serves its
+# artifacts from a shared CDN, so an allow-list could carry every index and still have no
+# download path, and the only apparent repair was to allow `*.fastly.net`, `*.cloudfront.net`,
+# `*.cdn.cloudflare.net` and friends - self-service namespaces anyone can publish into, so
+# allowing them ends this control.
 #
-# THAT CEILING WAS THE DEFAULT, NOT THE MECHANISM (v0.4.0). `firewall_domain_redirection_action`
-# on the ALLOW rule below is a per-rule setting with two values, and this module had never set
-# it, so it took the API default:
+# That ceiling was the default, not the mechanism. `firewall_domain_redirection_action` on the
+# ALLOW rule below is a per-rule setting with two values, and this module had never set it, so
+# it took the API default:
 #
-#   INSPECT_REDIRECTION_DOMAIN   the default - evaluate EVERY domain in the chain
-#   TRUST_REDIRECTION_DOMAIN     evaluate the FIRST domain only, trust the rest of the chain
+#   INSPECT_REDIRECTION_DOMAIN   the default - evaluate every domain in the chain
+#   TRUST_REDIRECTION_DOMAIN     evaluate the first domain only, trust the rest of the chain
 #
-# SINCE v0.4.0 IT IS AN INPUT, and the module's default stays INSPECT - the caller decides,
-# in the slice where that account's reach is decided, exactly as it decides the list itself.
-# What the second value buys is what an allow-list of hostnames means to the person writing
-# it: `julialang-s3.julialang.org` is listed, its CNAME into Fastly is not, and does not need
-# to be. Everything below describes the TRUST reading, because that is what both Interactive
-# slices pass; under the default nothing changed and the paragraph above is still the rule.
+# It is an input, and the module's default stays INSPECT: the caller decides, in the slice where
+# that account's reach is decided, exactly as it decides the list itself. What the second value
+# buys is what an allow-list of hostnames means to the person writing it:
+# `julialang-s3.julialang.org` is listed, its CNAME into Fastly is not, and does not need to be.
+# Everything below describes the TRUST reading, because that is what both Interactive slices
+# pass; under the default the whole-chain rule above still governs.
 #
-# AND IT IS NOT "ALLOWING THE CDN", which is the reading to check before trusting this: the
-# trust holds inside ONE query transaction. A process that queries the redirection target
-# ITSELF - `dualstack.j2.shared.global.fastly.net` - is evaluated as an independent query with
-# no trust carried over, matches nothing on the allow-list, falls to the catch-all below and
-# is BLOCKED. So the estate gains the artifact hosts without gaining the namespace they sit
-# in, which is the whole reason widening the list was never an acceptable repair.
+# TRUST is not "allowing the CDN": it holds inside one query transaction. A process that queries
+# the redirection target itself - `dualstack.j2.shared.global.fastly.net` - is evaluated as an
+# independent query with no trust carried over, matches nothing on the allow-list, falls to the
+# catch-all below and is blocked. So the estate gains the artifact hosts without gaining the
+# namespace they sit in.
 #
-# WHAT A CALLER TRADES FOR IT, stated because it is the real cost and it is not zero: the
-# control now rests entirely on WHO OWNS THE LISTED NAME. If the authoritative side of a
-# listed name is hostile or compromised, it can point the chain anywhere and the firewall
-# will follow. That was already true of an A record - a listed name could always answer with
-# any address - so the delta is narrower than it first reads, but it is a delta.
+# What a caller trades for it: the control then rests entirely on who owns the listed name. If
+# the authoritative side of a listed name is hostile or compromised, it can point the chain
+# anywhere and the firewall will follow. That was already true of an A record - a listed name
+# could always answer with any address - so the delta is narrow, but it is a delta.
 #
-# WHAT THIS DOES NOT REPAIR, so it is not mistaken for a perimeter: the two bypasses of a
-# name-based control are untouched. A process that already knows an ADDRESS never asks the
-# resolver, and a process that asks a resolver OTHER than the VPC's - `1.1.1.1:53` over the
-# NAT, or DoH on 443 - is not inspected here at all, because this firewall only sees what
-# the VPC resolver answers. Both need an L7 control (SNI/Host) to close, which is Network
-# Firewall or a proxy, and neither is built. Design A remains a control against ACCIDENT.
+# What this does not repair: the two bypasses of a name-based control are untouched. A process
+# that already knows an address never asks the resolver, and a process that asks a resolver other
+# than the VPC's - `1.1.1.1:53` over the NAT, or DoH on 443 - is not inspected here at all,
+# because this firewall only sees what the VPC resolver answers. Both need an L7 control
+# (SNI/Host) to close, which is Network Firewall or a proxy, and neither is built. Design A
+# remains a control against accident.
 #
-# THE LIST RULE THAT FOLLOWS FROM ALL OF THIS, for a caller that passes TRUST, and it is
-# shorter than the one it replaces: list THE NAME YOUR TOOLS QUERY, and never a redirection
-# target. A hop on such a list is not merely redundant - it is a widening, because it is what
-# makes the CDN name resolvable on its own. A caller left on the default keeps the old rule,
-# where every hop has to be listed and the whole chain is the unit.
+# The list rule for a caller that passes TRUST: list the name your tools query, and never a
+# redirection target. A hop on such a list is not merely redundant - it is a widening, because it
+# is what makes the CDN name resolvable on its own. A caller left on the default keeps the older
+# rule, where every hop has to be listed and the whole chain is the unit.
 resource "aws_route53_resolver_firewall_domain_list" "allow" {
   count = local.dns_firewall_allow_enabled ? 1 : 0
 
@@ -116,18 +104,18 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
 
   tags = { Name = "${local.name_prefix}-egress-allow" }
 
-  # EVERY INTERFACE ENDPOINT THIS VPC PAYS FOR MUST BE RESOLVABLE IN IT (6c step 5.7, v0.8.0).
-  # The list is computed in no-proxy.tf from the same reading NO_PROXY is built from; the whole
-  # argument is there. In one line: a shrinking allow-list is exactly how a paid endpoint becomes
-  # an NXDOMAIN, and NXDOMAIN reads as a network fault rather than as a policy decision.
-  # TWO PRECONDITIONS RATHER THAN ONE SINCE v0.11.1 (2026-09-09), because they answer at different
-  # times and only one of them can be trusted to answer EARLY. `declared` reads the service's
-  # canonical name from a data source and therefore fails in the PLAN of a VPC that does not exist
-  # yet; `served` reads every name the endpoints answer for and is (known after apply) until they do.
-  # Keeping only the second would put the whole guard behind an apply on every new spoke - Lesson 39,
-  # measured on staging/egress the day it was written. Each message names its reading, so a failure
-  # says which half found it and, by implication, whether a plan or an apply was the earliest it could
-  # have been found.
+  # Every interface endpoint this VPC pays for must be resolvable in it (6c step 5.7). The list
+  # is computed in no-proxy.tf from the same reading NO_PROXY is built from, and the argument is
+  # there: a shrinking allow-list is how a paid endpoint becomes an NXDOMAIN, and NXDOMAIN reads
+  # as a network fault rather than as a policy decision.
+  #
+  # Two preconditions, because the two readings answer at different times and only one can be
+  # trusted to answer early. `declared` reads the service's canonical name from a data source and
+  # therefore fails in the plan of a VPC that does not exist yet; `served` reads every name the
+  # endpoints answer for and is (known after apply) until they do. Keeping only the second would
+  # put the whole guard behind an apply on every new spoke (Lesson 39, measured on staging/egress
+  # 2026-09-09). Each message names its reading, so a failure says which half found it and
+  # whether a plan or an apply was the earliest it could have been found.
   lifecycle {
     precondition {
       condition     = length(local.dns_firewall_uncovered["declared"]) == 0
@@ -141,23 +129,22 @@ resource "aws_route53_resolver_firewall_domain_list" "allow" {
   }
 }
 
-# The catch-all. `*` matches every name, which is what turns the rule group into a
-# default-deny instead of a list of blocked sites (Lesson 5: an allow-list that is not the
-# LAST word is a suggestion).
+# The catch-all. `*` matches every name, which is what turns the rule group into a default-deny
+# instead of a list of blocked sites (Lesson 5: an allow-list that is not the last word is a
+# suggestion).
 #
-# `"*."` RATHER THAN `"*"`, AND THE TRAILING DOT IS THE WHOLE OF `EXC-04`'s REPAIR (v0.10.0,
-# 6c step 5.7, 2026-09-06). Route 53 Resolver canonicalises every domain-list entry as an FQDN -
-# `list-firewall-domains` returns `pypi.org.`, `*.amazonaws.com.` and, for this list, `*.` - while
-# this module wrote them without one. The provider was comparing two SPELLINGS of the same list,
-# re-issued `UpdateFirewallDomains` on every apply, and the diff never converged: `terraform plan`
-# read `0 to add, 2 to change` immediately after a successful apply of the same code, FOREVER.
-# The cost was not cosmetic - it took away *"re-plan reads `No changes`"*, which is this
-# repository's closing check for every change, on the two slices that carry a firewall.
+# `"*."` rather than `"*"`: the trailing dot is the whole of `EXC-04`'s repair (6c step 5.7,
+# 2026-09-06). Route 53 Resolver canonicalises every domain-list entry as an FQDN -
+# `list-firewall-domains` returns `pypi.org.`, `*.amazonaws.com.` and, for this list, `*.` -
+# while this module wrote them without one. The provider was comparing two spellings of the same
+# list, re-issued `UpdateFirewallDomains` on every apply, and the diff never converged:
+# `terraform plan` read `0 to add, 2 to change` immediately after a successful apply of the same
+# code, forever. That cost this repository's closing check for every change - *"re-plan reads `No
+# changes`"* - on the two slices that carry a firewall.
 #
-# MEASURED BEFORE IT WAS WRITTEN, on a live Sandbox list: with the caller's ten entries dotted and
-# this one still bare, the plan went from `2 to change` to `1 to change` - the allow list settled
-# and this one did not. The candidate fix the row carried was a hypothesis; that reading is what
-# turned it into a repair.
+# Measured on a live Sandbox list before the fix was written: with the caller's ten entries
+# dotted and this one still bare, the plan went from `2 to change` to `1 to change` - the allow
+# list settled and this one did not.
 resource "aws_route53_resolver_firewall_domain_list" "everything" {
   count = local.dns_firewall_enabled ? 1 : 0
 
@@ -175,11 +162,11 @@ resource "aws_route53_resolver_firewall_rule_group" "this" {
   tags = { Name = "${local.name_prefix}-egress" }
 }
 
-# PRIORITY IS EVALUATION ORDER, ASCENDING, AND THE TWO NUMBERS ARE THE WHOLE DESIGN: the
-# allow-list is consulted first and the catch-all only sees what it did not match. Reverse
-# them and every lookup is blocked, including the ones on the list.
+# Priority is evaluation order, ascending: the allow-list is consulted first and the catch-all
+# only sees what it did not match. Reverse them and every lookup is blocked, including the ones
+# on the list.
 #
-# WITH NO NAMES THIS RULE DOES NOT EXIST and the group holds the catch-all alone - the
+# With no names this rule does not exist and the group holds the catch-all alone - the
 # closed-door default described on `dns_firewall_allow_enabled` above.
 resource "aws_route53_resolver_firewall_rule" "allow" {
   count = local.dns_firewall_allow_enabled ? 1 : 0
@@ -190,18 +177,18 @@ resource "aws_route53_resolver_firewall_rule" "allow" {
   firewall_rule_group_id  = aws_route53_resolver_firewall_rule_group.this[0].id
   priority                = 100
 
-  # v0.4.0 - the header's argument, in one field, and the VALUE IS THE CALLER'S (variables.tf).
-  # The module defaults to INSPECT_REDIRECTION_DOMAIN, which is the API's own default and the
-  # stricter reading; both Interactive slices pass TRUST_REDIRECTION_DOMAIN. It goes on THIS
-  # rule and not on the catch-all below, and the asymmetry is not an oversight: `*` matches at
-  # the first domain of every query, so the block rule never has a chain left to inspect, and
-  # giving it a redirection setting would describe a path evaluation cannot take.
+  # The header's argument, in one field, and the value is the caller's (variables.tf). The
+  # module defaults to INSPECT_REDIRECTION_DOMAIN, the API's own default and the stricter
+  # reading; both Interactive slices pass TRUST_REDIRECTION_DOMAIN. It goes on this rule and not
+  # on the catch-all below: `*` matches at the first domain of every query, so the block rule
+  # never has a chain left to inspect, and giving it a redirection setting would describe a path
+  # evaluation cannot take.
   firewall_domain_redirection_action = var.firewall_domain_redirection_action
 }
 
-# NXDOMAIN rather than NODATA, and the choice is about the failure MODE a person sees: a
-# blocked package install should look like "no such host", which every tool reports clearly,
-# rather than like an empty answer, which several retry against for a minute first.
+# NXDOMAIN rather than NODATA, for the failure mode a person sees: a blocked package install
+# should look like "no such host", which every tool reports clearly, rather than like an empty
+# answer, which several retry against for a minute first.
 resource "aws_route53_resolver_firewall_rule" "block_everything_else" {
   count = local.dns_firewall_enabled ? 1 : 0
 
@@ -226,10 +213,9 @@ resource "aws_route53_resolver_firewall_rule_group_association" "this" {
 
 # ----------------------------------------------------------------- the block, made readable
 #
-# A BLOCK NOBODY CAN SEE IS INDISTINGUISHABLE FROM A NETWORK FAULT (Lesson 13 applied to an
-# operator rather than to a check): the person whose `pip install` failed needs to be able to
-# tell "the firewall refused this name" from "the NAT is down". Resolver query logging is what
-# writes the rule action beside the name.
+# A block nobody can see is indistinguishable from a network fault (Lesson 13): the person whose
+# `pip install` failed needs to tell "the firewall refused this name" from "the NAT is down".
+# Resolver query logging is what writes the rule action beside the name.
 
 resource "aws_cloudwatch_log_group" "dns_firewall" {
   # checkov:skip=CKV_AWS_158:default (AWS-managed) encryption - the same call Stage 3 made for the flow logs; this group holds DNS names, and it is [E]

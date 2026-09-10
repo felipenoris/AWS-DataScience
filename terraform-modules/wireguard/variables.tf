@@ -1,4 +1,4 @@
-# Inputs. NOTHING HERE IS AN ADDRESS THE MODULE CHOOSES: the VPC facts arrive from
+# Inputs. Nothing here is an address the module chooses: the VPC facts arrive from
 # foundation/'s outputs through the caller's terraform_remote_state, the client range from the
 # generated tfvars (scripts/tfhygiene/backend.py), and the keys from a git-ignored .tfvars the
 # user writes. A literal in this file would be a copy of one of those three (Lesson 14).
@@ -21,14 +21,14 @@ variable "zone_ids" {
   nullable    = false
 }
 
-# WHY THIS KNOB EXISTS: t4g.nano capacity was MEASURED ABSENT in one of this region's zones
-# during Stage 3 - Server.InsufficientInstanceCapacity, after 25 minutes of provider retry.
-# That measurement was taken on the Graviton family this module carried until 2026-08-20, and
-# the knob is kept for the x86_64 one rather than retired with it: what it defends against is a
-# zone's pool being short of a size, which is not a property of an architecture, and the cost of
-# keeping it is one variable nobody has to touch.
+# t4g.nano capacity was measured absent in one of this region's zones during Stage 3 -
+# Server.InsufficientInstanceCapacity, after 25 minutes of provider retry. That measurement was
+# taken on the Graviton family this module carried until 2026-08-20, and the knob is kept for
+# the x86_64 one rather than retired with it: what it defends against is a zone's pool being
+# short of a size, which is not a property of an architecture, and keeping it costs one variable
+# nobody has to touch.
 # (The region literal belongs in this comment and not in the description below: step 9.1's
-# scan reads string VALUES and skips full-line comments, deliberately.)
+# scan reads string values and skips full-line comments.)
 variable "zone_index" {
   description = "Which authored zone the host lands in. Everything this host consumes is AZ-free - the Elastic IP, the security group, the internet gateway and the S3 gateway endpoint all belong to the VPC rather than to a zone - so moving it is a one-variable retry rather than a redesign. See the note above for what made that necessary."
   type        = number
@@ -65,15 +65,15 @@ variable "peer_cidr" {
 
 # ---------------------------------------------------------------------------- the keys
 #
-# BOTH SIDES OF EVERY KEY PAIR ARE GENERATED ON A LAPTOP AND NEVER BY TERRAFORM (steps 4.1,
-# 4.3): a `tls_private_key` resource would put the key in state AND make it a thing Terraform
-# rotates. What arrives here is the public half of each client (the caller's TRACKED roster)
-# and - since the third design review (2026-08-16) - a POINTER to the host's private half:
-# the [P] Secrets Manager secret the caller's foundation/ owns. The value itself never
-# enters Terraform anywhere: the user writes it at enrollment, the instance reads it at
-# first boot with its own role.
+# Both sides of every key pair are generated on a laptop and never by Terraform (steps 4.1,
+# 4.3): a `tls_private_key` resource would put the key in state and make it a thing Terraform
+# rotates. What arrives here is the public half of each client (the caller's tracked roster)
+# and a pointer to the host's private half - the [P] Secrets Manager secret the caller's
+# foundation/ owns (the third design review, 2026-08-16). The value itself never enters
+# Terraform anywhere: the user writes it at enrollment, the instance reads it at first boot
+# with its own role.
 
-# ------------------------------------------------- the IPv6 half (v0.6.0, 6c 2026-09-07)
+# ------------------------------------------------------------------------- the IPv6 half
 
 variable "peer_cidr_v6" {
   description = <<-EOT
@@ -103,7 +103,7 @@ variable "peer_cidr_v6" {
   default     = ""
 
   validation {
-    # A ULA, AND THE CHECK IS ABOUT THE FAILURE MODE RATHER THAN ABOUT PURITY. A globally routable
+    # A ULA, and the check is about the failure mode rather than about purity. A globally routable
     # prefix here would put addresses on a tunnel that has no path to the internet, and the symptom
     # would be a device preferring IPv6 for a destination it can then never reach - Happy Eyeballs
     # papering over it inconsistently. `fd00::/8` is the range RFC 4193 reserves for exactly this.
@@ -157,12 +157,12 @@ variable "instance_type" {
 
 # ------------------------------------------------------- the two knobs D38 replaced NAT with
 #
-# `vpc_nat_cidrs` STOOD HERE UNTIL v0.5.0 (6c step 4.7, 2026-09-06) and is GONE, not renamed.
-# It turned this host into a NAT instance for a private tier that had no other way out. Under
-# D38 no tier has a default route at all and the way out is an explicit proxy, so the job it
-# existed for does not exist: the buildbox moves at 5.8 and `sandbox/vpn/` - the only caller
-# that ever set it - stays pinned at v0.4.0 until 4.13 destroys it. A tag is what makes a
-# removal safe here (conventions 6): the old caller keeps the old module, byte for byte.
+# No `vpc_nat_cidrs`, and it was removed rather than renamed (6c step 4.7, 2026-09-06). It
+# turned this host into a NAT instance for a private tier that had no other way out. Under D38
+# no tier has a default route at all and the way out is an explicit proxy, so the job it existed
+# for does not exist: the buildbox moves at 5.8 and `sandbox/vpn/` - the only caller that ever
+# set it - stays pinned at v0.4.0 until 4.13 destroys it. A tag is what makes a removal safe
+# here (conventions 6): the old caller keeps the old module, byte for byte.
 
 variable "forward_destinations" {
   description = "WHERE A TUNNEL PACKET MAY BE FORWARDED - and empty, the default, means ANYWHERE, which is v0.4.0's behaviour and what every reading before 2026-09-06 was taken under. A non-empty list makes wg0's PostUp accept `-i wg0` only toward these ranges and REJECT the rest. WHY IT EXISTS: under D38 a VPN client is a PRIVATE-NETWORK client - its whole internet crosses the proxy, by name, over an explicit HTTP CONNECT - so a packet from the tunnel addressed straight at a public IP is either a misconfigured client or an attempt to walk around the one egress the estate audits. Callers pass the private address space (scripts/tfhygiene/backend.py RFC1918_CIDRS), never a literal. REJECT AND NOT DROP, deliberately: the plan's word is `drops` and the target is a refusal, because the failure this produces is a client whose proxy settings are wrong, and a timeout is the one symptom nobody diagnoses correctly (the same reasoning that puts `http_access deny all` last in the proxy's own configuration - a fast, named refusal beats a hang)."

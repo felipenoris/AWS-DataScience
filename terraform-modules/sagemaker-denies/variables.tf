@@ -3,21 +3,19 @@ variable "allowed_instance_types" {
   type        = list(string)
   nullable    = false
 
-  # THE CANONICAL LIST, AND THE ONE COPY OF IT. Both callers - the six persona sets in
-  # terraform-live/identity/sso/ and the project boundary in sagemaker-prereqs - omit the
-  # argument or pass null, which `nullable = false` resolves to this default. That is the
-  # SECOND half of Lesson 33: the module already shares the structure, and a values list
-  # written once at each end would have been exactly the divergence the module exists to
-  # prevent.
+  # The canonical list. Both callers - the six persona sets in terraform-live/identity/sso/ and
+  # the project boundary in sagemaker-prereqs - omit the argument or pass null, which
+  # `nullable = false` resolves to this default. The module shares the structure; a values list
+  # written once at each end would be exactly the divergence it exists to prevent (Lesson 33).
   #
-  # WHAT IS IN IT: the app sizes SMUS launched when the list still reached apps (ml.t3.medium is
-  # the JupyterLab and Code Editor default, USD 0.050/h - docs/PRICING.md 8; ml.t3.large 0.100 is
-  # the remote-IDE floor) plus a small general-purpose and compute range for jobs - which, since
-  # v0.2.0, are the only calls this list governs. NO GPU AND NO *.2xlarge OR LARGER, deliberately: a single ml.p3
-  # hour is a fifth of D12's whole monthly ceiling, and the budget notifies nobody.
+  # In it: the app sizes SMUS launched when the list still reached apps (ml.t3.medium is the
+  # JupyterLab and Code Editor default, USD 0.050/h - docs/PRICING.md 8; ml.t3.large 0.100 is
+  # the remote-IDE floor) plus a small general-purpose and compute range for jobs, which are the
+  # only calls this list governs. No GPU and nothing at *.2xlarge or larger: a single ml.p3 hour
+  # is a fifth of D12's whole monthly ceiling, and the budget notifies nobody.
   #
-  # RAISING IT IS A DIFF ON THIS LINE, in a module whose tag every caller pins - which is the
-  # property that makes "we widened the ceiling" a reviewable event rather than a discovery.
+  # Raising it is a diff on this line, in a module whose tag every caller pins, so widening the
+  # ceiling is a reviewable event rather than a discovery.
   default = [
     "ml.t3.medium",
     "ml.t3.large",

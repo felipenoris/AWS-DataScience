@@ -1,14 +1,14 @@
 # s3-bucket - the bucket shape Stage 2's bootstrap slices proved, as a module: versioning,
-# SSE-KMS with BUCKET KEYS ON and PUBLIC ACCESS BLOCKED UNCONDITIONALLY (Stage 3 step 1.1a's
-# carried-over requirements - neither is a variable, deliberately), a TLS-only bucket policy,
-# a noncurrent-version lifecycle, and prevent_destroy - which cannot be parameterised
-# (lifecycle meta-arguments are static), so every bucket from this module is [P] by
-# construction. An [E] bucket is a different thing and does not come from here.
+# SSE-KMS with bucket keys on, public access blocked, a TLS-only bucket policy, a
+# noncurrent-version lifecycle, and prevent_destroy. Neither the bucket keys nor the public
+# access block is a variable. prevent_destroy cannot be parameterised (lifecycle
+# meta-arguments are static), so every bucket from this module is [P] by construction; an [E]
+# bucket does not come from here.
 
 # The three structural checkov suppressions of the bootstrap slices, same reasons (Stage 2
 # step 6.5): access logging = a second bucket with the same content one governance layer
 # thinner (Lesson 1); replication = a copy out of the one governed Region (1d step 12), Stage
-# 12's question; notifications have no consumer before Stage 12. Skips must sit INSIDE the
+# 12's question; notifications have no consumer before Stage 12. Skips must sit inside the
 # block - above it they are ordinary comments and checkov fails anyway (measured, Stage 2).
 resource "aws_s3_bucket" "this" {
   # checkov:skip=CKV_AWS_18:access logging = a second bucket with the same content (Lesson 1)
@@ -57,8 +57,8 @@ resource "aws_s3_bucket_public_access_block" "this" {
 }
 
 # TLS-only always; the caller's own statements (a perimeter branch, a drop-box asymmetry -
-# Stage 5) are appended through var.additional_policy_statements, because S3 holds exactly
-# ONE policy per bucket and a second aws_s3_bucket_policy would silently replace this one.
+# Stage 5) are appended through var.additional_policy_statements, because S3 holds exactly one
+# policy per bucket and a second aws_s3_bucket_policy would silently replace this one.
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -109,12 +109,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     }
   }
 
-  # THE ONLY RULE THAT DELETES SOMETHING NOBODY REPLACED (v0.3.0, Stage 5 pass 4). The two
-  # rules above are hygiene - a superseded version, an upload that never finished - and they
-  # are unconditional because no caller wants either kept. This one removes a CURRENT object,
-  # so it is opt-in and its absence is the default: a bucket whose contents disappear on a
-  # timer is a decision about the DATA, and only the caller knows whether its bucket holds
-  # results (D19: disposable by design) or the only copy of something.
+  # The only rule that deletes something nobody replaced. The two rules above are hygiene - a
+  # superseded version, an upload that never finished - and are unconditional because no caller
+  # wants either kept. This one removes a current object, so it is opt-in and its absence is the
+  # default: a bucket whose contents disappear on a timer is a decision about the data, and only
+  # the caller knows whether its bucket holds results (D19: disposable by design) or the only
+  # copy of something.
   dynamic "rule" {
     for_each = var.expiration_days == null ? [] : [var.expiration_days]
 

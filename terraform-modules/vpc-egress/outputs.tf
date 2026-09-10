@@ -1,4 +1,4 @@
-# Outputs - for the Validation's before/after diff, NOT for anchoring: everything this
+# Outputs - for the Validation's before/after diff, not for anchoring: everything this
 # module creates is [E] and holds new ids on every make up (step 8.6, Lesson 3, INT-05). No
 # policy, no condition, no other slice may name any id below. The [P] anchors live in
 # foundation/: the gateway endpoint id and aws:SourceVpc.
@@ -8,7 +8,7 @@ output "interface_endpoint_ids" {
   value       = { for s, ep in aws_vpc_endpoint.interface : s => ep.id }
 }
 
-# `nat_gateway_id` AND `nat_public_ip` STOOD HERE UNTIL v0.6.0 AND ARE GONE WITH THE NAT (5.1).
-# The address the internet now sees for this estate is the PROXY's, which is a [P] output of
-# `production/networking/` - and that is the difference D38 bought: an egress address that survives
-# `make down` and can therefore be named by a condition, which neither of these ever could.
+# No `nat_gateway_id` and no `nat_public_ip`: the NAT is gone (5.1). The address the internet sees
+# for this estate is the proxy's, a [P] output of `production/networking/` - the difference D38
+# bought, an egress address that survives `make down` and can therefore be named by a condition,
+# which neither of those ever could.

@@ -1,10 +1,9 @@
 # Outputs - what the slice republishes, and what other slices read through
 # terraform_remote_state rather than paste.
 #
-# FOUR OUTPUTS LEFT ON 2026-08-26 with the derived zone (derived_bucket_name/arn,
-# athena_workgroup_name/arn) - D19 as revised: the zone is the SMUS project path now, owned by
-# terraform-modules/sagemaker-prereqs/, and identity/sso/ stopped reading this state in the
-# same revision (its consumer_data lookup left with the statements that consumed it).
+# No derived-zone outputs: D19 as revised (2026-08-26) makes the derived zone the SMUS project
+# path, owned by terraform-modules/sagemaker-prereqs/, and identity/sso/ no longer reads this
+# state.
 
 output "data_key_arn" {
   description = "The account's data CMK - today the sandbox lake's key in Sandbox (Stage 16), held empty in Development."
