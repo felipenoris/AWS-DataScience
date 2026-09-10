@@ -32,8 +32,9 @@ knowing before one is mistaken for ours:
 - `datazone-<id>-dev` — one per DataZone project, service-created. **Their retention is whatever the
   service felt like**: measured 3, 30 and **731** days in one account on one day. Nobody chose those
   numbers ([Lesson 17](../lessons.md)), and 731 days is a cost line nobody priced.
-- `/aws/sagemaker/studio` and `/aws/mwaa-serverless/<domain>/<workflow>` — AWS's own, retention `None`
-  (**never expires**).
+- `/aws/sagemaker/studio` and `/aws/mwaa-serverless/dzd-<domain>-<project>/<workflow>` — AWS's own,
+  retention `None` (**never expires**). The MWAA one carries the task's traceback; **§W** is why it is the
+  second instrument and not the first.
 - `/aws/lambda/aws-controltower-NotificationForwarder` — Control Tower's.
 
 **`[E]` matters here.** The proxy and VPN groups are `[P]` and survive a teardown; what *writes* to them
@@ -259,6 +260,28 @@ PY
   and `datazone-<id>-dev` on its own; when a Studio symptom is not in ours, look there before concluding
   nothing was logged.
 
+### §W — an MWAA Serverless workflow: the log group is the second instrument, not the first
+
+Added 2026-09-10, from the run that debugged 6d step 4. `/aws/mwaa-serverless/<domain>-<project>/<workflow>`
+holds the task's stdout — the traceback — but **the service's own API holds the verdict**, and it is faster:
+
+```bash
+WF=$(aws mwaa-serverless list-workflows --profile awsds-infra-sandbox-1        --query 'Workflows[0].WorkflowArn' --output text)
+aws mwaa-serverless list-workflow-runs  --workflow-arn "$WF" --profile awsds-infra-sandbox-1
+aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"        --profile awsds-infra-sandbox-1
+```
+
+- **`DurationInSeconds` is a first-cut diagnosis.** A task that dies before the AWS SDK, one that dies in
+  the operator's own validation, and one that reaches the API and is refused sat at **7 s, 8 s and 12-17 s**
+  on the same workflow — three modes separated before a log line was opened.
+- **Read the TASK's duration, never the RUN's.** Every run here is **two attempts** (try 1 `UP_FOR_RETRY`,
+  try 2 `FAILED`) — the default retry — so a 7-second task sits inside a 6-minute run.
+- **`WorkflowVersion` on the run names the exact definition it used**, and every `update-workflow` mints a
+  new one. That is how a run is attributed to a definition without trusting memory.
+- **The log group can be the WRONG one.** `LoggingConfiguration` is a field of the workflow, so an update
+  that drops it silently re-points the logs at a service-default group — the symptom is *"the run produced
+  no logs"* while a second, orphan group fills up ([Lesson 60](../lessons.md)).
+
 ---
 
 ## 7. The four readings that recur
@@ -293,6 +316,7 @@ PY
 | a piped command's exit code ([Lesson 46](../lessons.md)) | a truncated read that looks like a finding |
 | a name searched with no `--start-time` is bounded by the group's **creation** | say *"never, since <date>"*, not *"never"* |
 | an SSO session expiring mid-session | every later call fails on a **missing token**, not on permissions |
+| an MWAA **run**'s duration read as its **task**'s (2026-09-10) | the retry delay, not the work — `list-task-instances` |
 
 ---
 
@@ -304,7 +328,7 @@ the browser, not which profile to log in with.
 | log | profile | permission set |
 |---|---|---|
 | `/awsds/prod/proxy`, `/awsds/prod/vpn`, the Production flow logs | `awsds-infra-prod` | `InfrastructureAccess` |
-| `/awsds/sandbox/*`, the Sandbox flow logs, CloudTrail in Sandbox | `awsds-infra-sandbox-1` | idem |
+| `/awsds/sandbox/*`, `/aws/mwaa-serverless/*` and the `mwaa-serverless` API, the Sandbox flow logs, CloudTrail in Sandbox | `awsds-infra-sandbox-1` | idem |
 | `/awsds/staging/*` | `awsds-infra-staging` | idem |
 
 **Log Archive and Audit hold no CLI profile** — the organization trail's S3 copy is not read this way.

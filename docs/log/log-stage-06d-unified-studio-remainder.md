@@ -1434,6 +1434,11 @@ is still owed.
 different switches and which one the portal's *Run* button uses is unmeasured — 4.2's to settle, not this
 sitting's to guess.
 
+## 2026-09-10 — the eighth sitting: the `compute` fix, and it changes nothing
+
+*Continues the seventh sitting's last section. The discovery above is 2026-09-09; everything below is
+2026-09-10, and all of it was authorized in chat before it ran.*
+
 ### [Claude⚡, authorized in chat] The `compute: {}` fix, three runs — and a mistake of mine in the middle
 
 The user asked for `compute: {}` to be filled and the workflow re-run. **It was, and the result is that
@@ -1488,6 +1493,63 @@ what you did not pass *and* what its creator injected, and the second kind has n
 
 **State left behind, deliberately.** The definition carries the requested fix plus the three project keys;
 everything else on the workflow matches what it was. The original definition is recoverable byte for byte
-— the bucket is versioned and the pre-change `VersionId` is in the stage record. **What is not repaired is
+— the bucket is versioned and the pre-change `VersionId` is in the register below. **What is not repaired is
 the thing the user asked about**, and it is a decision rather than an edit: amend the boundary, abandon
 the portal's notebook operator in favour of Stage 10's own DAGs (recommended), or record the loss.
+
+### [Claude] The register — four runs, four definition versions, and the duration is the diagnosis
+
+Read back from `list-workflow-runs` and `list-task-instances` on 2026-09-10 rather than transcribed from
+the sitting, because a run id read out of prose is a claim (Lesson 38).
+
+| run | authored by | definition version | task | verdict |
+|---|---|---|---|---|
+| `QdphFF89leYx6M6` | the portal, 2026-08-27 18:57 UTC | `b03fe2a0…d661` | 2 attempts | boundary refusal, `compute: {}` |
+| `h2z2UmY6Kytf7iW` | me, 02:31 UTC | `5ef4fd72…b257` | 2 × **7 s** | **no AWS call at all** — the dropped `NetworkConfiguration` |
+| `N56gnBolC6Ojy0I` | me, 02:56 UTC | `9b170a13…c8a6` | 2 × **8 s** | `ValueError: Project ID not found in environment` |
+| `lwPdgAQpWTqPAo1` | me, 03:06 UTC | `fd88f170…c023` | **12 s** then **17 s** | reached `CreateTrainingJob`, refused by the boundary |
+
+The definition object: `s3://awsds-sandbox-smus-projects/dzd-<domain>/<project>/dev/workflows/MyWorkflow-<epoch-ms>.yaml`,
+**pre-change `VersionId` `d1WGuB6S7KXg98QkAQE9EofUXU2IXe.y`** (2026-08-27 18:57:25, 451 bytes) — the byte-for-byte
+restore point. The portal wrote the object **twice** at creation, 18 s apart. And the same reading confirms
+the repair held: `describe-log-groups --log-group-name-prefix /aws/mwaa-serverless` now returns **one**
+group, the workflow's own — the orphan is gone.
+
+**Three readings this table gives that the sitting did not.**
+
+- **Every `update-workflow` mints a new `WorkflowVersion`**, and a run records the one it used. So a run is
+  attributable to an exact definition without trusting anybody's memory of what was current — the second
+  recovery handle after S3 versioning, and the one that survives an object overwrite.
+- **Every run is two attempts** — try 1 `UP_FOR_RETRY`, try 2 `FAILED`, in all four, the 2026-08-27 one
+  included. One retry is the default and nothing here set it. It is also why a **7-second task** sits
+  inside a **6-minute run**: the gap is the retry delay, and reading the run's duration as the task's is
+  the mistake waiting there.
+- **The duration separates the three failure modes before a single log line is opened.** 7 s = died before
+  the AWS SDK; 8 s = died in the operator's own validation; 12-17 s = reached the API and was answered.
+  A cheap first cut on any future MWAA failure, and it agrees with the CloudTrail reading that cost real
+  work above.
+
+### [Claude] What this failure is, and what it is not — because it reads narrower than it is
+
+The symptom presents as *one workflow failing*, and every fact above is about one object. It is worth
+saying plainly what the scope actually is, since nothing so far in this file does.
+
+**It is not one workflow.** The refusal is on `sagemaker:CreateTrainingJob` by the **project role** under
+the **project boundary** — both of which every Sandbox project gets from the same blueprint. So it is
+**every SMUS workflow whose task is a notebook execution, in every project in this estate**, and
+re-authoring it in the portal reproduces it exactly. **Other task types are UNMEASURED** — a query book or
+a visual ETL task may never call `CreateTrainingJob` at all, and nothing here licenses a claim about them.
+
+**And almost everything else works**, which is the half a failure record swallows:
+
+| | |
+|---|---|
+| the Workflows surface | **exists with no blueprint enabled** — 4.1 |
+| authoring, versioning, triggering, logging | all fine; four runs, four versions, one log group carrying all of them |
+| the workers' network | **this estate's private tier, two AZs**, CMK `alias/awsds-sandbox-project` — 4.6 |
+| the identity | **the project role**, so inside D13's reach — which is *why* the boundary could refuse — 4.4 |
+
+**One act fails: the notebook becoming a training job.** The worker is VPC-attached by the service; the
+job the worker submits is not, and the operator has no parameter that could attach it. So the collision is
+between a portal feature and a deliberate compute control, and it is settled by a decision rather than by
+an edit — the three options are at the end of the section above.
