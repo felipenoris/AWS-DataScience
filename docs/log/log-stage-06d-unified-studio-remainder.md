@@ -1825,6 +1825,27 @@ eight hours of the proxy log carried no Microsoft name, read as *the server neve
 the log lags by minutes, the window's last line was 16:00:20Z and the `403`s are stamped 16:02:19Z. The
 conclusion that survived is the same one, but it was true by luck the first time.
 
+### [Claude] The first session's egress by host, and two refusals nobody had named
+
+From `/awsds/prod/proxy`, the half hour around the first connection (15:30-16:00Z), one Sandbox
+container, ordered by bytes:
+
+| host | reading | what it is |
+|---|---|---|
+| `openvsx.eclipsecontent.org` | 200 — **128.88 MiB** in 18 | 8.4's three extensions |
+| `aws-language-servers.us-east-1.amazonaws.com` | 200 — **52.44 MiB** in 2 | the Toolkit's language servers, the host 8.8 had already measured at 52.4 MiB. Allowed by the plane's `.amazonaws.com` entry and holding no endpoint, so a **public** call |
+| `files.pythonhosted.org`, `pypi.org` | 200 — 36.72 + 6.58 MiB | wheels the IDE's own components pull |
+| `idetoolkits.amazonwebservices.com` | 200 — 15.69 MiB in 14 | named by decision 6 at 8.6 |
+| `idetoolkits-hostedfiles.amazonaws.com` | 200 — 0.16 MiB in 22 | **a fourth IDE host no decision names.** It works only because `.amazonaws.com` is on the plane, and it has no endpoint, so it leaves publicly — the fail-open row of `NETWORK.md`'s own table, happening unremarked |
+| `api.anthropic.com` | **403 × 17** | the Claude Code extension the user had just installed, reaching its own service. On no plane: the extension installs, and cannot work |
+| `westus-0.in.applicationinsights.azure.com`, `eastus-4.in.…` | **403** | editor telemetry nobody asked for, refused. Logged as `POST https://…/v2.1/track`, not `CONNECT` |
+| `dzd-<id>.sagemaker.us-west-2.on.aws` | **403** | the documented shape rather than a finding: `on.aws` is on the DNS Firewall list so the name resolves, and it has no endpoint, so the proxy refuses it — `NETWORK.md`, *resolving is not reaching* |
+
+**Two rows are decisions waiting rather than defects.** `api.anthropic.com` is decision 6's class of
+question — an extension is worth what the names it may reach are worth — and
+`idetoolkits-hostedfiles.amazonaws.com` is the argument for naming the IDE's hosts one at a time: a
+family entry hides both the dependency and the loss of `aws:SourceVpce`.
+
 ### [user ran the probes, Claude read] Two IDE servers in one container
 
 ```
@@ -1989,3 +2010,20 @@ So the whole chain is measured end to end, with a timestamp at every link:
 two checks: nothing about a green `DN-3` says the proxy is enforcing it yet. `PX-3` itself stays
 unanswered — it needs `--on-host` — and this reading is its behavioural equivalent, taken from the
 running file's own output rather than from the file.
+
+### [Claude] The sitting's record, and what it leaves owed
+
+Branch `claude/6d-remote-ide-and-cran`,
+[PR #77](https://github.com/felipenoris/AWS-DataScience/pull/77), one subject per commit: `rust-src` in
+the image; CRAN on the plane with `NETWORK.md`; the [`remote-ide.md`](../plan/runbooks/remote-ide.md)
+runbook with `REFERENCES.md` and `PRICING.md`; the stage file's corrected method table and its three
+closures; Lesson 62 with the access log's ingestion lag and `CLAUDE.md`; this log; the apply; and the
+in-space proof that closed CRAN. `make check` OK at every step and `terraform validate` clean on
+`production/networking`. The merge is the user's.
+
+**Owed after this sitting**, so the next one does not re-derive it: **7.6** — the tag pair exercised on a
+principal that carries it, which today is expected to *permit*, since it evaluates on nobody; **7.7** —
+the 12-hour residual, whether a session outlives the tunnel and the portal logout; **7.9** —
+`./aws/remote-ide.py`; and **decision due 4**, which now holds every reading it was waiting for. Outside
+step 7: 2.4, step 1's persona half, 3.4, 3.5, 3.7, step 5 and step 6. `rust-src` is in the Dockerfile
+and arrives with the next build; `PX-3` stays unanswered until someone runs `--on-host`.
