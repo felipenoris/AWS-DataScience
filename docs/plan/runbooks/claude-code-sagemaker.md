@@ -60,10 +60,15 @@ aws bedrock put-account-data-retention --mode none --region us-west-2 --profile 
 
 **After-reading.** Expect `none`, now with an `updatedAt`. Re-run the before-reading command.
 
-**What `none` costs.** A model whose minimum retention mode is above `none` becomes **unavailable in
-this account** rather than quietly retaining — which is the failure mode to want, and it is how a
-model added to the vendor's abuse-detection list is caught without anyone re-reading the page. None of
-the three scoped models is on that list as of 2026-09-11.
+**What `none` costs, and what no reading here shows.** The vendor's design is that a model whose
+minimum retention mode is above `none` becomes **unavailable in this account** rather than quietly
+retaining. **Nothing in the control plane shows that happening.** Measured 2026-09-11 with the account
+already at `none`: all thirteen Anthropic models in `us-west-2` read
+`AUTHORIZED / AVAILABLE / AVAILABLE`, including `claude-fable-5` and `claude-fable-5-1`, the two the
+vendor names as retaining every prompt for 30 days with human review; the agreement offer's
+`termDetails` carries pricing, legal and support terms and nothing about retention. So the mode's
+effect is **presumed to land at the invocation and has not been seen**. The only negative control that
+would settle it is invoking a retaining model and reading the refusal — stage step 7.2a, not yet run.
 
 **There is no Terraform for this.** `hashicorp/aws` 6.60.0 declares nine `aws_bedrock_*` resources and
 none wraps the retention API; the CloudFormation registry carries 29 `AWS::Bedrock::*` types and none
@@ -205,6 +210,8 @@ One instrument per question, all read-only.
 | Question | Instrument |
 |---|---|
 | Is the account's retention mode declared? | `aws bedrock get-account-data-retention --region us-west-2` — `none`, with an `updatedAt` |
+| Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a) |
+| Which models retain? | Not `allowed_modes` — it is in no Bedrock API. The vendor's abuse-detection page, dated when read; on 2026-09-11 it named the two Fable models, both present and available in `us-west-2` |
 | Does the form exist? | `aws bedrock get-use-case-for-model-access --region us-west-2` — anything but `ResourceNotFoundException`. **Not** `get-foundation-model-availability` |
 | Did the invocation take the private door? | CloudTrail in Sandbox: `InvokeModelWithResponseStream` is a **management event**, so the organization trail carries it with no data-event charge. The reading is `vpcEndpointId` on the event |
 | Did it instead go out through the proxy? | `/awsds/prod/proxy` must hold **no** `bedrock-runtime` line for the same window. Two channels that do not share a failure mode |

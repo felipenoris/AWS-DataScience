@@ -474,13 +474,31 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   So the requirement rests today on the per-model default and on nothing this estate has stated —
   Lesson 5's shape exactly, and the reason 7.5 gains a step it did not have.
 
-  **`allowed_modes` is not in the Bedrock API.** It is absent from `get-foundation-model`,
-  `list-foundation-models` and `get-foundation-model-availability`, and no shape matching `allowed`
-  exists in any of the eight `bedrock*` service models the CLI ships (`aws-cli/2.36.18`). The
+  **`allowed_modes` is not in the Bedrock API, and neither is the effect of setting the mode.** The
+  field is absent from `get-foundation-model`, `list-foundation-models`,
+  `get-foundation-model-availability` and `list-foundation-model-agreement-offers` — whose
+  `termDetails` carries pricing, legal and support terms and nothing about retention — and no shape
+  matching `allowed` exists in any of the eight `bedrock*` service models the CLI ships
+  (`aws-cli/2.36.18`). **Measured 2026-09-11 with the account already at `none`: all thirteen Anthropic
+  models in `us-west-2` read `AUTHORIZED / AVAILABLE / AVAILABLE`, `claude-fable-5` and
+  `claude-fable-5-1` among them** — the two the vendor names as retaining every prompt for 30 days with
+  human review. So this step's claim that such a model becomes *unavailable* rather than quietly
+  retaining is **unverified, by an instrument that would not have shown it either way** (Lesson 62).
+  Where `none` bites is presumed to be the invocation, and nobody here has seen it. **7.2a is the step
+  that would.** The
   load-bearing half of this step is a vendor-page or console reading, dated when it is taken — which
   makes 7.1's third statement decay with nothing watching it, and makes the **mode deny of 7.5 the
   only mechanical guard**. A model whose minimum is `aws_review` is then **unavailable** rather than
   quietly retaining, which is the failure mode to want.
+
+- **7.2a — [Claude reads, user decides] A negative control for `mode: none`, which nothing else
+  provides.** Invoke a model the vendor names as retaining — `us.anthropic.claude-fable-5` — and read
+  the refusal. A refused call costs no tokens, and the two outcomes are both worth having: a refusal
+  naming the retention mode proves the account setting is enforced where it matters, and a **success**
+  is a finding of the first order, because it would mean `none` is a label on an API and not a control.
+  It runs as the infrastructure user, not as the project role: the scoped grant of step 3 names three
+  profiles and Fable is not among them, so the probe must not be widened into the grant. **Decision due
+  11:** run it, or accept the vendor's sentence and record the acceptance with its date.
 
 - **7.3 — The residency qualification, which no setting removes.** `us.anthropic.claude-opus-5` routes to
   **us-east-1, us-east-2 and us-west-2** (0.2). A prompt is therefore *processed* outside `us-west-2`
@@ -531,8 +549,12 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
     impossible for anyone in the organization to opt this estate into retention — including by accident,
     including in an account nobody is watching. A model that then requires `aws_review` becomes
     **unavailable** rather than quietly retaining, which is the failure mode to want.
-  - **Deny the models that require retention**, by name, on `bedrock:InvokeModel*`. This is the
-    belt to 7.5's braces and it goes stale in the safe direction: a new retaining model is not on the
+  - **Deny the models that require retention**, by name, on `bedrock:InvokeModel*`. **Measured
+    2026-09-11: the two are `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1`, both present
+    in `us-west-2` and both reading available** — so this is written against model ids rather than
+    against a vendor page. It stopped being belt to 7.5's braces the moment 7.2 found that nothing
+    reads the mode's effect: **a deny is the only half of this pair the battery can prove**. It goes
+    stale in the safe direction: a new retaining model is not on the
     list and is caught by the mode deny instead. **It must not catch step 3's three models** — write it
     as a deny on the named retaining models, never as an allow-list of the scoped ones, or the next
     model this estate adopts is refused by a document nobody thought to open.
@@ -686,6 +708,7 @@ table is the index, not the reasoning.
 | **8** | Where the IAM grant lives | **one is needed** — 3.1 measured that the role's every `InvokeModel*` allow lands on `foundation-model/*` and none on the system profile. What remains is 3.4's question of *where it lives*, the user's |
 | **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
 | ~~**10**~~ | ~~Whether the use-case form is submitted by console or adopted as a Terraform resource~~ | **Taken 2026-09-11: console**, and done. The objection that decided it — `form_data` being opaque — turned out to be false: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed (2.5) |
+| **11** | Whether to run 7.2a's Fable probe, the only negative control `mode: none` can have | decidable now; recommended **run it** — a refused call costs nothing and a successful one is a finding of the first order (7.2a) |
 | — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |
 
 ## What the documentation changed
