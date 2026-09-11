@@ -274,12 +274,14 @@ echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY
 
 **The tag is decided before the push, by [`docs/SMUS.md`](../../SMUS.md)**: `<flavour>-v<major>.<minor>.<patch>`,
 the same number in both repositories. Both are `IMMUTABLE`, so a tag is spent the first time it lands —
-`default-v0.1.0` was spent on 2026-08-22 and **`default-v0.1.1` on 2026-09-08**. The second is the *same
-recipe rebuilt* — `images/` carries no commit between the two, and the whole delta is upstream drift
-(`base` +942 bytes, `dev-env` **-11.8 MB**) — which is what makes it a **patch**. So the next *recipe*
-change is `default-v0.2.0` (Stage 7 step 2.6, the CA layer); another no-change rebuild would be
-`default-v0.1.2`. **The recipe is not reproducible byte-for-byte**, and a pipeline that assumes it is
-will report a spurious change on every run.
+`default-v0.1.0` was spent on 2026-08-22, **`default-v0.1.1` on 2026-09-08** and **`default-v0.2.0` on
+2026-09-11**. The rule the three of them show: `v0.1.1` was the *same recipe rebuilt* — no commit under
+`images/` between them, the whole delta upstream drift (`base` +942 bytes, `dev-env` −11.8 MB) — which
+is what makes a **patch**; `v0.2.0` changed the recipe (the proxy environment as `ENV`, the apt and
+sudoers files, a second Python environment with its own kernel), which is what makes a **minor**. So the
+next recipe change is `default-v0.3.0` — Stage 7 step 2.6's CA layer, which this file used to name as
+`v0.2.0`, is now that. **The recipe is not reproducible byte-for-byte**, and a pipeline that assumes it
+is will report a spurious change on every run.
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>
