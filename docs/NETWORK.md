@@ -314,7 +314,7 @@ comes back a 403 naming the host.
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 24 † |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 25 † ‡ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
@@ -328,6 +328,14 @@ plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits
 the rendered file cannot distinguish *refuses everything* from *does not exist*, which is why `PX-3`
 compares it against the parameter rather than reading it alone.
 
+‡ **The twenty-fifth entry is `cloud.r-project.org`, in code and not applied** (2026-09-11, 6d decision
+6). CRAN was read as `403 TCP_DENIED` from a space on `default-v0.2.0` — three refusals in one second,
+because R tries more than one index candidate — and allowed on the reasoning that already put `pypi.org`
+and `index.crates.io` here: the plane carries code download for three of the four languages, and R was
+the one arbitrarily without it. `DN-3` is red until the apply by construction, since it compares the
+parameter with the code. **conda's two names stay off**, by the same decision: `repo.anaconda.com` was
+the negative control the same day, and a solver run in a space would move the distribution's own pins.
+
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
 and its control is the reviewed Dockerfile in git, not a hostname list. `open` here still means the three
@@ -337,6 +345,19 @@ unaffected**, which is what source-scoped planes are for.
 
 **Empty means opposite things in the two modes.** The objectives ask for the client's internet to be
 *monitored* and the **compute's** to be restricted.
+
+**The remote IDE needs nothing on this plane, and is refused twice by it.** Measured 2026-09-11 (6d step
+7): a laptop's VS Code attached to a space asks for `update.code.visualstudio.com` — three `403`s,
+seconds after `StartSession` — and then for `marketplace.visualstudio.com`, seven more, because a space's
+default is to fetch its own server and its own extensions. Both names stay off the list and the session
+works: Remote - SSH copies the server from the laptop when the remote download fails, and
+`remote.downloadExtensionsLocally` does the same for a `.vsix`, so those bytes cross the **session**
+instead of the proxy. What the session carries is therefore invisible to this list in both directions —
+a file channel no list of hostnames describes, which is
+[`remote-ide.md`](plan/runbooks/remote-ide.md) §N and an input to Stage 11's threat model. The Toolkit's
+own traffic does cross: `aws-language-servers.us-east-1.amazonaws.com` served 50.73 MiB through the
+`.amazonaws.com` entry, a public call with no endpoint — the fail-open row of the table above, happening
+in practice.
 
 ---
 

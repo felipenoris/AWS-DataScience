@@ -312,6 +312,23 @@ locals {
     "index.crates.io",
     "static.crates.io",
     "static.rust-lang.org",
+    # R. Allowed 2026-09-11 (the user, 6d decision 6) on the reasoning that put `pypi.org` and
+    # `index.crates.io` here: this plane already carries code download for three of the four
+    # languages the environment supports, and R was the one arbitrarily without it. Measured before
+    # the decision, from a space on `default-v0.2.0`: `install.packages` is `403 TCP_DENIED` on this
+    # name, three times in one second, because R tries more than one index candidate - and it
+    # reports none of them, saying `package 'R6' is not available for this version of R`, which
+    # points a reader at the R version instead of at the perimeter.
+    #
+    # What it does not buy: CRAN serves SOURCE packages, so anything with C or Fortran compiles in
+    # the space, and `images/dev-env/r/conda-packages.txt` stays the delivery path for the binary
+    # half. The pure-R half now installs from a notebook.
+    "cloud.r-project.org",
+    # conda stays OFF, by the same decision. `repo.anaconda.com` and `conda.anaconda.org` are the
+    # image build's channel and `production-foundation` is `open`, so a build reaches them; a solver
+    # run inside a space would move the SageMaker Distribution's own pins, which is a mechanism
+    # argument rather than a perimeter one. `repo.anaconda.com` was read as `403 TCP_DENIED` from a
+    # space the same day, the negative control for the entry above.
     # Source control is deliberately absent: `github.com` was removed by the user 2026-09-09 (6d
     # 8.6), and it worked while it stood - 3.1 measured a clone from a JupyterLab space 2026-09-08.
     # A name is judged by whether an interactive compute plane should reach it, and source control
