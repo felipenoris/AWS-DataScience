@@ -282,10 +282,19 @@ A steward approves a digest, the tag lands in both repositories, and the change 
 `1 to add, 1 to destroy` on `aws_sagemaker_image_version` — the image itself and both configurations stay
 — and after the apply the version number has moved.
 
-**Detach before the apply, and the order is the reason.** Terraform replaces by destroying first, and the
-version it destroys is the one the domain's `CustomImages` names; whether SageMaker refuses to delete a
-version a domain references is unmeasured here, and a refusal lands mid-apply. So: detach (§X step 1),
-apply, re-attach on the new number. Omitting `ImageVersionNumber` at §C6 removes both hand steps and the
+**Detach before the apply, and the vendor says why.** Terraform replaces by destroying first, and the
+version it destroys is the one the domain's `CustomImages` names. AWS does not promise a refusal — it
+promises a **later** failure: *"You must first detach your custom image from your domain before deleting
+the image from the SageMaker AI image store. If not, you may experience errors while viewing your domain
+information or attaching new custom images to your domain."* The second half of that sentence is the
+re-attach, so skipping the detach breaks the step that would have repaired it. So: detach (§X step 1),
+apply, re-attach on the new number.
+
+**Both halves need the domain's apps deleted first**, from the same page: *"Before you can update the
+custom images, you must delete all of the applications in your domain."* Not the user profiles and not
+the spaces — the running apps. `make down ENV=sandbox` is this estate's way (Stage 6d step 5.2), or stop
+the space in the portal when the session's endpoints are still wanted. `aws sagemaker list-apps
+--domain-id-equals <id>` is how to know before the call refuses. Omitting `ImageVersionNumber` at §C6 removes both hand steps and the
 review gate with them. What a space starts then depends on §C6's decision: a
 domain pinned to `ImageVersionNumber: 1` still serves the old version, which the apply has just deleted,
 so **the attachment is updated in the same sitting as the bump**, or the picker offers a version that no
