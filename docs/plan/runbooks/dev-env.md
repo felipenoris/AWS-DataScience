@@ -131,10 +131,15 @@ the safer route for a one-off — that it preserves every other field of `Defaul
 shape of the wizard rather than a reading of this domain, so `describe-domain` afterwards is still the
 proof (§C7).
 
-**The CLI route, for a scripted or repeated case.** `UpdateDomain` replaces `DefaultUserSettings` as a
-whole: every field not passed back is deleted, and this domain's block carries idle shutdown, the
-`shared` S3 mount, the storage ceiling, the portal settings and `AutoMountHomeEFS`, none of which any
-error would mention afterwards (Lesson 60). So read, edit, send back — never hand-write a minimal block:
+**The CLI route, for a scripted or repeated case.** Send the block back whole — read, edit, send —
+never a hand-written minimal one. Two readings say why, and they do not say the same thing:
+`UpdateDomain` is documented and treated as a full replace of `DefaultUserSettings`, so a field not
+passed back is at risk (Lesson 60), and this block carries idle shutdown, the `shared` S3 mount, the
+storage ceiling, the portal settings and `AutoMountHomeEFS`. But **an omitted `CustomImages` is not
+cleared**, measured 2026-09-11: a block sent without that key left both entries exactly as they were.
+The vendor's own detach page is where the rule is written — *"you will need to leave `CustomImages`
+blank, such that `"CustomImages": []`"* — so clearing a list means sending an empty one, while
+everything else is sent back as read.
 
 ```bash
 aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/user-settings.json"
@@ -315,7 +320,7 @@ aws sagemaker list-apps --domain-id-equals <domain-id> --profile awsds-infra-san
 (Lesson 61):
 
 ```bash
-aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq 'del(.JupyterLabAppSettings.CustomImages, .CodeEditorAppSettings.CustomImages)' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq '.JupyterLabAppSettings.CustomImages = [] | .CodeEditorAppSettings.CustomImages = []' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
 ```
 
 ```bash
@@ -356,7 +361,7 @@ which is the guard rather than a problem.
    behind, which is what makes the procedure runnable by somebody who was not there.
 
    ```bash
-   aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq 'del(.JupyterLabAppSettings.CustomImages, .CodeEditorAppSettings.CustomImages)' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
+   aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq '.JupyterLabAppSettings.CustomImages = [] | .CodeEditorAppSettings.CustomImages = []' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
    ```
 
    ```bash
