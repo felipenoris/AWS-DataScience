@@ -211,6 +211,7 @@ This table is the only routing map; every other file points here rather than rep
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
 | Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a version bump, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
+| Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the Windows client, §E extensions, §N the egress readings, §V the instruments |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
@@ -238,11 +239,33 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `./aws/devenv.py` reads the drift. **The image's Python is a second environment (2026-09-10)**:
   the distribution's env and default kernel untouched, uv builds `/opt/awsds/venv` on a uv-managed
   CPython from `python/pyproject.toml` + a committed `uv.lock`, own Launcher kernel; R stays
-  on conda. Locked, not built: no TensorFlow wheel past `cp313` set the interpreter at
-  **3.13**; the default `torch` drags 3.03 GiB of `nvidia-*` into a CPU image (hence the PyTorch CPU
-  index and `xgboost-cpu`); ~1.5 GiB of wheels. `uv` and Julia work in a space (3.1). Owed: **the rebuild**; 2.4;
-  1.2/1.3, 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; and 7.3-7.9,
-  which wait on decision 4.
+  on conda. Locked and **built 2026-09-11 as `default-v0.2.0`**, version **2** registered against its
+  digest and re-attached (the bump's order is `dev-env.md` §B: apps gone first, and a detach is `[]`):
+  no TensorFlow wheel past `cp313` set the interpreter at **3.13**; the default `torch` drags 3.03 GiB
+  of `nvidia-*` into a CPU image (hence the PyTorch CPU index and `xgboost-cpu`); ~1.5 GiB of wheels.
+  On that tag a space needs no export: `apt`, `uv`, Julia, Rust and the four kernels all work, which
+  **closes 8.4's delivery** (three extensions installed, the same three refused on a stock-image space,
+  128.9 MiB of `.vsix` logged). **3.1 closed 2026-09-11 on R**, the last ecosystem: CRAN `403` × 3
+  against a positive control in the same R process, and R blames its own version rather than the
+  perimeter, so decision 6 closed — `cloud.r-project.org` added to `proxy_allow_sandbox` in code,
+  conda refused, **unapplied, `DN-3` red until the apply**. Owed: 2.4; 1.1's persona half, 1.2/1.3;
+  3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
+- **The remote IDE works, and it is outside every control the estate wrote for it** (6d step 7,
+  2026-09-11, from a Windows laptop off the VPN through the Toolkit's domain sign-in).
+  `StartSession` is called **by the client as the project role** (`aws-sdk-js` on `win32`, the laptop's
+  own address, session `<idc-user-id>@<env-id>`, `sourceIdentity` the same id); the deep link is the
+  same principal from the browser. So `DenyControlPlaneOffVpn` and 6a's tag pair never evaluate, and
+  decision 4's repair has to land on the project role — `aws:SourceIdentity` and the space's
+  `OwnerUserProfileName` for *whose space*, `aws:SourceIp` for *VPN-only*. Decision 5 answered at zero
+  cost: the space's own fetch of the server and of each `.vsix` is refused
+  (`update.code.visualstudio.com` `403` × 3, `marketplace.visualstudio.com` × 7) and Remote - SSH
+  copies both from the laptop, so **no Microsoft name joins the plane** — and the session is a file
+  channel in both directions that no hostname list describes (Stage 11's threat model). **Two IDE
+  servers run in one container**: AWS's Code-OSS 1.119.1 on Open VSX
+  (`~/sagemaker-code-editor-server-data/extensions`) and Microsoft's at the client's own version on the
+  marketplace (`~/.vscode-server/extensions`), separate settings each, so one extension can sit in both
+  at different versions and a version complaint is the client's marketplace, never the remote runtime.
+  Runbook: `remote-ide.md`. Space read back: `ml.t3.xlarge` **0.200/h**, `RemoteAccess ENABLED`, idle 60.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub; peering shares an address, never a path (Lesson 44). Endpoint
   sets: Sandbox 18, Staging 11, SharedServices 13, Workloads 0; estate fixed rate 0.390/h; DNS Firewall 63 →
@@ -451,6 +474,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     object's creator may have injected state no field of that API can restore.**
 61. **A procedure that depends on a file it did not create runs only for its author — and against a
     full-replace API the stale file is not unavailable, it is wrong.**
+62. **An absence is evidence only when the instrument would have shown the presence — the wrong path
+    and the lagging log both answer "nothing", and the pleasant answer is the one nobody challenges.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

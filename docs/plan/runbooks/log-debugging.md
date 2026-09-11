@@ -315,6 +315,7 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
 | a name searched with no `--start-time` is bounded by the group's **creation** | say *"never, since <date>"*, not *"never"* |
 | an SSO session expiring mid-session | every later call fails on a **missing token**, not on permissions |
 | an MWAA **run**'s duration read as its **task**'s (2026-09-10) | the retry delay, not the work — `list-task-instances` |
+| the proxy log **lags its own events by minutes** (2026-09-11) | read the newest line's timestamp before believing a silence; three `403`s landed at 16:02:19Z in a window whose last line was 16:00:20Z, and the absence had already been written down as a conclusion ([Lesson 62](../lessons.md)) |
 
 ---
 
