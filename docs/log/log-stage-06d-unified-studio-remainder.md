@@ -1974,7 +1974,11 @@ minutes **before** the parameter write, so the running `squid.conf` was still th
 cost a second reading first: `~/R/library` did not exist in that space (`'lib = …' is not writable`, and
 `install.packages` checks the library before touching the network), because the `mkdir` of the earlier
 sitting lives on another space's EBS volume — [Lesson 61](../plan/lessons.md) in the hand of whoever
-shortened the command to one line.
+shortened the command to one line. The fact underneath it is worth carrying: R's personal
+library is created only when an interactive session prompts for it, so under `-e` it must exist first,
+and it lives on the space's EBS volume — **one `mkdir` per space**, not per user. If R use grows, that
+becomes an image concern, and not a `mkdir` in the Dockerfile: `/home/sagemaker-user` is mounted over,
+so it would be an `R_LIBS_USER` created at start-up.
 
 After the association ran at 19:30:57Z, the same line succeeded:
 
