@@ -214,6 +214,15 @@ RUN set -eu; \
 # The CodeArtifact hook is step 5.2's, not this file's: cargo reads its registry configuration
 # from $CARGO_HOME/config.toml (i.e. the user's home) or from the environment, so pointing it
 # at the `crates` repository is a runtime setting on the project, not a build-time layer here.
+#
+# rust-src is the third component because `minimal` does not carry it and rust-analyzer cannot
+# index the standard library without it. Measured 2026-09-11 in a remote VS Code session on
+# `default-v0.2.0`: `ERROR can't load standard library, try installing rust-src
+# sysroot_path=/opt/rust/rustup/toolchains/1.98.0-x86_64-unknown-linux-gnu`, repeated per
+# analysis run, with no visible effect on the user's own crate - so the loss is completion,
+# hover and go-to-definition for `std`, and it announces itself only in the extension's log.
+# It cannot be repaired from a space that matters: RUSTUP_HOME is under /opt, root-owned and
+# `a+rX`, so `rustup component add` needs sudo and the result dies with the container.
 ENV RUSTUP_HOME=/opt/rust/rustup \
     PATH=/opt/rust/cargo/bin:${PATH}
 
@@ -224,7 +233,8 @@ RUN set -eu; \
     echo "${RUSTUP_SHA256}  /tmp/rustup-init" | sha256sum -c -; \
     chmod +x /tmp/rustup-init; \
     CARGO_HOME=/opt/rust/cargo /tmp/rustup-init -y --no-modify-path --profile minimal \
-        --default-toolchain "${RUST_TOOLCHAIN}" --component rustfmt --component clippy; \
+        --default-toolchain "${RUST_TOOLCHAIN}" --component rustfmt --component clippy \
+        --component rust-src; \
     rm -f /tmp/rustup-init; \
     chmod -R a+rX /opt/rust; \
     rustc --version; \
