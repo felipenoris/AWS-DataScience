@@ -1927,3 +1927,21 @@ sudoers file keeps the proxy variables and `static.rust-lang.org` is on the plan
 ```bash
 sudo rustup component add rust-src
 ```
+
+### [Claude⚡, authorized in chat] The parameter carries CRAN
+
+Recipe A, and the plan applied was the file that was read: `0 to add, 1 to change, 0 to destroy` on
+`aws_ssm_parameter.proxy_allowlist`, then a re-plan of **`No changes`**.
+`/datascience/prod/proxy/allowlist` is **version 8** (from 7), `LastModifiedDate`
+2026-09-11T16:05:43-03.
+
+- **`DN-1`..`DN-4` all pass**, and `DN-3` is the one that moved: *5 planes, entry for entry — the first
+  link of code → parameter → host*. `DN-1` resolves 24 exact hostnames (the suffix entries are not
+  hostnames), CRAN among them.
+- **`PX-1`, `PX-2`, `PX-5` pass; `PX-3` is unanswered by design.** The second link needs `--on-host`
+  (`ssm:SendCommand`, a write API carrying only reads), and the host re-renders when its association
+  runs, so the reading belongs minutes later — the parameter is the source of truth for what *should*
+  be enforced, never for what is.
+- **Owed, and it is one line in a space**: `install.packages("R6", …, repos = "https://cloud.r-project.org")`
+  should now succeed, and the same name should read `200 TCP_TUNNEL` in `/awsds/prod/proxy` instead of
+  `403 TCP_DENIED`. That is the only proof that the chain reached the running file.
