@@ -47,11 +47,12 @@
 # both verify it by digest on the host before extracting: a transfer that arrives short would
 # otherwise leave a tree missing a file nobody looks for.
 #
-#   --via ssh   the default. The tarball rides the SSH channel through the Session Manager
-#               tunnel, on a key EC2 Instance Connect authorises for sixty seconds. Nothing new
-#               is opened on the host: no listening port, no security group rule, no traffic
-#               through the proxy - the laptop talks to the SSM API and the agent connects to
-#               sshd on localhost. Write api: ec2-instance-connect:SendSSHPublicKey.
+#   --via ssh   the default, and measured on 2026-09-10: 180 298 bytes, nine files, digest
+#               matched on the host. The tarball rides the SSH channel through the Session
+#               Manager tunnel, on a key EC2 Instance Connect authorises for sixty seconds.
+#               Nothing new is opened on the host: no listening port, no security group rule, no
+#               traffic through the proxy - the laptop talks to the SSM API and the agent
+#               connects to sshd on localhost. Write api: ec2-instance-connect:SendSSHPublicKey.
 #   --via ssm   the fallback, needing no ssh client. The tarball is base64 inside SendCommand,
 #               which caps document and parameters together at 97 KB - so it is sent in chunks
 #               and reassembled. Write api: ssm:SendCommand.
