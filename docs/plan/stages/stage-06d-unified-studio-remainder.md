@@ -101,6 +101,15 @@ work at all* — is still open.
     without the bypass list: with `.amazonaws.com` on the compute plane a missing `NO_PROXY` succeeds
     while losing `aws:SourceVpce`, which is the failure that does not announce itself (8.8's own
     finding, from the other end).
+  - **The first version bump, 2026-09-11.** `default-v0.2.0` built and pushed (the recipe changed:
+    the proxy environment, the apt and sudoers files, the second Python environment and its kernel),
+    `image_tag` bumped, and the apply replaced the version — `1 to add, 1 to destroy`, re-plan `No
+    changes`. Version **2** is `CREATED` against `sha256:b8f461da…`, the digest of that push, so the
+    registration points at the bytes that were built rather than at a name. The order the bump needed
+    is the runbook's §B, and two of its steps were learned here: the domain's apps must be gone before
+    either `update-domain`, and **clearing `CustomImages` means sending `[]`** — a block sent without
+    the key left both attachments untouched, which is the opposite of what a full-replace API would do
+    and is now in `lessons.md`.
   - **The attach ran the same day, by hand, and the block survived it.** `CustomImages` lives on the
     domain's user settings, which the `Tooling` blueprint provisions, and `UpdateDomain` replaces
     `DefaultUserSettings` whole (Lesson 60). Version 1 went into **both** app settings in one write
