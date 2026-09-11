@@ -112,6 +112,16 @@ The last one confirms *who you are* before anything acts. One login covers every
    code disagree, and you stop and read.
 8. **Verify and record**: `make check`; the matching instrument (`./aws/networking.py`,
    `./aws/egress.py`, …); the docs the change touches; the stage log entry.
+
+   **A proxy-plane edit has a second link, and it lags.** `./aws/dns-allowlist.py` `DN-3` compares the
+   repository with the SSM parameter and goes green at the apply; the running `squid.conf` is re-rendered
+   by a State Manager association on `cron(0/30 * * * ? *)`, so the change bites at the next half-hourly
+   tick. Measured 2026-09-11: parameter written 19:05:43Z, association's previous run 19:00:31Z, a retry
+   from a space still refused at 19:17:43Z, association 19:30:57Z, the same name answered `200` at
+   19:31:56Z. **An in-space verification before that tick reads a refusal that is not a defect** — check
+   `aws ssm list-associations --query 'Associations[0].LastExecutionDate'` against the parameter's
+   `LastModifiedDate` before concluding anything, and remember that `PX-3` (parameter against the running
+   file) needs `--on-host` and is a different question from `DN-3`.
 9. **Commit, push, open the PR.** The hooks re-validate everything; no tag changed, so nothing blocks.
 
 ## 3. Recipe B — change a module (the two-commit order)
