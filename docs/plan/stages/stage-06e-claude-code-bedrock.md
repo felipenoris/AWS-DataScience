@@ -290,11 +290,30 @@ deny list, which must not catch any of the three.
   --policy-type IDENTITY_POLICY` returned zero findings over the six ARNs above for `InvokeModel*`,
   the three profile ARNs for `GetInferenceProfile`, and `ListInferenceProfiles` on `*`
   (2026-09-11). Validation is syntax and key names, not reach; the call is still step 6's.
-- **3.4 — [Claude reads, user decides] Where the grant lives, if 3.1 says one is needed.** The candidates,
-  worst last: the blueprint's own template if it already does it (3.1's answer); a policy attached to
-  the project role by hand, which a blueprint reconciliation may remove (INT-15's open half); a policy
-  attached through `sandbox/sagemaker/`'s prerequisite slice, the mechanism 6a judged least likely to be
-  overwritten. **Whatever is chosen, the step that proves it is a call, not a `get-role`.**
+- **3.4 — [Claude reads, user decides] Where the grant lives. 3.1 says one is needed.**
+
+  **The blueprint gives a ceiling for every project role and a floor for none.** Measured 2026-09-11
+  from the provider schema: `awscc_datazone_environment_blueprint_configuration` carries fourteen
+  attributes and exactly one is policy-shaped — `environment_role_permission_boundary`, which is how
+  INT-15 imposes D13 — and a boundary only subtracts. `provisioning_configurations` holds Lake
+  Formation location registration and nothing else. **So there is no lever that grants to the project
+  roles a blueprint creates**, and the shape that would have reached every project in the domain at
+  once does not exist to be chosen or refused.
+
+  What is left:
+
+  | | Where the grant lives | Blast radius | What it costs |
+  |---|---|---|---|
+  | **(a)** | the blueprint's own template | every project | ruled out by 3.1: its grants land on `foundation-model/*` and none on the system profile |
+  | **(b)** | a policy attached to the project role, named by Terraform | exactly the roles named | the role is the service's and is created *after* the slice; a new project needs a new attachment (Lesson 14), and the missing one is a refusal mid-session. A blueprint reconciliation may remove it — INT-15's open half |
+  | **(c)** | a role **this repository authors**, reached by `awsCredentialExport` in the managed settings; its trust policy names the project roles allowed | exactly what the trust policy lists | an extra moving part in the image, and one thing to measure first: whether a same-account `sts:AssumeRole` needs an identity grant on the project role or the trust policy alone suffices |
+
+  (c) is the only one where *which projects* is a value this repository writes rather than a
+  consequence of where the attachment happened to land, and the only one whose grant sits on a
+  principal no blueprint reconciles. It also gives cost attribution a dedicated principal, which 8.4
+  says CloudTrail's `userIdentity` is otherwise the only instrument for.
+
+  **Whatever is chosen, the step that proves it is a call, not a `get-role`.**
 
 ### 4. Put the call on the private path
 
@@ -705,7 +724,7 @@ table is the index, not the reasoning.
 | | Question | Waits on |
 |---|---|---|
 | **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
-| **8** | Where the IAM grant lives | **one is needed** — 3.1 measured that the role's every `InvokeModel*` allow lands on `foundation-model/*` and none on the system profile. What remains is 3.4's question of *where it lives*, the user's |
+| **8** | Where the IAM grant lives | **one is needed** — 3.1 measured that the role's every `InvokeModel*` allow lands on `foundation-model/*` and none on the system profile. Two candidates remain and the blueprint is not one of them (3.4): attach to the project role, or author a role here whose trust policy lists the projects. The user's |
 | **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
 | ~~**10**~~ | ~~Whether the use-case form is submitted by console or adopted as a Terraform resource~~ | **Taken 2026-09-11: console**, and done. The objection that decided it — `form_data` being opaque — turned out to be false: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed (2.5) |
 | **11** | Whether to run 7.2a's Fable probe, the only negative control `mode: none` can have | decidable now; recommended **run it** — a refused call costs nothing and a successful one is a finding of the first order (7.2a) |
