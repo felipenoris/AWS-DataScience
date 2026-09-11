@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Not started, and its decisions are taken.** Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11**, and its decisions were taken before it started. Done: the read-only steps **2.4**, **3.1** and the half of **7.2** that has an instrument, with 0.3, 0.5 and 0.7 re-read the same day ([`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md)). What they changed is at the steps that own them: **a grant is needed** (3.1 closes the first half of open question 8), the account's retention mode reads **`inherit`** rather than `none` (7.2), the per-model `allowed_modes` has **no API at all** (7.2), and the retention mode has **no Terraform resource and no CloudFormation type** while the use-case form has both (7.5, step 2). Neither IAM simulator can answer this question. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -56,6 +56,10 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   *"Routes requests to Anthropic Claude Opus 5 in us-east-1, us-east-2 and us-west-2"*, three model ARNs
   — and `global.anthropic.claude-opus-5`. Neither is single-region, and no single-region option exists
   for this model. Step 7.3 is where that becomes a written exception rather than an omission.
+  **Re-read 2026-09-11 across the scoped set**: Sonnet 5 and Haiku 4.5 are `INFERENCE_PROFILE` only
+  too, and `get-inference-profile` returns `ACTIVE`, `SYSTEM_DEFINED` and the **same three model
+  ARNs — us-east-1, us-east-2, us-west-2** — for all three `us.` profiles. 7.3's residency
+  qualification is the set's, not Opus 5's.
 - **0.3 — The model-access form has never been submitted here.**
   `get-use-case-for-model-access` → `ResourceNotFoundException: You have not filled out the request form.
   Fill out the form before getting access.` That is step 2's before-reading.
@@ -76,6 +80,10 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   The narrower routing costs **10%**. A batch tier exists on the `global.` profile (2.50 / 12.50) and no
   interactive assistant can use it. Sonnet 5 and Haiku 4.5 were read from the same file on the same day
   and are in step 8.1's table, beside the Sonnet 4.5 rate that decides how much 5.3's pin is worth.
+  **Confirmed 2026-09-11 against a second source**: `list-foundation-model-agreement-offers` carries
+  a rate card per model, and every figure matches. It also corrects one clause above — a batch tier
+  exists on the **`us.` profile as well** (Opus 5 `2.75 / 13.75`), and an interactive assistant can
+  use neither.
 - **0.5 — Model invocation logging is off.** `get-model-invocation-logging-configuration` returns
   nothing, which is the documented shape of *no configuration*. Step 7.4 decides whether it stays off.
 - **0.6 — No policy in this organization denies Bedrock.** `POLICIES.md` carries no `bedrock:` action in
@@ -92,6 +100,10 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   would therefore succeed as a **public** call carrying neither `aws:SourceVpc` nor `aws:SourceVpce` —
   the same shape 6d found on `aws-language-servers.us-east-1.amazonaws.com`. Step 4 is about that and
   nothing else.
+- **0.9 — `get-foundation-model-availability` reads permissive with no form submitted.** All three
+  scoped models return `authorizationStatus AUTHORIZED`, `entitlementAvailability AVAILABLE` and
+  `regionAvailability AVAILABLE`, with `agreementAvailability.status NOT_AVAILABLE`, while 0.3 holds.
+  It is not the instrument for 2.3, and a later reader meeting it should not take it for access.
 
 ---
 
@@ -163,9 +175,19 @@ rather than quickly.
 - **2.3 — [Claude] Read it back.** `get-use-case-for-model-access` must stop returning
   `ResourceNotFoundException`. That is the whole verification, and it is the negative control for 0.3.
 
-- **2.4 — [Claude] Whether `InfrastructureAccess` can submit it.** The call needs
-  `bedrock:PutUseCaseForModelAccess`; the console path needs the same permission behind it. Read the
-  permission set before the user opens the console, so a refusal is expected rather than discovered.
+- **2.4 — `InfrastructureAccess` can submit it, on or off the VPN. Read 2026-09-11.** In Sandbox the
+  set carries `AdministratorAccess` and nothing else — no inline document, no permissions boundary —
+  so `bedrock:PutUseCaseForModelAccess` is covered, and 0.6 holds against the ten policy documents.
+  **It does not carry `DenyControlPlaneOffVpn`**: that fragment's `for_each` is the six persona sets,
+  and this is the imported seventh. The console submission therefore works from any network.
+
+- **2.5 — The form is a Terraform resource, and its one field is opaque.**
+  `aws_bedrock_use_case_for_model_access` exists in `hashicorp/aws` 6.60.0 with a single required
+  attribute, `form_data (string)`; the API takes `formData` as a **blob** on both `Put` and `Get`.
+  So the six answers above would reach the code and every diff as base64, and the console keeps them
+  legible. **Decision due 10:** submit by console and record the answers in the log (recommended), or
+  adopt the resource and lose the reviewable form. The resource is worth knowing about either way —
+  it means an org-wide form at the day 2.1 defers to has an authored shape.
 
 ### 3. Give the principal the reach, and find out whether it already has it
 
@@ -190,11 +212,38 @@ its bare model id:
 (Lesson 14): 3.3's resource scope, 4.4's endpoint policy, 5.2's pins and `availableModels`, and 7.5's
 deny list, which must not catch any of the three.
 
-- **3.1 — [Claude] Measure what the project role already grants.** `Sandbox` enables eleven blueprint
-  configurations including six `AmazonBedrock*` ones, and `docs/SMUS.md` records that the `Tooling`
-  template carries **conditional Bedrock roles**. So the role may already hold `bedrock:InvokeModel*`
-  and this step may be empty. Read the role's attached and inline policies rather than assuming either
-  way; `list-attached-role-policies` plus `get-role-policy` per inline document.
+- **3.1 — The role holds the foundation-model half and none of the profile half, so a grant is
+  needed. Read 2026-09-11**, and it closes the first half of open question 8. The role carries three
+  AWS-managed policies, no inline document, the D13 boundary, and the tag
+  `EnableAmazonBedrockPermissions=true` — while **`EnableAmazonBedrockIDEPermissions` is absent**.
+  Matching every `Allow` against the two ARNs a scoped invocation names:
+
+  | Action | `inference-profile/us.anthropic.*` | `foundation-model/anthropic.*` |
+  |---|---|---|
+  | `InvokeModel`, `InvokeModelWithResponseStream` | **nothing matches** | `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy/BedrockModelInvocationPermission`, no principal-tag gate, conditioned only on a profile ARN being present |
+  | `GetInferenceProfile` | **nothing matches** — every statement is scoped to `application-inference-profile/*` | — |
+  | `ListInferenceProfiles` | **granted nowhere** | — |
+
+  The two statements that look like they serve do not: `InvokeBRModel` requires the IDE tag the role
+  does not carry, and `BedrockInvokeModelPermissions` requires the profile ARN to be `ArnLike` an
+  **application** inference profile, a different resource type from the system-defined one. So the
+  `Tooling` template's conditional Bedrock grants are real and land on the wrong resource for a model
+  that is invocable only through a system profile (0.1, 0.2).
+
+  **The boundary is not the constraint**: nine statements, ceiling `Allow * on *`, and no `bedrock:`
+  action — 0.7 confirmed by reading rather than carried forward.
+
+- **3.1a — Neither IAM simulator can answer this, and one of them answers wrongly.**
+  `simulate-principal-policy` from Sandbox returned `explicitDeny` with
+  `AllowedByOrganizations false` for `bedrock:InvokeModel*`; the negative control is
+  `glue:GetDatabases`, which this role performs in the portal daily and which comes back identically,
+  while `sts:GetCallerIdentity` comes back `allowed / true`. **Its organization verdict is unusable
+  from a member account, and the top-level decision inherits it** (Lesson 30).
+  `simulate-custom-policy` caps each input policy at **2,000 characters** against SMUS documents of
+  4,720 and 54,912 bytes, so the identity layer cannot be isolated either. And the role's trust
+  policy admits only service principals and `awsds-sandbox-smus-provisioning`, so
+  `InfrastructureAccess` cannot produce the principal: **3.1 is a reading, and 3.4's rule stands —
+  the proof is step 6's call** (Lesson 22).
 - **3.2 — [Claude] The minimum the client needs.** The vendor's policy is four actions plus a
   marketplace pair:
 
@@ -205,8 +254,9 @@ deny list, which must not catch any of the three.
   bedrock:GetInferenceProfile
   ```
 
-  `ListInferenceProfiles` is what lets the client resolve `opus` to a profile that exists in this
-  account instead of guessing; without `GetInferenceProfile` the client recovers by retrying with the
+  **3.1 measured which of the four the role is missing: all but the `foundation-model` half of the
+  two invoke actions.** `ListInferenceProfiles` is what lets the client resolve `opus` to a profile
+  that exists in this account instead of guessing; without `GetInferenceProfile` the client recovers by retrying with the
   other request shape, so the cost of omitting it is a round-trip and not a failure. The vendor also
   asks for `aws-marketplace:ViewSubscriptions` and `aws-marketplace:Subscribe` under
   `aws:CalledViaLast = bedrock.amazonaws.com`. **Measure whether they are needed here** before adding
@@ -229,6 +279,11 @@ deny list, which must not catch any of the three.
   against each model it routes to. **The foundation-model ARN carries no region** on purpose — the
   profile routes to three of them (0.2), so a region-pinned ARN would authorize a third of the requests
   and refuse the rest, intermittently and by geography.
+
+  **The document drafted from this shape validates clean**: `accessanalyzer validate-policy
+  --policy-type IDENTITY_POLICY` returned zero findings over the six ARNs above for `InvokeModel*`,
+  the three profile ARNs for `GetInferenceProfile`, and `ListInferenceProfiles` on `*`
+  (2026-09-11). Validation is syntax and key names, not reach; the call is still step 6's.
 - **3.4 — [Claude reads, user decides] Where the grant lives, if 3.1 says one is needed.** The candidates,
   worst last: the blueprint's own template if it already does it (3.1's answer); a policy attached to
   the project role by hand, which a blueprint reconciliation may remove (INT-15's open half); a policy
@@ -397,20 +452,27 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   shipped, and a model added to it tomorrow would change this estate's answer without changing anything
   in this repository. 7.2 is the instrument that reads it rather than trusting it.
 
-- **7.2 — [Claude] Measure the retention mode, per account and per model.** Two readings, and the second
-  is the load-bearing one:
+- **7.2 — The account has declared nothing, and the per-model reading has no API. Read 2026-09-11.**
+  `get-account-data-retention` returns `{"mode": "inherit"}` with no `updatedAt`: it has never been
+  set. The enum, from the service model the CLI ships:
 
-  ```
-  # the account's effective mode
-  aws bedrock get-account-data-retention --region us-west-2 --profile awsds-infra-sandbox-1
-  # the model's own allowed_modes - `none` present means ZDR applies whatever the account is set to
-  ```
+  | mode | what the API documents |
+  |---|---|
+  | `default` | the standard data handling **for the model** applies |
+  | `none` | zero data retention |
+  | `provider_data_share` | data may be shared with the model provider |
+  | `inherit` | **no data retention mode is set at this scope** |
 
-  A model whose `allowed_modes` contains `none` is retention-free by construction. A model whose minimum
-  is `aws_review` retains for up to 30 days **and is simply unavailable** below that mode, so the failure
-  is visible rather than silent. **Record the reading with its date.** If `get-account-data-retention` is
-  absent from the installed CLI, the control-plane route is `GET /data-retention` and the reading is
-  still owed.
+  So the requirement rests today on the per-model default and on nothing this estate has stated —
+  Lesson 5's shape exactly, and the reason 7.5 gains a step it did not have.
+
+  **`allowed_modes` is not in the Bedrock API.** It is absent from `get-foundation-model`,
+  `list-foundation-models` and `get-foundation-model-availability`, and no shape matching `allowed`
+  exists in any of the eight `bedrock*` service models the CLI ships (`aws-cli/2.36.18`). The
+  load-bearing half of this step is a vendor-page or console reading, dated when it is taken — which
+  makes 7.1's third statement decay with nothing watching it, and makes the **mode deny of 7.5 the
+  only mechanical guard**. A model whose minimum is `aws_review` is then **unavailable** rather than
+  quietly retaining, which is the failure mode to want.
 
 - **7.3 — The residency qualification, which no setting removes.** `us.anthropic.claude-opus-5` routes to
   **us-east-1, us-east-2 and us-west-2** (0.2). A prompt is therefore *processed* outside `us-west-2`
@@ -440,8 +502,22 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   carries what this one would have had to invent: the CMK, the lifecycle, the Macie scope and the
   trail's own retention are already decided there for the buckets beside it.
 
-- **7.5 — [Claude] Turn the default into a control.** Two SCP statements, of which the mode deny is the
-  load-bearing one:
+- **7.5 — [Claude] Turn the default into a control.** 7.2 measured that the account reads `inherit`,
+  so this step gained a prerequisite it did not have: **the mode has to be set before it is frozen**,
+  and the deny alone leaves the account declaring nothing.
+  - **7.5a — [Claude⚡] Set the account's mode to `none`.** `put-account-data-retention --mode none`,
+    one call, in `Sandbox`. It is a write, and it is what turns the vendor's default into this
+    account's own statement. **It has no Terraform resource and no CloudFormation type** — nine
+    `aws_bedrock_*` resources in `hashicorp/aws` 6.60.0 and 29 `AWS::Bedrock::*` registry types,
+    none an account setting, so `awscc` offers nothing either (Lesson 8 checked, 2026-09-11). It
+    joins account-level BPA on the standing list of settings this estate manages by hand, with the
+    SCP below as the thing that keeps it there.
+  - **The condition key exists, measured.** `accessanalyzer validate-policy` accepted a statement
+    conditioned on `bedrock:DataRetentionMode` and rejected the one beside it conditioned on
+    `bedrock:NoSuchConditionKeyAtAll` (`INVALID_SERVICE_CONDITION_KEY`), so the silence on the real
+    key is a reading rather than an absence (2026-09-11). It establishes the key is in the service's
+    catalogue, not that `PutAccountDataRetention` publishes it at request time — that is the
+    battery's, in `Policy Canary`.
   - **Deny any retention mode but `none`.** The write actions publish a `bedrock:DataRetentionMode`
     condition key, so a deny on `bedrock:PutAccountDataRetention` where the mode is not `none` makes it
     impossible for anyone in the organization to opt this estate into retention — including by accident,
@@ -567,8 +643,8 @@ busy one has no upper bound at all. `make down` does not reach it.
 | (iii) | Does the invocation carry `vpcEndpointId`? | 4.5, 6.3 |
 | (iv) | Is the proxy access log silent on `bedrock-runtime` for the same window? | 4.5's negative control |
 | (v) | Does a session reach **no** Anthropic host? | 6.2 |
-| (vi) | What are the three models' `allowed_modes`, on the day they are read? | 7.2 |
-| (vii) | Is the account's retention mode `none`, and can anyone change it? | 7.2 and 7.5 |
+| (vi) | What are the three models' `allowed_modes`, on the day they are read? | 7.2 — **and no AWS API carries the field**, so this one is answered from the vendor page or the console, dated |
+| (vii) | Is the account's retention mode `none`, and can anyone change it? | 7.2 read `inherit` on 2026-09-11; 7.5a sets it and 7.5's deny freezes it |
 | (viii) | Does the CloudTrail record carry the prompt? | 4.6 — it must not |
 | (ix) | What does one session cost? | 6.4, 8.1 |
 | (x) | Does the configuration survive a new space? | a second space from `default-v0.3.0`, after 5.4 |
@@ -595,8 +671,9 @@ table is the index, not the reasoning.
 | | Question | Waits on |
 |---|---|---|
 | **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
-| **8** | Where the IAM grant lives, if one is needed at all | 3.1's reading of the project role — the `Tooling` blueprint may already carry it (3.4) |
-| **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2) |
+| **8** | Where the IAM grant lives | **one is needed** — 3.1 measured that the role's every `InvokeModel*` allow lands on `foundation-model/*` and none on the system profile. What remains is 3.4's question of *where it lives*, the user's |
+| **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
+| **10** | Whether the use-case form is submitted by console or adopted as `aws_bedrock_use_case_for_model_access` | decidable now; recommended **console**, because the resource's one field is an opaque blob (2.5) |
 | — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |
 
 ## What the documentation changed
@@ -616,6 +693,20 @@ Each row corrected something a plan written from familiarity would have got wron
 | `skipWebFetchPreflight` | the WebFetch hostname check calls `api.anthropic.com` **regardless of provider** and is not covered by the variable above |
 | `/etc/claude-code/managed-settings.json` | the configuration has a home that a user cannot override and the image can write — 6d decision 8's shape, with a file made for it |
 | `AWS_BEARER_TOKEN_BEDROCK` | a long-lived credential, refused by principle 2 before it is weighed (5.1) |
+
+**Added 2026-09-11, from the readings rather than from a page.** Each corrected something this file
+asserted before it was measured.
+
+| Read | What it corrected |
+|---|---|
+| the project role's three managed policies against the two target ARNs (3.1) | *"this step may be empty"* — it is not. Every `InvokeModel*` allow lands on `foundation-model/*`, none on the system profile, and `ListInferenceProfiles` is granted nowhere |
+| `{"mode": "inherit"}` and the enum's own wording (7.2) | the account has **declared nothing**, so 7.5 needs the call that sets `none` before the deny that freezes it |
+| no shape matching `allowed` in eight `bedrock*` service models (7.2) | the step's load-bearing reading has **no control-plane route**, which this file gave it |
+| nine `aws_bedrock_*` resources and 29 registry types (7.5a) | the retention mode is a hand-managed account setting, and the **use-case form is a Terraform resource** whose single field is an opaque blob (2.5) |
+| `glue:GetDatabases` as a negative control (3.1a) | `simulate-principal-policy`'s organization verdict is unusable from a member account, and `simulate-custom-policy` caps a policy at 2,000 characters — neither simulator can answer this |
+| `bedrock:DataRetentionMode` accepted, a bogus key rejected (7.5) | the condition key 7.5 rests on exists, measured with the instrument's own negative control |
+| `get-inference-profile` on all three (0.2) | the residency exception of 7.3 is the **set's**, not Opus 5's |
+| `list-foundation-model-agreement-offers` (0.4) | the rates hold against a second source, and a batch tier exists on the `us.` profile too |
 
 ---
 
