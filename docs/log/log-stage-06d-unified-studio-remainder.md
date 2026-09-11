@@ -1688,3 +1688,242 @@ package installation is exercised in Julia, Rust, Python (uv) and apt. **R is un
 installation**; the kernel starts, and whether `install.packages` reaches CRAN is untested — CRAN is on
 no compute plane, so the expected answer is a refusal and the image is the delivery path (3.1's
 `conda`/CRAN decision, still open).
+
+---
+
+## 2026-09-11 — the tenth sitting: the remote IDE opens, and it is outside the controls written for it
+
+*One sitting closed three things — 8.4's delivery, 3.1's last ecosystem and decision 6 — and opened the
+one the stage had left for a decision: step 7. The user drove every provocation from two machines; the
+readings are mine.*
+
+### [user] 8.4's delivery, with a negative control nobody asked for
+
+The user's report, from a Code Editor space on `default-v0.2.0`:
+
+> Abri o code editor com a imagem nova. Instalei extensões rust-analyser, julia, claude code. Todas
+> instalaram com sucesso e estão funcionando. Abri uma outra instância com a imagem padrão do
+> SageMaker, e as falhas de instalação acontecem (conforme esperado).
+
+So the mechanism is decision 8's `ENV` reaching the `codeeditorserver` supervisord program, and the
+stock-image space is the contrast that says so. **[Claude]** attribution from `/awsds/prod/proxy`, one
+Sandbox address, 15:30-15:32Z: `open-vsx.org:443 200 TCP_TUNNEL` for the API and
+`openvsx.eclipsecontent.org:443 200` for the bytes — **18 requests, 128.9 MiB**, the largest single
+transfer 102,238,249 bytes. Step 8's owed delivery is closed.
+
+### [user ran it, Claude read] 3.1 closes on R, and the tool names nothing
+
+The recipe needed three corrections before it measured the network at all: R lives in its own conda
+environment (`/opt/conda/envs/r/bin/R`), its library is root-owned so `install.packages` needs an
+explicit writable `lib`, conda-forge's `r-base` sets no mirror so `repos=` must be given, and the test
+package has to be **pure R** (`R6`) or a missing compiler answers instead of the perimeter. The run,
+pasted verbatim:
+
+```
+> capabilities("libcurl"); getOption("download.file.method")
+libcurl
+   TRUE
+NULL
+> download.file("https://pypi.org/pypi/requests/json", tempfile(), quiet = TRUE)  # controle positivo
+> install.packages("R6", lib = "~/R/library", repos = "https://cloud.r-project.org")
+Warning: unable to access index for repository https://cloud.r-project.org/src/contrib:
+  cannot open URL 'https://cloud.r-project.org/src/contrib/PACKAGES'
+Warning message:
+package 'R6' is not available for this version of R
+```
+
+```
+$ curl -sS -o /dev/null -w '%{http_code}\n' https://repo.anaconda.com/pkgs/main/noarch/repodata.json
+curl: (56) CONNECT tunnel failed, response 403
+000
+```
+
+- **R needs no proxy configuration of its own**: `capabilities("libcurl")` is `TRUE` with
+  `download.file.method` unset, so libcurl reads the image's variables. The positive control succeeded
+  in the same process, which separates the name from R's plumbing.
+- **[Claude] The proxy log names both refusals** where R does not:
+  `CONNECT cloud.r-project.org:443 403 TCP_DENIED` **three times in one second** — R tries more than one
+  index candidate — and `CONNECT repo.anaconda.com:443 403 TCP_DENIED` at 15:50:31Z, against
+  `pypi.org:443 200` with a 200,226-byte body at 15:50:10Z, the control.
+- **R's message points at the wrong thing.** *"package 'R6' is not available for this version of R"* is
+  what a user sees for a perimeter refusal. The `curl` half says `403` outright. Same refusal, two
+  legibilities, and the attribution came from the log either way.
+
+### [user] Decision due 6, closed on its original two: CRAN in, conda out
+
+> Podemos ir pela opção (b).
+
+**[Claude]** `cloud.r-project.org` added to `proxy_allow_sandbox` in
+[`hub-anchors.tf`](../../terraform-live/production/networking/hub-anchors.tf) — 24 entries to 25,
+`terraform validate` clean, `./scripts/check-tf-conventions.py` OK, **not applied**, so `DN-3` is red
+until it is. conda's two names stay refused: the image build reaches them through the `open` build
+plane, and a solver run inside a space would move the SageMaker Distribution's own pins. What CRAN does
+not buy is the compiled half — it serves source packages, so `images/dev-env/r/conda-packages.txt`
+stays the delivery path for anything with C or Fortran in it.
+
+### [user] The remote IDE, connected from a second machine
+
+The user's account of the flow, which is the record of what was done:
+
+> num outro computador (windows) com uma instalação do VSCode, instalei o suplemento AWS. O suplemento
+> oferece um painel específico do sagemaker. Nesse painel, ele tem a opção de logar (similar ao que tem
+> descrito no site da AWS sobre uso remoto do VSCode). Loguei passando o domínio sagemaker. Ele
+> autenticou. Em seguida abriu uma nova janela de sessão remota SSH , e consigo ver exatamente a mesma
+> tela que aparece no VSCode por dentro do SageMaker, com as pastas.
+
+### [Claude] Who made the call — 7.2 answered, and the method table was wrong twice
+
+CloudTrail in Sandbox, two `StartSession` calls 13 seconds apart:
+
+| field | 16:02:15Z and 16:02:28Z |
+|---|---|
+| principal | `datazone_usr_role_<project>_<env>` — **the project role**, by role id |
+| session name, `sourceIdentity` | `<idc-user-id>@<env-id>` — the Identity Center user id, inside the role session |
+| `sourceIPAddress` | the laptop's own public address — not the proxy's Elastic IP, not an AWS-internal one |
+| `userAgent` | `aws-sdk-js/1.0.0 … os/win32#10.0.26100 lang/js md/nodejs#24.15.0` |
+| resource | `space/<domain-id>/remote-editor`; `streamUrl` to `wss://ssmmessages.us-west-2.amazonaws.com/…` |
+
+Beside it, 2026-09-10 19:37:27Z: the **same role**, the same address, a Chrome user agent — the portal's
+deep link, refused with `ValidationException … does not have remote access enabled` because that space
+had the flag off. So both available methods call it **client-side as the project role**, and the stage's
+table was wrong about the principal in row 1 (*server-side*) and row 2 (*the persona*). Consequences:
+`DenyControlPlaneOffVpn` and 6a's tag pair never evaluate, the channel worked with the laptop off the
+VPN, and decision 4's repair has to land on the project role. Two keys exist without Identity Center
+*attributes for access control*: `aws:SourceIdentity`, and the space's `OwnershipSettings.OwnerUserProfileName`,
+which carries the same user id.
+
+### [Claude] 7.3 read back, and the size is not the one the step priced
+
+`describe-space` on `remote-editor`: `RemoteAccess: ENABLED`, `AppType CodeEditor`, image
+`awsds-sandbox-dev-env` **version 2**, `ml.t3.xlarge`, idle timeout 60 minutes, 64 GB EBS, the `shared`
+S3 mount, `SharingType Private`. Priced the same day from the Pricing API:
+`USW2-Studio:CodeEditor-ml.t3.xlarge` **0.200/h**, `SAE1` 0.323 — twice the `ml.t3.large` floor, and the
+space path carries no ceiling to refuse it (`PRICING.md` §8).
+
+### [Claude] Decision due 5, answered by measurement — and the first answer was wrong
+
+The proxy log, same space, after the session came up:
+
+```
+16:02:19  CONNECT update.code.visualstudio.com:443  403 TCP_DENIED
+16:02:55  CONNECT update.code.visualstudio.com:443  403 TCP_DENIED
+16:02:56  CONNECT update.code.visualstudio.com:443  403 TCP_DENIED
+16:08:10  CONNECT marketplace.visualstudio.com:443  403 TCP_DENIED   (x2)
+16:09:30  CONNECT marketplace.visualstudio.com:443  403 TCP_DENIED   (x3)
+16:09:40  CONNECT marketplace.visualstudio.com:443  403 TCP_DENIED   (x2)
+```
+
+The space tries the vendor's default for both the server and the `.vsix`, the plane refuses both, and the
+session works: Remote - SSH *"will attempt to download on the remote host, and fail back to downloading
+VS Code Server locally and transferring it remotely"*, which is the `Copying VS Code Server to host with
+scp` line the user saw. **No Microsoft name joins the compute plane**, and the estate pays nothing.
+
+**Two of my own readings were wrong before this one, and both were absences** (Lesson 62). `ls
+~/.vscode-server/bin` returned nothing and I read it as *no Microsoft server in the space* — the layout
+is `~/.vscode-server/cli/servers/Stable-<commit>/` and six node processes were running from it. And
+eight hours of the proxy log carried no Microsoft name, read as *the server never crossed the proxy* —
+the log lags by minutes, the window's last line was 16:00:20Z and the `403`s are stamped 16:02:19Z. The
+conclusion that survived is the same one, but it was true by luck the first time.
+
+### [user ran the probes, Claude read] Two IDE servers in one container
+
+```
+221  /opt/conda/share/sagemaker-code-editor/node …/out/server-main.js --port 8888 --base-path /codeeditor/default
+513  /home/sagemaker-user/.vscode-server/cli/servers/Stable-4fe60c8b…/server/node …
+```
+
+| | Code Editor, from the portal | the remote session |
+|---|---|---|
+| version | **1.119.1** (`product.json`) | **1.127.0** — the client's own |
+| gallery | `https://open-vsx.org/vscode/gallery` | `https://marketplace.visualstudio.com/_apis/public/gallery` |
+| extensions | `~/sagemaker-code-editor-server-data/extensions` — `rust-analyzer 0.4.3045`, `aws-toolkit 3.101.0`, Q, the Python and Jupyter set | `~/.vscode-server/extensions` — `aws-toolkit 4.15.0`, `language-julia 1.238.2` |
+
+Both directories are on the space's EBS volume, so both survive a restart and neither is in the image.
+The AWS Toolkit sits in both at **different versions**, which is the clearest statement of what the
+split means. `~/.sagemaker_remoteAccess_do_not_delete/sagemaker-remote-access-server` is AWS's own
+binary, 6.87 MB, `mtime` 2026-09-04, in a directory created at 15:57 — between the credential vend at
+15:52:45Z and the `StartSession` at 16:02:15Z — and its bytes are in no proxy log, so the service
+delivered it.
+
+**That settles the extension question the sitting kept returning to.** `Install in SSH` installs in the
+space, in the VS Code Server's directory; installing "from the remote environment" had been installing
+into the *other* server's directory, through the *other* gallery. A version complaint naming the
+client's version is the marketplace offering a build that wants a newer editor — not the remote runtime,
+which is the client's own build.
+
+### [user] The client pinned to the image's version
+
+The user chose to pin the Windows client to `1.119.1` — the version AWS pins in the image — from the
+archive build, which needs no administrator and does not update itself. **[Claude]** verified the
+download service before handing it over: `https://update.code.visualstudio.com/1.119.1/win32-x64-archive/stable`
+redirects to commit `974500e6…`, sha256 `6fd3396113d865571811497949a6c01784102e24f076e95a207d66918475894b`
+(arm64 `6438dc885a…`), and stable that day was **1.137.0**. The `data` folder beside `Code.exe` is what
+keeps the pinned install out of `%APPDATA%\Code` and `%USERPROFILE%\.vscode`, and
+`remote.downloadExtensionsLocally` plus `remote.SSH.localServerDownload` are what move the download to
+the laptop. A second session was being set up on the pinned client when this entry was written; the
+extension install through it is the reading that is still owed.
+
+### [Claude] What this sitting wrote down
+
+[`remote-ide.md`](../plan/runbooks/remote-ide.md) (7.8, the runbook, with the Windows section from the
+user's own draft), the stage file's corrected method table and its three closures, `PRICING.md` §8's
+`ml.t3.xlarge` row, `NETWORK.md`'s plane count and the remote-IDE paragraph, two `REFERENCES.md` rows
+for VS Code's own pages, Lesson 62, and the proxy log's ingestion lag as a trap in
+[`log-debugging.md`](../plan/runbooks/log-debugging.md) §8.
+
+### [user] The pinned client connects, and `rust-analyzer` works
+
+> Consegui subir a sessão remota no VSCode. Consegui instalar o rust-analyser. Ele funcionou
+> corretamente num projeto rust.
+
+With the extension's own log carrying, four times between 18:29:19Z and 18:30:50Z:
+
+```
+ERROR can't load standard library, try installing `rust-src` sysroot_path=/opt/rust/rustup/toolchains/1.98.0-x86_64-unknown-linux-gnu
+```
+
+### [Claude] The proxy log for that session, and the one thing it cannot attribute
+
+**The currency check first** (Lesson 62): the group's newest line was 18:30:49Z against a wall clock of
+18:33:48Z — a three-minute lag, so the window does cover the install.
+
+The new container is `10.20.116.89`, 39 requests. At **18:29:17Z, `marketplace.visualstudio.com` `403
+TCP_DENIED` × 3**, and the extension installed and ran anyway. No host in the marketplace or
+`vsassets` families answered `200` anywhere in the window, so **no `.vsix` crossed the proxy** and the
+bytes came through the session — the perimeter reading is the same as yesterday's.
+
+**What this log cannot separate**: whether `remote.downloadExtensionsLocally` stopped the remote
+download (leaving those three as the extension host's own gallery queries) or whether the download was
+refused and VS Code fell back to fetching locally. Both end with no marketplace bytes and a working
+extension. The instrument that would settle it is the **client's** Extensions output channel, not
+anything in the estate. Recorded as unattributed rather than as a setting proven.
+
+### [Claude] What else the session asked for, and one name that is new
+
+| name | reading | what it is |
+|---|---|---|
+| `github.com` × 4, `api.github.com` × 3, `raw.githubusercontent.com` × 3 | **403** at 18:25:24-18:25:30Z | the IDE's startup traffic, refused by decision 6's removal of source control from this plane |
+| `mobile.events.data.microsoft.com` × 3 | **403** | VS Code telemetry, a name not seen before — the same class as the Application Insights pair, and refused the same way |
+| `cognito-identity.us-east-1.amazonaws.com` × 4, `idetoolkits-hostedfiles.amazonaws.com` × 2 | 200 | the Toolkit's own, through the plane's `.amazonaws.com` entry, so public calls |
+| `index.crates.io` **2.07 MiB**, `static.crates.io` **0.34 MiB** | 200, 18:30:48-49Z | `cargo` fetching the registry index and crate sources while `rust-analyzer` ran — the Rust ecosystem's first attributed reading in this estate, on plane entries that were already there |
+
+The other container in the same window (`10.20.101.127`, 108 requests) ran an `apt` pass:
+`archive.ubuntu.com` and `security.ubuntu.com`, about 30 MiB of package indexes, all `200`.
+
+### [Claude] `rust-src` is missing from the image, and the reason is in the Dockerfile
+
+The error names the mechanism: `images/dev-env/Dockerfile` §4 installs the toolchain with
+`rustup-init … --profile minimal --component rustfmt --component clippy`, and **the `minimal` profile
+does not carry `rust-src`**, which is what `rust-analyzer` reads to index the standard library. The loss
+is completion, hover and go-to-definition for `std`; analysis of the user's own crate is unaffected,
+which is why nothing looked broken. It announces itself only in the extension's log.
+
+**Fixed in the image** (`--component rust-src` added, with the measurement in the comment beside it),
+so it arrives on the next build — this is not repairable from a space: `RUSTUP_HOME` is `/opt/rust/rustup`,
+root-owned and `a+rX`, so `rustup component add` needs `sudo` and whatever it writes dies with the
+container. The stopgap for the session in hand is exactly that, and it works today because the v0.2.0
+sudoers file keeps the proxy variables and `static.rust-lang.org` is on the plane:
+
+```bash
+sudo rustup component add rust-src
+```
