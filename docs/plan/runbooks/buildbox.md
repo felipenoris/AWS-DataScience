@@ -115,7 +115,9 @@ With the tunnel up, export the proxy variables in that terminal first
   `ssm:SendCommand`, in chunks, because that API caps document and parameters together at 97 KB, a
   cap the context passed on 2026-09-10 when the Python environment's `uv.lock` arrived. Both verify
   the tar by digest on the host before extracting, so a short transfer refuses rather than leaving a
-  tree missing a file.
+  tree missing a file. **The ssh path ran for the first time on 2026-09-10**: 180 298 bytes of
+  tar.gz, nine files, key delivered to `us-west-2b`, digest matched, `/opt/awsds/images` owned by
+  `ec2-user` — no security group change and nothing on the proxy's log.
 - `ssm` opens the shell. **You land as `ssm-user`**, an account Session Manager creates after the first
   boot, so it is not in the `docker` group: `sudo docker …`, or `sudo -iu ec2-user`.
 
