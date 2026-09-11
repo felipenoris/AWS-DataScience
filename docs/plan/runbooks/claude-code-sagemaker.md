@@ -205,7 +205,60 @@ two halves of the configuration are in one place.
 
 ## §V — Reading it back
 
-One instrument per question, all read-only.
+**The whole picture in one command.** [`./aws/bedrock.py`](../../../aws/bedrock.py) photographs what
+Bedrock is enabled for in every account that has a profile — the gates, the catalogue, the inference
+profiles and anything that would be billing — and writes `aws/output/bedrock.txt`. Run it rather than
+re-deriving the calls below; the calls are here because a runbook that only names a script stops
+working the day the script does.
+
+```bash
+./aws/bedrock.py
+```
+
+### Listing what is enabled, by hand
+
+The account gates, one call each:
+
+```bash
+aws bedrock get-use-case-for-model-access --region us-west-2 --profile awsds-infra-sandbox-1
+```
+
+```bash
+aws bedrock get-account-data-retention --region us-west-2 --profile awsds-infra-sandbox-1
+```
+
+```bash
+aws bedrock get-model-invocation-logging-configuration --region us-west-2 --profile awsds-infra-sandbox-1
+```
+
+Every Anthropic model the Region offers, with its lifecycle and whether the bare id is invocable —
+`INFERENCE_PROFILE` alone means a request must name a profile:
+
+```bash
+aws bedrock list-foundation-models --by-provider Anthropic --region us-west-2 --profile awsds-infra-sandbox-1 --query 'modelSummaries[].[modelId,modelLifecycle.status,join(`,`,inferenceTypesSupported)]' --output table
+```
+
+The profiles the account can actually name in a request, and how many models each routes to — the
+third column above 1 is a prompt processed outside `us-west-2` some of the time:
+
+```bash
+aws bedrock list-inference-profiles --region us-west-2 --profile awsds-infra-sandbox-1 --query "inferenceProfileSummaries[?status=='ACTIVE'].[inferenceProfileId,type,length(models)]" --output table
+```
+
+Anything standing up and billing by the hour, which should be empty:
+
+```bash
+aws bedrock list-provisioned-model-throughputs --region us-west-2 --profile awsds-infra-sandbox-1 --query 'length(provisionedModelSummaries)'
+```
+
+**Do not read `get-foundation-model-availability` as an access check.** It returned
+`AUTHORIZED / AVAILABLE / AVAILABLE` for all thirteen Anthropic models before the form, after the form
+and after the retention mode changed, and it reads the same in an account that has no form at all —
+which is what `BR-7` in the script above measures on every run.
+
+### One instrument per question
+
+All read-only.
 
 | Question | Instrument |
 |---|---|
