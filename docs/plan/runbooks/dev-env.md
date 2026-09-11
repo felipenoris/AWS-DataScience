@@ -310,8 +310,17 @@ version cannot be deleted while a domain names it, and an app image configuratio
 a `CustomImages` entry references it — both refuse with a `ResourceInUse`-shaped error naming the domain,
 which is the guard rather than a problem.
 
-1. Remove the entry from `CustomImages` — the console's *Detach*, or the same read-edit-send as §C6,
-   **built from a fresh `describe-domain`** and never from a file kept since the attach.
+1. Remove the entry from `CustomImages` — the console's *Detach*, or the two commands below. They
+   read the live block and strip the two keys; nothing here depends on a file an earlier step left
+   behind, which is what makes the procedure runnable by somebody who was not there.
+
+   ```bash
+   aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq 'del(.JupyterLabAppSettings.CustomImages, .CodeEditorAppSettings.CustomImages)' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
+   ```
+
+   ```bash
+   aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/detached.json" --profile awsds-infra-sandbox-1
+   ```
 2. `terraform apply -destroy` on the slice, or delete the resources from the code and apply.
 3. The ECR image is not this slice's to remove: the repository's lifecycle policy expires it, and
    `images/README.md` owns that rule.
