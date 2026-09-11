@@ -452,6 +452,41 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   admits it — the rule must stay quiet; then one from an unexpected role if one is obtainable, else record
   Lesson 22). Each alarm fires, the e-mail arrives, and a normal working session stays quiet. Record all
   outcomes, including the quiet ones.
+- **5.6 — [Claude reads, user decides] Bedrock model invocation logging — the assistant channel's content
+  record.** Handed here by [Stage 6e](stage-06e-claude-code-bedrock.md) step 7.4, deferred deliberately
+  by the user on 2026-09-11 rather than left undecided: *"turning it on creates the exact artefact the
+  requirement is about, and doing that before the threat model exists decides the question in the wrong
+  order"*. It arrives with its before-reading taken — the configuration was **absent** in `Sandbox` on
+  2026-09-11 — and it belongs in this step because it is the same question 5.1 answers for S3: whether
+  the estate keeps a durable record of *what* crossed a channel, or only of *who* crossed it.
+
+  **What is already true without it.** `InvokeModel` and `InvokeModelWithResponseStream` are CloudTrail
+  **management events** on the organization trail, carrying `modelId`, the principal, the address and the
+  `vpcEndpointId` — and `responseElements` null. So the assistant channel already has attribution, at no
+  cost and with no content. Turning invocation logging on adds **the full prompt and the full
+  completion**, and nothing else.
+
+  **What it would buy, and what it would cost.** It closes the one gap 6e names as a residual: Bedrock's
+  zero data retention governs *persistence outside*, not what an operator put into a prompt, and a model
+  in a Sandbox space is reachable by a project role that reaches the governed lake through Lake
+  Formation. An invocation log is the only instrument that could ever answer *what governed data was
+  shown to a model*. It costs a durable copy of every prompt, which is a Macie subject, a retention
+  obligation, and a store whose own exfiltration risk this stage would then have to carry.
+
+  **Recommended: on, in `Sandbox` only, to S3 and never to CloudWatch Logs**, and only alongside the
+  decisions this step already makes for its neighbours — the account's CMK, a lifecycle at the trail's
+  own retention, the `awsds-data-logs` delivery of 5.1 where cross-account delivery is supported, and
+  inclusion in decision 3's monitored-resource map. The argument for flipping 6e's *off*: this stage is
+  where the threat model exists, and an assistant that can read the lake and cannot be asked what it read
+  is the gap `objectives.md`'s fourth DLP problem names. The argument against, which the user takes if
+  the answer is no: the prompt store becomes the estate's most sensitive bucket, and a control that
+  creates the artefact it protects against is a trade rather than a win. **Whichever way it goes, it is
+  written down with its date** — and if it stays off, the threat model carries the residual explicitly
+  rather than by silence.
+
+  Its instrument is `get-model-invocation-logging-configuration` per account and Region; `dlp.py` gains
+  the check either way, because a configuration that appeared without a decision is the finding
+  (Lesson 17).
 
 ### 6. The third-party question, answered last
 
@@ -563,6 +598,11 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 10. **INT-16's choice, re-taken** (3.4) — recorded acceptance since 2026-09-07 (6c 6.6, the user's)
     versus fallback (i) on the domain execution role. Recommended: **(i)**, for the reasons 3.4 lists —
     unless `NT-9` says a private door for the portal now exists, which reopens the question differently.
+11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)
+    step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`). Recommended: **on in
+    `Sandbox` only, to S3 with the account's CMK and a lifecycle**, inside decision 3's map — the
+    assistant is the one channel where a model sees governed data and nothing today can say what it saw.
+    If the answer is off, the threat model carries the residual by name rather than by silence.
 
 ## Verifications to answer while executing
 
