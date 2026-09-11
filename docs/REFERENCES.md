@@ -538,6 +538,58 @@
   is what lets `remote-ide.md` §W verify a download instead of trusting it:
   <https://update.code.visualstudio.com/api/versions/commit:974500e64f0d1cfdf7c9821a2a51c2cb3bf0e561/win32-x64-archive/stable>.
 
+- **Amazon Bedrock data protection**, the pages [Stage 6e](plan/stages/stage-06e-claude-code-bedrock.md)
+  step 7 is written from (read 2026-09-11). *Abuse detection* carries the sentence that answers the
+  requirement — *"Amazon Bedrock uses a zero operator access (ZOA) data security model … Also, Amazon
+  Bedrock uses a zero data retention (ZDR) data security model. This means that by default, Amazon
+  Bedrock does not store model inputs or outputs"* — and, in the same page, the **per-model exceptions**
+  that make the answer a measurement rather than a property of the service:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/abuse-detection.html>. *Data retention* carries
+  the mode scale (`none < default < aws_review < provider_data_share`), the `allowed_modes` field that
+  says which a given model admits, the statement that content sharing with model providers *"is not
+  supported today"*, and the SCP shape that pins an organization to `none` through the
+  `bedrock:DataRetentionMode` condition key:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html>. *Data protection* carries
+  the deployment-account argument — *"Because the model providers don't have access to those accounts,
+  they don't have access to Amazon Bedrock logs or to customer prompts and completions"*:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>.
+
+- **Amazon Bedrock: the endpoints, the logging and the CloudTrail shape** (read 2026-09-11). The
+  PrivateLink page gives the interface endpoint service names — `com.amazonaws.<region>.bedrock` and
+  `com.amazonaws.<region>.bedrock-runtime` among them — and the default endpoint policy that allows every
+  action until it is narrowed:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/vpc-interface-endpoints.html>. Model invocation
+  logging is *"disabled by default"* and writes the full request and response bodies to a bucket or log
+  group in the same account and Region, which is the trade Stage 6e step 7.4 weighs:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html>. CloudTrail logs
+  `InvokeModel` and `InvokeModelWithResponseStream` as **management events**, and the worked example
+  shows `requestParameters` carrying `modelId` alone with `responseElements` null — attribution without
+  content: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>. The
+  model-access form's fields (`companyName`, `companyWebsite`, `intendedUsers`, `industryOption`,
+  `otherIndustryOption`, `useCases`) are in the API reference:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
+
+- **Claude Code on Amazon Bedrock**, the vendor's own setup page (read 2026-09-11): the environment
+  variables (`CLAUDE_CODE_USE_BEDROCK`, `AWS_REGION`, `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`,
+  `ANTHROPIC_DEFAULT_HAIKU_MODEL`), the IAM policy with its four `bedrock:` actions and the marketplace
+  pair, the `us.`/`global.` inference-profile prefixes, and the two sentences Stage 6e turned into steps —
+  the use-case form where *"access is granted immediately after submission"*, and the background-task
+  model, which on Bedrock is **the default Sonnet** rather than a Haiku:
+  <https://code.claude.com/docs/en/amazon-bedrock>. The extension's third-party path — *Disable Login
+  Prompt*, then the provider's own settings in `~/.claude/settings.json` — is on the VS Code page:
+  <https://code.claude.com/docs/en/vs-code>.
+
+- **What Claude Code sends, and to whom** (read 2026-09-11), the two pages that decide whether an
+  Anthropic host is reachable at all from a space. *Data usage* carries the per-provider default table:
+  on Amazon Bedrock, metrics, error reports and `/feedback` are **off by default**, session quality
+  surveys are **on**, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` closes the last of them:
+  <https://code.claude.com/docs/en/data-usage>. *Enterprise network configuration* carries the URL
+  allow-list and the sentence that survives a provider switch — the WebFetch domain safety check calls
+  `api.anthropic.com` *"regardless of which model provider you use"* unless `skipWebFetchPreflight` is
+  set: <https://code.claude.com/docs/en/network-config>. The managed settings file, which is where an
+  institution puts a configuration a user cannot override, is `/etc/claude-code/managed-settings.json` on
+  Linux: <https://code.claude.com/docs/en/managed-settings>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
@@ -1385,6 +1437,13 @@
   Claude and no Nova model at all — so §9's "what moving to São Paulo would change" is, for Bedrock, a
   change of *model* rather than of price. The endpoint needs no credentials:
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>.
+
+- AWS Price List bulk API, the **`AmazonBedrockFoundationModels`** offer file for `us-west-2` (read
+  2026-09-11, published `2026-09-11T12:44:10Z`): the offer code that actually carries the modern Claude
+  models, one `servicename` per model, which is why `docs/PRICING.md` §5's Claude rows were legacy SKUs
+  from 2026-08-21 until Stage 6e step 0.4 corrected them. The `AmazonBedrock` file above carries none of
+  them:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockFoundationModels/current/us-west-2/index.json>.
 
 - KMS pricing and key rotation — the unit billed is a key *version*, not a key (read 2026-08-21, from
   the Stage 6 plan review). The bulk API prices SKU `us-west-2-KMS-Keys` as *"$1 per customer managed

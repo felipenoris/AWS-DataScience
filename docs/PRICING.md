@@ -408,13 +408,34 @@ On-demand, in-region, per **1 000 tokens** (`us-west-2`):
 Two gaps in that table are readings, not omissions (Lesson 6 — a cell without a number means *not
 measured*, never *free*):
 
-- The `us-west-2` offer file carries no `output-tokens` usagetype for any Claude model, only
-  `input-tokens`. Every current Claude model is reached through a **cross-region inference profile**,
-  whose SKUs are published under the profile's home region rather than under `us-west-2`. The two Claude
-  rows above are the legacy in-region SKUs, not what a SMUS chat app would bill; price the specific model
-  against the inference profile before leaning on it.
+- The `AmazonBedrock` offer file carries no `output-tokens` usagetype for any Claude model, only
+  `input-tokens`. **The reason was found 2026-09-11, and it is the offer code, not the region**: the
+  modern Claude models publish under **`AmazonBedrockFoundationModels`**, a separate offer whose
+  `servicename` is the model (`Claude Opus 5 (Amazon Bedrock Edition)`) and whose usage types name the
+  routing tier. The two Claude rows above are the legacy in-region SKUs and no current model uses them.
+  The row below is that file read; anything else is priced the same way, from that offer code.
 - Batch, Flex and Priority tiers exist for the Nova family (roughly ×0.5, ×0.5 and ×1.75 of the on-demand
   rate respectively) and are not in the table because nothing in this design selects one.
+
+**Claude Opus 5, `us-west-2`, per 1M tokens** — read 2026-09-11 from
+`AmazonBedrockFoundationModels/current/us-west-2/index.json`, published `2026-09-11T12:44:10Z`
+([Stage 6e](plan/stages/stage-06e-claude-code-bedrock.md) step 0.4). The two columns are the two
+cross-region inference profiles, which is the only way this model is invocable — `get-foundation-model`
+returns `inferenceTypesSupported ["INFERENCE_PROFILE"]`, so there is no on-demand rate to quote.
+
+| Dimension | `us.anthropic.claude-opus-5` | `global.anthropic.claude-opus-5` |
+|---|---|---|
+| Input | 5.50 | 5.00 |
+| Output | 27.50 | 25.00 |
+| Cache read | 0.55 | 0.50 |
+| Cache write, 5-minute TTL | 6.875 | 6.25 |
+| Cache write, 1-hour TTL | 11.00 | 10.00 |
+
+The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
+less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.
+**What this table does not say is what a session costs**: output at 27.50 is five times input and fifty
+times cache read, so the bill is decided by output tokens and cache misses, and the token volume of one
+real session is unmeasured (Lesson 6). Stage 6e step 8.1 is where it gets a number.
 
 A `sa-east-1` finding for §9: the São Paulo offer carries **no Claude and no Nova model at all** — its
 catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS and others. The Ratio column is absent rather than a
