@@ -1945,3 +1945,47 @@ Recipe A, and the plan applied was the file that was read: `0 to add, 1 to chang
 - **Owed, and it is one line in a space**: `install.packages("R6", …, repos = "https://cloud.r-project.org")`
   should now succeed, and the same name should read `200 TCP_TUNNEL` in `/awsds/prod/proxy` instead of
   `403 TCP_DENIED`. That is the only proof that the chain reached the running file.
+
+### [user ran it, Claude read] The chain closes on CRAN, and it dates itself
+
+The first retry, at 19:17:43Z, was still refused — the association had last run at 19:00:31Z, five
+minutes **before** the parameter write, so the running `squid.conf` was still the 24-entry one. It also
+cost a second reading first: `~/R/library` did not exist in that space (`'lib = …' is not writable`, and
+`install.packages` checks the library before touching the network), because the `mkdir` of the earlier
+sitting lives on another space's EBS volume — [Lesson 61](../plan/lessons.md) in the hand of whoever
+shortened the command to one line.
+
+After the association ran at 19:30:57Z, the same line succeeded:
+
+```
+trying URL 'https://cloud.r-project.org/src/contrib/R6_2.6.1.tar.gz'
+Content type 'application/x-gzip' length 64507 bytes (62 KB)
+downloaded 62 KB
+* installing *source* package 'R6' ...
+* DONE (R6)
+```
+
+**The access log carries the pair on one container address**, which is the cleanest form this reading
+takes — no restart in between, so nothing has to be matched across two addresses:
+
+```
+19:17:43  10.20.119.67  CONNECT cloud.r-project.org:443  403  3416     TCP_DENIED   (x3)
+19:31:56  10.20.119.67  CONNECT cloud.r-project.org:443  200  1293832  TCP_TUNNEL   (the package index)
+19:31:57  10.20.119.67  CONNECT cloud.r-project.org:443  200  70816    TCP_TUNNEL   (the tarball)
+```
+
+So the whole chain is measured end to end, with a timestamp at every link:
+
+| when | what |
+|---|---|
+| 19:00:31Z | the association's previous run — the host renders version 7 |
+| 19:05:43Z | the apply; `/datascience/prod/proxy/allowlist` becomes version 8; `DN-3` goes green |
+| 19:17:43Z | a retry from a space: still `403`, because the parameter is not the running file |
+| 19:30:57Z | the association runs again — `cron(0/30 * * * ? *)` |
+| 19:31:56Z | the same name, the same container: `200`, and R builds the package |
+
+**An allow-list edit costs an apply plus at most one half-hourly interval**, which is the trade
+`reconfigure_schedule`'s own description names, now with numbers. It is also why `DN-3` and `PX-3` are
+two checks: nothing about a green `DN-3` says the proxy is enforcing it yet. `PX-3` itself stays
+unanswered — it needs `--on-host` — and this reading is its behavioural equivalent, taken from the
+running file's own output rather than from the file.
