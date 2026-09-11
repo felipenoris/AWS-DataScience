@@ -1543,3 +1543,148 @@ a visual ETL task may never call `CreateTrainingJob` at all, and nothing here li
 job the worker submits is not, and the operator has no parameter that could attach it. So the collision is
 between a portal feature and a deliberate compute control, and it is settled by a decision rather than by
 an edit — the three options are at the end of the section above.
+
+## 2026-09-10/11 — the ninth sitting: step 2 end to end, and the first version bump
+
+*Two days in one sitting: 2.1 and 2.2 on the evening of 2026-09-10, everything from the build session
+onwards on 2026-09-11. Claude wrote this file at the user's request. Every write in AWS was authorized
+in chat before it ran; the domain writes and the buildbox session are the user's own hands, and the
+readings around them are Claude's. The project's SageMaker AI domain is named rather than quoted, as
+`dzd-` ids are elsewhere in this file.*
+
+### [Claude⚡, authorized in chat] 2.1 and 2.2 — the slice, and the environment the API refused
+
+`terraform-live/sandbox/dev-env/` applied: the image `awsds-sandbox-dev-env`, one version against
+`default-v0.1.1`, two app image configurations and the image role. **Two applies**, because the first
+one failed: `CreateAppImageConfig` refused both configurations with
+
+```
+ValidationException: 1 validation error detected: Value '{http_proxy=..., NO_PROXY=...}' at
+'jupyterLabAppImageConfig.containerConfig.containerEnvironmentVariables' failed to satisfy constraint:
+Map value must satisfy constraint: [Member must have length less than or equal to 256, ...]
+```
+
+The `ContainerConfig` API reference gives the cap as 25 entries and 256 characters per key and per
+value; the generated `NO_PROXY` is 50 entries and about 2,300 characters. The second apply added the two
+configurations **without any environment**. The four proxy variables were deliberately not shipped
+alone: `.amazonaws.com` is on the compute plane, so a proxy with no bypass list succeeds while losing
+`aws:SourceVpce`.
+
+Two readings came out of the same apply:
+
+- **The version is pinned to bytes.** `ImageVersionStatus: CREATED`, `ContainerImage` ending
+  `@sha256:6916fc13ab533eb9…6d13` — the digest step 9.5 pushed on 2026-09-08.
+- **The image's `RoleArn` is load-bearing.** Production's CloudTrail carries `BatchGetImage` and
+  `GetDownloadUrlForLayer` on `awsds-prod-ecr-dev-env` at 17:05:37Z, `userIdentity.type AWSAccount`,
+  principal `<role-id>:SageMaker`, from an AWS-internal address. The role id resolves to
+  `awsds-sandbox-sagemaker-image`, the slice's own. Four ECR read actions are enough; the vendor's
+  `AmazonSageMakerFullAccess` hint is not needed.
+
+### [user] Decision 8 — the proxy environment goes into the image
+
+Taken the same evening: the six variables become `ENV` in `images/dev-env/Dockerfile`, with `NO_PROXY`
+as a dated literal, `/etc/apt/apt.conf.d/01proxy`, a sudoers `env_keep`, and `/opt/awsds-proxy.txt`
+carrying the entry count and the list's sha256 prefix. `./aws/devenv.py` (`DE-1`..`DE-4`) compares the
+literal against the account's current output. The lifecycle configuration was refused because it has no
+update API and cannot be deleted while a domain references it; a compressed `NO_PROXY` was refused
+because it would change the perimeter.
+
+### [user ran the domain writes, Claude read] The attach, 2.3 and 2.5
+
+`update-domain` put version 1 into **both** app settings in one write. The before/after diff of the
+whole `DefaultUserSettings` carried only the two added entries; the domain came back `InService` with
+no `FailureReason`. `DefaultSpaceSettings` was read in the same minute and holds no `CustomImages` and
+no `CodeEditorAppSettings` at all — the control for what 2.3 then answered.
+
+**2.3**: the user created spaces from the portal and **both started on the image, JupyterLab and Code
+Editor**. So a SMUS space reads the domain's `DefaultUserSettings`, and INT-17's per-space fallback is
+not needed. The Code Editor half had been attached as unexercised — the Dockerfile is JupyterLab-shaped
+by the vendor's rule — and it works.
+
+**2.5**: the registry account's CloudTrail carries the two spaces' pulls at 18:37:43Z and 18:38:31Z —
+`BatchGetImage` by `datazone_usr_role_<project>_<env>`, session `SageMaker`, **by digest**. Beside the
+17:05:37Z registration, which the image role made **by tag**. The tag is resolved once and a space never
+sees it. The D13 boundary did not stand in the way of the ECR read, and no KMS grant was needed.
+**INT-01 closed; INT-17 answered.**
+
+### [user] The image's Python: no conda, uv, and two kernels in the Launcher
+
+The user's decision, 2026-09-11: the distribution's environment, its interpreter and its default kernel
+are left exactly as they ship, and the image gains a **second** Python built by uv on a uv-managed
+CPython, from `images/dev-env/python/pyproject.toml` and a committed `uv.lock`, with its own Launcher
+kernel. R stays on conda. Four readings from `uv lock` on the laptop, before any build:
+
+- **TensorFlow publishes no wheel past `cp313`**, which set the interpreter at 3.13 (the user kept the
+  framework and moved the Python).
+- **The default PyPI `torch` drags the CUDA runtime**: 17 `nvidia-*` packages, 3.03 GiB, into a CPU
+  image. torch and torchvision now come from PyTorch's CPU index.
+- **`xgboost` pulls `nvidia-nccl`** (241 MiB) for the same reason; the dependency is `xgboost-cpu` —
+  the same choice the distribution makes (`py-xgboost-cpu` in its own list).
+- The set is about 1.6 GiB of wheels, against 4.7 GiB before those two changes.
+
+The list was then diffed against the distribution's own authored one (`cpu.env.in` for SMD 4.3.0,
+fetched): 71 packages, 30 already covered, 6 tooling, 36 missing. Of those, 24 are the server-side half
+a kernel has no use for; the user took the other twelve — the S3 Access Grants boto3 plugin, the SMUS
+kernel-side integrations and the agent SDKs. **`python-gssapi` was left out**: it is `gssapi` on PyPI
+and publishes no linux wheel at all, so it would compile and need `libkrb5-dev`. What that costs is
+Kerberos'd Hive.
+
+### [user at the buildbox, Claude read and fixed] The build session
+
+**`buildbox.py sync` failed before anything was copied**, and it was a regression this branch
+introduced: `MaxDocumentSizeExceeded`, the context at 585 KB of base64 against SSM's 97 KB cap for the
+document and its parameters together, because `uv.lock` had joined `images/`. Two fixes, in order: the
+lock now resolves for one platform (`tool.uv.environments`, linux x86_64 — 1373 KB → 517 KB), and the
+transfer moved to **SSH inside the Session Manager tunnel**, on a key EC2 Instance Connect authorises
+for sixty seconds. Nothing new is opened on the host: no listening port, no security group rule, and
+nothing through the proxy. First run: 180 298 bytes, nine files, digest matched on the host,
+`/opt/awsds/images` owned by `ec2-user`.
+
+**The first build came out at 28.1 GB**, and `docker history` attributed it: the Python layer at
+10.7 GB against a 5.2 GB environment, a 109 MB interpreter and **5.4 GB of `/root/.cache/uv`** — uv
+unpacks every wheel into the cache and then materialises it into the venv, both in the same layer.
+`UV_NO_CACHE=1` inside that `RUN` is the fix, and a later `rm -rf` is not one. The rebuild came out at
+**22.7 GB**.
+
+Pushed as `default-v0.2.0` — a **minor**, because the recipe changed. The user's paste:
+
+```
+default-v0.2.0: digest: sha256:48b93ba0b527bed792e361e2f284e8a76802df322e19e17e06e1cd63250e176a size: 6582
+
+default-v0.2.0: digest: sha256:b8f461dae73c1b6bc93b084c7009956049ff27a7b1e2591b001fd9d5585f16f2 size: 8893
+```
+
+The first is `awsds-prod-ecr-base`, the second `awsds-prod-ecr-dev-env`.
+
+### [user ran the domain writes, Claude applied] The first version bump, and two things it taught
+
+The order the runbook now carries was learned by running it wrong twice.
+
+1. **The apps must go first.** `./scripts/down-studio-apps.py sandbox` deleted a running app for the
+   first time since it was written (step 5.2's first exercise): one `JupyterLab/default`, `InService`
+   since the 3.1 session. The vendor gates both domain writes on it — *"Before you can update the
+   custom images, you must delete all of the applications in your domain."*
+2. **A detach is an empty list, not a removed key.** The first detach sent the block with
+   `CustomImages` omitted; `update-domain` returned success and **both attachments were unchanged**.
+   The vendor's detach page carries the form — *"you will need to leave `CustomImages` blank, such that
+   `"CustomImages": []`"*. So an omitted field reads as *unchanged* here, which is the opposite of what
+   a full-replace API does, and it is now in `lessons.md`.
+3. **The apply**: `1 to add, 1 to destroy` on the image version, re-plan `No changes`. Version **2** is
+   `CREATED` with `ContainerImage` at `@sha256:b8f461dae73c1b6b…f16f2` — the digest of the push above.
+4. **The re-attach** on version 2, and the read-back is exact: the live block equals the one that was
+   sent, and against the detached block the only fields that moved are the two `CustomImages`.
+
+### [user] What a space does now
+
+The user's report, after a space on `default-v0.2.0`:
+
+> Tudo funcionando perfeitamente! Kernels funcionando. Conectividade com internet sem necesidade de
+> configurar proxy. Testei instalação de pacotes com Julia, Cargo (Rust), uv, apt. Kernel do R
+> funcionando, não cheguei a testar instalação de pacotes novos.
+
+So: the four kernels start, the proxy environment arrives with the image — the by-hand export of
+`sg-proxy.md` is no longer needed on this tag, and `apt` works without `-o Acquire::http::Proxy` — and
+package installation is exercised in Julia, Rust, Python (uv) and apt. **R is unexercised for
+installation**; the kernel starts, and whether `install.packages` reaches CRAN is untested — CRAN is on
+no compute plane, so the expected answer is a refusal and the image is the delivery path (3.1's
+`conda`/CRAN decision, still open).
