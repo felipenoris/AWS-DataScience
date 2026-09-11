@@ -337,8 +337,18 @@ the domain serves those bytes, and `ContainerImage` is where that is legible:
 aws sagemaker describe-image-version --image-name awsds-sandbox-dev-env --version-number <n> --profile awsds-infra-sandbox-1 --query '[ImageVersionStatus,ContainerImage]' --output text
 ```
 
-**5. Re-attach on the new number**, the §C6 shape with `terraform output -json custom_images` supplying
-the entries, and §C6's read-back diff closing it.
+**5. Re-attach on the new number.** The entries come from the slice's own output, so the version number
+is never typed; the block comes from the live read, so nothing else moves:
+
+```bash
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq --argjson ci "$(AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/dev-env output -json custom_images)" '.JupyterLabAppSettings.CustomImages = [$ci.jupyterlab] | .CodeEditorAppSettings.CustomImages = [$ci.code_editor]' > "$HOME/tmp/attached.json" && cat "$HOME/tmp/attached.json"
+```
+
+```bash
+aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/attached.json" --profile awsds-infra-sandbox-1
+```
+
+§C6's read-back diff closes it.
 
 **6. A new space.** A running app keeps the image it started with; there are none at this point, which
 is what step 1 arranged.
