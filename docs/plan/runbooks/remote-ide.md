@@ -6,7 +6,7 @@
 | **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
 | **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
 | **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
-| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from the session measured that day. Exercised: §W on Windows x64, §E's two surfaces, §N's readings, §V's four instruments. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), and the tag pair on a principal that carries it (7.6). The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), and the tag pair on a principal that carries it (7.6). The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -17,7 +17,7 @@ A working session is five objects, and only one of them is this repository's.
 | Piece | What it is | Owner |
 |---|---|---|
 | **The space, with `RemoteAccess` enabled** | the compute the session attaches to. Per space, per app type | the portal, by hand |
-| **`sagemaker-remote-access-server`** | a binary AWS places in `~/.sagemaker_remoteAccess_do_not_delete/`, which is what answers the data channel | the service |
+| **`sagemaker-remote-access-server`** | a binary AWS places in `~/.sagemaker_remoteAccess_do_not_delete/`, which is what answers the data channel. 6.87 MB, root-owned, its `mtime` AWS's own build date; the directory appears **between** the credential vend and the `StartSession` (15:57Z against 15:52:45Z and 16:02:15Z on 2026-09-11) and its bytes are in no proxy log, so the service delivers it and not the plane | the service |
 | **`sagemaker:StartSession`** | the call that opens the channel, answered with a `wss://ssmmessages.<region>.amazonaws.com/v1/data-channel/…` URL | the client, as the project role (§I) |
 | **The VS Code Server** | Microsoft's server, under `~/.vscode-server/cli/servers/Stable-<commit>/`, at the **client's own version** | the client, per connection |
 | **The Code Editor server** | AWS's Code-OSS, `/opt/conda/share/sagemaker-code-editor`, already running on port 8888 for the browser surface | the image |
@@ -67,7 +67,9 @@ Matching the version AWS pins in the image (`1.119.1`, read from
 `/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
 usable in both surfaces. The archive build does not update itself, which is the pin — and also means it
 receives no fixes: stable was `1.137.0` on the day this was written, so keep a current install for
-everything else and use the pinned one for this session.
+everything else and use the pinned one for this session. **The pin is a choice and not a
+prerequisite** — §E carries what it buys, what it costs, and the per-extension route that needs no pin
+at all.
 
 ```
 https://update.code.visualstudio.com/1.119.1/win32-x64-archive/stable
@@ -144,7 +146,13 @@ directory, not into the surface the browser uses.
 | settings | `~/sagemaker-code-editor-server-data/data/User/` | `~/.vscode-server/data/User/` |
 
 Both directories are under `/home/sagemaker-user`, which is the space's EBS volume, so both survive a
-restart of the app and neither is in the image. An extension installed in one surface is invisible to the
+restart of the app and neither is in the image. **The settings files are separate in the same way**, and
+that has bitten this estate once already: 6d step 8.4's `http.proxy` repair was written into the Code
+Editor's settings and reaches nothing on the VS Code Server's side. A fix applied in one surface is not
+applied in the other — check which file you edited before concluding a setting does not work. And
+`~/.vscode-server/cli/servers/` holds **one tree per client version** that has ever connected — two
+after a pin, a few hundred MB each on a 64 GB volume — so an old one is safe to delete and worth
+deleting only if the volume is tight. An extension installed in one surface is invisible to the
 other, and the same extension can sit in both at **different versions** — the AWS Toolkit was `3.101.0`
 on the Open VSX side and `4.15.0` on the marketplace side the day this was written.
 
@@ -162,8 +170,15 @@ pre-releases as `0.4.x`. The fixes, cheapest first:
    and in the remote terminal run `code --install-extension <file>.vsix`, which is the server's CLI and
    installs on the remote side. The space cannot fetch it itself (§N).
 
-Pinning the client (§W) is what removes the conflict rather than working around it, at the cost of an
-editor that no longer updates.
+**What pinning the client actually buys, and what it costs.** Measured 2026-09-11: the remote server's
+`product.json` read `1.127.0` against a `1.127.0` client, so a client-versus-remote mismatch does not
+exist and a version complaint is never about the remote runtime. What the pin aligns is the **two
+surfaces** — a client at the image's `1.119.1` resolves extension builds against the same engine the
+portal's Code Editor does, so one extension set serves both, and the install that had complained
+succeeded once the client was pinned. What it costs is an editor that never updates and that is, by
+construction, behind the current stable — which makes *"requires a newer VS Code"* more likely for other
+extensions, not less. The per-extension answer stays route 1; the pin is for the operator who wants one
+extension set across both surfaces.
 
 ## N. What crosses the estate's egress, and what does not
 
@@ -181,9 +196,24 @@ Read from `/awsds/prod/proxy` on 2026-09-11, one space's address:
 **Neither refusal breaks the session**, and that is the design working rather than luck. Remote - SSH
 "will attempt to download on the remote host, and fail back to downloading VS Code Server locally and
 transferring it remotely once a connection is established", which is the `scp` line §W quotes; the
-extension bytes take the same route once `remote.downloadExtensionsLocally` is on. So the remote IDE
-channel needs **no entry on the compute plane**: the two Microsoft names stay off it, and the laptop —
-whose own plane is `open` when it is on the tunnel — is what fetches.
+extension bytes take the same route. So the remote IDE channel needs **no entry on the compute plane**:
+the two Microsoft names stay off it, and the laptop — whose own plane is `open` when it is on the
+tunnel — is what fetches.
+
+**The two client settings reduce those calls and do not remove them**, measured across two sessions the
+same day. Without them, one container asked `update.code.visualstudio.com` three times and
+`marketplace.visualstudio.com` fifteen times over four minutes. With `remote.SSH.localServerDownload:
+always` and `remote.downloadExtensionsLocally: true` on the client, the next container asked
+`update.code` **once** at connect and `marketplace` **three times** at install — and the extension
+installed and ran. Every one of those lines is a 3.4 KB Squid error page, so no Microsoft byte has ever
+crossed this plane. The operating rule: **a `403` on either name during a session that works is
+expected**, not a failure to chase; what would be a finding is a `200`.
+
+**One thing this log cannot settle**, and it is worth stating rather than implying: whether a given
+remote call was a *download attempt* or a version-and-metadata probe. The CLI under `~/.vscode-server/cli`
+checks for updates on its own, so a single `update.code` line after a connect is not evidence that the
+server was being fetched. The instrument that separates them is the **client's** Extensions and
+Remote-SSH output channels, outside the estate.
 
 **The channel is also a file path the plane cannot see.** The `.vsix` that arrived on 2026-09-11 arrived
 *through the session*, not through the proxy, and the same tunnel carries any file in either direction.
@@ -220,6 +250,19 @@ aws logs filter-log-events --log-group-name /awsds/prod/proxy --start-time <epoc
   --profile awsds-infra-prod --query 'events[].message' --output text | tr '\t' '\n'
 ```
 
+**Which surface's terminal you are in** — the question that precedes every other in-space reading,
+because the two servers' terminals look identical:
+
+```bash
+echo "${PERSISTENT_VOLUME_EXTENSIONS_DIR:-<empty: not a Code Editor terminal>}"
+echo "${SUPERVISOR_PROCESS_NAME:-<empty>}"
+```
+
+A Code Editor terminal is a child of the `codeeditorserver` supervisord program and carries both; the
+remote session's terminal carries neither (measured 2026-09-11). The image's proxy environment reaches
+**both**, since every process in the container inherits it — which is why `cargo` fetched
+`index.crates.io` from a remote session with nothing configured.
+
 **Which servers are running in the space, and where their extensions went** — from a terminal in the
 space:
 
@@ -243,6 +286,10 @@ ls ~/.vscode-server/extensions ~/sagemaker-code-editor-server-data/extensions
 | `Server returned 403` inside the space | the process has the variables and the **name** is not on the compute plane. The first question is whether that name has a VPC endpoint ([`docs/NETWORK.md`](../../NETWORK.md)) |
 | an extension refuses to install, naming your VS Code version | the marketplace offered a build that wants a newer editor; §E's three fixes |
 | an extension installed but not running | it went to the other surface, or it is a UI extension. `Developer: Show Running Extensions` |
+| an extension is present in one surface and missing in the other | expected: two servers, two extension directories (§E). Install it in both, or pin the client so one set serves both |
+| `403` on `marketplace.visualstudio.com` in the access log **while the install succeeds** | expected, and measured with the client settings on: the remote still probes the gallery, the bytes come from the laptop. A `200` on that name would be the finding |
+| `rust-analyzer` logs `can't load standard library, try installing rust-src` | the image installs rustup's `minimal` profile, which omits `rust-src`; `std` is not indexed, and nothing else is affected. Fixed in `images/dev-env/Dockerfile` for the next build (2026-09-11). In the session at hand: `sudo rustup component add rust-src`, which works because the image's sudoers keeps the proxy variables and `static.rust-lang.org` is on the plane, and which dies with the container |
+| an R or conda package manager refused in a space | not this channel's: [`sg-proxy.md`](sg-proxy.md) carries what a space may fetch, and `docs/NETWORK.md` the list |
 
 ## Cost
 

@@ -54,6 +54,39 @@ The durable form is in the house image, not in a shell: `/etc/apt/apt.conf.d/01p
 two `Acquire::` lines, plus a sudoers `env_keep` for the six proxy variables so a person's exports
 survive `sudo` for everything that is not `apt`. Both belong to Stage 6d step 2.2.
 
+## R — CRAN is reachable, and the library has to exist first
+
+`cloud.r-project.org` joined the compute plane on 2026-09-11 (6d decision 6), so `install.packages`
+works from a space — **after** one piece of local setup that has nothing to do with the network:
+
+```bash
+mkdir -p ~/R/library
+/opt/conda/envs/r/bin/R -q -e 'install.packages("R6", lib="~/R/library", repos="https://cloud.r-project.org")'
+```
+
+Three things decide whether that line measures the network at all:
+
+- **the library must exist and be writable.** R's personal library is created only when an interactive
+  session prompts for it, so under `-e` it must be there already, and `install.packages` checks it
+  **before** touching the network — the failure reads `'lib = …' is not writable`, which is not a proxy
+  refusal. It lives on the space's EBS volume, so this is one `mkdir` **per space**;
+- **`repos=` must be given.** The image's R is `/opt/conda/envs/r/bin/R`, a conda-forge `r-base` with no
+  default mirror, and without the argument the error is *"trying to use CRAN without setting a mirror"*;
+- **R needs no proxy configuration of its own.** `capabilities("libcurl")` is `TRUE` with
+  `download.file.method` unset, and libcurl reads the image's variables.
+
+**conda is still refused**, by the same decision: `repo.anaconda.com` and `conda.anaconda.org` are the
+image build's channel, and a solver run inside a space would move the SageMaker Distribution's own pins.
+The compiled half of CRAN is refused by arithmetic rather than by policy — CRAN serves source packages,
+so anything with C or Fortran needs a toolchain the image does not carry;
+[`images/dev-env/r/conda-packages.txt`](../../../images/dev-env/r/conda-packages.txt) stays the delivery
+path for those.
+
+**A refusal here reads misleadingly.** R reports `cannot open URL '…/src/contrib/PACKAGES'` and then
+*"package 'X' is not available for this version of R"*, which points at the R version instead of at the
+perimeter. The access log is what names the host
+([`log-debugging.md`](log-debugging.md) §P); `curl` against the same name says `403` outright.
+
 ## Code Editor — the extension gallery's proxy
 
 Measured 2026-09-08. A Code Editor space fails to update AWS's own `aws-toolkit-vscode` and
