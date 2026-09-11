@@ -6,7 +6,7 @@
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10, at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, from the applies it describes. §C steps 1-6 and §V ran that day, on `default-v0.1.1` in Sandbox — §C6 by the CLI route, with the whole settings block diffed before and after. §C7, §B and §X are written from the API contract and the vendor pages (the 2026-09-10 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) and are **unexercised** — each says so in place (Lesson 37) |
+| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B's six steps on `default-v0.2.0`, §X step 1, §V. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -141,52 +141,42 @@ The vendor's own detach page is where the rule is written — *"you will need to
 blank, such that `"CustomImages": []`"* — so clearing a list means sending an empty one, while
 everything else is sent back as read.
 
-```bash
-aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/user-settings.json"
-```
+**Both `update-domain` calls need the domain's apps gone first**, the vendor's precondition and not
+this estate's: *"Before you can update the custom images, you must delete all of the applications in
+your domain."* Not the user profiles and not the spaces — the running apps. `./scripts/down-studio-apps.py
+<env>` is how, and `aws sagemaker list-apps --domain-id-equals <domain-id>` is how to know before the
+call refuses.
 
-**That file is the rollback, so it is not the file you edit.** It holds the block as it was before the
-write, and it is the only copy of it: edit into a second file and keep this one until §C7's read-back
-has passed.
-
-**It is a rollback for this sitting, and for nothing later.** Any later act on this domain — the detach
-of §X, the re-attach of §B — reads the block again first. Sending back a kept snapshot is a
-full-replace with a picture of the past: whatever changed in between goes away, and no error mentions
-it. The file is safe to use only while it is still true, which is only while nobody else has written.
-
-Add to the copy — `terraform output -json custom_images` on the slice prints both entries in the API's
-own spelling, so nothing is retyped:
-
-```json
-"JupyterLabAppSettings": {
-  "CustomImages": [
-    { "ImageName": "awsds-sandbox-dev-env", "ImageVersionNumber": 1, "AppImageConfigName": "awsds-sandbox-dev-env-jupyterlab" }
-  ]
-}
-```
-
-`JupyterLabAppSettings` already exists in the block with its `AppLifecycleManagement`; `CustomImages` is
-added beside it, not in place of it. The Code Editor entry is the same three keys under
-`CodeEditorAppSettings`, naming `awsds-sandbox-dev-env-codeeditor`.
+The write is two commands. The first reads the live block and puts the slice's own entries into it, so
+the version number is never typed and nothing depends on a file an earlier step left behind
+(Lesson 61); the `cat` is there to be read before anything is sent:
 
 ```bash
-aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/user-settings-with-images.json" --profile awsds-infra-sandbox-1
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/before.json" && jq --argjson ci "$(AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/dev-env output -json custom_images)" '.JupyterLabAppSettings.CustomImages = [$ci.jupyterlab] | .CodeEditorAppSettings.CustomImages = [$ci.code_editor]' "$HOME/tmp/before.json" > "$HOME/tmp/attached.json" && cat "$HOME/tmp/attached.json"
+```
+
+```bash
+aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/attached.json" --profile awsds-infra-sandbox-1
 ```
 
 **Then diff the whole block, not the key you added.** The hazard is a field that went missing, and
-`--query CustomImages` cannot see one. Read the block back and compare it against the file you kept:
+`--query CustomImages` cannot see one. `$HOME/tmp/before.json` is that comparison's other half, and it
+is also the rollback — for this sitting only, since any later act reads the block again:
 
 ```bash
-aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/user-settings-after.json" && diff <(python3 -m json.tool "$HOME/tmp/user-settings.json") <(python3 -m json.tool "$HOME/tmp/user-settings-after.json")
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/after.json" && diff <(python3 -m json.tool "$HOME/tmp/before.json") <(python3 -m json.tool "$HOME/tmp/after.json")
 ```
 
-The only differences must be the entries you added. Anything else — a missing mount, a dropped idle
-setting — is Lesson 60 having happened, and the kept file is what puts it back.
+The only differences must be the entries you added. **Measured twice**, on the attach of 2026-09-10 and
+the re-attach on version 2 of 2026-09-11: both times the diff carried nothing but `CustomImages`, and
+the domain came back `InService` with no `FailureReason`.
 
-**`ImageVersionNumber` is a decision, not a formality.** The API marks the field optional, and what an
-omitted version resolves to — the latest, by the vendor's description — is unread here. Name it: a
-version named is a version reviewed, and §B's bump then reaches a space only when somebody moves this
-number.
+**`ImageVersionNumber` is a decision, and its price is now known.** The API marks the field optional,
+and what an omitted version resolves to — the latest, by the vendor's description — is unread here.
+Naming it means a version reviewed before any space starts on it, and it means §B's six steps on every
+build: two domain writes, with the apps deleted around them. Omitting it would collapse §B to the apply
+alone. This estate names it; a reader choosing otherwise is choosing to let an apply change what every
+new space runs.
 
 **A SMUS space reads the user-settings block, measured 2026-09-10.** The experiment had its control:
 `DefaultSpaceSettings` carried no `CustomImages` and no `CodeEditorAppSettings` at all, read after the
@@ -361,14 +351,19 @@ writes are what it cannot do from another account — which is why INT-18 stops 
 
 ## X. Detaching and removing
 
-**Unexercised.** Order matters, and it is the reverse of §C: the domain first, the objects after. A
-version cannot be deleted while a domain names it, and an app image configuration cannot be deleted while
-a `CustomImages` entry references it — both refuse with a `ResourceInUse`-shaped error naming the domain,
-which is the guard rather than a problem.
+Order matters, and it is the reverse of §C: the domain first, the objects after. **Do not expect the
+service to enforce it.** AWS does not promise a refusal on deleting an attached image — it promises a
+later failure: *"You must first detach your custom image from your domain before deleting the image from
+the SageMaker AI image store. If not, you may experience errors while viewing your domain information or
+attaching new custom images to your domain."* So the order is the operator's to keep, and the symptom of
+breaking it arrives on the next attach rather than on the delete.
 
-1. Remove the entry from `CustomImages` — the console's *Detach*, or the two commands below. They
-   read the live block and strip the two keys; nothing here depends on a file an earlier step left
-   behind, which is what makes the procedure runnable by somebody who was not there.
+Step 1 ran on 2026-09-11, as the detach half of §B's bump; steps 2 and 3 are unexercised.
+
+1. Empty `CustomImages` — the console's *Detach*, or the two commands below. **An empty list, not a
+   removed key**: a block sent without the key left both attachments exactly as they were (2026-09-11),
+   so the field has to be present and empty. They read the live block, and nothing here depends on a
+   file an earlier step left behind (Lesson 61).
 
    ```bash
    aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq '.JupyterLabAppSettings.CustomImages = [] | .CodeEditorAppSettings.CustomImages = []' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
@@ -400,8 +395,10 @@ which is the guard rather than a problem.
 | `ImageVersionStatus: CREATE_FAILED`, with a `FailureReason` naming permissions | the image role cannot read the repository: the identity half (§C5) or the repository policy half is missing | fix the half named, then taint and re-apply the version |
 | The image does not appear in the portal's picker | the attachment, not the registration | re-read §C7's `describe-domain`; if the entry is there, try the `DefaultSpaceSettings` block, which is §C6's unmeasured fallback |
 | A space stays in *starting* and never comes up | a pull that cannot complete: `ecr.dkr`, `ecr.api` or the S3 gateway endpoint absent, or the session down | `make up ENV=<env>`, then `./aws/egress.py` |
-| A space starts, and the terminal has no proxy | the space is on the stock image, or on a `dev-env` built before 2026-09-10 | select the house image (§C7); until one is attached, the by-hand export is [`sg-proxy.md`](sg-proxy.md) |
-| `sudo apt` fails to resolve a name that is on the plane | on an image built before 2026-09-10, `sudo` resets the environment and `apt` runs with none of the six variables | the `-o Acquire::http::Proxy=` form in `sg-proxy.md`; the durable fix is the Dockerfile's two files, live since §E's decision |
+| A space starts, and the terminal has no proxy | the space is on the stock image, or on `default-v0.1.1` or earlier — the environment arrived with `default-v0.2.0` | select the house image (§C7); on an older one, the by-hand export is [`sg-proxy.md`](sg-proxy.md) |
+| `sudo apt` fails to resolve a name that is on the plane | on `default-v0.1.1` or earlier, `sudo` resets the environment and `apt` runs with none of the six variables | the `-o Acquire::http::Proxy=` form in `sg-proxy.md`; `default-v0.2.0` carries the two image-side files that end it |
+| `update-domain` returns success and `CustomImages` is unchanged | the key was omitted rather than sent empty; an absent field reads as *unchanged* here | send `"CustomImages": []` — §X step 1's command |
+| `update-domain` refuses, naming applications | an app is still `InService` in the domain; the vendor gates both domain writes on that | `./scripts/down-studio-apps.py <env>`, then `list-apps` until it is empty |
 | An AWS call from a space arrives with no `aws:SourceVpce`, and nothing failed | a name added to the endpoint set after the image was built: it is not in the baked `NO_PROXY`, so it went out through the proxy | compare `/opt/awsds-proxy.txt` against the current list (§E), then rebuild |
 
 ---

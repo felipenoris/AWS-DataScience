@@ -1,8 +1,9 @@
 
 # Runbook — The proxy inside a SageMaker space
 
-> **Who this is for, since 2026-09-10.** Everything below is the by-hand path, and it is what a space on
-> the **stock image** — or on a `dev-env` built before that date — needs. 6d decision 8 puts the six
+> **Who this is for.** Everything below is the by-hand path, and it is what a space on the **stock
+> image** — or on `default-v0.1.1` and earlier — needs. `default-v0.2.0` (2026-09-11) is the first
+> `dev-env` that carries the environment itself. 6d decision 8 puts the six
 > variables in the house image itself (`ENV` in `images/dev-env/Dockerfile`, the bypass list a dated
 > literal there), together with `/etc/apt/apt.conf.d/01proxy` and a sudoers
 > `env_keep`, so on a space running that image none of the exports below is needed and `sudo apt` works

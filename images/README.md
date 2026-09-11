@@ -81,8 +81,15 @@ readings, and [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §E says when to 
 ./scripts/buildbox.py down
 ```
 
+**The uv cache must never be written into a layer.** Measured on the first `default-v0.2.0` build
+(2026-09-11): the Python layer came out at 10.7 GB against a 5.2 GB environment, because `uv` unpacks
+every wheel into `/root/.cache/uv` before materialising it into the venv and both live in the same
+layer. `UV_NO_CACHE=1` inside that `RUN` is the fix and a later `rm -rf` is not one — the bytes are
+committed the moment the layer closes. With it the image is **22.7 GB** on disk, against 28.1 GB
+without; the ECR figure is the compressed one and is roughly a third of that.
+
 **A change to `base` rebuilds `dev-env` from its first layer**, and a rebuild needs room for a second
-copy of a ~17 GB image before the old one loses its tag. The 64 GiB root is enough for that and not for
+copy of a ~23 GB image before the old one loses its tag. The 64 GiB root is enough for that and not for
 much more: [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §S is how to look before
 starting one, and what to prune when the answer is no.
 
