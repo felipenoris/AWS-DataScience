@@ -431,6 +431,23 @@ returns `inferenceTypesSupported ["INFERENCE_PROFILE"]`, so there is no on-deman
 | Cache write, 5-minute TTL | 6.875 | 6.25 |
 | Cache write, 1-hour TTL | 11.00 | 10.00 |
 
+**The rest of the scoped set**, same file, same day, the `us.` profiles only. Stage 6e scopes three
+models — Opus 5 as the primary, Sonnet 5 in the picker, Haiku 4.5 for background work — and the fourth
+row is what a Bedrock session bills for background work when nothing pins a Haiku, which is why pinning
+one is a decision and not a detail:
+
+| Model | Input | Output | Cache read | Cache write, 5 min |
+|---|---|---|---|---|
+| Claude Opus 5 | 5.50 | 27.50 | 0.55 | 6.875 |
+| Claude Sonnet 5 | 2.20 | 11.00 | 0.22 | 2.75 |
+| Claude Haiku 4.5 | 1.10 | 5.50 | 0.11 | 1.375 |
+| *Claude Sonnet 4.5 — the unpinned background default* | *3.30* | *16.50* | *0.33* | *4.125* |
+
+**Two spellings of the usage type coexist in that offer file**, and a parser over it must handle both:
+the newer models publish `USW2_input_tokens_standard-Units`, the older ones `USW2_InputTokenCount-Units`.
+Haiku 4.5 and Sonnet 4.5 are on the second spelling, Opus 5 and Sonnet 5 on the first — so a filter
+written against either one alone reports a model as unpriced when it is merely spelled differently.
+
 The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
 less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.
 **What this table does not say is what a session costs**: output at 27.50 is five times input and fifty

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Not started.** Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter |
+| **Status** | **Not started, and its decisions are taken.** Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -74,7 +74,8 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   | Cache write, 1-hour TTL | 11.00 | 10.00 |
 
   The narrower routing costs **10%**. A batch tier exists on the `global.` profile (2.50 / 12.50) and no
-  interactive assistant can use it.
+  interactive assistant can use it. Sonnet 5 and Haiku 4.5 were read from the same file on the same day
+  and are in step 8.1's table, beside the Sonnet 4.5 rate that decides how much 5.3's pin is worth.
 - **0.5 — Model invocation logging is off.** `get-model-invocation-logging-configuration` returns
   nothing, which is the documented shape of *no configuration*. Step 7.4 decides whether it stays off.
 - **0.6 — No policy in this organization denies Bedrock.** `POLICIES.md` carries no `bedrock:` action in
@@ -96,13 +97,21 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
 
 ## To execute
 
-### 1. Decide where the assistant runs
+### 1. Where the assistant runs — the space
 
 **Action:** pick the machine the `claude` process runs on. **Why:** it decides the principal, the
 network path, the perimeter and the blast radius, and every later step reads differently on each side.
 **Explanation:** the extension bundles its own copy of the CLI and spawns it; in a Remote-SSH session the
 extension installs on the **remote** side, so *"install Claude Code"* means a different thing depending
 on which of `remote-ide.md` §E's two surfaces the install happened in.
+
+**Taken 2026-09-11 by the user: the space.** The user also named *VS Code on the laptop, attached to the
+space over a remote session* — **that is the same answer, not a second one**, and the estate has already
+measured it rather than inferred it. The extension the user installed on 2026-09-11 was installed into
+the remote session, and its first outbound call reached `api.anthropic.com` **from the space's own
+address**, which is why the proxy refused it (`remote-ide.md` §N). The `claude` process runs where the
+workspace is either way. What the laptop keeps is the editor, the keyboard and one setting that has no
+remote half (step 5.5).
 
 | | The space | The laptop |
 |---|---|---|
@@ -112,9 +121,9 @@ on which of `remote-ide.md` §E's two surfaces the install happened in.
 | what the model can read | the space's filesystem and whatever the project role reaches — the lake included, through Lake Formation | the laptop's checkout |
 | what a prompt can contain | governed data | whatever the laptop already holds |
 
-**Decision due 1, and the recommendation is the space.** The work is there, the perimeter is there, and
-an assistant on the laptop moves the interesting half of the problem outside every control this estate
-has. The laptop is a separate question with a separate answer; nothing below is written for it.
+The reason for the choice: the work is there, the perimeter is there, and an assistant running on the
+laptop moves the interesting half of the problem outside every control this estate has. **An assistant on
+the laptop is a separate question with a separate answer**, and nothing below is written for it.
 
 ### 2. Submit the model-access form
 
@@ -125,17 +134,17 @@ an approval queue — **access is granted immediately after submission**. Nobody
 the model works; the answer is a declaration on the record, which is why it is worth writing carefully
 rather than quickly.
 
-- **2.1 — [Claude reads, user decides] Where to submit it.** The two shapes are not equivalent:
+- **2.1 — Where to submit it: `Sandbox` alone** (taken 2026-09-11 by the user). The two shapes are not
+  equivalent:
   - **In `Sandbox` alone**, from the Bedrock console's Model catalog, as the infrastructure user. Access
     covers that account and no other.
   - **Once from `Management`**, through `PutUseCaseForModelAccess`, which the vendor documents as
     extending *"to child accounts automatically"*.
 
-  **Recommended: `Sandbox` alone.** Principle 1 keeps the Management account bootstrap-only, and an
-  org-wide grant would open Anthropic models in `Staging`, `Production`, `Data`, `Audit` and
-  `Log Archive` — every account where D17 says no interactive compute runs and where nothing has asked
-  for a model. The org-wide form is the right shape the day a second account needs one, and the cost of
-  deferring it is one more form.
+  The reason: principle 1 keeps the Management account bootstrap-only, and an org-wide grant would open
+  Anthropic models in `Staging`, `Production`, `Data`, `Audit` and `Log Archive` — every account where
+  D17 says no interactive compute runs and where nothing has asked for a model. The org-wide form is the
+  right shape the day a second account needs one, and the cost of deferring it is one more form.
 
 - **2.2 — [user] The answers.** The API reference gives the form's fields; the console renders the same
   six. The values, settled by the user 2026-09-11:
@@ -160,11 +169,26 @@ rather than quickly.
 
 ### 3. Give the principal the reach, and find out whether it already has it
 
-**Action:** establish that the caller of step 1's choice can invoke Opus 5, and grant what is missing.
-**Why:** the project role is authored by a blueprint (D26), not by this repository, so *granting* is a
-different problem from *bounding* — INT-15 solved the second with `environment_role_permission_boundary`
-and says nothing about the first. **Explanation:** reach is an intersection (Lesson 28): the identity
-policy, the boundary, the SCPs and — here — the endpoint policy of step 4 all have to agree.
+**Action:** establish that the caller of step 1's choice can invoke the three scoped models, and grant
+what is missing. **Why:** the project role is authored by a blueprint (D26), not by this repository, so
+*granting* is a different problem from *bounding* — INT-15 solved the second with
+`environment_role_permission_boundary` and says nothing about the first. **Explanation:** reach is an
+intersection (Lesson 28): the identity policy, the boundary, the SCPs and — here — the endpoint policy of
+step 4 all have to agree.
+
+**The scoped model set, settled 2026-09-11 by the user.** Three models, each with a job, all three
+`ACTIVE` as `us.` profiles in `Sandbox` and all three **inference-profile only** — none is invocable by
+its bare model id:
+
+| Job | Model | `us.` profile |
+|---|---|---|
+| the primary model | Claude Opus 5 | `us.anthropic.claude-opus-5` |
+| the cheaper alternative in the picker | Claude Sonnet 5 | `us.anthropic.claude-sonnet-5` |
+| background tasks | Claude Haiku 4.5 | `us.anthropic.claude-haiku-4-5-20251001-v1:0` |
+
+**The set is one list with four consumers** and they drift apart the moment one is edited alone
+(Lesson 14): 3.3's resource scope, 4.4's endpoint policy, 5.2's pins and `availableModels`, and 7.5's
+deny list, which must not catch any of the three.
 
 - **3.1 — [Claude] Measure what the project role already grants.** `Sandbox` enables eleven blueprint
   configurations including six `AmazonBedrock*` ones, and `docs/SMUS.md` records that the `Tooling`
@@ -188,17 +212,23 @@ policy, the boundary, the SCPs and — here — the endpoint policy of step 4 al
   `aws:CalledViaLast = bedrock.amazonaws.com`. **Measure whether they are needed here** before adding
   them: the account reaches these models through the use-case form of step 2, and a `Subscribe` this
   estate never needs is a permission granted for a vendor sentence rather than for a call (Lesson 41).
-- **3.3 — [Claude] Scope the resource, not just the action.** `Resource` is the two profile ARNs and the
-  foundation-model ARNs they route to, never `*`:
+- **3.3 — [Claude] Scope the resource, not just the action.** `Resource` is the profile ARNs of the three
+  scoped models and the foundation-model ARNs they route to, never `*`:
 
   ```
   arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-opus-5
+  arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-sonnet-5
+  arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0
   arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-5
+  arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-5
+  arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0
   ```
 
   An inference profile is an account resource and the foundation model is not, which is why the second
-  ARN has no account field. Both are needed: authorization is evaluated against the profile *and*
-  against each model it routes to.
+  group has no account field. Both are needed: authorization is evaluated against the profile *and*
+  against each model it routes to. **The foundation-model ARN carries no region** on purpose — the
+  profile routes to three of them (0.2), so a region-pinned ARN would authorize a third of the requests
+  and refuse the rest, intermittently and by geography.
 - **3.4 — [Claude reads, user decides] Where the grant lives, if 3.1 says one is needed.** The candidates,
   worst last: the blueprint's own template if it already does it (3.1's answer); a policy attached to
   the project role by hand, which a blueprint reconciliation may remove (INT-15's open half); a policy
@@ -272,23 +302,36 @@ belongs in the image — and Claude Code has a file made for it.
       "AWS_REGION": "us-west-2",
       "ANTHROPIC_MODEL": "us.anthropic.claude-opus-5",
       "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-5",
+      "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-5",
+      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
       "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
     },
+    "availableModels": ["opus", "sonnet"],
     "skipWebFetchPreflight": true
   }
   ```
 
-  `ANTHROPIC_MODEL` pins the session's model; `ANTHROPIC_DEFAULT_OPUS_MODEL` pins what the `opus` alias
-  resolves to, so a later default change in the client does not silently move this estate onto another
-  model. **Pinning is not cosmetic**: without it the alias resolves to the client's built-in default,
-  which changes with the client version. `availableModels` is the key that stops a user picking
-  something else from `/model`, and whether to set it is decision due 3.
-- **5.3 — The small/fast model is a second pin, and it defaults to Sonnet.** Background work — session
-  titles and the like — runs on the small/fast model, and on Bedrock that is the **default Sonnet**
-  model rather than a Haiku, because Haiku may not be enabled in an account. Two consequences: a model
-  this estate never named will be invoked unless something says otherwise, and `ANTHROPIC_DEFAULT_HAIKU_MODEL`
-  is what names it. Whichever is chosen, step 2's form and step 3's resource scope must cover **both**
-  models, or the first background task is a refusal in the middle of a working session.
+  `ANTHROPIC_MODEL` pins the session's model; the three `ANTHROPIC_DEFAULT_*_MODEL` keys pin what each
+  alias resolves to, so a later default change in the client does not silently move this estate onto
+  another model. **Pinning is not cosmetic**: without it an alias resolves to the client's built-in
+  default, which changes with the client version. `availableModels` is the lock, set 2026-09-11 by the
+  user: it constrains `/model`, `--model` and the `model` key in a user's own file, so nothing outside
+  step 2's declared use case and step 3's resource scope is reachable from the picker. **Verify the
+  entries rather than trusting this block** — the list is matched against what the picker offers, and
+  `/model` at the first session is the instrument.
+- **5.3 — The background model is a pin, and leaving it out was a defect in this plan.** Background work
+  — session titles and the like — runs on the small/fast model, and on Bedrock that is **the default
+  Sonnet** rather than a Haiku, because Haiku may not be enabled in every account. **But a selected
+  primary model overrides that**: the vendor states that when a session sets `ANTHROPIC_MODEL`,
+  background tasks use *that* model. So 5.2's block **without** `ANTHROPIC_DEFAULT_HAIKU_MODEL` would
+  have run session titles on **Opus 5**, at 27.50 per 1M output tokens, for work a Haiku does.
+
+  **Taken 2026-09-11 by the user: Haiku 4.5.** `ANTHROPIC_DEFAULT_HAIKU_MODEL` is the only key that
+  moves background work to a Haiku-class model, and the rates make the size of the mistake it repairs
+  visible — Haiku 4.5 is **1.10 / 5.50** against Opus 5's **5.50 / 27.50** and against the Sonnet 4.5
+  default's **3.30 / 16.50** (step 8's table). The model is `ACTIVE` as a `us.` profile in `Sandbox` and
+  is in step 3.3's scope, **which is the half that fails loudly if it is forgotten**: an unscoped
+  background model is a refusal in the middle of a working session rather than a wrong bill.
 - **5.4 — [Claude] The image build, `default-v0.3.0`.** It carries three changes: the new
   `NO_PROXY_LIST` of 4.3, the managed settings file of 5.2, and `rust-src` in the rustup profile, which
   6d already owed. The bump's order is [`dev-env.md`](../runbooks/dev-env.md) §B — apps gone first, a
@@ -379,20 +422,23 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   `us.`, at a 10% premium (0.4), recorded as a named exception in `docs/AWS_STATE.md` rather than left
   for a later reader to discover.
 
-- **7.4 — [Claude reads, user decides] Model invocation logging, which is the requirement's mirror.**
-  It is off (0.5). Turning it on writes **the full prompt and the full completion** to an S3 bucket or a
-  CloudWatch log group **in this account** — inside the private cloud, which is what the requirement
-  permits, and durable, which is what the requirement was written against. The trade is exact:
+- **7.4 — Model invocation logging stays off here, and the question moves to Stage 11** (taken
+  2026-09-11 by the user). It is off (0.5). Turning it on writes **the full prompt and the full
+  completion** to an S3 bucket or a CloudWatch log group **in this account** — inside the private cloud,
+  which is what the requirement permits, and durable, which is what the requirement was written against.
+  The trade is exact:
   - **on** buys `objectives.md`'s fourth DLP problem, exfiltration detection, on the one channel where a
     model sees governed data. It costs a durable copy of every prompt, which becomes a Macie subject at
     Stage 11 and a retention obligation at Stage 12.
   - **off** keeps 4.6's property — attribution without content — and leaves the assistant channel
     invisible to content inspection.
 
-  **Recommended: off in Sandbox now, revisited at [Stage 11](stage-11-dlp.md) step 3.** The reason is not
-  cost: it is that turning it on creates the exact artefact the requirement is about, and doing that
-  before the threat model exists decides the question in the wrong order. If it is turned on later, it
-  goes to S3 with the account's CMK and a lifecycle, never to CloudWatch with a default retention.
+  The reason is not cost: turning it on creates the exact artefact the requirement is about, and doing
+  that before the threat model exists decides the question in the wrong order. **The obligation is
+  written into [Stage 11](stage-11-dlp.md) step 5.6 and its decision list, not only here** — a deferral
+  recorded at the deferring end is a promise the receiving stage never gets (Lesson 34). That step
+  carries what this one would have had to invent: the CMK, the lifecycle, the Macie scope and the
+  trail's own retention are already decided there for the buckets beside it.
 
 - **7.5 — [Claude] Turn the default into a control.** Two SCP statements, of which the mode deny is the
   load-bearing one:
@@ -403,13 +449,20 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
     **unavailable** rather than quietly retaining, which is the failure mode to want.
   - **Deny the models that require retention**, by name, on `bedrock:InvokeModel*`. This is the
     belt to 7.5's braces and it goes stale in the safe direction: a new retaining model is not on the
-    list and is caught by the mode deny instead.
+    list and is caught by the mode deny instead. **It must not catch step 3's three models** — write it
+    as a deny on the named retaining models, never as an allow-list of the scoped ones, or the next
+    model this estate adopts is refused by a document nobody thought to open.
 
-  **Decision due 4** is which document carries them — `awsds-org-scp-baseline.json`, which reaches every
-  account, or `awsds-org-scp-ou-interactive.json`, which reaches only where invocation happens.
-  **Recommended: baseline.** The statement's value is that it holds where nobody is looking.
+  **`awsds-org-scp-baseline.json` carries them** (taken 2026-09-11 by the user). It is attached at the
+  **root**, so it reaches every account in the organization — **with the exception every SCP has: it does
+  not restrict the Management account**, even attached at the root. That is acceptable here and it is not
+  nothing: it means the control rests on principle 1 for Management, and the only thing that keeps
+  Management out of scope is that nobody invokes a model there. Decision 2 keeps the model-access form
+  out of Management for the same reason, and the two reinforce each other.
+
   Per the standing rule, the battery is re-run and `POLICIES.md` gains its rows in the same sitting
-  ([`scp-battery.md`](../runbooks/scp-battery.md)).
+  ([`scp-battery.md`](../runbooks/scp-battery.md)). The battery is also the instrument that answers
+  whether the deny bites: an amended ceiling means editing `probes.py`, never reading the document back.
 
 - **7.6 — The residuals, stated rather than closed.** None of these is a defect in the design; each
   is a place where the requirement's boundary is the operator rather than the perimeter.
@@ -435,11 +488,26 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
 space costs its instance, an idle endpoint costs 0.010/h, and an idle assistant costs nothing while a
 busy one has no upper bound at all. `make down` does not reach it.
 
-- **8.1 — [Claude] The arithmetic that matters, from 6.4's reading.** Output at **27.50/1M** is five times
-  input and fifty times cache read; a session's bill is dominated by output tokens and by cache misses.
-  Do not estimate it here (Lesson 6, and Lesson 7 — a rejected-on-cost option goes stale in the direction
-  that flatters the rejection). Read one real session, write the number down with its date, and decide
-  against that.
+- **8.1 — [Claude] The rates of the scoped set, and the arithmetic that matters.** Per 1M tokens,
+  `us-west-2`, the `us.` profiles, read 2026-09-11 from `AmazonBedrockFoundationModels`. The fourth row
+  is not scoped and is here because it is what a Bedrock session bills for background work when nothing
+  pins a Haiku (5.3):
+
+  | Model | Input | Output | Cache read | Cache write, 5 min |
+  |---|---|---|---|---|
+  | Opus 5 — primary | 5.50 | 27.50 | 0.55 | 6.875 |
+  | Sonnet 5 — the picker's alternative | 2.20 | 11.00 | 0.22 | 2.75 |
+  | Haiku 4.5 — background | 1.10 | 5.50 | 0.11 | 1.375 |
+  | *Sonnet 4.5 — the unpinned background default* | *3.30* | *16.50* | *0.33* | *4.125* |
+
+  Output is five times input and fifty times cache read on every row, so a session's bill is dominated by
+  output tokens and by cache misses. **Do not estimate the total here** (Lesson 6, and Lesson 7 — a
+  rejected-on-cost option goes stale in the direction that flatters the rejection). Read one real
+  session from 6.4, write the number down with its date, and decide against that.
+
+  Two spellings of the usage type coexist in that offer file and a parser over it must handle both:
+  the newer models publish `USW2_input_tokens_standard-Units`, the older ones
+  `USW2_InputTokenCount-Units`. Haiku 4.5 is on the second spelling and the other three on the first.
 - **8.2 — The endpoint cost is separate and known.** Two interface endpoints at ~USD 0.010/h each add
   **~0.020/h** to the Sandbox `[E]` set while `sandbox/egress` is up, moving the estate's fixed rate
   from 0.390/h to 0.410/h. They go away with `make down`.
@@ -467,8 +535,26 @@ busy one has no upper bound at all. `make down` does not reach it.
 - **9.4 — [Claude] `docs/AWS_STATE.md`**, the residency exception of 7.3 and the retention reading of 7.2,
   both dated, so a later snapshot that shows a three-region profile is recognised as expected.
 - **9.5 — [Claude] `docs/REFERENCES.md`**, the vendor pages this stage was written from.
-- **9.6 — [Claude] A runbook**, `docs/plan/runbooks/bedrock-assistant.md`, if and only if step 6 produced
-  something a second operator would get wrong. If it did not, this file is enough.
+- **9.6 — [Claude] The runbook**, `docs/plan/runbooks/claude-code-sagemaker.md`, asked for by the user
+  2026-09-11 and owed whatever step 6 finds. **It is written for two audiences that do not overlap**, and
+  that is its whole shape: the infrastructure engineer configures this once for everyone and never opens
+  the IDE; the data scientist opens the IDE and never touches an account. A runbook that mixes them makes
+  each read past the other's half.
+
+  | Section | Audience | What it holds |
+  |---|---|---|
+  | **§M — Enabling the model** | infrastructure | the use-case form and its answers (step 2), which account submits it and why not Management, `get-use-case-for-model-access` as the before-and-after reading, the scoped model set with its `us.` profile ids, and the fact that access is granted on submission rather than approved |
+  | **§I — What the infrastructure configures** | infrastructure | the `bedrock-llm` endpoint group and the `NO_PROXY` that must move with it (step 4), the IAM grant and its resource scope (step 3), the endpoint policy, the managed settings file the image writes (5.2), the image bump that delivers it (5.4), the retention SCP (7.5), and the budget notification (8.3) |
+  | **§U — What the user configures** | the data scientist | installing the extension **into the remote session** rather than the portal's Code Editor, *Disable Login Prompt* per surface (5.5), what `/model` should offer and what it means if it offers more, how to confirm the session is on Bedrock (`/status` naming the provider and the resolved region), and the failures with their causes |
+  | **§V — Reading it back** | both | one instrument per question, read-only: the CloudTrail event with its `vpcEndpointId`, the proxy log's silence on `bedrock-runtime`, the retention mode, and the token counters |
+
+  **§U says what a user cannot change**, since managed settings sit above every other level: the
+  provider, the region, the model pins and the picker's contents are the institution's, and an attempt
+  to override one in `~/.claude/settings.json` is ignored rather than refused — which reads like the
+  setting not working.
+
+  Its row in `CLAUDE.md`'s routing table is added **when the file is created**, not before: `CLAUDE.md`
+  stands at 39,856 bytes against a 40,000-byte gate, so that sitting re-trims it first.
 
 ---
 
@@ -477,26 +563,41 @@ busy one has no upper bound at all. `make down` does not reach it.
 | | Question | Answered by |
 |---|---|---|
 | (i) | Does the form exist, and did it change anything? | 2.3, against 0.3 |
-| (ii) | Can the principal of step 1 invoke Opus 5, measured by a call rather than by a policy read? | 6.3 |
+| (ii) | Can the principal of step 1 invoke **each of the three scoped models**, measured by a call rather than by a policy read? | 6.3, and a background task for the Haiku half |
 | (iii) | Does the invocation carry `vpcEndpointId`? | 4.5, 6.3 |
 | (iv) | Is the proxy access log silent on `bedrock-runtime` for the same window? | 4.5's negative control |
 | (v) | Does a session reach **no** Anthropic host? | 6.2 |
-| (vi) | What is Opus 5's `allowed_modes`, on the day it is read? | 7.2 |
+| (vi) | What are the three models' `allowed_modes`, on the day they are read? | 7.2 |
 | (vii) | Is the account's retention mode `none`, and can anyone change it? | 7.2 and 7.5 |
 | (viii) | Does the CloudTrail record carry the prompt? | 4.6 — it must not |
 | (ix) | What does one session cost? | 6.4, 8.1 |
 | (x) | Does the configuration survive a new space? | a second space from `default-v0.3.0`, after 5.4 |
+| (xi) | Does `/model` offer exactly the picker set, and `/status` name Bedrock and `us-west-2`? | the first session, against 5.2's `availableModels` |
+| (xii) | Does a background task bill Haiku rather than the primary model? | the invocation's `modelId` in CloudTrail for a session-title call (5.3) |
 
-## Decisions due
+## Decisions
 
-| | Question | Recommendation |
+**Taken 2026-09-11 by the user, before execution.** Each is written into the step that owns it; this
+table is the index, not the reasoning.
+
+| | Question | Taken |
 |---|---|---|
-| **1** | Where the assistant runs | the space (step 1) |
-| **2** | Where the model-access form is submitted | `Sandbox` alone, not org-wide from Management (2.1) |
-| **3** | Whether `availableModels` locks the picker to the pinned models | yes — an unpinned model is a model outside step 2's declared use case and outside step 3's resource scope |
-| **4** | Which policy document carries the retention denies | `awsds-org-scp-baseline.json` (7.5) |
-| **5** | Model invocation logging on or off | off now, revisited at Stage 11 step 3 (7.4) |
-| **6** | Whether D12's budget deferral closes here | yes (8.3) |
+| **1** | Where the assistant runs | **the space** — and *VS Code on the laptop over a remote session* is the same answer, measured rather than inferred (step 1) |
+| **2** | Where the model-access form is submitted | **`Sandbox` alone**, not org-wide from Management (2.1) |
+| **3** | Whether `availableModels` locks the picker to the pinned models | **yes** — an unpinned model is outside step 2's declared use case and outside step 3's resource scope (5.2) |
+| **4** | Which policy document carries the retention denies | **`awsds-org-scp-baseline.json`**, attached at the root, which reaches every account but does not restrict Management — the exception every SCP has (7.5) |
+| **5** | Model invocation logging on or off | **off here, and the question moves to Stage 11 step 5.6**, written at the receiving end rather than only at this one (7.4) |
+| **7** | Which model carries background work | **Haiku 4.5**, pinned. Without the pin a session that sets `ANTHROPIC_MODEL` runs session titles on **Opus 5** — a defect in this plan's first draft, not an optimisation (5.3) |
+| — | The scoped model set | **Opus 5, Sonnet 5, Haiku 4.5**, one list with four consumers (step 3) |
+
+## Still open
+
+| | Question | Waits on |
+|---|---|---|
+| **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
+| **8** | Where the IAM grant lives, if one is needed at all | 3.1's reading of the project role — the `Tooling` blueprint may already carry it (3.4) |
+| **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2) |
+| — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |
 
 ## What the documentation changed
 
@@ -510,7 +611,7 @@ Each row corrected something a plan written from familiarity would have got wron
 | *"Access is granted immediately after submission"* | the form is a declaration, not an approval queue — nothing waits on AWS |
 | the abuse-detection page's model list | ZDR is Bedrock's default and the exceptions are **per model**, so the answer to the requirement is a measurement (7.2), not a property of the service |
 | `InvokeModel*` logged as a **management event** | attribution arrives for free on the existing organization trail, with no data-event charge and no prompt content |
-| the small/fast model defaults to **Sonnet** on Bedrock (5.3) | a model this estate never named gets invoked unless something names it — and it must be inside step 2's form and step 3's scope |
+| the background model on Bedrock (5.3) | two sentences that together caught a defect: background work runs on **the default Sonnet** rather than a Haiku, **and a session that sets `ANTHROPIC_MODEL` runs it on that model instead** — so the draft's own config would have billed session titles at the Opus rate. `ANTHROPIC_DEFAULT_HAIKU_MODEL` is the only key that moves it |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` vs the survey | metrics, error reports and `/feedback` are already off on Bedrock; the session-quality survey is **not**, and is the only Anthropic-bound traffic left to close |
 | `skipWebFetchPreflight` | the WebFetch hostname check calls `api.anthropic.com` **regardless of provider** and is not covered by the variable above |
 | `/etc/claude-code/managed-settings.json` | the configuration has a home that a user cannot override and the image can write — 6d decision 8's shape, with a file made for it |
