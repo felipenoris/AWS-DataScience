@@ -161,3 +161,12 @@ torchvision = { index = "pytorch-cpu" }
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+# The lock covers one platform, because the image is one platform.
+#
+# Without this the resolution is universal - macOS, Windows and aarch64 wheels for 460 packages, none
+# of which this image can run - and the lock is 1.3 MB. That size has a second consumer: the build
+# context travels to the buildbox inside an SSM SendCommand, whose document and parameters cap at
+# 97 KB (measured 2026-09-10, when the universal lock made `buildbox.py sync` fail outright).
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
