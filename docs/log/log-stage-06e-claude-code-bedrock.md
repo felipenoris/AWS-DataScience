@@ -140,3 +140,33 @@ publishes it at request time — that is the battery's, in `Policy Canary`.
   `USW2_input_tokens_standard`. One correction to 8.1: a **batch tier exists on the `us.` profile
   as well** (Opus 5 `2.75 / 13.75`), not only on `global.`, and Haiku 4.5 alone publishes reserved
   TPM dimensions.
+
+## 2026-09-11 — M1: the account declares zero data retention
+
+*The write was the user's, from `awsds-infra-sandbox-1` (account `Sandbox Account 1`, permission set
+`InfrastructureAccess`); the reading below is theirs, pasted verbatim. The post-condition beneath it is
+Claude's, read-only, and is analysis rather than record.*
+
+- **[user] `put-account-data-retention --mode none`**, `us-west-2`. The account read `inherit` with no
+  `updatedAt` before it (entry above). After:
+
+  ```
+  {
+      "mode": "none",
+      "updatedAt": "2026-09-11T22:31:02.565000+00:00"
+  }
+  ```
+
+- **[Claude] The post-condition, and it is not the mode.** `none` makes a model whose minimum retention
+  mode is above it **unavailable in this account** rather than silently retaining, so the reading that
+  matters is whether the scoped set survived. All three are unchanged from the morning's reading:
+
+  | model | `authorizationStatus` | `entitlementAvailability` | `regionAvailability` | `agreementAvailability` |
+  |---|---|---|---|---|
+  | `anthropic.claude-opus-5` | AUTHORIZED | AVAILABLE | AVAILABLE | NOT_AVAILABLE |
+  | `anthropic.claude-sonnet-5` | AUTHORIZED | AVAILABLE | AVAILABLE | NOT_AVAILABLE |
+  | `anthropic.claude-haiku-4-5-20251001-v1:0` | AUTHORIZED | AVAILABLE | AVAILABLE | NOT_AVAILABLE |
+
+  The mode was re-read independently in the same call set and returned the same `none` and the same
+  timestamp. **The setting is not yet frozen**: anyone holding `bedrock:PutAccountDataRetention` can
+  set it back until stage step 7.5's deny is attached.
