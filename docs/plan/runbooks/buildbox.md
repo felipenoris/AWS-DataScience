@@ -107,8 +107,15 @@ With the tunnel up, export the proxy variables in that terminal first
   runs, and `start-session` says *not connected*, indistinguishable from a slow boot (Lesson 52). It then
   **starts the proxy** if stopped, applies, waits for the agent and then for docker (the agent registers
   about a minute before `dnf install docker` finishes).
-- `sync` puts `images/` at `/opt/awsds/images` — the one write API in the tooling (`ssm:SendCommand`),
-  fenced like `./aws/vpn.py --on-host`.
+- `sync` puts `images/` at `/opt/awsds/images`, fenced like `./aws/vpn.py --on-host`. It sends the
+  tarball over the **SSH channel inside the Session Manager tunnel**, on a key EC2 Instance Connect
+  authorises for sixty seconds: no listening port, no security group rule, nothing through the proxy,
+  and nothing stored on the host. The write API is `ec2-instance-connect:SendSSHPublicKey`.
+  `--via ssm` is the fallback for a laptop with no ssh client — the same tar as base64 inside
+  `ssm:SendCommand`, in chunks, because that API caps document and parameters together at 97 KB, a
+  cap the context passed on 2026-09-10 when the Python environment's `uv.lock` arrived. Both verify
+  the tar by digest on the host before extracting, so a short transfer refuses rather than leaving a
+  tree missing a file.
 - `ssm` opens the shell. **You land as `ssm-user`**, an account Session Manager creates after the first
   boot, so it is not in the `docker` group: `sudo docker …`, or `sudo -iu ec2-user`.
 

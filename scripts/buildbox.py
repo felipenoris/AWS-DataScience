@@ -42,17 +42,25 @@
 # build finished would cut off every other account. `make hub-down` is what stops it, and it is
 # the user's call.
 #
-# The one write that is not terraform is `sync`, fenced the way ./aws/vpn.py --on-host is:
-# ssm:SendCommand is a write API. It is used here to place a tar of images/ on the host, because
-# the build context has to get there somehow and every alternative was worse - user data caps at
-# 16 KB, a git clone needs a credential on a throwaway host, and an S3 hop needs a bucket and a
-# grant for a file that lives for an hour. It sends no credential and reads nothing back but the
-# command's own status.
+# The one write that is not terraform is `sync`, fenced the way ./aws/vpn.py --on-host is, and it
+# has two transports. Both put the same deterministic tar of images/ at /opt/awsds/images, and
+# both verify it by digest on the host before extracting: a transfer that arrives short would
+# otherwise leave a tree missing a file nobody looks for.
 #
-# The context outgrew one command on 2026-09-10 (the Python environment's uv.lock: 235 KB of
-# base64 against the API's 97 KB), so the transfer is chunked and then verified by digest - which
-# is what keeps a half-arrived tree from extracting. The alternatives above were re-read before
-# choosing that, and none of them got cheaper.
+#   --via ssh   the default. The tarball rides the SSH channel through the Session Manager
+#               tunnel, on a key EC2 Instance Connect authorises for sixty seconds. Nothing new
+#               is opened on the host: no listening port, no security group rule, no traffic
+#               through the proxy - the laptop talks to the SSM API and the agent connects to
+#               sshd on localhost. Write api: ec2-instance-connect:SendSSHPublicKey.
+#   --via ssm   the fallback, needing no ssh client. The tarball is base64 inside SendCommand,
+#               which caps document and parameters together at 97 KB - so it is sent in chunks
+#               and reassembled. Write api: ssm:SendCommand.
+#
+# Why the default moved on 2026-09-10: the Python environment's uv.lock put the context at 235 KB
+# of base64 and the single-command form failed outright. Chunking answered that, and the ssh path
+# answers the next one too, because a build context only grows. The alternatives both routes were
+# chosen over: user data caps at 16 KB, a git clone needs a credential on a throwaway host, and an
+# S3 hop needs a bucket and a grant on a role that today holds nothing but Session Manager.
 #
 #   run:   ./scripts/buildbox.py up         # apply the slice (starts the proxy host first)
 #          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
@@ -70,9 +78,11 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 from pathlib import Path
 
@@ -92,7 +102,9 @@ REMOTE_DIR = "/opt/awsds/images"
 # with MaxDocumentSizeExceeded. 60 000 characters leaves the rest of each command generous room
 # under the cap, and the transfer is verified rather than assumed - the host compares the digest of
 # what it reassembled with the one this script computed (see cmd_sync).
-STAGING = "/tmp/awsds-images.b64"
+REMOTE_USER = "ec2-user"
+STAGING_TAR = "/tmp/awsds-images.tar.gz"
+STAGING_B64 = "/tmp/awsds-images.b64"
 CHUNK_CHARS = 60_000
 
 BOLD, RESET, RED, YELLOW = "\033[1m", "\033[0m", "\033[31m", "\033[33m"
@@ -387,6 +399,120 @@ def cmd_up(args) -> int:
     return 1
 
 
+def instance_az(iid: str) -> str:
+    """The instance's AZ, which EC2 Instance Connect asks for. Empty when the read fails."""
+    res = sh(
+        aws(
+            "ec2",
+            "describe-instances",
+            "--instance-ids",
+            iid,
+            "--query",
+            "Reservations[0].Instances[0].Placement.AvailabilityZone",
+            "--output",
+            "text",
+        )
+    )
+    return res.stdout.strip() if res.returncode == 0 else ""
+
+
+def sync_over_ssh(iid: str, tarball: bytes, digest: str) -> bool:
+    """Send the context over the Session Manager tunnel, on a key that lives sixty seconds.
+
+    Nothing new is opened on the host. The laptop talks to the SSM API; the service reaches the
+    agent through the outbound channel it already holds - the ssm/ssmmessages/ec2messages
+    interface endpoints 6c step 5.5 put in this VPC - and the agent connects to sshd on
+    localhost. No security group rule, no listening port, and nothing through the proxy, which
+    carries what the HOST initiates outbound and this is not.
+
+    The key is ephemeral: EC2 Instance Connect authorises one login for sixty seconds and the
+    host stores nothing, so the slice's property holds - zero authorized keys, the access path is
+    IAM (production/buildbox/main.tf's IN section).
+
+    The tarball travels on the connection's stdin rather than as a second scp hop: one
+    connection, one key window, and the digest is checked on the host before anything is
+    extracted, so a truncated transfer refuses instead of leaving a tree short of a file.
+    """
+    for tool in ("ssh", "ssh-keygen"):
+        if shutil.which(tool) is None:
+            print(f"{RED}{tool} is not on PATH{RESET} - use --via ssm.")
+            return False
+
+    with tempfile.TemporaryDirectory() as tmp:
+        key = Path(tmp) / "id_ed25519"
+        if sh(["ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", str(key)]).returncode != 0:
+            print(f"{RED}ssh-keygen failed{RESET}")
+            return False
+
+        print(
+            f"  {YELLOW}this is a WRITE api{RESET} (ec2-instance-connect:SendSSHPublicKey), "
+            "a public key the host honours for 60 seconds"
+        )
+        eic = [
+            "ec2-instance-connect",
+            "send-ssh-public-key",
+            "--instance-id",
+            iid,
+            "--instance-os-user",
+            REMOTE_USER,
+            "--ssh-public-key",
+            f"file://{key}.pub",
+        ]
+        az = instance_az(iid)
+        if az:
+            eic += ["--availability-zone", az]
+        if sh(aws(*eic)).returncode != 0:
+            print(f"{RED}the key was not delivered{RESET} - use --via ssm.")
+            return False
+
+        proxy = (
+            f"aws ssm start-session --target %h --document-name AWS-StartSSHSession "
+            f"--parameters portNumber=%p --region {backend.REGION} --profile {profile()}"
+        )
+        # accept-new against a throwaway known_hosts: the tunnel is addressed by instance id and
+        # built by the SSM service itself, so the identity this would otherwise pin is one AWS
+        # already asserts - and the file dies with the temporary directory either way.
+        opts = [
+            "-i",
+            str(key),
+            "-o",
+            "IdentitiesOnly=yes",
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+            "-o",
+            f"UserKnownHostsFile={tmp}/known_hosts",
+            "-o",
+            f"ProxyCommand={proxy}",
+        ]
+        remote = "; ".join(
+            [
+                "set -eu",
+                f"cat > {STAGING_TAR}",
+                f'got="$(sha256sum {STAGING_TAR} | cut -d" " -f1)"',
+                f'[ "$got" = "{digest}" ] || {{ echo "FATAL: received $got, expected {digest}" >&2; exit 1; }}',
+                f"sudo rm -rf {REMOTE_DIR}",
+                "sudo mkdir -p /opt/awsds",
+                f"sudo tar xzf {STAGING_TAR} -C /opt/awsds",
+                f"rm -f {STAGING_TAR}",
+                f"sudo chown -R {REMOTE_USER}:{REMOTE_USER} /opt/awsds",
+                f"ls -la {REMOTE_DIR}",
+            ]
+        )
+        print(f"  ssh {REMOTE_USER}@{iid} through AWS-StartSSHSession - {len(tarball)} bytes")
+        res = subprocess.run(
+            ["ssh", *opts, f"{REMOTE_USER}@{iid}", remote],
+            input=tarball,
+            capture_output=True,
+        )
+        if res.stdout:
+            print(res.stdout.decode(errors="replace"))
+        if res.returncode != 0:
+            print(res.stderr.decode(errors="replace").strip(), file=sys.stderr)
+            print(f"{RED}the transfer failed{RESET} - retry, or fall back with --via ssm.")
+            return False
+        return True
+
+
 def run_on_host(iid: str, script: list, label: str) -> bool:
     """One SendCommand, waited to a terminal status. True on Success.
 
@@ -443,10 +569,7 @@ def run_on_host(iid: str, script: list, label: str) -> bool:
 
 def cmd_sync(args) -> int:
     print(f"{BOLD}buildbox sync{RESET} - {CONTEXT}/ -> {REMOTE_DIR}")
-    print(
-        f"  {YELLOW}this is the one WRITE api in this file{RESET} (ssm:SendCommand), "
-        "the ./aws/vpn.py --on-host fence"
-    )
+    print("  the WRITE api this verb uses is fenced the way ./aws/vpn.py --on-host is")
     iid = require_buildbox()
     if not ssm_online(iid):
         raise SystemExit(
@@ -469,14 +592,16 @@ def cmd_sync(args) -> int:
                 with f.open("rb") as fh:
                     tar.addfile(info, fh)
     tarball = buf.getvalue()
-    payload = base64.b64encode(tarball).decode()
     digest = hashlib.sha256(tarball).hexdigest()
+    files = sum(1 for f in CONTEXT.rglob("*") if f.is_file())
+    print(f"  {len(tarball)} bytes of tar.gz for {files} files, sha256 {digest[:16]}")
+
+    if getattr(args, "via", "ssh") == "ssh":
+        return 0 if sync_over_ssh(iid, tarball, digest) else 1
+
+    payload = base64.b64encode(tarball).decode()
     chunks = [payload[i : i + CHUNK_CHARS] for i in range(0, len(payload), CHUNK_CHARS)]
-    print(
-        f"  {len(payload)} bytes of base64 for "
-        f"{sum(1 for f in CONTEXT.rglob('*') if f.is_file())} files, "
-        f"in {len(chunks)} command(s) of at most {CHUNK_CHARS}"
-    )
+    print(f"  {len(payload)} bytes of base64, in {len(chunks)} command(s) of at most {CHUNK_CHARS}")
 
     # The transfer is staged and then verified, because a chunk that does not arrive leaves a tar
     # that extracts into a tree missing a file nobody looks for. The host compares the digest of
@@ -485,7 +610,7 @@ def cmd_sync(args) -> int:
         redirect = ">" if n == 1 else ">>"
         if not run_on_host(
             iid,
-            ["set -eu", f"printf '%s' '{chunk}' {redirect} {STAGING}"],
+            ["set -eu", f"printf '%s' '{chunk}' {redirect} {STAGING_B64}"],
             f"chunk {n}/{len(chunks)}",
         ):
             print(f"{RED}the transfer stopped at chunk {n}{RESET} - nothing was extracted.")
@@ -493,12 +618,12 @@ def cmd_sync(args) -> int:
 
     script = [
         "set -eu",
-        f'got="$(base64 -d < {STAGING} | sha256sum | cut -d" " -f1)"',
+        f'got="$(base64 -d < {STAGING_B64} | sha256sum | cut -d" " -f1)"',
         f'[ "$got" = "{digest}" ] || {{ echo "FATAL: reassembled $got, expected {digest}" >&2; exit 1; }}',
         f"rm -rf {REMOTE_DIR}",
         "mkdir -p /opt/awsds",
-        f"base64 -d < {STAGING} | tar xzf - -C /opt/awsds",
-        f"rm -f {STAGING}",
+        f"base64 -d < {STAGING_B64} | tar xzf - -C /opt/awsds",
+        f"rm -f {STAGING_B64}",
         "chown -R ec2-user:ec2-user /opt/awsds",
         f"ls -la {REMOTE_DIR}",
     ]
@@ -571,6 +696,11 @@ def main(argv: list) -> int:
         p = sub.add_parser(name)
         if needs_approve:
             p.add_argument("--auto-approve", action="store_true")
+        if name == "sync":
+            # `ssh` is the transport; `ssm` is the fallback that needs no ssh client and no
+            # ec2-instance-connect, and pays for it with a cap the context has already passed
+            # once (CHUNK_CHARS).
+            p.add_argument("--via", choices=("ssh", "ssm"), default="ssh")
         p.set_defaults(fn=fn, auto_approve=False)
     args = ap.parse_args(argv)
     return args.fn(args)
