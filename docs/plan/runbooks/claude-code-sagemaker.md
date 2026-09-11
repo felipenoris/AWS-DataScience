@@ -11,6 +11,7 @@ account. Read your own half.
 | Section | Audience | What it holds |
 |---|---|---|
 | **§M** | infrastructure | enabling the model: the retention mode and the use-case form |
+| **§P** | infrastructure | **granting a project access — once per project, and the one recurring task here** |
 | **§I** | infrastructure | what the infrastructure configures: the endpoints, the grant, the image |
 | **§U** | the data scientist | what the user configures, and what a user cannot change |
 | **§V** | both | reading it back, one instrument per question |
@@ -142,6 +143,130 @@ like every SCP, does not restrict `Management`**. The condition key was confirme
 2026-09-11 with `accessanalyzer validate-policy` and a deliberately bogus key beside it as the
 control. Attaching it re-runs the battery and adds its rows to `POLICIES.md` in the same sitting
 ([`scp-battery.md`](scp-battery.md)). **Not done.**
+
+---
+
+## §P — Granting a project access
+
+**This is done once per project, and it is the only recurring task in this file.** A SageMaker
+Unified Studio project gets its own IAM role, `datazone_usr_role_<project>_<environment>`, minted by
+the service when the project is created in the portal. Nothing grants Bedrock to it automatically.
+
+**Why it is per project and not once for the domain.** The blueprint configuration
+(`awscc_datazone_environment_blueprint_configuration`) carries fourteen attributes and exactly one
+is policy-shaped — `environment_role_permission_boundary`, which is how D13's boundary reaches every
+project role — and a boundary only subtracts. The service offers **a ceiling for every project role
+and a floor for none**, so there is no lever that would grant Bedrock to a whole domain at once. The
+alternative that would have made "which projects" a single list — a role this repository authors,
+reached by SDK role chaining — was refused because the invocation would then leave the D13 boundary
+(Stage 6e decision 8).
+
+**The order is fixed by what creates what.**
+
+1. The project is created in the portal, by whoever owns it. **Nothing below works before this**:
+   the role does not exist and its name is not predictable.
+2. The role name is read (P1).
+3. The grant is attached (P2 by Terraform, or P3 by the CLI).
+4. The attachment is verified (P4).
+
+### P1 — Find the project's role name
+
+```bash
+aws iam list-roles --profile awsds-infra-sandbox-1 --query 'Roles[?starts_with(RoleName, `datazone_usr_role_`)].RoleName' --output text
+```
+
+More than one line means more than one project, and the name carries no project *title* — only the
+two service-minted ids. To tell them apart, read the tags: `AmazonDataZoneProject` is the project id
+the portal shows in its URL, and `AmazonDataZoneScopeName` is the environment (`dev`, and others as
+a project grows).
+
+```bash
+aws iam get-role --role-name datazone_usr_role_<project>_<environment> --profile awsds-infra-sandbox-1 --query 'Role.Tags[?Key==`AmazonDataZoneProject` || Key==`AmazonDataZoneScopeName` || Key==`AmazonDataZoneBlueprint`]' --output table
+```
+
+### P2 — Attach it with Terraform, which is how this estate does it
+
+The slice is [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock). It owns
+one policy, `awsds-<env>-bedrock-assistant`, and one attachment per project.
+
+Add the role name to `project_roles` in
+[`variables.tf`](../../../terraform-live/sandbox/bedrock/variables.tf) — the list's `default`, which
+is where this slice's hand-edited values live, the same idiom `sandbox/dev-env/` uses for
+`image_tag`:
+
+```hcl
+variable "project_roles" {
+  default = [
+    "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
+  ]
+}
+```
+
+Then plan and apply it the way [`terraform-changes.md`](terraform-changes.md) says, as the
+infrastructure user on **Sandbox** with **InfrastructureAccess**:
+
+```bash
+./scripts/gen-backend-hcl.py sandbox bedrock && ./scripts/gen-tfvars.py sandbox bedrock
+```
+
+```bash
+terraform -chdir=terraform-live/sandbox/bedrock init -backend-config=backend.hcl -input=false
+```
+
+```bash
+terraform -chdir=terraform-live/sandbox/bedrock plan -input=false
+```
+
+**Read the plan for one thing before applying**: a new project adds exactly one
+`aws_iam_role_policy_attachment`. If the policy itself is also being created, this is the first
+project; if the policy is being *replaced*, something changed in the model list and every project is
+affected.
+
+**Two ways the plan fails, and both are the guard working.** `no IAM role found` names a role that
+does not exist — the project was not created, or the name has a typo. A precondition failure naming
+`awsds-<env>-project-boundary` means the role exists but is not under D13: it is not a SMUS project
+role, whatever its name looks like, and it must not get this grant.
+
+### P3 — The same thing with the AWS CLI
+
+For a project that needs the grant before the next apply window. **It is the same policy**, not a
+second copy — the ARN comes from the slice, so the two forms converge rather than diverge:
+
+```bash
+aws iam list-policies --scope Local --profile awsds-infra-sandbox-1 --query 'Policies[?PolicyName==`awsds-sandbox-bedrock-assistant`].Arn' --output text
+```
+
+```bash
+aws iam attach-role-policy --role-name datazone_usr_role_<project>_<environment> --policy-arn arn:aws:iam::<sandbox>:policy/awsds-sandbox-bedrock-assistant --profile awsds-infra-sandbox-1
+```
+
+**This is a write, and it leaves drift.** Terraform does not know about it, so the next plan of this
+slice shows the attachment as missing and would *remove* it. Add the role to `project_roles` in the
+same sitting and re-plan until it reads `No changes` — Lesson 35's shape: the stale path is the one
+that still succeeds, quietly, past every guard.
+
+To undo one, by either route: remove the entry and apply, or
+
+```bash
+aws iam detach-role-policy --role-name datazone_usr_role_<project>_<environment> --policy-arn arn:aws:iam::<sandbox>:policy/awsds-sandbox-bedrock-assistant --profile awsds-infra-sandbox-1
+```
+
+### P4 — Verify, and what a verification here can and cannot say
+
+The attachment reads back:
+
+```bash
+aws iam list-attached-role-policies --role-name datazone_usr_role_<project>_<environment> --profile awsds-infra-sandbox-1 --query 'AttachedPolicies[].PolicyName' --output text
+```
+
+**That the policy is attached is not that the model can be invoked.** Reach is an intersection
+(Lesson 28) and this reads one term. The proof is a call from inside a space on that project, and
+§V's CloudTrail row is where it is read.
+
+**Re-plan this slice after any SMUS change to the project.** The role belongs to the service, and a
+blueprint reconciliation may detach a policy its control plane does not know about — INT-15's open
+half. The symptom is an assistant that stops working with no diff in this repository, and the only
+instrument that sees it is a plan that suddenly wants to re-attach.
 
 ---
 

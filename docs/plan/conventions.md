@@ -189,6 +189,12 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
+│   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
+│   │                     #     Claude models and one attachment per SMUS project role. The
+│   │                     #     roles are the service's, minted per project, so `project_roles`
+│   │                     #     is hand-written after a project exists - the blueprint offers a
+│   │                     #     boundary for every project role and no grant for any
+│   │                     #     (runbooks/claude-code-sagemaker.md section P)
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the

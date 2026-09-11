@@ -271,6 +271,15 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
   so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
   Stage 8 step 1's pipeline takes the slice over (INT-18).
+- **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, written 2026-09-11, unapplied): one
+  `awsds-<env>-bedrock-assistant` policy naming the three scoped Claude models — as inference-profile
+  ARNs *and* as region-less foundation-model ARNs, because authorization evaluates both — and one
+  attachment per SMUS project role. **It is the slice whose input cannot be derived**: the role is minted
+  by the service when a project is created in the portal, both ids in its name are the service's, and the
+  blueprint configuration has no field that grants anything (a boundary for every project role, a grant
+  for none). So `project_roles` is hand-written per project, guarded by a precondition that the role
+  carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
+  section P is the procedure, in both the Terraform and the `aws` CLI form.
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
 SMUS account association is **console-only — there is no public API** — so the blueprint configurations

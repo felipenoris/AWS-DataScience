@@ -154,6 +154,14 @@ RANKS = {
     # account, so production/registry/ is applied first. Nothing in this account precedes it, which
     # is why the number is merely the free slot below egress.
     "dev-env": 49,
+    # Stage 6e step 3: the Bedrock grant for SMUS project roles. Above `sagemaker` (46), which
+    # creates the blueprint the roles come from, and there is nothing else it depends on. The
+    # number is above the two egress slices only because 47, 48 and 49 are taken: a [P] rank
+    # records apply order for a person, and `up`/`down` skip [P] rows entirely, so nothing here
+    # is interleaved with an [E] session. Its real prerequisite is one no rank can express - a
+    # PROJECT must exist in the portal, because the role this slice attaches to is named after
+    # it (runbooks/claude-code-sagemaker.md section P).
+    "bedrock": 52,
     # The proxy is [D] and its rank decides the session (Stage 6c step 0.3). `up` ascends and
     # `down` descends, so 41 puts it up before any egress/ (50, 51) and down after them, which
     # keeps a spoke's package path alive for the entire life of an [E] session. Under D38 there
@@ -446,6 +454,13 @@ SLICES = [
     # registry account and is pulled by the project role when a space starts, which is where the
     # cost is.
     Slice("sandbox", "dev-env", PERSISTENT, "the dev-env image, its version + 2 app configs"),
+    # Stage 6e step 3 - one IAM policy and one attachment per SMUS project that may invoke the
+    # scoped Claude models. Persistent and nearly free: a policy costs nothing and an attachment
+    # is not a resource anybody pays for. What it is NOT is self-maintaining - `project_roles` is
+    # hand-written once per project, which decision 8 took deliberately.
+    Slice(
+        "sandbox", "bedrock", PERSISTENT, "the Bedrock grant: 1 policy + 1 attachment per project"
+    ),
 ]
 
 
