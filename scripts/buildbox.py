@@ -44,10 +44,15 @@
 #
 # The one write that is not terraform is `sync`, fenced the way ./aws/vpn.py --on-host is:
 # ssm:SendCommand is a write API. It is used here to place a tar of images/ on the host, because
-# the build context has to get there somehow and every alternative was worse - a 27 KB base64
-# blob does not fit user data's 16 KB, a git clone needs a credential on a throwaway host, and an
-# S3 hop needs a bucket and a grant for a file that lives for an hour. It sends no credential and
-# reads nothing back but the command's own status.
+# the build context has to get there somehow and every alternative was worse - user data caps at
+# 16 KB, a git clone needs a credential on a throwaway host, and an S3 hop needs a bucket and a
+# grant for a file that lives for an hour. It sends no credential and reads nothing back but the
+# command's own status.
+#
+# The context outgrew one command on 2026-09-10 (the Python environment's uv.lock: 235 KB of
+# base64 against the API's 97 KB), so the transfer is chunked and then verified by digest - which
+# is what keeps a half-arrived tree from extracting. The alternatives above were re-read before
+# choosing that, and none of them got cheaper.
 #
 #   run:   ./scripts/buildbox.py up         # apply the slice (starts the proxy host first)
 #          ./scripts/buildbox.py sync       # copy images/ to /opt/awsds/images on the host
@@ -61,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import io
 import json
 import os
@@ -78,6 +84,16 @@ ACCOUNT = "production"
 SLICE = "buildbox"
 CONTEXT = Path("images")
 REMOTE_DIR = "/opt/awsds/images"
+
+# Where the base64 is reassembled on the host, and how much of it travels per SendCommand.
+#
+# The API caps the document and every parameter together at 97 KB, and the build context passed it
+# on 2026-09-10: images/dev-env/python/uv.lock made the payload 235 KB of base64 and `sync` failed
+# with MaxDocumentSizeExceeded. 60 000 characters leaves the rest of each command generous room
+# under the cap, and the transfer is verified rather than assumed - the host compares the digest of
+# what it reassembled with the one this script computed (see cmd_sync).
+STAGING = "/tmp/awsds-images.b64"
+CHUNK_CHARS = 60_000
 
 BOLD, RESET, RED, YELLOW = "\033[1m", "\033[0m", "\033[31m", "\033[33m"
 
@@ -371,6 +387,60 @@ def cmd_up(args) -> int:
     return 1
 
 
+def run_on_host(iid: str, script: list, label: str) -> bool:
+    """One SendCommand, waited to a terminal status. True on Success.
+
+    The 97 KB the API allows covers the document AND every parameter together, so a caller that
+    sends data rather than a command is responsible for staying under it - see CHUNK_CHARS.
+    """
+    res = sh(
+        aws(
+            "ssm",
+            "send-command",
+            "--instance-ids",
+            iid,
+            "--document-name",
+            "AWS-RunShellScript",
+            "--parameters",
+            json.dumps({"commands": script}),
+            "--query",
+            "Command.CommandId",
+            "--output",
+            "text",
+        )
+    )
+    if res.returncode != 0:
+        print(res.stderr.strip(), file=sys.stderr)
+        return False
+    cid = res.stdout.strip()
+    print(f"  {label}: command {cid} - waiting")
+    for _ in range(30):
+        time.sleep(3)
+        got = sh(
+            aws(
+                "ssm",
+                "get-command-invocation",
+                "--command-id",
+                cid,
+                "--instance-id",
+                iid,
+                "--query",
+                "[Status,StandardOutputContent,StandardErrorContent]",
+                "--output",
+                "text",
+            )
+        )
+        if got.returncode != 0:
+            continue
+        status = got.stdout.split("\t")[0].strip()
+        if status in ("Success", "Failed", "Cancelled", "TimedOut"):
+            if status != "Success" or label == "extract":
+                print(got.stdout)
+            return status == "Success"
+    print(f"{RED}{label}: the command never reached a terminal status{RESET}")
+    return False
+
+
 def cmd_sync(args) -> int:
     print(f"{BOLD}buildbox sync{RESET} - {CONTEXT}/ -> {REMOTE_DIR}")
     print(
@@ -398,67 +468,44 @@ def cmd_sync(args) -> int:
                 info.uname = info.gname = ""
                 with f.open("rb") as fh:
                     tar.addfile(info, fh)
-    payload = base64.b64encode(buf.getvalue()).decode()
+    tarball = buf.getvalue()
+    payload = base64.b64encode(tarball).decode()
+    digest = hashlib.sha256(tarball).hexdigest()
+    chunks = [payload[i : i + CHUNK_CHARS] for i in range(0, len(payload), CHUNK_CHARS)]
     print(
-        f"  {len(payload)} bytes of base64 for {sum(1 for f in CONTEXT.rglob('*') if f.is_file())} files"
+        f"  {len(payload)} bytes of base64 for "
+        f"{sum(1 for f in CONTEXT.rglob('*') if f.is_file())} files, "
+        f"in {len(chunks)} command(s) of at most {CHUNK_CHARS}"
     )
+
+    # The transfer is staged and then verified, because a chunk that does not arrive leaves a tar
+    # that extracts into a tree missing a file nobody looks for. The host compares the digest of
+    # what it reassembled against the one computed here, and refuses to extract on a mismatch.
+    for n, chunk in enumerate(chunks, start=1):
+        redirect = ">" if n == 1 else ">>"
+        if not run_on_host(
+            iid,
+            ["set -eu", f"printf '%s' '{chunk}' {redirect} {STAGING}"],
+            f"chunk {n}/{len(chunks)}",
+        ):
+            print(f"{RED}the transfer stopped at chunk {n}{RESET} - nothing was extracted.")
+            return 1
 
     script = [
         "set -eu",
+        f'got="$(base64 -d < {STAGING} | sha256sum | cut -d" " -f1)"',
+        f'[ "$got" = "{digest}" ] || {{ echo "FATAL: reassembled $got, expected {digest}" >&2; exit 1; }}',
         f"rm -rf {REMOTE_DIR}",
         "mkdir -p /opt/awsds",
-        f"echo '{payload}' | base64 -d | tar xzf - -C /opt/awsds",
+        f"base64 -d < {STAGING} | tar xzf - -C /opt/awsds",
+        f"rm -f {STAGING}",
         "chown -R ec2-user:ec2-user /opt/awsds",
         f"ls -la {REMOTE_DIR}",
     ]
-    res = sh(
-        aws(
-            "ssm",
-            "send-command",
-            "--instance-ids",
-            iid,
-            "--document-name",
-            "AWS-RunShellScript",
-            "--parameters",
-            json.dumps({"commands": script}),
-            "--query",
-            "Command.CommandId",
-            "--output",
-            "text",
-        )
-    )
-    if res.returncode != 0:
-        print(res.stderr.strip(), file=sys.stderr)
+    if not run_on_host(iid, script, "extract"):
         return 1
-    cid = res.stdout.strip()
-    print(f"  command {cid} - waiting")
-    for _ in range(30):
-        time.sleep(3)
-        got = sh(
-            aws(
-                "ssm",
-                "get-command-invocation",
-                "--command-id",
-                cid,
-                "--instance-id",
-                iid,
-                "--query",
-                "[Status,StandardOutputContent,StandardErrorContent]",
-                "--output",
-                "text",
-            )
-        )
-        if got.returncode != 0:
-            continue
-        status = got.stdout.split("\t")[0].strip()
-        if status in ("Success", "Failed", "Cancelled", "TimedOut"):
-            print(got.stdout)
-            if status == "Success":
-                print(f"\n  {BOLD}synced.{RESET} on the host:  cd {REMOTE_DIR}")
-                return 0
-            return 1
-    print(f"{RED}the command never reached a terminal status{RESET}")
-    return 1
+    print(f"\n  {BOLD}synced.{RESET} on the host:  cd {REMOTE_DIR}")
+    return 0
 
 
 def cmd_ssm(args) -> int:
