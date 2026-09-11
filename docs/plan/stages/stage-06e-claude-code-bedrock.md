@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress since 2026-09-11**, and its decisions were taken before it started. Done: the read-only steps **2.4**, **3.1** and the half of **7.2** that has an instrument, with 0.3, 0.5 and 0.7 re-read the same day ([`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md)). What they changed is at the steps that own them: **a grant is needed** (3.1 closes the first half of open question 8), the account's retention mode reads **`inherit`** rather than `none` (7.2), the per-model `allowed_modes` has **no API at all** (7.2), and the retention mode has **no Terraform resource and no CloudFormation type** while the use-case form has both (7.5, step 2). Neither IAM simulator can answer this question. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11**, and its decisions were taken before it started. **Step 2 is done** — the form submitted by console 2026-09-11, verification (i) closed — and so is **7.5a**, the account's retention mode set to `none` at 22:31 UTC with the scoped set still available under it. Done before those: the read-only steps **2.4**, **3.1** and the half of **7.2** that has an instrument, with 0.3, 0.5 and 0.7 re-read the same day ([`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md)). What they changed is at the steps that own them: **a grant is needed** (3.1 closes the first half of open question 8), the account's retention mode reads **`inherit`** rather than `none` (7.2), the per-model `allowed_modes` has **no API at all** (7.2), and the retention mode has **no Terraform resource and no CloudFormation type** while the use-case form has both (7.5, step 2). Neither IAM simulator can answer this question. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -104,6 +104,8 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   scoped models return `authorizationStatus AUTHORIZED`, `entitlementAvailability AVAILABLE` and
   `regionAvailability AVAILABLE`, with `agreementAvailability.status NOT_AVAILABLE`, while 0.3 holds.
   It is not the instrument for 2.3, and a later reader meeting it should not take it for access.
+  **Read three times across two state changes** — before, after the retention mode went to `none`, and
+  after the form was submitted — and identical every time.
 
 ---
 
@@ -172,8 +174,12 @@ rather than quickly.
   Write the exclusions as well as the inclusions. A use case stated only as what it is admits every
   reading of what it is not, and this form is the one place the institution's intent is on AWS's record.
 
-- **2.3 — [Claude] Read it back.** `get-use-case-for-model-access` must stop returning
-  `ResourceNotFoundException`. That is the whole verification, and it is the negative control for 0.3.
+- **2.3 — Read it back. Done 2026-09-11.** `get-use-case-for-model-access` stopped returning
+  `ResourceNotFoundException` and returns a `formData` blob — the whole verification, with 0.3 as its
+  negative control. **The blob is double base64 over a flat JSON object of the six fields**, so the
+  record is readable after all; the submitted `useCases` reads narrower than 2.2's text and the user
+  chose to keep it as submitted, reading the leading `". "` as an artefact of the console's own form.
+  A re-submission is a `Put` and costs nothing if the wording is revisited.
 
 - **2.4 — `InfrastructureAccess` can submit it, on or off the VPN. Read 2026-09-11.** In Sandbox the
   set carries `AdministratorAccess` and nothing else — no inline document, no permissions boundary —
@@ -644,7 +650,7 @@ busy one has no upper bound at all. `make down` does not reach it.
 
 | | Question | Answered by |
 |---|---|---|
-| (i) | Does the form exist, and did it change anything? | 2.3, against 0.3 |
+| (i) | Does the form exist, and did it change anything? | **Answered 2026-09-11**: it exists (2.3, against 0.3), and it changed nothing any control-plane reading here can see (0.9) |
 | (ii) | Can the principal of step 1 invoke **each of the three scoped models**, measured by a call rather than by a policy read? | 6.3, and a background task for the Haiku half |
 | (iii) | Does the invocation carry `vpcEndpointId`? | 4.5, 6.3 |
 | (iv) | Is the proxy access log silent on `bedrock-runtime` for the same window? | 4.5's negative control |
@@ -679,7 +685,7 @@ table is the index, not the reasoning.
 | **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
 | **8** | Where the IAM grant lives | **one is needed** — 3.1 measured that the role's every `InvokeModel*` allow lands on `foundation-model/*` and none on the system profile. What remains is 3.4's question of *where it lives*, the user's |
 | **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
-| **10** | Whether the use-case form is submitted by console or adopted as `aws_bedrock_use_case_for_model_access` | decidable now; recommended **console**, because the resource's one field is an opaque blob (2.5) |
+| ~~**10**~~ | ~~Whether the use-case form is submitted by console or adopted as a Terraform resource~~ | **Taken 2026-09-11: console**, and done. The objection that decided it — `form_data` being opaque — turned out to be false: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed (2.5) |
 | — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |
 
 ## What the documentation changed
