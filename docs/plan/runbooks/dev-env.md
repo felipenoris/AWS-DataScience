@@ -144,6 +144,11 @@ aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sand
 write, and it is the only copy of it: edit into a second file and keep this one until §C7's read-back
 has passed.
 
+**It is a rollback for this sitting, and for nothing later.** Any later act on this domain — the detach
+of §X, the re-attach of §B — reads the block again first. Sending back a kept snapshot is a
+full-replace with a picture of the past: whatever changed in between goes away, and no error mentions
+it. The file is safe to use only while it is still true, which is only while nobody else has written.
+
 Add to the copy — `terraform output -json custom_images` on the slice prints both entries in the API's
 own spelling, so nothing is retyped:
 
@@ -275,7 +280,13 @@ A steward approves a digest, the tag lands in both repositories, and the change 
 
 `base_image` is force-new, because a SageMaker image version is immutable. The plan therefore reads
 `1 to add, 1 to destroy` on `aws_sagemaker_image_version` — the image itself and both configurations stay
-— and after the apply the version number has moved. What a space starts then depends on §C6's decision: a
+— and after the apply the version number has moved.
+
+**Detach before the apply, and the order is the reason.** Terraform replaces by destroying first, and the
+version it destroys is the one the domain's `CustomImages` names; whether SageMaker refuses to delete a
+version a domain references is unmeasured here, and a refusal lands mid-apply. So: detach (§X step 1),
+apply, re-attach on the new number. Omitting `ImageVersionNumber` at §C6 removes both hand steps and the
+review gate with them. What a space starts then depends on §C6's decision: a
 domain pinned to `ImageVersionNumber: 1` still serves the old version, which the apply has just deleted,
 so **the attachment is updated in the same sitting as the bump**, or the picker offers a version that no
 longer exists.
@@ -290,7 +301,8 @@ version cannot be deleted while a domain names it, and an app image configuratio
 a `CustomImages` entry references it — both refuse with a `ResourceInUse`-shaped error naming the domain,
 which is the guard rather than a problem.
 
-1. Remove the entry from `CustomImages` (the console's *Detach*, or the read-edit-send of §C6).
+1. Remove the entry from `CustomImages` — the console's *Detach*, or the same read-edit-send as §C6,
+   **built from a fresh `describe-domain`** and never from a file kept since the attach.
 2. `terraform apply -destroy` on the slice, or delete the resources from the code and apply.
 3. The ECR image is not this slice's to remove: the repository's lifecycle policy expires it, and
    `images/README.md` owns that rule.

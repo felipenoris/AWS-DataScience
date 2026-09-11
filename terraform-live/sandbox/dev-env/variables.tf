@@ -65,9 +65,9 @@ variable "registry" {
 # - runbooks/dev-env.md, "Attaching the image to the domain".
 
 variable "image_tag" {
-  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). Rebuilt as default-v0.1.1 on 2026-09-08 by Stage 6d step 9.5."
+  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.2.0 is the first recipe change since the convention was written: the proxy environment, the apt and sudoers files, and the second Python environment with its own kernel (2026-09-11)."
   type        = string
-  default     = "default-v0.1.1"
+  default     = "default-v0.2.0"
 
   validation {
     condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+$", var.image_tag))
