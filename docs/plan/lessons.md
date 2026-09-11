@@ -1236,6 +1236,27 @@ can be recognised without opening this file; the reasoning that makes each one u
 
 ---
 
+## Lesson 61 — a procedure that depends on a file it did not create runs only for its author
+
+**What happened.** Twice on 2026-09-10/11, a hand-over named a file in `$HOME/tmp` that an earlier
+sitting had produced: first the domain settings kept as a rollback, then a detach file generated in the
+assistant's own session. Both commands were correct and neither was runnable — the first because a
+rollback is only true while nobody else has written, the second because the file was simply gone by the
+time it was needed.
+
+**Why it is a class rather than a slip.** A procedure is written by somebody who has the file in front
+of them, and the missing step is invisible from there: the author's own shell is the hidden input. The
+failure lands on the next person, or on the same person a week later, and it lands at the moment the
+procedure is being trusted.
+
+**The rule.** A procedure names a file outside the repository only when the procedure itself creates it,
+in a step the reader can see. The generating command and the consuming command travel together. A file
+kept from an earlier step is a rollback for that sitting and an input to nothing.
+
+**Where it bites hardest**: a full-replace API, where the stale file is not merely unavailable but
+*wrong* — it overwrites the present with a picture of the past, and no error names the fields it
+dropped (Lesson 60's neighbour).
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

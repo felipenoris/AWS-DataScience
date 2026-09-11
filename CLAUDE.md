@@ -267,8 +267,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
   `ENOTFOUND` comes from a compute VPC.
 - **9.5/9.6 closed 2026-09-08**: `default-v0.1.1` pushed to both repositories, 196 requests,
-  4.67 GiB, plane matched by CIDR. `conda.anaconda.org` (155 requests) was on no allow-list, so the
-  old list would have refused the build. A rebuild is the same recipe and not byte-reproducible.
+  4.67 GiB, plane matched by CIDR. A rebuild is not byte-reproducible.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: 8 of 29 names are not derivable and a
   gateway endpoint has no `PrivateDnsName`, so S3/DynamoDB are hand-named in both spellings. 8.8 fixed
   2026-09-09 (`vpc-egress-v0.11.1`, applied on `sandbox/egress`, 28 → 50 entries): `no-proxy.tf` reads
@@ -450,6 +449,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     reads it moves with it, silently.**
 60. **A full-replace update API turns every field you did not pass into a deletion — and the
     object's creator may have injected state no field of that API can restore.**
+61. **A procedure that depends on a file it did not create runs only for its author — and against a
+    full-replace API the stale file is not unavailable, it is wrong.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
