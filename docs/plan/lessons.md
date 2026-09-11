@@ -1257,6 +1257,37 @@ kept from an earlier step is a rollback for that sitting and an input to nothing
 *wrong* — it overwrites the present with a picture of the past, and no error names the fields it
 dropped (Lesson 60's neighbour).
 
+## Lesson 62 — an absence is evidence only when the instrument would have shown the presence
+
+**What happened.** Twice on 2026-09-11, inside one hour, a conclusion rested on silence and the silence
+was the instrument's rather than the world's. First `ls ~/.vscode-server/bin` returned nothing and was
+read as *no Microsoft server in the space*: the current layout is `~/.vscode-server/cli/servers/Stable-<commit>/`
+and six node processes were running out of it. Then eight hours of the proxy's access log carried no
+Microsoft hostname, read as *the server never came through the proxy* — the log lags its own events by
+minutes, the window's last line was 16:00:20Z, and the three `403`s on `update.code.visualstudio.com`
+were stamped 16:02:19Z onward. Both reversed on the next query, and both had already been written down.
+
+**Why it is a class rather than a slip.** The rule for one half of this was already in the repository:
+[`log-debugging.md`](runbooks/log-debugging.md) §7.4, *absence is a verdict only with a positive
+control*, written for a quiet client. It was not applied, because neither reading looked like a log
+reading in need of a control — one was an `ls`, the other a query that had worked all day. An instrument
+answers *nothing matched in what I hold*, and its two ways of holding nothing are **coverage** (the wrong
+path, the wrong group, the wrong field) and **currency** (the right place, too early). The second was new
+here: a positive control taken from an earlier minute says nothing about the minute in question.
+
+**The rule.** Before a conclusion rests on an absence, state which instrument would have shown the
+presence and check both of its halves: a positive control in the same channel — a name known to be there,
+a path known to exist — and, for anything time-bounded, the newest entry's timestamp read against the
+event being asked about. `filter-log-events` never answers *it did not happen*. §7.4 covers the quiet
+client; this adds the quiet clock, and extends both beyond logs to every probe, since a stale path
+answers exactly like an empty world.
+
+**Where it bites hardest**: when the absence is the *pleasant* answer. Both readings closed a question at
+no cost and demanded no decision, which is why neither was challenged — the same evidence closed
+decision due 5 twice, once wrongly. Lesson 13 is its sibling (a verification empty on both outcomes),
+Lesson 42 its network form (denied is a response, never-arrived is an absence) and Lesson 30 the
+reminder that a tool's failure is not a property of the world.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
