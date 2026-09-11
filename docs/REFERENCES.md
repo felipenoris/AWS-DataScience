@@ -506,6 +506,17 @@
   only on the Studio Classic page:
   <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-byoi-create.html>.
 
+- Detach and clean up custom image resources — the ordering a version bump obeys (read 2026-09-11,
+  Stage 6d step 2's first bump). Two sentences decide the procedure: *"You must first detach your custom
+  image from your domain before deleting the image from the SageMaker AI image store. If not, you may
+  experience errors while viewing your domain information or attaching new custom images to your
+  domain"* — a deferred failure rather than a refusal, and it lands on the re-attach — and *"Before you
+  can update the custom images, you must delete all of the applications in your domain"*, which makes a
+  running app a precondition on both the detach and the re-attach:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-detach-from-domain.html>,
+  reached from
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-clean-up.html>.
+
 - `ContainerConfig` — the constraint that decided Stage 6d step 2.2 (read 2026-09-10).
   `ContainerEnvironmentVariables` is *"Map Entries: … Maximum number of 25 items"* with *"Key Length
   Constraints: … Maximum length of 256"* and the same cap on each value, which no BYOI page mentions:
