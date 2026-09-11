@@ -6,7 +6,7 @@
 | **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
 | **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
 | **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
-| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), and §C's bundle path. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), §C's bundle path, and §W's **macOS** client — its build, hash and portable-mode rules are the vendor's, read 2026-09-11, and nothing on a Mac has been run here. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -59,31 +59,43 @@ this estate has that reaches a role the blueprint writes. Which shape it takes i
 [Stage 6d](../stages/stage-06d-unified-studio-remainder.md), still open; until it is taken, this channel
 is reachable from any network by anyone the domain admits.
 
-## W. Configuring VS Code for a remote session on Windows (x64)
+## W. Configuring the client for a remote session
 
 **Pin the client to the Code Editor's version.** The remote VS Code Server is installed at the
 **client's** commit, so the client's version is what the marketplace resolves extension builds against.
 Matching the version AWS pins in the image (`1.119.1`, read from
 `/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
-usable in both surfaces. The archive build does not update itself, which is the pin — and also means it
-receives no fixes: stable was `1.137.0` on the day this was written, so keep a current install for
-everything else and use the pinned one for this session. **The pin is a choice and not a
-prerequisite** — §E carries what it buys, what it costs, and the per-extension route that needs no pin
-at all.
+usable in both surfaces. A pinned client receives no fixes — stable was `1.137.0` on the day this was
+written — so keep a current install for everything else and use the pinned one for this session. **The
+pin is a choice and not a prerequisite** — §E carries what it buys, what it costs, and the per-extension
+route that needs no pin at all. **What holds the pin differs by platform**: the Windows archive does not
+update itself, the macOS application does and has to be told not to.
 
-```
-https://update.code.visualstudio.com/1.119.1/win32-x64-archive/stable
-```
+One build per platform, all three from commit `974500e64f0d1cfdf7c9821a2a51c2cb3bf0e561`:
 
-sha256 `6fd3396113d865571811497949a6c01784102e24f076e95a207d66918475894b`
-(`win32-arm64-archive`: `6438dc885a99b82fe72a5841f5caf7a321e689852c85bc087ff4eafd579d6ff5`). Verify
-before extracting — no administrator is needed for either step:
+| platform | download | sha256 of the file |
+|---|---|---|
+| Windows x64 | `https://update.code.visualstudio.com/1.119.1/win32-x64-archive/stable` | `6fd3396113d865571811497949a6c01784102e24f076e95a207d66918475894b` |
+| Windows arm64 | `https://update.code.visualstudio.com/1.119.1/win32-arm64-archive/stable` | `6438dc885a99b82fe72a5841f5caf7a321e689852c85bc087ff4eafd579d6ff5` |
+| macOS Apple silicon | `https://update.code.visualstudio.com/1.119.1/darwin-arm64/stable` | `f00ca1d7bf0ba24ca1f39fb58252afe57adfbb672badd3bb8f00ef692d6e6e74` |
+
+The hashes are the vendor's own, read 2026-09-11 from
+`https://update.code.visualstudio.com/api/versions/1.119.1/<platform>/stable` (`sha256hash`). The two
+Windows rows were in this file before the third was added and the API returned them unchanged, which is
+the control on the `darwin-arm64` row. The macOS zip expands to `Visual Studio Code.app` and carries no
+version in its name, so name the directory it goes into. Verify before extracting — no administrator is
+needed for either step:
 
 ```powershell
 Get-FileHash -Algorithm SHA256 .\VSCode-win32-x64-1.119.1.zip | Format-List
 ```
 
-**Turn the extracted folder into its own installation.** Create an empty `data` folder beside `Code.exe`:
+```bash
+shasum -a 256 ~/Downloads/VSCode-darwin-arm64.zip
+```
+
+**Turn the extracted folder into its own installation.** On Windows, create an empty `data` folder
+beside `Code.exe`:
 
 ```
 VSCode-win32-x64-1.119.1\
@@ -96,8 +108,39 @@ settings at `data\user-data\User\settings.json`, extensions at `data\extensions`
 `%APPDATA%\Code` and `%USERPROFILE%\.vscode`, which every other installation on the machine shares. Skip
 this and the pinned client writes its state into the current client's profile.
 
-**Set who downloads.** Open the pinned client, `Ctrl+Shift+P` → *Preferences: Open User Settings (JSON)*
-— in portable mode this is the file inside `data` — and add:
+**On macOS the folder sits beside the application, under another name.** Put the app in a directory of
+its own — not `/Applications`, where the current install lives — and create `code-portable-data` next to
+it, never inside the bundle:
+
+```
+vscode-1.119.1/
+  Visual Studio Code.app
+  code-portable-data/      <- create this
+```
+
+Settings are then at `code-portable-data/user-data/User/settings.json` and extensions at
+`code-portable-data/extensions`. Portable mode *"won't work if your application is in quarantine"*, which
+is the state a browser download arrives in, so clear the attribute before the first launch — a `curl`
+download carries none and the command is harmless either way:
+
+```bash
+xattr -dr com.apple.quarantine "Visual Studio Code.app"
+```
+
+**On macOS the package does not hold the pin; a setting does.** The vendor's own portable-mode page says
+automatic updates keep working on macOS with nothing extra configured, so this installation would leave
+`1.119.1` behind on its own, with no message and no diff, and §E's whole reason for the pin would go
+with it. Disable updates in the same settings file as the two below:
+
+```json
+{
+  "update.mode": "none"
+}
+```
+
+**Set who downloads.** Open the pinned client, `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) → *Preferences:
+Open User Settings (JSON)* — in portable mode this is the file inside `data` or `code-portable-data` —
+and add:
 
 ```json
 {

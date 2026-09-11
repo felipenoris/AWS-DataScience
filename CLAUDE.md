@@ -211,7 +211,8 @@ This table is the only routing map; every other file points here rather than rep
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
 | Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a version bump, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
-| Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the Windows client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
+| Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
+| Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
@@ -232,32 +233,35 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version
   **2** is `default-v0.2.0`, frozen to the digest it was registered against, attached by hand to the
   domain's `DefaultUserSettings` — which is what a space's picker reads, JupyterLab and Code Editor both.
-  INT-01/INT-17 closed: the image role reads the repository **by tag** at registration, the project role
-  **by digest** at start. **The app image config caps each env value at 256 characters** against a
+  INT-01/INT-17 closed (image role by tag at registration, project role by digest at start). **The app
+  image config caps each env value at 256 characters** against a
   `NO_PROXY` of ~2,300, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`, the
   list a dated literal (50 entries, sha256 `856bc57bb…`); `./aws/devenv.py` reads the drift, and the
-  bump's order is `dev-env.md` §B (apps gone first, and a detach is `[]`). The image's Python is a
-  **second** uv environment under `/opt/awsds` on CPython **3.13** (TensorFlow has no wheel past
-  `cp313`), with its own Launcher kernel; the distribution's env and default kernel are untouched, R
-  stays on conda, and `rust-src` joins the toolchain on the next build. Owed: 2.4; 1.1's persona half,
+  bump's order is `dev-env.md` §B. The image's Python is a **second** uv environment under `/opt/awsds`
+  on CPython **3.13** (TensorFlow has no wheel past `cp313`), with its own Launcher kernel; R stays on
+  conda, and `rust-src` joins the toolchain on the next build. Owed: 2.4; 1.1's persona half,
   1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
-  Windows laptop off the VPN through the Toolkit's domain sign-in). `StartSession` is called **by the
-  client as the project role** (`aws-sdk-js` on `win32`, the laptop's own address, session
-  `<idc-user-id>@<env-id>`, `sourceIdentity` the same id); the deep link is that principal from the
-  browser. So `DenyControlPlaneOffVpn` and 6a's tag pair never evaluate, and decision 4's repair lands on
-  the project role — `aws:SourceIdentity` or the space's `OwnerUserProfileName` for *whose space*,
-  `aws:SourceIp` for *VPN-only*. Decision 5 answered at zero cost: the space's own fetch of the server
-  and of each `.vsix` is refused (`update.code…` `403`, `marketplace.visualstudio.com` `403`) and
-  Remote - SSH copies both from the laptop — **no Microsoft name joins the plane**, the client settings
-  reduce those calls without removing them, and the session is a **file channel in both directions that
-  no hostname list describes** (Stage 11's threat model). **Two IDE servers run in one container**: AWS's
-  Code-OSS 1.119.1 on Open VSX and Microsoft's at the client's own version on the marketplace, separate
-  extension directories and settings, so a version complaint is the client's marketplace and never the
-  remote runtime. Runbook: `remote-ide.md`. A remote space needs **≥ 8 GB**
-  (`ml.t3.large` 0.100/h, `ml.t3.xlarge` 0.200/h) and the space path carries no instance ceiling since
-  `sagemaker-denies-v0.2.0`; `session-manager-plugin` honours `HTTPS_PROXY` only if the environment
-  reaches its process, which is why a browser-launched client times out on the monitored profile.
+  Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
+  deep link is that principal from the browser, so `DenyControlPlaneOffVpn` and 6a's tag pair never
+  evaluate: decision 4's repair lands on the project role — `aws:SourceIdentity` or the space's
+  `OwnerUserProfileName` for *whose space*, `aws:SourceIp` for *VPN-only*. Decision 5: the space's own
+  fetch of the server and of each `.vsix` is refused (`403`) and Remote - SSH copies both from the
+  laptop — **no Microsoft name joins the plane**, and the session is a **file channel in both
+  directions that no hostname list describes**. **Two IDE servers run in one
+  container**, separate extension directories and settings, so a version complaint is the client's
+  marketplace and never the remote runtime. A remote space needs **≥ 8 GB** (`ml.t3.large` 0.100/h);
+  the space path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and
+  `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
+  Runbook: `remote-ide.md`.
+- **Stage 6e is in progress** (Claude Code on Bedrock), decisions taken first, read-only steps measured
+  2026-09-11. **A grant is needed**: the project role's every `InvokeModel*` allow lands on
+  `foundation-model/*`, none on the system inference profile, `ListInferenceProfiles` nowhere. The
+  account's retention mode reads **`inherit`** — no mode set at this scope — so setting `none` precedes
+  the SCP that freezes it, **by hand**: no Terraform resource, no CloudFormation type (the use-case form
+  has both, its one field an opaque blob). Per-model `allowed_modes` is **in no Bedrock API**. All three
+  scoped models are inference-profile only and their `us.` profiles route to three US regions, so D1's
+  exception is the set's. Neither IAM simulator answers here. Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.390/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
@@ -272,62 +276,58 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   allow-list refuses everything and an empty deny-list permits everything**; an `open` plane emits no
   `dstdeny_` ACL and an empty allow-list plane emits nothing. `DN-4` reads "no plane is `open` except the
   ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next half-hourly association
-  tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running file) are two questions —
-  `terraform-changes.md` Recipe A step 8 carries the timings. The three global denies, the absent default
-  route and the 3128-only SG are unchanged.
+  tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running file) are two questions
+  (`terraform-changes.md` Recipe A step 8). The three global denies, the absent default route and the
+  3128-only SG are unchanged.
 - **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is invisible,
   an HTTP redirect is a new name, and a bare entry matches exactly (`github.com` covers neither
-  `api.github.com` nor `raw.githubusercontent.com`; `amazonwebservices.com` is not `amazonaws.com`). A
-  refusal over https reads `000` at the client. A missing name can also fail **without** a `403`: the
+  `api.github.com` nor `raw.githubusercontent.com`). A refusal over https reads `000` at the client. A missing name can also fail **without** a `403`: the
   second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
   `ENOTFOUND` comes from a compute VPC.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: it reads each endpoint's `dns_entry`
   rather than the service's one canonical name (`v0.11.1`, 50 entries on `sandbox/egress`), and a gateway
-  endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. The coverage
-  precondition is split into `declared` and `served`, each with a negative control. The other three
+  endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. The other three
   `egress/` slices are down and take v0.11.1 on their next `make up`. **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.
 - **Inside a space**: on `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the four
-  kernels work as they are; earlier images need `sg-proxy.md`'s by-hand path. A space started while
+  kernels work as they are (earlier images: `sg-proxy.md`). A space started while
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
   2026-09-11 and needs a writable per-space library; `conda` is not, by decision. A rebuild is not
   byte-reproducible.
-- **6d step 4, MWAA Serverless** (2026-09-09/10). One workflow, `READY`, `manual_only`; every run is
-  two attempts, so read the task's `DurationInSeconds`, never the run's. The surface needs nothing: 6a's
-  eleven configurations unchanged, no `Workflows` blueprint. It runs as the project role (session
-  `AmazonMWAAServerless`), inside the D13 boundary; workers in two AZs, this estate's private subnets,
-  CMK `alias/awsds-sandbox-project`. A "Notebook task" is a `CreateTrainingJob` and dies on
-  `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); the portal emits `compute: {}` and
-  filling it changes nothing, because the operator has no parameter for four of the five conditions.
-  `update-workflow` is a full replace (Lesson 60) and severs the domain/project the portal injects.
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
+  one workflow, `READY`, `manual_only`; every run is two attempts, so read the task's
+  `DurationInSeconds`, never the run's. The surface needs nothing — 6a's eleven configurations
+  unchanged, and the `Workflows` blueprint is the provisioned shape, not this one. It runs as the
+  project role inside the D13 boundary; workers in two AZs, private subnets, no proxy (a priced D9
+  exception), CMK `alias/awsds-sandbox-project`. A "Notebook task" is a `CreateTrainingJob` and dies on
+  `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
+  changes nothing. `update-workflow` is a full replace (Lesson 60) and severs the domain/project the
+  portal injects. The SMUS CI/CD tool deploys only into existing projects; the pipeline stays the
+  deployer (D26/D28).
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only. The reach difference is by
-  identity, never by network. The App Store client sends every DNS query through the tunnel; the tunnel
-  is dual-family (`wireguard-v0.6.0`) and rejects IPv6 (Lesson 56). macOS's system proxy is not consulted
-  while the tunnel is primary (issue #67), and with the tunnel down it breaks the `aws` CLI —
-  `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c); 6.6 as (ii), which Stage 11 step 3.4
-  re-takes. `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
+  identity, never by network. The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
+  (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
+  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as
+  (c); 6.6 as (ii), re-taken at Stage 11 3.4. `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
   none, and a cached token is keyed by `sso-session` name, never by user.
 - **Module tags**: `vpc-egress-v0.11.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (`vpc-egress-v0.9.0`, `vpc-egress-v0.11.0` and `vpc-v0.3.0` are abandoned on origin, Lesson 46).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour); workers accept no proxy: two AZs, a
-  priced D9 exception; the `Workflows` blueprint is the provisioned shape, not this one. The SMUS CI/CD
-  tool deploys only into existing projects; the pipeline stays the deployer (D26/D28).
 - **SMUS mechanics**: a blueprint configuration is applied from the member account; an existing one is
   immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
   configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);
-  `-refresh=false` is forbidden on that slice. A denied call does not always name the policy:
-  attribution is a contrast probe.
+  `-refresh=false` is forbidden on that slice. A denied call does not always name the policy.
 - **Standing rules**: never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
   note; resolve an account by exact vended name; subnets anchor on AZ `zone_id`; read the denial wording,
-  never the exit code; account-level BPA is hand-managed; Log Archive and Audit hold no CLI profile;
-  auto-enrollment is on; `INV-09` is ten principals. Before reporting a gap, read the file that owns it:
+  never the exit code; account-level BPA **and the Bedrock retention mode** are hand-managed; Log
+  Archive and Audit hold no CLI profile; auto-enrollment is on; `INV-09` is ten principals. Before
+  reporting a gap, read the file that owns it:
   unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
-  21. From Stage 5: no principal can start the crawlers (OQ 19); `EXC-02`'s uncollectable object; no
-  Athena in Data Governance. Deferred by decision, do not offer to close: the USD 50 budget notifies
-  nobody (D12); OQ 10 waits for N=2; the Config recorder is left alone. Every script is Python 3 on `uv`;
-  `aws/cloudshell/` is shell.
+  21. From Stage 5: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
+  Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
+  left alone. **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock being the first thing here
+  that bills per use with no ceiling.
 
 Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a
 stale copy of something that lives elsewhere. Re-trim whenever a stage closes.
