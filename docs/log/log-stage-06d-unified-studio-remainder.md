@@ -2068,9 +2068,18 @@ And one into [`terraform-changes.md`](../plan/runbooks/terraform-changes.md) Rec
 proxy-plane edit has a second link that lags, with this sitting's five timestamps as its measurement, so
 an in-space check before the association's next tick reads a refusal that is not a defect.
 
-**`CLAUDE.md` crossed its 40 KB gate** with this session's additions and was re-trimmed to state: the
-step-7 bullet the CloudTrail reading superseded is deleted, and the MWAA, `NO_PROXY`, VPN, hub and
-proxy-plane bullets are cut to what is live. `./scripts/check-plan-refs.py` reports the size clean; its
-remaining 180-odd failures are all inside `.claude/worktrees/` and `.terraform/modules/`, vendored copies
-of this repository whose relative links cannot resolve from where they sit — a scope defect in the gate,
-not in the documents, and older than this sitting.
+**`CLAUDE.md` crossed its 40 KB gate** with this session's additions — 42,805 bytes — and was re-trimmed
+to state: the step-7 bullet the CloudTrail reading superseded is deleted, and the MWAA, `NO_PROXY`, VPN,
+hub and proxy-plane bullets are cut to what is live. 39,802 after, and the size check passes.
+
+**`make check-docs` stays red, and it is red on `main` in exactly the same way** — counted on both refs
+the same evening: 180 broken links under `.claude/worktrees/`, **694** under `.terraform/modules/`, one
+account-count prose failure and one `INT-nn` prose failure, identical numbers on each side, so nothing
+this sitting wrote enters them. **Two of those four are accepted by decision**:
+[Stage 2](../plan/stages/stage-02-terraform-foundation.md) records that `make check` excludes
+`check-plan-refs.py` because it is red on prose that predates it — three stage files carry dated
+measurements phrased *"all six accounts with a profile"*, and the check cannot tell a historical
+measurement from a count that goes stale. The **link** half is the part nobody decided: both directories
+hold whole copies of this repository, whose relative links cannot resolve from where they sit. A
+suggestion was left to scope the walk to the tracked tree; the size half of the same gate works and is
+what caught the `CLAUDE.md` overflow.
