@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Scope** | Connecting VS Code on a laptop to a SageMaker space in Sandbox, and everything that decides whether it works: the space's `RemoteAccess` flag, the identity that calls `sagemaker:StartSession`, the two IDE servers that end up running in the same container, where an extension installs and which gallery serves it, and which of those calls cross the estate's proxy. The space itself is the portal's ([`dev-env.md`](dev-env.md) owns the image it starts on); the network it sits in is [`docs/NETWORK.md`](../../NETWORK.md)'s |
+| **Scope** | Connecting VS Code on a laptop to a SageMaker space in Sandbox, and everything that decides whether it works: the space's `RemoteAccess` flag, the identity that calls `sagemaker:StartSession`, the two IDE servers that end up running in the same container, where an extension installs and which gallery serves it, which of those calls cross the estate's proxy, and the files that cross the session itself in either direction. The space itself is the portal's ([`dev-env.md`](dev-env.md) owns the image it starts on); the network it sits in is [`docs/NETWORK.md`](../../NETWORK.md)'s |
 | **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
 | **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
 | **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
-| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), and the tag pair on a principal that carries it (7.6). The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), and §C's bundle path. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -222,6 +222,71 @@ removed from that list on 2026-09-09 to keep code from leaving a governed enviro
 is not covered by that removal. It is an input to decision due 4 and to
 [Stage 11](../stages/stage-11-dlp.md)'s threat model, recorded here as a property of the channel rather
 than as a defect in the list.
+
+## C. Moving files between the laptop and the space
+
+The session carries files in both directions and the estate's instruments do not see them: the bytes
+travel inside the data channel, so no name reaches Squid and no query reaches the DNS Firewall (§N). The
+same property carries the procedures below and makes this channel a
+[Stage 11](../stages/stage-11-dlp.md) subject.
+
+**Why a procedure is needed at all.** The compute plane carries no source control: `github.com` came off
+it on 2026-09-09, and `git clone`, `fetch` and `push` from a space fail by that decision rather than by
+accident. **This is the path for today and not the design.** The estate's GitLab is internal — it lands
+in `VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
+[INT-09](../integrations.md) already carries — so from
+[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) a space clones over private addresses with no laptop
+in the middle, and this section becomes the exception rather than the route.
+
+**A file arrives by drag and drop.** Drag it from Windows Explorer onto the file tree of the **remote**
+window. It lands in the directory it is dropped on, under `/home/sagemaker-user`, which is the space's
+EBS volume — so it survives a restart of the app, and the portal's Code Editor sees the same file (§E).
+Exercised 2026-09-11: the `linux-x64` `.vsix` of §E's route 3 arrived this way, and the remote terminal's
+`code --install-extension` read it from disk.
+
+**The reverse direction is the Explorer's context menu**, *Download* on a file in the remote tree. It is
+the direction Stage 11 cares about, and it is unexercised here.
+
+**One file is the proven case.** A folder drop is not, and a repository dropped as a folder is thousands
+of transfers where the method below is one.
+
+**A repository arrives as a `git bundle`.** A bundle is git's own transport for a channel that is not a
+network: one file, the full history, and a real repository at the far end. On the laptop, where the
+GitLab host resolves:
+
+```bash
+git clone --mirror https://<gitlab-host>/<group>/<project>.git project.git
+git -C project.git bundle create ../project.bundle --all
+```
+
+`--mirror` is what makes `--all` mean every branch and every tag; from a plain clone the bundle carries
+the one local branch that clone checked out. Drag `project.bundle` into the remote window, then from a
+terminal in the space:
+
+```bash
+git bundle verify project.bundle
+git clone project.bundle project
+```
+
+`verify` is the instrument: it lists the refs the bundle holds and says whether the bundle is
+self-contained, which separates a file that did not arrive whole from a clone that is wrong. After the
+clone, `origin` is the bundle's path on disk. **The space holds no GitLab credential and a `push` reaches
+nothing**, which is a property of this path rather than a gap to repair.
+
+**Later commits travel as a second bundle**, cut from the point the space is already at:
+
+```bash
+git -C project rev-parse main                                     # in the space: where it is
+git -C project.git bundle create ../incr.bundle <that-sha>..main  # on the laptop
+git -C project pull ../incr.bundle main                           # in the space, after the drop
+```
+
+The starting point is read from the space and not noted on the laptop, so the procedure does not depend
+on a file only its author holds (Lesson 61). `git bundle verify` refuses `incr.bundle` in a repository
+that lacks the commits it starts from, which is the same instrument answering a different question.
+
+**Unexercised here: every command of the bundle path.** They are git's own, and the channel under them is
+the one the `.vsix` proved, but nobody has run this sequence in this estate.
 
 ## V. Reading it back
 
