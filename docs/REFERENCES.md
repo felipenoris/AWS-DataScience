@@ -537,6 +537,21 @@
   and `api/versions/commit:<commit>/<platform>/stable` answers with that build's own `sha256hash`, which
   is what lets `remote-ide.md` §W verify a download instead of trusting it:
   <https://update.code.visualstudio.com/api/versions/commit:974500e64f0d1cfdf7c9821a2a51c2cb3bf0e561/win32-x64-archive/stable>.
+  `api/versions/<version>/<platform>/stable` answers the same shape without a commit, and is how §W's
+  **`darwin-arm64`** row was read the same day: the platform tokens are `win32-x64-archive`,
+  `win32-arm64-archive` and `darwin-arm64`, all three resolving to commit
+  `974500e64f0d1cfdf7c9821a2a51c2cb3bf0e561` for `1.119.1`, and the API returned the two Windows hashes
+  this file's runbook already carried — the control on the macOS one.
+
+- **VS Code Portable Mode, and the setting that keeps a pinned client pinned** (read 2026-09-11), which
+  is what §W's macOS half rests on. Portable Mode is a folder, and where it goes differs by platform: a
+  `data` folder inside the installation on Windows and Linux, and on macOS a `code-portable-data` folder
+  placed as a sibling of the application, since the bundle cannot hold it. The same page carries the two
+  macOS facts a pin depends on — it *"won't work if your application is in quarantine"*, the state a
+  browser download arrives in, and automatic updates keep working there with nothing extra configured:
+  <https://code.visualstudio.com/docs/editor/portable>. So a macOS client holds `1.119.1` only while
+  updates are off, which the FAQ's own instruction covers by setting Update: Mode (`update.mode`) to
+  `none`: <https://code.visualstudio.com/docs/supporting/FAQ>.
 
 - **Amazon Bedrock data protection**, the pages [Stage 6e](plan/stages/stage-06e-claude-code-bedrock.md)
   step 7 is written from (read 2026-09-11). *Abuse detection* carries the sentence that answers the
@@ -575,9 +590,16 @@
   pair, the `us.`/`global.` inference-profile prefixes, and the two sentences Stage 6e turned into steps —
   the use-case form where *"access is granted immediately after submission"*, and the background-task
   model, which on Bedrock is **the default Sonnet** rather than a Haiku:
-  <https://code.claude.com/docs/en/amazon-bedrock>. The extension's third-party path — *Disable Login
-  Prompt*, then the provider's own settings in `~/.claude/settings.json` — is on the VS Code page:
-  <https://code.claude.com/docs/en/vs-code>.
+  <https://code.claude.com/docs/en/amazon-bedrock>. **Re-read 2026-09-11 for Stage 6e's §M**: the same
+  page gives the console path in four steps — Bedrock console, **Model catalog**, select an Anthropic
+  model, complete the form — and four facts the runbook needed. `GetInferenceProfile` resolves an
+  **application** inference profile to its backing model, a case a system-profile deployment does not
+  have; the login wizard and `/setup-bedrock` write to `~/.claude/settings.json`, which managed
+  settings sit above; a pin older than the client's default makes Claude Code **offer to update it**
+  and write to that same file; and **WebSearch is unavailable on Bedrock** while `/logout` is
+  unavailable because authentication is the AWS credential chain. The extension's third-party path —
+  *Disable Login Prompt*, then the provider's own settings in `~/.claude/settings.json` — is on the VS
+  Code page: <https://code.claude.com/docs/en/vs-code>.
 
 - **What Claude Code sends, and to whom** (read 2026-09-11), the two pages that decide whether an
   Anthropic host is reachable at all from a space. *Data usage* carries the per-provider default table:

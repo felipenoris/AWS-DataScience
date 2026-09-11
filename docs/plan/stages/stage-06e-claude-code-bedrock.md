@@ -414,6 +414,8 @@ until it works.
   error reports and `/feedback` as **off by default**, and step 5.2's
   `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` closes the session-quality survey, which is on by default
   even there. A line on any of those names is a finding about the configuration, not about the network.
+  **WebSearch is not available at all on Bedrock**, so no search host can appear either; `/logout` is
+  likewise unavailable, authentication being the container's AWS credentials.
 - **6.3 — [Claude] Read the invocation.** CloudTrail in `Sandbox`: `eventName
   InvokeModelWithResponseStream`, `eventSource bedrock.amazonaws.com`, the project role as
   `userIdentity`, `requestParameters.modelId` naming the profile, and `vpcEndpointId` present. That last
@@ -611,8 +613,11 @@ busy one has no upper bound at all. `make down` does not reach it.
 - **9.4 — [Claude] `docs/AWS_STATE.md`**, the residency exception of 7.3 and the retention reading of 7.2,
   both dated, so a later snapshot that shows a three-region profile is recognised as expected.
 - **9.5 — [Claude] `docs/REFERENCES.md`**, the vendor pages this stage was written from.
-- **9.6 — [Claude] The runbook**, `docs/plan/runbooks/claude-code-sagemaker.md`, asked for by the user
-  2026-09-11 and owed whatever step 6 finds. **It is written for two audiences that do not overlap**, and
+- **9.6 — The runbook exists**, [`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md),
+  written 2026-09-11 at the user's request with **§M complete** — the retention mode and the form, the
+  two acts that enable the model — and §I, §U and §V carrying what is settled, each marked where it
+  describes something unbuilt. `CLAUDE.md`'s routing row was added in the same sitting, after the
+  re-trim it needed. It still owes whatever step 6 finds. **It is written for two audiences that do not overlap**, and
   that is its whole shape: the infrastructure engineer configures this once for everyone and never opens
   the IDE; the data scientist opens the IDE and never touches an account. A runbook that mixes them makes
   each read past the other's half.
@@ -629,8 +634,9 @@ busy one has no upper bound at all. `make down` does not reach it.
   to override one in `~/.claude/settings.json` is ignored rather than refused — which reads like the
   setting not working.
 
-  Its row in `CLAUDE.md`'s routing table is added **when the file is created**, not before: `CLAUDE.md`
-  stands at 39,856 bytes against a 40,000-byte gate, so that sitting re-trims it first.
+  Its row in `CLAUDE.md`'s routing table was added the day the file was created, after the re-trim it
+  needed: the file stood at 39,856 bytes against a 40,000-byte gate and now stands at 39,900, so the
+  next sitting that adds to it re-trims again.
 
 ---
 
