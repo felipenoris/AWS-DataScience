@@ -2031,3 +2031,46 @@ the 12-hour residual, whether a session outlives the tunnel and the portal logou
 `./aws/remote-ide.py`; and **decision due 4**, which now holds every reading it was waiting for. Outside
 step 7: 2.4, step 1's persona half, 3.4, 3.5, 3.7, step 5 and step 6. `rust-src` is in the Dockerfile
 and arrives with the next build; `PX-3` stays unanswered until someone runs `--on-host`.
+
+### [Claude] The runbook review, and the one claim it had to weaken
+
+Re-reading [`remote-ide.md`](../plan/runbooks/remote-ide.md) against the session produced one new
+reading, taken by attributing the Microsoft calls **per container address** rather than per window:
+
+| container | client | `update.code.visualstudio.com` | `marketplace.visualstudio.com` |
+|---|---|---|---|
+| `10.20.101.127` | current, no client settings | **3** (16:02:19-16:02:56Z) + 1 later | **15** across 17:00-17:03Z |
+| `10.20.116.89` | pinned, both settings on | **1** at 18:21:53Z | **3** at 18:29:17Z |
+
+So `remote.SSH.localServerDownload: always` and `remote.downloadExtensionsLocally: true` **reduce the
+remote's calls to Microsoft and do not remove them**, and the runbook's first draft said the settings
+"only remove the refusals from the path", which is wrong. Every one of those lines is a 3.4 KB Squid
+error page, so the perimeter reading is unchanged — no Microsoft byte has ever crossed this plane — and
+the operating rule is now written down: **a `403` on either name during a session that works is
+expected; a `200` would be the finding.** What the log still cannot say is whether a given remote call
+was a download attempt or a version probe; the CLI under `~/.vscode-server/cli` checks for updates on its
+own, and the client's Extensions and Remote-SSH output channels are the instrument that separates them.
+
+Three other facts the review moved out of this file and into the runbooks, because they are procedure
+rather than record:
+
+- **the settings files are split the way the extension directories are** — which is why 8.4's
+  `http.proxy` repair, written on the Code Editor side, reaches nothing on the VS Code Server's side;
+  and `~/.vscode-server/cli/servers/` keeps one tree per client version that has ever connected;
+- **what pinning the client buys and costs**, now that the remote server is known to carry the client's
+  own version: it aligns the two surfaces on one engine version, and it makes *"requires a newer VS
+  Code"* more likely for other extensions, not less;
+- **R in a space**, into [`sg-proxy.md`](../plan/runbooks/sg-proxy.md): CRAN reachable since the apply,
+  the library that must exist first and is one `mkdir` per space, the mandatory `repos=` on a conda-forge
+  `r-base`, and the message that blames the R version rather than the perimeter.
+
+And one into [`terraform-changes.md`](../plan/runbooks/terraform-changes.md) Recipe A step 8: a
+proxy-plane edit has a second link that lags, with this sitting's five timestamps as its measurement, so
+an in-space check before the association's next tick reads a refusal that is not a defect.
+
+**`CLAUDE.md` crossed its 40 KB gate** with this session's additions and was re-trimmed to state: the
+step-7 bullet the CloudTrail reading superseded is deleted, and the MWAA, `NO_PROXY`, VPN, hub and
+proxy-plane bullets are cut to what is live. `./scripts/check-plan-refs.py` reports the size clean; its
+remaining 180-odd failures are all inside `.claude/worktrees/` and `.terraform/modules/`, vendored copies
+of this repository whose relative links cannot resolve from where they sit — a scope defect in the gate,
+not in the documents, and older than this sitting.
