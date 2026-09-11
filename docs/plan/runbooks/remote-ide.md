@@ -1,0 +1,259 @@
+# Runbook — the remote IDE: a laptop's VS Code attached to a Sandbox space
+
+| | |
+|---|---|
+| **Scope** | Connecting VS Code on a laptop to a SageMaker space in Sandbox, and everything that decides whether it works: the space's `RemoteAccess` flag, the identity that calls `sagemaker:StartSession`, the two IDE servers that end up running in the same container, where an extension installs and which gallery serves it, and which of those calls cross the estate's proxy. The space itself is the portal's ([`dev-env.md`](dev-env.md) owns the image it starts on); the network it sits in is [`docs/NETWORK.md`](../../NETWORK.md)'s |
+| **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
+| **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
+| **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from the session measured that day. Exercised: §W on Windows x64, §E's two surfaces, §N's readings, §V's four instruments. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), and the tag pair on a principal that carries it (7.6). The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+
+---
+
+## O. The pieces, and who owns each
+
+A working session is five objects, and only one of them is this repository's.
+
+| Piece | What it is | Owner |
+|---|---|---|
+| **The space, with `RemoteAccess` enabled** | the compute the session attaches to. Per space, per app type | the portal, by hand |
+| **`sagemaker-remote-access-server`** | a binary AWS places in `~/.sagemaker_remoteAccess_do_not_delete/`, which is what answers the data channel | the service |
+| **`sagemaker:StartSession`** | the call that opens the channel, answered with a `wss://ssmmessages.<region>.amazonaws.com/v1/data-channel/…` URL | the client, as the project role (§I) |
+| **The VS Code Server** | Microsoft's server, under `~/.vscode-server/cli/servers/Stable-<commit>/`, at the **client's own version** | the client, per connection |
+| **The Code Editor server** | AWS's Code-OSS, `/opt/conda/share/sagemaker-code-editor`, already running on port 8888 for the browser surface | the image |
+
+The last two run **at the same time, in the same container**, with separate extension directories and
+separate settings files. That is §E's whole subject, and the first thing to understand before debugging
+anything about extensions.
+
+## I. Who makes the call, and which perimeter it crosses
+
+Measured 2026-09-11 from CloudTrail in Sandbox, two `StartSession` calls at 16:02:15Z and 16:02:28Z:
+
+| field | value |
+|---|---|
+| principal | `datazone_usr_role_<project>_<env>` — **the project role**, resolved by role id |
+| session name and `sourceIdentity` | `<idc-user-id>@<env-id>` — the Identity Center user travels inside the role session |
+| `sourceIPAddress` | the **laptop's own public address**, not the proxy's Elastic IP and not an AWS-internal one |
+| `userAgent` | `aws-sdk-js/… os/win32 lang/js md/nodejs` — the call is made **client-side** |
+| resource | `space/<domain-id>/<space-name>` |
+
+**What this means for the controls the estate already has.** 1c withholds `sagemaker:StartSession` from
+the `Interactive` document and 6a step 3.2 put two tag-scoped denies into the six persona permission
+sets. Both are attached to personas; the caller here is a blueprint-authored project role, so **neither
+evaluates**, and the session worked with the laptop off the VPN entirely. The scoping the objective asks
+for is granted by nothing today (Lesson 18, with Lesson 28 underneath: the grant and the constraint live
+in different slices).
+
+**The Toolkit is not the persona path.** The AWS Toolkit's SageMaker panel signs in to the **SMUS domain**
+and receives project-role credentials; it does not use the laptop's persona role. The portal's deep link
+is the same principal by a different client — measured 2026-09-10 19:37:27Z, same role, same address, a
+Chrome user agent, refused with `ValidationException … does not have remote access enabled` because that
+space had the flag off. So both available methods put the project role in front of the call, from the
+user's own address.
+
+**Two keys exist for scoping it**, and neither needs Identity Center *attributes for access control*:
+`aws:SourceIdentity` on the role session, and the space's `OwnershipSettings.OwnerUserProfileName`,
+which carries the same user id. A condition on the **D13 permissions boundary** is the one instrument
+this estate has that reaches a role the blueprint writes. Which shape it takes is decision due 4 in
+[Stage 6d](../stages/stage-06d-unified-studio-remainder.md), still open; until it is taken, this channel
+is reachable from any network by anyone the domain admits.
+
+## W. Configuring VS Code for a remote session on Windows (x64)
+
+**Pin the client to the Code Editor's version.** The remote VS Code Server is installed at the
+**client's** commit, so the client's version is what the marketplace resolves extension builds against.
+Matching the version AWS pins in the image (`1.119.1`, read from
+`/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
+usable in both surfaces. The archive build does not update itself, which is the pin — and also means it
+receives no fixes: stable was `1.137.0` on the day this was written, so keep a current install for
+everything else and use the pinned one for this session.
+
+```
+https://update.code.visualstudio.com/1.119.1/win32-x64-archive/stable
+```
+
+sha256 `6fd3396113d865571811497949a6c01784102e24f076e95a207d66918475894b`
+(`win32-arm64-archive`: `6438dc885a99b82fe72a5841f5caf7a321e689852c85bc087ff4eafd579d6ff5`). Verify
+before extracting — no administrator is needed for either step:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\VSCode-win32-x64-1.119.1.zip | Format-List
+```
+
+**Turn the extracted folder into its own installation.** Create an empty `data` folder beside `Code.exe`:
+
+```
+VSCode-win32-x64-1.119.1\
+  Code.exe
+  data\            <- create this
+```
+
+Its presence is the switch, and no setting configures it. VS Code then keeps **all** user state there —
+settings at `data\user-data\User\settings.json`, extensions at `data\extensions` — instead of in
+`%APPDATA%\Code` and `%USERPROFILE%\.vscode`, which every other installation on the machine shares. Skip
+this and the pinned client writes its state into the current client's profile.
+
+**Set who downloads.** Open the pinned client, `Ctrl+Shift+P` → *Preferences: Open User Settings (JSON)*
+— in portable mode this is the file inside `data` — and add:
+
+```json
+{
+  "remote.downloadExtensionsLocally": true,
+  "remote.SSH.localServerDownload": "always"
+}
+```
+
+Both are **client-side** (application scope): the settings editor greys them out on the *Remote [SSH]*
+tab. They are a different subject from the `data` folder — they decide which machine fetches the bytes,
+which in this estate is the difference between a working install and a `403` (§N).
+
+**Install two client extensions**: *Remote - SSH* and *AWS Toolkit*.
+
+**Sign in to the domain.** Open the AWS panel from the sidebar icon, find **SAGEMAKER UNIFIED STUDIO**,
+choose to sign in with IAM Identity Center, and enter the **full domain URL** — the portal's own address,
+`https://dzd-<domain-id>.sagemaker.us-west-2.on.aws/` — then Enter. A browser opens to authorize the
+application. The credentials that come back are the **project role's**, which is why §I reads the way it
+does.
+
+**Connect.** The Toolkit opens a new window: `Opening Remote`, then
+`Setting up SSH Host sm_…: Copying VS Code Server to host with scp`, and it takes minutes on a first
+connection. That message is the measurement: the server is **copied from the laptop**, because the
+space's own attempt to fetch it was refused (§N).
+
+## E. Extensions: UI, Workspace, and the version conflict
+
+**The kinds.** VS Code splits extensions in two. *UI extensions* "contribute to the VS Code user
+interface and are always run on the user's local machine" — themes, snippets, language grammars,
+keymaps. *Workspace extensions* "are run on the same machine as where the workspace is located", so in a
+remote session they run **in the space**. An extension declares this with `extensionKind` in its
+`package.json`, and VS Code chooses when both are possible. A language server, a debugger or a linter is
+a workspace extension by nature: it needs the files and the toolchain. `Developer: Show Running
+Extensions` says which side each one is on.
+
+So **`Install in SSH: <host>` installs in the space** — and specifically into the VS Code Server's own
+directory, not into the surface the browser uses.
+
+**The two surfaces, measured in one container on 2026-09-11:**
+
+| | Code Editor, from the portal | the remote session, from the laptop |
+|---|---|---|
+| server | `/opt/conda/share/sagemaker-code-editor`, Code-OSS **1.119.1** | `~/.vscode-server/cli/servers/Stable-<commit>`, **the client's version** |
+| gallery | `https://open-vsx.org/vscode/gallery` | `https://marketplace.visualstudio.com/_apis/public/gallery` |
+| extensions | `~/sagemaker-code-editor-server-data/extensions` | `~/.vscode-server/extensions` |
+| settings | `~/sagemaker-code-editor-server-data/data/User/` | `~/.vscode-server/data/User/` |
+
+Both directories are under `/home/sagemaker-user`, which is the space's EBS volume, so both survive a
+restart of the app and neither is in the image. An extension installed in one surface is invisible to the
+other, and the same extension can sit in both at **different versions** — the AWS Toolkit was `3.101.0`
+on the Open VSX side and `4.15.0` on the marketplace side the day this was written.
+
+**The version conflict, and why it is not about the remote.** The compatibility check reads
+`engines.vscode` against the runtime that will load the extension. Because the remote server takes the
+client's version, a complaint naming *your* version is the marketplace offering a build that wants a
+newer editor than the client — typically a **pre-release** build; `rust-analyzer` publishes its
+pre-releases as `0.4.x`. The fixes, cheapest first:
+
+1. the extension's gear menu → **Switch to Release Version**, or **Install Specific Version…** and pick
+   one below the build that complained. Then turn **Auto Update** off for it, or it returns;
+2. install it from the portal's Code Editor instead, where Open VSX resolves against 1.119.1;
+3. carry the `.vsix` yourself: download the **`linux-x64`** build on the laptop — platform-specific,
+   because the package embeds the language server binary — drag it into the remote window's Explorer,
+   and in the remote terminal run `code --install-extension <file>.vsix`, which is the server's CLI and
+   installs on the remote side. The space cannot fetch it itself (§N).
+
+Pinning the client (§W) is what removes the conflict rather than working around it, at the cost of an
+editor that no longer updates.
+
+## N. What crosses the estate's egress, and what does not
+
+Read from `/awsds/prod/proxy` on 2026-09-11, one space's address:
+
+| name | reading | what it is |
+|---|---|---|
+| `update.code.visualstudio.com` | **403 TCP_DENIED** × 3, at 16:02:19-16:02:56 | the space trying to download the VS Code Server |
+| `marketplace.visualstudio.com` | **403 TCP_DENIED** × 7, at 16:08-16:09 | the space trying to fetch a `.vsix` |
+| `aws-language-servers.us-east-1.amazonaws.com` | 200, 50.73 MiB | the Toolkit's language servers, allowed by the plane's `.amazonaws.com` entry and therefore a **public** call, carrying neither `aws:SourceVpc` nor `aws:SourceVpce` |
+| `idetoolkits.amazonwebservices.com`, `idetoolkits-hostedfiles.amazonaws.com`, `ide-toolkits.app-composer.aws.dev`, `sagemaker-unified-studio-mcp.<region>.api.aws` | 200 | the IDE's own startup traffic, four names, three of them decided at 6d 8.6 |
+| `api.anthropic.com` | **403 TCP_DENIED** × 17 | an extension the user installed reaching its own service; on no plane, so it does not work in a space |
+| `*.in.applicationinsights.azure.com` | **403 TCP_DENIED** | editor telemetry nobody asked for, refused |
+
+**Neither refusal breaks the session**, and that is the design working rather than luck. Remote - SSH
+"will attempt to download on the remote host, and fail back to downloading VS Code Server locally and
+transferring it remotely once a connection is established", which is the `scp` line §W quotes; the
+extension bytes take the same route once `remote.downloadExtensionsLocally` is on. So the remote IDE
+channel needs **no entry on the compute plane**: the two Microsoft names stay off it, and the laptop —
+whose own plane is `open` when it is on the tunnel — is what fetches.
+
+**The channel is also a file path the plane cannot see.** The `.vsix` that arrived on 2026-09-11 arrived
+*through the session*, not through the proxy, and the same tunnel carries any file in either direction.
+The compute plane's allow-list is a list of **names**, so it says nothing about this; `github.com` was
+removed from that list on 2026-09-09 to keep code from leaving a governed environment, and this channel
+is not covered by that removal. It is an input to decision due 4 and to
+[Stage 11](../stages/stage-11-dlp.md)'s threat model, recorded here as a property of the channel rather
+than as a defect in the list.
+
+## V. Reading it back
+
+One instrument per question, all read-only.
+
+**Which principal made the call, and from where** — Sandbox:
+
+```bash
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=StartSession \
+  --max-results 10 --profile awsds-infra-sandbox-1 --output json --query 'Events[].CloudTrailEvent' \
+  | jq -r '.[] | fromjson | [.eventTime, .userIdentity.arn, .sourceIPAddress, .userAgent] | @tsv'
+```
+
+**What the space is, and whether the flag is on**:
+
+```bash
+aws sagemaker describe-space --domain-id <domain-id> --space-name <space> \
+  --profile awsds-infra-sandbox-1 --query 'SpaceSettings.[RemoteAccess,AppType,CodeEditorAppSettings.DefaultResourceSpec]'
+```
+
+**Which names the session's traffic asked for** — Production, and the window matters: this log lags its
+own events by minutes, so an absence read too early is not an absence (`log-debugging.md`):
+
+```bash
+aws logs filter-log-events --log-group-name /awsds/prod/proxy --start-time <epoch-ms> \
+  --profile awsds-infra-prod --query 'events[].message' --output text | tr '\t' '\n'
+```
+
+**Which servers are running in the space, and where their extensions went** — from a terminal in the
+space:
+
+```bash
+pgrep -af node | cut -c1-200
+for p in ~/.vscode-server/cli/servers/Stable-*/server/product.json /opt/conda/share/sagemaker-code-editor/product.json; do
+  python3 -c "import json;d=json.load(open('$p'));print(d['version'], d.get('extensionsGallery',{}).get('serviceUrl'))"
+done
+ls ~/.vscode-server/extensions ~/sagemaker-code-editor-server-data/extensions
+```
+
+## F. Failures, and what each one is
+
+| symptom | what it is |
+|---|---|
+| `ValidationException … does not have remote access enabled` | the flag is off on that space. Stop the space, turn Remote Access on in its details, start it |
+| an `AccessDenied` on `StartSession` naming an identity-based policy | the caller is a **persona**, not the project role — the persona sets hold no Allow. Read the caller before changing anything (§I) |
+| the connection hangs at `Copying VS Code Server to host` for many minutes on a first connect | expected: the laptop is transferring the server because the space's own download was refused (§N) |
+| a timeout with nothing in CloudTrail | the call never arrived. A permission failure is a response; a network failure is the absence of one (Lesson 42) |
+| `getaddrinfo ENOTFOUND <name>` inside the space | the process has **no** proxy variables, so it resolved the name itself and the DNS Firewall refused it. On `default-v0.2.0` and later the image carries them; on earlier images see [`sg-proxy.md`](sg-proxy.md) |
+| `Server returned 403` inside the space | the process has the variables and the **name** is not on the compute plane. The first question is whether that name has a VPC endpoint ([`docs/NETWORK.md`](../../NETWORK.md)) |
+| an extension refuses to install, naming your VS Code version | the marketplace offered a build that wants a newer editor; §E's three fixes |
+| an extension installed but not running | it went to the other surface, or it is a UI extension. `Developer: Show Running Extensions` |
+
+## Cost
+
+The session costs the space's instance plus the Sandbox `[E]` endpoint set. The space measured on
+2026-09-11 was `ml.t3.xlarge` at **USD 0.200/h** ([`docs/PRICING.md`](../../PRICING.md) §8) — twice the
+`ml.t3.large` that is the 8 GB floor the server needs, and the space path carries no instance ceiling
+since `sagemaker-denies-v0.2.0`, so the size is a cost choice rather than a permitted one. Idle shutdown
+applies to a Code Editor app as it does to JupyterLab: the space read that day had a 60-minute threshold.
+The channel itself adds nothing: no endpoint, no plane entry, no NAT.
+
+---
+
+*Runbook index: [`CLAUDE.md`](../../../CLAUDE.md) routing table · Stage:
+[6d](../stages/stage-06d-unified-studio-remainder.md) step 7*

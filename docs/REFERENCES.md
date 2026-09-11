@@ -522,6 +522,22 @@
   Constraints: … Maximum length of 256"* and the same cap on each value, which no BYOI page mentions:
   <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ContainerConfig.html>.
 
+- VS Code's own two pages, consumed by Stage 6d step 7.8 (read 2026-09-11). **UI versus workspace
+  extensions** is what decides where an extension installs — *"These extensions contribute to the VS Code
+  user interface and are always run on the user's local machine"* against *"These extensions are run on
+  the same machine as where the workspace is located"*, declared by `extensionKind` in the manifest:
+  <https://code.visualstudio.com/api/advanced-topics/remote-extensions>. The Remote - SSH page carries the
+  sentence that explains why a session works with both Microsoft names refused by the compute plane —
+  *"By default, the Remote - SSH will attempt to download on the remote host, and fail back to downloading
+  VS Code Server locally and transferring it remotely once a connection is established"*:
+  <https://code.visualstudio.com/docs/remote/ssh>.
+
+- The VS Code download service, used to pin a client to the version the SageMaker image carries (read
+  2026-09-11). `https://update.code.visualstudio.com/<version>/<platform>/stable` redirects to the CDN,
+  and `api/versions/commit:<commit>/<platform>/stable` answers with that build's own `sha256hash`, which
+  is what lets `remote-ide.md` §W verify a download instead of trusting it:
+  <https://update.code.visualstudio.com/api/versions/commit:974500e64f0d1cfdf7c9821a2a51c2cb3bf0e561/win32-x64-archive/stable>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.

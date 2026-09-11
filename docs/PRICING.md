@@ -267,6 +267,7 @@ the real bill.
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.m5.large` — measured 2026-09-07, the 8 GB general-purpose alternative | 0.184 | **0.115** | 1.60 |
+| SageMaker Studio JupyterLab / CodeEditor `ml.t3.xlarge` — **measured 2026-09-11**, the size the first remote-IDE space was created at (6d step 7.3); twice the 8 GB floor above it | 0.323 | **0.200** | 1.62 |
 | SageMaker processing job `ml.t3.medium` | 0.066 | — | |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
 | Public IPv4 address (in use or idle) | 0.005 | 0.005 | **1.00** |
