@@ -6,7 +6,7 @@
 | **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
 | **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
 | **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
-| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, §V's five instruments, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), §C's bundle path, and §W's **macOS** client — its build, hash and portable-mode rules are the vendor's, read 2026-09-11, and nothing on a Mac has been run here. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, every §V instrument but the laptop-side logs, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), §C's bundle path, and §W's **macOS** client — its download, portable-mode rules and connect path are read from the vendor's pages and the Toolkit's own source on 2026-09-11, and nothing on a Mac has been run here. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -94,6 +94,10 @@ Get-FileHash -Algorithm SHA256 .\VSCode-win32-x64-1.119.1.zip | Format-List
 shasum -a 256 ~/Downloads/VSCode-darwin-arm64.zip
 ```
 
+```bash
+ditto -x -k ~/Downloads/VSCode-darwin-arm64.zip "$HOME/Applications/vscode-1.119.1"
+```
+
 **Turn the extracted folder into its own installation.** On Windows, create an empty `data` folder
 beside `Code.exe`:
 
@@ -165,6 +169,67 @@ does.
 `Setting up SSH Host sm_…: Copying VS Code Server to host with scp`, and it takes minutes on a first
 connection. That message is the measurement: the server is **copied from the laptop**, because the
 space's own attempt to fetch it was refused (§N).
+
+### What the connection runs on the laptop, and what macOS adds to it
+
+Read from the Toolkit's source on 2026-09-11 (`awsService/sagemaker/`, `shared/sshConfig.ts`,
+`shared/utilities/cliUtils.ts`), because the pieces below are invisible from the UI and every one of
+them is a place a macOS session can fail. **None of it is exercised here** — the Windows session of
+7.8 is what this file measured.
+
+**The Toolkit checks its dependencies before it connects**: the *Remote - SSH* extension at or above a
+minimum version, an `ssh` on the path — macOS ships one — and a `session-manager-plugin`, which it
+installs itself if the check fails.
+
+**The Toolkit writes an SSH host and a connect script.** The host block is `Host sm_*` in
+`~/.ssh/config` — `ForwardAgent yes`, `AddKeysToAgent yes`, `StrictHostKeyChecking accept-new` and a
+`ProxyCommand`, with the file forced to `0600`. The `ProxyCommand` is the platform difference: on
+Windows it is `powershell.exe … -File sagemaker_connect.ps1 %n`, and on macOS it is
+`'<globalStorage>/sagemaker_connect' '%n'`, a bash script the extension copies out of itself and marks
+executable. The script needs `curl`, which macOS ships, and **`jq`**, which it does not — this estate
+installed `jq` long ago, and a laptop without it fails in the `ProxyCommand` rather than in the UI. It reads the session from a local HTTP server the Toolkit spawns
+(`SAGEMAKER_LOCAL_SERVER_FILE_PATH` names the JSON that carries its port) and ends in
+`exec "$AWS_SSM_CLI" "$SSM_SESSION_JSON" "$REGION" StartSession`.
+
+**The `session-manager-plugin` the session uses is the Toolkit's own, not the laptop's.** The
+toolkit's unix entry for that CLI is a single relative path under its own storage, so a Homebrew
+install on `PATH` does not satisfy the check; it downloads the `mac_arm64` `.pkg`, expands it with
+`pkgutil` and `tar` into its storage — no administrator, no installer run — and hands the connect
+script the absolute path in `AWS_SSM_CLI`. Nothing has to be installed by hand for this, and the
+`session-manager-plugin` Stage 4 put on the laptop (`vpn.md`'s table) is a different copy serving a
+different purpose.
+
+**Whether the laptop needs a proxy is decided by the profile, not by macOS.** The calls are the
+SageMaker API and the `ssmmessages` data channel, both public names:
+
+| the laptop's network | what the session needs |
+|---|---|
+| off the VPN | nothing — the two names are reached directly, which is how 7.8 ran |
+| the tunnel in its split-tunnel profile | nothing — `AllowedIPs` carries the five VPC CIDRs, so a public AWS name is not routed into the tunnel |
+| the tunnel in its monitored profile | the proxy has to reach the processes below, or the session times out with no refusal to read (Lesson 55) |
+
+**On macOS the monitored profile has no system path to the proxy.** `scutil --proxy` is empty while the
+tunnel is primary ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [a],
+issue #67), so a client launched from the Dock inherits nothing. Two shapes carry it, and the second is
+a reading rather than a measurement:
+
+- launch the pinned client from a terminal that has run `proxy-on`, so `process.env` carries the
+  variables into the `ssh` child and into the plugin:
+
+```bash
+"$HOME/Applications/vscode-1.119.1/Visual Studio Code.app/Contents/MacOS/Electron" &
+```
+
+- or set `http.proxy` and `http.noProxy` in the client's settings. The Toolkit turns those two into
+  `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` and puts them in the environment of both the local server and
+  the `ssh` process (`model.ts`'s `getLocalProxyEnv`, merged into the connection's `envProvider`), which
+  is the whole path the plugin needs. Read from the code, never run here; the terminal launch is the
+  shape whose process tree the operator controls.
+
+**Two clients on one machine share `~/.ssh/config` and nothing else.** Each writes its own
+`sagemaker_connect` under its own `globalStorage` — inside `code-portable-data/user-data` for a portable
+install — and the Toolkit rewrites the host block when the `ProxyCommand` it finds is not its own. A
+host that connects from one client and fails from the other is this, not the space.
 
 ## E. Extensions: UI, Workspace, and the version conflict
 
@@ -281,14 +346,14 @@ in `VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peeri
 [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) a space clones over private addresses with no laptop
 in the middle, and this section becomes the exception rather than the route.
 
-**A file arrives by drag and drop.** Drag it from Windows Explorer onto the file tree of the **remote**
-window. It lands in the directory it is dropped on, under `/home/sagemaker-user`, which is the space's
-EBS volume — so it survives a restart of the app, and the portal's Code Editor sees the same file (§E).
+**A file arrives by drag and drop.** Drag it from the laptop's file manager — Explorer on Windows,
+Finder on macOS — onto the file tree of the **remote** window. It lands in the directory it is dropped
+on, under `/home/sagemaker-user`, which is the space's EBS volume — so it survives a restart of the app, and the portal's Code Editor sees the same file (§E).
 Exercised 2026-09-11: the `linux-x64` `.vsix` of §E's route 3 arrived this way, and the remote terminal's
 `code --install-extension` read it from disk.
 
-**The reverse direction is the Explorer's context menu**, *Download* on a file in the remote tree. It is
-the direction Stage 11 cares about, and it is unexercised here.
+**The reverse direction is the VS Code Explorer's context menu**, *Download* on a file in the remote
+tree. It is the direction Stage 11 cares about, and it is unexercised here.
 
 **One file is the proven case.** A folder drop is not, and a repository dropped as a folder is thousands
 of transfers where the method below is one.
@@ -371,6 +436,19 @@ remote session's terminal carries neither (measured 2026-09-11). The image's pro
 **both**, since every process in the container inherits it — which is why `cargo` fetched
 `index.crates.io` from a remote session with nothing configured.
 
+**What the connect script did, on the laptop** — the `ProxyCommand` runs under `set -x` and writes to
+the Toolkit's own storage, beside the local server's log. On macOS that directory is
+`~/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode` for a normal
+install, and the same path under `code-portable-data/user-data` for a pinned one:
+
+```bash
+ls -lt "$HOME/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode" | head
+```
+
+`sagemaker.connect.log` carries the script's trace and `sagemaker-local-server.*.log` the server that
+vends the session. They are the instrument for a connection that fails before any AWS call appears in
+CloudTrail, which is where §F's timeout row sends you.
+
 **Which servers are running in the space, and where their extensions went** — from a terminal in the
 space:
 
@@ -398,6 +476,10 @@ ls ~/.vscode-server/extensions ~/sagemaker-code-editor-server-data/extensions
 | `403` on `marketplace.visualstudio.com` in the access log **while the install succeeds** | expected, and measured with the client settings on: the remote still probes the gallery, the bytes come from the laptop. A `200` on that name would be the finding |
 | `rust-analyzer` logs `can't load standard library, try installing rust-src` | the image installs rustup's `minimal` profile, which omits `rust-src`; `std` is not indexed, and nothing else is affected. Fixed in `images/dev-env/Dockerfile` for the next build (2026-09-11). In the session at hand: `sudo rustup component add rust-src`, which works because the image's sudoers keeps the proxy variables and `static.rust-lang.org` is on the plane, and which dies with the container |
 | an R or conda package manager refused in a space | not this channel's: [`sg-proxy.md`](sg-proxy.md) carries what a space may fetch, and `docs/NETWORK.md` the list |
+| the connection times out on the monitored profile, with nothing in CloudTrail | the proxy did not reach the process: on macOS no system setting carries it while the tunnel is primary, so the client has to be launched from a terminal that ran `proxy-on`, or given `http.proxy` (§W). A refusal you cannot see is not silence (Lesson 55) |
+| `jq: command not found` or `curl: …` in `sagemaker.connect.log` | the `ProxyCommand` runs with the client process's `PATH`, not a login shell's. Launch the client from a terminal, or install the tool where that `PATH` reaches |
+| the pinned macOS client writes into `~/Library/Application Support/Code` | portable mode is not in effect: the folder is not a sibling of the `.app`, is not named `code-portable-data`, or the application is still in quarantine (§W) |
+| the pinned macOS client is no longer `1.119.1` | it updated itself. The package does not hold the pin on macOS; `update.mode` set to `none` does (§W) |
 
 ## Cost
 
