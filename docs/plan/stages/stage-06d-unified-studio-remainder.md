@@ -109,7 +109,11 @@ work at all* — is still open.
     is the runbook's §B, and two of its steps were learned here: the domain's apps must be gone before
     either `update-domain`, and **clearing `CustomImages` means sending `[]`** — a block sent without
     the key left both attachments untouched, which is the opposite of what a full-replace API would do
-    and is now in `lessons.md`.
+    and is now in `lessons.md`. **Re-attached on version 2 the same day**, and the read-back is exact:
+    the live block equals the one that was sent, and against the detached block the only fields that
+    moved are the two `CustomImages` — the domain `InService`, no `FailureReason`. The six steps ran
+    in order; the picker now offers `default-v0.2.0` and a space started on it carries the proxy
+    environment in the image.
   - **The attach ran the same day, by hand, and the block survived it.** `CustomImages` lives on the
     domain's user settings, which the `Tooling` blueprint provisions, and `UpdateDomain` replaces
     `DefaultUserSettings` whole (Lesson 60). Version 1 went into **both** app settings in one write
