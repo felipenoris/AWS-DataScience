@@ -170,3 +170,43 @@ Claude's, read-only, and is analysis rather than record.*
   The mode was re-read independently in the same call set and returned the same `none` and the same
   timestamp. **The setting is not yet frozen**: anyone holding `bedrock:PutAccountDataRetention` can
   set it back until stage step 7.5's deny is attached.
+
+## 2026-09-11 — M2: the model-access form submitted, and what the blob turned out to be
+
+*The submission was the user's, by console, as the infrastructure user on `Sandbox Account 1` with
+`InfrastructureAccess`. The `formData` below is theirs, pasted verbatim from
+`get-use-case-for-model-access`; the decode and the two readings under it are Claude's.
+`companyName` is redacted to the account owner's own name per [`INDEX.md`](INDEX.md).*
+
+- **[user] Submitted from the Bedrock console**, Region `us-west-2`, Model catalog → Claude Opus 5 →
+  the use case form.
+
+- **[Claude] Verification (i) closed.** `get-use-case-for-model-access` stops returning
+  `ResourceNotFoundException` and returns a `formData` blob. That is the whole verification, and its
+  negative control is the same command's refusal in the entry above.
+
+- **[Claude] The blob is double base64 over a flat JSON object**, which is what makes the record
+  readable at all — `PutUseCaseForModelAccess` and `GetUseCaseForModelAccess` both declare `formData`
+  as an opaque blob, and the CLI prints the outer layer. Decoded, six fields:
+
+  | field | value |
+  |---|---|
+  | `companyName` | *the account owner's own name* |
+  | `companyWebsite` | `https://github.com/felipenoris` |
+  | `intendedUsers` | `0` |
+  | `industryOption` | `FinancialServices` |
+  | `otherIndustryOption` | `` (empty) |
+  | `useCases` | `. Data-Science models for Banking` |
+
+- **[Claude] `useCases` carries a leading `". "` and reads narrower than the stage's step 2.2 text.**
+  Raised with the user the same day, **who chose to keep it as submitted**: their reading is that the
+  separator is an artefact of the console's own form, which is consistent with `otherIndustryOption`
+  being empty and the two fields sharing one input. The form is a `Put` and the blob's encoding is now
+  known, so a re-submission is cheap if the wording is ever revisited.
+
+- **[Claude] The availability reading did not move on submission.** All three scoped models read
+  `AUTHORIZED / AVAILABLE / AVAILABLE` with `agreementAvailability NOT_AVAILABLE` before the form and
+  the same after it — identical to the morning's reading and to M1's post-condition. **Three readings
+  across two state changes, all identical**: `get-foundation-model-availability` is not an instrument
+  for whether this account may invoke, and a later reader meeting `AUTHORIZED` should not take it for
+  access.

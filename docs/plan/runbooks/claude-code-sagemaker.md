@@ -15,7 +15,8 @@ account. Read your own half.
 | **§U** | the data scientist | what the user configures, and what a user cannot change |
 | **§V** | both | reading it back, one instrument per question |
 
-**State, 2026-09-11.** §M is exercised and its readings are in
+**State, 2026-09-11.** **§M is done** — M1 at 22:31 UTC, M2 by console the same evening — except M3,
+the deny that freezes M1. The readings are in
 [`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). §I is designed and **not built**:
 no endpoint, no grant, no image carrying the settings. §U describes a surface no space offers yet.
 Every sentence below that describes something unbuilt says so.
@@ -103,13 +104,26 @@ because a use case stated only as what it is admits every reading of what it is 
 | `intendedUsers` | the institution's data scientists — internal only, no external or public exposure |
 | `useCases` | data-science work: a coding assistant inside the institution's own development environment; code comprehension, refactoring, test writing and documentation over internal repositories; exploratory analysis support in notebooks. **No customer-facing application, no automated decisioning, no credit or risk scoring, no content generation for publication** |
 
-**After-reading.** The same command must stop returning `ResourceNotFoundException`. That is the whole
-verification. `get-foundation-model-availability` is **not** the instrument: it already reads
-`authorizationStatus AUTHORIZED` with the form unsubmitted.
+**After-reading.** The same command must stop returning `ResourceNotFoundException` and return a
+`formData` blob. That is the whole verification. `get-foundation-model-availability` is **not** the
+instrument: it reads `authorizationStatus AUTHORIZED` with the form unsubmitted, and it was read
+identically before the form, after it, and after the retention mode changed.
+
+**Reading the record back.** `formData` is **double base64 over a flat JSON object** of the six fields,
+so what the account declared is recoverable despite the API calling it a blob:
+
+```bash
+aws bedrock get-use-case-for-model-access --region us-west-2 --profile awsds-infra-sandbox-1   --query formData --output text | base64 -d | base64 -d
+```
+
+Read it back after submitting. The console appears to share one input between `otherIndustryOption` and
+`useCases`, so a form submitted with the first empty can leave a `". "` at the head of the second.
 
 **Why not Terraform, and why not org-wide.** `aws_bedrock_use_case_for_model_access` exists, and its
-entire schema is one required attribute, `form_data (string)` — the API takes it as a **blob**, so the
-six answers above would reach the code and every diff as opaque base64. The org-wide shape
+entire schema is one required attribute, `form_data (string)`. The form was submitted by console
+(decision 10) on the argument that a blob is unreviewable in a diff — **and the read-back above shows
+that argument was wrong**: the encoding is known, so the org-wide form could be authored and checked
+field by field. The org-wide shape
 (`PutUseCaseForModelAccess` from `Management`, which the vendor says extends to child accounts
 automatically) is the right one the day a second account needs a model; the cost of deferring it is
 one more form.
