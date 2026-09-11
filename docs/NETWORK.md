@@ -328,13 +328,21 @@ plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits
 the rendered file cannot distinguish *refuses everything* from *does not exist*, which is why `PX-3`
 compares it against the parameter rather than reading it alone.
 
-‡ **The twenty-fifth entry is `cloud.r-project.org`, in code and not applied** (2026-09-11, 6d decision
-6). CRAN was read as `403 TCP_DENIED` from a space on `default-v0.2.0` — three refusals in one second,
-because R tries more than one index candidate — and allowed on the reasoning that already put `pypi.org`
-and `index.crates.io` here: the plane carries code download for three of the four languages, and R was
-the one arbitrarily without it. `DN-3` is red until the apply by construction, since it compares the
-parameter with the code. **conda's two names stay off**, by the same decision: `repo.anaconda.com` was
-the negative control the same day, and a solver run in a space would move the distribution's own pins.
+‡ **The twenty-fifth entry is `cloud.r-project.org`, applied 2026-09-11** (6d decision 6). CRAN was
+read as `403 TCP_DENIED` from a space on `default-v0.2.0` — three refusals in one second, because R
+tries more than one index candidate — and allowed on the reasoning that already put `pypi.org` and
+`index.crates.io` here: the plane carries code download for three of the four languages, and R was the
+one arbitrarily without it. **conda's two names stay off**, by the same decision: `repo.anaconda.com`
+was the negative control the same day, and a solver run in a space would move the distribution's own
+pins.
+
+**That apply is also the clearest reading this estate has of how long a plane edit takes to bite.** The
+parameter reached version 8 at 19:05:43Z; State Manager's half-hourly association had last run at
+19:00:31Z, so a retry at 19:17:43Z was still refused by the old file; the association ran again at
+19:30:57Z and the same name answered `200 TCP_TUNNEL` at 19:31:56Z — 1,293,832 bytes of package index
+and 70,816 of tarball, from the **same container address** as the refusals. An allow-list edit is an
+apply plus at most one interval, which is why `DN-3` (code against parameter) and `PX-3` (parameter
+against the running file) are two checks and not one.
 
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
