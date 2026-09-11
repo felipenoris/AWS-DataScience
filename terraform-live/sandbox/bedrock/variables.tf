@@ -52,7 +52,13 @@ variable "environment_tag" {
 variable "project_roles" {
   description = "The SMUS project roles that may invoke the scoped models, by role NAME (not ARN). One entry per project; empty is legal and attaches nothing."
   type        = list(string)
-  default     = []
+
+  # The experimentation project created 2026-08-22 (Stage 6a pass 3), read from
+  # `iam list-roles` on 2026-09-11. Both ids are the service's: `avhvbqn37ty7m8` is the project
+  # and `5hkjdsy3umpi1c` the environment, and the pair is what the portal shows in its URL.
+  default = [
+    "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
+  ]
 
   validation {
     condition     = alltrue([for r in var.project_roles : can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", r))])

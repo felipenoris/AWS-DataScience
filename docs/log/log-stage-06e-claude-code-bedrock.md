@@ -254,3 +254,40 @@ Claude's, read-only, and is analysis rather than record.*
   P1 finds the role name and tells two projects apart by tag, P2 is the Terraform path, P3 the
   `aws iam attach-role-policy` equivalent with the warning that it leaves drift the next plan would
   revert (Lesson 35), P4 verifies and says what a verification here cannot say.
+
+## 2026-09-11 — `sandbox/bedrock/` applied
+
+*The apply was Claude's, authorized by the user in that sitting, as the infrastructure user on
+`Sandbox Account 1` with `InfrastructureAccess`. Recipe A. Account ids are redacted.*
+
+- **[user] Authorized the apply.** **[Claude] The one edit it needed first**: `project_roles` was
+  `[]`, which would have created a policy attached to nothing. It now carries the experimentation
+  project's role, read from `iam list-roles` the same day.
+
+- **[Claude⚡] `terraform apply`, 2 added, 0 changed, 0 destroyed.**
+
+  ```
+  aws_iam_policy.bedrock_assistant: Creation complete after 1s
+  aws_iam_role_policy_attachment.project["datazone_usr_role_..."]: Creation complete after 0s
+  ```
+
+  The plan was read before applying and matched what the runbook's §P2 says to expect for a first
+  project: the policy plus exactly one attachment, nothing changed and nothing destroyed. **The
+  boundary precondition passed silently**, which is its pass condition — the role carries
+  `awsds-sandbox-project-boundary`.
+
+- **[Claude] The policy as applied**, read out of the plan rather than from the source:
+
+  | Sid | Actions | Resources |
+  |---|---|---|
+  | `InvokeScopedClaudeModelsThroughSystemProfiles` | `InvokeModel`, `InvokeModelWithResponseStream` | the three `us.` profile ARNs **and** the three foundation-model ARNs, the latter with no region segment |
+  | `ResolveTheScopedProfiles` | `GetInferenceProfile` | the three profile ARNs |
+  | `ListProfilesHasNoResource` | `ListInferenceProfiles` | `*` |
+
+- **[Claude] Verified two ways.** `terraform plan -detailed-exitcode` returns **0** with *"found no
+  differences"*; `list-attached-role-policies` on the project role returns **four** policies — the
+  blueprint's three and `awsds-sandbox-bedrock-assistant`.
+
+- **What this does not establish.** That the policy is attached is not that the model can be
+  invoked: reach is an intersection and this is one term of it. Steps 4 (the private path) and 5
+  (the configuration in the image) stand between here and a call, and the call is step 6's.
