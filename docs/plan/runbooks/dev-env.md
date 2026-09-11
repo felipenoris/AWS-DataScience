@@ -274,34 +274,75 @@ CloudTrail shows and the space does not.
 
 ## B. A new build, and the version bump
 
-A steward approves a digest, the tag lands in both repositories, and the change here is one line:
-`image_tag` in the slice's `variables.tf`. A **list change** reaches this same place by a longer road —
-§E's chain — because the proxy environment is baked at build time.
+A steward approves a digest, the tag lands in both repositories, and the change in code is one line:
+`image_tag` in the slice's `variables.tf`. The acts around that line are the section. A **list change**
+reaches the same place by a longer road — §E's chain — because the proxy environment is baked at build
+time.
 
-`base_image` is force-new, because a SageMaker image version is immutable. The plan therefore reads
-`1 to add, 1 to destroy` on `aws_sagemaker_image_version` — the image itself and both configurations stay
-— and after the apply the version number has moved.
-
-**Detach before the apply, and the vendor says why.** Terraform replaces by destroying first, and the
-version it destroys is the one the domain's `CustomImages` names. AWS does not promise a refusal — it
-promises a **later** failure: *"You must first detach your custom image from your domain before deleting
-the image from the SageMaker AI image store. If not, you may experience errors while viewing your domain
+**What the apply does, and why it needs company.** `base_image` is force-new: a SageMaker image version
+is immutable, so the plan reads `1 to add, 1 to destroy` on `aws_sagemaker_image_version` — the image
+itself and both configurations stay — and Terraform **destroys before it creates**. The version it
+destroys is the one the domain's `CustomImages` names, and AWS does not promise a refusal there. It
+promises a later failure: *"You must first detach your custom image from your domain before deleting the
+image from the SageMaker AI image store. If not, you may experience errors while viewing your domain
 information or attaching new custom images to your domain."* The second half of that sentence is the
-re-attach, so skipping the detach breaks the step that would have repaired it. So: detach (§X step 1),
-apply, re-attach on the new number.
+re-attach — skipping the detach breaks the step that would repair it.
 
-**Both halves need the domain's apps deleted first**, from the same page: *"Before you can update the
-custom images, you must delete all of the applications in your domain."* Not the user profiles and not
-the spaces — the running apps. `make down ENV=sandbox` is this estate's way (Stage 6d step 5.2), or stop
-the space in the portal when the session's endpoints are still wanted. `aws sagemaker list-apps
---domain-id-equals <id>` is how to know before the call refuses. Omitting `ImageVersionNumber` at §C6 removes both hand steps and the
-review gate with them. What a space starts then depends on §C6's decision: a
-domain pinned to `ImageVersionNumber: 1` still serves the old version, which the apply has just deleted,
-so **the attachment is updated in the same sitting as the bump**, or the picker offers a version that no
-longer exists.
+The same page adds the precondition both domain writes obey: *"Before you can update the custom images,
+you must delete all of the applications in your domain."* Not the user profiles and not the spaces — the
+running apps.
 
-Stage 8 step 1's pipeline takes this slice over (INT-18): the same two acts, with the digest arriving from
-the approval rather than from an editor.
+### The order, and the reading that ends each step
+
+**1. Delete the apps** (the estate's own way; `--spaces` is opt-in and not wanted — a space is a home
+directory and an EBS volume that outlives the app).
+
+```bash
+./scripts/down-studio-apps.py sandbox --dry-run
+```
+
+```bash
+./scripts/down-studio-apps.py sandbox
+```
+
+Read it back; `Deleting` is not `Deleted`, and the next call refuses while one is in flight:
+
+```bash
+aws sagemaker list-apps --domain-id-equals <domain-id> --profile awsds-infra-sandbox-1 --query 'Apps[?Status!=`Deleted`].[AppName,AppType,Status]' --output text
+```
+
+**2. Detach**, generated from the live block — never from a file an earlier step left behind
+(Lesson 61):
+
+```bash
+aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings | jq 'del(.JupyterLabAppSettings.CustomImages, .CodeEditorAppSettings.CustomImages)' > "$HOME/tmp/detached.json" && cat "$HOME/tmp/detached.json"
+```
+
+```bash
+aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "file://$HOME/tmp/detached.json" --profile awsds-infra-sandbox-1
+```
+
+**3. Apply**, after `image_tag` carries the new tag. The plan to read is the saved one, and the counts
+to expect are `1 to add, 1 to destroy`.
+
+**4. Read the new version against the digest that was pushed** — the point of the whole exercise is that
+the domain serves those bytes, and `ContainerImage` is where that is legible:
+
+```bash
+aws sagemaker describe-image-version --image-name awsds-sandbox-dev-env --version-number <n> --profile awsds-infra-sandbox-1 --query '[ImageVersionStatus,ContainerImage]' --output text
+```
+
+**5. Re-attach on the new number**, the §C6 shape with `terraform output -json custom_images` supplying
+the entries, and §C6's read-back diff closing it.
+
+**6. A new space.** A running app keeps the image it started with; there are none at this point, which
+is what step 1 arranged.
+
+**Omitting `ImageVersionNumber` at §C6 removes steps 2 and 5**, and the review gate with them: the domain
+would then follow the image's latest version, so an apply alone would change what every new space starts.
+
+Stage 8 step 1's pipeline takes this slice over (INT-18). It inherits this order, and the two domain
+writes are what it cannot do from another account — which is why INT-18 stops at the apply.
 
 ## X. Detaching and removing
 
