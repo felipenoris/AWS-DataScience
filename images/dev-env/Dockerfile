@@ -78,6 +78,12 @@ USER root
 # Under design B the index is switched at build time, not here:
 # `--build-arg UV_DEFAULT_INDEX=<the CodeArtifact pypi URL>` and no line of pyproject.toml
 # changes. The lock's hashes stay valid; CodeArtifact serves the same artifacts.
+#
+# UV_NO_CACHE is what keeps the layer the size of the environment. Measured 2026-09-11 on the first
+# build: uv unpacks every wheel into /root/.cache/uv and then materialises it into the venv, and
+# both live in the same layer - 5.4 GB of cache beside a 5.2 GB environment, in a layer of 10.7 GB.
+# A later `rm -rf` would return nothing, since the bytes are already committed to this layer; the
+# cache has to never be written. The build is a single resolve, so nothing is lost by it.
 ARG PYTHON_VERSION=3.13
 ARG UV_DEFAULT_INDEX=""
 
@@ -93,6 +99,7 @@ RUN set -eu; \
     export UV_PYTHON_DOWNLOADS=automatic; \
     export UV_PYTHON_INSTALL_DIR="${AWSDS_PYTHON_HOME}"; \
     export UV_PROJECT_ENVIRONMENT="${AWSDS_PYTHON_ENV}"; \
+    export UV_NO_CACHE=1; \
     if [ -n "${UV_DEFAULT_INDEX}" ]; then export UV_DEFAULT_INDEX; else unset UV_DEFAULT_INDEX; fi; \
     uv python install "${PYTHON_VERSION}"; \
     cd /opt/awsds/python-project; \
