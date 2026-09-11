@@ -210,3 +210,47 @@ Claude's, read-only, and is analysis rather than record.*
   across two state changes, all identical**: `get-foundation-model-availability` is not an instrument
   for whether this account may invoke, and a later reader meeting `AUTHORIZED` should not take it for
   access.
+
+## 2026-09-11 — step 3's decision: the blueprint grants nothing, so the grant is per project
+
+*Claude's readings and authored changes, at the user's request. No AWS write.*
+
+- **[Claude] The blueprint has no granting lever, measured from the provider schema.**
+  `awscc_datazone_environment_blueprint_configuration` carries fourteen attributes and exactly one
+  is policy-shaped — `environment_role_permission_boundary`, which is how INT-15 imposes D13 — and
+  a boundary only subtracts. The one other IAM-shaped field, `provisioning_configurations`, holds
+  `location_registration_role` and an S3 exclusion list: Lake Formation registration, not a grant.
+  **The service offers a ceiling for every project role and a floor for none**, so the option this
+  stage had recommended — a policy reaching the project roles through `sandbox/sagemaker/` — never
+  existed to be chosen or refused.
+
+- **[Claude] Whether a same-account `sts:AssumeRole` needs an identity grant, part-measured.** It
+  is the question option (c) would have had to answer. `awsds-sandbox-smus-provisioning` is named
+  in the project role's trust policy as a principal allowed to assume it, and its only attached
+  policy — `SageMakerStudioProjectProvisioningRolePolicy`, v82 — carries **zero** `sts:` statements
+  and zero wildcards, with no inline document. If an identity grant were required, that trust
+  statement AWS itself wrote would be inert. **The observation to confirm it was not obtained**:
+  the 50 most recent `AssumeRole` events in Sandbox span 19:12 to 20:37 today, and the project was
+  created 2026-08-22, so the instrument does not reach the event. The absence is not a reading
+  (Lesson 62) and is recorded as such.
+
+- **[user] Decision 8 taken: option (b)** — the policy attached to the project role. Against (c)'s
+  advantages (which projects as a list this repository writes, a dedicated principal for cost
+  attribution) stood one fact: in (c) the model is invoked by a principal **outside
+  `awsds-sandbox-project-boundary`**, and every other interactive call in this account is inside
+  it. (c) is recorded as the Stage 14 shape.
+
+- **[Claude] `terraform-live/sandbox/bedrock/` written, unapplied.** Rank **52**, `[P]`, registered
+  in `scripts/tfhygiene/layers.py`. One `awsds-<env>-bedrock-assistant` policy — the two invoke
+  actions on the three profile ARNs and the three region-less foundation-model ARNs,
+  `GetInferenceProfile` on the profiles, `ListInferenceProfiles` on `*` — and one attachment per
+  entry in `project_roles`, hand-written after a project exists. The attachment carries a
+  **precondition that the role is under the D13 boundary**: a hand-written name matching
+  `datazone_usr_role_*` is the one way this could grant Bedrock to a principal outside the ceiling
+  the decision was taken to keep. `terraform validate` passes; the lock file was copied from
+  `sandbox/dev-env/` per step 6.3 rather than regenerated, which the gate names as the correct move.
+
+- **[Claude] The procedure is `claude-code-sagemaker.md` §P**, in both forms the user asked for:
+  P1 finds the role name and tells two projects apart by tag, P2 is the Terraform path, P3 the
+  `aws iam attach-role-policy` equivalent with the warning that it leaves drift the next plan would
+  revert (Lesson 35), P4 verifies and says what a verification here cannot say.
