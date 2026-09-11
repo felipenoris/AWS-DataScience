@@ -1425,6 +1425,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 
 ### Lake Formation and SageMaker Unified Studio
 
+- **`UpdateDomain` does not clear a list you leave out; it clears one you send empty** (measured
+  2026-09-11, 6d step 2's first version bump). The API is treated as a full replace of
+  `DefaultUserSettings` — and a block sent without `JupyterLabAppSettings.CustomImages` left both
+  attachments exactly as they were, so "omitted" read as "unchanged" rather than as "deleted". The
+  vendor says the form in the detach page and nowhere near the attach page: *"you will need to leave
+  `CustomImages` blank, such that `"CustomImages": []`"*. What survives of Lesson 60 here is the
+  discipline, not the mechanism: send the block back as read, and clear a list explicitly. Where:
+  `runbooks/dev-env.md` §B step 2.
+
 - **SMUS appoints itself a Lake Formation administrator** when the first project is created: two
   service roles nobody chose, in an account whose `admins` list a later
   `aws_lakeformation_data_lake_settings` would silently reset. Found 2026-08-26 by an unrelated
