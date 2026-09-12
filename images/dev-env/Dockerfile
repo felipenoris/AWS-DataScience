@@ -130,6 +130,16 @@ RUN set -eu; \
 # writes to the first entry) and the shared one second (Pkg reads from all of them). The home
 # depot lives on the space's EBS volume at /home/sagemaker-user, which is where a space's
 # state is meant to live.
+#
+# What the shared depot carries is package sources, artifacts, the registry and the resolved
+# environment - not precompilation output. Since Julia 1.9 a precompilation cache is a package
+# image carrying native code, and Julia accepts one only when the CPU features recorded in it
+# are a subset of the running CPU's. JULIA_CPU_TARGET is unset here on purpose, so the compiler
+# targets the machine it runs on: baking a cache would tie it to the build host's CPU family,
+# and pinning a portable target would cost the optimisations the user's own CPU offers. The
+# build therefore discards its own precompilation output at the end of the package RUN below,
+# and the first `using` in a space compiles for that space's CPU, into the home depot on its
+# EBS volume (per space, per user - a new space compiles again). The user's decision, 2026-09-11.
 ENV JULIA_ROOT=/opt/julia \
     JULIA_SHARED_DEPOT=/opt/julia-depot
 ENV JULIA_DEPOT_PATH=/home/sagemaker-user/.julia:${JULIA_SHARED_DEPOT} \
@@ -154,6 +164,14 @@ RUN set -eu; \
 # home, where `sagemaker-user` never looks. JUPYTER_DATA_DIR is set for the branch where it
 # does not delegate. A kernel only root can see is a kernel nobody sees, and it fails silently
 # as "Julia is missing from the launcher", so the build fails here instead.
+#
+# Pkg.precompile() stays although this RUN discards its output at the end: it is the build's
+# only proof that this package set compiles at all, and without it a package that does not
+# build is discovered by a scientist in a notebook. The `du -sh` before the removal prints what
+# the discarded cache weighed, so the build log answers the size question without a second run.
+# The removal names the shared depot's cache and nothing else - /opt/julia/share/julia/compiled
+# holds the distribution's own stdlib caches, which ship with the portable target the official
+# binaries are built with and must stay.
 COPY julia/packages.txt /tmp/awsds-julia-packages.txt
 RUN set -eu; \
     export JULIA_DEPOT_PATH="${JULIA_SHARED_DEPOT}"; \
@@ -177,6 +195,8 @@ RUN set -eu; \
            echo "  A kernel on the default environment would ignore julia/packages.txt." >&2; \
            cat /opt/conda/share/jupyter/kernels/julia-*/kernel.json >&2; exit 1; }; \
     rm -f /tmp/awsds-julia-packages.txt; \
+    du -sh "${JULIA_SHARED_DEPOT}/compiled"; \
+    rm -rf "${JULIA_SHARED_DEPOT}/compiled"; \
     chmod -R a+rX "${JULIA_SHARED_DEPOT}" "${JULIA_ROOT}" /opt/conda/share/jupyter/kernels
 
 # ------------------------------------------------------------------------------------- 3. R

@@ -93,8 +93,11 @@ copy of a ~23 GB image before the old one loses its tag. The 64 GiB root is enou
 much more: [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §S is how to look before
 starting one, and what to prune when the answer is no.
 
-Nothing in either `Dockerfile` compiles anything: Julia is a prebuilt tarball, `rustup` fetches prebuilt
-binaries, the R environment is conda-forge binaries. That is why the build is short.
+Neither `Dockerfile` builds anything from source: Julia is a prebuilt tarball, `rustup` fetches prebuilt
+binaries, the R environment is conda-forge binaries. That is why the build is short. The one compilation
+either of them performs is Julia's `Pkg.precompile()`, kept as the build's proof that the package set
+compiles and then **discarded** — a precompilation cache carries native code for the CPU that produced it,
+so the first `using` in a space compiles for that space's CPU instead.
 
 **The buildbox cannot push.** Its role carries Session Manager and no `ecr:` permission, and the host
 lives in the registry's own account, where no repository policy grants a push to anybody (read live on
@@ -128,7 +131,9 @@ flavour comes first and the trigger that turns a flavour into a repository of it
    volume mounts at `/home/sagemaker-user` on a path that cannot be changed. Anything written to `/opt`
    by these builds is therefore **read-only shared state**, and anything a user must be able to write
    goes under the home directory — which is why the Julia depot search path lists the user's depot first
-   and the baked one second.
+   and the baked one second. Since 2026-09-11 the baked depot carries package sources, artifacts, the
+   registry and the resolved environment but **no precompilation cache**, so that first entry is where a
+   space's Julia caches land — on its own EBS volume, per space and per user.
 
 ## The editable surface
 
