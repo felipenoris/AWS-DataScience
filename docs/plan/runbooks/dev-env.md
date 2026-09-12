@@ -6,7 +6,7 @@
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B's six steps on `default-v0.2.0`, §X step 1, §V. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B on `default-v0.2.0` and again on `v0.4.0` (2026-09-12), §X step 1, §V. §B step 6 was found missing on the second run and has been exercised only through the portal; its CLI route is written and not run. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -23,10 +23,16 @@ first three are this repository's.
 | **`CustomImages` on the domain** | the list a space's image picker is built from | the **`Tooling` blueprint**, and §C6 by hand |
 
 The seam is the fourth row, and it is a per-app-type field of the domain's **user settings** —
-`JupyterLabAppSettings.CustomImages`, `CodeEditorAppSettings.CustomImages`. A **space** cannot name an
-image: `SpaceSettings.CodeEditorAppSettings` is a different shape and carries neither `CustomImages` nor
-`LifecycleConfigArns`. That is why every delivery question in this file lands on the domain, and why the
-answer to *can we do this per space* is no.
+`JupyterLabAppSettings.CustomImages`, `CodeEditorAppSettings.CustomImages`. A **space** carries no image
+*list*: `SpaceSettings.CodeEditorAppSettings` is a different shape, with neither `CustomImages` nor
+`LifecycleConfigArns`, so what the picker **offers** is decided on the domain alone.
+
+**What a space runs is decided on the space.** Its `DefaultResourceSpec` names one image and one
+version, written when the space is created, and it **overrides the domain default** from then on
+(measured 2026-09-12, correcting a 2026-09-10 reading here that said a space cannot name an image and
+that the answer to *can we do this per space* is no). So the domain governs new spaces, each space
+governs itself, and a version bump has both halves to deliver — §B step 6 is the second, and a space it
+misses does not start (`EXC-09`).
 
 ## C. Configuring an account so a custom image is selectable
 
@@ -193,6 +199,34 @@ image appears under the custom images beside the SageMaker Distribution versions
 it is the whole of this section's proof; that a space **starts** on it is the endpoints' and the pull
 grant's proof, and it is where a missing `ecr.dkr` shows up as a start that never finishes.
 
+**AWS's image sits in the same picker, and a space created on it looks like this image failing.**
+The custom image is listed beside the SageMaker Distribution versions, and on 2026-09-12 the user
+created a space on the distribution without meaning to — reported as picking *"a imagem padrão do
+SageMaker"*. A space on it starts normally, runs the same IDE, and has
+**no proxy variables and no internet name reachable** — which reads exactly like a defect in this
+image's proxy environment. Measured 2026-09-12: a Code Editor space created that way ran
+`sagemaker-distribution-cpu` by alias `4.3` and reached nothing, while the image it was meant to run
+carried all six variables. Two readings separate the cases, and neither needs a theory:
+
+| From | Reading | This image | Anything else |
+|---|---|---|---|
+| inside the space | `cat /opt/awsds-proxy.txt` | prints the proxy URL, entry count and list digest | `No such file` — only this image writes it |
+| outside | `describe-app … --query ResourceSpec` | `image/awsds-sandbox-dev-env`, a version ARN | another image ARN, often `sagemaker-distribution-cpu` with an alias |
+
+```bash
+aws sagemaker describe-app --domain-id <domain-id> --space-name <space> --app-type CodeEditor --app-name default --profile awsds-infra-sandbox-1 --query ResourceSpec
+```
+
+**`describe-app` answers for an app that has already been deleted**, so a space removed in frustration
+can still be attributed afterwards — the 2026-09-12 reading above was taken that way. And
+`./aws/devenv.py`'s `DE-5` answers the other half of the question: whether the image the registry
+holds carries the variables at all, read from its config blob rather than from any space.
+
+**`RemoteAccess` is per space and a new one can come up without it.** Of the two spaces created on
+this image on 2026-09-12, one read `RemoteAccess: DISABLED` (`ml.t3.large`, 16 GB) and the other
+`ENABLED` (`ml.m7i.xlarge`, 64 GB); which values the portal form proposes was not recorded. A space is
+not reachable from a laptop's VS Code until the flag is on — [`remote-ide.md`](remote-ide.md).
+
 Read back what the domain now holds, and keep the reading:
 
 ```bash
@@ -350,11 +384,19 @@ the version it names.
 for SP in $(aws sagemaker list-spaces --domain-id-equals <domain-id> --profile awsds-infra-sandbox-1 --query 'Spaces[].SpaceName' --output text); do printf '%-50s ' "$SP"; aws sagemaker describe-space --domain-id <domain-id> --space-name "$SP" --profile awsds-infra-sandbox-1 --query 'SpaceSettings.[CodeEditorAppSettings.DefaultResourceSpec.SageMakerImageVersionArn,JupyterLabAppSettings.DefaultResourceSpec.SageMakerImageVersionArn]' --output text; done
 ```
 
-A space naming an `image-version/<this image>/<the destroyed number>` is stranded. Repair it with
-`update-space` rather than by deleting and recreating — **a space is a home directory and an EBS
-volume**, and recreating loses both. `update-space` is full-replace like `update-domain`, so the
-block is the live read with the version ARN's trailing number changed and **every other field kept**
-— the instance type and the idle timeout come from the space, not from this page:
+A space naming an `image-version/<this image>/<the destroyed number>` is stranded, and **stranded
+means it does not start**: measured 2026-09-12, the app on `remote-editor-claude` failed to start
+against the destroyed version, with no fallback to the domain default. Repair it rather than deleting
+and recreating — **a space is a home directory and an EBS volume**, and recreating loses both.
+
+**Two repairs, and they have been exercised to different depths.** The user repaired that space on
+2026-09-12 **in the portal**, editing its settings to version 4, and it came up with `RemoteAccess:
+ENABLED`, its 64 GB and the project's S3 connection intact. The CLI route below was **generated and
+read, not run**. Whether `update-space` clears the `SpaceSettings` fields a request omits, as
+`update-domain` does, **is not measured** — and the portal keeping them says nothing about the API,
+since the portal may send the whole block itself. So the block is the live read with the version
+ARN's trailing number changed and **every other field kept**, which is correct under either
+behaviour:
 
 ```bash
 aws sagemaker describe-space --domain-id <domain-id> --space-name <space> --profile awsds-infra-sandbox-1 --query SpaceSettings | jq --arg n "$(AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/dev-env output -raw image_version_number)" '(.. | objects | select(.SageMakerImageVersionArn) | .SageMakerImageVersionArn) |= sub("/[0-9]+$"; "/" + $n)' > "$HOME/tmp/space.json" && cat "$HOME/tmp/space.json"
@@ -373,9 +415,10 @@ pass, so a space with both a Code Editor and a JupyterLab entry is repaired at o
 the live `SpaceSettings` carried, besides the resource spec: `AppType`, an `EbsStorageSettings` size,
 `SpaceManagedResources`, `RemoteAccess: ENABLED` — **without which the remote IDE stops working** —
 and a `CustomFileSystems` entry holding the project's S3 connection. None of those is in this
-runbook and none can be reconstructed from it. That is the whole reason the block is a transformation
-of the live read rather than a template (Lesson 60, and Lesson 61 for the file: regenerate it, never
-reuse the one an earlier bump left in `$HOME/tmp`).
+runbook and none can be reconstructed from it. If `update-space` is full-replace, a block naming only
+the resource spec deletes all of them; if it merges, the transformation costs nothing. That asymmetry
+is the reason the block is a transformation of the live read rather than a template (Lesson 60 for the
+risk, Lesson 61 for the file: regenerate it, never reuse the one an earlier bump left in `$HOME/tmp`).
 
 **Measured 2026-09-12**, at the `v0.3.0` → `v0.4.0` bump: `remote-editor-claude` pinned
 `image-version/awsds-sandbox-dev-env/3` after version 3 had been destroyed, and nothing in this
@@ -430,7 +473,10 @@ Step 1 ran on 2026-09-11, as the detach half of §B's bump; steps 2 and 3 are un
 | Does the domain offer the image? | `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | the attachment, which no Terraform state records |
 | Did the registration read the repository across the boundary? | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=BatchGetImage --profile awsds-infra-prod` | the image role as `AWSAccount`/`…:SageMaker` on `awsds-prod-ecr-dev-env` (§C5) |
 | Did a **space** pull it? | the same lookup, in the window a space started | the project role rather than the image role, and **by digest** rather than by tag — measured 2026-09-10, both app types |
-| Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py` | the repository's two copies, name by name; an image older than the Dockerfile is the gap it cannot see (§E) |
+| Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py`, `DE-1`..`DE-3` | the **recipe** against the account, name by name. An image built from an older checkout passes these |
+| Does the image the registry holds carry it? | `./aws/devenv.py`, `DE-5` | the **bytes**: the latest version's digest, its manifest, its config blob hash-checked, and the six variables in its `Env`. Verified both ways 2026-09-12 — `v0.4.0` bakes all six, `v0.1.0` none |
+| Which image is a space **running**? | `describe-app … --query ResourceSpec`, or `cat /opt/awsds-proxy.txt` inside it | the only reading that separates this image from AWS's distribution in the same picker, and `describe-app` still answers after the app is deleted (§C7) |
+| Does every space still name a version that exists? | the `describe-space` loop in §B step 6 | a space's own copy of the version number, which overrides the domain default and is stranded by a bump (`EXC-09`); a stranded one does not start |
 
 ## F. Failures, and what each one is
 

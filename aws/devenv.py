@@ -9,8 +9,11 @@
 #             ./aws/devenv.py staging         # another account folder, once one has a dev-env
 #   writes:   aws/output/devenv.txt   (untracked - see .gitignore)
 #   reads:    s3:GetObject on the account's own state bucket (the egress slice's outputs) with the
-#             kms:Decrypt that bucket's CMK requires, and sts:GetCallerIdentity. It never creates,
-#             updates or deletes anything, and it runs no terraform.
+#             kms:Decrypt that bucket's CMK requires; sagemaker:DescribeImageVersion, and
+#             ecr:BatchGetImage and ecr:GetDownloadUrlForLayer on the registry the image version
+#             names, followed by an HTTPS GET of the one presigned URL that returns the image's
+#             config blob; and sts:GetCallerIdentity. It never creates, updates or deletes
+#             anything, pulls no layer, and runs no terraform.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # Why this script exists. Since 6d decision 8 (2026-09-10) the house image carries the estate's six
@@ -37,10 +40,19 @@
 # working directory, no terraform binary and no module fetch. The bucket and key are the ones
 # scripts/gen-backend-hcl.py writes into backend.hcl - awsds-<env>-tfstate, <account>/egress/.
 #
+# What the registered image carries (DE-5). DE-3 compares the RECIPE with the account, so an image
+# built from an older checkout, or registered from an older tag, passes it while the domain serves
+# something else. DE-5 reads the bytes SageMaker serves instead: the image version's ContainerImage is
+# a digest, the manifest behind that digest names a config blob, and the blob's `Env` is exactly what
+# the Dockerfile's ENV baked - no Docker, no buildbox, and none of the buildbox client's own
+# `noProxy` injected over the reading (buildbox.md, "Reading an image's own environment"). The blob
+# is checked against its own digest before it is believed.
+#
 # What it cannot see (Lesson 13), so a clean run is not a working space:
-#   - Whether the image a space is RUNNING carries this list. The image on the registry may be
-#     older than the Dockerfile: /opt/awsds-proxy.txt inside the space holds the digest of what was
-#     baked, and section 3 prints the digest to compare it against. Nothing here opens a space.
+#   - Which image a space is RUNNING. A space keeps its own copy of the version number and can name
+#     another image entirely - AWS's SageMaker Distribution sits in the same portal picker, and a
+#     space created on it has no proxy variables at all (2026-09-12). `describe-app`'s ResourceSpec
+#     is that reading, or /opt/awsds-proxy.txt from inside, which only this image writes.
 #   - Whether the variables reach a process. `sudo` strips them and needs the image's two files
 #     (6d step 3.1); a Code Editor server inherits them from supervisord. Both are readings taken
 #     inside a space - docs/plan/runbooks/sg-proxy.md.
@@ -53,6 +65,8 @@ import hashlib
 import json
 import re
 import sys
+import urllib.error
+import urllib.request
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog
@@ -76,6 +90,27 @@ PROBES_VARIABLES = "terraform-live/sandbox/probes/variables.tf"
 ARG_LIST_RE = re.compile(r'^ARG NO_PROXY_LIST="(?P<value>[^"]*)"\s*$', re.M)
 ARG_PROXY_RE = re.compile(r"^ARG PROXY_URL=(?P<value>\S+)\s*$", re.M)
 PROBES_PROXY_RE = re.compile(r'default\s*=\s*"(?P<value>http://proxy\.[^"]+)"')
+
+# How SageMaker records the bytes an image version was registered against: a digest, never a tag
+# (INT-17). The registry is the account that holds the repository, which is not this one.
+CONTAINER_IMAGE_RE = re.compile(
+    r"^(?P<registry>[0-9]+)\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/"
+    r"(?P<repository>[^@]+)@(?P<digest>sha256:[0-9a-f]{64})$"
+)
+
+# The six the Dockerfile's final ENV sets. Both spellings, because tools disagree on which they read.
+PROXY_NAMES = ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "no_proxy", "NO_PROXY")
+
+
+def fetch(url: str) -> bytes:
+    """GET a presigned URL, honouring only the environment's proxy variables.
+
+    On macOS urllib also consults the system proxy configuration, which the aws CLI does not, so
+    reading only the environment keeps this download on the same path as the calls around it.
+    """
+    handler = urllib.request.ProxyHandler(urllib.request.getproxies_environment())
+    with urllib.request.build_opener(handler).open(url, timeout=60) as response:
+        return response.read()
 
 
 def digest(value: str) -> str:
@@ -230,6 +265,151 @@ def main(argv: list) -> int:
                 f"Dockerfile {baked_proxy} against {PROBES_VARIABLES} {expected}",
             )
 
+    # ------------------------------------------------------- what the registered image carries
+    # The latest version is the one read: the slice's version is force-new on `base_image`, so an
+    # apply destroys the previous one and there is never a second to choose between.
+    image_name = f"awsds-{env_token}-dev-env"
+    served: dict = {}
+    served_version = None
+    served_digest = None
+    config_digest = None
+    if caller.live:
+        res = cli.run(
+            "sagemaker",
+            "describe-image-version",
+            "--image-name",
+            image_name,
+            "--query",
+            "[Version,ContainerImage]",
+            "--output",
+            "json",
+            tolerate="ResourceNotFound",
+        )
+        match = None
+        if res.tolerated:
+            checks.note(
+                "DE-5",
+                "the registered image carries the account's list",
+                f"no version of {image_name} is registered in {account}",
+            )
+        elif res.ok:
+            served_version, container_image = json.loads(res.stdout)
+            match = CONTAINER_IMAGE_RE.match(container_image or "")
+            if match is None:
+                checks.fail(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version}'s ContainerImage is not a digest reference: "
+                    f"{container_image!r}",
+                )
+        if match is not None:
+            registry, repository = match.group("registry"), match.group("repository")
+            served_digest = match.group("digest")
+            where = ("--registry-id", registry, "--repository-name", repository)
+            manifest_res = cli.run(
+                "ecr",
+                "batch-get-image",
+                *where,
+                "--image-ids",
+                f"imageDigest={served_digest}",
+                "--query",
+                "images[0].imageManifest",
+                "--output",
+                "text",
+            )
+            if manifest_res.ok:
+                config_digest = json.loads(manifest_res.stdout)["config"]["digest"]
+                url_res = cli.run(
+                    "ecr",
+                    "get-download-url-for-layer",
+                    *where,
+                    "--layer-digest",
+                    config_digest,
+                    "--query",
+                    "downloadUrl",
+                    "--output",
+                    "text",
+                )
+                raw = None
+                if url_res.ok:
+                    try:
+                        raw = fetch(url_res.stdout)
+                    except (urllib.error.URLError, TimeoutError) as exc:
+                        errors.add(("GET", "<presigned config blob URL>"), str(exc))
+                if raw is not None:
+                    if f"sha256:{hashlib.sha256(raw).hexdigest()}" != config_digest:
+                        checks.fail(
+                            "DE-5",
+                            "the registered image carries the account's list",
+                            f"the downloaded config blob does not hash to {config_digest} - "
+                            "not the image the manifest names, so nothing in it is believed",
+                        )
+                    else:
+                        env = json.loads(raw).get("config", {}).get("Env") or []
+                        for name, _, value in (item.partition("=") for item in env):
+                            if name in PROXY_NAMES:
+                                served[name] = value
+
+        decided = any(row.split("\t")[1] == "DE-5" for row in checks.rows)
+        if config_digest is not None and served_digest is not None and not decided:
+            absent = [name for name in PROXY_NAMES if name not in served]
+            served_list = served.get("NO_PROXY", "")
+            reference, against = (
+                (live, "the account's") if live is not None else (baked, "the Dockerfile's")
+            )
+            if absent:
+                checks.fail(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version} bakes no {', '.join(absent)} - a space on it "
+                    "reaches no internet name, and an AWS call with no bypass list leaves the "
+                    "perimeter",
+                )
+            elif served.get("no_proxy") != served_list:
+                checks.fail(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version} bakes no_proxy and NO_PROXY differently - a tool "
+                    "reading the lowercase spelling gets another perimeter",
+                )
+            elif baked_proxy and any(served[n] != baked_proxy for n in PROXY_NAMES[:4]):
+                checks.fail(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version} bakes a proxy URL other than the Dockerfile's "
+                    f"{baked_proxy}",
+                )
+            elif reference is None:
+                checks.note(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version}: {len(entries(served_list))} names, sha256 "
+                    f"{digest(served_list)} - neither side to compare it with was read",
+                )
+            elif set(entries(served_list)) != set(entries(reference)):
+                missing = len(set(entries(reference)) - set(entries(served_list)))
+                stale = len(set(entries(served_list)) - set(entries(reference)))
+                checks.fail(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version} (sha256 {digest(served_list)}) against {against} "
+                    f"(sha256 {digest(reference)}): {missing} name(s) the image lacks, {stale} it "
+                    "has and should not - DE-3 may pass while the domain serves this",
+                )
+            else:
+                checks.ok(
+                    "DE-5",
+                    "the registered image carries the account's list",
+                    f"version {served_version}, {served_digest[:19]}...: "
+                    f"{len(entries(served_list))} names, sha256 {digest(served_list)}",
+                )
+    else:
+        checks.fail(
+            "DE-5",
+            "the registered image carries the account's list",
+            f"{profile} did not authenticate",
+        )
+
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -246,8 +426,9 @@ SECTIONS
   2. The account's list, from {account}/egress's state
   3. What the Dockerfile carries
   4. The divergence, name by name
-  5. Checks
-  6. Calls that failed
+  5. What the registered image carries
+  6. Checks
+  7. Calls that failed
 
 HOW TO READ THIS FILE
   - A NAME IN THE ACCOUNT AND NOT IN THE IMAGE is the dangerous half: the call leaves
@@ -258,9 +439,13 @@ HOW TO READ THIS FILE
     refusal (Lesson 42).
   - AN EMPTY `no_proxy` OUTPUT IS THE SESSION BEING DOWN, not a divergence. egress/ is
     [E]; a destroy leaves the state object and removes its outputs.
-  - THIS COMPARES THE REPOSITORY, NOT A RUNNING IMAGE. The registry may hold an image
-    older than the Dockerfile: read /opt/awsds-proxy.txt inside a space and compare its
-    digest with section 3's.
+  - DE-3 COMPARES THE RECIPE; DE-5 READS THE BYTES. An image built from an older
+    checkout, or registered from an older tag, passes DE-3 while the domain serves
+    something else. Section 5 is the registered image's own baked Env, read from the
+    registry by digest and checked against the config blob's own digest.
+  - NEITHER SAYS WHICH IMAGE A SPACE RUNS. A space keeps its own version number and can
+    name AWS's SageMaker Distribution instead, which bakes no proxy at all. Read
+    `describe-app`'s ResourceSpec, or /opt/awsds-proxy.txt inside the space.
   - The repair for any divergence is the chain in docs/plan/runbooks/dev-env.md E:
     edit the Dockerfile, rebuild, push a new tag, bump image_tag, re-attach, restart.
 
@@ -273,27 +458,28 @@ trusting a stale copy.""")
                 "WHAT\tWHERE",
                 f"the account's list\ts3://{bucket}/{key} -> outputs.no_proxy",
                 f"the baked list\t{DOCKERFILE} -> ARG NO_PROXY_LIST",
+                f"the served list\t{image_name}'s latest version -> ContainerImage -> config Env",
                 f"caller\t{caller.arn or '(failed)'}",
             ]
         )
 
         rep.h1(f"2. The account's list, from {account}/egress's state")
         if live is None:
-            rep.text("Not read - see the checks in section 5.")
+            rep.text("Not read - see the checks in section 6.")
         else:
             rep.text(f"{len(entries(live))} entries, sha256 {digest(live)}\n")
             rep.tabulate(["NAME"] + entries(live))
 
         rep.h1("3. What the Dockerfile carries")
         if baked is None:
-            rep.text("Not read - see the checks in section 5.")
+            rep.text("Not read - see the checks in section 6.")
         else:
             rep.text(f"""{len(entries(baked))} entries, sha256 {digest(baked)}
 proxy URL : {baked_proxy or "(not found)"}
 
 The digest above is what a space's /opt/awsds-proxy.txt prints when it is running an
-image built from this Dockerfile. Two different digests mean the image predates the
-file, which this script cannot see from here.""")
+image built from this Dockerfile. Section 5 reads the same digest out of the image the
+registry actually holds.""")
 
         rep.h1("4. The divergence, name by name")
         if baked is None or live is None:
@@ -316,10 +502,26 @@ in the image, missing from the account : {len(stale_in_image)}
                 ]
             )
 
-        rep.h1("5. Checks")
+        rep.h1("5. What the registered image carries")
+        if config_digest is None or not served:
+            rep.text("Not read - see the checks in section 6.")
+        else:
+            served_list = served.get("NO_PROXY", "")
+            rep.tabulate(
+                [
+                    "WHAT\tVALUE",
+                    f"image version\t{image_name} {served_version}",
+                    f"served digest\t{served_digest}",
+                    f"config blob\t{config_digest}  (hash checked)",
+                    f"proxy URL\t{served.get('HTTPS_PROXY', '(absent)')}",
+                    f"NO_PROXY\t{len(entries(served_list))} entries, sha256 {digest(served_list)}",
+                ]
+            )
+
+        rep.h1("6. Checks")
         rep.checks_table(checks)
 
-        rep.h1("6. Calls that failed")
+        rep.h1("7. Calls that failed")
         failed_calls_epilogue(rep, errors)
 
     n_fail = checks.n_fail()

@@ -35,6 +35,11 @@ resource "aws_sagemaker_image" "dev_env" {
 # Stage 8 step 1's pipeline takes this slice over and its only input is the approved digest - and it
 # is also why the attachment's version number is a decision rather than a detail (the runbook's
 # "Attaching the image to the domain").
+#
+# Version N is named in two places an apply does not reach: the domain's CustomImages, and the
+# DefaultResourceSpec of every space created while N was current. A space keeps that copy and it
+# overrides the domain default, so after the destroy its app does not start (AWS_STATE.md EXC-09).
+# No alias is set, which is what would let a space follow a bump; dev-env.md §B step 6 is the sweep.
 resource "aws_sagemaker_image_version" "dev_env" {
   image_name = aws_sagemaker_image.dev_env.image_name
   base_image = local.base_image
@@ -44,8 +49,9 @@ resource "aws_sagemaker_image_version" "dev_env" {
 #
 # One configuration per app type: the vendor's instruction is to match the application type to the
 # Dockerfile, and the domain reads the two from different fields of its user settings
-# (JupyterLabAppSettings and CodeEditorAppSettings). A space cannot name either - CustomImages lives
-# on the domain default or a user profile, never on SpaceSettings.
+# (JupyterLabAppSettings and CodeEditorAppSettings). A space names no configuration - CustomImages
+# lives on the domain default or a user profile, never on SpaceSettings - though it does name an image
+# and a version, in its own DefaultResourceSpec (see the version above).
 #
 # No file_system_config in either: the defaults are already this image's shape - uid 1000, gid 100,
 # and the space's EBS volume mounted at /home/sagemaker-user, a path the platform owns and that
