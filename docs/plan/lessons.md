@@ -1130,6 +1130,18 @@ can be recognised without opening this file; the reasoning that makes each one u
     `templatefile` in a scratch directory costs one minute), and treat the first successful boot,
     not the first successful apply, as the moment a `[D]` slice is evidence rather than intent.
 
+    Stage 6e, 2026-09-12, adds the case where `validate` is not silent but affirmative. `vpc-egress`
+    v0.12.0 to v0.14.0 built each endpoint's policy with
+    `scope == null ? st : merge(st, { Action = scope })`, whose branches disagree on the type of one
+    attribute - `"*"` against a list of strings. `terraform validate` answered `Success!` in the
+    module directory and again in `sandbox/egress` fully initialised at the tag, because a
+    statement's type stays dynamic while the keys of a `for` over a computed map are unknown. They
+    are known at plan, and the same directory then produced the error once per endpoint on the first
+    `make up`. Neither `make check` nor the commit hooks read a plan, so three module versions
+    reached origin and a caller was committed against them with no gate that could have seen it. A
+    module change is exercised by planning a caller against the local path (`terraform-changes.md`
+    Recipe B step 1), never by validating it.
+
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
     [Lesson 42](#) separates a permission failure, which is a response, from a network failure,
     which is the absence of one. This is its mirror and the harder case: there is a response, and

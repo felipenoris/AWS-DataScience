@@ -120,25 +120,30 @@ locals {
   # of the service, not of this estate's choices, and it changes when AWS adds an API rather than
   # when a decision is taken here.
   #
-  # `null`, not `["*"]`, for an endpoint nobody named. The difference is not cosmetic: `["*"]`
-  # would emit `"Action": ["*"]` where every endpoint has carried `"Action": "*"` since step 9,
-  # so a caller adopting this version would see a policy diff on all eighteen endpoints for a
-  # change that means nothing. An unscoped endpoint's document must come out BYTE-IDENTICAL, which
-  # is also what the D11 cycle checks across a `make down` / `make up` (Stage 3's Validation).
-  endpoint_action_scope = {
-    for short, _svc in local.service_names :
-    short => lookup(var.endpoint_action_scopes, short, null)
+  # An endpoint nobody named takes `local.endpoint_policy` itself - the same string rather than a
+  # re-encoding of it - so its document stays byte-identical to what every endpoint has carried
+  # since step 9, which is what the D11 cycle compares across a `make down` / `make up` (Stage 3's
+  # Validation). Emitting `"Action": ["*"]` there would be a policy diff on every unscoped endpoint
+  # for a change that means nothing.
+  #
+  # The two documents are built separately and selected by `lookup`, never merged under a
+  # conditional. A conditional has to unify `Action` across its branches - `"*"` on one side, a list
+  # on the other - and the mismatch is invisible to `terraform validate`: a statement's type stays
+  # dynamic until the keys of `local.service_names` are known, which happens at plan. Validate
+  # answered `Success!` on the caller for both versions that shipped it (Lesson 54).
+  scoped_policies = {
+    for short, actions in var.endpoint_action_scopes :
+    short => jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        for st in jsondecode(local.endpoint_policy).Statement : merge(st, { Action = actions })
+      ]
+    })
   }
 
   endpoint_policies = {
     for short, _svc in local.service_names :
-    short => jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        for st in jsondecode(local.endpoint_policy).Statement :
-        local.endpoint_action_scope[short] == null ? st : merge(st, { Action = local.endpoint_action_scope[short] })
-      ]
-    })
+    short => lookup(local.scoped_policies, short, local.endpoint_policy)
   }
 
   endpoint_policy = jsonencode({
