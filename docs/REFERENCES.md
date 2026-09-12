@@ -553,6 +553,35 @@
   updates are off, which the FAQ's own instruction covers by setting Update: Mode (`update.mode`) to
   `none`: <https://code.visualstudio.com/docs/supporting/FAQ>.
 
+- **Amazon Q Developer**, the pages [Stage 6d](plan/stages/stage-06d-unified-studio-remainder.md) step 10
+  was planned from, read 2026-09-12. *Tiers of service* — the Free tier signs a third-party IDE in with a
+  Builder ID only, while IAM credentials serve the console and AWS coding environments:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-tiers.html>. *Data storage* — Q *"stores
+  your questions, its responses, and additional context"*, at the Free tier in `us-east-1`:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/data-storage.html>. *Data encryption* — AWS
+  owned keys, customer managed keys for Pro IdC users only:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/data-encryption.html>. *Service
+  improvement* — Free tier content may be used, *"for model training"* among other uses, and the
+  opt-out in an IDE is the IDE's setting rather than the Organizations AI services opt-out policy:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/service-improvement.html> and
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/opt-out-IDE.html>. *Cross-region
+  processing* — *"powered by Amazon Bedrock"*, US inference in `us-east-1`, `us-west-2` and `us-east-2`:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/cross-region-processing.html>. *Selecting a
+  model for chat in IDEs* — Claude Sonnet 3.7 and Claude Sonnet 4, the second the default, on the day
+  read: <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-in-ides-chat-models.html>. *Interface
+  endpoints* — `com.amazonaws.us-east-1.codewhisperer` exists in `us-east-1` alone:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/vpc-interface-endpoints.html>. *User
+  permissions* — `q:PassRequest` is what lets Amazon Q act with the caller's credentials:
+  <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/id-based-policy-examples-users.html>. *Pro
+  Region support* — the console and profile in `us-east-1` and `eu-central-1` only, data stored where the
+  profile is: <https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-admin-setup-subscribe-regions.html>.
+  On the SageMaker side: *Set up Amazon Q Developer for your users* — *"Amazon Q Developer in Studio
+  doesn't use user content to improve the service, regardless of whether you use the Free-tier or
+  Pro-tier subscription"*, the two Free-tier actions, and `AmazonQSettings` for Pro:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-amazon-q-admin-guide-set-up.html>;
+  and *Generative AI assistance in Amazon SageMaker Unified Studio* — the Free tier on by default, and
+  the deny pair and SSM parameters that turn it off:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>.
 - **Amazon Bedrock data protection**, the pages [Stage 6e](plan/stages/stage-06e-claude-code-bedrock.md)
   step 7 is written from (read 2026-09-11). *Abuse detection* carries the sentence that answers the
   requirement — *"Amazon Bedrock uses a zero operator access (ZOA) data security model … Also, Amazon
