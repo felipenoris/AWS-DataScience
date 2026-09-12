@@ -84,6 +84,33 @@
           "aws:PrincipalIsAWSService": "false"
         }
       }
+    },
+    {
+      "Sid": "DenyBedrockRetentionModeOtherThanNone",
+      "Effect": "Deny",
+      "Action": "bedrock:PutAccountDataRetention",
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "bedrock:DataRetentionMode": "none"
+        }
+      }
+    },
+    {
+      "Sid": "DenyInvokingModelsThatRetain",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-1",
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5",
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-1",
+        "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5",
+        "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1"
+      ]
     }
   ]
 }

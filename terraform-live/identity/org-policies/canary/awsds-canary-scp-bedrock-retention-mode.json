@@ -1,0 +1,16 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyBedrockRetentionModeOtherThanNone",
+      "Effect": "Deny",
+      "Action": "bedrock:PutAccountDataRetention",
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "bedrock:DataRetentionMode": "none"
+        }
+      }
+    }
+  ]
+}

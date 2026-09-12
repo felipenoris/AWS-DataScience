@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`) **step 4** (`vpc-egress-v0.14.1` applied 2026-09-12 for `2 to add, 0 to change, 0 to destroy`, the two endpoints always-on rather than an optional group — decision 12, and the image's bypass list refreshed 50 → 52 entries) and **step 5** (`default-v0.3.0` built and pushed 2026-09-12, registered as image version 3 against `sha256:bd78c976…` and attached to the domain on both app types). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **Step 6 ran on 2026-09-12 and answered**: a session replied from inside a space, on **Haiku 4.5**, as the project role, through `vpce-0171b785…`, with the proxy log carrying no Bedrock and no Anthropic name under a negative control. Getting there cost four measurements nobody had: the Control Tower Region ceiling refuses a cross-Region profile until `bedrock:InvokeModel*` is exempted, because authorization is evaluated **per destination Region**; what enables a model is the **agreement**, not the form; the retention mode is **per Region** and is declared in one of the three a prompt is processed in; and **`claude-opus-5` and `claude-sonnet-5` are refused by AWS for this account**, for every principal including `AdministratorAccess`, while the 4.5 generation answers. **Closed since**: the scoped set is decision **14**'s 4.5 generation, the Region exemption has its compensating deny (decision **15**, applied and exercised), and `mode: none` is declared in **all 17 enabled Regions** (decision **16**). **What remains**: 7.5 — which decision 16 left carrying the whole requirement, since the exemption it needed removed the Region ceiling from the retention write — the `default-v0.4.0` release that delivers the new pins, the battery re-run, 8.3, and 6.4's token volume. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`) **step 4** (`vpc-egress-v0.14.1` applied 2026-09-12 for `2 to add, 0 to change, 0 to destroy`, the two endpoints always-on rather than an optional group — decision 12, and the image's bypass list refreshed 50 → 52 entries) and **step 5** (`default-v0.3.0` built and pushed 2026-09-12, registered as image version 3 against `sha256:bd78c976…` and attached to the domain on both app types). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **Step 6 ran on 2026-09-12 and answered**: a session replied from inside a space, on **Haiku 4.5**, as the project role, through `vpce-0171b785…`, with the proxy log carrying no Bedrock and no Anthropic name under a negative control. Getting there cost four measurements nobody had: the Control Tower Region ceiling refuses a cross-Region profile until `bedrock:InvokeModel*` is exempted, because authorization is evaluated **per destination Region**; what enables a model is the **agreement**, not the form; the retention mode is **per Region** and is declared in one of the three a prompt is processed in; and **`claude-opus-5` and `claude-sonnet-5` are refused by AWS for this account**, for every principal including `AdministratorAccess`, while the 4.5 generation answers. **Closed since**: the scoped set is decision **14**'s 4.5 generation, the Region exemption has its compensating deny (decision **15**, applied and exercised), and `mode: none` is declared in **all 17 enabled Regions** (decision **16**). **7.5 is applied too** (2026-09-12): the mode ceiling and the retaining-model deny, with the condition key proven published by a throwaway document on `Policy Test` before the root document was touched. **What remains**: the `default-v0.4.0` release that delivers the new pins, the full battery re-run, 8.3, and 6.4's token volume. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -703,12 +703,24 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   `Interactive` OU can now set the mode in every Region, `inherit` included. The mode is correct in
   all 17 and nothing keeps it there.
 
-  **The order is the reverse of the obvious one, and decision 16 says why**: the condition below is
-  `StringNotEquals` on a key whose presence at request time is unverified, and such a condition
-  evaluates TRUE when the key is absent. Attaching this first would have denied `--mode none` itself.
-  The writes are done, so this now attaches against a **positive control**: `--mode none` must still
-  succeed afterwards. If it is refused, the key is not published, this is a blanket deny on the action
-  rather than decision 4's mode ceiling, and that is a different control needing a different decision.
+  **The premise is measured, 2026-09-12, and it was the last thing blocking this step.** The condition
+  below is `StringNotEquals` on `bedrock:DataRetentionMode`, and such a condition evaluates TRUE when
+  the key is absent from the request — so if `PutAccountDataRetention` did not publish it, this
+  statement would be a blanket deny on the action, `--mode none` included. **It publishes it.** The
+  statement was parked on the `Policy Test` OU as a throwaway document rather than tested by amending
+  the root document, because the root document already reaches `Policy Canary` and a blanket deny
+  landing there would have stranded every retention write in the organization at once. Three calls as
+  `awsds-policy-canary` in `us-west-2`: `--mode none` with nothing attached **succeeded** (15:56:38Z),
+  the same call with the document attached **succeeded** with a fresh `updatedAt` (16:05:22Z, so a
+  write and not a no-op), and `--mode inherit` was **refused naming `p-ojm4ldiw`** — the throwaway's
+  own id. The first call is what makes the third attributable. Detached and deleted in the same
+  sitting; the document is kept as
+  [`canary/awsds-canary-scp-bedrock-retention-mode.json`](../../../terraform-live/identity/org-policies/canary/awsds-canary-scp-bedrock-retention-mode.json).
+
+  **The mode enum has four values, not the two this file discussed** (measured the same day):
+  `default`, `none`, `provider_data_share`, `inherit`. The condition catches the other three, so the
+  statement is unchanged — but **`provider_data_share` is the value the requirement is about**, and it
+  was written here without anyone having read the enum.
   - **7.5a — [Claude⚡] Set the account's mode to `none`. Done.** `us-west-2` 2026-09-11, the other
     sixteen 2026-09-12 (decision 16). It is a write, and it is what turns the vendor's default into
     this account's own statement. **It has no Terraform resource and no CloudFormation type** — nine
@@ -720,8 +732,8 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
     conditioned on `bedrock:DataRetentionMode` and rejected the one beside it conditioned on
     `bedrock:NoSuchConditionKeyAtAll` (`INVALID_SERVICE_CONDITION_KEY`), so the silence on the real
     key is a reading rather than an absence (2026-09-11). It establishes the key is in the service's
-    catalogue, not that `PutAccountDataRetention` publishes it at request time — that is the
-    battery's, in `Policy Canary`.
+    catalogue, not that `PutAccountDataRetention` publishes it at request time — **that is the
+    canary's, and it answered on 2026-09-12: the key is published.** See the block above.
   - **Deny any retention mode but `none`.** The write actions publish a `bedrock:DataRetentionMode`
     condition key, so a deny on `bedrock:PutAccountDataRetention` where the mode is not `none` makes it
     impossible for anyone in the organization to opt this estate into retention — including by accident,
@@ -737,8 +749,25 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
     as a deny on the named retaining models, never as an allow-list of the scoped ones, or the next
     model this estate adopts is refused by a document nobody thought to open.
 
-  **`awsds-org-scp-baseline.json` carries them** (taken 2026-09-11 by the user). It is attached at the
-  **root**, so it reaches every account in the organization — **with the exception every SCP has: it does
+  **`awsds-org-scp-baseline.json` carries them** (taken 2026-09-11 by the user). **Applied
+  2026-09-12**: `0 to add, 2 to change, 0 to destroy` — the document updated in place, id unchanged,
+  so the root attachment never moved and there was no instant without a baseline; the second change
+  is the `Interactive` document's description, which still named `Development` in an OU it left at 6b
+  and named neither statement decision 15 added. Re-plan `No changes`. The document goes 1,651 → 2,395
+  minified bytes, against the 5,120 ceiling. **Re-probed where it lives** rather than read back:
+  `--mode none` succeeded (16:18:02Z), `--mode inherit` was refused naming **`p-1fp032g8`** — the
+  baseline, not the deleted throwaway — `invoke-model` on `us.anthropic.claude-fable-5` was refused by
+  the same id **on the inference-profile ARN**, the *must still succeed* trio passed, and
+  **`us.anthropic.claude-haiku-4-5-20251001-v1:0` still answered from `Sandbox`**. That last control is
+  the one worth keeping: the failure these statements could cause is not a retaining model answering,
+  it is the **scoped set going dark** from a resource list written one character wrong.
+
+  **Six resource ARNs, not two.** The two foundation-model ids plus a `us.` **and** a `global.`
+  inference profile for each — all four measured `ACTIVE` 2026-09-12. The refusal named the
+  *inference-profile* ARN, so a statement listing only the model ids would have left the route an
+  invocation actually takes wide open.
+
+  It is attached at the **root**, so it reaches every account in the organization — **with the exception every SCP has: it does
   not restrict the Management account**, even attached at the root. That is acceptable here and it is not
   nothing: it means the control rests on principle 1 for Management, and the only thing that keeps
   Management out of scope is that nobody invokes a model there. Decision 2 keeps the model-access form
@@ -863,7 +892,7 @@ busy one has no upper bound at all. `make down` does not reach it.
 | (iv) | Is the proxy access log silent on `bedrock-runtime` for the same window? | 4.5's negative control |
 | (v) | Does a session reach **no** Anthropic host? | 6.2 |
 | (vi) | What are the three models' `allowed_modes`, on the day they are read? | 7.2 — **and no AWS API carries the field**, so this one is answered from the vendor page or the console, dated |
-| (vii) | Is the account's retention mode `none`, and can anyone change it? | **Half answered.** 7.2 read `inherit`, 7.5a set `none` at 2026-09-11T22:31:02Z and `INV-18` is the standing reading. *Anyone with the permission can still change it back*: 7.5's deny is written nowhere yet |
+| (vii) | Is the account's retention mode `none`, and can anyone change it? | **Answered, both halves, 2026-09-12.** `none` in all 17 enabled Regions (decision 16), and no principal in the organization can set it to anything else: `--mode inherit` is refused naming `p-1fp032g8` while `--mode none` still succeeds. `INV-18` is the standing reading and `./aws/bedrock-scope.py`'s `BS-6` the standing check. The residual is the one every SCP has — it does not restrict `Management` |
 | (xiii) | Is `mode: none` **enforced**, or only declared? | **Nothing here answers it.** No control-plane call shows a retention mode's effect, and the two models the vendor names as retaining read exactly like the scoped three (7.2). 7.2a's invocation is the only instrument, and it is decision 11 |
 | (viii) | Does the CloudTrail record carry the prompt? | 4.6 — it must not |
 | (ix) | What does one session cost? | 6.4, 8.1 |
