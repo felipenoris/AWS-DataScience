@@ -65,9 +65,9 @@ variable "registry" {
 # - runbooks/dev-env.md, "Attaching the image to the domain".
 
 variable "image_tag" {
-  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.3.0 carries, against default-v0.2.0: /etc/claude-code/managed-settings.json, a NO_PROXY_LIST of 52 entries that includes the two Bedrock endpoint names, rust-src in the rustup profile, and no Julia precompilation cache (2026-09-12)."
+  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.4.0 carries, against default-v0.3.0: the Claude Code model pins moved to the 4.5 generation, which is the one AWS lets this account invoke (Stage 6e decision 14). Nothing else changed - the NO_PROXY_LIST is the same 52 entries, sha256 fc11caaa3145fdef (2026-09-12)."
   type        = string
-  default     = "default-v0.3.0"
+  default     = "default-v0.4.0"
 
   validation {
     condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+$", var.image_tag))

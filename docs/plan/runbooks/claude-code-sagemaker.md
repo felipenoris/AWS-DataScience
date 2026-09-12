@@ -21,7 +21,7 @@ through the VPC endpoint — which is what every section below was written to pr
 
 **§M is done**: M0, M2, M4 and M5; M1 in all 17 enabled Regions and M3 attached, both 2026-09-12.
 **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
-2026-09-12, and `default-v0.3.0` carries the settings file as image version 3, attached to the domain
+2026-09-12, and `default-v0.4.0` carries the settings file as image version 4, attached to the domain
 the same day. **§U is exercised** for the first time, on settings edited by hand inside the container
 rather than shipped in the image — a measurement, not a configuration.
 
@@ -732,7 +732,7 @@ change; §U is the other half.
 | the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), on `vpc-egress-v0.14.1` | applied 2026-09-12, step 4.2 |
 | the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
 | the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
-| the client's configuration | [`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.3.0`, image version 3, 2026-09-12 |
+| the client's configuration | [`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.4.0`, image version 4, 2026-09-12 — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
 
 ### The private path
 

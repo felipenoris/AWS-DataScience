@@ -415,6 +415,14 @@ aws sagemaker describe-space --domain-id <domain-id> --space-name <space> \
   --profile awsds-infra-sandbox-1 --query 'SpaceSettings.[RemoteAccess,AppType,CodeEditorAppSettings.DefaultResourceSpec]'
 ```
 
+**Read the third field, not only the first two.** `DefaultResourceSpec` carries the space's **own
+copy of the image version number**, written when the space was created, and it **overrides the
+domain default** — so an image bump leaves it naming a version that no longer exists. Measured
+2026-09-12: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
+version 3, which the apply had destroyed. Repairing it is [`dev-env.md`](dev-env.md) §B step 6, and
+it is `update-space` rather than a recreate — **`RemoteAccess`, the EBS size and the project's S3
+connection all live in that same block**, and a recreate loses the home directory with them.
+
 **Which names the session's traffic asked for** — Production, and the window matters: this log lags its
 own events by minutes, so an absence read too early is not an absence (`log-debugging.md`):
 
