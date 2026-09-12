@@ -336,3 +336,44 @@ Claude's, read-only, and is analysis rather than record.*
   token expired, because it used a still-valid cached **role credential**; terraform's SDK tried to
   refresh the **session token** and failed. Neither is wrong — they read different objects, and
   `get-caller-identity` is therefore not a test of whether an apply will authenticate.
+
+## 2026-09-12 — step 4 restructured: the Bedrock pair is always-on, not a group
+
+*Claude's authored changes, at the user's direction. No AWS write; the apply is still owed.*
+
+- **[user] The `bedrock-llm` group is withdrawn**, and the reason is the flag's own semantics: an
+  optional group is per apply, `make up` without it destroys what it created, and the assistant
+  needs this path in every session a space runs. A permanent consumer cannot live behind a
+  per-apply flag.
+
+- **[Claude] `vpc-egress-v0.14.0`.** `bedrock-llm` removed; the optional `bedrock` group narrowed
+  to `["bedrock-agent", "bedrock-agent-runtime"]`, what only the blueprints use. **The mutual
+  exclusion of `v0.13.0` is gone with it** — the two groups shared two endpoints and could not be
+  named together, and with the shared pair moved out there is nothing left to collide. A guard
+  against a situation that can no longer arise misleads the next reader.
+
+- **[Claude] `sandbox/egress/` carries the pair in `extra_services`**, always on, and takes the new
+  tag. The cost moves from per-apply to permanent-while-up: **Sandbox 18 endpoints → 20, the
+  estate's fixed rate 0.390 → 0.410 USD/h.** `CLAUDE.md`, `docs/plan/conventions.md` §6,
+  `docs/NETWORK.md` and the `Makefile`'s `GROUPS` help were corrected in the same sitting; the
+  2026-09-09 "16 of 18" measurement in `NETWORK.md` stays as measured, with the new count dated
+  beside it.
+
+- **[Claude] The restructure moved the action-scope question, and the answer changed with it.**
+  While the two endpoints belonged to an assistant-only group, scoping both was safe. As always-on
+  infrastructure they are shared with the six SMUS `AmazonBedrock*` blueprints, and a list written
+  for one consumer silently refuses the other with no denial naming the policy (Lesson 51). So
+  `sandbox/egress/` now scopes **`bedrock-runtime` only**, to `InvokeModel` and
+  `InvokeModelWithResponseStream` — that door carries invocation for every consumer, so the list is
+  a statement about the service. **`bedrock` keeps `Action = "*"`** under the organization
+  condition.
+
+- **[Claude] What that gives up, written rather than left to be discovered.**
+  `PutAccountDataRetention` and `PutModelInvocationLoggingConfiguration` are control-plane calls and
+  still traverse their endpoint. The first is covered org-wide by step 7.5's SCP, which is the right
+  layer for it; the second is Stage 11 step 5.6's and has no control here yet.
+
+- **[Claude] `terraform validate` passes** on the module and on the caller against
+  `vpc-egress-v0.14.0`, fetched from origin. **Three tags exist for one step** — `v0.12.0` the
+  mechanism, `v0.13.0` a guard, `v0.14.0` the restructure that dissolved it — because a tag is
+  never moved and each was pushed before the next question was asked.

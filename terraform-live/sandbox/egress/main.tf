@@ -21,7 +21,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.13.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.14.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -36,28 +36,26 @@ module "egress" {
   endpoint_subnet_id         = data.terraform_remote_state.foundation.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.foundation.outputs.endpoints_security_group_id
 
-  # Stage 6e step 4.4 - the Bedrock door, narrowed on the action axis.
+  # Stage 6e step 4.4 - the invocation door, narrowed on the action axis.
   #
-  # It applies only when `make up ENV=sandbox GROUPS=bedrock-llm` created those two endpoints; a
-  # key naming an endpoint that does not exist contributes nothing, which is why this is a
-  # permanent declaration rather than something threaded through the GROUPS flag. The module
-  # refuses `GROUPS=bedrock,bedrock-llm` outright (v0.13.0), so this list can never reach the
-  # blueprints' control-plane calls.
+  # THE RUNTIME ENDPOINT ONLY, AND THE CONTROL PLANE DELIBERATELY NOT. `bedrock-runtime` carries
+  # invocation for every consumer this account has or will have, so naming the two invoke actions
+  # is a statement about the service rather than about one caller: any future runtime API - an
+  # async invoke, a bidirectional stream - does not silently acquire this door. `bedrock` is a
+  # growing control plane that the six SMUS AmazonBedrock* blueprints call for things a coding
+  # assistant never does (CreateGuardrail, CreateEvaluationJob), and since 2026-09-12 both
+  # endpoints are always-on infrastructure shared by both consumers. A list written for one of
+  # them would silently refuse the other, with no denial that names this policy, so the control
+  # plane keeps `Action = "*"` under the organization condition like the other eighteen.
   #
-  # THE LIST IS THE CLIENT'S, MEASURED FROM THE VENDOR'S OWN IAM SAMPLE (Stage 6e step 3.2), and
-  # it is short because a coding assistant does four things: invoke, invoke with a stream, list
-  # the profiles to resolve an alias, and read one to pick a request shape. What it buys is that
-  # `PutAccountDataRetention` and `PutModelInvocationLoggingConfiguration` cannot traverse this
-  # door at all - the two calls that would undo 7.5a and turn prompt logging on - whatever an
-  # identity policy in this account allows.
+  # WHAT THIS GIVES UP, stated rather than discovered later: `PutAccountDataRetention` and
+  # `PutModelInvocationLoggingConfiguration` are control-plane calls and still traverse their
+  # endpoint. The first is covered org-wide by Stage 6e step 7.5's SCP, which is the right layer
+  # for it; the second is Stage 11 step 5.6's question and has no control here yet.
   #
-  # An action absent here gets no response and no denial naming this policy, so an addition
-  # belongs with a measured refusal rather than with a guess (the module's own variable says so).
+  # An action absent from a scoped list gets no response and no denial naming this policy, so an
+  # addition belongs with a measured refusal rather than with a guess.
   endpoint_action_scopes = {
-    bedrock = [
-      "bedrock:ListInferenceProfiles",
-      "bedrock:GetInferenceProfile",
-    ]
     "bedrock-runtime" = [
       "bedrock:InvokeModel",
       "bedrock:InvokeModelWithResponseStream",
@@ -98,6 +96,22 @@ module "egress" {
     "sagemaker.api",
     "sagemaker.runtime",
     "sagemaker.studio",
+
+    # The Bedrock pair, always on since 2026-09-12 (Stage 6e step 4, the user's restructure). They
+    # were an optional group first, and the flag was the wrong shape for them: a group is per apply
+    # and a `make up` without it destroys what it created, while the assistant needs this path in
+    # every session a space runs. ~USD 0.020/h, which moves this account's endpoint set from 18 to
+    # 20 and the estate's fixed rate from 0.390 to 0.410 USD/h while the slice is up.
+    #
+    # `bedrock` is here as well as `bedrock-runtime` because the client resolves an alias to a
+    # profile that exists in this account before it invokes anything - ListInferenceProfiles and
+    # GetInferenceProfile are control-plane calls, and without the endpoint they leave through the
+    # proxy while the invocation does not.
+    #
+    # `GROUPS=bedrock` now adds only the agent pair (vpc-egress-v0.14.0) and a blueprint that needs
+    # them finds this control plane already up.
+    "bedrock",
+    "bedrock-runtime",
 
     # `S3TableCatalog` is one of category 1's eleven blueprints and the S3 gateway endpoint does not
     # cover it: a gateway carries `s3` and `dynamodb`, nothing else, while `s3tables` is its own
