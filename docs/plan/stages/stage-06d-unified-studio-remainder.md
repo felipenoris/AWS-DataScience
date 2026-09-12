@@ -93,7 +93,7 @@ work at all* — is still open.
   - **`ContainerEnvironmentVariables` cannot carry `NO_PROXY`.** `CreateAppImageConfig` refused both
     configurations with `ValidationException … Member must have length less than or equal to 256`; the
     API reference gives the cap as 25 entries, 256 characters per key and per value, and the generated
-    `NO_PROXY` is 50 entries and about 2,300 characters. **This is the mechanism 2.2 and 8.4(c) both
+    `NO_PROXY` is 50 entries and 1,442 characters. **This is the mechanism 2.2 and 8.4(c) both
     name**, so the delivery stopped being a choice between (b) and (c): decision due 8 was opened and
     **taken the same day — the `ENV` in the Dockerfile**, the list a dated literal there, with the
     rebuild owed and `./aws/devenv.py` reading the drift
@@ -810,7 +810,7 @@ class as `pypi.org`: the question is which names, not whether code may be fetche
     - **(c) was the recommendation, and 2.2's apply refused it on 2026-09-10.** It is declarative and
       lands beside 2.2's JupyterLab config, and it sets the **container** environment, which supervisord
       and the server inherit. What it cannot do is carry the value: `ContainerEnvironmentVariables` caps
-      each value at 256 characters against a `NO_PROXY` of about 2,300, so (b) and (c) are no longer the
+      each value at 256 characters against a `NO_PROXY` of 1,442, so (b) and (c) are no longer the
       question — decision due 8 is, and its candidates are a lifecycle configuration, a Dockerfile `ENV`
       and a compressed `NO_PROXY` ([`runbooks/dev-env.md`](../runbooks/dev-env.md) §E). **`sudo` still
       strips them** whichever wins: 2.2's two image-side files remain necessary.
@@ -1236,7 +1236,7 @@ measurement.
 7. **Whether the build plane's deny list stays empty** (9.6). Empty by decision today; Stage 11 owns the
    policy that would fill it.
 8. **How the six proxy variables reach a space** (2.2, 8.4), opened by the measurement of 2026-09-10:
-   the app image configuration cannot carry `NO_PROXY` — 256 characters per value against about 2,300 —
+   the app image configuration cannot carry `NO_PROXY` — 256 characters per value against 1,442 —
    so the mechanism this stage assumed does not exist. **Taken the same day by the user: the `ENV` in
    the Dockerfile.** The two it was chosen over: a **lifecycle configuration** (fits in 16 KB, but has
    no update API and cannot be deleted while a domain references it, so every list change is a
