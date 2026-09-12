@@ -472,9 +472,12 @@ file: it prices from the table above, and a model with no row there is reported 
 
 The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
 less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.
-**What this table does not say is what a session costs**: output at 27.50 is five times input and fifty
-times cache read, so the bill is decided by output tokens and cache misses, and the token volume of one
-real session is unmeasured (Lesson 6). Stage 6e step 8.1 is where it gets a number.
+**What this table does not say is what a session costs.** Output at 27.50 is five times input and fifty
+times cache read, which reads as though output decides the bill; **measured, it does not**. The UTC day of
+2026-09-12 (three spaces of testing, not one session) priced at USD **1.30**, of which **cache writes
+52%**, cache reads 32%, output 15% and uncached input 1%: a coding client re-sends and caches its whole
+context every turn. The figure is a floor, since CloudWatch does not separate a 1-hour cache write from a
+5-minute one. `./aws/bedrock-usage.py` is the reading; one real session is Stage 6e step 6.4's.
 
 A `sa-east-1` finding for §9: the São Paulo offer carries **no Claude and no Nova model at all** — its
 catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS and others. The Ratio column is absent rather than a
@@ -483,6 +486,31 @@ premium, and a move would be a change of *model*, not of price.
 Not priced here: provisioned throughput (model units by the hour, the one standing Bedrock shape and the
 one D12 would notice), model customisation, Knowledge Bases (which bill their own vector store), and
 Guardrails. None is reachable from the blueprint as enabled.
+
+### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
+
+Read 2026-09-12 from `AmazonQ/current/<region>/index.json`, published `2026-09-11T12:45:01Z`. Q Developer
+is priced **per user, flat**, where the Bedrock path above is priced per token:
+
+| Tier | USD | Usage type |
+|---|---|---|
+| **Q Developer Pro** | **19.00 per user per month** | `USE1-`, `USW2-` and `EUC1-Amazon-Q-Developer-Pro-subscription-monthly`, the same figure in all three |
+| Q Developer Free | — | **no SKU in the offer file**, so its limits are the vendor page's and not a reading |
+
+The offer file carries **no overage and no per-request row** for Q Developer; anything the vendor page
+says about limits or overage is not measured here. The same offer code prices Q Business (Lite 3.00, Pro
+20.00 per user per month, index units by the hour), a different product.
+
+**What 19.00 is against, and what it is not.** It is a monthly ceiling per user where the Bedrock path has
+none, so the two cross where one user's month of tokens exceeds 19.00 — and the only month-shaped Bedrock
+number this file has is one day of testing at 1.30, which is not a month (Lesson 7: a rejected-on-cost
+option goes stale in the direction that flatters the rejection). Stage 6e step 6.4 is the reading that
+makes the comparison. **Price is not what currently decides it.** Measured 2026-09-12, the Q Developer chat
+call from a Sandbox space went to **`us-east-1`** through the proxy, and the Control Tower Region ceiling
+refused it — `q:SendMessage`, *"explicit deny in a service control policy"*, attributed by reading to
+`CT.MULTISERVICE.PV.1` on `Interactive` ([Stage 6d](plan/stages/stage-06d-unified-studio-remainder.md)
+step 3.5 is where the missing private path was first recorded). The service has no private path from
+`us-west-2`, no retention mode this estate declares, and no model this estate pins.
 
 ---
 

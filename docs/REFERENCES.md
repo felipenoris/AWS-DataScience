@@ -843,6 +843,10 @@
 - Amazon MWAA pricing (environment fee billed hourly, at one-second resolution, for as long as the environment exists): <https://aws.amazon.com/managed-workflows-for-apache-airflow/pricing/>.
 
 - AWS Price List bulk API, used to read the authoritative `us-west-2` MWAA rates: <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
+- AWS Price List bulk API, Amazon Q — read 2026-09-12 for Q Developer Pro's per-user rate in three
+  Regions (`docs/PRICING.md`, *Amazon Q Developer*): <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonQ/current/us-east-1/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonQ/current/us-west-2/index.json> and
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonQ/current/eu-central-1/index.json>.
 
 - Amazon MWAA environment classes (`mw1.micro` ... `mw1.2xlarge`): <https://docs.aws.amazon.com/mwaa/latest/userguide/environment-class.html>.
 
