@@ -716,9 +716,11 @@ busy one has no upper bound at all. `make down` does not reach it.
   Two spellings of the usage type coexist in that offer file and a parser over it must handle both:
   the newer models publish `USW2_input_tokens_standard-Units`, the older ones
   `USW2_InputTokenCount-Units`. Haiku 4.5 is on the second spelling and the other three on the first.
-- **8.2 — The endpoint cost is separate and known.** Two interface endpoints at ~USD 0.010/h each add
-  **~0.020/h** to the Sandbox `[E]` set while `sandbox/egress` is up, moving the estate's fixed rate
-  from 0.390/h to 0.410/h. They go away with `make down`.
+- **8.2 — The endpoint cost is separate, known, and no longer optional.** Two interface endpoints at
+  ~USD 0.010/h each add **~0.020/h** to the Sandbox `[E]` set while `sandbox/egress` is up, moving
+  the estate's fixed rate from 0.390/h to 0.410/h. Step 4's restructure made them always-on, so this
+  is now the cost of having the slice up at all rather than the cost of naming a flag. They still go
+  away with `make down`.
 - **8.3 — [Claude reads, user decides] The alarm, and the deferral it collides with.** D12 left the
   USD 50 budget notifying **nobody**, and that deferral was taken when nothing in the estate could spend
   quickly. This can. **Decision due 5:** either close D12's deferral here — a budget notification with a
@@ -732,16 +734,21 @@ busy one has no upper bound at all. `make down` does not reach it.
 
 ### 9. Close
 
-- **9.1 — [Claude] `docs/PRICING.md`.** Correct §5: the offer code for modern Claude models is
-  **`AmazonBedrockFoundationModels`**, and the existing table's two Claude rows are legacy in-region SKUs
-  that no current model uses. Add 0.4's table, dated.
+- **9.1 — Done at planning time.** `docs/PRICING.md` §5 carries the `AmazonBedrockFoundationModels`
+  correction and both tables, dated 2026-09-11. What execution added: the rates hold against a
+  **second, independent source**, `list-foundation-model-agreement-offers`' rate card, and a batch
+  tier exists on the `us.` profile as well as on `global.` (0.4).
 - **9.2 — [Claude] `docs/NETWORK.md`.** Two endpoints, the new `bedrock-llm` group, the `NO_PROXY` count,
   and the fact that the Bedrock name is on the compute plane's allow-list *and* on the bypass list —
   which is not a contradiction but is the kind of sentence a later reader has to be told once.
   `./scripts/check-network-doc.py` is the mechanical half.
 - **9.3 — [Claude] `POLICIES.md`**, one row per new `Sid`, in the sitting that attaches them (7.5).
-- **9.4 — [Claude] `docs/AWS_STATE.md`**, the residency exception of 7.3 and the retention reading of 7.2,
-  both dated, so a later snapshot that shows a three-region profile is recognised as expected.
+- **9.4 — Done 2026-09-12.** `docs/AWS_STATE.md` gains **`EXC-07`**, 7.3's residency exception — the
+  estate's first resource that cannot honour D1, with the reading that a *one*-Region profile would
+  be the finding — and **`INV-18`**, the account's Bedrock posture: `mode: none` with its timestamp,
+  the form present, invocation logging off, the three models `ACTIVE` and inference-profile only,
+  and every other account at `inherit`. `INV-18` names its instrument (`bedrock.txt`, `BR-1`..`BR-4`)
+  and says what is **not** readable: whether `none` is enforced.
 - **9.5 — [Claude] `docs/REFERENCES.md`**, the vendor pages this stage was written from.
 - **9.6 — The runbook exists**, [`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md),
   written 2026-09-11 at the user's request with **§M complete** — the retention mode and the form, the

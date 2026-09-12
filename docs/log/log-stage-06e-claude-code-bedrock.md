@@ -411,3 +411,25 @@ no build: `default-v0.3.0` is written but not buildable.*
   derivable from a service token, which is why it is read from the slice rather than composed — so
   the refresh needs the slice **up**. Until then a Bedrock call from a space reaches the proxy and
   leaves as a public call: it works, with no `aws:SourceVpc` and no `aws:SourceVpce`.
+
+## 2026-09-12 — the close steps that need no session
+
+*Claude's authored changes while the SSO session was down. No AWS call.*
+
+- **[Claude] `docs/AWS_STATE.md` gains two rows (step 9.4).** **`EXC-07`**, 7.3's residency
+  exception: all three scoped models are inference-profile only and every `us.` profile routes to
+  us-east-1, us-east-2 and us-west-2, so this is the estate's first resource that cannot honour D1.
+  The reading is inverted on purpose — a profile that ever showed **one** Region would be the
+  finding, because it would mean AWS changed the profile under a pinned model id. **`INV-18`**, the
+  account's Bedrock posture: `mode: none` with its timestamp, the form present, invocation logging
+  off, the three models `ACTIVE`, and every other account at `inherit`. It names `bedrock.txt`
+  `BR-1`..`BR-4` as its instrument and states what is **not** readable — whether `none` is enforced.
+
+- **[Claude] `docs/PRICING.md` (step 9.1) was already correct at planning time**; what this sitting
+  added is the cross-check. The agreement rate card is a second, independent publication of the same
+  prices and every figure matches, which is worth recording because a disagreement between the two
+  would itself be a finding. Two facts the card adds: a batch tier exists on the `us.` profile as
+  well as on `global.`, and Haiku 4.5 alone publishes reserved TPM dimensions.
+
+- **[Claude] Step 8.2 restated.** The two endpoints are no longer the cost of naming a flag; since
+  step 4's restructure they are the cost of having `sandbox/egress` up at all.
