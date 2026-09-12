@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), and **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`). **Written and not applied:** step 4 (`vpc-egress-v0.14.0`, the two endpoints always-on rather than an optional group — decision 12) and step 5's repository half (the managed settings as a `COPY`d side file, `default-v0.3.0`). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **The remaining order is fixed at one point**: `make up` → refresh the image's `NO_PROXY` → build → step 6. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`) and **step 4** (`vpc-egress-v0.14.1` applied 2026-09-12 for `2 to add, 0 to change, 0 to destroy`, the two endpoints always-on rather than an optional group — decision 12, and the image's bypass list refreshed 50 → 52 entries). **Written and not applied:** step 5's repository half (the managed settings as a `COPY`d side file, `default-v0.3.0`). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **What remains is the `default-v0.3.0` build, its attachment and step 6**, in that order. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -43,7 +43,7 @@ Step 8 is the close.
 time and was. Its delivery cannot: 4.1 made the two Bedrock endpoints always-on, so the generated
 `NO_PROXY` grew by two names, and the literal the image carries can only be refreshed from a slice that
 is **up** — eight of that list's entries are not derivable from a service token. The order is therefore
-fixed at one point and nowhere else:
+fixed at one point and nowhere else. 4.2 and 4.3 were walked on 2026-09-12:
 
     4.2 make up  →  4.3 terraform output -raw no_proxy  →  5.4 build default-v0.3.0  →  6
 
@@ -102,8 +102,9 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   `bedrock:`. A boundary grants nothing, so step 3 is still a real question.
 - **0.8 — `bedrock-runtime.us-west-2.amazonaws.com` is already reachable from a space, by the wrong
   door.** The compute plane's allow-list opens with `.amazonaws.com`, so the name is permitted through
-  Squid; the image's `NO_PROXY` literal (50 entries, `images/dev-env/Dockerfile`) carries no Bedrock
-  name, and the proxy sits in `VPC-Networking` where no Sandbox endpoint answers. A call made today
+  Squid; the image's `NO_PROXY` literal (50 entries on this date, `images/dev-env/Dockerfile`) carries
+  no Bedrock name, and the proxy sits in `VPC-Networking` where no Sandbox endpoint answers. A call
+  made before 4.3
   would therefore succeed as a **public** call carrying neither `aws:SourceVpc` nor `aws:SourceVpce` —
   the same shape 6d found on `aws-language-servers.us-east-1.amazonaws.com`. Step 4 is about that and
   nothing else.
@@ -373,14 +374,21 @@ outside the data perimeter while looking exactly like one that is inside it.
   `v0.12.0` the group and the action-scope mechanism, `v0.13.0` a guard against naming two groups
   that shared a door, `v0.14.0` the restructure that dissolved both the group and the guard.
 
-- **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox` — **no flag**, since 4.1 made the pair
-  always-on. Two endpoints at ~USD 0.010/h each on top of the eighteen, `[E]`, and they leave on the
-  next `make down` like everything else. **Not done**: the apply is owed.
-- **4.3 — The bypass list moves with it, and it has not yet.** `NO_PROXY` is generated from each endpoint's own
-  `dns_entry` (`vpc-egress-v0.11.1`), so the two names join the list the moment the endpoints exist —
-  in the **slice output**. The image carries a dated literal instead (6d decision 8), which is where the
-  value actually reaches a process, so the list in `images/dev-env/Dockerfile` is 50 entries and knows
-  nothing about Bedrock. Two deliveries, and they are not the same act:
+- **4.2 — Done 2026-09-12, by the user, on the second attempt.** `make up ENV=sandbox` — **no flag**,
+  since 4.1 made the pair always-on. The first attempt produced no plan at all: `vpc-egress-v0.14.0`
+  scoped an endpoint with a conditional whose branches disagree on the type of `Action`, `"*"` against a
+  list. `terraform validate` answers `Success!` to it and a plan rejects it once per endpoint, so the
+  defect reached origin across three tags with no gate that could have seen it (Lesson 54).
+  `vpc-egress-v0.14.1` builds the scoped and the unscoped document separately and selects by `lookup`;
+  the plan then read **`2 to add, 0 to change, 0 to destroy`**, which is also the proof the eighteen
+  existing documents came out byte-identical. Two endpoints at ~USD 0.010/h each on top of the eighteen,
+  `[E]`, and they leave on the next `make down` like everything else.
+- **4.3 — Done 2026-09-12.** `NO_PROXY` is generated from each endpoint's own `dns_entry`
+  (`vpc-egress-v0.14.1`), so the two names joined the list the moment the endpoints existed — in the
+  **slice output**. The image carries a dated literal instead (6d decision 8), which is where the value
+  actually reaches a process, and it was refreshed from the slice: **50 → 52 entries, nothing removed**,
+  sha256 `fc11caaa3145fdef`, the two added being `bedrock.us-west-2.amazonaws.com` and
+  `bedrock-runtime.us-west-2.amazonaws.com`. Two deliveries, and they are not the same act:
   - in the session at hand, `export NO_PROXY="$(terraform output -raw no_proxy)"` per
     [`sg-proxy.md`](../runbooks/sg-proxy.md);
   - durably, a rebuild with the new `--build-arg NO_PROXY_LIST`, which is step 5.4.

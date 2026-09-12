@@ -235,8 +235,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   domain's `DefaultUserSettings` — which is what a space's picker reads, JupyterLab and Code Editor both.
   INT-01/INT-17 closed (image role by tag at registration, project role by digest at start). **The app
   image config caps each env value at 256 characters** against a
-  `NO_PROXY` of ~2,300, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`, the
-  list a dated literal (50 entries, sha256 `856bc57bb…`); `./aws/devenv.py` reads the drift, and the
+  `NO_PROXY` of ~1,500, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`, the
+  list a dated literal (52 entries, sha256 `fc11caaa3…`); `./aws/devenv.py` reads the drift, and the
   bump's order is `dev-env.md` §B. The image's Python is a **second** uv environment under `/opt/awsds`
   on CPython **3.13** (TensorFlow has no wheel past `cp313`), with its own Launcher kernel; R stays on
   conda, and `rust-src` joins the toolchain on the next build. Owed: 2.4; 1.1's persona half,
@@ -285,7 +285,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
   `ENOTFOUND` comes from a compute VPC.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: it reads each endpoint's `dns_entry`
-  rather than the service's one canonical name (`v0.11.1`, 50 entries on `sandbox/egress`), and a gateway
+  rather than the service's one canonical name (`v0.14.1`, 52 entries on `sandbox/egress`), and a gateway
   endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. The other three
   `egress/` slices are down and take v0.11.1 on their next `make up`. **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.

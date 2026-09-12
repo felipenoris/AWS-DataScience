@@ -217,15 +217,15 @@ mechanism can:
 
 | Mechanism | Why not |
 |---|---|
-| `ContainerEnvironmentVariables` on the app image configuration | each value caps at 256 characters (`ContainerConfig`: 25 entries, 256 per key and per value) against a `NO_PROXY` of about 2,300 — `CreateAppImageConfig` refuses it outright, measured at step 2.2 |
+| `ContainerEnvironmentVariables` on the app image configuration | each value caps at 256 characters (`ContainerConfig`: 25 entries, 256 per key and per value) against a `NO_PROXY` of about 1,500 — `CreateAppImageConfig` refuses it outright, measured at step 2.2 |
 | A lifecycle configuration | it fits — a 16 KB script — but there is no `UpdateStudioLifecycleConfig`, and the API says deleting one needs *"no running apps using the Lifecycle Configuration"* and its removal *"from UserSettings in all Domains and UserProfiles"*: every list change becomes detach, replace, re-attach, in a console the CLI cannot stand in for |
 
 So [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) §6 sets the six as `ENV`, plus the
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-09-10 (50 entries,
-sha256 `856bc57bb73c4134`). The comment beside it carries the command that produces the current value —
+**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-09-12 (52 entries,
+sha256 `fc11caaa3145fdef`). The comment beside it carries the command that produces the current value —
 `terraform output -raw no_proxy` on `<account>/egress` — because the list is generated there and eight
 of its names are not derivable from a service token. A second account overrides it at build time with
 `--build-arg NO_PROXY_LIST=…` rather than editing the file. The section sits last in the file so its
