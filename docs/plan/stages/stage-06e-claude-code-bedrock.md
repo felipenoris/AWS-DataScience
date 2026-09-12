@@ -576,13 +576,18 @@ container** — a measurement, not a configuration, and it dies with the app.
   `vpcEndpointId: vpce-0171b785473053321`, `sourceIPAddress: 10.20.60.99`, the project role as
   `userIdentity`, `requestParameters.modelId` naming
   `us.anthropic.claude-haiku-4-5-20251001-v1:0`, and `responseElements: null` — attribution without
-  content, which is 4.6's property measured rather than asserted. **One invocation writes two events**:
+  content, which is 4.6's property measured rather than asserted. **One streaming invocation writes two events** (a non-streaming `InvokeModel` writes one, measured the same day):
   one with `requestParameters.modelId` and a sibling with `requestParameters: {}`, so a count doubles
   and a `modelId` filter halves. Event History lags several minutes; the earlier denied attempts
   appeared promptly and the successful ones did not, so an absent event is not yet a missing call.
 - **6.4 — [Claude] Read the token volume. Not taken.** The session that answered ran with all three
   aliases pinned to Haiku, so its accounting describes neither the scoped set nor the primary/background
-  split. It is re-run once decision 14 settles the models and the image carries them.
+  split. Decision 14 settled the models and `default-v0.4.0` carries them, so it is **ready to take**,
+  and `./aws/bedrock-usage.py` is the instrument. **The window has to hold one session and nothing
+  else**: every space invokes as the project role and neither channel names the space. The session
+  runs on the default model (Opus 4.5) with a task of real length and several turns, since it is the
+  accumulated context that costs; the start and end are marked by Claude in UTC as the user reports
+  them, and the window is read after the channels' publication lag.
 
 ### 7. Does this meet the data-protection requirement
 
@@ -802,25 +807,33 @@ space costs its instance, an idle endpoint costs 0.010/h, and an idle assistant 
 busy one has no upper bound at all. `make down` does not reach it.
 
 - **8.1 — [Claude] The rates of the scoped set, and the arithmetic that matters.** Per 1M tokens,
-  `us-west-2`, the `us.` profiles, read 2026-09-11 from `AmazonBedrockFoundationModels`. The fourth row
-  is not scoped and is here because it is what a Bedrock session bills for background work when nothing
-  pins a Haiku (5.3):
+  `us-west-2`, the `us.` profiles, from `AmazonBedrockFoundationModels`. The set is decision 14's; the
+  rows for the refused `claude-opus-5` and `claude-sonnet-5`, and the one-model delta the switch cost,
+  are [`docs/PRICING.md`](../../PRICING.md)'s:
 
   | Model | Input | Output | Cache read | Cache write, 5 min |
   |---|---|---|---|---|
-  | Opus 5 — primary | 5.50 | 27.50 | 0.55 | 6.875 |
-  | Sonnet 5 — the picker's alternative | 2.20 | 11.00 | 0.22 | 2.75 |
+  | Opus 4.5 — primary | 5.50 | 27.50 | 0.55 | 6.875 |
+  | Sonnet 4.5 — the picker's alternative | 3.30 | 16.50 | 0.33 | 4.125 |
   | Haiku 4.5 — background | 1.10 | 5.50 | 0.11 | 1.375 |
-  | *Sonnet 4.5 — the unpinned background default* | *3.30* | *16.50* | *0.33* | *4.125* |
 
-  Output is five times input and fifty times cache read on every row, so a session's bill is dominated by
-  output tokens and by cache misses. **Do not estimate the total here** (Lesson 6, and Lesson 7 — a
-  rejected-on-cost option goes stale in the direction that flatters the rejection). Read one real
-  session from 6.4, write the number down with its date, and decide against that.
+  **What a session spends on is cache, not output** — the opposite of what this step first said,
+  measured 2026-09-12 over the day's testing (three spaces, several short sessions, **not** 6.4's
+  single session). Priced at the rates above, USD **1.30** for the UTC day, of which **cache writes
+  52%**, cache reads 32%, output 15% and uncached input 1%. The client re-sends and caches its whole
+  context every turn, so the output rate — five times input — is not where the money goes. That
+  reading also bounds the figure from below: CloudWatch does not separate a 5-minute cache write from a
+  1-hour one, the 1-hour rate is higher (Opus 4.5: 11.00), and Cost Explorer's usage types are what
+  settle it. **Do not project a month from it** (Lesson 6, and Lesson 7 — a rejected-on-cost option
+  goes stale in the direction that flatters the rejection): 6.4 is the reading to decide against.
+
+  **The instrument is `./aws/bedrock-usage.py`**: with no argument this month to now, or one window
+  with an explicit offset. It reconciles CloudWatch with itself and with CloudTrail before it prices
+  anything, and it reports an empty window as unverified rather than as agreement.
 
   Two spellings of the usage type coexist in that offer file and a parser over it must handle both:
   the newer models publish `USW2_input_tokens_standard-Units`, the older ones
-  `USW2_InputTokenCount-Units`. Haiku 4.5 is on the second spelling and the other three on the first.
+  `USW2_InputTokenCount-Units`.
 - **8.2 — The endpoint cost is separate, known, and no longer optional.** Two interface endpoints at
   ~USD 0.010/h each add **~0.020/h** to the Sandbox `[E]` set while `sandbox/egress` is up, moving
   the estate's fixed rate from 0.390/h to 0.410/h. Step 4's restructure made them always-on, so this
