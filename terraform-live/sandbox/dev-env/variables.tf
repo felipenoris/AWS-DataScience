@@ -65,7 +65,7 @@ variable "registry" {
 # - runbooks/dev-env.md, "Attaching the image to the domain".
 
 variable "image_tag" {
-  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.3.0 carries Stage 6e step 5.4's three changes: /etc/claude-code/managed-settings.json, a NO_PROXY_LIST that includes the two Bedrock endpoint names, and rust-src in the rustup profile (2026-09-12)."
+  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.3.0 carries, against default-v0.2.0: /etc/claude-code/managed-settings.json, a NO_PROXY_LIST of 52 entries that includes the two Bedrock endpoint names, rust-src in the rustup profile, and no Julia precompilation cache (2026-09-12)."
   type        = string
   default     = "default-v0.3.0"
 
