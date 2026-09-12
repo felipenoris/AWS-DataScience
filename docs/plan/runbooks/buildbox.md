@@ -281,8 +281,14 @@ commit under `images/` between them, the whole delta upstream drift (`base` +942
 `ENV`, the apt and sudoers files, a second Python environment with its own kernel) and `v0.3.0` changed
 it again (`/etc/claude-code/managed-settings.json`, a `NO_PROXY` literal of 52 entries carrying the two
 Bedrock endpoint names, `rust-src` in the rustup profile, and no Julia precompilation cache), which is
-what makes a **minor**. Stage 7 step 2.6's CA layer is the next one. **The recipe is not reproducible
-byte-for-byte**, and a pipeline that assumes it is will report a spurious change on every run.
+what makes a **minor**. **The recipe is not reproducible byte-for-byte**, and a pipeline that assumes it is will report a
+spurious change on every run.
+
+**Two builds are owed and neither has run.** Stage 6e's model pins have to change — `claude-opus-5`
+and `claude-sonnet-5` are refused by AWS for this account and the working set is the 4.5 generation
+(2026-09-12, [`claude-code-sagemaker.md`](claude-code-sagemaker.md) M4) — and the pins live in
+`images/dev-env/claude-code/managed-settings.json`, so changing them is a release rather than a
+setting. Stage 7 step 2.6's CA layer is the other. Whichever runs first takes `default-v0.4.0`.
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>

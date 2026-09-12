@@ -619,3 +619,177 @@ sizes below were read back from AWS.*
   file is in the layer is not that Claude Code read it, and that the endpoints exist is not that an
   invocation took them — step 6 is the first call, and §V's CloudTrail `vpcEndpointId` reading is
   where both are settled.
+
+## 2026-09-12 — step 6: the first session, four refusals, and what each one corrected
+
+*The space, the Control Tower change, every agreement and every invocation from the space were the
+user's. Claude's are the read-only measurements and three invocations the user authorized in the
+sitting, run as the infrastructure user on `Sandbox` with `InfrastructureAccess`. The session ran on
+`default-v0.3.0`, image version 3.*
+
+### 6.1 — what the extension showed, and why it could not be debugged from there
+
+- **[user] Opened a new space on version 3, connected remotely, installed *Claude Code for VS Code*.**
+  The extension **opened a session with no login screen** — so the provider was Bedrock and nothing
+  had to be exported. The picker offered **Default / Sonnet / Opus**, and **Haiku was absent**.
+
+- **[Claude] The absent Haiku is the design, and the picker is not evidence the settings applied.**
+  `availableModels` is `["opus","sonnet"]` and the Haiku pin is where background work goes, so a
+  reader who sees it missing is seeing the lock. But `Default / Sonnet / Opus` is also the client's
+  stock list, so the picker cannot distinguish a loaded managed-settings file from none at all —
+  `/status` can.
+
+- **[user] The first prompt hung, then the extension closed the chat and reopened its login screen**,
+  and the requested action never ran. **[Claude] That is what the client does when a call fails in a
+  way it reads as authentication**, and the refusal text never reaches the UI. Every diagnosis below
+  came from CloudTrail and from `aws bedrock-runtime invoke-model` in the space's terminal.
+
+### The first refusal — the organization's Region ceiling
+
+- **[Claude] CloudTrail, twenty-two `InvokeModelWithResponseStream` events, all `AccessDenied`:**
+
+  ```
+  User: …/datazone_usr_role_…/SageMaker is not authorized to perform: bedrock:InvokeModel
+  on resource: arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-5
+  with an explicit deny in a service control policy: …/p-umksvu5a
+  ```
+
+  Three things in one reading. The principal is **the granted role**. `vpcEndpointId` is
+  `vpce-0171b785473053321` and `sourceIPAddress` `10.20.60.99` — **the call took the private door**,
+  so 4.5's property was measured on a denied call. And the resource is in **`us-east-1`** while the
+  event's own `awsRegion` is `us-west-2`.
+
+- **[Claude] A cross-Region inference profile is authorized per destination Region**, and in that
+  evaluation `aws:RequestedRegion` is the destination. `p-umksvu5a` is `aws-guardrails-fzqpfF`, a
+  **Control Tower** document holding `CT.MULTISERVICE.PV.1`, attached to the **`Interactive` OU**
+  alone, whose only condition is `aws:RequestedRegion != us-west-2`; no `bedrock:` action appears in
+  its 86 `NotAction` entries and its four exempted principals are Control Tower's own. **Nothing in
+  this repository authors it** — the ten documents in `org-policies/policies/` carry no Region
+  condition at all.
+
+- **[user] The exemption, from `Management` as AWS Control Tower Admin.** Control Tower → Enabled
+  controls → `CT.MULTISERVICE.PV.1` → the `Interactive` row → *View configurations* → *Update enabled
+  control*. The Region list showed `us-west-2` alone; the next screen showed the policy with
+  `{{ExemptedActions}}` and `{{ExemptedPrincipalArns}}` visible as template slots; at the foot of the
+  page, *Adding NotActions*. Added over three passes as the diagnosis needed them:
+
+  ```
+  bedrock:InvokeModel
+  bedrock:InvokeModelWithResponseStream
+  bedrock:GetFoundationModelAvailability
+  bedrock:GetAccountDataRetention
+  bedrock:GetUseCaseForModelAccess
+  ```
+
+- **[Claude] Why `NotActions` and not `Exempted principals`.** The two lists are independent inside one
+  statement — there is no way to say *this action, for this principal*. A principal exemption removes
+  the Region ceiling from that principal **for every action in every Region**, and the project role is
+  the interactive-compute principal. The action lever was the narrower by a wide margin. Widening
+  `AllowedRegions` was the third option and opens every service in the added Regions.
+
+- **What it gives up, and it is not yet taken back.** Those five actions are now exempt **for every
+  principal in the OU, in every Region**, including Regions no profile routes to. Decision 15.
+
+### The second refusal — the model was never enabled
+
+- **[user] The next attempt failed differently**, which is the whole value of it:
+
+  ```
+  AccessDeniedException: anthropic.claude-sonnet-5 is not available for this account.
+  You can explore other available models on Amazon Bedrock. For additional access options,
+  contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/
+  ```
+
+- **[Claude] Two hypotheses were tested and both were wrong.** Per-Region entitlement: all three models
+  read `AUTHORIZED / AVAILABLE / AVAILABLE` in **all three** Regions. Per-Region form: the use-case
+  form is present in all three, same blob. Both eliminated by reading, and the second only after the
+  exemption made the other Regions readable at all.
+
+- **[Claude] `list-foundation-model-agreement-offers` carried the answer.** A live offer exists for
+  each of the three — `offer-2ykemehpsyf7g`, `offer-f3u6lgbrem3zs`, `offer-fudwqbphlos64` — each with
+  a 392-dimension rate card, a `legalTerm` URL and `supportTerm: "No refunds"`. So
+  **`agreementAvailability: NOT_AVAILABLE` means no agreement has been created**, not *no agreement is
+  needed* — which is how step 3's grant comment and step 0.9 both read it, and how the omission
+  survived three separate readings across two state changes.
+
+- **[user] Accepted the agreement for `anthropic.claude-sonnet-5`.** Status went `PENDING` →
+  `AVAILABLE` within seconds. **[Claude] It is account-wide, not per Region**: `us-east-1` and
+  `us-east-2` read `AVAILABLE` **before** the creating Region left `PENDING`. It is per **model**: the
+  other twelve stayed `NOT_AVAILABLE`. Amazon's own models need none — `amazon.nova-lite-v1:0` reads
+  `AVAILABLE` with nothing done.
+
+### The third refusal — a commercial gate no instrument exposes
+
+- **[user] With the agreement `AVAILABLE`, the same call returned the same message.** Not propagation:
+  it held minutes later.
+
+- **[user] `amazon.nova-lite-v1:0` from the space** was refused at a different layer —
+  *"no identity-based policy allows the `bedrock:InvokeModel` action"* — which **confirms 3.1** rather
+  than contradicting it: the blueprint's one matching allow is conditioned on an inference-profile ARN
+  being present and a bare model id does not satisfy it. It also proves the Claude call was passing
+  IAM and the SCP and dying past both.
+
+- **[Claude⚡] Three invocations, authorized by the user in the sitting**, as the infrastructure user:
+  `amazon.nova-lite-v1:0` **answered** (1 input / 16 output tokens — the estate's first successful
+  Bedrock invocation); `us.anthropic.claude-sonnet-5` returned **the same refusal for
+  `AdministratorAccess`**. So the account invokes Bedrock, and this model is refused regardless of
+  principal.
+
+- **[user] Accepted the agreement for `anthropic.claude-sonnet-4-5-20250929-v1:0`** — it took minutes
+  rather than seconds to leave `PENDING`. **[Claude⚡] `us.anthropic.claude-sonnet-4-5-20250929-v1:0`
+  answered `pong`.**
+
+- **The gate follows the shape of the model id.** Dated ids (`…-2025xxxx-v1:0`) invoke; clean ids
+  (`claude-sonnet-5`, `claude-opus-5`, `claude-opus-4-6/4-7/4-8`, `claude-sonnet-4-6`, `claude-fable-5`,
+  `claude-fable-5-1`) do not. Every readable instrument reports the gated model as available and
+  authorized — agreement, authorization, entitlement, Region availability, lifecycle, the form —
+  **and the invocation refuses it**. Lesson 13 at account scale; recorded as `EXC-08`.
+
+- **[user] Accepted the agreements for `anthropic.claude-haiku-4-5-20251001-v1:0` and
+  `anthropic.claude-opus-4-5-20251101-v1:0`.** **[Claude⚡] Both answered.** All three of the working
+  set route to the same `us-east-1, us-east-2, us-west-2`, so `EXC-07`'s routing sentence is unchanged
+  by a switch.
+
+### The retention finding, which no refusal surfaced
+
+- **[Claude] `get-account-data-retention` is a per-Region call**, measured by it answering `none` in
+  `us-west-2` — the M1 write of 2026-09-11 at 22:31:02Z — and being refused in the other two until the
+  exemption, then reading **`inherit` in both**. `inherit` is the same value step 7.2 found here before
+  M1 and called *declaring nothing*. **Zero retention is declared in one of the three Regions a prompt
+  is processed in.** Whether cross-Region inference obeys the source Region's mode or the
+  destination's is in no API and on no vendor page. Decision 16; the repair does not wait on the
+  answer and needs `bedrock:PutAccountDataRetention` in the exemption first.
+
+### The session, and both channels read
+
+- **[user] Edited `/etc/claude-code/managed-settings.json` inside the container** — `0444`, so
+  `sudo` — pointing all three aliases at Haiku 4.5, the one scoped model this account can invoke.
+  Restarted the session. **It answered.** A measurement, not a configuration: it lives in the
+  container's writable layer, dies with the app, and diverges from what the image declares
+  (Lesson 35's shape).
+
+- **[Claude] CloudTrail, fifteen `InvokeModelWithResponseStream` with no `errorCode`**, each
+  `vpcEndpointId: vpce-0171b785473053321`, `sourceIPAddress: 10.20.60.99`, the project role as
+  `userIdentity`, `requestParameters.modelId` = `us.anthropic.claude-haiku-4-5-20251001-v1:0`, and
+  **`responseElements: null`** — attribution without content, measured rather than asserted. **One
+  invocation writes two events**, one carrying `modelId` and a sibling carrying
+  `requestParameters: {}`, so counting doubles and filtering on `modelId` halves. Event History lagged
+  several minutes on the successes while the denials had appeared promptly.
+
+- **[Claude] `/awsds/prod/proxy` over the same hour: no `bedrock` line and no Anthropic name** — with
+  the negative control that makes the absence mean something (Lesson 62). The space's own
+  `10.20.60.99` is in that window, tunnelling `idetoolkits-hostedfiles.amazonaws.com` and refused
+  `default.exp-tas.com` with `403 TCP_DENIED`. The instrument was watching.
+
+- **What 6.4 did not get.** The session pinned all three aliases to one model, so its accounting
+  separates neither the scoped set nor primary from background. Re-run once decision 14 settles.
+
+### What this sitting changed in writing
+
+`claude-code-sagemaker.md` §M gains **M0** (where the models run), **M4** (the agreement) and **M5**
+(the Region exemption) and keeps M1-M3's numbers, which other files reference; M1 becomes per Region,
+M2 stops claiming to enable a model, and §V opens with the warning that no reading here answers
+whether a model is invocable. `AWS_STATE.md` `EXC-07` loses the clause that rested on the unmeasured
+premise and `EXC-08` is new; `INV-12` records the `Interactive` divergence. Five entries join
+lessons.md's platform-behaviour list. The stage's step 6 carries its verdicts, 0.9 and 7.3 their
+corrections, question 9 closes by measurement, and decisions **14**, **15** and **16** open.
