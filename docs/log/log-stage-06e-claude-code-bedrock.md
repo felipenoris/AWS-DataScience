@@ -1170,3 +1170,120 @@ on another image. The readings that settled it are now an instrument.*
   written saying the SageMaker Distribution is *what the portal form selects* and that a portal space
   *has `RemoteAccess` off*. Neither was measured: the first is the user's report of picking the default
   image, and the second is one of two spaces' recorded settings. Both now say exactly that.
+
+## 2026-09-12 — step 6.4 prepared: an instrument for the token volume, and not yet taken
+
+*The user asked to move to 6.4. Before any session, Claude checked that an instrument on the account's
+side could see the day's invocations, so that an empty reading later would mean something. It could,
+completely — and the reading corrected a claim in step 8.1 about where a session's money goes. The
+readings became a script, and the user deferred the session itself.*
+
+### What the account records, with invocation logging off
+
+- **[Claude] `AWS/Bedrock` in `us-west-2` carries per-model tokens.** `ListMetrics` returned
+  `Invocations`, `InputTokenCount`, `OutputTokenCount`, `CacheReadInputTokenCount` and
+  `CacheWriteInputTokenCount` per `ModelId` — the `us.` profile id — for all three scoped models and
+  for `amazon.nova-lite-v1:0`, plus series with **no dimension**. `us-east-1` and `us-east-2` refused
+  `cloudwatch:ListMetrics` with *"explicit deny in a service control policy: …/p-umksvu5a"*, the
+  Control Tower Region ceiling.
+
+- **[Claude] A timezone error of Claude's, caught before it was reported.** The first per-hour table
+  was printed as UTC; the raw timestamps carried **`-03:00`** — this machine's CLI renders them in
+  local time, as `describe-space` had shown earlier. Re-read in UTC, the 13:00 bucket is 16:00Z and holds
+  the one Haiku invocation Claude made at ~16:19Z during 7.5's re-probe: a positive control with a
+  known time.
+
+- **[Claude] Two channels, one evening, exact agreement.** CloudTrail `us-west-2`, 21:00–23:00Z: **90
+  events**, 45 carrying a `modelId` and 45 without, all `InvokeModelWithResponseStream` — Opus 4.5
+  **22**, Sonnet 4.5 **20**, Haiku 4.5 **3**. CloudWatch's `Invocations` for the same window: 22, 20, 3.
+  So **`us-west-2` holds every invocation of a cross-region profile**, whichever Region processed it,
+  and the ceiling on the other two costs nothing here.
+
+- **[Claude] The UTC day, priced at `docs/PRICING.md`'s rates**:
+
+  | Model | Invocations | Input | Output | Cache read | Cache write | USD |
+  |---|---|---|---|---|---|---|
+  | Opus 4.5 | 23 | 860 | 4,899 | 442,512 | 63,864 | 0.822 |
+  | Sonnet 4.5 | 21 | 258 | 3,398 | 458,411 | 50,949 | 0.418 |
+  | Haiku 4.5 | 15 | 3,222 | 1,233 | 162,985 | 24,357 | 0.062 |
+
+  **USD 1.30, of which cache writes 52%, cache reads 32%, output 15%, input 1%.** Step 8.1 had said a
+  bill is *"dominated by output tokens"*. The figure is a floor: cache writes are priced at the
+  5-minute rate, CloudWatch does not separate a 1-hour write, and the 1-hour rate is higher (Opus 4.5:
+  11.00 against 6.875).
+
+- **[Claude] What reconciles inside CloudWatch.** For the day, the dimensionless series equals the
+  per-model sum **exactly** for all four token metrics. `Invocations` does not: **66 against 60**, and
+  the six are `InvocationClientErrors` — a metric AWS publishes **only without a `ModelId`** — all in the
+  06:00Z hour, the hour of step 6's refusals. 66 = 60 + 6.
+
+- **[Claude] What CloudTrail shows for that hour.** `InvokeModel` with **no `modelId` and `AccessDenied`:
+  18**. `InvokeModel` succeeding with a `modelId`: Nova Lite 1, Haiku 1, Opus 4.5 1, Sonnet 4.5 1 — and
+  **no sibling event** for any of them. `InvokeModelWithResponseStream`: Haiku 9 with a `modelId`, 9
+  without. Two corrections follow. **Only the streaming call writes two events**, which narrows what the
+  runbook and the stage had recorded. And **a denied call reaches CloudTrail with no `modelId`**, so
+  refusals do not reconcile across the channels: 18 events against 6 client errors in the same hour.
+
+### `aws/bedrock-usage.py`
+
+- **[user] The request.** *"Pode escrever o script. Mas faça de forma que, se invocado sem parâmetros,
+  leia o consumo acumulado do mês corrente."*
+
+- **[Claude] How CloudWatch sums a window, measured before relying on it.** One bucket as long as the
+  window returned the same totals as 60-second buckets for the evening (22/20/3), for the UTC day
+  (23/21/15) and for twelve days from the 1st (23/21/15); a daily period across the same twelve days
+  agreed.
+
+- **[Claude] The script.** With no argument it reads **this month to now**, in UTC; `YYYY-MM` reads a
+  calendar month with a per-day table; two instants read a window, and **a time with no offset is
+  refused**. Models are the union of `ListMetrics` — which names only series active in the last two
+  weeks — and the scoped set read from the SCP. `BU-1` the window is within CloudWatch's retention;
+  `BU-2` every token is attributed to a model; `BU-3` invocations equal per-model plus client errors;
+  `BU-4` CloudTrail's successful invocations agree per model; `BU-5` every model with tokens has a
+  recorded rate. Prices come from `docs/PRICING.md`'s table, so a model with no row is reported unpriced
+  by name.
+
+- **[Claude] Readings of the finished script.** This month: **USD 1.30**, the figure computed by hand,
+  every check passing and Nova Lite unpriced by name. The evening: 22/20/3 in both channels. A naive
+  time: refused, exit 2. August: no invocation.
+
+- **[Claude] Two defects in the first version, found by those readings.** `BU-1` reported *"1-minute
+  data"* for August, which only 5-minute data still covers — the resolution was computed correctly and
+  the message ignored it. And **the empty month passed `BU-2`, `BU-3` and `BU-4`** with *"0 = 0"*: an
+  identity over nothing is true whatever the instrument is doing, including reading the wrong Region.
+  An empty window now reports the three as notes.
+
+- **[Claude] A false alarm of the test, not of the script.** One run exited 2 without writing its
+  report. This shell is zsh, which does not split an unquoted variable, so the window reached the
+  script as one argument and was refused as malformed. Run directly, it passed.
+
+- **[Claude] Negative control, through the script's own code.** With `amazon.nova-lite-v1:0` removed
+  from `ListMetrics`' answer, **`BU-2` failed on exactly its 1 input and 16 output tokens** and **`BU-4`
+  on its one invocation** (*"CloudTrail 1 / CloudWatch 0"*), exit 2. The two checks caught the same
+  omission from different channels.
+
+- **[Claude] Carried into the plan.** Step 8.1's table moves to the 4.5 set and its claim about output
+  is replaced by the measurement; 6.4 is marked ready, with the rule that its window holds one session
+  and nothing else, since every space invokes as the project role. The streaming-only sibling and the
+  unattributable refusal are corrected in the runbook, the stage and `lessons.md`. In
+  `docs/PRICING.md`, the older of two adjacent paragraphs that disagreed on which models use which
+  usage-type spelling was removed; the newer agrees with the rate-card measurement recorded above it.
+
+### Deferred, and what the day changed about what is left
+
+- **[user] 6.4 not taken today.** *"Não vou executar o 6.4 agora."*
+
+- **[Claude] 7.5 overtook decision 11.** Step 7.2a would invoke `us.anthropic.claude-fable-5` to read
+  whether the retention mode refuses it. Since 7.5, that call is refused by
+  `DenyInvokingModelsThatRetain` first — measured in `Policy Canary`, naming `p-1fp032g8` — so the probe
+  would read the SCP, which is already proven, and never reach the mode. The only principal no SCP
+  restricts is in `Management`, which holds no model access by decision 2. **Verification (xiii),
+  whether `mode: none` is enforced, has no instrument left in this estate** unless the statement is
+  carved out for the probe. The stage file still recommends running 7.2a.
+
+- **[Claude] Verifications the day's readings answer, not yet marked.** (ii): all three scoped models
+  answered by invocation — Haiku in step 6, Sonnet 4.5 and Opus 4.5 in the evening's sessions, in both
+  channels. (xi), its `/model` half: the picker offered exactly Default (Opus 4.5), Sonnet 4.5 and Opus
+  4.5. (xii): during the evening's Opus and Sonnet sessions **Haiku took 3 invocations with 81 output
+  tokens and no cache write**, the shape of background work such as session titles — strong evidence,
+  not the single title call's `modelId` the row asks for.
