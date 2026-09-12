@@ -23,31 +23,25 @@ locals {
   # SDKs resolve unless a client is configured for FIPS, and adding one by pattern-match would be
   # a cent an hour for a path nothing takes.
   optional_services = {
-    # The six enabled AmazonBedrock* blueprints both author Bedrock objects and invoke them, and
-    # the two halves are different services. `bedrock` is the control plane that
-    # `AmazonBedrockGuardrail` (CreateGuardrail) and `AmazonBedrockEvaluation`
-    # (CreateEvaluationJob) call; `bedrock-agent` is the control plane for agents, flows and
-    # prompts; the two `-runtime` names are the invocation path. The stage's own text lists three
-    # and omits `bedrock`; this list follows the API split, and 6d measures which of the four are
-    # load-bearing. Excluded and named so nobody adds them by resemblance: bedrock-agentcore*,
-    # bedrock-data-automation*, bedrock-mantle.
-    bedrock = ["bedrock", "bedrock-agent", "bedrock-agent-runtime", "bedrock-runtime"]
-
-    # The same service, a different consumer, and a narrower one (Stage 6e step 4.1). A coding
-    # assistant in a space invokes a model and resolves an inference profile; it authors no
-    # guardrail, no agent, no flow and no prompt. `bedrock-agent` and `bedrock-agent-runtime` are
-    # two endpoints at ~USD 0.010/h each that its calls never reach.
+    # The agent pair, and ONLY the agent pair since 2026-09-12. `bedrock` and `bedrock-runtime`
+    # moved into the caller's always-on list, where Stage 6e's assistant needs them every session:
+    # an optional group is per apply, and `make up` without the flag destroys what it created, so a
+    # permanent consumer cannot live behind one.
     #
-    # It is a SECOND GROUP rather than a narrowing of the one above, because the group above has
-    # its own consumer - the six enabled AmazonBedrock* blueprints, whose control-plane calls do
-    # reach the agent endpoints. Narrowing it would have taken those away for a reason that has
-    # nothing to do with them (Lesson 51: two intents sharing one list stay identical until they
-    # must differ, and then a change made for one silently makes it for the other).
+    # What is left here is what only the blueprints use. The six enabled AmazonBedrock* blueprints
+    # both author Bedrock objects and invoke them, and the two halves are different services:
+    # `bedrock` is the control plane that `AmazonBedrockGuardrail` (CreateGuardrail) and
+    # `AmazonBedrockEvaluation` (CreateEvaluationJob) call and `bedrock-runtime` is the invocation
+    # path - both now always on - while `bedrock-agent` is the control plane for agents, flows and
+    # prompts and `bedrock-agent-runtime` invokes them. Excluded and named so nobody adds them by
+    # resemblance: bedrock-agentcore*, bedrock-data-automation*, bedrock-mantle.
     #
-    # The two overlap on `bedrock` and `bedrock-runtime`, and naming both groups in one apply is
-    # legal: `local.service_names` is a map keyed by the short name, so the overlap collapses to
-    # one endpoint rather than colliding.
-    "bedrock-llm" = ["bedrock", "bedrock-runtime"]
+    # A CALLER THAT DOES NOT CARRY THE PAIR GETS A HALF-WORKING GROUP. This list is the module's
+    # and the always-on half is the caller's, which is the seam this restructure introduced: in an
+    # account where `bedrock` is not in extra_services, `GROUPS=bedrock` now creates two endpoints
+    # that have no control plane to talk to. `sandbox/egress` is the only caller that names any of
+    # them today.
+    bedrock = ["bedrock-agent", "bedrock-agent-runtime"]
 
     # EmrServerless, the enabled blueprint. All seven measured present in the Region.
     # `emr-containers` is EMR-on-EKS - a category 3 blueprint, not here - and `emrwal.prod`
@@ -107,10 +101,16 @@ locals {
   #
   # NARROWING IT PER ENDPOINT, on the ACTION axis and no other (Stage 6e step 4.4). A caller may
   # name a short service in `endpoint_action_scopes` and the two statements below carry that list
-  # instead of `*` for that endpoint alone. What it buys is a second, independent statement of
-  # which calls may traverse this door: on the Bedrock pair, an invocation may and
-  # `PutAccountDataRetention` or `PutModelInvocationLoggingConfiguration` may not, whatever any
-  # identity policy says.
+  # instead of `*` for that endpoint alone: a second, independent statement of which calls may
+  # traverse this door, under the same organization condition.
+  #
+  # SCOPE ONLY A DOOR WHOSE PURPOSE IS UNAMBIGUOUS, and the Bedrock pair is the worked example.
+  # `bedrock-runtime` carries invocation and nothing else for any consumer, so a list of invoke
+  # actions on it is a statement about the service rather than about one caller. `bedrock` is the
+  # control plane: its API surface is long, it grows, and the six SMUS AmazonBedrock* blueprints
+  # call it for things a coding assistant never does. A list written for one of those consumers
+  # silently refuses the other, with no denial that names this policy - which is why
+  # `sandbox/egress` scopes the runtime endpoint and leaves the control plane open.
   #
   # THE RESOURCE AXIS IS DELIBERATELY NOT NARROWED HERE, and that is the interesting half. Scoping
   # the endpoint to named model ARNs would be a second copy of a list whose first copy is the IAM
@@ -119,6 +119,7 @@ locals {
   # model somebody added to the grant. The action list does not have that problem: it is a property
   # of the service, not of this estate's choices, and it changes when AWS adds an API rather than
   # when a decision is taken here.
+  #
   # `null`, not `["*"]`, for an endpoint nobody named. The difference is not cosmetic: `["*"]`
   # would emit `"Action": ["*"]` where every endpoint has carried `"Action": "*"` since step 9,
   # so a caller adopting this version would see a policy diff on all eighteen endpoints for a
