@@ -254,12 +254,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the space path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and
   `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
-- **Stage 6e is in progress** (Claude Code on Bedrock), decisions taken first, read-only steps measured
-  2026-09-11. **A grant is needed**: the project role's every `InvokeModel*` allow lands on
-  `foundation-model/*`, none on the system inference profile, `ListInferenceProfiles` nowhere. The
-  account's retention mode reads **`inherit`** — no mode set at this scope — so setting `none` precedes
-  the SCP that freezes it, **by hand**: no Terraform resource, no CloudFormation type (the use-case form
-  has both, its one field an opaque blob). Per-model `allowed_modes` is **in no Bedrock API**. All three
+- **Stage 6e is in progress** (Claude Code on Bedrock), the account half done 2026-09-11. **The grant
+  is per project**: `sandbox/bedrock/` (rank 52, `[P]`, applied), the project role's every
+  `InvokeModel*` allow landing on `foundation-model/*`, none on the system inference profile,
+  `ListInferenceProfiles` nowhere. The retention mode is **`none`**, declared **by hand** and frozen
+  by nothing until 7.5's SCP: no Terraform resource, no CloudFormation type (the use-case form has
+  both, its one field an opaque blob). Per-model `allowed_modes` is **in no Bedrock API**. All three
   scoped models are inference-profile only and their `us.` profiles route to three US regions, so D1's
   exception is the set's. Neither IAM simulator answers here. Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
@@ -311,9 +311,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as
   (c); 6.6 as (ii), re-taken at Stage 11 3.4. `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
   none, and a cached token is keyed by `sso-session` name, never by user.
-- **Module tags**: `vpc-egress-v0.11.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
-  (`vpc-egress-v0.9.0`, `vpc-egress-v0.11.0` and `vpc-v0.3.0` are abandoned on origin, Lesson 46).
-  `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters.
+- **Module tags**: `vpc-egress-v0.14.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
+  (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
+  `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
+  a module change is exercised by planning a caller, never by `validate` (it passed on all three).
 - **SMUS mechanics**: a blueprint configuration is applied from the member account; an existing one is
   immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
   configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);
