@@ -1589,6 +1589,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   verification is the opposite of an instrument — re-attempting the denied call returns the same
   refusal whether the form failed to propagate or something else in the chain is missing (Lesson 24).
   Where: `claude-code-sagemaker.md` M5.
+- **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
+  2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
+  blanket deny on the action. **A condition key being in a service's catalogue and a key being
+  published by a given action are two claims**, and `accessanalyzer validate-policy` answers only the
+  first: it accepts a statement conditioned on a catalogued key whatever action it is written against.
+  The second is a call, and the vendor documents neither. The mode enum is also four values —
+  `default`, `none`, `provider_data_share`, `inherit` — where this plan had discussed two. Where:
+  `claude-code-sagemaker.md` M3.
 
 ---
 

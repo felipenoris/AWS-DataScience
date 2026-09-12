@@ -19,8 +19,8 @@ account. Read your own half.
 **State, 2026-09-12.** **A session answered from inside a space**, on Haiku 4.5, as the project role,
 through the VPC endpoint — which is what every section below was written to produce.
 
-**§M**: M0, M2, M4 and M5 done; M1 done in `us-west-2` and **not** in the other two Regions it routes
-to; M3 not done. **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
+**§M is done**: M0, M2, M4 and M5; M1 in all 17 enabled Regions and M3 attached, both 2026-09-12.
+**§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
 2026-09-12, and `default-v0.3.0` carries the settings file as image version 3, attached to the domain
 the same day. **§U is exercised** for the first time, on settings edited by hand inside the container
 rather than shipped in the image — a measurement, not a configuration.
@@ -50,7 +50,7 @@ done. The numbers are kept because other files reference them.
 | 4 | **M4** | accept each model's agreement — **this is what enables a model** |
 | 5 | **M5** | exempt the invocation from the Region ceiling |
 | 6 | **M6** | invoke, and read both channels |
-| later | **M3** | the SCP that freezes M1 |
+| 7 | **M3** | the SCPs that freeze M1 and close the models that retain — **last**, and the order is argued in M1 |
 
 All of it is `Sandbox` only, by decision 2: principle 1 keeps `Management` bootstrap-only, and an
 org-wide form would open Anthropic models in five accounts where D17 says no interactive compute
@@ -111,16 +111,13 @@ the API answers in **all 17 enabled Regions**.
 2. **The writes**, every enabled Region. **Done 2026-09-12**, 17 of 17.
 3. **M3's mode deny last, not first** — the reverse of what it looks like it should be. M3's
    condition is `StringNotEquals` on `bedrock:DataRetentionMode`, and **a `StringNotEquals` whose key
-   is absent from the request evaluates TRUE**. Whether `PutAccountDataRetention` publishes that key
-   at request time is **unverified** (M3 says so: `validate-policy` established the key is in the
-   service's catalogue, which is a different claim). If it does not, attaching M3 first denies every
-   retention write including `--mode none`, and step 2 becomes impossible in the Regions that still
-   need it. Doing the writes first means that failure mode arrives with the mode already correct
-   everywhere.
-4. **Verify M3 against a positive control**: `put-account-data-retention --mode none` must still
-   **succeed** after attaching. If it is refused, the key is not published, M3 is a blanket deny on
-   the action rather than decision 4's mode ceiling, and that is a different control needing a
-   different decision.
+   is absent from the request evaluates TRUE**. Had `PutAccountDataRetention` not published that key,
+   attaching M3 first would have denied every retention write including `--mode none`, stranding the
+   Regions that still needed one. **The key is published — measured 2026-09-12, on a throwaway
+   document rather than on the root one (M3)** — so this ordering cost nothing and was the right way
+   round anyway: it put the risk after the work instead of before it.
+4. **Attached 2026-09-12**, and re-probed where it lives rather than read back from the document.
+   M3 carries the probes and the *must still succeed* floor.
 5. The reading, as a standing check rather than a one-off: `./aws/bedrock-scope.py`'s **`BS-6`**.
 
 **Before-reading**, every enabled Region. Expect `inherit` in all but the ones already done:
@@ -223,21 +220,125 @@ field by field. The org-wide shape
 automatically) is the right one the day a second account needs a model; the cost of deferring it is
 one more form.
 
-### M3 — Freeze the mode
+### M3 — Freeze the mode, and close the models that retain
 
-M1 is a setting anyone with the permission can change back. The control that keeps it is a deny on
-`bedrock:PutAccountDataRetention` where `bedrock:DataRetentionMode` is not `none`, in
-`awsds-org-scp-baseline.json` (decision 4), attached at the root — **which reaches every account and,
-like every SCP, does not restrict `Management`**. The condition key was confirmed to exist on
-2026-09-11 with `accessanalyzer validate-policy` and a deliberately bogus key beside it as the
-control. Attaching it re-runs the battery and adds its rows to `POLICIES.md` in the same sitting
-([`scp-battery.md`](scp-battery.md)). **Not done, and since 2026-09-12 it is the only thing holding
-the mode.** M5's sixth exempted action removed the Region ceiling from the write, so every principal
-in the `Interactive` OU can now set the mode in every Region. Until this deny is attached, M1's
-`none` is a setting, not a control (Lesson 5).
+M1 is a setting anyone with the permission can change back, and M5's sixth exempted action took away
+the Region ceiling that used to confine the write to `us-west-2` by accident. Two statements in
+`awsds-org-scp-baseline.json` (decision 4) close both halves. **Applied 2026-09-12**, `0 to add,
+2 to change, 0 to destroy` — the document updated in place, its id unchanged, so the root attachment
+never moved and there was no instant without a baseline.
 
-**It carries no Region condition, and that is deliberate.** M1 is per Region, so a deny written for
-one Region freezes one third of the routing and leaves the rest free to be set to anything.
+The document is attached at the **organization root**, **which reaches every account and, like every
+SCP, does not restrict `Management`**. That is accepted here: nobody invokes a model in `Management`,
+and decision 2 keeps the model-access form out of it for the same reason.
+
+#### The statements, as they stand in the document
+
+```json
+{
+  "Sid": "DenyBedrockRetentionModeOtherThanNone",
+  "Effect": "Deny",
+  "Action": "bedrock:PutAccountDataRetention",
+  "Resource": "*",
+  "Condition": {
+    "StringNotEquals": {
+      "bedrock:DataRetentionMode": "none"
+    }
+  }
+}
+```
+
+```json
+{
+  "Sid": "DenyInvokingModelsThatRetain",
+  "Effect": "Deny",
+  "Action": [
+    "bedrock:InvokeModel",
+    "bedrock:InvokeModelWithResponseStream"
+  ],
+  "Resource": [
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5",
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1"
+  ]
+}
+```
+
+#### What is deliberate in them, and easy to undo by accident
+
+- **No Region condition on the first, and that is the point.** The mode is per account **and** per
+  Region (M1), so a deny written for one Region freezes one Region and leaves every other free to be
+  set to anything. The same reasoning keeps the two retention actions outside the Region condition of
+  the `Interactive` OU document (M5).
+- **`StringNotEquals` against `none`, not a list of the modes to forbid.** The enum is `default`,
+  `none`, `provider_data_share`, `inherit` — four values, where this plan had discussed two until
+  2026-09-12, and **`provider_data_share` is the one the requirement is about**. Naming the three to
+  forbid would go stale the day AWS adds a fifth; naming the one to permit cannot.
+- **Six resource ARNs in the second, not two.** The two foundation-model ids, plus a `us.` **and** a
+  `global.` inference profile for each — all four profiles measured `ACTIVE` on 2026-09-12. A deny
+  naming only the model ids leaves the profile routes open, and **the profile ARN is what the
+  refusal names**: the probe below was denied on
+  `arn:aws:bedrock:us-west-2:<account>:inference-profile/us.anthropic.claude-fable-5`, not on a
+  foundation-model ARN.
+- **A deny on the models that retain, never an allow-list of the scoped ones.** An allow-list refuses
+  the next model this estate adopts, from a document nobody thinks to open. This list goes stale in
+  the safe direction: a new retaining model is not on it and is caught by the mode ceiling instead.
+- **The two statements are not interchangeable.** Nothing in the control plane reads a retention
+  mode's *effect* (§V), so the first is verifiable only in its own terms — that the write is refused.
+  The second is verifiable by a call. They cover the same requirement from opposite ends.
+
+#### The condition key is published, and that was measured rather than assumed
+
+A `StringNotEquals` whose key is absent from the request **evaluates TRUE**. If
+`PutAccountDataRetention` did not publish `bedrock:DataRetentionMode` at request time, the first
+statement would be a blanket deny on the action — including on the `--mode none` M1 needs. Two
+readings, and the first is not the second:
+
+| Reading | What it establishes |
+|---|---|
+| `accessanalyzer validate-policy` accepted the key and rejected a bogus one beside it (2026-09-11) | the key is in the service's **catalogue** |
+| the statement parked on the `Policy Test` OU, probed in `Policy Canary` (2026-09-12) | the key is **published at request time** |
+
+#### Doing this in another environment
+
+**Verify the statement before the document that carries it reaches anything.** A root-attached
+document already reaches the canary, so there is nothing to park and a mistake lands everywhere at
+once ([`scp-battery.md`](scp-battery.md), *Amending a root document*). Put the statement in a
+throwaway document instead —
+[`canary/awsds-canary-scp-bedrock-retention-mode.json`](../../../terraform-live/identity/org-policies/canary/awsds-canary-scp-bedrock-retention-mode.json)
+is the one used here, the real statement verbatim rather than an inverted one — attach it to an OU
+holding one disposable account, and run three calls. **Call 0 is what makes the other two
+attributable**; without it a refusal is just a refusal.
+
+| # | Call, in the disposable account | Must |
+|---|---|---|
+| 0 | `put-account-data-retention --mode none`, **nothing attached** | succeed |
+| 1 | the same call, **document attached** | succeed, **with a fresh `updatedAt`** — the stamp is what separates a write from a no-op |
+| 2 | `put-account-data-retention --mode inherit` | be refused, **naming the throwaway's own policy id** |
+
+Measured 2026-09-12: succeeded at 15:56:38Z, succeeded at 16:05:22Z, refused naming `p-ojm4ldiw`.
+Detach and delete in the same sitting — a throwaway left attached governs an OU nobody meant to
+govern.
+
+#### After attaching, re-probe where it lives
+
+Amending a root document is the battery's phases 1-3, not phase 4b, because the document reaches the
+canary too. Measured 2026-09-12, after the apply:
+
+| Probe | Result |
+|---|---|
+| `put-account-data-retention --mode none` | succeeded, `updatedAt` 16:18:02Z |
+| `put-account-data-retention --mode inherit` | refused, naming **`p-1fp032g8`** — the baseline, not the deleted throwaway |
+| `invoke-model` on `us.anthropic.claude-fable-5` | refused, naming `p-1fp032g8`, **on the inference-profile ARN** |
+| `sts get-caller-identity`, `s3api list-buckets`, `ec2 describe-vpcs` | all three succeed — the *must still succeed* floor |
+| `invoke-model` on `us.anthropic.claude-haiku-4-5-20251001-v1:0`, from `Sandbox` | answered — **the retaining deny does not catch the scoped set**, which the canary cannot test because it holds no agreement |
+
+The last row is the one to keep. The failure this pair of statements could cause is not a model that
+answers when it should not; it is the **scoped set going dark** because a resource list was written
+one character wrong, in a document nobody opens.
 
 ### M4 — Accept each model's agreement
 
@@ -354,9 +455,10 @@ negative control: with the other five in place,
 
 **The write is the one that widens something.** The five reads tell an operator what is true. The
 sixth lets **any principal in the OU** set the retention mode in **any Region**, including back to
-`inherit` — the thing this stage exists to prevent. Confining that is M3's job and no longer optional:
-before this action was exempted the Control Tower ceiling confined the write to `us-west-2` by
-accident, and that accidental confinement is what M1 traded away to declare the mode everywhere.
+`inherit` — the thing this stage exists to prevent. Before this action was exempted the Control Tower
+ceiling confined the write to `us-west-2` by accident, and that accidental confinement is what M1
+traded away to declare the mode everywhere. **M3 is what replaces it**, on the mode axis rather than
+the Region one, and it was attached the same day.
 
 **Verify the console act by reading the policy, not by attempting a call.** The Control Tower *control*
 API answers from `Management` alone, but the SCP it writes is an Organizations document, and
@@ -972,6 +1074,7 @@ All read-only.
 | Question | Instrument |
 |---|---|
 | Is the account's retention mode declared? | `aws bedrock get-account-data-retention` — `none`, with an `updatedAt`. The response field is **`mode`**; a `--query` naming `dataRetentionMode` returns `None`, which reads exactly like a Region that answered and declared nothing |
+| Is the mode *frozen*, or merely set? | `put-account-data-retention --mode inherit` must be **refused naming the baseline's policy id**, and `--mode none` must still succeed beside it. Reading the document back says what is attached, not what evaluates (Lesson 20); the pair is the instrument, and it needs an account it is safe to write in |
 | Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a) |
 | Which models retain? | Not `allowed_modes` — it is in no Bedrock API. The vendor's abuse-detection page, dated when read; on 2026-09-11 it named the two Fable models, both present and available in `us-west-2` |
 | Does the form exist? | `aws bedrock get-use-case-for-model-access --region us-west-2` — anything but `ResourceNotFoundException`. **Not** `get-foundation-model-availability` |

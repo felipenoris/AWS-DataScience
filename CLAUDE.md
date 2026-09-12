@@ -253,15 +253,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
 - **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
-  `bedrock-runtime` endpoint. **The agreement enables a model, not the form** (`create-foundation-model-agreement`, per model; `NOT_AVAILABLE` = none created). **A cross-region profile is authorized per
+  `bedrock-runtime` endpoint. **The agreement enables a model, not the form** (`create-foundation-model-agreement`, per model). **A cross-region profile is authorized per
   destination region**, so CT's `CT.MULTISERVICE.PV.1` on `Interactive` refuses it until
-  `bedrock:` actions join its `NotAction` — six now, deny applied (dec 15); the sixth frees the
-  retention write, so 7.5 alone holds it. **Retention mode is per account AND region**: `none`
-  in all 17 enabled regions (dec 16). **`claude-opus-5`/`claude-sonnet-5` are refused for this
+  `bedrock:` actions join its `NotAction` — six now, deny applied (dec 15). **Retention mode is per
+  account AND region**: `none` in all 17 regions (dec 16), frozen by 7.5 — `--mode inherit` refused,
+  `--mode none` not; the Fable pair closed by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this
   account**, every principal, all instruments green (`EXC-08`); **the set is the 4.5 generation
-  since dec 14**, image release owed. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); the
-  SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route to
-  three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
+  since dec 14**, image release owed. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); the SCP's
+  `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route to three
+  US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

@@ -148,12 +148,12 @@ locals {
   # for is about `content` and `type`. The repository is the source of truth instead, and the
   # four are named above so the plan is read rather than approved.
   policy_descriptions = {
-    "awsds-org-scp-baseline"        = "Stage 1c step 7.5 - organization baseline: LeaveOrganization, IAM users, account BPA (carve-out), snapshot and AMI sharing, ecr-public, GuardDuty, datazone outside Data OU."
+    "awsds-org-scp-baseline"        = "Stage 1c step 7.5 - organization baseline: LeaveOrganization, IAM users, account BPA (carve-out), snapshot and AMI sharing, ecr-public, GuardDuty, datazone outside Data OU. Stage 6e step 7.5 - the Bedrock data retention mode must be none, and the models that retain cannot be invoked."
     "awsds-org-scp-perimeter"       = "Stage 1c step 7.5 - trusted resources: deny S3 object writes and ECR layer/image pushes to resources outside this organization."
     "awsds-org-scp-tag-enforcement" = "Stage 1c step 7.8 - Environment and Project required on ec2:RunInstances, one statement per key, scoped to instance/*."
     "awsds-org-scp-ou-workloads"    = "Stage 1c step 7.6 - Workloads OU: no interactive SageMaker surface, no DataZone."
     "awsds-org-scp-ou-identity"     = "Stage 1c step 7.6 - Identity OU: deny user compute (EC2, SageMaker, Glue, Lambda, ECS) in an account that runs no workload, only Terraform managing Identity Center."
-    "awsds-org-scp-ou-interactive"  = "Stage 1c step 7.6 - Interactive OU (Development + the nested Sandboxes): deny the classic SageMaker notebook instance and its presigned URL. SMUS notebooks are spaces and apps and are unaffected."
+    "awsds-org-scp-ou-interactive"  = "Stage 1c step 7.6 - Interactive OU (the nested Sandboxes; Development left at 6b): deny the classic SageMaker notebook instance and its presigned URL. SMUS notebooks are spaces and apps and are unaffected. Stage 6e decision 15 - Bedrock invocation is limited to the scoped profiles and models, and the Bedrock reads exempted from the Control Tower Region ceiling are limited to the routed Regions."
     "awsds-org-scp-ou-data"         = "Stage 1c step 7.6 - Data OU: deny user compute; crawler and column-statistics runs allowed only for awsds-data-catalog-maintenance (D27); deny bucket deletion and Lake Formation deregistration."
     "awsds-org-rcp-perimeter"       = "Stage 1c step 7.8 - deny access to S3, DynamoDB, SQS, KMS, Secrets Manager, ECR, and sts:AssumeRole/sts:SetContext from principals outside the organization."
     "awsds-org-tag-policy"          = "Stage 1c step 7.8 - canonical capitalisation and value enumerations for the five mandatory tags. Reports, does not enforce."
