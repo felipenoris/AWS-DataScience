@@ -236,8 +236,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
   `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. The image's Python is a
   second uv env under `/opt/awsds` on CPython **3.13** (no TF wheel past `cp313`), own kernel; R on
-  conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half, 1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond
-  the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
+  conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half, 1.2/1.3; 3.4, 3.7; step 5 beyond
+  the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9; step 10 (Amazon Q, dec 9 first).
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
   Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
   deep link is that principal from the browser, so `DenyControlPlaneOffVpn` and 6a's tag pair never
