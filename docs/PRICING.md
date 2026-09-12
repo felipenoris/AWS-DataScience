@@ -463,15 +463,12 @@ disagreement between them would be the finding. Two things the agreement card ad
 exists on the `us.` profile as well**, not only on `global.` (Opus 5: 2.75 input / 13.75 output), and
 Haiku 4.5 alone publishes **reserved TPM** dimensions. No interactive assistant can use either.
 
-**A parser over this offer file must handle two spellings.** The newer models publish
-`USW2_input_tokens_standard-Units` and the older ones `USW2_InputTokenCount-Units`; of the four rows
-above, Haiku 4.5 is on the second spelling and the other three on the first. The same split appears
-in the agreement rate card.
-
 **Two spellings of the usage type coexist in that offer file**, and a parser over it must handle both:
 the newer models publish `USW2_input_tokens_standard-Units`, the older ones `USW2_InputTokenCount-Units`.
 Haiku 4.5 and Sonnet 4.5 are on the second spelling, Opus 5 and Sonnet 5 on the first — so a filter
 written against either one alone reports a model as unpriced when it is merely spelled differently.
+The same split appears in the agreement rate card. `./aws/bedrock-usage.py` does not read the offer
+file: it prices from the table above, and a model with no row there is reported unpriced by name.
 
 The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
 less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.

@@ -1611,11 +1611,24 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Sales` for every principal including `AdministratorAccess`, while the previous generation answered.
   **The invocation is the only instrument that answers whether a model can be used**, which is
   Lesson 13 at account scale. Where: `AWS_STATE.md` `EXC-08`.
-- **One Bedrock invocation writes two CloudTrail events** (measured 2026-09-12, fifteen over one
-  session): one carrying `requestParameters.modelId`, its sibling carrying `requestParameters: {}`.
-  Counting events doubles the call count and filtering on `modelId` halves it — the same shape as MWAA's
-  two attempts per run. `responseElements` is `null` on both, which is the attribution-without-content
-  property Stage 6e 4.6 claims, measured.
+- **A streaming Bedrock invocation writes two CloudTrail events; a non-streaming one writes one**
+  (measured 2026-09-12). `InvokeModelWithResponseStream` records one event carrying
+  `requestParameters.modelId` and a sibling carrying `requestParameters: {}` — 9 and 9 in one hour —
+  while `InvokeModel` records a single event, 4 with a `modelId` and none without in the same hour.
+  Counting events doubles a streaming client's calls; **counting events that name a `modelId` and
+  carry no `errorCode` counts each invocation once**, and it equals CloudWatch's per-model
+  `Invocations` exactly (22/20/3 over one evening). `responseElements` is `null` on both, which is the
+  attribution-without-content property Stage 6e 4.6 claims, measured. **A denied call reaches
+  CloudTrail with no `modelId` at all**, so refusals cannot be attributed to a model there — and they
+  do not reconcile with CloudWatch either: one hour held 18 `AccessDenied` events against 6
+  `InvocationClientErrors`, a metric AWS publishes only without a `ModelId`.
+- **CloudWatch carries a cross-region profile's tokens in the source Region, with invocation
+  logging off** (measured 2026-09-12). `AWS/Bedrock` publishes `Invocations` and four token counts per
+  `ModelId` — the `us.` profile id — in `us-west-2`, whichever Region processed the prompt; the
+  dimensionless series equals the per-model sum for all four token metrics. The Control Tower Region
+  ceiling refuses `cloudwatch:ListMetrics` in `us-east-1` and `us-east-2`, so nothing else could have
+  been read. And `ListMetrics` names only series with data in the last two weeks. Where:
+  `aws/bedrock-usage.py`.
 - **A Control Tower control is written from `Management` and read from anywhere** (measured
   2026-09-12). `controltower:` answers only in the management account — a member account is told to
   create a landing zone first — but the control writes an ordinary SCP, and
