@@ -60,6 +60,7 @@ import sys
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
+from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "bedrock.txt"
@@ -82,14 +83,9 @@ PROJECT_ROLES_RE = re.compile(
     r'variable\s+"project_roles"\s*\{.*?default\s*=\s*\[(?P<body>.*?)\]', re.S
 )
 
-# The set Stage 6e scoped, and the one list with four consumers (the stage's step 3): the grant's
-# resource scope, the endpoint policy, the managed-settings pins, and the retention deny that must
-# not catch any of them. A row here that disagrees with the stage file is a defect.
-SCOPED = {
-    "anthropic.claude-opus-5": "us.anthropic.claude-opus-5",
-    "anthropic.claude-sonnet-5": "us.anthropic.claude-sonnet-5",
-    "anthropic.claude-haiku-4-5-20251001-v1:0": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
-}
+# The scoped set is READ from the SCP that declares it (awslib/bedrockscope.py), never spelled
+# here. This file carried a literal until 2026-09-12 and it named the generation Stage 6e decision
+# 14 had already abandoned, so BR-4 reported `pass` about three profiles nobody had scoped.
 
 # The models the vendor's abuse-detection page named as retaining all traffic for up to 30 days,
 # read 2026-09-11. This list is DATED, not derived: `allowed_modes` is in no API, so nothing here
@@ -160,6 +156,11 @@ def main(argv: list) -> int:
     checks = Checks()
     gates: dict = {}  # profile -> dict(form, retention, logging)
     avail: dict = {}  # profile -> {model_id: reading}
+
+    # None when the document is unreadable - standalone in CloudShell, or a malformed SCP. The
+    # sections that need the set say why instead of falling back to a copy that would go stale.
+    SCOPED, _, scope_why = scp_declaration(ctx.repo_root / SCP_PATH)
+    SCOPED = SCOPED or {}
 
     def cli_for(profile: str) -> AwsCli:
         return AwsCli(profile=profile, region=context.REGION, errors=errors, echo_profile=True)
@@ -336,6 +337,8 @@ submission covers every Anthropic model in the account.""")
                 errors.add(("bedrock", "list-foundation-models"), res.merged, anchor.profile)
 
             rep.h2("4.2 The scoped set, and the retaining models beside it")
+            if scope_why:
+                rep.text(f"The scoped set is empty here: {scope_why}")
             rows = ["MODEL\tROLE\tLIFECYCLE\tINFERENCE TYPES"]
             for model in list(SCOPED) + list(RETAINING):
                 role = "scoped" if model in SCOPED else "RETAINS (vendor page, 2026-09-11)"
@@ -649,7 +652,9 @@ The instrument for all of it is a call. Stage 6e steps 6 and 7.2a are where it l
             )
             have = set(profs.stdout.split()) if profs.ok else set()
             missing = [p for p in SCOPED.values() if p not in have]
-            if profs.ok and not missing:
+            if not SCOPED:
+                checks.fail("BR-4", "the scoped set could not be read", scope_why)
+            elif profs.ok and not missing:
                 checks.ok(
                     "BR-4",
                     "every scoped model has an ACTIVE us. profile",

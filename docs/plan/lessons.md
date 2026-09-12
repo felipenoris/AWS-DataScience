@@ -1580,6 +1580,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Counting events doubles the call count and filtering on `modelId` halves it — the same shape as MWAA's
   two attempts per run. `responseElements` is `null` on both, which is the attribution-without-content
   property Stage 6e 4.6 claims, measured.
+- **A Control Tower control is written from `Management` and read from anywhere** (measured
+  2026-09-12). `controltower:` answers only in the management account — a member account is told to
+  create a landing zone first — but the control writes an ordinary SCP, and
+  `organizations describe-policy` returns its document from a delegated-admin account. So a console
+  act on a control has a **mechanical verification**: the `NotAction` count, 86 in the
+  `CT.MULTISERVICE.PV.1` template and 92 after six additions. This matters because the obvious
+  verification is the opposite of an instrument — re-attempting the denied call returns the same
+  refusal whether the form failed to propagate or something else in the chain is missing (Lesson 24).
+  Where: `claude-code-sagemaker.md` M5.
 
 ---
 
