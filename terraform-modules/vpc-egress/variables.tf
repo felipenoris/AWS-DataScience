@@ -82,8 +82,32 @@ variable "optional_service_groups" {
     # A closed list, because the failure of an unknown name is silent: a group nobody defined
     # contributes no endpoints, the apply succeeds, and the blueprint fails on first use exactly
     # as it would have with no flag at all. `make up GROUPS=bedrok` must be a plan error.
-    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "emr", "mwaa"], g)])
-    error_message = "optional_service_groups admits only: bedrock, emr, mwaa. An unknown name would contribute nothing and fail silently at first use."
+    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "bedrock-llm", "emr", "mwaa"], g)])
+    error_message = "optional_service_groups admits only: bedrock, bedrock-llm, emr, mwaa. An unknown name would contribute nothing and fail silently at first use."
+  }
+}
+
+# Narrow one endpoint's policy to a list of actions (Stage 6e step 4.4). Keyed by the SHORT service
+# name - `bedrock-runtime`, not the full `com.amazonaws.<region>.bedrock-runtime` - which is the key
+# every other map in this module uses.
+#
+# Default empty, and the default is the decision: an endpoint nobody names keeps `Action = "*"`
+# under the organization condition, which is what every endpoint has carried since step 9. This
+# variable adds a second axis to that document for the endpoints where a caller has an argument for
+# one; it never widens, because the organization condition is untouched.
+#
+# It narrows the DOOR, not the caller. An action absent here cannot traverse this endpoint at all,
+# whatever an identity policy allows - which is the property that makes it worth writing, and also
+# the way to break a service by guessing: an SDK call nobody thought of gets no response and no
+# denial that names this policy. Name only actions a consumer is known to make.
+variable "endpoint_action_scopes" {
+  description = "Per-endpoint action allow-list for the interface endpoint policy: short service name => list of actions. Endpoints not named here keep Action=* under the organization condition."
+  type        = map(list(string))
+  default     = {}
+
+  validation {
+    condition     = alltrue([for _k, v in var.endpoint_action_scopes : length(v) > 0])
+    error_message = "an empty action list would emit `Action = []`, which denies everything through that endpoint while reading like a policy that was left blank. Omit the key instead."
   }
 }
 
