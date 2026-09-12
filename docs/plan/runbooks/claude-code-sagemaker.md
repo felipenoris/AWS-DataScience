@@ -265,8 +265,17 @@ aws iam list-attached-role-policies --role-name datazone_usr_role_<project>_<env
 
 **Re-plan this slice after any SMUS change to the project.** The role belongs to the service, and a
 blueprint reconciliation may detach a policy its control plane does not know about — INT-15's open
-half. The symptom is an assistant that stops working with no diff in this repository, and the only
-instrument that sees it is a plan that suddenly wants to re-attach.
+half. The symptom is an assistant that stops working with no diff in this repository.
+
+**Or read both sides at once**, which needs no plan and no state lock:
+
+```bash
+./aws/bedrock.py
+```
+
+Its `BR-8` compares `project_roles` against what IAM reports, and names which fault it found: a
+declared attachment that is gone was **removed** by something, and an attachment nothing declares
+was **added by hand** and the next apply will undo it.
 
 ---
 
