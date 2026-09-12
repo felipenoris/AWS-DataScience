@@ -182,7 +182,7 @@ terraform-live/
 │   │                     #     bucket, the access role awsds-sandbox-lake-access and (its
 │   │                     #     decision 3) the Access Grants location + per-group grants;
 │   │                     #     per-project grants are hand-made: runbooks/sandbox-lake.md
-│   ├── egress/           # [E] interface VPC endpoints (18 since 6c 5.2, single AZ) and the
+│   ├── egress/           # [E] interface VPC endpoints (20 since 6e step 4, single AZ) and the
 │   │                     #     DNS Firewall - no NAT, no default route (D38; the NAT code left
 │   │                     #     vpc-egress at v0.6.0). The optional families (bedrock, emr,
 │   │                     #     mwaa) exist only when `make up ENV=sandbox GROUPS=...` names one

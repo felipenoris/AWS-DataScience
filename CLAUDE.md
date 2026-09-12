@@ -263,8 +263,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   scoped models are inference-profile only and their `us.` profiles route to three US regions, so D1's
   exception is the set's. Neither IAM simulator answers here. Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18, Staging 11, SharedServices 13,
-  Workloads 0; estate fixed rate 0.390/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
+  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
+  Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
   stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
   PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `production/egress/` is a prerequisite of a build
   (the buildbox's SSM door). `10.40.0.0/16` stays unallocated.

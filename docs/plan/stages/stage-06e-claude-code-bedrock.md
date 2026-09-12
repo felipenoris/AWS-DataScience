@@ -344,8 +344,22 @@ arrives *public*. **Explanation:** the perimeter conditions this estate writes �
 `aws:SourceVpce` — are absent on a call that leaves through Squid, so a Bedrock invocation made now is
 outside the data perimeter while looking exactly like one that is inside it.
 
-- **4.1 — Done 2026-09-11, as `vpc-egress-v0.13.0`.** A new optional endpoint group, narrower than
-  the one that exists.
+- **4.1 — Done, and the answer is not a group. `vpc-egress-v0.14.0`.** A new optional endpoint group,
+  narrower than the one that exists — **withdrawn 2026-09-12 by the user, and the reason is the
+  flag's own semantics**: a group is per apply, `make up` without it destroys what it created, and
+  the assistant needs this path in every session a space runs. A permanent consumer cannot live
+  behind a per-apply flag.
+
+  So `bedrock` and `bedrock-runtime` are in `sandbox/egress`'s **always-on** `extra_services`, and
+  the optional `bedrock` group narrows to what only the blueprints use, `bedrock-agent` and
+  `bedrock-agent-runtime`. The restructure also dissolves a guard: `bedrock` and `bedrock-llm`
+  shared two endpoints and could not be named together (`v0.13.0`), and with the shared pair moved
+  out there is nothing left to collide. **One seam it introduces**, named in the module: a caller
+  that does not carry the pair gets two agent endpoints with no control plane to talk to.
+
+  **The cost is now permanent while the slice is up**, not per apply: Sandbox moves from 18
+  endpoints to 20, and the estate's fixed rate from 0.390 to 0.410 USD/h. It still leaves on
+  `make down`. *Superseded text:*
   `terraform-modules/vpc-egress`'s `bedrock` group is four endpoints — `bedrock`, `bedrock-agent`,
   `bedrock-agent-runtime`, `bedrock-runtime` — sized for the portal's blueprints. This stage needs
   **two**: `bedrock-runtime` for the invocation and `bedrock` for the control-plane calls of 3.2. Add
@@ -360,8 +374,9 @@ outside the data perimeter while looking exactly like one that is inside it.
   blueprints' control-plane calls and refused `CreateGuardrail` with no denial naming it. A tag is
   never moved, so the fix is a second version rather than an amendment (Lesson 46's rule, applied
   before it cost anything).
-- **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox GROUPS=bedrock-llm`. Two endpoints at
-  ~USD 0.010/h each, `[E]`, and they leave on the next `make down` like everything else.
+- **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox` — **no flag**, since 4.1 made the pair
+  always-on. Two endpoints at ~USD 0.010/h each on top of the eighteen, `[E]`, and they leave on the
+  next `make down` like everything else. **Not done**: the apply is owed.
 - **4.3 — [Claude] The bypass list moves with it.** `NO_PROXY` is generated from each endpoint's own
   `dns_entry` (`vpc-egress-v0.11.1`), so the two names join the list the moment the endpoints exist —
   in the **slice output**. The image carries a dated literal instead (6d decision 8), which is where the
@@ -381,11 +396,20 @@ outside the data perimeter while looking exactly like one that is inside it.
   writing what a control does (Lesson 30's neighbour).
 
   What `v0.12.0` adds is `endpoint_action_scopes`, a narrowing of that document **on the action
-  axis** for a named endpoint: `sandbox/egress/` scopes `bedrock-runtime` to the two invoke actions
-  and `bedrock` to the two profile reads. **What it buys is exact**:
-  `PutAccountDataRetention` and `PutModelInvocationLoggingConfiguration` — the two calls that would
-  undo 7.5a and turn prompt logging on — cannot traverse this door at all, whatever an identity
-  policy in this account allows.
+  axis** for a named endpoint. **4.1's restructure changed what it should be used on.** While the
+  two endpoints belonged to an assistant-only group, scoping both was safe; as always-on
+  infrastructure they are shared with the six SMUS `AmazonBedrock*` blueprints, and a list written
+  for one consumer silently refuses the other with no denial naming the policy (Lesson 51).
+
+  So `sandbox/egress/` scopes **`bedrock-runtime` only**, to the two invoke actions. That door
+  carries invocation for every consumer, so the list is a statement about the service rather than
+  about one caller, and a future runtime API does not silently acquire it. **`bedrock` keeps
+  `Action = "*"`** under the organization condition, like the other nineteen.
+
+  **What that gives up, stated rather than discovered later**: `PutAccountDataRetention` and
+  `PutModelInvocationLoggingConfiguration` are control-plane calls and still traverse their
+  endpoint. The first is covered org-wide by 7.5's SCP, which is the right layer for it; the second
+  is [Stage 11](stage-11-dlp.md) step 5.6's question and has no control here yet.
 
   **The resource axis is deliberately not narrowed, reversing what this step used to ask for.**
   Scoping the endpoint to the six model ARNs would be a second copy of the grant's list, in another
