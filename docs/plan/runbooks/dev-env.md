@@ -340,7 +340,52 @@ aws sagemaker update-domain --domain-id <domain-id> --default-user-settings "fil
 
 §C6's read-back diff closes it.
 
-**6. A new space.** A running app keeps the image it started with; there are none at this point, which
+**6. Every existing space, which carries its own copy of the version number.** The domain's
+`DefaultUserSettings` is what a **new** space reads. An **existing** space has a
+`SpaceSettings.<app>AppSettings.DefaultResourceSpec` written when it was created, and that copy
+**overrides the domain default** — so steps 2 and 5 do not reach it, and step 3 has just destroyed
+the version it names.
+
+```bash
+for SP in $(aws sagemaker list-spaces --domain-id-equals <domain-id> --profile awsds-infra-sandbox-1 --query 'Spaces[].SpaceName' --output text); do printf '%-50s ' "$SP"; aws sagemaker describe-space --domain-id <domain-id> --space-name "$SP" --profile awsds-infra-sandbox-1 --query 'SpaceSettings.[CodeEditorAppSettings.DefaultResourceSpec.SageMakerImageVersionArn,JupyterLabAppSettings.DefaultResourceSpec.SageMakerImageVersionArn]' --output text; done
+```
+
+A space naming an `image-version/<this image>/<the destroyed number>` is stranded. Repair it with
+`update-space` rather than by deleting and recreating — **a space is a home directory and an EBS
+volume**, and recreating loses both. `update-space` is full-replace like `update-domain`, so the
+block is the live read with the version ARN's trailing number changed and **every other field kept**
+— the instance type and the idle timeout come from the space, not from this page:
+
+```bash
+aws sagemaker describe-space --domain-id <domain-id> --space-name <space> --profile awsds-infra-sandbox-1 --query SpaceSettings | jq --arg n "$(AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/dev-env output -raw image_version_number)" '(.. | objects | select(.SageMakerImageVersionArn) | .SageMakerImageVersionArn) |= sub("/[0-9]+$"; "/" + $n)' > "$HOME/tmp/space.json" && cat "$HOME/tmp/space.json"
+```
+
+```bash
+aws sagemaker update-space --domain-id <domain-id> --space-name <space> --space-settings "file://$HOME/tmp/space.json" --profile awsds-infra-sandbox-1
+```
+
+**Read the generated block before the second command.** The slice publishes
+`image_version_number`, not a version ARN, which is why the number is substituted into the ARN
+rather than the ARN replaced wholesale; and the `..` walk rewrites **every** app type's spec in one
+pass, so a space with both a Code Editor and a JupyterLab entry is repaired at once.
+
+**What a hand-written block would delete.** Generated against `remote-editor-claude` on 2026-09-12,
+the live `SpaceSettings` carried, besides the resource spec: `AppType`, an `EbsStorageSettings` size,
+`SpaceManagedResources`, `RemoteAccess: ENABLED` — **without which the remote IDE stops working** —
+and a `CustomFileSystems` entry holding the project's S3 connection. None of those is in this
+runbook and none can be reconstructed from it. That is the whole reason the block is a transformation
+of the live read rather than a template (Lesson 60, and Lesson 61 for the file: regenerate it, never
+reuse the one an earlier bump left in `$HOME/tmp`).
+
+**Measured 2026-09-12**, at the `v0.3.0` → `v0.4.0` bump: `remote-editor-claude` pinned
+`image-version/awsds-sandbox-dev-env/3` after version 3 had been destroyed, and nothing in this
+chain had said to look. The space beside it was unaffected because it runs AWS's own
+`sagemaker-distribution-cpu` **by alias** (`SageMakerImageVersionAlias: "4.3"`) rather than by a
+version ARN — **an alias survives a bump and a version ARN does not**, and
+`aws_sagemaker_image_version.dev_env` currently sets `aliases = []`. Giving the estate's versions
+aliases would remove this step; it is a decision nobody has taken.
+
+**7. A new space.** A running app keeps the image it started with; there are none at this point, which
 is what step 1 arranged.
 
 **Omitting `ImageVersionNumber` at §C6 removes steps 2 and 5**, and the review gate with them: the domain

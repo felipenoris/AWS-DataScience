@@ -274,8 +274,8 @@ echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY
 
 **The tag is decided before the push, by [`docs/SMUS.md`](../../SMUS.md)**: `<flavour>-v<major>.<minor>.<patch>`,
 the same number in both repositories. Both are `IMMUTABLE`, so a tag is spent the first time it lands —
-`default-v0.1.0` on 2026-08-22, **`default-v0.1.1` on 2026-09-08**, **`default-v0.2.0` on 2026-09-11**
-and **`default-v0.3.0` on 2026-09-12**. The rule they show: `v0.1.1` was the *same recipe rebuilt* — no
+`default-v0.1.0` on 2026-08-22, **`default-v0.1.1` on 2026-09-08**, **`default-v0.2.0` on 2026-09-11**,
+**`default-v0.3.0` on 2026-09-12** and **`default-v0.4.0` the same day**. The rule they show: `v0.1.1` was the *same recipe rebuilt* — no
 commit under `images/` between them, the whole delta upstream drift (`base` +942 bytes, `dev-env`
 −11.8 MB) — which is what makes a **patch**; `v0.2.0` changed the recipe (the proxy environment as
 `ENV`, the apt and sudoers files, a second Python environment with its own kernel) and `v0.3.0` changed
@@ -284,11 +284,14 @@ Bedrock endpoint names, `rust-src` in the rustup profile, and no Julia precompil
 what makes a **minor**. **The recipe is not reproducible byte-for-byte**, and a pipeline that assumes it is will report a
 spurious change on every run.
 
-**Two builds are owed and neither has run.** Stage 6e's model pins have to change — `claude-opus-5`
-and `claude-sonnet-5` are refused by AWS for this account and the working set is the 4.5 generation
-(2026-09-12, [`claude-code-sagemaker.md`](claude-code-sagemaker.md) M4) — and the pins live in
+**`default-v0.4.0` is Stage 6e's model pins**, built 2026-09-12: `claude-opus-5` and
+`claude-sonnet-5` are refused by AWS for this account and the working set is the 4.5 generation
+([`claude-code-sagemaker.md`](claude-code-sagemaker.md) M4). The pins live in
 `images/dev-env/claude-code/managed-settings.json`, so changing them is a release rather than a
-setting. Stage 7 step 2.6's CA layer is the other. Whichever runs first takes `default-v0.4.0`.
+setting — which is what makes a **minor** out of a four-string edit. **`dev-env` came out 5,453 bytes
+smaller than `v0.3.0`** (7,182,170,437 against 7,182,175,890), and that is the sanity reading: a delta
+of kilobytes is a string change, a delta of megabytes would be a layer nobody asked for.
+**Stage 7 step 2.6's CA layer is the build still owed, and it takes `default-v0.5.0`.**
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>
@@ -328,7 +331,7 @@ where a `RUN` step has no other way to reach the proxy, and it applies to `docke
 The list it injects is **Production's**, the account this host lives in, not the Sandbox list the
 image carries.
 
-Measured 2026-09-12 on `default-v0.3.0`: `docker run … printenv NO_PROXY` hashed
+Measured 2026-09-12 on `default-v0.3.0`, and `v0.4.0` carries the same list (`./aws/devenv.py`, `DE-3`): `docker run … printenv NO_PROXY` hashed
 `d8ee66e61600e654…`, which is exactly `terraform output -raw no_proxy` on **`production/egress`**, 39
 entries; the image's own literal is 52 entries, `fc11caaa3145fdef…`. Neither reading is wrong — they
 answer different questions, and only one of them is about the image. The trap is that the answer

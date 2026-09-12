@@ -723,8 +723,16 @@ verification (vi) is where the working mechanism gets recorded).
 Stage 6d step 2). `sandbox/dev-env/` holds the image, the version and one app image configuration per
 app type; `CustomImages` is a field of the domain's user settings, so making an image *selectable* is a
 hand step against an object `Tooling` owns, and `UpdateDomain` replaces `DefaultUserSettings` whole
-(Lesson 60). A **space** cannot name an image at all — `SpaceSettings.CodeEditorAppSettings` carries
-neither `CustomImages` nor `LifecycleConfigArns`. Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
+(Lesson 60). A **space** carries no image *list* — `SpaceSettings.CodeEditorAppSettings`
+has neither `CustomImages` nor `LifecycleConfigArns` — **but it does name one image and one version**,
+in `DefaultResourceSpec`, and that copy **overrides the domain's default for that space** (measured
+2026-09-12, correcting the 2026-09-10 reading above, which said a space cannot name an image at all).
+The copy is written when the space is created and never revisited, so an image bump reaches new
+spaces only and leaves existing ones naming a version the bump destroyed — `AWS_STATE.md` `EXC-09`,
+[Lesson 63](plan/lessons.md), and the sweep is [`dev-env.md`](plan/runbooks/dev-env.md) §B step 6.
+**AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather than a version
+ARN, which is what makes them survive a bump; `aws_sagemaker_image_version.dev_env` sets
+`aliases = []`. Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
 `RoleArn` reads it **by tag** and pins the version to a digest; when a space starts, the **project
 role** reads it **by digest**, so a space never sees the tag. Both a **JupyterLab** and a **Code
 Editor** space started on this image (2026-09-10) from the `DefaultUserSettings` block, with

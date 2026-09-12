@@ -889,3 +889,184 @@ The two verification invocations are Claude's, under the same authorization.*
   now: the exemption, the writes, M3 **last**, and a positive control that `--mode none` still
   succeeds afterwards. **7.5's statement was deliberately not written in this sitting** for that
   reason.
+
+## 2026-09-12 — decision 16 executed, 7.5 attached, and `default-v0.4.0` delivered
+
+*One sitting, three acts, each with a measurement in front of it and a reading behind it. Two
+findings came out of it that nobody was looking for: a check that had been reporting `pass` about the
+wrong models for a day, and a space that carries its own copy of the image version number.*
+
+### Decision 16 — the retention mode, everywhere
+
+- **[Claude] The before-reading, 17 enabled Regions**: `none` in `us-west-2`, **`inherit` in the
+  other sixteen**. The *read* answered in all seventeen, which confirmed that the
+  `bedrock:GetAccountDataRetention` the user had already added to the Control Tower `NotActions` was
+  in force.
+
+- **[user] The negative control, before the console act.** The runbook had *predicted* that the
+  Region ceiling refuses the write outside `us-west-2`; that was deduced from the `NotAction` list,
+  never exercised. Run by hand, verbatim:
+
+  ```
+  aws bedrock put-account-data-retention --mode none --region us-east-1 --profile awsds-infra-sandbox-1
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the PutAccountDataRetention
+  operation: User: … is not authorized to perform: bedrock:PutAccountDataRetention with an explicit
+  deny in a service control policy: …/p-umksvu5a
+  ```
+
+  The measurement was worth taking for its own sake and for a second reason: had it **succeeded**,
+  the console act below would have been unnecessary.
+
+- **[Claude] `p-umksvu5a` is `aws-guardrails-fzqpfF`**, the Control Tower document on the
+  `Interactive` OU — **the same id [D37](../plan/decisions/D37-nested-ou-inheritance.md) recorded in
+  Stage 1c**, when the `us-east-1` deny inside Sandbox named `Interactive`'s Region policy rather
+  than `Sandboxes`' own. An identifier from a year-old reading closed with one taken today.
+
+- **[Claude] The Control Tower document is readable from `Identity`**, and this is new. The
+  *control* API answers from `Management` alone, but the SCP the control writes is an Organizations
+  document: `organizations describe-policy --policy-id p-umksvu5a --profile awsds-infra-identity`
+  returns its content. Before the console act it carried **91** `NotAction` entries — the template's
+  86 plus the user's five.
+
+- **[user] `bedrock:PutAccountDataRetention` added as the sixth `NotAction`**, by console, as **AWS
+  Control Tower Admin** on **Management**. Region list left at `us-west-2`; exempted principals left
+  empty.
+
+- **[Claude] The console act verified by reading the policy, not by re-attempting the call.**
+  **91 → 92**, the six `bedrock:` entries present. This matters because the obvious verification is
+  not an instrument: a re-attempted call is refused whether the form failed to propagate or something
+  else in the chain is missing (Lesson 24).
+
+- **[Claude⚡] The writes: `put-account-data-retention --mode none` in all 17 enabled Regions.**
+  17 of 17 accepted. After-reading: **`none` everywhere**, `updatedAt` between 15:31:45Z and
+  15:32:02Z. The write is accepted in a Region already at `none` and stamps a fresh `updatedAt`, so
+  the loop is safe to re-run and the timestamp is not evidence a Region had drifted.
+  `./aws/bedrock-scope.py` `BS-6` green, 7 of 7 checks passing.
+
+- **[Claude] The exemption widened something, and it is written down where it lands.** The five
+  earlier `NotActions` are reads. The sixth lets **any principal in the `Interactive` OU** set the
+  retention mode in **any Region**, `inherit` included. Until today the Control Tower ceiling confined
+  that write to `us-west-2` **as a side effect nobody designed**, and decision 16 traded that
+  accidental confinement away. From here 7.5 is the only thing holding the mode.
+
+### A check that was reporting `pass` about the wrong models
+
+- **[Claude] `aws/bedrock.py` carried a fifth copy of the scoped set**, and it still named
+  `claude-opus-5` and `claude-sonnet-5` — the generation decision 14 abandoned the day before. Its
+  `BR-4` ("every scoped model has an ACTIVE us. profile") read **`pass`**, truthfully, about three
+  profiles nobody had scoped: the `us.` profiles for Opus 5 and Sonnet 5 exist and are `ACTIVE`, they
+  are simply not invocable in this account. A green check about the wrong subject (Lesson 31's
+  neighbour).
+
+- **[Claude] The constant was removed rather than corrected.** The SCP reader moved to
+  `aws/awslib/bedrockscope.py` and both `bedrock.py` and `bedrock-scope.py` read it, so the estate is
+  back to one declaration. With the document unreadable — standalone in CloudShell — `BR-4` now
+  **fails naming why** instead of passing on an empty set.
+
+### Step 7.5 — the mode ceiling and the retaining-model deny
+
+- **[Claude] The mode enum has four values, not the two this plan discussed**: `default`, `none`,
+  `provider_data_share`, `inherit`. **`provider_data_share` is the value the requirement is about**,
+  and no file here had named it. The condition is unchanged — `StringNotEquals` against `none`
+  catches the other three, and naming the one mode to permit cannot go stale where a list of modes to
+  forbid would.
+
+- **[Claude] The premise was tested before the root document was touched.** `awsds-org-scp-baseline`
+  is attached at the **root**, so it already reaches `Policy Canary`: there is nothing to park, and an
+  amendment that turned out to be a blanket deny would have stranded every retention write in the
+  organization at once, `--mode none` included. The statement was therefore tested **on its own**, as
+  a throwaway document — `canary/awsds-canary-scp-bedrock-retention-mode.json`, the real statement
+  verbatim rather than phase 1's inverted shape — created as **`p-ojm4ldiw`** and attached to the
+  **`Policy Test` OU**.
+
+- **[Claude⚡/user] Three calls in `Policy Canary`, `us-west-2`.** Claude ran call 0; the user ran the
+  attach, calls 1 and 2, and the cleanup, because the classifier declined the policy attachment:
+
+  | # | Call | Result |
+  |---|---|---|
+  | 0 | `--mode none`, **nothing attached** | succeeded, `updatedAt` 15:56:38Z |
+  | 1 | `--mode none`, **document attached** | succeeded, `updatedAt` **16:05:22Z** — a fresh stamp, so a write and not a no-op |
+  | 2 | `--mode inherit` | `AccessDeniedException … explicit deny in a service control policy: …/p-ojm4ldiw` |
+
+  **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time.** Call 0 is what
+  makes call 2 attributable; the named policy id is what makes it attributable to *this* document.
+  Detached and deleted in the same sitting.
+
+- **[Claude⚡] `identity/org-policies/` applied**: `0 to add, **2 to change**, 0 to destroy`. The
+  baseline document updated **in place**, id `p-1fp032g8` unchanged, so the root attachment never
+  moved and there was no instant without a baseline — **1,651 → 2,395** minified bytes against the
+  5,120 ceiling. The second change is the `Interactive` document's *description*, which still named
+  `Development` in an OU it left at 6b and named neither statement decision 15 had added. Re-plan
+  `No changes`.
+
+- **[Claude⚡] Re-probed where it lives**, not read back from the document:
+
+  | Probe | Result |
+  |---|---|
+  | `--mode none` | succeeded, `updatedAt` 16:18:02Z |
+  | `--mode inherit` | refused, naming **`p-1fp032g8`** — the baseline, not the deleted throwaway |
+  | `invoke-model` on `us.anthropic.claude-fable-5` | refused, same id, **on the inference-profile ARN** |
+  | `sts get-caller-identity`, `s3api list-buckets`, `ec2 describe-vpcs` | all three succeed |
+  | `invoke-model` on `us.anthropic.claude-haiku-4-5-20251001-v1:0`, from `Sandbox` | **answered** |
+
+  The last row is the one to keep. The failure these statements could cause is not a retaining model
+  answering — it is the **scoped set going dark** from a resource list written one character wrong,
+  and the canary cannot test it because it holds no agreement.
+
+- **[Claude] Six resource ARNs, not two, and the probe justified it.** The refusal named
+  `…:inference-profile/us.anthropic.claude-fable-5` — the **profile** ARN, not a foundation-model one.
+  A statement listing only the two model ids would have left open exactly the route an invocation
+  takes. Both Fable models have a `us.` **and** a `global.` profile, all four `ACTIVE`.
+
+### `default-v0.4.0` — the pins delivered
+
+- **[Claude] What `v0.3.0` was shipping, measured against the repository.** The image attached to the
+  domain pinned `ANTHROPIC_MODEL` and `ANTHROPIC_DEFAULT_OPUS_MODEL` to `us.anthropic.claude-opus-5`
+  and `ANTHROPIC_DEFAULT_SONNET_MODEL` to `us.anthropic.claude-sonnet-5`, with `availableModels`
+  locked to `["opus","sonnet"]` — **a picker offering exactly the two models that refuse**, with the
+  working Haiku not selectable. That is the symptom the user reported on 2026-09-12, now with a cause
+  rather than a mystery; and since decision 15's apply those two pins are denied by **two independent
+  things**, the commercial gate and this estate's own `NotResource`.
+
+- **[user] `default-v0.4.0` built on the buildbox and pushed**, `dev-env`
+  `sha256:ba1b395ea8b035c5a2f770e92c6fcefda5d14fa180479ed25eea0df44f2f2636`,
+  **7,182,170,437 bytes against `v0.3.0`'s 7,182,175,890 — 5,453 fewer**. That delta is the sanity
+  reading: a four-string edit in a JSON file is kilobytes, and a layer nobody asked for would be
+  megabytes.
+
+- **[Claude] `./aws/devenv.py` before the bump**: `DE-1`..`DE-4` pass, 52 entries, sha256
+  `fc11caaa3145fdef` on both sides — the proxy list is the same in `v0.4.0`, which is what a pins-only
+  release should show.
+
+- **[Claude⚡] The §B chain.** No app was running, so step 1 had nothing to delete. Detached — the
+  block generated from the **live read**, all ten keys preserved and only the two `CustomImages`
+  arrays emptied, because `update-domain` is full-replace (Lesson 60). Applied for
+  `1 to add, 0 to change, 1 to destroy`, `base_image` forcing replacement. **Version 4's
+  `ContainerImage` read back against the pushed digest and matched.** Re-attached from the slice's own
+  output, so no version number was typed. Domain `InService`, both app types on version 4, re-plan
+  `No changes`.
+
+### The finding nobody was looking for: a space carries its own version number
+
+- **[Claude] `remote-editor-claude` pins `…:image-version/awsds-sandbox-dev-env/3`** in its own
+  `SpaceSettings.CodeEditorAppSettings.DefaultResourceSpec` — **and version 3 no longer exists**, the
+  apply having destroyed it. The domain's `DefaultUserSettings` is what a **new** space reads; an
+  **existing** space carries a copy written when it was created, and that copy overrides the domain
+  default.
+
+- **[Claude] `dev-env.md` §B did not cover this.** Its only neighbouring sentence is *"A new space. A
+  running app keeps the image it started with"*, which is about the **app**, not the space. Every
+  version bump from here strands every space that pinned the previous version, and the number of
+  spaces only grows.
+
+- **[user] Left unrepaired on purpose** (2026-09-12): *"Não precisa ajustar o space antigo por
+  enquanto. Eu vou ver como ele se comporta e criar um space novo para testar a imagem nova."* So the
+  behaviour of an app started against a destroyed image version becomes a **measurement this stage
+  does not yet have**, and the new space is what exercises `v0.4.0`.
+
+- **[Claude] The other space is unaffected**:
+  `default-28f1b390-…` runs AWS's own `sagemaker-distribution-cpu` by **alias `4.3`**, not our image.
+  That contrast is the design observation: **an alias survives a version bump, a version ARN does
+  not**, and `aws_sagemaker_image_version.dev_env` currently sets `aliases = []`. Whether to give the
+  estate's versions aliases is a decision this log records and does not take.

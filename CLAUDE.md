@@ -226,19 +226,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Stages 0-1d, 2, 3, 4, 5, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5 register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed; D38 §6
-  was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
+  Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision (the portal's notebook operator dies on the D13 boundary; Stage 10's own DAGs can pass a
-  full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **3**
-  is `default-v0.3.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
-  what a space's picker reads, both app types.
-  INT-01/INT-17 closed (image role by tag, project role by digest). **The app image config caps each env
-  value at 256 chars** vs a `NO_PROXY` of ~1,500, so decision 8 put the six variables in the Dockerfile
-  as `ENV`, a dated literal (52 entries, sha256 `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump
-  order `dev-env.md` §B. The image's Python is a second uv env under `/opt/awsds` on
-  CPython **3.13** (no TF wheel past `cp313`), own kernel; R on conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half,
-  1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
+  full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
+  is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
+  what a new space's picker reads, both app types. INT-01/INT-17 closed (image role by tag, project
+  role by digest). **The app image config caps each env value at 256 chars** vs a `NO_PROXY` of ~1,500,
+  so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
+  `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. The image's Python is a
+  second uv env under `/opt/awsds` on CPython **3.13** (no TF wheel past `cp313`), own kernel; R on
+  conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half, 1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond
+  the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
   Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
   deep link is that principal from the browser, so `DenyControlPlaneOffVpn` and 6a's tag pair never
@@ -246,22 +245,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `OwnerUserProfileName` for *whose space*, `aws:SourceIp` for *VPN-only*. Decision 5: the space's own
   fetch of the server and of each `.vsix` is refused (`403`) and Remote - SSH copies both from the
   laptop — **no Microsoft name joins the plane**, and the session is a **file channel in both
-  directions that no hostname list describes**. **Two IDE servers run in one
-  container**, separate extension directories and settings, so a version complaint is the client's
-  marketplace and never the remote runtime. A remote space needs **≥ 8 GB** (`ml.t3.large` 0.100/h);
-  the space path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and
-  `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
+  directions that no hostname list describes**. **Two IDE servers run in one container**, separate
+  extension directories and settings, so a version complaint is the client's marketplace, never the
+  remote runtime. A remote space needs **≥ 8 GB** (`ml.t3.large` 0.100/h); the space
+  path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and `session-manager-plugin`
+  honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
 - **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
-  `bedrock-runtime` endpoint. **The agreement enables a model, not the form** (`create-foundation-model-agreement`, per model). **A cross-region profile is authorized per
-  destination region**, so CT's `CT.MULTISERVICE.PV.1` on `Interactive` refuses it until
-  `bedrock:` actions join its `NotAction` — six now, deny applied (dec 15). **Retention mode is per
-  account AND region**: `none` in all 17 regions (dec 16), frozen by 7.5 — `--mode inherit` refused,
-  `--mode none` not; the Fable pair closed by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this
-  account**, every principal, all instruments green (`EXC-08`); **the set is the 4.5 generation
-  since dec 14**, image release owed. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); the SCP's
-  `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route to three
-  US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
+  `bedrock-runtime` endpoint. **The agreement enables a model, not the form**
+  (`create-foundation-model-agreement`, per model). CT's `CT.MULTISERVICE.PV.1` on `Interactive` carries
+  six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
+  dec 15's compensating deny. **Retention mode is per
+  account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
+  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`);
+  the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
+  to three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
@@ -289,11 +287,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. The other three
   `egress/` slices are down and take v0.11.1 on their next `make up`. **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.
-- **Inside a space**: on `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the four
-  kernels work as they are (earlier images: `sg-proxy.md`). A space started while
+- **Inside a space**: since `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the
+  four kernels work as they are (earlier images: `sg-proxy.md`). A space started while
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
-  2026-09-11 and needs a writable per-space library; `conda` is not, by decision. A rebuild is not
-  byte-reproducible.
+  2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
   one workflow, `READY`, `manual_only`; every run is two attempts, so read the task's
   `DurationInSeconds`, never the run's. The surface needs nothing — 6a's eleven configurations
@@ -445,6 +442,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     full-replace API the stale file is not unavailable, it is wrong.**
 62. **An absence is evidence only when the instrument would have shown the presence — the wrong path
     and the lagging log both answer "nothing", and the pleasant answer is the one nobody challenges.**
+63. **A default is read once, when the consumer is created — the copy outlives it, and an alias
+    survives a bump where an id does not.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

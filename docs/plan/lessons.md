@@ -1300,6 +1300,37 @@ decision due 5 twice, once wrongly. Lesson 13 is its sibling (a verification emp
 Lesson 42 its network form (denied is a response, never-arrived is an absence) and Lesson 30 the
 reminder that a tool's failure is not a property of the world.
 
+## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
+
+**What happened.** The `default-v0.3.0` → `v0.4.0` bump followed [`dev-env.md`](runbooks/dev-env.md) §B
+to the letter: apps deleted, the domain detached, the apply read `1 to add, 1 to destroy`, the new
+version's digest checked against the one pushed, the domain re-attached on both app types, re-plan
+`No changes`. Every reading the chain asks for was green. Then a reading nobody had asked for:
+`remote-editor-claude` still named `image-version/awsds-sandbox-dev-env/3` in its **own**
+`SpaceSettings.DefaultResourceSpec`, and version 3 had just been destroyed — the resource is force-new
+on `base_image`. The domain's `DefaultUserSettings` had been correct throughout and reached nothing
+that already existed.
+
+**Why it is a class rather than a slip.** A *default* looks like a live indirection and is usually a
+**copy taken at creation**. The word invites the reading that consumers follow it; what they follow is
+the value it held on the day they were made. The chain was written from the domain's side, where the
+whole story is visible and complete, so nothing in it pointed outward at the consumers — and the
+consumers are the half that grows. Every bump after this one strands one more space than the last.
+
+**The rule.** When a bump changes something a consumer could have copied, enumerate the consumers and
+read the field back from each; do not infer their state from the object that supplied it. Ask, of any
+value named *default*, when it is read — at use or at creation — because that decides whether changing
+it is one write or N. Where the platform offers a **mutable alias** beside an immutable id, the alias
+is what survives a bump: the space next to the stranded one was fine because it names AWS's image by
+`SageMakerImageVersionAlias: "4.3"` rather than by a version ARN.
+
+**What makes it expensive.** The stranded copy is invisible from the side you are working on and the
+whole procedure reports success — this is Lesson 35's shape (adopting an object invalidates procedures
+and touches none of the files carrying them) meeting Lesson 33's (one intent in two places). The repair
+is also where Lesson 60 bites: the consumer's block is full-replace and carries fields the runbook never
+mentions — `RemoteAccess`, storage, a project's S3 connection — so it is a transformation of the live
+read, never a template.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -1589,6 +1620,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   verification is the opposite of an instrument — re-attempting the denied call returns the same
   refusal whether the form failed to propagate or something else in the chain is missing (Lesson 24).
   Where: `claude-code-sagemaker.md` M5.
+- **A SageMaker space keeps its own copy of the custom image version number**, in
+  `SpaceSettings.<app>AppSettings.DefaultResourceSpec`, written when the space is created — and it
+  **overrides the domain's `DefaultUserSettings`**. Measured 2026-09-12: with version 4 attached to the
+  domain, an existing space still named version 3, which the same apply had destroyed
+  (`aws_sagemaker_image_version` is force-new on `base_image`). AWS's own images are referenced by a
+  mutable **alias** instead, which survives a bump. Where: `dev-env.md` §B step 6, `AWS_STATE.md`
+  `EXC-09`, Lesson 63.
 - **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
   2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
   blanket deny on the action. **A condition key being in a service's catalogue and a key being
