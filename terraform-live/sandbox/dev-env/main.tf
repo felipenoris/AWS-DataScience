@@ -57,7 +57,7 @@ resource "aws_sagemaker_image_version" "dev_env" {
 # refused both configurations with a ValidationException: `Member must have length less than or
 # equal to 256`. The API reference confirms the shape of the limit - ContainerConfig's map takes at
 # most 25 entries, and each key and each value at most 256 characters. The estate's generated
-# NO_PROXY is 50 entries and about 2,300 characters, so it does not fit and no rewriting of these
+# NO_PROXY is 52 entries and about 1,500 characters, so it does not fit and no rewriting of these
 # resources makes it fit.
 #
 # The four proxy variables are not delivered without it. NO_PROXY is what keeps AWS traffic on the

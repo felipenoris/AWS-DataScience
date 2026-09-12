@@ -349,18 +349,9 @@ RUN set -eu; \
 # on the VPC endpoints. A proxy without its bypass list does not fail: the call goes out through the
 # hub as a public one, with no aws:SourceVpc and no aws:SourceVpce, so the perimeter is lost silently.
 #
-# The list below is Sandbox's, read on 2026-09-10 (50 entries). It goes stale when that account's
+# The list below is Sandbox's, read on 2026-09-12 (52 entries). It goes stale when that account's
 # endpoint set changes - a stale image is a working image with a hole, and `./aws/devenv.py` is what
 # reports the difference.
-#
-# IT IS STALE RIGHT NOW, BY TWO NAMES, AND KNOWINGLY: Stage 6e step 4 made `bedrock` and
-# `bedrock-runtime` always-on in sandbox/egress, so the slice's generated list is 52 entries and
-# this literal is still 50. The two cannot be written here by hand - eight of the names in this list
-# are not derivable from a service token, which is why it is read from the slice rather than
-# composed - so the refresh below has to run against a slice that is UP. Until it does, a Bedrock
-# call from a space goes to the proxy and out as a public call: it WORKS, with no aws:SourceVpc and
-# no aws:SourceVpce, which is the silent half of Lesson 33. `default-v0.3.0` is not buildable until
-# this line is refreshed.
 #
 # Refresh it with:
 #
@@ -376,7 +367,7 @@ RUN set -eu; \
 # same reason in reverse - it writes a file and sets nothing, so its position does not matter, and
 # it is placed before rather than after so that this one keeps the last word.
 ARG PROXY_URL=http://proxy.awsds.internal:3128
-ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
+ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
 
 # The variables alone are not enough, measured 2026-09-08 (6d step 3.1): `sudo` resets the
 # environment, so `apt` ran with no proxy and failed to resolve a name that is on the plane. apt gets
