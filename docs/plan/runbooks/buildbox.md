@@ -16,7 +16,7 @@ account, layer **`[E]`** — created for a build session, destroyed at its end. 
 
 ## D. What it is
 
-One EC2 instance — `t3.xlarge`, 64 GiB gp3, both set in the tracked `instance_type.auto.tfvars` beside the
+One EC2 instance — `m8i.xlarge`, 64 GiB gp3, both set in the tracked `instance_type.auto.tfvars` beside the
 slice — with docker and git installed at first boot. **No public address, no ingress rule, no route to the
 internet.** It holds nothing worth keeping: the volume dies with the instance, the state carries no secret,
 and anything that must survive leaves as an image in ECR.
@@ -79,7 +79,7 @@ boot on 2026-09-06.
 
 | bill | USD/h |
 |---|---|
-| this host, `t3.xlarge` | 0.1664 |
+| this host, `m8i.xlarge` | 0.2117 |
 | `production/egress/` | 0.130 |
 | the proxy, `t3.micro`, shared | 0.0104 |
 
@@ -341,5 +341,5 @@ the narrowed form, or with `make down ENV=production`, which also destroys this 
 ./scripts/slices.py down --env production --only egress
 ```
 
-`./scripts/buildbox.py status` is the reading: a `t3.xlarge` left up for a week is USD 28 against D12's
+`./scripts/buildbox.py status` is the reading: an `m8i.xlarge` left up for a week is USD 36 against D12's
 USD 50/month.

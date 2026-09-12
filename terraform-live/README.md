@@ -167,7 +167,7 @@ door into the host) rather than a slice a build could avoid.
 **`buildbox/` is raised by [`scripts/buildbox.py`](../scripts/buildbox.py), not by `make up` — by
 convention, not by refusal.** It is `[E]` with a row and no refusal in `layers.py`, so `make status` sees
 it, `make down ENV=production` destroys it, **and `make up ENV=production` applies it** with the account's
-other three `[E]` slices — `egress/`, `workloads-egress/`, `probes/` — at 0.1664/h for a `t3.xlarge` a
+other three `[E]` slices — `egress/`, `workloads-egress/`, `probes/` — at 0.2117/h for an `m8i.xlarge` a
 Sandbox session never needs. The script exists for the reverse case: a build needs `egress/` and this slice
 and neither of the other two, so it raises this one alone, checks the two prerequisites a rank cannot
 express, syncs the context, opens the shell and tears down.

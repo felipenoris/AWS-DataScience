@@ -58,16 +58,19 @@ variable "account_folder" {
 # ------------------------------------------------------------ the two knobs, and one caveat
 
 variable "instance_type" {
-  description = "The build host's size, selected per apply, from the tracked instance_type.auto.tfvars beside this file. Where this differs from sandbox/vpn/'s knob of the same name, and it is the thing to read before assuming the two files behave alike: there, the default is a posture - t3.nano is what the design runs at and a larger value is a temporary switch. Here the default is a floor. This host exists to build a container image whose base alone is ~3.9 GB compressed and several times that unpacked, and a default too small to do that would be a value that looks like a choice and is a trap. So the default is the working shape (t3.xlarge - 4 vCPU, 16 GiB, 0.1664 USD/h measured, docs/PRICING.md 8) and the file beside this one assigns it explicitly, so the two agree and a fresh clone builds something that works. The list is x86_64, and that is not a preference either: SageMaker images are amd64 and the sagemaker-distribution repository publishes no arm64 tag at all, so building on Graviton would produce an image no SMUS space can run. It is the whole reason this slice exists rather than a laptop."
+  description = "The build host's size, selected per apply, from the tracked instance_type.auto.tfvars beside this file. Where this differs from sandbox/vpn/'s knob of the same name, and it is the thing to read before assuming the two files behave alike: there, the default is a posture - t3.nano is what the design runs at and a larger value is a temporary switch. Here the default is a floor. This host exists to build a container image whose base alone is ~3.9 GB compressed and several times that unpacked, and a default too small to do that would be a value that looks like a choice and is a trap. So the default is the working shape (m8i.xlarge - 4 vCPU, 16 GiB, 0.2117 USD/h measured, docs/PRICING.md 8) and the file beside this one assigns it explicitly, so the two agree and a fresh clone builds something that works. The list is x86_64, and that is not a preference either: SageMaker images are amd64 and the sagemaker-distribution repository publishes no arm64 tag at all, so building on Graviton would produce an image no SMUS space can run. It is the whole reason this slice exists rather than a laptop."
   type        = string
-  default     = "t3.xlarge"
+  default     = "m8i.xlarge"
 
   validation {
     # A closed list. What it defends is an architecture (the AMI is x86_64; a t4g is a machine
     # this image cannot run on and EC2 refuses it) and a ceiling on an hourly rate that is
-    # already 32x the tunnel host's.
-    condition     = contains(["t3.large", "t3.xlarge", "t3.2xlarge"], var.instance_type)
-    error_message = "instance_type must be t3.large, t3.xlarge or t3.2xlarge - x86_64, because the image being built is amd64 (docs/PRICING.md 8 carries the rates)."
+    # already 41x the tunnel host's. The family is m8i since 2026-09-11: the build is CPU-bound
+    # and a burstable host's baseline is the wrong shape for it - the measurement is in the
+    # tfvars beside this file. m8i.xlarge is offered in usw2-az1 through usw2-az4, so it reaches
+    # both authored zones.
+    condition     = contains(["m8i.large", "m8i.xlarge", "m8i.2xlarge"], var.instance_type)
+    error_message = "instance_type must be m8i.large, m8i.xlarge or m8i.2xlarge - x86_64, because the image being built is amd64 (docs/PRICING.md 8 carries the rates)."
   }
 }
 

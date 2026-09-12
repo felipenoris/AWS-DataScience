@@ -17,16 +17,16 @@
 # values below and variables.tf's defaults deliberately AGREE. Commenting a line out changes
 # nothing, which is the honest outcome when there is no cheaper posture to return to.
 #
-# THE COST, MEASURED (docs/PRICING.md 8, us-west-2, 2026-08-21) - and it is not small against
+# THE COST, MEASURED (docs/PRICING.md 8, us-west-2, 2026-09-11) - and it is not small against
 # D12's USD 50/month, which is why every helper the script prints ends in `down`:
 #
-#   t3.large    2 vCPU,  8 GiB   0.0832 USD/h
-#   t3.xlarge   4 vCPU, 16 GiB   0.1664 USD/h    <- assigned below
-#   t3.2xlarge  8 vCPU, 32 GiB   0.3328 USD/h
+#   m8i.large    2 vCPU,  8 GiB   0.1058 USD/h
+#   m8i.xlarge   4 vCPU, 16 GiB   0.2117 USD/h    <- assigned below
+#   m8i.2xlarge  8 vCPU, 32 GiB   0.4234 USD/h
 #
 #   + gp3 at 0.08 USD/GB-month: 64 GiB is ~5.12/month IF it stood, ~0.007/h while it does not
 #
-# A t3.xlarge left running for a week is USD 28. `./scripts/buildbox.py status` is the reading;
+# An m8i.xlarge left running for a week is USD 36. `./scripts/buildbox.py status` is the reading;
 # `./scripts/buildbox.py down` is the cure. A build session is THREE bills (6c step 5.8): this
 # host, production/egress/ at 0.130 USD/h ([E] - its SSM endpoints are the only door in) and
 # the proxy's t3.micro at 0.0104 ([D], the whole estate's egress). `down` ends only the first -
@@ -38,13 +38,26 @@
 # up does not widen that. What does not cross it: a private-registry pull's layers (the S3
 # gateway endpoint) and the push (the ecr.dkr interface endpoint).
 #
+# The proxy is not the ceiling, and that is measured rather than argued (the 02:50-03:15 UTC
+# build of 2026-09-11, squid's access log against the two hosts' EC2 metrics). The proxy moved
+# 3.11 GB in its busiest minute - 414 Mbps, 6.5x its own 64 Mbps baseline - at 2.70% CPU with
+# its credit balance never leaving 288. This host sat at 99.98% CPU in two consecutive
+# five-minute bins, its own credits never falling and its surplus balance at zero: the build
+# ran out of vCPU, not of pipe and not of credit. EBS write peaked at 75.5 MB/s against the
+# t3.xlarge's 86.875 baseline, 87% of it.
+#
+# That is what moved the family from t3 to m8i on 2026-09-11: same 4 vCPU and same 16 GiB, but
+# dedicated cores at 3.9 GHz instead of burstable at 2.5, and EBS at 156.25 MB/s and 6000 IOPS
+# instead of 86.875 and 4000. The build is expected to shorten by a fifth to a quarter; that
+# part is an estimate and the next session's wall clock is what settles it.
+#
 # HOW TO APPLY EITHER - the name ends in .auto.tfvars, so Terraform loads it by itself and
 # there is no -var-file to forget:
 #
 #   ./scripts/buildbox.py up
 
 
-instance_type = "t3.xlarge"
-#instance_type    = "t3.large"
-#instance_type    = "t3.2xlarge"
+instance_type = "m8i.xlarge"
+#instance_type    = "m8i.large"
+#instance_type    = "m8i.2xlarge"
 root_volume_size = 64
