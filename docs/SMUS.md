@@ -733,7 +733,8 @@ Editor** space started on this image (2026-09-10) from the `DefaultUserSettings`
 
 **What the app image configuration cannot carry is the proxy environment.**
 `ContainerEnvironmentVariables` caps each value at 256 characters against a generated `NO_PROXY` of
-about 2,300, so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4 both assumed does not exist. 6d
+1,514 characters (52 entries, 2026-09-12), so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4
+both assumed does not exist. 6d
 decision 8 (2026-09-10) puts the six variables in the **image** instead — `ENV` in
 `images/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
 estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and a

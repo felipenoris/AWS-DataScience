@@ -500,3 +500,122 @@ no build: `default-v0.3.0` is written but not buildable.*
 
 - **[Claude] Step 8.2 restated.** The two endpoints are no longer the cost of naming a flag; since
   step 4's restructure they are the cost of having `sandbox/egress` up at all.
+
+## 2026-09-12 — step 4 applied, the list refreshed, and `default-v0.3.0` built and attached
+
+*Every apply, the build, the push and both domain writes were the user's, as the infrastructure user
+on `Sandbox Account 1` with `InfrastructureAccess` (the push as the buildbox's instance role on
+`Production`). The diagnosis, the module fix and the authored changes are Claude's. Digests and
+sizes below were read back from AWS.*
+
+### 4.2 — the apply, on the second attempt
+
+- **[user] `make up ENV=sandbox AUTO=1` failed** against `vpc-egress-v0.14.0` with twenty
+  `Inconsistent conditional result types`, one per endpoint.
+
+- **[Claude] The defect was in the action-scope conditional, pushed under three tags.** The
+  `endpoint_policies` local chose between a scoped document and the unscoped one with a conditional
+  whose two branches gave `Action` different types — a list for a scoped endpoint, the inherited
+  string for every other. HCL unifies a conditional's two result types, and a statement object
+  carrying a string where the other carries a list does not unify.
+
+- **[Claude] `terraform validate` had answered `Success!` on the module and on the caller, at
+  `v0.12.0`, `v0.13.0` and `v0.14.0`** — the caller fully initialised against the tag that failed.
+  The reason it cannot see this is that `local.service_names` is a `for` over
+  `distinct(concat(...))` whose keys are unknown until plan, so a statement's type stays dynamic
+  through validation. **Lesson 54's instance, recorded there**: a module change is exercised by
+  planning a caller against the local path ([`terraform-changes.md`](../plan/runbooks/terraform-changes.md)
+  Recipe B step 1), never by validating it. `make check` has no plan step and the commit hooks stop
+  at validate, so nothing in this repository could have caught it.
+
+- **[Claude] `vpc-egress-v0.14.1` removes the conditional rather than repairing it.** Two documents
+  are built — a `scoped_policies` map keyed by the short service name, and `local.endpoint_policy`
+  itself — and `lookup` selects between them. An endpoint nobody scoped now takes **the same
+  string**, not a re-encoding of it, so its document cannot drift from what it has carried since
+  Stage 6c step 9. Recipe B's two commits, in order; `v0.14.0` joins the abandoned list.
+
+- **[user] The apply: `2 to add, 0 to change, 0 to destroy`.** The two Bedrock endpoints created and
+  **no existing endpoint's policy document touched** — which is the measurement that the eighteen
+  documents stayed byte-identical, rather than the argument that they should have. Sandbox is now
+  20 interface endpoints; the estate's fixed rate is 0.410 USD/h.
+
+### 4.3 — the image's `NO_PROXY` literal refreshed
+
+- **[Claude] Read from the slice, not composed**: `terraform output -raw no_proxy` on
+  `sandbox/egress`, **50 → 52 entries**, the two new ones being the Bedrock pair's `dns_entry`
+  names. The literal in `images/dev-env/Dockerfile` is **1,514 characters**, sha256
+  `fc11caaa3145fdef8615ac59fd4a70207ebbee071edafbcc3271595dbc496ab8`. `sg-proxy.md`'s pasteable
+  export block and `dev-env.md`'s dated reading were refreshed in the same sitting.
+
+- **[Claude] A figure repeated across six files was wrong, and is corrected.** The generated
+  `NO_PROXY` had been written as *"about 2,300 characters"* since 2026-09-10. Measured: the
+  50-entry list is **1,442** characters and the 52-entry one **1,514**. The argument it supports is
+  untouched — the app image configuration caps each value at 256 — but the number was never right.
+  `docs/SMUS.md`, `docs/REFERENCES.md`, `docs/plan/lessons.md` and three passages of the 6d stage
+  file now carry the measured value. **The 6d log keeps what it recorded**; this entry is the
+  correction, because a log is a record of what was written on its date.
+
+- **[Claude] `wc -l` miscounted it once**, reporting 51: `terraform output -raw` emits no trailing
+  newline. The count that stands was taken by splitting on commas.
+
+### 5.4 — the build, and the two digests
+
+- **[user] Both images built on the buildbox and pushed as `default-v0.3.0`**, verbatim:
+
+  ```
+  default-v0.3.0: digest: sha256:97cf219d80fc5539e145733216d280f3ce836e6ccec04214542ccab3ca98bd7a size: 6582
+  default-v0.3.0: digest: sha256:bd78c976195fe20c3b15a128766aed2cf15bf6d026d01280ff70128269a0c83a size: 9307
+  ```
+
+  The first is `awsds-prod-ecr-base`, the second `awsds-prod-ecr-dev-env`. Read back from the laptop
+  with `describe-images`, both agree with the push output.
+
+- **[Claude] The size delta, measured in ECR rather than from `docker images`.** `dev-env`
+  **7,256,923,087 → 7,182,175,890 bytes**, −74.7 MB, −1.0% — the Julia precompilation cache removed,
+  net of `rust-src` added. `base` moved 14 bytes (3,959,751,940 → 3,959,751,954), upstream drift.
+  On the host: `awsds/dev-env` 22.7 → 22.4 GB, `awsds/base` 12.1 GB.
+
+- **[Claude] A verification of Claude's own that read the wrong list, and what it turned out to
+  mean.** `docker run … printf "%s" "$NO_PROXY" | sha256sum` on the buildbox returned
+  `d8ee66e61600e654…` against the image's `fc11caaa3145fdef…`. The image was not wrong: the host's
+  `~/.docker/config.json` carries a `proxies.default` block, and the Docker **client** injects its
+  `noProxy` into every container it starts, outranking the image's `ENV`. That value is
+  **`production/egress`'s** output — 39 entries, `d8ee66e61600e654…`, an exact match. The manifest
+  answers the question the run cannot: `docker image inspect … .Config.Env` returns
+  `fc11caaa3145fdef…`. Written up in [`buildbox.md`](../plan/runbooks/buildbox.md), because the
+  symptom looks exactly like a broken image.
+
+- **[Claude] `default-v0.3.0` carries four changes against `v0.2.0`**, not the three the stage file
+  claimed: the managed settings file, the 52-entry `NO_PROXY`, `rust-src` in the rustup profile, and
+  no Julia precompilation cache. `UV_NO_CACHE` landed inside the `v0.2.0` build session itself and
+  is not one of them — established from the commits and the 6d log rather than from the stage file.
+
+### The version bump, and the teardown
+
+- **[Claude] The plan read `1 to add, 0 to change, 1 to destroy`** on
+  `aws_sagemaker_image_version.dev_env`, `base_image` moving to `default-v0.3.0` with
+  `# forces replacement` and `version 2 -> (known after apply)` — exactly what
+  [`dev-env.md`](../plan/runbooks/dev-env.md) §B predicts, a SageMaker image version being
+  immutable. Saved and applied as a plan file.
+
+- **[user] §B's chain, in order**: no app running, the custom images detached from the domain's
+  `DefaultUserSettings`, the apply, the re-attach on the new version number. The detached and
+  attached blocks were both generated from the **live** `describe-domain` rather than from a stored
+  file (Lesson 61), and the attach entries from `terraform output -json custom_images`, so the
+  version number was never typed.
+
+- **[Claude] Read back afterwards.** `describe-image-version` on version **3**: `CREATED`, and its
+  `ContainerImage` ends in `@sha256:bd78c976195fe20c3b15a128766aed2cf15bf6d026d01280ff70128269a0c83a`
+  — the digest of the push above, which is the whole point of registering against a digest rather
+  than a tag. `describe-domain` carries `ImageVersionNumber: 3` on **both** `JupyterLabAppSettings`
+  and `CodeEditorAppSettings`. `terraform plan` on the slice: **`No changes`**.
+
+- **[user] The buildbox is down and so is `production/egress`.** Confirmed by reading: the only
+  instances left in `Production` are `awsds-prod-vpn` (`t3.nano`) and `awsds-prod-proxy`
+  (`t3.micro`), the two hub hosts, and the account's six remaining VPC endpoints are all **Gateway**
+  (S3 and DynamoDB, three VPCs), which carry no hourly charge. The 0.130 USD/h has stopped.
+
+- **What this does not establish.** No session has been opened on the new image. That the settings
+  file is in the layer is not that Claude Code read it, and that the endpoints exist is not that an
+  invocation took them — step 6 is the first call, and §V's CloudTrail `vpcEndpointId` reading is
+  where both are settled.

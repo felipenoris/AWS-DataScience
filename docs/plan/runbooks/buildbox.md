@@ -274,14 +274,15 @@ echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY
 
 **The tag is decided before the push, by [`docs/SMUS.md`](../../SMUS.md)**: `<flavour>-v<major>.<minor>.<patch>`,
 the same number in both repositories. Both are `IMMUTABLE`, so a tag is spent the first time it lands —
-`default-v0.1.0` was spent on 2026-08-22, **`default-v0.1.1` on 2026-09-08** and **`default-v0.2.0` on
-2026-09-11**. The rule the three of them show: `v0.1.1` was the *same recipe rebuilt* — no commit under
-`images/` between them, the whole delta upstream drift (`base` +942 bytes, `dev-env` −11.8 MB) — which
-is what makes a **patch**; `v0.2.0` changed the recipe (the proxy environment as `ENV`, the apt and
-sudoers files, a second Python environment with its own kernel), which is what makes a **minor**. So the
-next recipe change is `default-v0.3.0` — Stage 7 step 2.6's CA layer, which this file used to name as
-`v0.2.0`, is now that. **The recipe is not reproducible byte-for-byte**, and a pipeline that assumes it
-is will report a spurious change on every run.
+`default-v0.1.0` on 2026-08-22, **`default-v0.1.1` on 2026-09-08**, **`default-v0.2.0` on 2026-09-11**
+and **`default-v0.3.0` on 2026-09-12**. The rule they show: `v0.1.1` was the *same recipe rebuilt* — no
+commit under `images/` between them, the whole delta upstream drift (`base` +942 bytes, `dev-env`
+−11.8 MB) — which is what makes a **patch**; `v0.2.0` changed the recipe (the proxy environment as
+`ENV`, the apt and sudoers files, a second Python environment with its own kernel) and `v0.3.0` changed
+it again (`/etc/claude-code/managed-settings.json`, a `NO_PROXY` literal of 52 entries carrying the two
+Bedrock endpoint names, `rust-src` in the rustup profile, and no Julia precompilation cache), which is
+what makes a **minor**. Stage 7 step 2.6's CA layer is the next one. **The recipe is not reproducible
+byte-for-byte**, and a pipeline that assumes it is will report a spurious change on every run.
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>
@@ -309,6 +310,35 @@ replaced. Read them from the laptop, not from the push output:
 
 ```bash
 aws ecr describe-images --profile awsds-infra-prod --region us-west-2 --repository-name awsds-prod-ecr-dev-env --query 'imageDetails[].{Tag:imageTags[0],Digest:imageDigest,Bytes:imageSizeInBytes}' --output table
+```
+
+### Reading an image's own environment on this host
+
+**A `docker run` here does not show the image's `NO_PROXY`.** The user-data writes
+`~/.docker/config.json` for `/root` and `/home/ec2-user` with a `proxies.default` block, and the
+Docker **client** injects `httpProxy`, `httpsProxy` and `noProxy` from it into every container it
+starts — as container environment, which outranks the image's own `ENV`. It is written for the build,
+where a `RUN` step has no other way to reach the proxy, and it applies to `docker run` just the same.
+The list it injects is **Production's**, the account this host lives in, not the Sandbox list the
+image carries.
+
+Measured 2026-09-12 on `default-v0.3.0`: `docker run … printenv NO_PROXY` hashed
+`d8ee66e61600e654…`, which is exactly `terraform output -raw no_proxy` on **`production/egress`**, 39
+entries; the image's own literal is 52 entries, `fc11caaa3145fdef…`. Neither reading is wrong — they
+answer different questions, and only one of them is about the image. The trap is that the answer
+looks like a broken image.
+
+Ask the manifest, which no client environment reaches:
+
+```bash
+sudo docker image inspect awsds/dev-env:local --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E '^(NO_PROXY|no_proxy)='
+```
+
+Or read the receipt the image wrote at build time, which records the entry count and the sha256 of
+the list it set:
+
+```bash
+sudo docker run --rm awsds/dev-env:local cat /opt/awsds-proxy.txt
 ```
 
 ### Which path the bytes take

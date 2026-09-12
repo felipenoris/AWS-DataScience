@@ -231,7 +231,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision (the portal's notebook operator dies on the D13 boundary; Stage 10's own DAGs can pass a
   full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version
-  **2** is `default-v0.2.0`, frozen to the digest it was registered against, attached by hand to the
+  **3** is `default-v0.3.0`, frozen to the digest it was registered against, attached by hand to the
   domain's `DefaultUserSettings` — which is what a space's picker reads, JupyterLab and Code Editor both.
   INT-01/INT-17 closed (image role by tag at registration, project role by digest at start). **The app
   image config caps each env value at 256 characters** against a
@@ -239,7 +239,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   list a dated literal (52 entries, sha256 `fc11caaa3…`); `./aws/devenv.py` reads the drift, and the
   bump's order is `dev-env.md` §B. The image's Python is a **second** uv environment under `/opt/awsds`
   on CPython **3.13** (TensorFlow has no wheel past `cp313`), with its own Launcher kernel; R stays on
-  conda, and `rust-src` joins the toolchain on the next build. Owed: 2.4; 1.1's persona half,
+  conda, `rust-src` in it since v0.3.0. Owed: 2.4; 1.1's persona half,
   1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
   Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
@@ -254,7 +254,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the space path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and
   `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
-- **Stage 6e is in progress** (Claude Code on Bedrock), the account half done 2026-09-11. **The grant
+- **Stage 6e is in progress** (Claude Code on Bedrock); only step 6, the first session, is left. **The grant
   is per project**: `sandbox/bedrock/` (rank 52, `[P]`, applied), the project role's every
   `InvokeModel*` allow landing on `foundation-model/*`, none on the system inference profile,
   `ListInferenceProfiles` nowhere. The retention mode is **`none`**, declared **by hand** and frozen

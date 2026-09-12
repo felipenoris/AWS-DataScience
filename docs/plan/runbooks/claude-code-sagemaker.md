@@ -16,11 +16,14 @@ account. Read your own half.
 | **§U** | the data scientist | what the user configures, and what a user cannot change |
 | **§V** | both | reading it back, one instrument per question |
 
-**State, 2026-09-11.** **§M is done** — M1 at 22:31 UTC, M2 by console the same evening — except M3,
-the deny that freezes M1. The readings are in
-[`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). §I is designed and **not built**:
-no endpoint, no grant, no image carrying the settings. §U describes a surface no space offers yet.
-Every sentence below that describes something unbuilt says so.
+**State, 2026-09-12.** **§M is done** — M1 at 22:31 UTC on 2026-09-11, M2 by console the same
+evening — except M3, the deny that freezes M1. **§I is built**: the grant applied 2026-09-11, the
+endpoint pair and its policy 2026-09-12, and `default-v0.3.0` carries the settings file as image
+version 3, attached to the domain the same day. **§U is unexercised**: a space started on version 3
+offers the surface it describes, and no session has been opened on it yet — stage step 6 is the first
+one, and where these sentences get their measurements. The readings are in
+[`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). Every sentence below that
+describes something unbuilt or unexercised says so.
 
 ---
 
@@ -281,45 +284,243 @@ was **added by hand** and the next apply will undo it.
 
 ## §I — What the infrastructure configures
 
-**None of this is built.** It is the design the stage's steps 3, 4 and 5 carry, recorded here so the
-two halves of the configuration are in one place.
+**Built 2026-09-12**, the stage's steps 3, 4 and 5. This is the half no user sees and no user can
+change; §U is the other half.
 
-- **The private path** (stage step 4). `bedrock-runtime` and `bedrock` as interface endpoints in the
-  Sandbox VPC, through a new `bedrock-llm` group in `terraform-modules/vpc-egress`, ~USD 0.010/h each.
-  **The endpoints and the `NO_PROXY` bypass list are one change in two places** (Lesson 33): an
-  endpoint without the bypass entry sends the call to the proxy and out to the internet, and the call
-  still works, which is how it fails silently. The generated list is the slice output; the value a
-  process actually reads is the dated literal in `images/dev-env/Dockerfile` (6d decision 8).
-- **The grant** (stage step 3). Measured 2026-09-11: the project role's every `InvokeModel*` allow
-  lands on `foundation-model/*` and **none on the system inference profile**, and
-  `ListInferenceProfiles` is granted nowhere — so a grant is needed. It names the three `us.` profile
-  ARNs and the three region-less foundation-model ARNs; **both groups are required**, because
-  authorization is evaluated against the profile and against each model it routes to. The
-  foundation-model ARN carries no region on purpose: the profile routes to three of them, so a
-  region-pinned ARN would authorize a third of the requests and refuse the rest by geography.
-- **The endpoint policy** (4.4), narrowed to those actions on those resources, so the endpoint states
-  the same intent independently of the identity policy.
-- **The configuration** (5.2), in `/etc/claude-code/managed-settings.json`, written by the image.
-  Managed settings sit above every other level and nothing a user writes overrides them.
-- **The picker** (decision 3): `availableModels` locks `/model` to the scoped set, so nothing outside
-  the declared use case and the resource scope is reachable.
-- **The background model** (5.3): `ANTHROPIC_DEFAULT_HAIKU_MODEL` is the only key that moves session
-  titles off the primary model. Without it a session that sets `ANTHROPIC_MODEL` runs them on
-  **Opus 5**, at 27.50 per 1M output tokens, for work a Haiku does.
+| What | Where it is declared | State |
+|---|---|---|
+| the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), on `vpc-egress-v0.14.1` | applied 2026-09-12, step 4.2 |
+| the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
+| the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
+| the client's configuration | [`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.3.0`, image version 3, 2026-09-12 |
+
+### The private path
+
+`bedrock` and `bedrock-runtime` are interface endpoints in the Sandbox VPC, about USD 0.010/h each.
+They sit in the caller's always-on list rather than behind an optional service group: a group is per
+apply, and a `make up` without the flag destroys what a flagged one created, so a permanent consumer
+cannot live behind one. The module's `bedrock` group is now the agent pair (`bedrock-agent`,
+`bedrock-agent-runtime`), which only the blueprints use.
+
+**The endpoints and the `NO_PROXY` bypass list are one change in two places** (Lesson 33). An
+endpoint whose name is missing from the bypass list sends the call to the proxy and out to the
+internet, and the call still works — with no `aws:SourceVpce` on the far side, which is how the
+perimeter is lost silently. The generated list is `terraform output -raw no_proxy` on
+`sandbox/egress` (52 entries since 2026-09-12); what a process inside a space reads is the dated
+literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), and
+[`./aws/devenv.py`](../../../aws/devenv.py) reports the difference between the two.
+
+### The endpoint policy
+
+The caller narrows the runtime door on the action axis and leaves the control plane open:
+
+```hcl
+endpoint_action_scopes = {
+  "bedrock-runtime" = [
+    "bedrock:InvokeModel",
+    "bedrock:InvokeModelWithResponseStream",
+  ]
+}
+```
+
+Both statements of the trusted-networks document then carry that list in place of `*`, for that
+endpoint alone. Read back from the applied endpoint on 2026-09-12:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowOrganizationPrincipals",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:PrincipalOrgID": "<org>" } }
+    },
+    {
+      "Sid": "AllowAWSServicePrincipals",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+      "Resource": "*",
+      "Condition": { "Bool": { "aws:PrincipalIsAWSService": "true" } }
+    }
+  ]
+}
+```
+
+**Scope a door whose purpose is unambiguous.** `bedrock-runtime` carries invocation and nothing else
+for any consumer, so an invoke list on it states a property of the service. `bedrock` is the control
+plane: its surface is long, it grows, and the six enabled `AmazonBedrock*` blueprints call it for
+things a coding assistant never does — a list written for one of those consumers refuses the other,
+with no denial that names this policy. **The resource axis is deliberately not narrowed.** Model
+ARNs are the grant's list, and a second copy of it in another slice diverges (Lesson 33), while the
+action list changes when AWS adds an API rather than when a decision is taken here.
+
+### The grant
+
+Measured 2026-09-11: the project role's every `InvokeModel*` allow lands on `foundation-model/*`,
+**none on the system inference profile**, and `ListInferenceProfiles` is granted nowhere — so a
+grant is needed, and §P is how one project gets it. What the policy says, read back from
+`awsds-sandbox-bedrock-assistant` v1 on 2026-09-12:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeScopedClaudeModelsThroughSystemProfiles",
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+      "Resource": [
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-opus-5",
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-sonnet-5",
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-5",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-5",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+      ]
+    },
+    {
+      "Sid": "ResolveTheScopedProfiles",
+      "Effect": "Allow",
+      "Action": "bedrock:GetInferenceProfile",
+      "Resource": [
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-opus-5",
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-sonnet-5",
+        "arn:aws:bedrock:us-west-2:<sandbox>:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0"
+      ]
+    },
+    {
+      "Sid": "ListProfilesHasNoResource",
+      "Effect": "Allow",
+      "Action": "bedrock:ListInferenceProfiles",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Both ARN groups are required for one call**: the request names the profile, and the service
+evaluates the profile *and* each foundation model behind it. The foundation-model ARNs carry no
+region on purpose — a `us.` profile routes to three of them, so a region-pinned ARN would authorize
+a third of the requests and refuse the rest by geography.
+
+### The client's configuration
+
+`/etc/claude-code/managed-settings.json`, written into the image. Managed settings are the top tier
+of Claude Code's precedence: no user, project, local or `--settings` value overrides a key set here
+(the vendor's table, read 2026-09-11), and on Linux the client reads `/etc/claude-code/` at startup.
+It ships in the layer because a space starts with nothing — `/home/sagemaker-user` survives an app
+restart and dies with the space, so a configuration that must be present before the first prompt
+cannot live in a home directory. Unlike the proxy variables, it is not constrained by the app image
+configuration's 256-character cap per environment value: it is a file, not an env entry.
+
+The source is
+[`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json),
+copied by the Dockerfile to that path and `chmod 0444`. It is the whole file:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_REGION": "us-west-2",
+    "ANTHROPIC_MODEL": "us.anthropic.claude-opus-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "availableModels": ["opus", "sonnet"],
+  "skipWebFetchPreflight": true
+}
+```
+
+| Key | What it decides |
+|---|---|
+| `CLAUDE_CODE_USE_BEDROCK` | the provider. Without it the client calls `api.anthropic.com`, which the compute plane refused 17 times on 2026-09-11 ([`remote-ide.md`](remote-ide.md) §N) |
+| `AWS_REGION` | the Region. The client resolves `AWS_REGION` → `AWS_DEFAULT_REGION` → the profile's → `us-east-1`, and the last would be a silent wrong answer |
+| `ANTHROPIC_MODEL` | the session's model. It also decides the background model: the vendor states that when a session sets it, background tasks use it too |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL` | what each alias resolves to. Without the pins an alias follows the client's built-in default, which moves with the client version |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | the only key that moves background work — session titles and the like — off the primary model. Without it they run on Opus 5 at 27.50 per 1M output tokens for work a Haiku does; Haiku 4.5 is 1.10/5.50 (step 8.1) |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | the session-quality survey. On Bedrock, metrics, error reports and `/feedback` are already off; the survey is not, and this is what closes it |
+| `availableModels` | the picker lock (decision 3). It constrains `/model`, `--model` and the model key in a user's own file, so nothing outside the use-case form's declaration and the grant's resource scope is reachable |
+| `skipWebFetchPreflight` | the WebFetch hostname check, which calls `api.anthropic.com` whatever the provider and is not covered by the traffic key above |
+
+**Every model id is an inference profile**, because all three are `INFERENCE_PROFILE` only and the
+bare model id is not invocable (step 0.1). These ids, the grant above and 7.5's retention deny are
+one list with several consumers: a model added here and nowhere else is a refusal at the first
+prompt, and one added to the grant and not here is unreachable from the picker.
+
+`availableModels` names aliases, not ids, and Haiku's absence from it is deliberate. The picker
+offers what a person may choose; the Haiku pin is where background work goes, so a user neither
+selects it nor needs to — and dropping it from the pins would put session titles back on Opus.
+
+### Changing the configuration
+
+**Editing that file is an image release, not a configuration change.** Nothing re-reads it in place:
+a running space holds the layer it started from, and a space's home directory cannot override it.
+The chain is [`dev-env.md`](dev-env.md) §B, and its shape is:
+
+1. Edit `images/dev-env/claude-code/managed-settings.json` and commit. `pre-commit`'s `check-json`
+   covers `images/**.json` and the Dockerfile re-parses the file during the build, so a trailing
+   comma fails in review rather than in a space three weeks later.
+2. Build both images on the buildbox ([`buildbox.md`](buildbox.md)) and push under a **new**
+   `<flavour>-v<semver>` tag. The ECR repository is immutable-tagged: a rebuild is a new tag, never
+   a re-push of an existing one.
+3. Bump `image_tag` in
+   [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf)
+   and apply. A SageMaker image version is immutable, so `base_image` forces replacement and the
+   plan reads `1 to add, 0 to change, 1 to destroy`.
+4. The two domain writes around that apply, in §B's order: delete the apps, detach the custom images
+   from the domain's `DefaultUserSettings`, apply, re-attach on the new version number, then start a
+   new space. The version the apply destroys is the one the domain names, and the service fails the
+   re-attach rather than refusing the destroy.
+
+**An unparseable file is ignored silently.** Claude Code neither refuses to start nor warns: every
+key above stops applying, the client falls back to its own defaults, and the session goes to
+`api.anthropic.com` — which the compute plane refuses. The symptom is an assistant that reaches
+nothing, with no message naming this file.
+
+### Reading it back inside a space
+
+```bash
+cat /etc/claude-code/managed-settings.json
+```
+
+**That the file is there is not that it applied** (Lesson 54). The readings that settle it are in
+§V: `/status` for the provider and the resolved Region, `/model` for the picker's contents, and the
+CloudTrail row for which `modelId` a call actually used.
 
 ---
 
 ## §U — What the user configures, and what a user cannot change
 
-**No space offers this yet**; the image that carries it is stage step 5.4.
+**The surface exists since 2026-09-12**, on a space started from image version 3. What is written
+here about the client itself is read from the vendor's documentation and from what §I declares;
+stage step 6 is the first session, and what it measures lands here.
 
 - **Install the extension into the remote session**, not into the portal's Code Editor. A space runs
   two IDE servers with separate extension directories and settings ([`remote-ide.md`](remote-ide.md)
   §E), and an extension installed in the wrong one is invisible to the other.
 - **Disable Login Prompt** (`claudeCode.disableLoginPrompt`) is a **VS Code** setting, not a Claude
-  Code one, so it is set once per surface: `~/.vscode-server/data/User/settings.json` for the remote
-  session and `~/sagemaker-code-editor-server-data/data/User/settings.json` for the Code Editor. A
-  configuration that works in one surface and not the other is this file's most common failure.
+  Code one, so it lives in a different file from everything in §I and is set once per surface:
+  `~/.vscode-server/data/User/settings.json` for the remote session and
+  `~/sagemaker-code-editor-server-data/data/User/settings.json` for the Code Editor. A configuration
+  that works in one surface and not the other is this file's most common failure.
+
+  The key merges into whatever that file already holds — it is the editor's own settings file, not a
+  Claude Code one, so replacing it drops the user's editor configuration:
+
+  ```json
+  {
+    "claudeCode.disableLoginPrompt": true
+  }
+  ```
+
+  This one is the user's, and stays the user's: managed settings do not reach it, because the
+  precedence chain §I sits on top of is Claude Code's and this key belongs to VS Code.
 - **What the institution owns, and an attempt to override is ignored rather than refused** — which
   reads exactly like the setting not working: the provider, the Region, the model pins and the
   picker's contents. Two consequences worth knowing before they surprise someone:

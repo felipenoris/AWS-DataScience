@@ -1516,7 +1516,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   variables with `ValidationException … Member must have length less than or equal to 256`; the cap is
   in the `ContainerConfig` API reference (25 entries, 256 per key and per value) and nowhere on the
   pages that recommend `ContainerEnvironmentVariables` as the way to configure a custom image. A
-  generated `NO_PROXY` — 50 endpoint names, about 2,300 characters — does not fit, so the documented
+  generated `NO_PROXY` — 50 endpoint names, 1,442 characters — does not fit, so the documented
   mechanism cannot deliver the estate's own proxy contract. Where: `runbooks/dev-env.md` §E, and 6d
   decision due 8.
 - **`CreateImageVersion` uses the image's `RoleArn` to read the repository, and resolves the tag to a

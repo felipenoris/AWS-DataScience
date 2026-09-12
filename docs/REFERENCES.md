@@ -487,7 +487,7 @@
   SageMaker AI domain and user profile through the CLI is documented as not supported: the console is
   the path. The sentence this row used to end on — that a custom image avoids the question by carrying
   the variables as `ContainerEnvironmentVariables` — was **measured false on 2026-09-10** (Stage 6d step
-  2.2): the map's values cap at 256 characters and this estate's `NO_PROXY` is about 2,300, so the
+  2.2): the map's values cap at 256 characters and this estate's `NO_PROXY` is 1,442, so the
   lifecycle configuration is back as a candidate rather than as the alternative to one:
   <https://docs.aws.amazon.com/sagemaker/latest/dg/jl-lcc.html> and
   <https://docs.aws.amazon.com/sagemaker/latest/dg/jl-lcc-create.html>.
