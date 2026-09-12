@@ -10,59 +10,109 @@ account. Read your own half.
 
 | Section | Audience | What it holds |
 |---|---|---|
-| **§M** | infrastructure | enabling the model: the retention mode and the use-case form |
+| **§M** | infrastructure | enabling the model: where it runs, the retention mode, the form, **the agreement**, and the Region-ceiling exemption |
 | **§P** | infrastructure | **granting a project access — once per project, and the one recurring task here** |
 | **§I** | infrastructure | what the infrastructure configures: the endpoints, the grant, the image |
 | **§U** | the data scientist | what the user configures, and what a user cannot change |
 | **§V** | both | reading it back, one instrument per question |
 
-**State, 2026-09-12.** **§M is done** — M1 at 22:31 UTC on 2026-09-11, M2 by console the same
-evening — except M3, the deny that freezes M1. **§I is built**: the grant applied 2026-09-11, the
-endpoint pair and its policy 2026-09-12, and `default-v0.3.0` carries the settings file as image
-version 3, attached to the domain the same day. **§U is unexercised**: a space started on version 3
-offers the surface it describes, and no session has been opened on it yet — stage step 6 is the first
-one, and where these sentences get their measurements. The readings are in
-[`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). Every sentence below that
-describes something unbuilt or unexercised says so.
+**State, 2026-09-12.** **A session answered from inside a space**, on Haiku 4.5, as the project role,
+through the VPC endpoint — which is what every section below was written to produce.
+
+**§M**: M0, M2, M4 and M5 done; M1 done in `us-west-2` and **not** in the other two Regions it routes
+to; M3 not done. **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
+2026-09-12, and `default-v0.3.0` carries the settings file as image version 3, attached to the domain
+the same day. **§U is exercised** for the first time, on settings edited by hand inside the container
+rather than shipped in the image — a measurement, not a configuration.
+
+**Three things are open and none of them is cosmetic.** The scoped models `claude-opus-5` and
+`claude-sonnet-5` are **refused by AWS for this account** and the working set is the 4.5 generation
+(M4); the retention mode is declared in one Region of three (M1); and M5's exemption has no
+compensating deny, so the `Interactive` OU currently has no Region ceiling on Bedrock invocation.
+
+The readings are in [`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). Every sentence
+below that describes something unbuilt or unexercised says so.
 
 ---
 
 ## §M — Enabling the model
 
-Two acts, in this order, in the account that will invoke. Both are `Sandbox` only, by decision 2:
-principle 1 keeps `Management` bootstrap-only, and an org-wide form would open Anthropic models in
-five accounts where D17 says no interactive compute runs.
+**The order is not the numbering.** M1, M2 and M3 were written when the use-case form was believed to
+be the enabling act. 2026-09-12 measured that it is not: what enables a model is the **agreement**
+(M4), and a cross-Region profile is refused by the organization's own Region ceiling until M5 is
+done. The numbers are kept because other files reference them.
 
-**The identity for both:** the **infrastructure user**
-(`felipenoris+infrastructure_user@…`), account **Sandbox**, permission set **InfrastructureAccess** —
-the CLI profile `awsds-infra-sandbox-1`, and the same identity picked in the browser for the console
-half. That set is `AdministratorAccess` alone and carries **no `DenyControlPlaneOffVpn`**, so neither
-act needs the VPN. Check before, not after:
+| Order | Act | What it does |
+|---|---|---|
+| 1 | **M0** | read which Regions the profiles route to. Every act below is per that list |
+| 2 | **M1** | declare the retention mode — **in each of those Regions** |
+| 3 | **M2** | submit the use-case form — the Anthropic catalogue's prerequisite, not the grant |
+| 4 | **M4** | accept each model's agreement — **this is what enables a model** |
+| 5 | **M5** | exempt the invocation from the Region ceiling |
+| 6 | **M6** | invoke, and read both channels |
+| later | **M3** | the SCP that freezes M1 |
+
+All of it is `Sandbox` only, by decision 2: principle 1 keeps `Management` bootstrap-only, and an
+org-wide form would open Anthropic models in five accounts where D17 says no interactive compute
+runs. M5 is the exception — it is a Control Tower control and is changed from `Management`.
+
+**The identity:** the **infrastructure user**, account **Sandbox**, permission set
+**InfrastructureAccess** — the CLI profile `awsds-infra-sandbox-1`, and the same identity picked in
+the browser for the console half. That set is `AdministratorAccess` alone and carries **no
+`DenyControlPlaneOffVpn`**, so none of it needs the VPN. M5 is signed in as **AWS Control Tower
+Admin** on **Management** instead. Check before, not after:
 
 ```bash
 aws sts get-caller-identity --profile awsds-infra-sandbox-1
 ```
 
-### M1 — Declare the account's data retention mode
+### M0 — Where the models run
 
-**Why first.** A fresh account reads `mode: inherit`, which the API documents as *no data retention
-mode is set at this scope* — so the requirement rests on each model's own default and on nothing this
-estate has said. Setting it before the form means the first access ever granted arrives with the
-account already declaring zero retention (Lesson 5: an intention is not a control).
-
-**Before-reading.** Expect `inherit`, with no `updatedAt`:
+All three scoped models are invocable **only** through a cross-Region inference profile (step 0.1),
+and which Regions that profile routes to is a **reading, not a constant** — AWS owns the routing and
+can change it under a pinned model id.
 
 ```bash
-aws bedrock get-account-data-retention --region us-west-2 --profile awsds-infra-sandbox-1
+for P in us.anthropic.claude-opus-5 us.anthropic.claude-sonnet-5 us.anthropic.claude-haiku-4-5-20251001-v1:0; do printf '%-46s ' "$P"; aws bedrock get-inference-profile --region us-west-2 --profile awsds-infra-sandbox-1 --inference-profile-identifier "$P" --query 'models[].modelArn' --output text | tr '\t' '\n' | sed 's|arn:aws:bedrock:||; s|::foundation-model/.*||' | tr '\n' ' '; echo; done
 ```
 
-**The call.** One write, reversible by setting the mode back:
+**Measured 2026-09-12: `us-east-1`, `us-east-2`, `us-west-2`** — the same three for all three scoped
+models and for the 4.5 generation beside them. That list is the input to M1 and the ceiling on M5: an
+exemption naming more Regions than this permits calls the profiles never make.
+
+A profile that ever reads **one** Region is the finding, not the relief — it would mean AWS changed
+the profile under a pinned model id (`AWS_STATE.md` `EXC-07`).
+
+### M1 — Declare the account's data retention mode
+
+**The mode is per account and per Region.** Measured 2026-09-12: `get-account-data-retention` answers
+independently in each Region, and this account read `none` in `us-west-2` and **`inherit` in
+`us-east-1` and `us-east-2`** — the two Regions M0 says a prompt is also processed in. A mode
+declared in one Region of three covers one third of the routing.
+
+**Why before the form.** A fresh account reads `inherit`, which the API documents as *no data
+retention mode is set at this scope* — so the requirement rests on each model's own default and on
+nothing this estate has said. Setting it first means the first access ever granted arrives with the
+account already declaring zero retention (Lesson 5: an intention is not a control).
+
+**Before-reading**, every Region M0 named. Expect `inherit`, with no `updatedAt`:
+
+```bash
+for R in us-west-2 us-east-1 us-east-2; do printf '%-12s ' "$R"; aws bedrock get-account-data-retention --region "$R" --profile awsds-infra-sandbox-1 --output text; done
+```
+
+**The call**, once per Region. One write each, reversible by setting the mode back:
 
 ```bash
 aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-infra-sandbox-1
 ```
 
-**After-reading.** Expect `none`, now with an `updatedAt`. Re-run the before-reading command.
+**A Region that is not `us-west-2` needs M5 first**, and needs `bedrock:PutAccountDataRetention` in
+the exemption list — the Region ceiling refuses the write, and refuses the read that would show it.
+This is why M0 comes first and why M5's list is not only the two invoke actions.
+
+**After-reading.** Expect `none` in every Region, each with its own `updatedAt`. Re-run the
+before-reading command.
 
 **What `none` costs, and what no reading here shows.** The vendor's design is that a model whose
 minimum retention mode is above `none` becomes **unavailable in this account** rather than quietly
@@ -84,9 +134,12 @@ of account settings this estate manages by hand**, and what keeps it in place is
 
 ### M2 — Submit the model-access form
 
-**What it is.** A declaration on AWS's record, not an approval queue: the vendor states that *access
-is granted immediately after submission*. Nobody reviews the answer before the model works, which is
-why it is worth writing carefully rather than quickly. Submitted **once per AWS account**.
+**What it is, corrected 2026-09-12.** A prerequisite for the Anthropic catalogue and a declaration on
+AWS's record — **not the act that enables a model**. With the form present in all three Regions,
+`authorizationStatus AUTHORIZED`, `entitlementAvailability AVAILABLE` and `regionAvailability
+AVAILABLE`, the invocation was still refused; what was missing was M4. Nobody reviews the answer
+before a model works, which is why it is worth writing carefully rather than quickly. Submitted
+**once per AWS account**, and it then reads back in every Region.
 
 **Before-reading.** Expect the refusal — it is the negative control for the after-reading:
 
@@ -110,11 +163,12 @@ because a use case stated only as what it is admits every reading of what it is 
 | `companyName` | the institution's name |
 | `companyWebsite` | its site |
 | `industryOption` | **Banking / Financial Services** — the catalogue's nearest label; use `otherIndustryOption` only if no banking label exists |
-| `intendedUsers` | the institution's data scientists — internal only, no external or public exposure |
+| `intendedUsers` | the institution's data scientists — internal only, no external or public exposure. **A count, and `"0"` is not one**: this account submitted `"0"` and it is the one field worth re-submitting if access to a model is ever refused on review |
 | `useCases` | data-science work: a coding assistant inside the institution's own development environment; code comprehension, refactoring, test writing and documentation over internal repositories; exploratory analysis support in notebooks. **No customer-facing application, no automated decisioning, no credit or risk scoring, no content generation for publication** |
 
 **After-reading.** The same command must stop returning `ResourceNotFoundException` and return a
-`formData` blob. That is the whole verification. `get-foundation-model-availability` is **not** the
+`formData` blob, in every Region M0 named. That is the whole verification of **this act** and says
+nothing about any model being invocable. `get-foundation-model-availability` is **not** the
 instrument: it reads `authorizationStatus AUTHORIZED` with the form unsubmitted, and it was read
 identically before the form, after it, and after the retention mode changed.
 
@@ -146,6 +200,168 @@ like every SCP, does not restrict `Management`**. The condition key was confirme
 2026-09-11 with `accessanalyzer validate-policy` and a deliberately bogus key beside it as the
 control. Attaching it re-runs the battery and adds its rows to `POLICIES.md` in the same sitting
 ([`scp-battery.md`](scp-battery.md)). **Not done.**
+
+**It carries no Region condition, and that is deliberate.** M1 is per Region, so a deny written for
+one Region freezes one third of the routing and leaves the rest free to be set to anything.
+
+### M4 — Accept each model's agreement
+
+**This is the act that enables a model.** It is what the Bedrock console calls *Enable specific
+models*, and until 2026-09-12 this runbook did not name it at all.
+
+**Before-reading.** `NOT_AVAILABLE` means **no agreement has been created**, not *no agreement is
+needed*. Reading it the second way is what made the omission invisible:
+
+```bash
+aws bedrock get-foundation-model-availability --region us-west-2 --profile awsds-infra-sandbox-1 --model-id anthropic.claude-haiku-4-5-20251001-v1:0 --query 'agreementAvailability.status' --output text
+```
+
+**Read the offer before accepting it.** It carries a rate card, a URL to a legal document and a
+support term, and accepting it is a legal act:
+
+```bash
+aws bedrock list-foundation-model-agreement-offers --region us-west-2 --profile awsds-infra-sandbox-1 --model-id anthropic.claude-haiku-4-5-20251001-v1:0 --query 'offers[0].{offer:offerId,legal:termDetails.legalTerm.url,support:termDetails.supportTerm}'
+```
+
+**The call, one model at a time** — deliberately not a loop, because each run accepts a separate
+agreement:
+
+```bash
+MODEL=anthropic.claude-haiku-4-5-20251001-v1:0
+```
+
+```bash
+aws bedrock create-foundation-model-agreement --region us-west-2 --profile awsds-infra-sandbox-1 --model-id "$MODEL" --offer-token "$(aws bedrock list-foundation-model-agreement-offers --region us-west-2 --profile awsds-infra-sandbox-1 --model-id "$MODEL" --query 'offers[0].offerToken' --output text)"
+```
+
+The model ids this estate has accepted, and the ones it would accept for the scoped set:
+
+| Generation | Model ids |
+|---|---|
+| current, **gated** (see below) | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` |
+| previous, **invocable** | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| either way | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+
+**After-reading.** The status goes `NOT_AVAILABLE` → `PENDING` → `AVAILABLE`. It settled in seconds
+for one model and took minutes for another, so poll rather than assume:
+
+```bash
+until [ "$(aws bedrock get-foundation-model-availability --region us-west-2 --profile awsds-infra-sandbox-1 --model-id "$MODEL" --query 'agreementAvailability.status' --output text)" = AVAILABLE ]; do sleep 15; done; echo AVAILABLE
+```
+
+**Per account and per model, not per Region.** Measured 2026-09-12: an agreement created in
+`us-west-2` read `AVAILABLE` in `us-east-1` and `us-east-2` **before** the creating Region left
+`PENDING`. Each model needs its own; Amazon's own models need none — `amazon.nova-lite-v1:0` reads
+`AVAILABLE` with nothing done.
+
+**The generation gate, and no reading exposes it.** Measured 2026-09-12, with the agreement
+`AVAILABLE`, the form present in all three Regions and every availability field green:
+`us.anthropic.claude-sonnet-5` was refused for **every principal, `AdministratorAccess` included** —
+
+```
+AccessDeniedException: anthropic.claude-sonnet-5 is not available for this account.
+You can explore other available models on Amazon Bedrock. For additional access options,
+contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/
+```
+
+The identical chain on `us.anthropic.claude-sonnet-4-5-20250929-v1:0` answered `pong`, and so did
+Haiku 4.5 and Opus 4.5. The split follows the shape of the model id: **dated ids
+(`…-2025xxxx-v1:0`) are invocable in this account; clean ids (`claude-sonnet-5`, `claude-opus-5`,
+`claude-opus-4-6/4-7/4-8`, `claude-sonnet-4-6`, `claude-fable-5`, `claude-fable-5-1`) are not.** The
+gate is commercial, at the account, and **every readable instrument reports the model as available and
+authorized while the invocation refuses it** — Lesson 13 at account scale. The message is literal:
+the path forward is the sales contact it names, or the previous generation.
+
+### M5 — Exempt the invocation from the Region ceiling
+
+**Why it is needed.** A cross-Region inference profile is authorized **per destination Region**.
+Measured 2026-09-12: a call made with `--region us-west-2`, logged with `awsRegion: us-west-2`, was
+denied against `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-5` by
+`CT.MULTISERVICE.PV.1`, whose only condition is `aws:RequestedRegion != us-west-2`. No `bedrock:`
+action appears in that control's 86 `NotAction` entries, and its four exempted principals are Control
+Tower's own roles.
+
+**The control is Control Tower's**, and its own SCP says so: *"Do not modify, delete, or detach this
+policy … To modify these controls, you must utilize AWS Control Tower."* It is attached to the
+**`Interactive` OU** alone and it is parameterized — `AllowedRegions`, `ExemptedActions` and
+`ExemptedPrincipalArns` are injection points in the policy template
+([`REFERENCES.md`](../../REFERENCES.md), the `ou-region-deny` page).
+
+**The path**, signed in as **AWS Control Tower Admin** on **Management** — the Control Tower API
+answers from that account alone, and a member account is told *"you must create a landing zone first"*:
+
+1. **Control Tower → Enabled controls**, open **`CT.MULTISERVICE.PV.1`**.
+2. On the row for the **`Interactive`** OU, **View configurations → Update enabled control**.
+3. The Region list appears with **`us-west-2`** selected. **Leave it as it is** — see the lever below.
+4. The next screen shows the Region deny policy, read-only, with `{{ExemptedActions}}` and
+   `{{ExemptedPrincipalArns}}` visible as template slots.
+5. At the foot of the page, **Adding NotActions**. Add the actions below, one per line.
+6. Leave **Exempted principals** empty.
+
+**The actions added 2026-09-12:**
+
+```
+bedrock:InvokeModel
+bedrock:InvokeModelWithResponseStream
+bedrock:GetFoundationModelAvailability
+bedrock:GetAccountDataRetention
+bedrock:GetUseCaseForModelAccess
+```
+
+The first two are what an invocation needs. The last three are what lets an operator **see** the other
+Regions at all: with only the first two in place, `get-foundation-model-availability` and
+`get-account-data-retention` are refused in `us-east-1` and `us-east-2`, so M0 and M1 cannot be
+verified there.
+
+**Which lever, and why not the other.** The two lists are independent inside one statement — there is
+no way to say *this action, for this principal*. `Exempted principals` removes a principal from the
+ceiling **for every action in every Region**; the project role is the interactive-compute principal,
+so exempting it would hand the Region ceiling to whatever a scientist runs. `NotActions` removes
+those actions **for every principal in the OU**, which is the narrower of the two by a wide margin.
+Write the actions explicitly rather than `bedrock:InvokeModel*` — the wildcard would also catch
+`InvokeModelWithBidirectionalStream` and whatever AWS adds next, and this list is meant to stay
+identical to the grant's and the endpoint policy's.
+
+**Do not widen `AllowedRegions` instead.** That opens every service in the added Regions for the whole
+OU; the action lever opens five actions. Both were on the table 2026-09-12 and this is why the action
+lever won.
+
+**What is still open, and it is not small.** The exemption is on the action axis, so those five
+actions are now permitted **in every Region**, including the ones M0 says the profiles never touch,
+and for every principal in the `Interactive` OU. Two compensations, **neither done**:
+
+- **A model scope in the estate's own SCP.** Step 7.5's document gains a deny on
+  `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` for any resource but the scoped
+  profiles and their foundation models. This moves the resource ceiling out of IAM — where a
+  blueprint's managed policy can widen it without this repository's say — and into the organization.
+- **A Region scope for the exemption itself.** The five actions should be denied outside the M0 list
+  by the same document, so the door the Control Tower control stopped guarding is closed again for
+  every Region a profile does not route to.
+
+Until both land, the honest statement is that the `Interactive` OU has no Region ceiling on Bedrock
+invocation.
+
+### M6 — Invoke, and read both channels
+
+The invocation is the only instrument that answers. Run it **from a space**, as the project role, so
+that what is measured is the path a session takes:
+
+```bash
+aws bedrock-runtime invoke-model --region us-west-2 --model-id us.anthropic.claude-haiku-4-5-20251001-v1:0 --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}' /tmp/bedrock-out.json && cat /tmp/bedrock-out.json
+```
+
+**Read the refusal, never the exit code.** The three that matter, and each names a different act:
+
+| What it says | What is missing |
+|---|---|
+| `… explicit deny in a service control policy: p-…`, naming a resource in another Region | M5 |
+| `… is not available for this account … contact AWS Sales` | M4, or the generation gate M4 describes |
+| `… no identity-based policy allows the bedrock:InvokeModel action` | the model is not in `sandbox/bedrock/`'s `models` map — §P |
+
+**Then both channels**, which is what §V's rows are for: CloudTrail for `vpcEndpointId` and the
+absence of an `errorCode`, and `/awsds/prod/proxy` for the absence of any `bedrock` or Anthropic name
+in the same window — **with a negative control**, since an empty log proves nothing unless the
+instrument was seeing the space at all.
 
 ---
 
@@ -362,8 +578,18 @@ action list changes when AWS adds an API rather than when a decision is taken he
 
 Measured 2026-09-11: the project role's every `InvokeModel*` allow lands on `foundation-model/*`,
 **none on the system inference profile**, and `ListInferenceProfiles` is granted nowhere — so a
-grant is needed, and §P is how one project gets it. What the policy says, read back from
-`awsds-sandbox-bedrock-assistant` v1 on 2026-09-12:
+grant is needed, and §P is how one project gets it.
+
+**Confirmed from a space 2026-09-12, by a refusal.** `bedrock:InvokeModel` on the bare
+`amazon.nova-lite-v1:0` — a model id with no profile in the request — came back *"no identity-based
+policy allows the bedrock:InvokeModel action"*. The blueprint's one matching allow is conditioned on
+an **inference-profile ARN being present**, and a bare model id does not satisfy it; through a profile
+it would match the foundation-model half and still nothing on the profile half, which is the half this
+slice supplies. Either way the consequence is the same and worth stating plainly: **no model outside
+this slice's `models` map is invocable from a space**, so that map is the whole of what a project can
+reach.
+
+What the policy says, read back from `awsds-sandbox-bedrock-assistant` v1 on 2026-09-12:
 
 ```json
 {
@@ -540,6 +766,14 @@ stage step 6 is the first session, and what it measures lands here.
 
 ## §V — Reading it back
 
+**Every readable instrument here can report a model as available while the invocation refuses it.**
+Measured 2026-09-12 on `claude-sonnet-5`: agreement `AVAILABLE`, `authorizationStatus AUTHORIZED`,
+`entitlementAvailability AVAILABLE`, `regionAvailability AVAILABLE`, `modelLifecycle ACTIVE`, the
+use-case form present in all three routed Regions — and `AccessDeniedException: not available for
+this account` for every principal including `AdministratorAccess`. **The invocation is the only
+instrument that answers the question "can this model be used here".** Everything below narrows down
+*why* a refusal happened; none of it substitutes for M6.
+
 **The whole picture in one command.** [`./aws/bedrock.py`](../../../aws/bedrock.py) photographs what
 Bedrock is enabled for in every account that has a profile — the gates, the catalogue, the inference
 profiles and anything that would be billing — and writes `aws/output/bedrock.txt`. Run it rather than
@@ -601,13 +835,16 @@ All read-only.
 | Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a) |
 | Which models retain? | Not `allowed_modes` — it is in no Bedrock API. The vendor's abuse-detection page, dated when read; on 2026-09-11 it named the two Fable models, both present and available in `us-west-2` |
 | Does the form exist? | `aws bedrock get-use-case-for-model-access --region us-west-2` — anything but `ResourceNotFoundException`. **Not** `get-foundation-model-availability` |
-| Did the invocation take the private door? | CloudTrail in Sandbox: `InvokeModelWithResponseStream` is a **management event**, so the organization trail carries it with no data-event charge. The reading is `vpcEndpointId` on the event |
-| Did it instead go out through the proxy? | `/awsds/prod/proxy` must hold **no** `bedrock-runtime` line for the same window. Two channels that do not share a failure mode |
+| Which Regions is a prompt processed in? | `get-inference-profile`, `models[].modelArn` — the routing is AWS's and can change under a pinned model id. `us-east-1`, `us-east-2`, `us-west-2` on 2026-09-12 (M0) |
+| Is the retention mode declared **where the prompt is processed**? | `get-account-data-retention` **once per routed Region** — it answers per Region. One Region reading `none` says nothing about the other two (M1) |
+| Is a model enabled for this account? | `get-foundation-model-availability`, `agreementAvailability.status`. `NOT_AVAILABLE` means **no agreement created**, not *none needed* (M4). It does **not** answer whether the model is invocable — see the warning above |
+| Did the invocation take the private door? | CloudTrail in Sandbox: `InvokeModelWithResponseStream` is a **management event**, so the organization trail carries it with no data-event charge. The reading is `vpcEndpointId` on the event. **One invocation writes two events** — one carrying `requestParameters.modelId`, its sibling carrying `requestParameters: {}` — so counting events doubles and filtering on `modelId` halves (measured 2026-09-12, 15 events over one session) |
+| Did it instead go out through the proxy? | `/awsds/prod/proxy` must hold **no** `bedrock-runtime` line for the same window. Two channels that do not share a failure mode — and the empty answer is evidence only with a **negative control**, since a log that saw nothing at all reads the same (Lesson 62). The control is the space's own address in that window: on 2026-09-12 `10.20.60.99` appears there tunnelling to `idetoolkits-hostedfiles.amazonaws.com` and being refused `default.exp-tas.com`, with no `bedrock` and no Anthropic name |
 | Does the record carry the prompt? | It must not: `requestParameters` carries `modelId`, `responseElements` is `null` — attribution without content |
 | Did the session reach any Anthropic host? | `/awsds/prod/proxy` for the session's window. The pass condition is that **no** Anthropic name appears at all |
 | Is the session on Bedrock, in the right Region? | `/status` inside the session names the provider and the resolved Region |
 | Does the picker offer exactly the scoped set? | `/model` |
-| Did a background task bill Haiku? | the `modelId` on the CloudTrail event for a session-title call |
+| Did a background task bill Haiku? | the `modelId` on the CloudTrail event for a session-title call — and only when the primary model differs from it. The 2026-09-12 session pinned all three aliases to Haiku to work around the generation gate, so primary and background were indistinguishable and this row stayed unanswered |
 | What does a session cost? | the session's own token accounting, against the rates in the stage's step 8.1 |
 
 **What no instrument here reads**: the per-model `allowed_modes`. It is not in `get-foundation-model`,

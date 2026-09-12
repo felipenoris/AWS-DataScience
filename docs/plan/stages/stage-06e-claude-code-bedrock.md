@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`) **step 4** (`vpc-egress-v0.14.1` applied 2026-09-12 for `2 to add, 0 to change, 0 to destroy`, the two endpoints always-on rather than an optional group — decision 12, and the image's bypass list refreshed 50 → 52 entries) and **step 5** (`default-v0.3.0` built and pushed 2026-09-12, registered as image version 3 against `sha256:bd78c976…` and attached to the domain on both app types). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **What remains is step 6** — the first session, and the CloudTrail and proxy readings that say whether the call took the private door. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`) **step 4** (`vpc-egress-v0.14.1` applied 2026-09-12 for `2 to add, 0 to change, 0 to destroy`, the two endpoints always-on rather than an optional group — decision 12, and the image's bypass list refreshed 50 → 52 entries) and **step 5** (`default-v0.3.0` built and pushed 2026-09-12, registered as image version 3 against `sha256:bd78c976…` and attached to the domain on both app types). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **Step 6 ran on 2026-09-12 and answered**: a session replied from inside a space, on **Haiku 4.5**, as the project role, through `vpce-0171b785…`, with the proxy log carrying no Bedrock and no Anthropic name under a negative control. Getting there cost four measurements nobody had: the Control Tower Region ceiling refuses a cross-Region profile until `bedrock:InvokeModel*` is exempted, because authorization is evaluated **per destination Region**; what enables a model is the **agreement**, not the form; the retention mode is **per Region** and is declared in one of the three a prompt is processed in; and **`claude-opus-5` and `claude-sonnet-5` are refused by AWS for this account**, for every principal including `AdministratorAccess`, while the 4.5 generation answers. **What remains**: the scoped set is undecided (decision **14**), the Region exemption has no compensating deny, `mode: none` is owed in two Regions, and 7.5, 8.3 and 6.4's token volume are unchanged. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -116,6 +116,14 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   **Read three times across two state changes** — before, after the retention mode went to `none`, and
   after the form was submitted — and identical every time.
 
+  **`NOT_AVAILABLE` was read as *no agreement is needed* and it means *no agreement has been
+  created*** (corrected 2026-09-12). `list-foundation-model-agreement-offers` returns a live offer for
+  every one of the three — a rate card, a legal document and a support term — and
+  `create-foundation-model-agreement` against its token is **the act that enables a model**. Nothing
+  in 0.9's four fields moves when it is done except that one status, which is why the omission
+  survived three readings. This also inverts the reading's own conclusion: the permissiveness was not
+  the instrument being useless, it was the instrument answering a different question.
+
 ---
 
 ## To execute
@@ -156,6 +164,14 @@ invocation without it. **Explanation:** the vendor calls this *"submit use case 
 an approval queue — **access is granted immediately after submission**. Nobody reviews the answer before
 the model works; the answer is a declaration on the record, which is why it is worth writing carefully
 rather than quickly.
+
+**This step does not enable a model, and this plan read it as though it did** (corrected 2026-09-12).
+With the form submitted and readable in all three routed Regions, every availability field green and
+the account's retention mode set, an invocation was still refused. What enables a model is the
+**agreement** — `create-foundation-model-agreement`, per model, per account
+([`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md) M4). The form is its prerequisite
+for the Anthropic catalogue and nothing more. A reader who stops here has done a third of the work and
+has no instrument that will tell them so.
 
 - **2.1 — Where to submit it: `Sandbox` alone** (taken 2026-09-11 by the user). The two shapes are not
   equivalent:
@@ -528,9 +544,26 @@ belongs in the image — and Claude Code has a file made for it.
 produces the readings steps 7 and 8 need, so it is run deliberately and read afterwards, not repeated
 until it works.
 
+**Ran 2026-09-12, and it answered — after four refusals, each naming a different missing act.** The
+order the refusals arrived in is the order the runbook's §M now carries: the Region ceiling (M5), the
+model agreement (M4), the generation gate (M4), and the identity grant (§P) for a model outside the
+`models` map. The session that finally replied ran on **Haiku 4.5**, the only one of the three scoped
+models AWS will invoke for this account, on a `managed-settings.json` **edited by hand inside the
+container** — a measurement, not a configuration, and it dies with the app.
+
 - **6.1 — [user] Ask one question**, in a repository that holds no governed data, on a space started
-  from `default-v0.3.0`.
-- **6.2 — [Claude] Read the egress by host.** `/awsds/prod/proxy` for the session's window. **The pass
+  from `default-v0.3.0`. **Done.** The extension opened a session with no login screen, the picker
+  offered `Default / Sonnet / Opus`, and the first prompt hung and then dropped back to the login
+  screen — which is what the client does when a call fails in a way it reads as authentication. **The
+  client's own error is not readable from the extension**; the refusal text lives in CloudTrail and in
+  the CLI. A session opened from the space's terminal, or a direct `bedrock-runtime invoke-model`, is
+  the instrument (§M's M6).
+- **6.2 — [Claude] Read the egress by host. Done, and it passes.** `/awsds/prod/proxy` over the
+  session's hour carries **no `bedrock` and no Anthropic name**, under a negative control that matters
+  more than the absence: the space's own address `10.20.60.99` is in that same window, tunnelling to
+  `idetoolkits-hostedfiles.amazonaws.com` and being refused `default.exp-tas.com` with `403
+  TCP_DENIED`. The instrument was watching (Lesson 62). *The original pass condition follows.*
+  `/awsds/prod/proxy` for the session's window. **The pass
   condition is that no Anthropic name appears at all** — not `api.anthropic.com`, not
   `downloads.claude.ai`, not `statsig` or either Datadog intake. On Bedrock the vendor documents metrics,
   error reports and `/feedback` as **off by default**, and step 5.2's
@@ -538,12 +571,18 @@ until it works.
   even there. A line on any of those names is a finding about the configuration, not about the network.
   **WebSearch is not available at all on Bedrock**, so no search host can appear either; `/logout` is
   likewise unavailable, authentication being the container's AWS credentials.
-- **6.3 — [Claude] Read the invocation.** CloudTrail in `Sandbox`: `eventName
-  InvokeModelWithResponseStream`, `eventSource bedrock.amazonaws.com`, the project role as
-  `userIdentity`, `requestParameters.modelId` naming the profile, and `vpcEndpointId` present. That last
-  field is 4.5's whole point.
-- **6.4 — [Claude] Read the token volume.** From the first session's own accounting, and it is the one
-  number step 8 cannot get any other way.
+- **6.3 — [Claude] Read the invocation. Done, and it passes.** Fifteen
+  `InvokeModelWithResponseStream` events with **no `errorCode`**, each carrying
+  `vpcEndpointId: vpce-0171b785473053321`, `sourceIPAddress: 10.20.60.99`, the project role as
+  `userIdentity`, `requestParameters.modelId` naming
+  `us.anthropic.claude-haiku-4-5-20251001-v1:0`, and `responseElements: null` — attribution without
+  content, which is 4.6's property measured rather than asserted. **One invocation writes two events**:
+  one with `requestParameters.modelId` and a sibling with `requestParameters: {}`, so a count doubles
+  and a `modelId` filter halves. Event History lags several minutes; the earlier denied attempts
+  appeared promptly and the successful ones did not, so an absent event is not yet a missing call.
+- **6.4 — [Claude] Read the token volume. Not taken.** The session that answered ran with all three
+  aliases pinned to Haiku, so its accounting describes neither the scoped set nor the primary/background
+  split. It is re-run once decision 14 settles the models and the image carries them.
 
 ### 7. Does this meet the data-protection requirement
 
@@ -618,13 +657,23 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
 
 - **7.3 — The residency qualification, which no setting removes.** `us.anthropic.claude-opus-5` routes to
   **us-east-1, us-east-2 and us-west-2** (0.2). A prompt is therefore *processed* outside `us-west-2`
-  some of the time, inside AWS, over AWS's network. Under ZDR nothing is stored there — the abuse-detection
-  page's residency sentence, *"retained inputs and outputs are stored in destination regions"*, is about
-  models that retain, and Opus 5 does not. What remains is a transit fact, and it is real: **D1 says the
-  region is a variable, and this is the estate's first resource that cannot honour it.** There is no
-  narrower option — 0.1 makes the bare model id uninvocable and `global.` routes wider — so the choice is
-  `us.`, at a 10% premium (0.4), recorded as a named exception in `docs/AWS_STATE.md` rather than left
-  for a later reader to discover.
+  some of the time, inside AWS, over AWS's network. **D1 says the region is a variable, and this is the
+  estate's first resource that cannot honour it.** There is no narrower option — 0.1 makes the bare
+  model id uninvocable and `global.` routes wider — so the choice is `us.`, at a 10% premium (0.4),
+  recorded as a named exception in `docs/AWS_STATE.md` rather than left for a later reader to discover.
+
+  **"Under ZDR nothing is stored there" was written from an unmeasured premise, and the premise is
+  false** (corrected 2026-09-12). The retention mode is a property of the account **and the Region**:
+  `get-account-data-retention` answers independently per Region, and this account reads `none` in
+  `us-west-2` and **`inherit` in `us-east-1` and `us-east-2`** — `inherit` being the same reading 7.2
+  found here before M1 and called *declaring nothing*. So on 2026-09-12 zero retention was declared in
+  one of the three Regions a prompt is processed in. What is **not** measurable from here is whether
+  cross-Region inference obeys the source Region's setting or the destination's; no instrument answers
+  it and the vendor pages do not say. The repair does not wait on that answer — declare `none` in all
+  three — and it needs `bedrock:PutAccountDataRetention` added to the Region-ceiling exemption first,
+  because the write is refused in the other two Regions and so is the read that would show it. **Owed.**
+  This is Lesson 37's shape: a conclusion in the perfect tense, carrying no measurement, standing
+  beside neighbours that carried three.
 
 - **7.4 — Model invocation logging stays off here, and the question moves to Stage 11** (taken
   2026-09-11 by the user). It is off (0.5). Turning it on writes **the full prompt and the full
@@ -826,14 +875,17 @@ table is the index, not the reasoning.
 | **8** | Where the IAM grant lives | **on the project role, attached by `sandbox/bedrock/`** (2026-09-11, during execution). The blueprint offers no granting lever at all, so a domain-wide floor was never on the table (3.4); the alternative that would have made *which projects* one list puts the caller outside the D13 boundary, and that decided it. Lesson 14's cost is accepted, in the slice and in the runbook's §P |
 | **10** | Whether the use-case form is submitted by console or adopted as a Terraform resource | **console** (2026-09-11), and done. The objection that decided it — `form_data` being opaque — **turned out to be false**: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed field by field (2.5) |
 | **12** | Whether the Bedrock endpoints are an optional group or always-on | **always-on** (2026-09-12), in `sandbox/egress`'s `extra_services`. A group is per apply and `make up` without the flag destroys what it created, so a consumer that needs the path in every session cannot live behind one. It makes the ~0.020/h permanent while the slice is up, narrows the optional `bedrock` group to the agent pair, and **changes 4.4's answer**: shared infrastructure cannot carry one consumer's action list (4.1, 4.4) |
-| — | The scoped model set | **Opus 5, Sonnet 5, Haiku 4.5**, one list with four consumers (step 3) |
+| — | The scoped model set | **Opus 5, Sonnet 5, Haiku 4.5**, one list with four consumers (step 3) — **and two thirds of it is not invocable in this account**, see decision 14 below |
 
 ## Still open
 
 | | Question | Waits on |
 |---|---|---|
 | **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
-| **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
+| **9** | ~~Whether the `aws-marketplace` pair is needed here~~ | **Closed 2026-09-12 by measurement, and the answer is no.** The agreement the models needed was created with `bedrock:CreateFoundationModelAgreement` by the **infrastructure user**, once per model, at account scope; no `aws-marketplace` action was called and none was refused. The project role invokes against an agreement that already exists, so the vendor's sample pair belongs to the operator's console flow and not to this grant. 3.2's omission stands |
+| **14** | **Which models the scoped set names** | the user. `claude-opus-5` and `claude-sonnet-5` are refused by AWS for this account (M4's generation gate) and the working set measured 2026-09-12 is **Opus 4.5, Sonnet 4.5, Haiku 4.5** — all three answered `pong`, all three route to the same three Regions. Switching is not a setting: the pins live in the image, so it is `sandbox/bedrock/`'s `models` map, a `default-v0.4.0` release, the whole `dev-env.md` §B chain, and `PRICING.md` §5 plus 8.1 re-measured at the 4.5 rates. The alternative is the sales contact the refusal names, at an unknown horizon. The two are not exclusive |
+| **15** | **What compensates M5's Region exemption** | recommended, not taken. Five `bedrock:` actions are now exempt from the Control Tower Region ceiling for **every principal in the `Interactive` OU, in every Region** — including Regions no profile routes to. Two statements in 7.5's document close it: a model scope on `InvokeModel`/`InvokeModelWithResponseStream`, and a Region scope on the five actions bounded by M0's list. Until both land, that OU has no Region ceiling on Bedrock |
+| **16** | **Declaring `mode: none` in the other two routed Regions** | the user. 7.3's correction: the mode is per Region and two of three read `inherit`. It needs `bedrock:PutAccountDataRetention` in M5's exemption first, and it does not wait on knowing whether cross-Region inference obeys source or destination |
 | **11** | Whether to run 7.2a's Fable probe, the only negative control `mode: none` can have | decidable now; recommended **run it** — a refused call costs nothing and a successful one is a finding of the first order (7.2a) |
 | **13** | Whether the `bedrock` control-plane endpoint carries an action scope too | **taken by Claude on 2026-09-12 under a stated assumption, and not reviewed by the user.** Only `bedrock-runtime` is scoped. The argument is that the control plane's API surface is long, growing, and called by the SMUS blueprints for things an assistant never does, so a list written for one consumer silently refuses the other. The cost of that choice is named in 4.4: `PutModelInvocationLoggingConfiguration` still traverses its door, and nothing else covers it until Stage 11 |
 | — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |

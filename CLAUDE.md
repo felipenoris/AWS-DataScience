@@ -230,16 +230,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   was amended 2026-09-08. Still needed from the user: the domain name (blocks Stage 13).
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision (the portal's notebook operator dies on the D13 boundary; Stage 10's own DAGs can pass a
-  full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version
-  **3** is `default-v0.3.0`, frozen to the digest it was registered against, attached by hand to the
-  domain's `DefaultUserSettings` — which is what a space's picker reads, JupyterLab and Code Editor both.
-  INT-01/INT-17 closed (image role by tag at registration, project role by digest at start). **The app
-  image config caps each env value at 256 characters** against a
-  `NO_PROXY` of ~1,500, so decision 8 put the six variables in `images/dev-env/Dockerfile` as `ENV`, the
-  list a dated literal (52 entries, sha256 `fc11caaa3…`); `./aws/devenv.py` reads the drift, and the
-  bump's order is `dev-env.md` §B. The image's Python is a **second** uv environment under `/opt/awsds`
-  on CPython **3.13** (TensorFlow has no wheel past `cp313`), with its own Launcher kernel; R stays on
-  conda, `rust-src` in it since v0.3.0. Owed: 2.4; 1.1's persona half,
+  full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **3**
+  is `default-v0.3.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
+  what a space's picker reads, both app types.
+  INT-01/INT-17 closed (image role by tag, project role by digest). **The app image config caps each env
+  value at 256 chars** vs a `NO_PROXY` of ~1,500, so decision 8 put the six variables in the Dockerfile
+  as `ENV`, a dated literal (52 entries, sha256 `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump
+  order `dev-env.md` §B. The image's Python is a second uv env under `/opt/awsds` on
+  CPython **3.13** (no TF wheel past `cp313`), own kernel; R on conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half,
   1.2/1.3; 3.4, 3.5, 3.7; step 5 beyond the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9.
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
   Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
@@ -254,14 +252,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the space path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and
   `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
-- **Stage 6e is in progress** (Claude Code on Bedrock); only step 6, the first session, is left. **The grant
-  is per project**: `sandbox/bedrock/` (rank 52, `[P]`, applied), the project role's every
-  `InvokeModel*` allow landing on `foundation-model/*`, none on the system inference profile,
-  `ListInferenceProfiles` nowhere. The retention mode is **`none`**, declared **by hand** and frozen
-  by nothing until 7.5's SCP: no Terraform resource, no CloudFormation type (the use-case form has
-  both, its one field an opaque blob). Per-model `allowed_modes` is **in no Bedrock API**. All three
-  scoped models are inference-profile only and their `us.` profiles route to three US regions, so D1's
-  exception is the set's. Neither IAM simulator answers here. Runbook: `claude-code-sagemaker.md`.
+- **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
+  `bedrock-runtime` endpoint. Four premises fell. **The
+  agreement enables a model, not the form** (`create-foundation-model-agreement`, per model; `NOT_AVAILABLE` = none created). **A cross-region profile is authorized per
+  destination region**, so CT's `CT.MULTISERVICE.PV.1` on `Interactive` refuses it until
+  `bedrock:` actions join its `NotAction` — five did; compensating deny owed (dec 15). **Retention
+  mode is per account AND region**: `none` in `us-west-2`, `inherit` in the other two (dec 16).
+  **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every principal, every
+  instrument green (`EXC-08`); the 4.5 generation answers and switching costs the image (dec 14).
+  Grant per project, `sandbox/bedrock/` (rank 52, `[P]`): its `models` map is all a space can invoke. The `us.` profiles route to three US regions (D1's exception).
+  Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

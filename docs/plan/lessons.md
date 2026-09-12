@@ -1548,6 +1548,38 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **Changing `instance_type` is a stop/modify/start, and user data does not re-run on it**, so a
   size change made because the build ran out of memory leaves the bigger host unbuilt. Only a
   replacement re-runs a first boot.
+- **A cross-Region inference profile is authorized once per destination Region, and `aws:RequestedRegion`
+  in that evaluation is the destination, not the caller's** (measured 2026-09-12, Stage 6e step 6). A
+  call made with `--region us-west-2` and logged by CloudTrail with `awsRegion: us-west-2` was denied
+  against `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-5` by Control Tower's
+  `CT.MULTISERVICE.PV.1`, whose only condition is `aws:RequestedRegion != us-west-2`. No vendor page
+  connects the two, and the consequence is that **a Region ceiling refuses every cross-Region profile in
+  the organization** until the invoke actions are exempted. Where: `claude-code-sagemaker.md` M5.
+- **Bedrock's data retention mode is per account AND per Region** (measured 2026-09-12). The account read
+  `none` in `us-west-2` and `inherit` in the two Regions its own profiles route to; `get-account-data-retention`
+  answers independently in each. A mode declared once is a claim about one Region, and whether cross-Region
+  inference obeys the source Region's mode or the destination's is in no API and on no page. Where:
+  `claude-code-sagemaker.md` M1, `AWS_STATE.md` `EXC-07`.
+- **The Bedrock use-case form does not enable a model; the agreement does** (measured 2026-09-12). With
+  the form submitted and readable in all three Regions, `create-foundation-model-agreement` against an
+  offer token was still required per model — the act the console calls *Enable specific models*.
+  `agreementAvailability.status: NOT_AVAILABLE` means **no agreement has been created**, not *no
+  agreement is needed*, and reading it the second way is what hid the omission through three separate
+  readings. The agreement is account-wide: created in one Region it reads `AVAILABLE` in the others
+  before the creating Region leaves `PENDING`. Amazon's own models need none. Where:
+  `claude-code-sagemaker.md` M4.
+- **A Bedrock model can be gated commercially with every readable instrument reporting it available**
+  (measured 2026-09-12). `anthropic.claude-sonnet-5`: agreement `AVAILABLE`, `authorizationStatus
+  AUTHORIZED`, `entitlementAvailability AVAILABLE`, `regionAvailability AVAILABLE`, `modelLifecycle
+  ACTIVE`, form present — and `AccessDeniedException … not available for this account … contact AWS
+  Sales` for every principal including `AdministratorAccess`, while the previous generation answered.
+  **The invocation is the only instrument that answers whether a model can be used**, which is
+  Lesson 13 at account scale. Where: `AWS_STATE.md` `EXC-08`.
+- **One Bedrock invocation writes two CloudTrail events** (measured 2026-09-12, fifteen over one
+  session): one carrying `requestParameters.modelId`, its sibling carrying `requestParameters: {}`.
+  Counting events doubles the call count and filtering on `modelId` halves it — the same shape as MWAA's
+  two attempts per run. `responseElements` is `null` on both, which is the attribution-without-content
+  property Stage 6e 4.6 claims, measured.
 
 ---
 
