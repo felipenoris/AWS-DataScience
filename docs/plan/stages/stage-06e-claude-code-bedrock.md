@@ -344,14 +344,22 @@ arrives *public*. **Explanation:** the perimeter conditions this estate writes �
 `aws:SourceVpce` — are absent on a call that leaves through Squid, so a Bedrock invocation made now is
 outside the data perimeter while looking exactly like one that is inside it.
 
-- **4.1 — [Claude] A new optional endpoint group, narrower than the one that exists.**
+- **4.1 — Done 2026-09-11, as `vpc-egress-v0.13.0`.** A new optional endpoint group, narrower than
+  the one that exists.
   `terraform-modules/vpc-egress`'s `bedrock` group is four endpoints — `bedrock`, `bedrock-agent`,
   `bedrock-agent-runtime`, `bedrock-runtime` — sized for the portal's blueprints. This stage needs
   **two**: `bedrock-runtime` for the invocation and `bedrock` for the control-plane calls of 3.2. Add
   `bedrock-llm = ["bedrock", "bedrock-runtime"]` beside it rather than narrowing the existing group,
   which has a different consumer, and extend the `optional_service_groups` validation to admit the name.
-  A new module tag follows (`vpc-egress-v0.12.0`), by the two-commit order in
-  [`terraform-changes.md`](../runbooks/terraform-changes.md).
+  **Two tags followed, not one**, by the two-commit order in
+  [`terraform-changes.md`](../runbooks/terraform-changes.md): `v0.12.0` carries the group and the
+  action scope of 4.4, and `v0.13.0` carries a guard found while writing the caller — **`bedrock`
+  and `bedrock-llm` cannot be named together**. They are two configurations of one door rather than
+  two doors: both contain `bedrock` and `bedrock-runtime`, the map key collapses the overlap to one
+  endpoint, and one endpoint carries one policy, so 4.4's action list would have reached the
+  blueprints' control-plane calls and refused `CreateGuardrail` with no denial naming it. A tag is
+  never moved, so the fix is a second version rather than an amendment (Lesson 46's rule, applied
+  before it cost anything).
 - **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox GROUPS=bedrock-llm`. Two endpoints at
   ~USD 0.010/h each, `[E]`, and they leave on the next `make down` like everything else.
 - **4.3 — [Claude] The bypass list moves with it.** `NO_PROXY` is generated from each endpoint's own
@@ -366,12 +374,28 @@ outside the data perimeter while looking exactly like one that is inside it.
   **The endpoints and the bypass list are one change in two places** (Lesson 33): an endpoint without
   the bypass entry sends the call to the proxy and out to the internet, and the call still works, which
   is how this fails silently.
-- **4.4 — [Claude] An endpoint policy, because the default is full access.** The interface endpoint's
-  default policy allows every Bedrock action to every principal. Narrow it to 3.2's actions on 3.3's
-  resources, so the endpoint is a second, independent statement of the same intent rather than a hole
-  under it. **Read it from `sandbox/bedrock/`'s `scoped_model_arns` output rather than retyping the
-  six ARNs**: the same intent written twice from one source is Lesson 33's shape avoided; written
-  twice from two sources is Lesson 33 itself.
+- **4.4 — Done, and this step's premise was wrong.** It said the endpoint's *default* policy allows
+  every Bedrock action to every principal. **These endpoints have never carried the default**:
+  `vpc-egress` has applied the trusted-networks document to every interface endpoint since Stage 3
+  step 9 — organization principals and AWS service principals, nobody else. Read the module before
+  writing what a control does (Lesson 30's neighbour).
+
+  What `v0.12.0` adds is `endpoint_action_scopes`, a narrowing of that document **on the action
+  axis** for a named endpoint: `sandbox/egress/` scopes `bedrock-runtime` to the two invoke actions
+  and `bedrock` to the two profile reads. **What it buys is exact**:
+  `PutAccountDataRetention` and `PutModelInvocationLoggingConfiguration` — the two calls that would
+  undo 7.5a and turn prompt logging on — cannot traverse this door at all, whatever an identity
+  policy in this account allows.
+
+  **The resource axis is deliberately not narrowed, reversing what this step used to ask for.**
+  Scoping the endpoint to the six model ARNs would be a second copy of the grant's list, in another
+  slice, with nothing comparing them — one intent in two places, which diverges (Lesson 33) — and
+  the failure would be an invocation refused at the network layer for a model somebody had properly
+  added to the grant. The action list has no such problem: it is a property of the service, and it
+  changes when AWS adds an API rather than when a decision is taken here.
+
+  An action absent from the list gets **no response and no denial naming this policy**, so an
+  addition belongs with a measured refusal rather than with a guess.
 - **4.5 — [Claude] Prove the door.** CloudTrail records `InvokeModelWithResponseStream` as a
   **management event**, so the organization trail already carries it with no data-event charge and no
   configuration. The reading is the `vpcEndpointId` field on the event, and the negative control is the
