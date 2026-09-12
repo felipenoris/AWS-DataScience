@@ -32,7 +32,7 @@ Both images are `linux/amd64` and the laptop is `arm64`. The SageMaker Distribut
 run on x86 instance types, so the platform is not a choice; the laptop has no docker installed either.
 The build happens on
 [`terraform-live/production/buildbox/`](../terraform-live/production/buildbox/README.md) — an `[E]`
-`t3.xlarge` in `VPC-SharedServices`'s private tier (Production, since
+`m8i.xlarge` in `VPC-SharedServices`'s private tier (Production, since
 [6c step 5.8](../docs/plan/stages/stage-06c-networking-hub.md)), reached over Session Manager through
 `production/egress/`'s SSM endpoints, with no ingress rule at all, reaching the internet only as a client
 of the explicit proxy. It exists while a build runs and is destroyed after; the session's order — the

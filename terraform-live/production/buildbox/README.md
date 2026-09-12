@@ -101,8 +101,8 @@ action added here would simply work. [`runbooks/buildbox.md`](../../../docs/plan
 
 ## What it costs
 
-`t3.xlarge` is **0.1664 USD/h** (`docs/PRICING.md` §8, `us-west-2`) plus ~0.007/h for the 64 GiB
-gp3 while it exists. **A week left running is USD 28** against D12's USD 50/month, which is why
+`m8i.xlarge` is **0.2117 USD/h** (`docs/PRICING.md` §8, `us-west-2`) plus ~0.007/h for the 64 GiB
+gp3 while it exists. **A week left running is USD 36** against D12's USD 50/month, which is why
 every helper the script prints ends in `down`, and why `./scripts/buildbox.py status` exists.
 
 A build session is three bills (6c step 5.8): this host, plus `production/egress/` at
@@ -111,8 +111,14 @@ which is `[D]` and shared with the whole estate.
 
 **A bigger instance does not fix the network.** Every byte this host pulls from the internet crosses
 the proxy, a `t3.micro` — the base image included, whose manifest comes from `public.ecr.aws` and
-whose blobs come from the CloudFront distribution its redirect names (measured 2026-09-06). If a build
-is network-bound rather than CPU-bound, the knob is that host's instance type, not this slice's. What
+whose blobs come from the CloudFront distribution its redirect names (measured 2026-09-06). What
 does **not** cross it: a private-registry pull's layers, which come from S3 through the `[P]` gateway
 endpoint, and the push, which goes to this VPC's `ecr.dkr` interface endpoint — the documented shape,
 not yet measured since the move.
+
+**The build is CPU-bound, and that is measured.** On the 02:50-03:15 UTC build of 2026-09-11 the proxy
+moved 3.11 GB in its busiest minute — 414 Mbps, 6.5x its own 64 Mbps baseline — at 2.70% CPU with its
+credit balance never leaving 288, while this host sat at 99.98% CPU in two consecutive five-minute bins
+with its own credits never falling and its surplus balance at zero. EBS write peaked at 75.5 MB/s
+against the `t3.xlarge`'s 86.875 baseline. Sizing the proxy up would widen a pipe nothing was waiting
+on; the family moved to `m8i` instead, and the knob that matters is this slice's.

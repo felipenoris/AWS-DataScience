@@ -75,7 +75,7 @@ counted at [6c](stages/stage-06c-networking-hub.md) step 7.4:
 | WireGuard EC2 `t3.nano` — `production/vpn/`, `[D]` | ~0.005. Its Elastic IP was transferred rather than added, so the estate's address count did not move |
 | GitLab EC2 `t4g.large` | ~0.067 (`t3.large` would be ~0.083) |
 | Internal ALB in front of GitLab/Pages (only while GitLab is up) | ~0.023 + LCU usage |
-| **the build host** — `production/buildbox/`, `[E]` | 0.1664 (`t3.xlarge`) **plus `VPC-SharedServices`'s 0.130/h**, which since 6c step 5.8 is a *prerequisite* rather than a slice a build could avoid: the SSM endpoints are the host's only door. A build session is three bills, not one |
+| **the build host** — `production/buildbox/`, `[E]` | 0.2117 (`m8i.xlarge` since 2026-09-11; `t3.xlarge` was 0.1664) **plus `VPC-SharedServices`'s 0.130/h**, which since 6c step 5.8 is a *prerequisite* rather than a slice a build could avoid: the SSM endpoints are the host's only door. A build session is three bills, not one |
 | SageMaker Studio `ml.t3.medium` (per running app) | ~0.050 |
 | VPC peering — **five**, hub-and-spoke | free within an AZ; USD 0.01/GB each way across AZs. With the hub hosts and every endpoint set pinned to `usw2-az1` the common path is free. **Transit Gateway was the alternative and it is priced**: 5 attachments × 0.05/h ≈ USD 182/month standing before a byte (`PRICING.md` §7) |
 | **Staging `egress/` during a promotion run** (D20) | 0.110/h, measured in *minutes* per promotion rather than hours — `make up ENV=staging` is a pipeline step and the pipeline tears it down. Budget ~USD 0.02 per promotion, not a standing hourly cost |

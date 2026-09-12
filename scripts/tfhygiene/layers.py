@@ -370,7 +370,7 @@ SLICES = [
         "Squid explicit proxy - the estate's only internet exit",
         0.0104,
     ),
-    # Stage 6 step 5.0 - the amd64 build host, [E]. usd_per_hour is the t3.xlarge row of
+    # Stage 6 step 5.0 - the amd64 build host, [E]. usd_per_hour is the m8i.xlarge row of
     # docs/PRICING.md 8, measured us-west-2 (Lesson 6), and unlike the WireGuard row above it
     # this figure does follow the tracked tfvars, because the default and the assignment agree
     # by design (the slice's own instance_type.auto.tfvars says why). The 64 GiB gp3 is
@@ -387,7 +387,7 @@ SLICES = [
         "buildbox",
         EPHEMERAL,
         "amd64 build host for the dev-env image (St.6 5.0)",
-        0.1664,
+        0.2117,
     ),
     # Stage 5 pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer

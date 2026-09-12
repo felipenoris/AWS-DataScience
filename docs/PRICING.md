@@ -262,7 +262,8 @@ the real bill.
 | — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
-| Stage 6 build host `t3.xlarge` (`production/buildbox/`, `[E]`) | 0.2688 | **0.1664** | 1.62 |
+| Stage 6 build host `m8i.xlarge` (`production/buildbox/`, `[E]`) — **measured 2026-09-11**, the family the 02:50-03:15 UTC build moved it to: the build saturated four burstable vCPUs while the proxy sat at 2.70% | 0.3374 | **0.2117** | 1.59 |
+| — `t3.xlarge`, the burstable it replaced | 0.2688 | 0.1664 | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
@@ -620,9 +621,12 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
-| EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — **the Stage 6 build host** | 0.2688 | **0.1664** | 1.62 |
+| EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
 | EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
+| EC2 `m8i.large` (2 vCPU, 8 GiB, x86) — measured 2026-09-11 | 0.1687 | 0.1058 | 1.59 |
+| EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the Stage 6 build host since 2026-09-11**; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
+| EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) | 0.068 | — | |
