@@ -1070,3 +1070,103 @@ wrong models for a day, and a space that carries its own copy of the image versi
   That contrast is the design observation: **an alias survives a version bump, a version ARN does
   not**, and `aws_sagemaker_image_version.dev_env` currently sets `aliases = []`. Whether to give the
   estate's versions aliases is a decision this log records and does not take.
+
+## 2026-09-12 — verification (x) answered, a false negative explained, and `DE-5`
+
+*The evening after `v0.4.0` landed. Two spaces behaved differently on what looked like the same image,
+and the question put was whether the build had skipped a step. It had not; the space had been created
+on another image. The readings that settled it are now an instrument.*
+
+### The stranded space, and the first session on the image's own pins
+
+- **[user] The space left naming the destroyed version did not start.** Verbatim: *"Sobre o espaço
+  que estava com a imagem antiga, ele falhou em iniciar. Editei as configurações do espaço alterando
+  para a imagem na versão nova e agora ele subiu corretamente."* This closes the measurement `EXC-09`
+  had left open: **an app started against a destroyed image version fails to start**, with no
+  fallback to the domain default. The repair was made **in the portal**.
+
+- **[user] A session on the repaired space, reading the pins from the image.** Internet reachable, the
+  proxy variables present; the *Claude Code for VS Code* extension installed; a **Sonnet 4.5** prompt
+  asking for a Python hello-world project worked. The picker showed *"Default (Opus 4.5), Sonnet 4.5 e
+  Opus 4.5. Não vi o Hayku."*
+
+- **[Claude] The picker is the settings file, exactly.** `availableModels: ["opus","sonnet"]` locks it
+  to those two, "Default" is `ANTHROPIC_MODEL` (Opus 4.5), and Haiku is pinned through
+  `ANTHROPIC_DEFAULT_HAIKU_MODEL` for background work only — not selectable, by design. The pins came
+  from the image rather than from the earlier hand edit: `/etc/claude-code/` is in the container's
+  filesystem, rebuilt from the image at every app start, where the home directory is what persists.
+
+### A new space with no proxy, and the question of a skipped build step
+
+- **[user] The report and the question.** A new space on the new image *"aparentemente não tem as
+  configurações de variáveis de ambiente de proxy, então ele não tem acesso à internet. Ao fazer o
+  build da última versão da imagem, eu não executei nenhuma etapa de atualização de variável de
+  proxy.. Será que deixei de executar alguma etapa do build da imagem?"*
+
+- **[Claude] Answered from the repository before any AWS reading, the session having expired.** The
+  proxy is not a build step: `PROXY_URL` and `NO_PROXY_LIST` are `ARG`s **with default values** and the
+  Dockerfile's last `ENV` bakes them on any plain `docker build`. A step exists only when Sandbox's
+  endpoint set changes, and `DE-3` had just read the list unchanged. The decisive evidence was the
+  other space: **the repaired space ran the same digest and had the variables**, so the difference was
+  between the spaces, not in the image. Two hypotheses were put, each with a discriminator — the new
+  space on another image (`cat /opt/awsds-proxy.txt`, which only this image writes), or the repaired
+  space's variables coming from its persistent home rather than the image (`grep -in proxy
+  ~/.bashrc ~/.profile ~/.bash_profile`).
+
+- **[user] The first hypothesis, confirmed by hand.** *"O problema era mesmo a imagem: na criação do
+  segundo espaço eu selecionei de forma errada a imagem padrão do SageMaker. Criei um novo space
+  selecionando a imagem correta e agora funciona."* The user signed in again as the infrastructure
+  user.
+
+### The readings, taken afterwards
+
+- **[Claude] Four spaces, and what each app actually runs** — `describe-app`'s `ResourceSpec`, which
+  is the image an app started on, not the space's default:
+
+  | Space | Created (UTC-3) | Image the app ran | `RemoteAccess` |
+  |---|---|---|---|
+  | `remote-editor-claude` | 01:56 | `awsds-sandbox-dev-env` version 4 | `ENABLED`, 64 GB |
+  | `remote-editor-claude-v4` | 17:40, **deleted** | **`sagemaker-distribution-cpu`, alias `4.3`** | — |
+  | `remote-editor-claude-v4-2nd` | 18:38 | `awsds-sandbox-dev-env` version 4 | `DISABLED`, 16 GB |
+  | `remote-editor-claude-v4-3rd` | 18:52 | `awsds-sandbox-dev-env` version 4 | `ENABLED`, 64 GB |
+
+  **`describe-app` still answered for the deleted app**, which is what made the attribution possible
+  after the space was gone. The portal edit of `remote-editor-claude` kept `RemoteAccess`, the 64 GB and
+  the project's S3 connection.
+
+- **[Claude] The image's baked `Env`, read from the registry rather than from any space.**
+  `batch-get-image` on `default-v0.4.0` gave a manifest naming config blob `sha256:7fd2620c…`;
+  `get-download-url-for-layer` and one HTTPS GET returned it, and **its sha256 matched that digest**.
+  Its `Env`: `http_proxy`, `https_proxy`, `HTTP_PROXY`, `HTTPS_PROXY` =
+  `http://proxy.awsds.internal:3128`; `no_proxy`, `NO_PROXY` = **52 entries, sha256
+  `fc11caaa3145fdef`**. The build baked all six. The Sandbox infrastructure role reads Production's
+  repository by digest, so the reading needs one profile.
+
+### What was built from it, and what it corrected
+
+- **[Claude] `./aws/devenv.py` gained `DE-5`**, at the user's go-ahead: the latest image version's
+  `ContainerImage` digest → its manifest → its config blob, hash-checked, → the six variables, compared
+  with the account's list. `DE-3` compares the *recipe*, so an image built from an older checkout
+  passes it while the domain serves something else; `DE-5` reads the bytes. First run: **`DE-1`..`DE-5`
+  pass**. **Negative control**, through the script's own `fetch()` and `PROXY_NAMES`:
+  `default-v0.1.0`, which predates the proxy `ENV`, reads **no proxy variable**; `v0.4.0` reads all
+  six. The instrument distinguishes the two outcomes.
+
+- **[Claude] A claim of mine withdrawn: "`update-space` is full-replace like `update-domain`".**
+  Written into `dev-env.md` §B step 6 earlier the same day, from inference. It is **not measured**, and
+  the portal edit keeping every field settles nothing about the API, since the portal may send the
+  whole block itself. The step now says so, and its CLI route is marked written-and-not-run; the recipe
+  was already correct under either behaviour, because it transforms the live read.
+
+- **[Claude] The claim that caused the surprise, found in three places.** *"A space cannot name an
+  image"* stood in `docs/SMUS.md` (corrected in the previous sitting), in **`dev-env.md` §O** — the
+  runbook that drives the bump, adding *"the answer to can we do this per space is no"* — and in a code
+  comment in `terraform-live/sandbox/dev-env/main.tf`. All three now say what was measured: a space
+  names no image *list*, so the domain decides what the picker offers, and it names **one image and one
+  version** in `DefaultResourceSpec`, so the space decides what it runs. The comment on
+  `aws_sagemaker_image_version` now states that its destroy strands every space that named it.
+
+- **[Claude] Two more sentences corrected before they were committed.** `dev-env.md` §C7 was first
+  written saying the SageMaker Distribution is *what the portal form selects* and that a portal space
+  *has `RemoteAccess` off*. Neither was measured: the first is the user's report of picking the default
+  image, and the second is one of two spaces' recorded settings. Both now say exactly that.

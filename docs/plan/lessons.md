@@ -1327,9 +1327,14 @@ is what survives a bump: the space next to the stranded one was fine because it 
 **What makes it expensive.** The stranded copy is invisible from the side you are working on and the
 whole procedure reports success — this is Lesson 35's shape (adopting an object invalidates procedures
 and touches none of the files carrying them) meeting Lesson 33's (one intent in two places). The repair
-is also where Lesson 60 bites: the consumer's block is full-replace and carries fields the runbook never
-mentions — `RemoteAccess`, storage, a project's S3 connection — so it is a transformation of the live
-read, never a template.
+is also where Lesson 60 would bite: the consumer's block carries fields the runbook never mentions —
+`RemoteAccess`, storage, a project's S3 connection — and whether `update-space` clears what a request
+omits is **not measured**. So the repair is a transformation of the live read, never a template: it is
+correct whether the API replaces or merges, and a template is correct only if it merges.
+
+**The failure is a start that does not happen.** Measured the same evening: the stranded space's app
+failed to start against the destroyed version, with no fallback to the domain default. The user
+repaired it in the portal and it came up with those three fields intact.
 
 ## What AWS does that its documentation does not say
 
@@ -1625,8 +1630,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   **overrides the domain's `DefaultUserSettings`**. Measured 2026-09-12: with version 4 attached to the
   domain, an existing space still named version 3, which the same apply had destroyed
   (`aws_sagemaker_image_version` is force-new on `base_image`). AWS's own images are referenced by a
-  mutable **alias** instead, which survives a bump. Where: `dev-env.md` §B step 6, `AWS_STATE.md`
-  `EXC-09`, Lesson 63.
+  mutable **alias** instead, which survives a bump. **An app started against the destroyed version
+  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B step
+  6, `AWS_STATE.md` `EXC-09`, Lesson 63.
+- **`describe-app` still returns the `ResourceSpec` of an app that has been deleted** (measured
+  2026-09-12), so the image a removed space ran can be attributed after the fact. A space deleted
+  within the hour read `sagemaker-distribution-cpu`, alias `4.3`, with `Status: Deleted` — the
+  evidence that it had been created on AWS's image rather than this estate's, which is what its
+  missing proxy variables had looked like a defect of. Where: `dev-env.md` §C7.
 - **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
   2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
   blanket deny on the action. **A condition key being in a service's catalogue and a key being
