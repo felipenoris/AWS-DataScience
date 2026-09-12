@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress since 2026-09-11**, and its decisions were taken before it started. **Step 2 is done** — the form submitted by console 2026-09-11, verification (i) closed — and so is **7.5a**, the account's retention mode set to `none` at 22:31 UTC with the scoped set still available under it. **Step 3 is done**: `sandbox/bedrock/` (rank 52, `[P]`) applied the same day — one policy and one attachment, re-plan `No changes`, the project role now carrying four policies. Steps 4 and 5 stand between here and a call. Done before those: the read-only steps **2.4**, **3.1** and the half of **7.2** that has an instrument, with 0.3, 0.5 and 0.7 re-read the same day ([`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md)). What they changed is at the steps that own them: **a grant is needed** (3.1 closes the first half of open question 8), the account's retention mode reads **`inherit`** rather than `none` (7.2), the per-model `allowed_modes` has **no API at all** (7.2), and the retention mode has **no Terraform resource and no CloudFormation type** while the use-case form has both (7.5, step 2). Neither IAM simulator can answer this question. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
+| **Status** | **In progress since 2026-09-11.** **Done in AWS:** step 2 (the form, by console — verification (i) closed), **7.5a** (the account's retention mode set to `none` at 22:31 UTC, with the scoped set still available under it), and **step 3** (`sandbox/bedrock/` applied — one policy, one attachment, re-plan `No changes`). **Written and not applied:** step 4 (`vpc-egress-v0.14.0`, the two endpoints always-on rather than an optional group — decision 12) and step 5's repository half (the managed settings as a `COPY`d side file, `default-v0.3.0`). **Closed without a session:** 9.1, 9.4 (`EXC-07`, `INV-18`) and the runbook, 9.6. **The remaining order is fixed at one point**: `make up` → refresh the image's `NO_PROXY` → build → step 6. Decisions **6, 11 and 13** are open, and 13 is Claude's own, unreviewed. Written 2026-09-11 against the vendor documentation and eight read-only measurements taken the same day in `Sandbox` (step 0). The stage exists because [6d](stage-06d-unified-studio-remainder.md) step 7 opened the remote IDE and the user installed the *Claude Code for VS Code* extension in it, whose first act was `api.anthropic.com` — refused by the compute plane, `403 TCP_DENIED` × 17 ([`remote-ide.md`](../runbooks/remote-ide.md) §N). This stage replaces that refused call with a call to Amazon Bedrock inside the estate's own perimeter. **Settled by the user the same day, before execution**: the assistant runs **in the space** (a laptop's VS Code over a remote session is the same answer, measured); the model-access form is submitted in **`Sandbox` alone**; `availableModels` **locks** the picker; the retention denies go in **`awsds-org-scp-baseline.json`**; model invocation logging **stays off and the question moves to [Stage 11](stage-11-dlp.md) step 5.6**, written there rather than only here (Lesson 34). The scoped set is **Opus 5, Sonnet 5 and Haiku 4.5**, with **Haiku pinned for background work** — which caught a defect in this file's first draft: a session that sets `ANTHROPIC_MODEL` runs session titles on the primary model, so the draft would have billed them at the Opus rate (5.3) |
 | **Prerequisites** | [6d](stage-06d-unified-studio-remainder.md) step 2 (the house image is selectable; `default-v0.2.0` carries the proxy environment) and step 7 (the remote session works, and [`remote-ide.md`](../runbooks/remote-ide.md) says how). [6c](stage-06c-networking-hub.md) pass 5 for the proxy and the generated `NO_PROXY`. Nothing here waits on a vend |
 | **Consumes** | [D1](../decisions/D01-region.md) (the region is a variable — step 7.3 records the exception this stage buys), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md). Principle 2 rules out one of the vendor's five credential options before the stage starts (step 5.1) |
 | **Proves** | The first **Bedrock invocation** in this estate. `docs/PRICING.md` §5 has carried the Claude token rates as a named gap since 2026-08-21 — *"price the specific model against the inference profile before leaning on it"* — and step 0.4 closes it. `docs/SMUS.md`'s six `AmazonBedrock*` blueprints stay unexercised: this is a different consumer of the same service |
@@ -37,8 +37,15 @@ exercised they arrive at a perimeter that already exists.
 
 Step 2 (the form) gates every invocation and can be done first, alone, in five minutes. Steps 3, 4 and 7
 are independent of each other and all three precede step 6, which is the only step that sends a prompt.
-Step 5 is a repository edit that can be written before any of them and delivered by step 5.4's image
-build. Step 8 is the close.
+Step 8 is the close.
+
+**Step 5 is the exception, and it became one on 2026-09-12.** Its repository half can be written at any
+time and was. Its delivery cannot: 4.1 made the two Bedrock endpoints always-on, so the generated
+`NO_PROXY` grew by two names, and the literal the image carries can only be refreshed from a slice that
+is **up** — eight of that list's entries are not derivable from a service token. The order is therefore
+fixed at one point and nowhere else:
+
+    4.2 make up  →  4.3 terraform output -raw no_proxy  →  5.4 build default-v0.3.0  →  6
 
 ---
 
@@ -344,36 +351,28 @@ arrives *public*. **Explanation:** the perimeter conditions this estate writes �
 `aws:SourceVpce` — are absent on a call that leaves through Squid, so a Bedrock invocation made now is
 outside the data perimeter while looking exactly like one that is inside it.
 
-- **4.1 — Done, and the answer is not a group. `vpc-egress-v0.14.0`.** A new optional endpoint group,
-  narrower than the one that exists — **withdrawn 2026-09-12 by the user, and the reason is the
-  flag's own semantics**: a group is per apply, `make up` without it destroys what it created, and
-  the assistant needs this path in every session a space runs. A permanent consumer cannot live
-  behind a per-apply flag.
+- **4.1 — Done. The endpoints are always-on, not an optional group. `vpc-egress-v0.14.0`.**
+  `bedrock` and `bedrock-runtime` are in `sandbox/egress`'s `extra_services`, and the optional
+  `bedrock` group is narrowed to what only the blueprints use, `bedrock-agent` and
+  `bedrock-agent-runtime`.
 
-  So `bedrock` and `bedrock-runtime` are in `sandbox/egress`'s **always-on** `extra_services`, and
-  the optional `bedrock` group narrows to what only the blueprints use, `bedrock-agent` and
-  `bedrock-agent-runtime`. The restructure also dissolves a guard: `bedrock` and `bedrock-llm`
-  shared two endpoints and could not be named together (`v0.13.0`), and with the shared pair moved
-  out there is nothing left to collide. **One seam it introduces**, named in the module: a caller
-  that does not carry the pair gets two agent endpoints with no control plane to talk to.
+  **The flag was the wrong shape for this consumer.** A group is per apply: `make up` without it
+  destroys what it created. The assistant needs this path in every session a space runs, so it
+  cannot live behind one. (This step first built a `bedrock-llm` group, and the user withdrew it
+  2026-09-12 for that reason; the intermediate versions are in the log.)
 
-  **The cost is now permanent while the slice is up**, not per apply: Sandbox moves from 18
-  endpoints to 20, and the estate's fixed rate from 0.390 to 0.410 USD/h. It still leaves on
-  `make down`. *Superseded text:*
-  `terraform-modules/vpc-egress`'s `bedrock` group is four endpoints — `bedrock`, `bedrock-agent`,
-  `bedrock-agent-runtime`, `bedrock-runtime` — sized for the portal's blueprints. This stage needs
-  **two**: `bedrock-runtime` for the invocation and `bedrock` for the control-plane calls of 3.2. Add
-  `bedrock-llm = ["bedrock", "bedrock-runtime"]` beside it rather than narrowing the existing group,
-  which has a different consumer, and extend the `optional_service_groups` validation to admit the name.
-  **Two tags followed, not one**, by the two-commit order in
-  [`terraform-changes.md`](../runbooks/terraform-changes.md): `v0.12.0` carries the group and the
-  action scope of 4.4, and `v0.13.0` carries a guard found while writing the caller — **`bedrock`
-  and `bedrock-llm` cannot be named together**. They are two configurations of one door rather than
-  two doors: both contain `bedrock` and `bedrock-runtime`, the map key collapses the overlap to one
-  endpoint, and one endpoint carries one policy, so 4.4's action list would have reached the
-  blueprints' control-plane calls and refused `CreateGuardrail` with no denial naming it. A tag is
-  never moved, so the fix is a second version rather than an amendment (Lesson 46's rule, applied
-  before it cost anything).
+  **One seam it introduces**, named in the module's map: a caller that does not carry the pair in
+  `extra_services` now gets two agent endpoints with no control plane to talk to. `sandbox/egress`
+  is the only caller naming any of them today.
+
+  **The cost is permanent while the slice is up** rather than per apply: Sandbox 18 endpoints → 20,
+  the estate's fixed rate 0.390 → 0.410 USD/h. It still leaves on `make down`.
+
+  **Three tags, by the two-commit order in
+  [`terraform-changes.md`](../runbooks/terraform-changes.md)**, because a tag is never moved:
+  `v0.12.0` the group and the action-scope mechanism, `v0.13.0` a guard against naming two groups
+  that shared a door, `v0.14.0` the restructure that dissolved both the group and the guard.
+
 - **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox` — **no flag**, since 4.1 made the pair
   always-on. Two endpoints at ~USD 0.010/h each on top of the eighteen, `[E]`, and they leave on the
   next `make down` like everything else. **Not done**: the apply is owed.
@@ -787,7 +786,8 @@ busy one has no upper bound at all. `make down` does not reach it.
 | (iv) | Is the proxy access log silent on `bedrock-runtime` for the same window? | 4.5's negative control |
 | (v) | Does a session reach **no** Anthropic host? | 6.2 |
 | (vi) | What are the three models' `allowed_modes`, on the day they are read? | 7.2 — **and no AWS API carries the field**, so this one is answered from the vendor page or the console, dated |
-| (vii) | Is the account's retention mode `none`, and can anyone change it? | 7.2 read `inherit` on 2026-09-11; 7.5a sets it and 7.5's deny freezes it |
+| (vii) | Is the account's retention mode `none`, and can anyone change it? | **Half answered.** 7.2 read `inherit`, 7.5a set `none` at 2026-09-11T22:31:02Z and `INV-18` is the standing reading. *Anyone with the permission can still change it back*: 7.5's deny is written nowhere yet |
+| (xiii) | Is `mode: none` **enforced**, or only declared? | **Nothing here answers it.** No control-plane call shows a retention mode's effect, and the two models the vendor names as retaining read exactly like the scoped three (7.2). 7.2a's invocation is the only instrument, and it is decision 11 |
 | (viii) | Does the CloudTrail record carry the prompt? | 4.6 — it must not |
 | (ix) | What does one session cost? | 6.4, 8.1 |
 | (x) | Does the configuration survive a new space? | a second space from `default-v0.3.0`, after 5.4 |
@@ -796,18 +796,21 @@ busy one has no upper bound at all. `make down` does not reach it.
 
 ## Decisions
 
-**Taken 2026-09-11 by the user, before execution.** Each is written into the step that owns it; this
+**1 to 7 were taken by the user on 2026-09-11 before execution; 8, 10 and 12 during it**, each on a
+reading the stage did not have when it was written. Each is written into the step that owns it; this
 table is the index, not the reasoning.
 
 | | Question | Taken |
 |---|---|---|
-| **8** | Where the IAM grant lives | **on the project role, attached by `sandbox/bedrock/`** (taken 2026-09-11). The blueprint offers no granting lever at all, so a domain-wide floor was never on the table (3.4); the alternative that would have made *which projects* one list puts the caller outside the D13 boundary, and that decided it. Lesson 14's cost is accepted and written into the slice and into the runbook's §P |
 | **1** | Where the assistant runs | **the space** — and *VS Code on the laptop over a remote session* is the same answer, measured rather than inferred (step 1) |
 | **2** | Where the model-access form is submitted | **`Sandbox` alone**, not org-wide from Management (2.1) |
 | **3** | Whether `availableModels` locks the picker to the pinned models | **yes** — an unpinned model is outside step 2's declared use case and outside step 3's resource scope (5.2) |
 | **4** | Which policy document carries the retention denies | **`awsds-org-scp-baseline.json`**, attached at the root, which reaches every account but does not restrict Management — the exception every SCP has (7.5) |
 | **5** | Model invocation logging on or off | **off here, and the question moves to Stage 11 step 5.6**, written at the receiving end rather than only at this one (7.4) |
 | **7** | Which model carries background work | **Haiku 4.5**, pinned. Without the pin a session that sets `ANTHROPIC_MODEL` runs session titles on **Opus 5** — a defect in this plan's first draft, not an optimisation (5.3) |
+| **8** | Where the IAM grant lives | **on the project role, attached by `sandbox/bedrock/`** (2026-09-11, during execution). The blueprint offers no granting lever at all, so a domain-wide floor was never on the table (3.4); the alternative that would have made *which projects* one list puts the caller outside the D13 boundary, and that decided it. Lesson 14's cost is accepted, in the slice and in the runbook's §P |
+| **10** | Whether the use-case form is submitted by console or adopted as a Terraform resource | **console** (2026-09-11), and done. The objection that decided it — `form_data` being opaque — **turned out to be false**: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed field by field (2.5) |
+| **12** | Whether the Bedrock endpoints are an optional group or always-on | **always-on** (2026-09-12), in `sandbox/egress`'s `extra_services`. A group is per apply and `make up` without the flag destroys what it created, so a consumer that needs the path in every session cannot live behind one. It makes the ~0.020/h permanent while the slice is up, narrows the optional `bedrock` group to the agent pair, and **changes 4.4's answer**: shared infrastructure cannot carry one consumer's action list (4.1, 4.4) |
 | — | The scoped model set | **Opus 5, Sonnet 5, Haiku 4.5**, one list with four consumers (step 3) |
 
 ## Still open
@@ -816,8 +819,8 @@ table is the index, not the reasoning.
 |---|---|---|
 | **6** | Whether D12's budget deferral closes here, and at what threshold | the *whether* is decidable now and recommended **yes**; the number waits on 6.4's token volume (8.3) |
 | **9** | Whether the `aws-marketplace` pair is needed here | a measured refusal, not the vendor's policy sample (3.2). 0.9 narrows it: the three models read `AUTHORIZED` with `agreementAvailability NOT_AVAILABLE`, so any subscribe would belong to the form's submitter, not to the project role at invocation |
-| ~~**10**~~ | ~~Whether the use-case form is submitted by console or adopted as a Terraform resource~~ | **Taken 2026-09-11: console**, and done. The objection that decided it — `form_data` being opaque — turned out to be false: the blob is double base64 over flat JSON, so the org-wide form 2.1 defers to could be authored and reviewed (2.5) |
 | **11** | Whether to run 7.2a's Fable probe, the only negative control `mode: none` can have | decidable now; recommended **run it** — a refused call costs nothing and a successful one is a finding of the first order (7.2a) |
+| **13** | Whether the `bedrock` control-plane endpoint carries an action scope too | **taken by Claude on 2026-09-12 under a stated assumption, and not reviewed by the user.** Only `bedrock-runtime` is scoped. The argument is that the control plane's API surface is long, growing, and called by the SMUS blueprints for things an assistant never does, so a list written for one consumer silently refuses the other. The cost of that choice is named in 4.4: `PutModelInvocationLoggingConfiguration` still traverses its door, and nothing else covers it until Stage 11 |
 | — | Whether the assistant fits the USD 50 ceiling | one real session (6.4, 8.1) |
 
 ## What the documentation changed

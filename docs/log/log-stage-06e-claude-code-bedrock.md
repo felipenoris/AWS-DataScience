@@ -211,6 +211,73 @@ Claude's, read-only, and is analysis rather than record.*
   for whether this account may invoke, and a later reader meeting `AUTHORIZED` should not take it for
   access.
 
+## 2026-09-11 — every Anthropic model in the Region, and the two the vendor names as retaining
+
+*Claude's readings, read-only, on the user's question "what about the other models". Recorded here
+after the fact, in the sitting the user asked for the log to be completed.*
+
+- **[Claude] Thirteen Anthropic models in `us-west-2`, all reading identically with the account at
+  `none`.** `AUTHORIZED / AVAILABLE / AVAILABLE`, `agreementAvailability NOT_AVAILABLE` — and that
+  includes **`anthropic.claude-fable-5` and `anthropic.claude-fable-5-1`**, the two the vendor's
+  abuse-detection page names as retaining every prompt for up to 30 days with human review of
+  classifier-flagged traffic.
+
+- **[Claude] So `mode: none` has no visible effect, and the claim that it makes a retaining model
+  unavailable is unverified.** Four instruments were tried and none shows a retention mode or its
+  consequence: `get-foundation-model`, `list-foundation-models`,
+  `get-foundation-model-availability`, and `list-foundation-model-agreement-offers`, whose
+  `termDetails` carries pricing, legal and support terms only. **The instrument would not have shown
+  the presence either way** (Lesson 62), so this is a non-reading rather than a negative one.
+
+- **[Claude] The catalogue, for scale**: 113 models across 18 providers — Amazon 17, Stability 16,
+  Mistral 13, Anthropic 13, Meta 10, OpenAI 8, and twelve more.
+
+- **[Claude] Two consequences written into the stage.** Step **7.2a** was created — invoke
+  `us.anthropic.claude-fable-5` as the infrastructure user and read the refusal, the only negative
+  control `none` can have, and a **success** would mean it is a label rather than a control
+  (decision due 11). And step 7.5's second deny stopped being belt-to-braces: with nothing reading
+  the mode's effect, **it is the only half of the pair the battery can prove**, and it now has a
+  measured target list rather than a vendor page.
+
+- **[Claude] The form is account-level, shown from the API's own shape.** Neither
+  `PutUseCaseForModelAccess` (`POST /use-case-for-model-access`) nor `GetUseCaseForModelAccess`
+  (`GET /use-case-for-model-access`) takes a `modelId`, in the path or the body — against
+  `GetFoundationModelAvailability`, whose route is `/foundation-model-availability/{modelId}`. So
+  one submission covers Sonnet 5 and Haiku 4.5 as well as the Opus 5 selected in the console.
+
+## 2026-09-11/12 — the instrument and the runbook
+
+*Claude's authored changes. Both were asked for by the user; recorded here in the sitting the user
+asked for the log to be completed.*
+
+- **[Claude] `aws/bedrock.py`**, read-only, multi-profile, in `aws/INDEX.md`'s shape. It holds the
+  three questions the console blurs apart — the account gates, the catalogue, and the resources that
+  would be billing — and decodes the use-case form. Checks `BR-1`..`BR-6` are readings;
+  **`BR-7` is an instrument control rather than a finding**: it compares the availability reading in
+  an account that submitted the form against one that did not. **First run, on a real contrast**:
+  `Sandbox` (form, `none`) against `Staging` (no form, `inherit`) — identical. So the call is not
+  evidence of access, measured on every run rather than asserted once.
+
+- **[Claude] `BR-8` added after the grant was applied**, in `aws/devenv.py`'s shape: read what
+  `terraform-live/sandbox/bedrock/variables.tf` declares, read what IAM reports, and name **which of
+  the two divergences** it found — a declared attachment that is gone was removed by something
+  (INT-15's open half), and an attachment nothing declares is undone by the next apply (Lesson 35).
+  First run: one project role, declared and attached, `agree`.
+  **A defect caught in the same sitting**: the first draft built the policy name from an `env_token`
+  that was never in the dict, so it silently always read `sandbox`. It now matches
+  `awsds-<env>-bedrock-assistant` by shape — `aws/` does not import the env-token table by design.
+
+- **[Claude] `docs/plan/runbooks/claude-code-sagemaker.md`**, the stage's step 9.6 brought forward
+  because the two acts it describes were the next thing to happen. **§M** (the retention mode and
+  the form) is complete and was executed from it; **§P** is the per-project grant procedure in both
+  the Terraform and the `aws` CLI form, added when decision 8 was taken; §I, §U and §V carry what is
+  settled, each marked where it describes something unbuilt.
+
+- **[Claude] `CLAUDE.md` re-trimmed to make room for the runbook's routing row**, which the stage
+  said that sitting would have to do: 39,713 → 39,900 bytes against a 40,000-byte gate. The cuts are
+  explanation whose owning file already carries it — the remote-IDE, 6d, MWAA, VPN, proxy-plane and
+  standing-rules bullets — plus one genuine dedup, the two MWAA bullets being one subject.
+
 ## 2026-09-11 — step 3's decision: the blueprint grants nothing, so the grant is per project
 
 *Claude's readings and authored changes, at the user's request. No AWS write.*
@@ -250,10 +317,10 @@ Claude's, read-only, and is analysis rather than record.*
   the decision was taken to keep. `terraform validate` passes; the lock file was copied from
   `sandbox/dev-env/` per step 6.3 rather than regenerated, which the gate names as the correct move.
 
-- **[Claude] The procedure is `claude-code-sagemaker.md` §P**, in both forms the user asked for:
-  P1 finds the role name and tells two projects apart by tag, P2 is the Terraform path, P3 the
-  `aws iam attach-role-policy` equivalent with the warning that it leaves drift the next plan would
-  revert (Lesson 35), P4 verifies and says what a verification here cannot say.
+- **[Claude] The procedure is `claude-code-sagemaker.md` §P**, added to the runbook in the same
+  sitting: P1 finds the role name and tells two projects apart by tag, P2 is the Terraform path, P3
+  the `aws iam attach-role-policy` equivalent with the warning that it leaves drift the next plan
+  would revert (Lesson 35), P4 verifies and says what a verification here cannot say.
 
 ## 2026-09-11 — `sandbox/bedrock/` applied
 
