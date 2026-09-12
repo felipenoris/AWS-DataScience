@@ -33,6 +33,22 @@ locals {
     # bedrock-data-automation*, bedrock-mantle.
     bedrock = ["bedrock", "bedrock-agent", "bedrock-agent-runtime", "bedrock-runtime"]
 
+    # The same service, a different consumer, and a narrower one (Stage 6e step 4.1). A coding
+    # assistant in a space invokes a model and resolves an inference profile; it authors no
+    # guardrail, no agent, no flow and no prompt. `bedrock-agent` and `bedrock-agent-runtime` are
+    # two endpoints at ~USD 0.010/h each that its calls never reach.
+    #
+    # It is a SECOND GROUP rather than a narrowing of the one above, because the group above has
+    # its own consumer - the six enabled AmazonBedrock* blueprints, whose control-plane calls do
+    # reach the agent endpoints. Narrowing it would have taken those away for a reason that has
+    # nothing to do with them (Lesson 51: two intents sharing one list stay identical until they
+    # must differ, and then a change made for one silently makes it for the other).
+    #
+    # The two overlap on `bedrock` and `bedrock-runtime`, and naming both groups in one apply is
+    # legal: `local.service_names` is a map keyed by the short name, so the overlap collapses to
+    # one endpoint rather than colliding.
+    "bedrock-llm" = ["bedrock", "bedrock-runtime"]
+
     # EmrServerless, the enabled blueprint. All seven measured present in the Region.
     # `emr-containers` is EMR-on-EKS - a category 3 blueprint, not here - and `emrwal.prod`
     # belongs to EMR on EC2's write-ahead log.
@@ -88,6 +104,42 @@ locals {
   # base images, SageMaker JumpStart artifacts - and the resource axis has its own control where
   # it is load-bearing, the S3 gateway policy with its enumerated allow-list (9.3), in
   # foundation/. EG-1 (aws/egress.py) accepts either key by design.
+  #
+  # NARROWING IT PER ENDPOINT, on the ACTION axis and no other (Stage 6e step 4.4). A caller may
+  # name a short service in `endpoint_action_scopes` and the two statements below carry that list
+  # instead of `*` for that endpoint alone. What it buys is a second, independent statement of
+  # which calls may traverse this door: on the Bedrock pair, an invocation may and
+  # `PutAccountDataRetention` or `PutModelInvocationLoggingConfiguration` may not, whatever any
+  # identity policy says.
+  #
+  # THE RESOURCE AXIS IS DELIBERATELY NOT NARROWED HERE, and that is the interesting half. Scoping
+  # the endpoint to named model ARNs would be a second copy of a list whose first copy is the IAM
+  # grant, in a different slice, with nothing comparing them - one intent in two places, which
+  # diverges (Lesson 33), and the failure would be an invocation refused at the network layer for a
+  # model somebody added to the grant. The action list does not have that problem: it is a property
+  # of the service, not of this estate's choices, and it changes when AWS adds an API rather than
+  # when a decision is taken here.
+  # `null`, not `["*"]`, for an endpoint nobody named. The difference is not cosmetic: `["*"]`
+  # would emit `"Action": ["*"]` where every endpoint has carried `"Action": "*"` since step 9,
+  # so a caller adopting this version would see a policy diff on all eighteen endpoints for a
+  # change that means nothing. An unscoped endpoint's document must come out BYTE-IDENTICAL, which
+  # is also what the D11 cycle checks across a `make down` / `make up` (Stage 3's Validation).
+  endpoint_action_scope = {
+    for short, _svc in local.service_names :
+    short => lookup(var.endpoint_action_scopes, short, null)
+  }
+
+  endpoint_policies = {
+    for short, _svc in local.service_names :
+    short => jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        for st in jsondecode(local.endpoint_policy).Statement :
+        local.endpoint_action_scope[short] == null ? st : merge(st, { Action = local.endpoint_action_scope[short] })
+      ]
+    })
+  }
+
   endpoint_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -124,7 +176,7 @@ resource "aws_vpc_endpoint" "interface" {
   subnet_ids          = [var.endpoint_subnet_id]
   security_group_ids  = [var.endpoint_security_group_id]
   private_dns_enabled = true
-  policy              = local.endpoint_policy
+  policy              = local.endpoint_policies[each.key]
 
   tags = {
     Name = "${local.name_prefix}-${each.key}"
