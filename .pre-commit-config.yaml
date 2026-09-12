@@ -14,6 +14,12 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
+      # The image's managed-settings.json reaches /etc/claude-code/ by COPY, and Claude Code
+      # IGNORES AN UNPARSEABLE ONE SILENTLY: every key in it stops applying and the session runs
+      # on the client's own defaults, against api.anthropic.com. A trailing comma has to fail
+      # here, in review, rather than in a space three weeks later (Stage 6e step 5.2).
+      - id: check-json
+        files: ^images/.*\.json$
       - id: check-added-large-files
         # The one file over 500 KB that belongs in git: images/dev-env/python/uv.lock, ~900 KB of
         # resolved hashes for 363 packages. It is the reproducibility of the image's Python

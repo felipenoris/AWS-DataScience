@@ -377,7 +377,7 @@ outside the data perimeter while looking exactly like one that is inside it.
 - **4.2 — [Claude⚡] Bring it up.** `make up ENV=sandbox` — **no flag**, since 4.1 made the pair
   always-on. Two endpoints at ~USD 0.010/h each on top of the eighteen, `[E]`, and they leave on the
   next `make down` like everything else. **Not done**: the apply is owed.
-- **4.3 — [Claude] The bypass list moves with it.** `NO_PROXY` is generated from each endpoint's own
+- **4.3 — The bypass list moves with it, and it has not yet.** `NO_PROXY` is generated from each endpoint's own
   `dns_entry` (`vpc-egress-v0.11.1`), so the two names join the list the moment the endpoints exist —
   in the **slice output**. The image carries a dated literal instead (6d decision 8), which is where the
   value actually reaches a process, so the list in `images/dev-env/Dockerfile` is 50 entries and knows
@@ -483,9 +483,21 @@ belongs in the image — and Claude Code has a file made for it.
   default's **3.30 / 16.50** (step 8's table). The model is `ACTIVE` as a `us.` profile in `Sandbox` and
   is in step 3.3's scope, **which is the half that fails loudly if it is forgotten**: an unscoped
   background model is a refusal in the middle of a working session rather than a wrong bill.
-- **5.4 — [Claude] The image build, `default-v0.3.0`.** It carries three changes: the new
-  `NO_PROXY_LIST` of 4.3, the managed settings file of 5.2, and `rust-src` in the rustup profile, which
-  6d already owed. The bump's order is [`dev-env.md`](../runbooks/dev-env.md) §B — apps gone first, a
+- **5.4 — Written 2026-09-12, not buildable yet.** `default-v0.3.0` carries three changes, and two
+  of the three are in the repository:
+  - **the managed settings file** (5.2), as `images/dev-env/claude-code/managed-settings.json`
+    `COPY`d to `/etc/claude-code/`. A side file rather than a heredoc: this Dockerfile carries no
+    `# syntax=` directive, so a shell heredoc inside a line-continued `RUN` does not work, and a
+    side file is reviewable as JSON. **An unparseable managed-settings.json is ignored silently** —
+    every key stops applying and the session runs on the client's own defaults against
+    `api.anthropic.com` — so `pre-commit`'s `check-json` now covers `images/**.json` and the image
+    re-parses it at build time;
+  - **`rust-src`**, already in the rustup profile since 2026-09-11;
+  - **the `NO_PROXY_LIST`**, which is **the one that blocks the build**. Step 4 made the two Bedrock
+    endpoints always-on, so the slice's generated list is 52 entries and the image's literal is
+    still the 50 read on 2026-09-10. It cannot be written by hand — eight names in it are not
+    derivable from a service token, which is why it is read from the slice — so the refresh needs
+    `sandbox/egress` **up**. The Dockerfile says so where the literal is. The bump's order is [`dev-env.md`](../runbooks/dev-env.md) §B — apps gone first, a
   detach is `[]` — and the registered version freezes to a digest, not a tag.
 - **5.5 — [user] The one setting the image cannot carry.** *Disable Login Prompt*
   (`claudeCode.disableLoginPrompt`) is a **VS Code** setting, not a Claude Code one, and

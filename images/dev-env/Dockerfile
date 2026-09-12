@@ -283,7 +283,67 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
       org.awsds.julia="${JULIA_VERSION}" \
       org.awsds.rust="${RUST_TOOLCHAIN}"
 
-# ------------------------------------------------- 6. the estate's proxy contract (6d decision 8)
+# ------------------------------------ 6. the coding assistant's institution settings (6e step 5.2)
+#
+# Claude Code reads Amazon Bedrock out of this file and nothing else has to be exported. Managed
+# settings are the TOP tier: no user, project, local or `--settings` value overrides a key set here
+# (the vendor's precedence table, read 2026-09-11), and on Linux the system directory is
+# /etc/claude-code/, read at startup and reloaded when the file changes.
+#
+# IT IS IN THE IMAGE BECAUSE A SPACE STARTS WITH NOTHING. /home/sagemaker-user survives an app
+# restart and dies with the space, so a configuration that must be present before the first prompt
+# belongs in the layer, not in a home directory - 6d decision 8's shape, with a file made for it.
+# Unlike the proxy variables below, this is NOT constrained by the app image configuration's
+# 256-character cap per environment value: it is a file, not an env entry.
+#
+# WHY EACH KEY:
+#
+#   CLAUDE_CODE_USE_BEDROCK   the provider. Without it the client calls api.anthropic.com, which
+#                             the compute plane refused 17 times on 2026-09-11 (remote-ide.md N)
+#   AWS_REGION                Claude Code resolves the region AWS_REGION -> AWS_DEFAULT_REGION ->
+#                             the profile's -> us-east-1. The last would be a silent wrong answer,
+#                             so it is set rather than inherited
+#   ANTHROPIC_MODEL           the session's model. It also DECIDES THE BACKGROUND MODEL: the vendor
+#                             states that when a session sets it, background tasks use that model
+#   ANTHROPIC_DEFAULT_*_MODEL what each alias resolves to. Without the pins an alias resolves to the
+#                             client's built-in default, which moves with the client version
+#   ..._HAIKU_MODEL           the only key that moves background work - session titles and the like
+#                             - to a Haiku. Without it, and with ANTHROPIC_MODEL set, session titles
+#                             run on OPUS 5 at 27.50 per 1M output tokens for work a Haiku does.
+#                             Haiku 4.5 is 1.10/5.50 (6e step 8.1). This was a defect in 6e's first
+#                             draft, not an optimisation
+#   ..._NONESSENTIAL_TRAFFIC  on Bedrock, metrics, error reports and /feedback are already off; the
+#                             session-quality survey is NOT, and this is what closes it
+#   availableModels           the lock (6e decision 3). It constrains /model, --model and the model
+#                             key in a user's own file, so nothing outside the use-case form's
+#                             declaration and the IAM grant's resource scope is reachable
+#   skipWebFetchPreflight     the WebFetch hostname check calls api.anthropic.com REGARDLESS of
+#                             provider, and CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC does not cover it
+#
+# Every model id here is an inference profile, because all three are INFERENCE_PROFILE only and the
+# bare model id is not invocable (6e step 0.1). The three profiles, the IAM grant in
+# terraform-live/sandbox/bedrock/ and the retention deny of 6e step 7.5 are one list with several
+# consumers: a model added here and nowhere else is a refusal at the first prompt.
+#
+# It is a FILE IN THIS REPOSITORY rather than a heredoc, for two reasons. This Dockerfile carries
+# no `# syntax=` directive, so the classic frontend is in use and a shell heredoc inside a
+# line-continued RUN does not work - the backslash eats the newline the heredoc body needs. And a
+# side file is reviewable as JSON: a trailing comma is visible in a diff instead of surviving to a
+# build, where an unparseable managed-settings.json is IGNORED SILENTLY and every key above simply
+# stops applying. `pre-commit`'s check-json covers images/**.json for exactly that reason, and the
+# RUN below re-parses it in the image as well - guarded like the visudo call below, because whether
+# python3 is on PATH here is the distribution's choice and not this file's.
+COPY claude-code/managed-settings.json /etc/claude-code/managed-settings.json
+
+RUN set -eu; \
+    chmod 0444 /etc/claude-code/managed-settings.json; \
+    if command -v python3 >/dev/null 2>&1; then \
+      python3 -c 'import json; json.load(open("/etc/claude-code/managed-settings.json"))' \
+        || { echo "managed-settings.json is not valid JSON - Claude Code would ignore it silently"; exit 1; }; \
+    fi; \
+    cat /etc/claude-code/managed-settings.json
+
+# ------------------------------------------------- 7. the estate's proxy contract (6d decision 8)
 #
 # Every internet call from a space crosses the Squid proxy (D38), and NO_PROXY is what keeps AWS calls
 # on the VPC endpoints. A proxy without its bypass list does not fail: the call goes out through the
@@ -291,7 +351,18 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
 #
 # The list below is Sandbox's, read on 2026-09-10 (50 entries). It goes stale when that account's
 # endpoint set changes - a stale image is a working image with a hole, and `./aws/devenv.py` is what
-# reports the difference. Refresh it with:
+# reports the difference.
+#
+# IT IS STALE RIGHT NOW, BY TWO NAMES, AND KNOWINGLY: Stage 6e step 4 made `bedrock` and
+# `bedrock-runtime` always-on in sandbox/egress, so the slice's generated list is 52 entries and
+# this literal is still 50. The two cannot be written here by hand - eight of the names in this list
+# are not derivable from a service token, which is why it is read from the slice rather than
+# composed - so the refresh below has to run against a slice that is UP. Until it does, a Bedrock
+# call from a space goes to the proxy and out as a public call: it WORKS, with no aws:SourceVpc and
+# no aws:SourceVpce, which is the silent half of Lesson 33. `default-v0.3.0` is not buildable until
+# this line is refreshed.
+#
+# Refresh it with:
 #
 #   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
 #
@@ -301,7 +372,9 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
 # whitespace inside an entry, and an entry with a space matches nothing.
 #
 # The section is last in the file: an ENV set earlier would apply to every RUN above it, and those
-# build in VPC-SharedServices, whose endpoint set is not this one.
+# build in VPC-SharedServices, whose endpoint set is not this one. Section 6 sits above it for the
+# same reason in reverse - it writes a file and sets nothing, so its position does not matter, and
+# it is placed before rather than after so that this one keeps the last word.
 ARG PROXY_URL=http://proxy.awsds.internal:3128
 ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
 

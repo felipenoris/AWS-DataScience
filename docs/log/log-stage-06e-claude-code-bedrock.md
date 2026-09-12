@@ -377,3 +377,37 @@ Claude's, read-only, and is analysis rather than record.*
   `vpc-egress-v0.14.0`, fetched from origin. **Three tags exist for one step** — `v0.12.0` the
   mechanism, `v0.13.0` a guard, `v0.14.0` the restructure that dissolved it — because a tag is
   never moved and each was pushed before the next question was asked.
+
+## 2026-09-12 — step 5's repository half
+
+*Claude's authored changes, at the user's request while the SSO session was down. No AWS write, and
+no build: `default-v0.3.0` is written but not buildable.*
+
+- **[Claude] The managed settings path was read rather than assumed.** The vendor documents the
+  system directory per OS, and on **Linux and WSL** it is `/etc/claude-code/managed-settings.json`,
+  read at startup and reloaded when the file changes — the mechanism named for *"images you build
+  yourself"*. Managed settings are the top tier and `availableModels` is the lock that constrains
+  `/model`, `--model` and the `model` key in a user's own file. A wrong path would have been ignored
+  in silence, which is why it was fetched.
+
+- **[Claude] It is a side file, not a heredoc, and that was a correction mid-edit.** The first
+  version wrote the JSON with a shell heredoc inside the `RUN`. That cannot work here: the
+  Dockerfile carries no `# syntax=` directive, so the classic frontend is in use and the line
+  continuation eats the newline the heredoc body needs. It is now
+  `images/dev-env/claude-code/managed-settings.json`, `COPY`d — reviewable as JSON in a diff, which
+  a heredoc inside a `RUN` is not.
+
+- **[Claude] `pre-commit` gains `check-json` over `images/**.json`.** An unparseable
+  `managed-settings.json` is **ignored silently**: every key stops applying and the session runs on
+  the client's defaults, against `api.anthropic.com`. A trailing comma has to fail in review rather
+  than in a space three weeks later. The image re-parses it too, guarded on `command -v python3` the
+  way the `visudo` call beside it is.
+
+- **[Claude] `sandbox/dev-env/`'s `image_tag` is `default-v0.3.0`.**
+
+- **[Claude] The build is blocked, and the Dockerfile says why where the value is.** Step 4 made the
+  two Bedrock endpoints always-on, so `sandbox/egress`'s generated list is 52 entries against the
+  image's literal 50. The two names cannot be added by hand — eight entries in that list are not
+  derivable from a service token, which is why it is read from the slice rather than composed — so
+  the refresh needs the slice **up**. Until then a Bedrock call from a space reaches the proxy and
+  leaves as a public call: it works, with no `aws:SourceVpc` and no `aws:SourceVpce`.
