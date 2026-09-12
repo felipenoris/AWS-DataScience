@@ -21,7 +21,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.11.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.13.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -35,6 +35,34 @@ module "egress" {
   # route table for this slice to write to.
   endpoint_subnet_id         = data.terraform_remote_state.foundation.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.foundation.outputs.endpoints_security_group_id
+
+  # Stage 6e step 4.4 - the Bedrock door, narrowed on the action axis.
+  #
+  # It applies only when `make up ENV=sandbox GROUPS=bedrock-llm` created those two endpoints; a
+  # key naming an endpoint that does not exist contributes nothing, which is why this is a
+  # permanent declaration rather than something threaded through the GROUPS flag. The module
+  # refuses `GROUPS=bedrock,bedrock-llm` outright (v0.13.0), so this list can never reach the
+  # blueprints' control-plane calls.
+  #
+  # THE LIST IS THE CLIENT'S, MEASURED FROM THE VENDOR'S OWN IAM SAMPLE (Stage 6e step 3.2), and
+  # it is short because a coding assistant does four things: invoke, invoke with a stream, list
+  # the profiles to resolve an alias, and read one to pick a request shape. What it buys is that
+  # `PutAccountDataRetention` and `PutModelInvocationLoggingConfiguration` cannot traverse this
+  # door at all - the two calls that would undo 7.5a and turn prompt logging on - whatever an
+  # identity policy in this account allows.
+  #
+  # An action absent here gets no response and no denial naming this policy, so an addition
+  # belongs with a measured refusal rather than with a guess (the module's own variable says so).
+  endpoint_action_scopes = {
+    bedrock = [
+      "bedrock:ListInferenceProfiles",
+      "bedrock:GetInferenceProfile",
+    ]
+    "bedrock-runtime" = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+    ]
+  }
 
   # Step 8.3, the Sandbox row: the three SageMaker endpoints (sagemaker.studio is what lets
   # JupyterLab/Code Editor apps start in a VPC-only domain). elasticfilesystem sat here until

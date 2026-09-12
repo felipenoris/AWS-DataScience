@@ -291,3 +291,48 @@ Claude's, read-only, and is analysis rather than record.*
 - **What this does not establish.** That the policy is attached is not that the model can be
   invoked: reach is an intersection and this is one term of it. Steps 4 (the private path) and 5
   (the configuration in the image) stand between here and a call, and the call is step 6's.
+
+## 2026-09-11/12 — step 4's code: two module tags, and a premise corrected
+
+*Claude's authored changes and readings. No AWS write; the apply is owed.*
+
+- **[Claude] `vpc-egress-v0.12.0`** — `bedrock-llm = ["bedrock", "bedrock-runtime"]` beside the
+  four-endpoint `bedrock` group rather than instead of it (the existing group's consumer, the six
+  enabled `AmazonBedrock*` blueprints, does reach the agent endpoints), and
+  `endpoint_action_scopes`, which narrows one endpoint's policy on the action axis.
+
+- **[Claude] `vpc-egress-v0.13.0`, and why it is a second tag.** Writing the caller surfaced that
+  **`bedrock` and `bedrock-llm` are two configurations of one door**: both contain `bedrock` and
+  `bedrock-runtime`, the map key collapses the overlap to one endpoint, and one endpoint carries
+  one policy — so the assistant's action list would have applied to the blueprints' control-plane
+  calls and refused `CreateGuardrail` with no denial naming the policy. The module now refuses the
+  two groups together as a plan error. **A tag is never moved**, so this is a version rather than
+  an amendment.
+
+- **[Claude] Step 4.4's premise was wrong, and the stage file now says so.** It read *"the
+  interface endpoint's default policy allows every Bedrock action to every principal"*. These
+  endpoints have never carried the default: `vpc-egress` has applied the trusted-networks document
+  — organization principals and AWS service principals — to every interface endpoint since Stage 3
+  step 9. What the new variable adds is a second axis on top of that, not a first control.
+
+- **[Claude] The resource axis is left alone, reversing what 4.4 asked for.** Scoping the endpoint
+  to the six model ARNs would put the grant's list in a second slice with nothing comparing them
+  (Lesson 33), and the failure would be a network refusal for a model correctly added to the grant.
+  The action list is a property of the service rather than of this estate's choices.
+
+- **[Claude] A defect caught before it shipped.** The first draft defaulted an unscoped endpoint's
+  `Action` to the list `["*"]` where every endpoint has carried the string `"*"` since step 9. It
+  would have shown a policy diff on all eighteen endpoints for a change that means nothing, and
+  broken the byte-identical output the D11 cycle checks. Unscoped endpoints now take the statement
+  untouched.
+
+- **[Claude] `sandbox/egress/` bumped to `v0.13.0`** and given the action scope. `terraform
+  validate` passes and the module resolved from origin at the new tag. **`plan` was not obtained**:
+  the `awsds` SSO session token expired at `00:07:30Z` and terraform's refresh returned
+  `InvalidGrantException`.
+
+- **[Claude] A reading worth keeping: the CLI and terraform disagreed about whether the session was
+  alive.** `aws sts get-caller-identity` answered normally at `00:12Z`, five minutes after the
+  token expired, because it used a still-valid cached **role credential**; terraform's SDK tried to
+  refresh the **session token** and failed. Neither is wrong — they read different objects, and
+  `get-caller-identity` is therefore not a test of whether an apply will authenticate.
