@@ -57,19 +57,13 @@ from pathlib import Path
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog
+from awslib.bedrockscope import SCP_PATH, SID_REGIONS, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "bedrock-scope.txt"
 
-SCP_PATH = "terraform-live/identity/org-policies/policies/awsds-org-scp-ou-interactive.json"
 GRANT_VARS = "terraform-live/sandbox/bedrock/variables.tf"
 SETTINGS = "images/dev-env/claude-code/managed-settings.json"
-
-SID_MODELS = "DenyBedrockInvocationOutsideTheScopedModels"
-SID_REGIONS = "DenyBedrockReadsOutsideTheRoutedRegions"
-
-PROFILE_ARN_RE = re.compile(r"^arn:aws:bedrock:[^:]*:[^:]*:inference-profile/(?P<id>.+)$")
-MODEL_ARN_RE = re.compile(r"^arn:aws:bedrock:[^:]*::foundation-model/(?P<id>.+)$")
 
 # `default = { "model" = "profile" ... }` inside the models block of the grant slice. Anchored on
 # the variable name so another map in the same file cannot be picked up by accident.
@@ -77,49 +71,6 @@ MODELS_RE = re.compile(r'variable\s+"models"\s*\{.*?default\s*=\s*\{(?P<body>.*?
 PAIR_RE = re.compile(r'"(?P<model>[^"]+)"\s*=\s*"(?P<profile>[^"]+)"')
 
 DEFAULT_PROFILE = "awsds-infra-sandbox-1"
-
-
-def scp_declaration(path: Path) -> tuple[dict | None, list | None, str]:
-    """(models -> profile, routed regions, why it is None) read out of the SCP document."""
-    if not path.is_file():
-        return None, None, f"{SCP_PATH} not found - running outside the repository"
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return None, None, f"{SCP_PATH} is not valid JSON: {exc}"
-
-    by_sid = {st.get("Sid"): st for st in doc.get("Statement", [])}
-
-    pairs: dict[str, str] = {}
-    st = by_sid.get(SID_MODELS)
-    if st is not None:
-        profiles_seen, models_seen = {}, set()
-        for arn in st.get("NotResource", []):
-            m = PROFILE_ARN_RE.match(arn)
-            if m:
-                pid = m.group("id")
-                # `us.anthropic.claude-x` is the profile for `anthropic.claude-x`.
-                profiles_seen[pid.split(".", 1)[1] if "." in pid else pid] = pid
-                continue
-            m = MODEL_ARN_RE.match(arn)
-            if m:
-                models_seen.add(m.group("id"))
-        for model in sorted(models_seen):
-            pairs[model] = profiles_seen.get(model, "")
-
-    regions = None
-    st = by_sid.get(SID_REGIONS)
-    if st is not None:
-        cond = st.get("Condition", {}).get("StringNotEquals", {})
-        value = cond.get("aws:RequestedRegion")
-        if isinstance(value, str):
-            regions = [value]
-        elif isinstance(value, list):
-            regions = sorted(value)
-
-    missing = [s for s, present in ((SID_MODELS, pairs), (SID_REGIONS, regions)) if not present]
-    why = f"{SCP_PATH} carries no {', '.join(missing)}" if missing else ""
-    return (pairs or None), regions, why
 
 
 def grant_models(path: Path) -> dict | None:

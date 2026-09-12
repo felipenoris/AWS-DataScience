@@ -253,15 +253,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `session-manager-plugin` honours `HTTPS_PROXY` only if the environment reaches its process.
   Runbook: `remote-ide.md`.
 - **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
-  `bedrock-runtime` endpoint. Four premises fell. **The
-  agreement enables a model, not the form** (`create-foundation-model-agreement`, per model; `NOT_AVAILABLE` = none created). **A cross-region profile is authorized per
+  `bedrock-runtime` endpoint. **The agreement enables a model, not the form** (`create-foundation-model-agreement`, per model; `NOT_AVAILABLE` = none created). **A cross-region profile is authorized per
   destination region**, so CT's `CT.MULTISERVICE.PV.1` on `Interactive` refuses it until
-  `bedrock:` actions join its `NotAction` — five did; compensating deny owed (dec 15). **Retention
-  mode is per account AND region**: `none` in `us-west-2`, `inherit` in the other two (dec 16).
-  **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every principal, every
-  instrument green (`EXC-08`); **the set is the 4.5 generation since dec 14**, delivery owed (image).
-  Grant per project, `sandbox/bedrock/` (rank 52, `[P]`): its `models` map is all a space can invoke. The `us.` profiles route to three US regions (D1's exception).
-  Runbook: `claude-code-sagemaker.md`.
+  `bedrock:` actions join its `NotAction` — six now, deny applied (dec 15); the sixth frees the
+  retention write, so 7.5 alone holds it. **Retention mode is per account AND region**: `none`
+  in all 17 enabled regions (dec 16). **`claude-opus-5`/`claude-sonnet-5` are refused for this
+  account**, every principal, all instruments green (`EXC-08`); **the set is the 4.5 generation
+  since dec 14**, image release owed. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); the
+  SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route to
+  three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
@@ -327,8 +327,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
   21. From Stage 5: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
   Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
-  left alone. **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock being the first thing here
-  that bills per use with no ceiling.
+  left alone. **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock billing per use with no
+  ceiling.
 
 Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a
 stale copy of something that lives elsewhere. Re-trim whenever a stage closes.

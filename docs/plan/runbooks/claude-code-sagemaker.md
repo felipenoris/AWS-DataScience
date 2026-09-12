@@ -105,8 +105,10 @@ the API answers in **all 17 enabled Regions**.
 
 1. **`bedrock:PutAccountDataRetention` joins M5's exemption.** Without it the Region ceiling refuses
    the write outside `us-west-2`, and refuses the read that would show it — which is why M0 comes
-   first and why M5's list is not only the two invoke actions.
-2. **The writes**, every enabled Region.
+   first and why M5's list is not only the two invoke actions. **Done 2026-09-12**, and the refusal
+   was measured first rather than assumed: M5 carries the negative control and the reading that
+   verifies the console act.
+2. **The writes**, every enabled Region. **Done 2026-09-12**, 17 of 17.
 3. **M3's mode deny last, not first** — the reverse of what it looks like it should be. M3's
    condition is `StringNotEquals` on `bedrock:DataRetentionMode`, and **a `StringNotEquals` whose key
    is absent from the request evaluates TRUE**. Whether `PutAccountDataRetention` publishes that key
@@ -139,6 +141,10 @@ The response field is **`mode`**, not `dataRetentionMode`: a `--query` naming th
 **After-reading.** Expect `none` in every Region, each with its own `updatedAt`. Re-run the
 before-reading command, or `./aws/bedrock-scope.py` and read `BS-6`. **A Region opted into later
 starts at `inherit`**, so this is a standing check and not a one-time act.
+
+Measured 2026-09-12: **17 of 17 `none`**, `updatedAt` between 15:31:45Z and 15:32:02Z, and `BS-6`
+green. The write is accepted in a Region already at `none` and stamps a fresh `updatedAt`, so the
+loop is safe to re-run and the timestamp is not evidence that a Region had drifted.
 
 **What `none` costs, and what no reading here shows.** The vendor's design is that a model whose
 minimum retention mode is above `none` becomes **unavailable in this account** rather than quietly
@@ -225,7 +231,10 @@ M1 is a setting anyone with the permission can change back. The control that kee
 like every SCP, does not restrict `Management`**. The condition key was confirmed to exist on
 2026-09-11 with `accessanalyzer validate-policy` and a deliberately bogus key beside it as the
 control. Attaching it re-runs the battery and adds its rows to `POLICIES.md` in the same sitting
-([`scp-battery.md`](scp-battery.md)). **Not done.**
+([`scp-battery.md`](scp-battery.md)). **Not done, and since 2026-09-12 it is the only thing holding
+the mode.** M5's sixth exempted action removed the Region ceiling from the write, so every principal
+in the `Interactive` OU can now set the mode in every Region. Until this deny is attached, M1's
+`none` is a setting, not a control (Lesson 5).
 
 **It carries no Region condition, and that is deliberate.** M1 is per Region, so a deny written for
 one Region freezes one third of the routing and leaves the rest free to be set to anything.
@@ -332,12 +341,35 @@ bedrock:InvokeModelWithResponseStream
 bedrock:GetFoundationModelAvailability
 bedrock:GetAccountDataRetention
 bedrock:GetUseCaseForModelAccess
+bedrock:PutAccountDataRetention
 ```
 
-The first two are what an invocation needs. The last three are what lets an operator **see** the other
+The first two are what an invocation needs. The next three are what lets an operator **see** the other
 Regions at all: with only the first two in place, `get-foundation-model-availability` and
 `get-account-data-retention` are refused in `us-east-1` and `us-east-2`, so M0 and M1 cannot be
-verified there.
+verified there. The sixth is what lets M1 **declare** the mode there, and it was added last, after a
+negative control: with the other five in place,
+`put-account-data-retention --mode none --region us-east-1` was refused by this control naming
+`p-umksvu5a`, so the ceiling's reach over the write is measured rather than deduced from the list.
+
+**The write is the one that widens something.** The five reads tell an operator what is true. The
+sixth lets **any principal in the OU** set the retention mode in **any Region**, including back to
+`inherit` — the thing this stage exists to prevent. Confining that is M3's job and no longer optional:
+before this action was exempted the Control Tower ceiling confined the write to `us-west-2` by
+accident, and that accidental confinement is what M1 traded away to declare the mode everywhere.
+
+**Verify the console act by reading the policy, not by attempting a call.** The Control Tower *control*
+API answers from `Management` alone, but the SCP it writes is an Organizations document, and
+`describe-policy` answers for it from `Identity`. The count is the check — the base template carries
+86 entries, so the expected total is 86 plus the list above:
+
+```bash
+aws organizations describe-policy --policy-id p-umksvu5a --profile awsds-infra-identity --query 'Policy.Content' --output text | python3 -c "import json,sys; na=json.load(sys.stdin)['Statement'][0]['NotAction']; print(len(na)); print([a for a in na if a.startswith('bedrock')])"
+```
+
+Measured 2026-09-12: **92**, the six above among them. A console form that is accepted and does not
+move that number is a control that did not propagate, and the attempted call cannot tell the two
+apart — it is refused either way while something else in the chain is also missing.
 
 **Which lever, and why not the other.** The two lists are independent inside one statement — there is
 no way to say *this action, for this principal*. `Exempted principals` removes a principal from the
@@ -349,7 +381,7 @@ Write the actions explicitly rather than `bedrock:InvokeModel*` — the wildcard
 identical to the grant's and the endpoint policy's.
 
 **Do not widen `AllowedRegions` instead.** That opens every service in the added Regions for the whole
-OU; the action lever opens five actions. Both were on the table 2026-09-12 and this is why the action
+OU; the action lever opens six actions. Both were on the table 2026-09-12 and this is why the action
 lever won.
 
 **What is still open, and it is not small.** The exemption is on the action axis, so those five
@@ -939,12 +971,13 @@ All read-only.
 
 | Question | Instrument |
 |---|---|
-| Is the account's retention mode declared? | `aws bedrock get-account-data-retention --region us-west-2` — `none`, with an `updatedAt` |
+| Is the account's retention mode declared? | `aws bedrock get-account-data-retention` — `none`, with an `updatedAt`. The response field is **`mode`**; a `--query` naming `dataRetentionMode` returns `None`, which reads exactly like a Region that answered and declared nothing |
 | Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a) |
 | Which models retain? | Not `allowed_modes` — it is in no Bedrock API. The vendor's abuse-detection page, dated when read; on 2026-09-11 it named the two Fable models, both present and available in `us-west-2` |
 | Does the form exist? | `aws bedrock get-use-case-for-model-access --region us-west-2` — anything but `ResourceNotFoundException`. **Not** `get-foundation-model-availability` |
 | Which Regions is a prompt processed in? | `get-inference-profile`, `models[].modelArn` — the routing is AWS's and can change under a pinned model id. `us-east-1`, `us-east-2`, `us-west-2` on 2026-09-12 (M0) |
-| Is the retention mode declared **where the prompt is processed**? | `get-account-data-retention` **once per routed Region** — it answers per Region. One Region reading `none` says nothing about the other two (M1) |
+| Is the retention mode declared **where the prompt is processed**? | `get-account-data-retention` **once per enabled Region**, not per routed Region — it answers per Region, and AWS can add a routed Region under a pinned model id. `BS-6` enumerates rather than carrying a list, so a Region opted into later shows up as `inherit` (M1) |
+| Did a Control Tower console act propagate? | `organizations describe-policy --policy-id p-umksvu5a` from `awsds-infra-identity`, and count the `NotAction` entries — 86 in the base template, 92 on 2026-09-12. The *control* API answers from `Management` alone, but the SCP it writes is an Organizations document and reads from `Identity`. **Attempting the call is not the instrument**: it is refused whether the form failed to propagate or something else in the chain is missing (M5) |
 | Is a model enabled for this account? | `get-foundation-model-availability`, `agreementAvailability.status`. `NOT_AVAILABLE` means **no agreement created**, not *none needed* (M4). It does **not** answer whether the model is invocable — see the warning above |
 | Did the invocation take the private door? | CloudTrail in Sandbox: `InvokeModelWithResponseStream` is a **management event**, so the organization trail carries it with no data-event charge. The reading is `vpcEndpointId` on the event. **One invocation writes two events** — one carrying `requestParameters.modelId`, its sibling carrying `requestParameters: {}` — so counting events doubles and filtering on `modelId` halves (measured 2026-09-12, 15 events over one session) |
 | Did it instead go out through the proxy? | `/awsds/prod/proxy` must hold **no** `bedrock-runtime` line for the same window. Two channels that do not share a failure mode — and the empty answer is evidence only with a **negative control**, since a log that saw nothing at all reads the same (Lesson 62). The control is the space's own address in that window: on 2026-09-12 `10.20.60.99` appears there tunnelling to `idetoolkits-hostedfiles.amazonaws.com` and being refused `default.exp-tas.com`, with no `bedrock` and no Anthropic name |
