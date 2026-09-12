@@ -793,3 +793,53 @@ whether a model is invocable. `AWS_STATE.md` `EXC-07` loses the clause that rest
 premise and `EXC-08` is new; `INV-12` records the `Interactive` divergence. Five entries join
 lessons.md's platform-behaviour list. The stage's step 6 carries its verdicts, 0.9 and 7.3 their
 corrections, question 9 closes by measurement, and decisions **14**, **15** and **16** open.
+
+## 2026-09-12 — decisions 14, 15 and 16, and the code they land in
+
+*The decisions are the user's, taken in the sitting; the measurements and the authored changes are
+Claude's. No AWS write: the grant, the SCP and the image all need an apply that has not run.*
+
+- **[user] Decision 14: the scoped set is the 4.5 generation** — Opus 4.5, Sonnet 4.5, Haiku 4.5, the
+  three proven by invocation. **[Claude] Written into all the consumers of that one list**:
+  `sandbox/bedrock/`'s `models` map, `images/dev-env/claude-code/managed-settings.json`, the
+  Dockerfile's per-key comment, and the runbook's §I block, which is checked byte-identical to the
+  file the image ships. The endpoint policy is action-scoped only, so it does not move.
+
+- **[Claude] The switch costs one model's rate and only one, measured rather than assumed.** From
+  each model's agreement rate card, `USW2_InputTokenCount` / `USW2_OutputTokenCount` per 1M tokens:
+  Opus 4.5 is **5.50 / 27.50**, identical to Opus 5; Haiku 4.5 is **1.10 / 5.50**, unmoved; Sonnet
+  goes **2.20 / 11.00 → 3.30 / 16.50**, half as much again. `PRICING.md` now carries both sets — what
+  is paid today and what would be paid if the gate opens — rather than replacing one with the other.
+
+- **[Claude] Decision 15's two statements are written and unapplied**, in
+  `awsds-org-scp-ou-interactive.json` rather than the root document: the hole was opened on that OU
+  and the compensation belongs in the same scope.
+  - `DenyBedrockInvocationOutsideTheScopedModels` is a `NotResource` ceiling over the six ARNs. It
+    exists because `sandbox/bedrock/` is a **floor** and the blueprint can widen what it allows
+    without this repository being asked; a ceiling and a floor are two intents sharing one list
+    (Lesson 51), which is worth naming rather than discovering. The profile ARNs carry a wildcard
+    account — an account id may not appear in a tracked file, and an inference-profile ARN is always
+    the caller's own — and the foundation-model ARNs carry no region, because the profiles route to
+    three.
+  - `DenyBedrockReadsOutsideTheRoutedRegions` puts back the axis the Control Tower lever cannot
+    express. `NotActions` has no resource and no region dimension: it lifts the ceiling for those
+    actions everywhere. **The two retention actions are deliberately outside this condition** —
+    decision 16 declares the mode in every Region, so a Region condition here would forbid the calls
+    that keep it declared. The mode axis guards them instead, in 7.5.
+  - Both rows are in `POLICIES.md`; `./scripts/check-index.py` reads clean. The document is 1,827
+    bytes against the 5,120 SCP limit.
+
+- **[user] Decision 16: declare `mode: none` in every enabled Region**, not only the routed three.
+  **[Claude] The routed list is readable programmatically** — M0's `get-inference-profile`, parsing
+  the Region out of each `models[].modelArn` — so the narrow option was available and was refused on
+  a race rather than on a limitation: AWS owns the routing and can add a Region under a pinned model
+  id, and between that change and the next reading a prompt is processed where nothing is declared.
+  **Measured the same day: `get-account-data-retention` answers in all 17 enabled Regions**, reading
+  `inherit` in sixteen and `none` in `us-west-2`. The broad option costs 17 one-time calls and turns
+  `INV-18` into an invariant that needs no knowledge of the routing.
+
+- **[Claude] The order matters and is written into the decision.** 7.5's mode deny goes **first**: it
+  permits `none` and forbids every other value, which is what makes the next step harmless. Then
+  `bedrock:PutAccountDataRetention` joins M5's exemption — the write is refused outside `us-west-2`
+  without it. Then the sixteen writes. Then the reading in `./aws/bedrock.py`, which enumerates
+  Regions rather than carrying a list, because a Region opted into later starts at `inherit`.

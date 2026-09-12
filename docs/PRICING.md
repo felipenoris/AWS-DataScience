@@ -433,16 +433,27 @@ returns `inferenceTypesSupported ["INFERENCE_PROFILE"]`, so there is no on-deman
 | Cache write, 1-hour TTL | 11.00 | 10.00 |
 
 **The rest of the scoped set**, same file, same day, the `us.` profiles only. Stage 6e scopes three
-models — Opus 5 as the primary, Sonnet 5 in the picker, Haiku 4.5 for background work — and the fourth
-row is what a Bedrock session bills for background work when nothing pins a Haiku, which is why pinning
-one is a decision and not a detail:
+models. **The scoped set changed on 2026-09-12** (Stage 6e decision 14): `claude-opus-5` and
+`claude-sonnet-5` are refused for this account by AWS (`AWS_STATE.md` `EXC-08`), so what a session
+actually bills is the 4.5 generation. Both sets are kept — the first is what is paid today, the
+second what would be paid if the gate ever opens:
 
 | Model | Input | Output | Cache read | Cache write, 5 min |
 |---|---|---|---|---|
-| Claude Opus 5 | 5.50 | 27.50 | 0.55 | 6.875 |
-| Claude Sonnet 5 | 2.20 | 11.00 | 0.22 | 2.75 |
-| Claude Haiku 4.5 | 1.10 | 5.50 | 0.11 | 1.375 |
-| *Claude Sonnet 4.5 — the unpinned background default* | *3.30* | *16.50* | *0.33* | *4.125* |
+| **Claude Opus 4.5** — the primary | **5.50** | **27.50** | **0.55** | **6.875** |
+| **Claude Sonnet 4.5** — in the picker | **3.30** | **16.50** | **0.33** | **4.125** |
+| **Claude Haiku 4.5** — background work | **1.10** | **5.50** | **0.11** | **1.375** |
+| Claude Opus 5 — refused for this account | 5.50 | 27.50 | 0.55 | 6.875 |
+| Claude Sonnet 5 — refused for this account | 2.20 | 11.00 | 0.22 | 2.75 |
+
+**The switch costs one model and only one.** Opus 4.5 and Opus 5 publish identical rates and Haiku
+did not move, so the only delta is Sonnet: **3.30 / 16.50 against 2.20 / 11.00, half as much again**
+per token. Measured 2026-09-12 from each model's agreement rate card, `USW2_InputTokenCount` and
+`USW2_OutputTokenCount`. A session's bill moves by that difference only in proportion to how much of
+it runs on Sonnet rather than on the primary.
+
+**Pinning a Haiku is a decision and not a detail**: without the pin, background work bills at the
+primary model's rate.
 
 **Confirmed the same day against a second, independent source.**
 `bedrock list-foundation-model-agreement-offers --model-id <model>` carries a rate card per model in

@@ -236,11 +236,11 @@ aws bedrock create-foundation-model-agreement --region us-west-2 --profile awsds
 
 The model ids this estate has accepted, and the ones it would accept for the scoped set:
 
-| Generation | Model ids |
-|---|---|
-| current, **gated** (see below) | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` |
-| previous, **invocable** | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` |
-| either way | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| Generation | Model ids | State |
+|---|---|---|
+| current | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` | agreements accepted 2026-09-12; **refused for this account**, see below |
+| previous | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` | agreements accepted 2026-09-12; **invocable, and the scoped set since decision 14** |
+| either way | `anthropic.claude-haiku-4-5-20251001-v1:0` | agreement accepted 2026-09-12; invocable |
 
 **After-reading.** The status goes `NOT_AVAILABLE` → `PENDING` → `AVAILABLE`. It settled in seconds
 for one model and took minutes for another, so poll rather than assume:
@@ -652,9 +652,9 @@ copied by the Dockerfile to that path and `chmod 0444`. It is the whole file:
   "env": {
     "CLAUDE_CODE_USE_BEDROCK": "1",
     "AWS_REGION": "us-west-2",
-    "ANTHROPIC_MODEL": "us.anthropic.claude-opus-5",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-5",
+    "ANTHROPIC_MODEL": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },
@@ -669,10 +669,17 @@ copied by the Dockerfile to that path and `chmod 0444`. It is the whole file:
 | `AWS_REGION` | the Region. The client resolves `AWS_REGION` → `AWS_DEFAULT_REGION` → the profile's → `us-east-1`, and the last would be a silent wrong answer |
 | `ANTHROPIC_MODEL` | the session's model. It also decides the background model: the vendor states that when a session sets it, background tasks use it too |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL` | what each alias resolves to. Without the pins an alias follows the client's built-in default, which moves with the client version |
-| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | the only key that moves background work — session titles and the like — off the primary model. Without it they run on Opus 5 at 27.50 per 1M output tokens for work a Haiku does; Haiku 4.5 is 1.10/5.50 (step 8.1) |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | the only key that moves background work — session titles and the like — off the primary model. Without it they bill at the primary's rate, 27.50 per 1M output tokens, for work a Haiku does at 5.50 (step 8.1) |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | the session-quality survey. On Bedrock, metrics, error reports and `/feedback` are already off; the survey is not, and this is what closes it |
 | `availableModels` | the picker lock (decision 3). It constrains `/model`, `--model` and the model key in a user's own file, so nothing outside the use-case form's declaration and the grant's resource scope is reachable |
 | `skipWebFetchPreflight` | the WebFetch hostname check, which calls `api.anthropic.com` whatever the provider and is not covered by the traffic key above |
+
+**The pins are the 4.5 generation, and not by preference** (decision 14, 2026-09-12):
+`claude-opus-5` and `claude-sonnet-5` are refused for this account by AWS while every readable
+instrument reports them available (M4's generation gate, `AWS_STATE.md` `EXC-08`). All three below
+were proven by invocation the same day. The switch costs one model's rate and only one — Opus 4.5
+prices identically to Opus 5 and Haiku did not move, while Sonnet goes 2.20/11.00 → 3.30/16.50
+(`PRICING.md`).
 
 **Every model id is an inference profile**, because all three are `INFERENCE_PROFILE` only and the
 bare model id is not invocable (step 0.1). These ids, the grant above and 7.5's retention deny are

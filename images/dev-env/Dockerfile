@@ -309,9 +309,8 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
 #                             client's built-in default, which moves with the client version
 #   ..._HAIKU_MODEL           the only key that moves background work - session titles and the like
 #                             - to a Haiku. Without it, and with ANTHROPIC_MODEL set, session titles
-#                             run on OPUS 5 at 27.50 per 1M output tokens for work a Haiku does.
-#                             Haiku 4.5 is 1.10/5.50 (6e step 8.1). This was a defect in 6e's first
-#                             draft, not an optimisation
+#                             run on the primary model, at the Opus rate, for work a Haiku does.
+#                             This was a defect in 6e's first draft, not an optimisation
 #   ..._NONESSENTIAL_TRAFFIC  on Bedrock, metrics, error reports and /feedback are already off; the
 #                             session-quality survey is NOT, and this is what closes it
 #   availableModels           the lock (6e decision 3). It constrains /model, --model and the model
@@ -321,7 +320,13 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
 #                             provider, and CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC does not cover it
 #
 # Every model id here is an inference profile, because all three are INFERENCE_PROFILE only and the
-# bare model id is not invocable (6e step 0.1). The three profiles, the IAM grant in
+# bare model id is not invocable (6e step 0.1).
+#
+# THEY ARE THE 4.5 GENERATION AND NOT BY PREFERENCE (6e decision 14, 2026-09-12). claude-opus-5 and
+# claude-sonnet-5 are refused for this account by AWS - every principal - while every readable
+# instrument reports them available (AWS_STATE.md EXC-08). All three below were proven by invocation.
+# Changing a pin is an image release, not a setting: this file reaches the layer by COPY, so the
+# whole dev-env.md section B chain runs for it. The three profiles, the IAM grant in
 # terraform-live/sandbox/bedrock/ and the retention deny of 6e step 7.5 are one list with several
 # consumers: a model added here and nowhere else is a refusal at the first prompt.
 #

@@ -19,6 +19,42 @@
         "athena:StartCalculationExecution"
       ],
       "Resource": "arn:aws:athena:*:*:workgroup/*"
+    },
+    {
+      "Sid": "DenyBedrockInvocationOutsideTheScopedModels",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "NotResource": [
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-opus-4-5-20251101-v1:0",
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-5-20251101-v1:0",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+      ]
+    },
+    {
+      "Sid": "DenyBedrockReadsOutsideTheRoutedRegions",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+        "bedrock:GetFoundationModelAvailability",
+        "bedrock:GetUseCaseForModelAccess"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": [
+            "us-east-1",
+            "us-east-2",
+            "us-west-2"
+          ]
+        }
+      }
     }
   ]
 }
