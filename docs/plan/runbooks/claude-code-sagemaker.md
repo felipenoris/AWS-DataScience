@@ -95,24 +95,50 @@ retention mode is set at this scope* — so the requirement rests on each model'
 nothing this estate has said. Setting it first means the first access ever granted arrives with the
 account already declaring zero retention (Lesson 5: an intention is not a control).
 
-**Before-reading**, every Region M0 named. Expect `inherit`, with no `updatedAt`:
+**Every enabled Region, not the routed three** (decision 16). The routed list is readable — M0 —
+but AWS owns the routing and can add a Region under a pinned model id, and between that change and
+the next reading a prompt is processed where nothing is declared. Declaring `none` everywhere
+removes the race and makes the invariant checkable without knowing the routing. Measured 2026-09-12:
+the API answers in **all 17 enabled Regions**.
+
+**The order, and it is not the obvious one:**
+
+1. **`bedrock:PutAccountDataRetention` joins M5's exemption.** Without it the Region ceiling refuses
+   the write outside `us-west-2`, and refuses the read that would show it — which is why M0 comes
+   first and why M5's list is not only the two invoke actions.
+2. **The writes**, every enabled Region.
+3. **M3's mode deny last, not first** — the reverse of what it looks like it should be. M3's
+   condition is `StringNotEquals` on `bedrock:DataRetentionMode`, and **a `StringNotEquals` whose key
+   is absent from the request evaluates TRUE**. Whether `PutAccountDataRetention` publishes that key
+   at request time is **unverified** (M3 says so: `validate-policy` established the key is in the
+   service's catalogue, which is a different claim). If it does not, attaching M3 first denies every
+   retention write including `--mode none`, and step 2 becomes impossible in the Regions that still
+   need it. Doing the writes first means that failure mode arrives with the mode already correct
+   everywhere.
+4. **Verify M3 against a positive control**: `put-account-data-retention --mode none` must still
+   **succeed** after attaching. If it is refused, the key is not published, M3 is a blanket deny on
+   the action rather than decision 4's mode ceiling, and that is a different control needing a
+   different decision.
+5. The reading, as a standing check rather than a one-off: `./aws/bedrock-scope.py`'s **`BS-6`**.
+
+**Before-reading**, every enabled Region. Expect `inherit` in all but the ones already done:
 
 ```bash
-for R in us-west-2 us-east-1 us-east-2; do printf '%-12s ' "$R"; aws bedrock get-account-data-retention --region "$R" --profile awsds-infra-sandbox-1 --output text; done
+for R in $(aws account list-regions --region-opt-status-contains ENABLED ENABLED_BY_DEFAULT --profile awsds-infra-sandbox-1 --query 'Regions[].RegionName' --output text); do printf '%-16s ' "$R"; aws bedrock get-account-data-retention --region "$R" --profile awsds-infra-sandbox-1 --query mode --output text; done
 ```
 
 **The call**, once per Region. One write each, reversible by setting the mode back:
 
 ```bash
-aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-infra-sandbox-1
+for R in $(aws account list-regions --region-opt-status-contains ENABLED ENABLED_BY_DEFAULT --profile awsds-infra-sandbox-1 --query 'Regions[].RegionName' --output text); do printf '%-16s ' "$R"; aws bedrock put-account-data-retention --mode none --region "$R" --profile awsds-infra-sandbox-1 && echo none; done
 ```
 
-**A Region that is not `us-west-2` needs M5 first**, and needs `bedrock:PutAccountDataRetention` in
-the exemption list — the Region ceiling refuses the write, and refuses the read that would show it.
-This is why M0 comes first and why M5's list is not only the two invoke actions.
+The response field is **`mode`**, not `dataRetentionMode`: a `--query` naming the second returns
+`None` in every Region, which reads exactly like a Region that answered and declared nothing.
 
 **After-reading.** Expect `none` in every Region, each with its own `updatedAt`. Re-run the
-before-reading command.
+before-reading command, or `./aws/bedrock-scope.py` and read `BS-6`. **A Region opted into later
+starts at `inherit`**, so this is a standing check and not a one-time act.
 
 **What `none` costs, and what no reading here shows.** The vendor's design is that a model whose
 minimum retention mode is above `none` becomes **unavailable in this account** rather than quietly
@@ -338,8 +364,72 @@ and for every principal in the `Interactive` OU. Two compensations, **neither do
   by the same document, so the door the Control Tower control stopped guarding is closed again for
   every Region a profile does not route to.
 
-Until both land, the honest statement is that the `Interactive` OU has no Region ceiling on Bedrock
-invocation.
+**Both are written** (2026-09-12, decision 15), in
+[`awsds-org-scp-ou-interactive.json`](../../../terraform-live/identity/org-policies/policies/awsds-org-scp-ou-interactive.json)
+rather than in the root document: the hole was opened on this OU and the compensation belongs in the
+same scope. The two statements, as they stand in that file — the first two in it are older and
+belong to other stages:
+
+```json
+{
+  "Sid": "DenyBedrockInvocationOutsideTheScopedModels",
+  "Effect": "Deny",
+  "Action": [
+    "bedrock:InvokeModel",
+    "bedrock:InvokeModelWithResponseStream"
+  ],
+  "NotResource": [
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-5-20251101-v1:0",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+  ]
+}
+```
+
+```json
+{
+  "Sid": "DenyBedrockReadsOutsideTheRoutedRegions",
+  "Effect": "Deny",
+  "Action": [
+    "bedrock:InvokeModel",
+    "bedrock:InvokeModelWithResponseStream",
+    "bedrock:GetFoundationModelAvailability",
+    "bedrock:GetUseCaseForModelAccess"
+  ],
+  "Resource": "*",
+  "Condition": {
+    "StringNotEquals": {
+      "aws:RequestedRegion": ["us-east-1", "us-east-2", "us-west-2"]
+    }
+  }
+}
+```
+
+**Four things in there are deliberate and easy to undo by accident.**
+
+- **`NotResource`, and all six spellings.** A cross-Region profile is authorized once per destination
+  Region: one pass names the profile ARN, the others name a per-Region `foundation-model` ARN. Miss
+  one spelling and that pass is denied.
+- **A wildcard account on the profile ARNs.** An account id may not appear in a tracked file
+  (`aws/INDEX.md` rule 1), and an inference-profile ARN is always the caller's own account, so within
+  an account there is nothing else for the wildcard to match.
+- **No region on the foundation-model ARNs.** The profiles route to three; a region-pinned ARN would
+  deny two thirds of the requests by geography, intermittently.
+- **The two retention actions are absent from the second statement's `Action` list.** M1 declares the
+  mode in **every** enabled Region, so a Region condition over those calls would forbid the very
+  thing that keeps the mode declared. What guards them instead is M3, on the mode axis, everywhere at
+  once.
+
+**The list in both statements is the same list M4 and §I carry**, so it has a drift check of its
+own: [`./aws/bedrock-scope.py`](../../../aws/bedrock-scope.py) reads the declaration out of this file
+and compares it against AWS — `BS-3` when AWS routes somewhere the condition does not name, `BS-7`
+when the repository's copies disagree.
+
+Until both statements are **attached**, the honest statement is that the `Interactive` OU has no
+Region ceiling on Bedrock invocation.
 
 ### M6 — Invoke, and read both channels
 
@@ -780,6 +870,17 @@ use-case form present in all three routed Regions — and `AccessDeniedException
 this account` for every principal including `AdministratorAccess`. **The invocation is the only
 instrument that answers the question "can this model be used here".** Everything below narrows down
 *why* a refusal happened; none of it substitutes for M6.
+
+**The drift nothing else can see.** [`./aws/bedrock-scope.py`](../../../aws/bedrock-scope.py)
+compares what this repository **declares** — read out of the SCP, not out of a constant — against
+what AWS does: whether a profile still routes only where the condition names (`BS-3`), whether each
+scoped model still holds an agreement (`BS-5`), whether every enabled Region declares `none`
+(`BS-6`), and whether the SCP, the grant's `models` map and the image's pins still agree (`BS-7`).
+Two of those facts are AWS's rather than ours and move without any diff here.
+
+```bash
+./aws/bedrock-scope.py
+```
 
 **The whole picture in one command.** [`./aws/bedrock.py`](../../../aws/bedrock.py) photographs what
 Bedrock is enabled for in every account that has a profile — the gates, the catalogue, the inference

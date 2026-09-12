@@ -843,3 +843,49 @@ Claude's. No AWS write: the grant, the SCP and the image all need an apply that 
   `bedrock:PutAccountDataRetention` joins M5's exemption — the write is refused outside `us-west-2`
   without it. Then the sixteen writes. Then the reading in `./aws/bedrock.py`, which enumerates
   Regions rather than carrying a list, because a Region opted into later starts at `inherit`.
+
+## 2026-09-12 — the two applies, and an instrument for the drift neither can see
+
+*Both applies authorized by the user in the sitting and run by Claude, as the infrastructure user:
+`sandbox/bedrock/` on `Sandbox` with `InfrastructureAccess`, `identity/org-policies/` on `Identity`.
+The two verification invocations are Claude's, under the same authorization.*
+
+- **[Claude⚡] `sandbox/bedrock/` — decision 14's grant half.** `0 to add, 1 to change, 0 to destroy`:
+  a **new policy version**, not a replacement, so the attachment never moved and no project lost
+  access for a moment. Re-plan `No changes`. The outputs show the six ARNs moving to the 4.5
+  generation.
+
+- **[Claude⚡] `identity/org-policies/` — decision 15's two statements.** `0 to add, 1 to change, 0 to
+  destroy`, the `Interactive` document alone, **390 → 1,362 bytes** minified; the other nine
+  documents untouched. Re-plan `No changes`.
+
+- **[Claude⚡] The deny was exercised, not merely attached** (Lesson 5), with a before/after control
+  on the **same principal and the same call**: `amazon.nova-lite-v1:0` answered for
+  `InfrastructureAccess` an hour earlier and now returns *"explicit deny in a service control policy:
+  …/p-tgda7n58"* — `awsds-org-scp-ou-interactive`. The positive control beside it:
+  `us.anthropic.claude-haiku-4-5-20251001-v1:0` still answers. Owed: the full battery run and its
+  rows (`scp-battery.md`).
+
+- **[Claude] `aws/bedrock-scope.py` is new**, at the user's request. It reads the **declaration out of
+  the SCP** rather than carrying a constant — the models from `DenyBedrockInvocationOutsideTheScoped
+  Models`' `NotResource`, the Regions from the other statement's condition — because a script with
+  its own copy is one more consumer of a list that already had four. It watches the two facts that
+  are AWS's rather than ours: a profile's routing, which can change under a pinned model id with no
+  diff here, and whether each model still holds an agreement. First run: **`BS-1`..`BS-5` and `BS-7`
+  pass, `BS-6` fails on sixteen Regions at `inherit`** — which is decision 16, reported by an
+  instrument instead of by memory.
+
+- **[Claude] A defect in this script, found by its own first run.** `BS-6` read `None` in every
+  Region including the one known to be `none`: the response field is **`mode`**, not
+  `dataRetentionMode`, and a `--query` naming the second returns `None` — which reads exactly like a
+  Region that answered and declared nothing. Fixed and re-run. The runbook's M1 now names the field.
+
+- **[Claude] The order in decision 16 was wrong and is reversed.** M3's deny is
+  `StringNotEquals` on `bedrock:DataRetentionMode`, and **a `StringNotEquals` whose key is absent
+  from the request evaluates true**. Whether `PutAccountDataRetention` publishes that key at request
+  time is unverified — 7.5 says so itself, and `validate-policy` establishing that a key is in the
+  service's catalogue is a different claim. Attaching M3 first would therefore risk denying every
+  retention write including `--mode none`, stranding the Regions that still need one. The order is
+  now: the exemption, the writes, M3 **last**, and a positive control that `--mode none` still
+  succeeds afterwards. **7.5's statement was deliberately not written in this sitting** for that
+  reason.
