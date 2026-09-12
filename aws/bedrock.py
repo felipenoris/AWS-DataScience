@@ -17,7 +17,8 @@
 #             GetModelInvocationLoggingConfiguration, ListFoundationModels,
 #             GetFoundationModelAvailability, ListInferenceProfiles, ListGuardrails,
 #             ListCustomModels, ListImportedModels, ListProvisionedModelThroughputs,
-#             ListMarketplaceModelEndpoints, and sts:GetCallerIdentity. Every one is a read;
+#             ListMarketplaceModelEndpoints; iam:ListRoles and iam:ListAttachedRolePolicies for
+#             section 7; and sts:GetCallerIdentity. Every one is a read;
 #             this script never creates, updates or deletes anything and invokes no model.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
@@ -54,6 +55,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import sys
 
 from awslib import context, profiles
@@ -61,6 +63,24 @@ from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "bedrock.txt"
+
+# The slice that owns the grant, and the variable inside it that lists the project roles. BR-8
+# compares that declaration against IAM, the way devenv.py compares the image's baked NO_PROXY
+# against the account that generates it: neither side is authoritative on its own, and the two
+# divergences are DIFFERENT FAULTS (see BR-8's own report block).
+GRANT_SLICE_VARS = "terraform-live/sandbox/bedrock/variables.tf"
+# Matched by shape, not by a fixed name. The policy is `awsds-<env>-bedrock-assistant` and this
+# script does not know an account's env token - it runs against profiles, and the mapping lives in
+# scripts/tfhygiene/backend.py, which aws/ deliberately does not import (aws/INDEX.md, the
+# CloudShell fallback). A pattern answers the question without a second copy of that table.
+GRANT_POLICY_RE = re.compile(r"^awsds-[a-z0-9]+-bedrock-assistant$")
+PROJECT_ROLE_PREFIX = "datazone_usr_role_"
+
+# `default = [ "datazone_usr_role_x_y", ... ]` inside the project_roles block. Anchored on the
+# variable name so a second list variable in the same file cannot be picked up by accident.
+PROJECT_ROLES_RE = re.compile(
+    r'variable\s+"project_roles"\s*\{.*?default\s*=\s*\[(?P<body>.*?)\]', re.S
+)
 
 # The set Stage 6e scoped, and the one list with four consumers (the stage's step 3): the grant's
 # resource scope, the endpoint policy, the managed-settings pins, and the retention deny that must
@@ -105,6 +125,20 @@ def decode_form(blob: str) -> dict | None:
     return doc if isinstance(doc, dict) else None
 
 
+def declared_project_roles(path) -> list | None:
+    """The role names `project_roles` declares, or None when the file is unreadable.
+
+    None and [] are different answers and the report says which: an empty list is a slice that
+    grants nothing yet, and None is a script running outside the repository (CloudShell).
+    """
+    if not path.is_file():
+        return None
+    match = PROJECT_ROLES_RE.search(path.read_text(encoding="utf-8"))
+    if not match:
+        return None
+    return re.findall(r'"([^"]+)"', match.group("body"))
+
+
 def json_or_none(text: str):
     try:
         return json.loads(text)
@@ -146,14 +180,18 @@ SECTIONS
   4. The catalogue, and the scoped set's availability per account
   5. Inference profiles the account holds
   6. Bedrock resources that would be billing
-  7. What "enabled" does NOT mean
-  8. Checks
-  9. Calls that failed
+  7. The grant on the project roles, code against account
+  8. What "enabled" does NOT mean
+  9. Checks
+ 10. Calls that failed
 
 HOW TO READ THIS FILE
   - THE CATALOGUE IS NOT REACH. A model reading AVAILABLE says the account may invoke
     it; whether a given principal may is the intersection of four policy layers and is
-    answered by a call, never by a read. Section 7.
+    answered by a call, never by a read. Section 8.
+  - SECTION 7 READS BOTH SIDES OF THE GRANT, and the two divergences are different
+    faults: a declared attachment that is gone was removed by something (INT-15), and
+    an attachment nothing declares will be removed by the next apply (Lesson 35).
   - `ResourceNotFoundException` ON THE FORM IS THE "NEVER SUBMITTED" ANSWER, reported as
     NOT SUBMITTED rather than as a failure.
   - `inherit` IS NOT `none`. The API documents it as *no data retention mode is set at
@@ -418,7 +456,124 @@ Guardrails are cheap and are listed because they change what an invocation does,
 because of the bill.""")
 
         # ------------------------------------------------------------------------------
-        rep.h1('7. What "enabled" does NOT mean')
+        rep.h1("7. The grant on the project roles, code against account")
+
+        declared = declared_project_roles(ctx.repo_root / GRANT_SLICE_VARS)
+        rep.text(f"""The grant is per project by design (Stage 6e decision 8): a SMUS project role is
+minted by the service, and the blueprint offers no field that grants anything, so
+`{GRANT_SLICE_VARS}` names the roles one at a time.
+
+THE TWO DIVERGENCES ARE DIFFERENT FAULTS:
+
+  in the code, missing from the account   the attachment was REMOVED - a blueprint
+                                          reconciliation is the suspect (INT-15's open half),
+                                          and the symptom a user sees is an assistant that
+                                          stopped working with no diff in the repository
+  in the account, missing from the code   it was attached BY HAND (the runbook's P3) and the
+                                          next `terraform apply` of the slice will take it
+                                          away again - Lesson 35, the stale path that still
+                                          succeeds
+
+Neither is visible from the other side alone, which is why both sides are read here.""")
+
+        for c in live:
+            cli = cli_for(c.profile)
+            rep.h2(f"7.x {c.profile}  ({c.account})")
+
+            res = cli.call(
+                "iam",
+                "list-roles",
+                "--query",
+                f"Roles[?starts_with(RoleName, `{PROJECT_ROLE_PREFIX}`)].RoleName",
+                "--output",
+                "text",
+            )
+            if not res.ok:
+                rep.line(f"  !! {head2(res.merged)}")
+                errors.add(("iam", "list-roles"), res.merged, c.profile)
+                continue
+            roles = sorted(res.stdout.split())
+            if not roles:
+                rep.line(
+                    "  no SMUS project role in this account - nothing to grant, and nothing to check"
+                )
+                continue
+
+            attached: dict = {}
+            for role in roles:
+                got = cli.call(
+                    "iam",
+                    "list-attached-role-policies",
+                    "--role-name",
+                    role,
+                    "--query",
+                    "AttachedPolicies[].PolicyName",
+                    "--output",
+                    "text",
+                )
+                if not got.ok:
+                    errors.add(("iam", "list-attached-role-policies", role), got.merged, c.profile)
+                    attached[role] = None
+                    continue
+                attached[role] = any(GRANT_POLICY_RE.match(n) for n in got.stdout.split())
+
+            rows = ["PROJECT ROLE\tIN THE CODE\tGRANT ATTACHED\tVERDICT"]
+            for role in roles:
+                in_code = "-" if declared is None else ("yes" if role in declared else "no")
+                has = attached[role]
+                shown = "?" if has is None else ("yes" if has else "no")
+                if declared is None or has is None:
+                    verdict = "not compared"
+                elif (role in declared) == has:
+                    verdict = "agree"
+                elif has:
+                    verdict = "ATTACHED BY HAND"
+                else:
+                    verdict = "REMOVED"
+                rows.append(f"{role}\t{in_code}\t{shown}\t{verdict}")
+            rep.tabulate(rows)
+
+            if declared is None:
+                checks.note(
+                    "BR-8",
+                    "the grant declaration is unreadable",
+                    f"{GRANT_SLICE_VARS} not found - running outside the repository",
+                )
+                continue
+            removed = [r for r in roles if r in declared and attached.get(r) is False]
+            byhand = [r for r in roles if r not in declared and attached.get(r) is True]
+            ungranted = [r for r in roles if r not in declared and attached.get(r) is False]
+            if removed:
+                checks.fail(
+                    "BR-8",
+                    "a declared grant is NOT attached",
+                    f"{', '.join(removed)} - removed since the last apply; suspect a "
+                    f"blueprint reconciliation (INT-15)",
+                )
+            if byhand:
+                checks.fail(
+                    "BR-8",
+                    "a grant is attached that the code does not declare",
+                    f"{', '.join(byhand)} - attached by hand; the next apply of "
+                    f"sandbox/bedrock/ will detach it (Lesson 35)",
+                )
+            if not removed and not byhand:
+                checks.ok(
+                    "BR-8",
+                    "code and account agree on the grant",
+                    f"{c.profile}: {len(roles)} project role(s), "
+                    f"{sum(1 for r in roles if attached.get(r))} granted",
+                )
+            if ungranted:
+                checks.note(
+                    "BR-8",
+                    "a project has no Bedrock grant",
+                    f"{', '.join(ungranted)} - by design unless somebody asked for it; "
+                    f"the runbook's section P is how it gets one",
+                )
+
+        # ------------------------------------------------------------------------------
+        rep.h1('8. What "enabled" does NOT mean')
 
         rep.text("""NOTHING IN THIS FILE SAYS A PRINCIPAL CAN INVOKE A MODEL. Reach is an
 intersection (Lesson 28) and this script reads one term of it:
@@ -445,7 +600,7 @@ something invokes a retaining model and reads the refusal.
 The instrument for all of it is a call. Stage 6e steps 6 and 7.2a are where it lives.""")
 
         # ------------------------------------------------------------------------------
-        rep.h1("8. Checks")
+        rep.h1("9. Checks")
 
         for c in live:
             state = gates[c.profile]
@@ -563,10 +718,11 @@ The instrument for all of it is a call. Stage 6e steps 6 and 7.2a are where it l
         rep.text("""
 A `note` is not a failure: BR-1 and BR-2 are notes in an account that is supposed to
 have no Bedrock use at all, and BR-5 is a note because the deny it points at is a
-Stage 6e step, not a deployed control.""")
+Stage 6e step rather than a deployed control, and BR-8's "no grant" note is the design -
+a project gets Bedrock when somebody asks, not by existing.""")
 
         # ------------------------------------------------------------------------------
-        rep.h1("9. Calls that failed")
+        rep.h1("10. Calls that failed")
 
         failed_calls_epilogue(
             rep,
@@ -578,10 +734,10 @@ Stage 6e step, not a deployed control.""")
     note("")
     n_fail = checks.n_fail()
     if n_fail:
-        note(f"wrote {out_label} ({n_fail} check(s) FAILED - see section 8)")
+        note(f"wrote {out_label} ({n_fail} check(s) FAILED - see section 9)")
         return 2
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 9)")
+        note(f"wrote {out_label} (some calls FAILED - see section 10)")
         return 1
     note(f"wrote {out_label}")
     return 0
