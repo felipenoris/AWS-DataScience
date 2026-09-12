@@ -85,6 +85,21 @@ variable "optional_service_groups" {
     condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "bedrock-llm", "emr", "mwaa"], g)])
     error_message = "optional_service_groups admits only: bedrock, bedrock-llm, emr, mwaa. An unknown name would contribute nothing and fail silently at first use."
   }
+
+  validation {
+    # `bedrock` and `bedrock-llm` are two configurations of the SAME DOOR for two consumers, not
+    # two doors. Both contain `bedrock` and `bedrock-runtime`, the map key collapses the overlap
+    # to one endpoint, and that endpoint can carry only one policy - so naming both groups makes
+    # whichever `endpoint_action_scopes` the caller wrote for the assistant apply to the
+    # blueprints' control-plane calls as well, and `CreateGuardrail` or `CreateEvaluationJob`
+    # would be refused by the door with no denial that names this policy.
+    #
+    # A plan error rather than a merge, because the two intents genuinely conflict and picking one
+    # silently is Lesson 51's failure. A caller that needs both consumers at once needs a decision
+    # about the shared endpoint's action list, not a wider default chosen here.
+    condition     = !(contains(var.optional_service_groups, "bedrock") && contains(var.optional_service_groups, "bedrock-llm"))
+    error_message = "bedrock and bedrock-llm cannot be named together: they share the `bedrock` and `bedrock-runtime` endpoints, one endpoint carries one policy, and an action scope written for the assistant would silently refuse the blueprints' control-plane calls."
+  }
 }
 
 # Narrow one endpoint's policy to a list of actions (Stage 6e step 4.4). Keyed by the SHORT service
