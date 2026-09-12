@@ -490,8 +490,9 @@ belongs in the image — and Claude Code has a file made for it.
   default's **3.30 / 16.50** (step 8's table). The model is `ACTIVE` as a `us.` profile in `Sandbox` and
   is in step 3.3's scope, **which is the half that fails loudly if it is forgotten**: an unscoped
   background model is a refusal in the middle of a working session rather than a wrong bill.
-- **5.4 — Written 2026-09-12, not buildable yet.** `default-v0.3.0` carries three changes, and two
-  of the three are in the repository:
+- **5.4 — Buildable since 2026-09-12.** `default-v0.3.0` carries four changes against
+  `default-v0.2.0`, all of them now in the repository — the fourth, no Julia precompilation cache, is
+  not this stage's:
   - **the managed settings file** (5.2), as `images/dev-env/claude-code/managed-settings.json`
     `COPY`d to `/etc/claude-code/`. A side file rather than a heredoc: this Dockerfile carries no
     `# syntax=` directive, so a shell heredoc inside a line-continued `RUN` does not work, and a
@@ -500,11 +501,11 @@ belongs in the image — and Claude Code has a file made for it.
     `api.anthropic.com` — so `pre-commit`'s `check-json` now covers `images/**.json` and the image
     re-parses it at build time;
   - **`rust-src`**, already in the rustup profile since 2026-09-11;
-  - **the `NO_PROXY_LIST`**, which is **the one that blocks the build**. Step 4 made the two Bedrock
-    endpoints always-on, so the slice's generated list is 52 entries and the image's literal is
-    still the 50 read on 2026-09-10. It cannot be written by hand — eight names in it are not
-    derivable from a service token, which is why it is read from the slice — so the refresh needs
-    `sandbox/egress` **up**. The Dockerfile says so where the literal is. The bump's order is [`dev-env.md`](../runbooks/dev-env.md) §B — apps gone first, a
+  - **the `NO_PROXY_LIST`**, which is what blocked the build until 4.3. Step 4 made the two Bedrock
+    endpoints always-on, so the slice's generated list grew to 52 entries against the image's 50. It
+    cannot be written by hand — eight names in it are not derivable from a service token, which is why
+    it is read from the slice — so the refresh needed `sandbox/egress` **up**. Refreshed 2026-09-12,
+    sha256 `fc11caaa3145fdef` on both sides (`./aws/devenv.py` DE-3). The bump's order is [`dev-env.md`](../runbooks/dev-env.md) §B — apps gone first, a
   detach is `[]` — and the registered version freezes to a digest, not a tag.
 - **5.5 — [user] The one setting the image cannot carry.** *Disable Login Prompt*
   (`claudeCode.disableLoginPrompt`) is a **VS Code** setting, not a Claude Code one, and
