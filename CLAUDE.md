@@ -259,7 +259,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `bedrock:` actions join its `NotAction` — five did; compensating deny owed (dec 15). **Retention
   mode is per account AND region**: `none` in `us-west-2`, `inherit` in the other two (dec 16).
   **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every principal, every
-  instrument green (`EXC-08`); the 4.5 generation answers and switching costs the image (dec 14).
+  instrument green (`EXC-08`); **the set is the 4.5 generation since dec 14**, delivery owed (image).
   Grant per project, `sandbox/bedrock/` (rank 52, `[P]`): its `models` map is all a space can invoke. The `us.` profiles route to three US regions (D1's exception).
   Runbook: `claude-code-sagemaker.md`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid

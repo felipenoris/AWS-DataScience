@@ -86,10 +86,16 @@ variable "models" {
   description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. All three are inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
   type        = map(string)
 
+  # THE 4.5 GENERATION, AND NOT BY PREFERENCE (2026-09-12, Stage 6e decision 14). `claude-opus-5`
+  # and `claude-sonnet-5` are refused for this account by AWS - every principal, `AdministratorAccess`
+  # included - with the agreement created, the use-case form present and every availability field
+  # green (`AWS_STATE.md` EXC-08). All three below were proven by invocation the same day, and all
+  # three route to the same us-east-1, us-east-2, us-west-2. Moving back is this map plus an image
+  # release, since the pins also live in images/dev-env/claude-code/managed-settings.json.
   default = {
-    "anthropic.claude-opus-5"                  = "us.anthropic.claude-opus-5"
-    "anthropic.claude-sonnet-5"                = "us.anthropic.claude-sonnet-5"
-    "anthropic.claude-haiku-4-5-20251001-v1:0" = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    "anthropic.claude-opus-4-5-20251101-v1:0"   = "us.anthropic.claude-opus-4-5-20251101-v1:0"
+    "anthropic.claude-sonnet-4-5-20250929-v1:0" = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    "anthropic.claude-haiku-4-5-20251001-v1:0"  = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
   }
 
   validation {
