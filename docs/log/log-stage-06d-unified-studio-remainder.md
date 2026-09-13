@@ -2280,3 +2280,115 @@ One further reading was taken to make a new decision concrete.*
   `api.anthropic.com` from that space's address; that the Claude Code client made them is by every sign
   true and was never said by the user. Stage 11's 3.5, this stage's decision 13, 6e's verification (v) and
   6e's log now say which part is the reading.
+
+## 2026-09-12/13 — the thirteenth sitting: the portal's catalog by hand, a table from an upload, and the querybook's quota
+
+*The user worked in the portal's catalog by hand and asked what each object was. Claude answered from
+read-only readings, recorded them in the documents the last bullets name, and wrote this entry at the
+user's request. Times are UTC; the sitting ran from 2026-09-13 01:45Z.*
+
+### A database from the catalog
+
+- **[user] Create database.** *Data → Catalogs → AwsDataCatalog* showed the Athena workgroup
+  `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`. *Create database* made `mydatabase`, location
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/`. The
+  questions: *"Entendi que isso se trata de uma base de dados no formato "Athena" que fica persistida no
+  bucket S3 do projeto, correto?"* and *"O `mydatabase` aparece na interface como "Created by DataZone".
+  Isso é Athena ou AWS Glue?"*
+
+- **[Claude] A Glue database, written by the provisioning role.** `glue:CreateDatabase` at 01:45:38Z by
+  `awsds-sandbox-smus-provisioning` through `datazone.amazonaws.com`: description *"Created by DataZone
+  for project eighth-experimentation"*, `CreateTableDefaultPermissions: []`, no tables, and no object
+  under `dev/data/`. The workgroup is the project's enforced one, with results in `dev/sys/athena/` under
+  `alias/awsds-sandbox-project`.
+
+- **[Claude] The project's `dev/` scope is LF-registered, and `GOVERNANCE.md` said it was not.**
+  `lakeformation list-resources` in Sandbox returns one location, `…/avhvbqn37ty7m8/dev`, registered
+  under `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` with hybrid access off. CloudTrail since
+  2026-08-20 holds five `RegisterResource` calls by the provisioning role, this project's at its creation
+  (2026-08-23 17:31:47Z), and four `DeregisterResource` calls for the deleted projects. Every grant in
+  that window came from the provisioning role. The grants to `<account-id>:IAMPrincipals` and
+  `arn:aws:identitystore:::user/*` all carry `context has datazone && context.datazone has projectId &&
+  context.datazone.projectId=="<project-id>"`; the grants to `awsds-sandbox-smus-manage-access` carry no
+  condition. For `mydatabase` the conditioned principals received `CREATE_TABLE`, `DESCRIBE` and `DROP`
+  on the database, and `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DROP` and `DESCRIBE` on its tables. The
+  manage-access role's only Lake Formation call, `CreateLakeFormationOptIn` on `mydatabase` at 01:45:46Z,
+  was refused *"because no identity-based policy allows the lakeformation:CreateLakeFormationOptIn
+  action"*. Neither SMUS role granted, revoked or registered anything on `raw` or `curated`.
+
+### A table from an upload, and two SQL surfaces
+
+- **[user] A table, a query and a 402.** Uploading a Parquet file created `house-price`, and the file
+  stayed at `dev/local-uploads/1789265679189/house-price.parquet`. The questions: *"Esse arquivo parquet
+  é o local para onde o AWS Glue referencia, de forma que o Athena ao executar consultas lê diretamente
+  deste arquivo? Se eu apagar este arquivo do bucket, a tabela "quebra"?"* The Query Editor showed:
+
+  ```
+  Status code: 402 - The account-level service limit 'SageMaker Unified Studio Querybooks running on sc.t3.medium instances' is 0 Querybooks, with current utilization of 0 Querybooks and a request delta of 1 Querybooks. Please use AWS Service Quotas to request an increase for this quota. If AWS Service Quotas is not available, contact AWS support to request an increase for this quota.
+  ```
+
+  and *"Ao disparar um SELECT a consulta executa sem erros, mas não exibe nenhum resultado."*
+
+- **[Claude] The table points at the folder.** `glue:CreateTable` at 02:14:48Z, by the project role from
+  the browser: `EXTERNAL_TABLE`, `ParquetHiveSerDe`, location `…/dev/local-uploads/1789265679189/`,
+  `IsRegisteredWithLakeFormation: true`. The folder name is the upload's time in milliseconds
+  (02:14:39Z), and the database's `LocationUri` was not used. The 9,249-byte file is the only copy of the
+  data.
+
+- **[Claude] The one query that reached Athena returned rows.**
+  `select * from "AwsDataCatalog"."mydatabase"."house-price" limit 10` at 02:30:17Z:
+  `sqlworkbench:ExecuteQuery`, then `athena:StartQueryExecution` from `sqlworkbench.amazonaws.com` as the
+  project role, then `lakeformation:GetDataAccess` for `SELECT` on the table. `SUCCEEDED`, 7,994 bytes
+  scanned, **10 output rows**, and `GetQueryResults` called three times.
+
+- **[Claude] The 402 is the querybook's.** A DataZone notebook of type `SQL` was created at 02:30:43Z.
+  Six `datazone:StartNotebookCompute` calls between 02:30:48Z and 02:39:14Z returned
+  `ServiceQuotaExceededException`, and none of its cells reached Athena. The request named
+  `networkAccessType: VPC_ONLY`, `awsds-sandbox-vpc`, both private subnets and the security group
+  `datazone-avhvbqn37ty7m8-dev`. In the `datazone` service code, `L-F63F402C` (*Querybooks running on
+  sc.t3.medium instances*) read 0 against a default of 5, `L-B3401D17` (*Querybook Runs*) 0 against 5,
+  and `L-85C9EC5A` (*concurrent notebook runs per account*) 0 against 15. Of the 81 `sc.*` quotas with a
+  default above zero, 79 read 0, and no increase had been requested. The price list carries
+  `UnifiedStudio:Notebook-sc.t3.medium` at USD 0.050/h in `us-west-2` and no querybook usage type.
+
+### The quota requests
+
+- **[user] Three requests by hand**, as the infrastructure user (`InfrastructureAccess`, profile
+  `awsds-infra-sandbox-1`). The first attempt used the desired value Claude proposed, which was below the
+  defaults:
+
+  ```
+  for q in L-F63F402C L-B3401D17 L-85C9EC5A; do aws service-quotas request-service-quota-increase --service-code datazone --quota-code $q --desired-value 1 --profile awsds-infra-sandbox-1 --region us-west-2; done
+
+  aws: [ERROR]: An error occurred (IllegalArgumentException) when calling the RequestServiceQuotaIncrease operation: You must provide a quota value greater than the default quota value of 5.0
+
+  aws: [ERROR]: An error occurred (IllegalArgumentException) when calling the RequestServiceQuotaIncrease operation: You must provide a quota value greater than the default quota value of 5.0
+
+  aws: [ERROR]: An error occurred (IllegalArgumentException) when calling the RequestServiceQuotaIncrease operation: You must provide a quota value greater than the default quota value of 15.0
+  ```
+
+  Then at the defaults:
+
+  ```
+  aws service-quotas request-service-quota-increase --service-code datazone --quota-code L-F63F402C --desired-value 5 --profile awsds-infra-sandbox-1 --region us-west-2
+
+  aws service-quotas request-service-quota-increase --service-code datazone --quota-code L-B3401D17 --desired-value 5 --profile awsds-infra-sandbox-1 --region us-west-2
+
+  aws service-quotas request-service-quota-increase --service-code datazone --quota-code L-85C9EC5A --desired-value 15 --profile awsds-infra-sandbox-1 --region us-west-2
+  ```
+
+  *"Os pedidos retornaram como `PENDING`."*
+
+- **[Claude] Read back at 03:46Z.** `list-requested-service-quota-change-history`: `L-F63F402C` at 5,
+  `PENDING`, created 03:43:22Z; `L-B3401D17` at 5, `PENDING`, 03:43:27Z; `L-85C9EC5A` at 15,
+  **`CASE_OPENED`**, 03:43:30Z and updated seven seconds later. The three applied values still read 0. A
+  request equal to the default was accepted, although the refusal asks for a value *"greater than the
+  default"*.
+
+- **[Claude] Recorded the same sitting.** `GOVERNANCE.md` (the `dev/` row and the corrected registration
+  sentence), `SMUS.md` (§S3 item 1b and §"Querybook compute"), open question 24 (the trail reading),
+  `AWS_STATE.md`, `PRICING.md` §8 and `REFERENCES.md`. `./aws/datalake.py` gained `DL-14` and was run: a
+  `note` for the project's `dev/` scope, all checks passed. `make check` OK.
+
+- **[Claude] Owed once the requests are approved.** The querybook compute's first run: its calls, their
+  path through the endpoints and the proxy, and the usage type it bills under.

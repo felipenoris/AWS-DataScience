@@ -709,6 +709,15 @@
   settings apply replaces wholesale (INT-11) and the `Create*DefaultPermissions` that must be cleared
   before the first local database exists (Lesson 27).
 
+- Lake Formation attribute-based access control (read 2026-09-12): a grant to
+  `<account-id>:IAMPrincipals` carries a Cedar condition expression, and only principals whose
+  attributes satisfy it receive the permissions; the page's example reads `context.iam.principalTags`.
+  SMUS writes this shape on its own, conditioned on `context.datazone.projectId == "<project-id>"`, to
+  `IAMPrincipals` and to `arn:aws:identitystore:::user/*` (CloudTrail `BatchGrantPermissions` by
+  `awsds-sandbox-smus-provisioning`, 2026-08-23 and 2026-09-12). The page does not describe the
+  `context.datazone` namespace:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/abac-granting-permissions.html>.
+
 - AWS data governance framing — the curate/understand/protect triad (read 2026-08-17; the "curate" third is the one this plan has no owner for): <https://aws.amazon.com/what-is/data-governance/>.
 
 - AWS Well-Architected Data Analytics Lens (design principles: least privilege for analytics users, classify data, govern data changes): <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/analytics-lens.html>. Machine Learning Lens, data-protection section (non-production environments get restricted or anonymized datasets — the row the Sandbox share deviates from): <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/data-protection.html>.

@@ -2,7 +2,8 @@
 # datalake.py - Stage 5's evidence, per account, side by side: the lake buckets and their
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
 # crawlers), the catalog-maintenance role and its trust, the Lake Formation settings with the
-# parameters reading that defends INT-11, the RAM shares and any pending invitation, the
+# parameters reading that defends INT-11, the registered locations on both sides of the share
+# (DL-14 for the consumers), the RAM shares and any pending invitation, the
 # consumer Athena workgroups and the derived zone (both removed 2026-08-26, D19 revised -
 # absence is the pass, DL-8/DL-9), the EFS reading (absence expected, save the home
 # filesystem a Studio domain creates for itself - the NFS requirement was withdrawn
@@ -329,6 +330,7 @@ def main(argv: list) -> int:
     received: list = []  # (profile, share name, status)
     lf_admin_counts: dict = {}  # profile -> number of data lake admins in that account
     lf_consumer_settings: dict = {}  # profile -> {params, db_defaults, tbl_defaults}
+    lf_consumer_registered: dict = {}  # profile -> [(resource arn, registration role, hybrid)]
     for p in CONSUMER_PROFILES:
         if p not in live:
             continue
@@ -366,6 +368,18 @@ def main(argv: list) -> int:
                     a.get("DataLakePrincipalIdentifier", "?") for a in cs.get("DataLakeAdmins", [])
                 ],
             }
+        # The locations Lake Formation governs in this account, for DL-14. SMUS registers each
+        # project's dev/ scope here, so a consumer's list is not empty by design.
+        doc = run_json(cli, p, "lakeformation", "list-resources")
+        if doc is not None:
+            lf_consumer_registered[p] = [
+                (
+                    r.get("ResourceArn", "?"),
+                    r.get("RoleArn", "-"),
+                    str(r.get("HybridAccessEnabled", "-")),
+                )
+                for r in doc.get("ResourceInfoList", [])
+            ]
 
     # ----------------------------------------------------- Athena workgroups, consumer side
     workgroups: list = []  # (profile, name, enforce, output location, scan limit)
@@ -783,6 +797,37 @@ def main(argv: list) -> int:
                 "the InfrastructureAccess seat alone - the create-time list, unchanged",
             )
 
+    # DL-14: the Lake Formation registrations in each consumer account. SMUS registers a live
+    # project's <bucket>/<domain-id>/<project-id>/dev scope under that project's role, hybrid
+    # access off, and deregisters it when the project is deleted (CloudTrail, 2026-08-22/23;
+    # docs/SMUS.md S3 item 1b). Each such registration is a `note`. Any other registration
+    # fails: it changes which credentials an engine reads that prefix with, and nobody in this
+    # design makes one in a consumer. The project id in the path must match the role's.
+    smus_reg_re = re.compile(
+        r"^arn:aws:s3:::awsds-[a-z0-9]+(-[0-9]+)?-smus-projects/dzd-[a-z0-9]+/([a-z0-9]+)/dev/?$"
+    )
+    for prof, regs in sorted(lf_consumer_registered.items()):
+        if not regs:
+            checks.ok("DL-14", f"LF registered locations ({prof})", "none")
+            continue
+        for arn, role, hybrid in regs:
+            m = smus_reg_re.match(arn)
+            role_name = role.rsplit("/", 1)[-1]
+            if m and role_name.startswith(f"datazone_usr_role_{m.group(2)}_"):
+                checks.note(
+                    "DL-14",
+                    f"LF registered location ({prof})",
+                    f"project {m.group(2)}'s dev/ scope under {role_name}, hybrid {hybrid} - "
+                    "registered by SMUS at project creation (docs/SMUS.md S3 item 1b)",
+                )
+            else:
+                checks.fail(
+                    "DL-14",
+                    f"LF registered location ({prof})",
+                    f"{arn} under {role_name} is not a SMUS project's dev/ scope under that "
+                    "project's own role - a registration this design does not make",
+                )
+
     # DL-6: the IAM-fallback defaults, once the catalog exists (step 5.2).
     dg_dbs = [d for d in databases if d[0] == DATA_PROFILE and d[2] == "-"]
     if data_live and lf_read and dg_dbs:
@@ -1134,6 +1179,21 @@ The Parameters line is the INT-11 reading (DL-5): 5.4 brackets every apply with
 it. Admins present with Parameters absent is the reset having happened.""")
         else:
             rep.line("get-data-lake-settings was not read - see section 14.")
+        rep.line()
+        consumer_regs = [
+            f"{p}\t{arn}\t{role.rsplit('/', 1)[-1]}\t{hybrid}"
+            for p, regs in sorted(lf_consumer_registered.items())
+            for arn, role, hybrid in regs
+        ]
+        if consumer_regs:
+            rep.tabulate(
+                ["PROFILE\tREGISTERED LOCATION\tREGISTRATION ROLE\tHYBRID"] + consumer_regs
+            )
+            rep.text("""
+Consumer side. SMUS registers each live project's dev/ scope under that project's
+datazone_usr_role_* and deregisters it with the project (DL-14).""")
+        elif lf_consumer_registered:
+            rep.line("No registered location in any consumer account.")
 
         # ==============================================================================
         rep.h1("7. RAM - shares out, invitations pending, shares HELD by each consumer")
@@ -1279,7 +1339,10 @@ What the checks are, and where each comes from:
          InfrastructureAccess seat missing, FAILS on any seat that is neither
          that nor a SMUS service role, NOTES the SMUS seats (open question 24
          owns whether they stay). "A fourth administrator is a principal nobody
-         granted" - AWS_STATE.md's invariant, measured here""")
+         granted" - AWS_STATE.md's invariant, measured here
+  DL-14  the Lake Formation registered locations in each consumer: a note for a
+         SMUS project's dev/ scope under that project's own role (the service
+         registers it at project creation), a fail for any other registration""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")

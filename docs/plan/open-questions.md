@@ -676,6 +676,26 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     governance half** - whether the seats should exist - and its instrument is the trail reading this
     entry describes.
 
+    **Amended 2026-09-12: the trail reading, over five project lifecycles and one database.** CloudTrail
+    in Sandbox since 2026-08-20 holds every Lake Formation call and every Glue database call the two
+    seats made, all through `datazone.amazonaws.com`:
+
+    - **The provisioning seat** wrote the settings three times at the first project (2026-08-22 20:29
+      UTC): itself and the manage-access role into the admin list, `Parameters` kept at `4`/`TRUE`, both
+      create-defaults kept empty, `allowFullTableExternalDataAccess = true`. It registered each project's
+      `dev/` scope (five) and deregistered the four deleted projects'. Per project it granted, and at
+      deletion revoked, `DATA_LOCATION_ACCESS` on that scope and `DESCRIBE` on `default`. It created
+      `default` and, on 2026-09-12, `mydatabase` with its database and all-tables grants. Every grant
+      it issued goes to `<account-id>:IAMPrincipals` and `arn:aws:identitystore:::user/*` under a
+      `context.datazone.projectId` condition, or to the manage-access role (`docs/SMUS.md` §S3 item 1b).
+    - **The manage-access seat** made one call, `CreateLakeFormationOptIn` on `mydatabase`, refused by its
+      own identity policy.
+    - **Neither seat** granted, revoked or registered anything on `raw` or `curated`.
+
+    The seats have so far served the projects' own storage and databases, never the lake. What stays
+    open is whether a subscription changes that, and whether a permission narrower than an administrator
+    seat would carry what the trail shows. `./aws/datalake.py` `DL-14` reads the registrations.
+
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
