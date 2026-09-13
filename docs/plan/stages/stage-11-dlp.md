@@ -297,7 +297,11 @@ control at all. A threat model that lists a control nobody implemented is worse 
   connection method decides whether the VPN perimeter applies to this channel at all)** —
   and remote sessions authenticate with **IAM credentials even in IdC domains, persisting up to 12 h after
   portal logout**. Accepted, with the kill-switch named: the `sagemaker:RemoteAccess` condition key on
-  `CreateSpace`/`UpdateSpace`.
+  `CreateSpace`/`UpdateSpace`. **Measured 2026-09-12 by `./aws/remote-ide.py`**: the AWS Allow is attached
+  (`SageMakerStudioProjectRoleMachineLearningPolicy` v43, both tags, `RI-3`), so the scoping is real and
+  is AWS's; and **all 14 `StartSession` calls of that week came from a laptop's own uplink** (`RI-5`) —
+  none through the monitored profile. The row this step writes therefore reads *scoped by AWS, VPN-only by
+  nobody* until 6d decision 4 is taken.
 - **3.4 — [Claude reads, user decides] Re-take INT-16's closing choice — the portal's off-VPN ingress,
   accepted on 2026-09-07 (6c step 6.6, fallback (ii)) as a recorded deviation from `objectives.md`'s
   VPN-only statement.** The acceptance was taken with the proxy's address newly stable and nothing yet
@@ -323,6 +327,21 @@ control at all. A threat model that lists a control nobody implemented is worse 
   Recommended: **(i)** unless (b) changed the picture — it costs nothing, it was measured viable on
   2026-08-22, and it closes the one surface where an unmanaged laptop reaches governed data; acceptance
   stays defensible only while 5.2's rule stays quiet.
+- **3.5 — [Claude] Write the last barrier down: a space on the wrong image.** Measured 2026-09-12 (6d
+  step 7.9's sitting, 6e verification (v)): a space created on AWS's SageMaker Distribution had no proxy
+  variables and no Claude Code settings, something in it — by every sign the Claude Code client — asked
+  for Anthropic's own API, and **the DNS
+  Firewall was the only control left, blocking `api.anthropic.com` 46 times** — together with GitHub, PyPI
+  and the VS Code marketplace, all refused from the same address. So for any compute that bypasses the
+  house image the allow-list is not one filter among two but the only one, and a name added to it for
+  convenience is added for that case too. The row names 6d decision 13 as the preventive control that
+  would close the case at `CreateApp`, and records whether it was taken.
+- **3.6 — [Claude] Carry Amazon Q Developer's residual, if 6d decision 9 opens it.** Q *"stores your
+  questions, its responses, and additional context"* in AWS's `us-east-1` under AWS owned keys, reached from
+  a space over the internet because no endpoint exists from `us-west-2`, with models AWS chooses. Opened
+  as a `Sandbox` residual, it needs its own row: what is stored and where, that the content is not used to
+  improve the service in SageMaker Studio but may be at the Free tier in a third-party IDE, and what a user
+  may not paste. Closed, the row records the decision and the deny that keeps it closed.
 
 ### 4. GuardDuty's two paid features, decided against a real bill
 

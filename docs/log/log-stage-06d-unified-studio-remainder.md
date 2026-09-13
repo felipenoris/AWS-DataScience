@@ -2230,3 +2230,53 @@ and corrected two sentences an earlier sitting had left standing.*
   endpoint half is CloudTrail's `vpcEndpointId` for the two plugins; 5.2 and 5.4 are `make` runs; 6.1
   needs the user for four of its rows; 6.3 rewrites `SMUS.md`; 7.6 and 7.7 need a session provoked; step
   10 waits on decision due 9. The two Stage 3 probes were found running since 14:17:30Z, `[E]`.
+
+## 2026-09-12 — the twelfth sitting: the plan revised against the eleventh sitting's readings
+
+*The user asked for the plan to be revised against what the readings found. Most findings changed a
+decision or created one, and two belonged to later stages, which is where they were written (Lesson 34).
+One further reading was taken to make a new decision concrete.*
+
+- **[user] The instruction.** *"Registre todo o andamento no log. Revise o plano considerando os achados
+  desta sessão. Faça commit e suba as alterações no PR em aberto."*
+
+- **[Claude] Decision due 13's control, read before it was proposed.** A space on the wrong image had left
+  the DNS Firewall as the only barrier, so the preventive question is whether an app can be refused at
+  `CreateApp` for its image. `accessanalyzer validate-policy`, three statements in one document:
+  `sagemaker:ImageArns` on `CreateApp`, `CreateSpace` and `UpdateSpace` — **accepted**, with
+  `STRING_LIKE_OPERATOR_WITH_ARN_CONDITION_KEYS` and `TYPE_MISMATCH`, which say the key is ARN-typed and
+  wants `ArnNotLike`; `sagemaker:ImageVersionArns` on `CreateApp` — **accepted**, the same two warnings;
+  `sagemaker:NoSuchImageKeyAtAll` — **`INVALID_SERVICE_CONDITION_KEY`**, the control. The keys exist in the
+  catalogue. Whether `CreateApp` publishes them at request time, and whether an app that names AWS's image
+  by alias carries one, is the canary's to answer — the gap 6e's `DataRetentionMode` had before its probe.
+
+- **[Claude] What changed in this stage.**
+  - **Decision due 4** gained the day's two readings. The *whose space* half is AWS's tag-scoped Allow
+    (`RI-3`, `RI-4`). The *VPN-only* half is the whole remaining repair, and `RI-5` gives it a price: an
+    `aws:SourceIp` condition keyed to the proxy's address would refuse all 14 sessions of the week, because
+    only the monitored profile arrives from that address and the split-tunnel profile — the one used to
+    implement the plan — sends public AWS API calls out of the laptop. The repair makes the remote IDE a
+    monitored-profile feature; the choice is the user's.
+  - **Decision due 12**, where the apps' logs live: adopt `/aws/sagemaker/studio` into `sandbox/sagemaker/`
+    with a retention and stop creating the empty group (recommended), or set retention by hand.
+  - **Decision due 13**, whether a space may start on any image but the house image, with the validation
+    above, the canary probe recommended first, and its cost named: the SMUS default JupyterLab space runs
+    AWS's distribution and would stop starting unless that image is exempted by ARN.
+  - **6.2** now points its repair at decision due 12, and the verifications list decision 13's two
+    questions and closes 10.1's.
+
+- **[Claude] What was written into later stages.**
+  - **Stage 11, step 3**: 3.3 records that AWS's Allow is attached and that the week's sessions all came
+    from laptop uplinks, so its row reads *scoped by AWS, VPN-only by nobody*; **3.5** writes the wrong-image
+    case down as the DNS Firewall being the last barrier, naming decision 13; **3.6** carries Amazon Q's
+    residual if decision 9 opens it.
+  - **Stage 10, step 0.5**: the `lakeformation` endpoint question, to be re-read when the first engine
+    that vends its own Lake Formation credentials runs.
+  - **`docs/plan/cost-model.md`**: a kept space's volume, USD 0.112 per GB-month, as the Studio's idle floor
+    that `make down` does not reach.
+
+- **[Claude] An inference corrected in four files.** The sitting's records had said *"the extension fell
+  back"* to Anthropic's API on the wrong-image space. What was measured is 46 DNS queries for
+  `api.anthropic.com` from that space's address; that the Claude Code client made them is by every sign
+  true and was never said by the user. Stage 11's 3.5, this stage's decision 13, 6e's verification (v) and
+  6e's log now say which part is the reading.

@@ -1296,7 +1296,8 @@ while looking at 6d's.*
 
 - **[Claude] (v) held a second time, on the wrong image.** The space the user had created by mistake on
   AWS's SageMaker Distribution carried no proxy variables and no `/etc/claude-code/managed-settings.json`,
-  so the extension fell back to Anthropic's API. The Sandbox DNS Firewall log shows **`api.anthropic.com`
+  and something in it asked for Anthropic's API — by every sign the Claude Code client, though the user
+  did not say it was installed there. The Sandbox DNS Firewall log shows **`api.anthropic.com`
   blocked 46 times** from `10.20.10.101` between 20:58 and 21:32Z, beside `api.github.com`,
   `marketplace.visualstudio.com` and `pypi.org`, all from the same address, all blocked — the lifetime of
   that space, which was created at 20:40Z and deleted before 21:38Z. The attribution is by time, since its
@@ -1328,3 +1329,14 @@ while looking at 6d's.*
   endpoint — is not observed, and is unexercised rather than refuted**: none of the six `AmazonBedrock*`
   blueprints has been used. A scope of `bedrock:ListInferenceProfiles` would have broken nothing
   measured so far; the choice stays the user's.
+
+## 2026-09-12 — decision 11 carried into the stage
+
+- **[Claude, at the user's request to revise the plan against the session's findings]** The previous entry
+  recorded that 7.5 overtook decision 11 and that the stage still recommended running 7.2a. The stage now
+  says so where the recommendation stood: **7.2a as written reads `DenyInvokingModelsThatRetain`, not the
+  retention mode**, so decision 11 becomes whether to carve one probe principal out of that statement for
+  one sitting — recommended, since the requirement rests on the answer and the carve-out is one condition
+  added and removed — or to accept the vendor's sentence with its date. Verification (xiii) now reads that
+  no instrument is left in the estate as built. Verification (v)'s text was corrected the same sitting to
+  separate the 46 measured DNS blocks from the inference that the Claude Code client made them.
