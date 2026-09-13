@@ -261,6 +261,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`);
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
   to three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
+- **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
+  catalog acts already taken. Publishing is metadata only (no grant); the portal's catalog calls run as
+  `awsds-data-studio-domain-execution` in Data Governance; DataZone documents no LF-TBAC support for
+  managed Glue assets. Five decisions due; `INT-23` new.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

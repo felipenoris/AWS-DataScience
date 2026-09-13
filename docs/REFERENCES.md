@@ -437,6 +437,10 @@
 
 - Publishing and subscribing S3 data in SageMaker Unified Studio — catalog-subscribed S3 assets are fulfilled through S3 Access Grants (read-only or read/write chosen at approval), and revocation leaves up to ~20 minutes of residual access (≤5 min to still obtain credentials + a 15-min credential lifetime) — the bearer residual Stage 16 verification (viii) measures on its own grants: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3-publish.html>. Read 2026-08-26.
 
+- Sharing and data products in SageMaker Unified Studio (read 2026-09-13). *Share* gives S3, Glue (SageMaker Lakehouse) and QuickSight assets to other projects or to users and groups; for S3 it makes the data *"available to the projects you specify right away, without needing a subscription process"*, and the asset then shows under approved subscription requests, revocable: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/share-assets.html>. A data product groups assets into *"well-defined, self-contained packages"* for a business use case, published and subscribed as one unit, and is created from *Manage → Catalog management → Assets* by choosing assets: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>. The concepts page scopes the SageMaker Catalog to the domain, with discovery crossing the account and Region boundary; it names no sharing across domains.
+
+- Amazon DataZone concepts and managed-asset fulfilment (read 2026-09-13, for Stage 6f). The concepts page: *"An AWS account can be associated with one or more Amazon DataZone domain"*; an approved subscription is fulfilled *"by creating the necessary grants in AWS Lake Formation or Amazon Redshift"*, automatically only for managed assets (Glue tables, Redshift tables and views), with an EventBridge event for the rest; project members are owners, contributors, consumers, stewards and viewers: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>. The Glue-asset page: *"Access management for the AWS Glue Data Catalog assets using the AWS Lake Formation LF-TBAC method is not supported"*, cross-Region sharing is not supported, the table *"must be Lake Formation-managed"*, and the manage-access role needs `DESCRIBE` and `DESCRIBE GRANTABLE` on the database and `DESCRIBE`, `SELECT` and both grantable on the table: <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>. The SageMaker Unified Studio subscription page says a project is subscribed *"when the publisher approves your request"*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
+
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.
 
 - SageMaker Unified Studio access-control patterns (admin guide) — the role taxonomy (domain execution, provisioning, manage-access, project user role) and the two documented access patterns for external data (direct IAM on the project role vs catalog subscription): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-accesss-control-patterns.html>. Read 2026-08-26.
@@ -516,6 +520,17 @@
   <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-detach-from-domain.html>,
   reached from
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-clean-up.html>.
+
+- Code spaces in Identity Center domains — the user-guide page behind the default JupyterLab space (read
+  2026-09-13). Spaces are created from the *Spaces* tab of the *Compute* page, every space the portal
+  creates is private, and the page derives the user profile id from the default space's name (the string
+  after `default-`). Its delete procedure carries the note *"You cannot delete the default JupyterLab
+  space in Amazon SageMaker Unified Studio"*, and no setting on the page lets an administrator skip that
+  space: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/code-spaces-idc.html>. The
+  *Manage Tooling blueprint parameters* page, re-read the same day, describes `enableSpaces` as enabling
+  private compute spaces and names no parameter for the default space; the Tooling template gates the
+  whole SageMaker AI domain on `enableSpaces` (condition `sageMakerDomainRequired`):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>.
 
 - `ContainerConfig` — the constraint that decided Stage 6d step 2.2 (read 2026-09-10).
   `ContainerEnvironmentVariables` is *"Map Entries: … Maximum number of 25 items"* with *"Key Length
@@ -644,6 +659,8 @@
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
+
+- Redshift and the Glue Data Catalog, both directions (read 2026-09-13, for Stage 6f's institutional pattern). A Redshift provisioned cluster or serverless namespace registered to the Data Catalog becomes a federated catalog (namespace → multi-level catalog, database → catalog, schema → database, table → table), governed by Lake Formation and queried by Iceberg-compatible engines such as Athena and EMR Serverless: <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>. Redshift reads the Data Catalog through the `awsdatacatalog` database (RA3 or Serverless; `data_catalog_auto_mount`), and *"Queries against the `awsdatacatalog` database can only be read-only"*: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>. The crawler's data stores: S3, DynamoDB, Delta Lake, Iceberg and Hudi natively; Amazon Redshift, Snowflake, Aurora, MariaDB, SQL Server, MySQL, Oracle and PostgreSQL over JDBC; MongoDB, MongoDB Atlas and DocumentDB through the MongoDB client: <https://docs.aws.amazon.com/glue/latest/dg/crawler-data-stores.html>.
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
