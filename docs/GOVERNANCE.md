@@ -58,7 +58,7 @@ The derived zone is `awsds-<env>-smus-projects` — one bucket per Interactive m
 
 | Scope | What it holds | Who writes | Who reads | Who deletes |
 |---|---|---|---|---|
-| `<project>/dev/` | the project's system outputs — its enforced Athena workgroup writes query results to `dev/sys/athena/` (`EnforceWorkGroupConfiguration = true`, measured 2026-08-26), connectors beside it | the project role (Athena stages results with the querying session's credentials — always the project role in SMUS) | project members, through the project role; the laptop via a per-project S3 Access Grant (`docs/SMUS.md` §S3 item 1a) | nobody today — no lifecycle rule reaps a current object, and a deleted project keeps its prefix (measured; open question 25) |
+| `<project>/dev/` | the project's system outputs — its enforced Athena workgroup writes query results to `dev/sys/athena/` (`EnforceWorkGroupConfiguration = true`, measured 2026-08-26), connectors beside it; the portal's file uploads under `dev/local-uploads/<epoch-ms>/`, each folder the location of the Glue table the upload created; `dev/data/catalogs/`, the `LocationUri` of a database created in the portal (both measured 2026-09-12) | the project role (Athena stages results with the querying session's credentials — always the project role in SMUS) | project members, through the project role; Athena through Lake Formation, because the scope is LF-registered (below); the laptop via a per-project S3 Access Grant (`docs/SMUS.md` §S3 item 1a) | nobody today — no lifecycle rule reaps a current object, and a deleted project keeps its prefix (measured; open question 25) |
 | `<project>/shared/` | the project's working files — mounted as the shared folder in JupyterLab and Code Editor (the old `scratch/` role, at project grain) | the project role | idem | the project role (ordinary working-folder semantics, SMUS's) |
 
 Where it stands against the removed zone's design differences:
@@ -73,8 +73,14 @@ Where it stands against the removed zone's design differences:
   without touching what SMUS manages;
 - the write/containment grain is the project, not the person — Stage 5 decision 6's grain one level up;
   per-write attribution is Stage 11's data events;
-- nothing here is LF-registered: plain IAM, the managed policies' path shape (`*/dzd*/<project>/…`), the
-  project CMK, and S3 Access Grants over the project prefix.
+- `<project>/dev/` is LF-registered and `shared/` is not (measured 2026-09-12). SMUS registers the
+  `dev/` scope when it creates a project, with the project role as registration role and hybrid access
+  off, and deregisters it when it deletes the project, leaving the prefix. The service grants over that
+  scope, and over the databases and tables a project creates, to every IAM principal and Identity
+  Center user of the account under a condition naming the project (`docs/SMUS.md` §S3 item 1b). Athena
+  reads a table under `dev/` with credentials Lake Formation vends. A direct S3 call is decided by IAM,
+  the managed policies' path shape (`*/dzd*/<project>/…`), the project CMK and S3 Access Grants over
+  the project prefix.
 
 Stage 11 inherits the bucket by name (Macie scan scope, data-event trail map — `./aws/dlp.py` `DP-4`
 reads it): Stage 11 cannot discover a destination nothing points at, and an orphaned prefix is invisible

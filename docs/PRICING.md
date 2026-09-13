@@ -683,6 +683,7 @@ Paulo that discipline is worth exactly twice as much.
 | SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / Code Editor `ml.m5.large` (2026-09-07) | 0.184 | **0.115** | 1.60 |
 | SageMaker Unified Studio **space volume**, USD per GB-month (`UnifiedStudio:VolumeUsage.gp3`) — **measured 2026-09-12**; a space bills this at rest, app stopped, which is why `conventions.md` §5.1 does not put it in `[E]` | 0.2128 | **0.112** | 1.90 |
+| SageMaker Unified Studio notebook compute `sc.t3.medium` (`UnifiedStudio:Notebook-sc.t3.medium`, 2 vCPU, 4 GiB) — measured 2026-09-12, offer published 2026-09-11. The offer has no querybook usage type, so what a querybook bills under is unmeasured (`SMUS.md` §"Querybook compute") | 0.081 | 0.050 | 1.62 |
 | SageMaker notebook instance `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker processing `ml.t3.medium` | 0.066 | — | |
 | SageMaker notebook EBS (USD/GB-mo) | 0.266 | — | |

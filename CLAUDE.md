@@ -317,6 +317,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
   configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);
   `-refresh=false` is forbidden on that slice. A denied call does not always name the policy.
+  SMUS LF-registers each project's `dev/` under the project role and grants to `IAMPrincipals` under a
+  `context.datazone.projectId` condition (`DL-14`, SMUS.md §S3 1b). Querybook quotas read 0; the
+  defaults were requested 2026-09-13 (pending), and the compute's first run is unmeasured.
 - **Standing rules**: never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
   note; resolve an account by exact vended name; subnets anchor on AZ `zone_id`; read the denial wording,
   never the exit code; account-level BPA **and the Bedrock retention mode** are hand-managed; Log

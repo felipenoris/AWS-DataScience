@@ -570,6 +570,48 @@ persona role — every set holder vends for every granted project), and the vend
 **bearer** for their duration (the OQ-14 shape). Requests are metered: USD 0.03 per 1,000 non-delete
 AG calls (`PRICING.md` §5).
 
+**1b. Lake Formation over the same path — registration, conditional grants, and what the portal
+creates (measured 2026-09-12: CloudTrail since 2026-08-20, and the objects read back).**
+
+- **The service registers each project's `dev/` scope.** At project creation
+  `awsds-<env>-smus-provisioning` (session `AmazonDataZoneEnvironmentDeployer-*`, via
+  `datazone.amazonaws.com`) calls `RegisterResource` on `…/<project-id>/dev/` with the **project role**
+  as registration role, `HybridAccessEnabled = false` and `WithFederation = false`. At deletion it calls
+  `DeregisterResource`, and the prefix stays (item 1). Sandbox's trail holds five registrations and four
+  deregistrations; `list-resources` returns the live project's alone. `shared/` is not registered.
+  `./aws/datalake.py` `DL-14` reads the list.
+- **The service grants to a condition, not to a role.** The provisioning role runs
+  `BatchGrantPermissions` to `<account-id>:IAMPrincipals` and `arn:aws:identitystore:::user/*`, each with
+  the condition `context has datazone && context.datazone has projectId &&
+  context.datazone.projectId=="<project-id>"`, Lake Formation's attribute-based grant. At project
+  creation it grants `DATA_LOCATION_ACCESS` on the `dev/` location and `DESCRIBE` on `default`, the
+  database the first project created (2026-08-22); at deletion `BatchRevokePermissions` removes the
+  same pair. Lake Formation's ABAC page does not describe `context.datazone` (`REFERENCES.md`), and
+  which sessions carry it is unmeasured. Neither SMUS role has granted, revoked or registered anything
+  on `raw` or `curated`, and the project role's `glue:GetDatabase` on both resource links is refused:
+  *"Insufficient Lake Formation permission(s): Required Describe on raw"*.
+- **A portal "Create database" is a Glue call made by the provisioning role.** *Data → Catalogs →
+  AwsDataCatalog → Create database* produced `glue:CreateDatabase` with the description *"Created by
+  DataZone for project <name>"*, `LocationUri` `…/<project-id>/dev/data/catalogs/` and
+  `CreateTableDefaultPermissions: []`, and wrote no object. The grants followed within eight seconds. The
+  two conditioned principals received `CREATE_TABLE`, `DESCRIBE` and `DROP` on the database, and
+  `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DROP` and `DESCRIBE` on all its tables.
+  `awsds-<env>-smus-manage-access` received `CREATE_TABLE` and grantable `DESCRIBE` on the database, and
+  grantable `DESCRIBE` and `SELECT` on its tables. The manage-access role then called
+  `lakeformation:CreateLakeFormationOptIn` for the conditioned principal on the database and was refused
+  (*"no identity-based policy allows"*); the query below succeeded without the opt-in.
+- **A table created by uploading a file points at a folder the upload flow chose, not at the database
+  location.** The Parquet landed at `…/dev/local-uploads/<epoch-ms>/<name>.parquet`. `glue:CreateTable`,
+  called by the project role from the browser, set that folder as the table's location: `EXTERNAL_TABLE`,
+  `ParquetHiveSerDe`, `IsRegisteredWithLakeFormation: true`. An external table stores the schema and the
+  location; its rows are read from the folder's objects at query time.
+- **The query editor and the querybook are separate surfaces.** The query editor runs through SQL
+  Workbench: `sqlworkbench:ExecuteQuery`, then `athena:StartQueryExecution` from
+  `sqlworkbench.amazonaws.com` as the project role, then `lakeformation:GetDataAccess` for `SELECT` on
+  the table. A `SELECT … LIMIT 10` returned 10 rows (`OutputRows`), with results in `dev/sys/athena/`. A
+  querybook is a DataZone notebook of type `SQL`, and its cells need a managed compute; §"Querybook
+  compute" records why none started.
+
 **2. Project files storage — S3, and a git repository beside it, not instead of it** (measured
 2026-08-26). The documentation reads *"S3 or Git"*; the profile answers it directly. The `Tooling`
 configuration carries five parameters — `gitConnectionArn`, `gitFullRepositoryId`, `gitBranchName`,
@@ -602,7 +644,7 @@ kept struck as the record of what the account used to hold.
 
 | Object | Created by | Holds |
 |---|---|---|
-| `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location |
+| `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location, the portal's file uploads behind the tables they created (item 1b) |
 | ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Destroyed 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
 | ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Deleted 2026-08-26/27**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
 
@@ -711,6 +753,35 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 step 1.5 sets `sagemakerDomainNetworkType = VpcOnly` in both project profiles and marks the parameter
 **non-Editable** — the *Editable* flag is what turns a default into a control (Lesson 5): the
 parameter exists so nobody can flip a project to `PublicInternetOnly`.
+
+### Querybook compute
+
+A querybook, the SQL notebook the portal opens from the catalog, runs its cells on a managed compute
+that `datazone:StartNotebookCompute` starts. In Sandbox that call fails with
+`ServiceQuotaExceededException`, which the portal shows as status code 402 (measured 2026-09-12, six
+attempts by the project role):
+
+- `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*, reads **0**
+  against an AWS default of **5**. `L-B3401D17` (*Querybook Runs running on sc.t3.medium instances*)
+  reads 0 against 5, and `L-85C9EC5A` (*The maximum number of concurrent notebook runs per account*)
+  0 against 15. Of the 81 `sc.*` quotas in the `datazone` service code with a default above zero, 79
+  read 0; the two others are `L-DBBAE884` (*Notebooks running on sc.t3.medium instances*, 2 against 6)
+  and `L-B890B049` (*Compute environments running on sc.t3.large instances*, 5 against 5). No increase
+  had been requested before 2026-09-13.
+- The request names where the compute would run: `networkAccessType = VPC_ONLY`, `awsds-sandbox-vpc`,
+  the subnets `awsds-sandbox-private-usw2-az1` and `awsds-sandbox-private-usw2-az2`, the security group
+  `datazone-<project-id>-dev` (*"Security group for the project."*), the project role as execution role,
+  and the project path under the project CMK as storage. That is the placement `VpcOnly` asks for,
+  read from a request that never ran; the compute's own calls, and their path through the endpoints and
+  the proxy, are unmeasured.
+- The price list has no querybook usage type. `UnifiedStudio:Notebook-sc.t3.medium` is USD 0.050/h
+  in `us-west-2` (`PRICING.md` §8); what a querybook bills under is unmeasured.
+- The user requested the three at their defaults on 2026-09-13: `L-F63F402C` and `L-B3401D17` at 5
+  (`PENDING`), `L-85C9EC5A` at 15 (`CASE_OPENED`), all three still applied at 0 when read at 03:46Z. A
+  request below the default is refused with `IllegalArgumentException` (*"You must provide a quota value
+  greater than the default quota value of 5.0"*), and a request equal to the default is accepted. An
+  approval turns on a compute surface this estate has not measured. The query editor runs Athena
+  through SQL Workbench without it (§S3 item 1b).
 
 ### Custom images (BYOI) — and how they are named
 
