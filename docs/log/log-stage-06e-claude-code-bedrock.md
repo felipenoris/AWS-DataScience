@@ -1287,3 +1287,44 @@ readings became a script, and the user deferred the session itself.*
   4.5. (xii): during the evening's Opus and Sonnet sessions **Haiku took 3 invocations with 81 output
   tokens and no cache write**, the shape of background work such as session titles — strong evidence,
   not the single title call's `modelId` the row asks for.
+
+## 2026-09-12 — four verifications answered from logs, and the evidence decision 13 was taken without
+
+*No write. Readings taken at the user's instruction to advance every read the plan allows — "Avance em
+todas as leituras que conseguir e registre todo o andamento no log" — that happened to answer 6e rows
+while looking at 6d's.*
+
+- **[Claude] (v) held a second time, on the wrong image.** The space the user had created by mistake on
+  AWS's SageMaker Distribution carried no proxy variables and no `/etc/claude-code/managed-settings.json`,
+  so the extension fell back to Anthropic's API. The Sandbox DNS Firewall log shows **`api.anthropic.com`
+  blocked 46 times** from `10.20.10.101` between 20:58 and 21:32Z, beside `api.github.com`,
+  `marketplace.visualstudio.com` and `pypi.org`, all from the same address, all blocked — the lifetime of
+  that space, which was created at 20:40Z and deleted before 21:38Z. The attribution is by time, since its
+  interface no longer exists. **The requirement survived the loss of both the image's settings and the
+  proxy: the name never resolved.**
+
+- **[Claude] (xii) answered by timing.** CloudTrail `us-west-2`, 21:00-23:30Z: each of the three Haiku 4.5
+  invocations is the **first call of a conversation, one to two seconds before the primary's burst** —
+  21:35:31Z before 19 Sonnet 4.5 calls, 21:57:03Z before 13 Opus 4.5 calls, 22:13:55Z before 9 Opus 4.5
+  calls. That is the session-title call, billed on Haiku, across two different primary models. CloudTrail
+  carries no content, so the title is not read; the pattern is.
+
+- **[Claude] (ii) and the `/model` half of (xi) marked.** All three scoped models answered by invocation in
+  both channels (Haiku in step 6, Sonnet 4.5 20 and Opus 4.5 22 in the evening), and the picker the user
+  reported on 2026-09-12 is exactly `availableModels` plus the default. `/status` was not read.
+
+- **[Claude] 8.4 — who spent it.** The evening's 45 invocations were **all the one project role**, all
+  through the runtime endpoint, from three space addresses: `10.20.43.114` (20), `10.20.61.134` (14),
+  `10.20.64.199` (11). The source address is the only field that separates spaces, and it changes at
+  every app restart; nothing attributes spend to a user.
+
+- **[Claude] Decision 13's evidence, for the review it never had.** Three days of `bedrock.amazonaws.com`
+  in Sandbox: **the only action through the control-plane endpoint was `ListInferenceProfiles`, by the
+  project role, 16 times across two `make up`s** — the client starting. Every other control-plane call came
+  without an endpoint, from an operator's laptop (`GetFoundationModelAvailability` 186,
+  `GetFoundationModel` 35, and the rest of this stage's instruments) or from AWS Config. The endpoint
+  policies read the same day: the runtime endpoint scoped to the two invoke actions, the control-plane
+  endpoint `*`. **The decision's premise — that SMUS blueprints call the control plane through this
+  endpoint — is not observed, and is unexercised rather than refuted**: none of the six `AmazonBedrock*`
+  blueprints has been used. A scope of `bedrock:ListInferenceProfiles` would have broken nothing
+  measured so far; the choice stays the user's.

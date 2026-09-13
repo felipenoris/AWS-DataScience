@@ -2083,3 +2083,150 @@ measurement from a count that goes stale. The **link** half is the part nobody d
 hold whole copies of this repository, whose relative links cannot resolve from where they sit. A
 suggestion was left to scope the walk to the tracked tree; the size half of the same gate works and is
 what caught the `CLAUDE.md` overflow.
+
+## 2026-09-12 — the eleventh sitting: Amazon Q fails in a space, step 10 is planned, and every read the stage allows
+
+*Two parts. The first answers why Amazon Q failed and plans its Free tier as step 10. The second is the
+user's instruction to take every reading that needs no write, which closed or half-closed seven steps
+and corrected two sentences an earlier sitting had left standing.*
+
+### Amazon Q in a space: where it fails
+
+- **[user] The report.** *"Existe um assistente de programação padrão da AWS no VSCode. Amazon Q. Tentei
+  usqr pelo ambiente, mas falhou. Pode verificar nos logs? Quero verificar a diferença de preço dele em
+  relqção aos modelos que habilitamos."*
+
+- **[Claude] The proxy did not refuse it.** Three hours of `/awsds/prod/proxy`: every name the extension
+  used was `200 TCP_TUNNEL` through the compute plane's `.amazonaws.com` entry —
+  `codewhisperer.us-east-1.amazonaws.com` (one tunnel, logged at 22:06:06Z when it closed),
+  `aws-language-servers.us-east-1.amazonaws.com`, `aws-toolkit-language-servers.amazonaws.com`, and
+  `client-telemetry` and `cognito-identity` in `us-east-1`. One tunnel and then silence is the shape of an
+  authorization refusal inside it.
+
+- **[Claude] CloudTrail `us-east-1` carries the refusal**, readable from Sandbox because
+  `cloudtrail:LookupEvents` is among the Region ceiling's exemptions: `q:SendMessage` at
+  **22:03:08Z**, `AccessDenied`, as the **project role**, from `184.33.8.126` — the proxy's Elastic IP —
+  with no `vpcEndpointId` and `userAgent` `api/qdeveloperstreaming`. *"explicit deny in a service control
+  policy"*, **naming none**.
+
+- **[Claude] Attributed by reading, not by attempt.** The six SCPs on Sandbox's path (`FullAWSAccess` on
+  each level aside) were fetched and every `Deny` evaluated against the request — `q:SendMessage`,
+  `us-east-1`, the project role. **Exactly one statement matches: `CTMULTISERVICEPV1` in `p-umksvu5a`**,
+  the Control Tower Region ceiling on `Interactive`. No `q:` or `codewhisperer:` action is among its
+  `NotAction` entries, and the service answers in `us-east-1`.
+
+- **[Claude] Every other layer permits it.** `SageMakerStudioProjectUserRolePolicy` v75 grants
+  `q:StartConversation`, `q:SendMessage` (`AmazonQChatPermissions`) and
+  `codewhisperer:GenerateRecommendations` (`CodeWhisperer`), `Resource *`, no condition — **and not
+  `q:PassRequest`**. The D13 boundary permits them: its one deny reads `sagemaker:InstanceTypes`, which a
+  `q:` request does not carry, so the `ForAnyValue` condition is false. **Amazon Q is on by default in
+  Unified Studio and off here by accident.**
+
+- **[Claude] The price, from the price list.** `AmazonQ` offer, published `2026-09-11T12:45:01Z`: **Q
+  Developer Pro USD 19.00 per user per month**, identical in `us-east-1`, `us-west-2` and `eu-central-1`;
+  no Free-tier SKU, no overage row. Recorded in `docs/PRICING.md` (PR #80).
+
+### Step 10 planned, and the questions it has to answer first
+
+- **[user] The direction.** *"Vamos trabalhar na configuração do Amazon Q na versão free. Ajuste o plano do
+  estágio 6d incluindo uma etapa de configuração do Amazon Q Free."* With two questions: whether the
+  extension's model picker, which showed an Anthropic model, is the same extension; and *"se o uso do
+  amazon Q possui mesmo controle que configuramos no caso do bedrock, sem retenção de dados."* And, during
+  the sitting: *"gostaria de prever a possibilidade de migrar para o Amazon Q Pro."*
+
+- **[Claude] The same extension, and Claude models on Bedrock.** The failing call's `userAgent` is Q
+  Developer's streaming API, and the space downloaded Q's language servers. The vendor's *Selecting a model
+  for Amazon Q chat in IDEs* listed Claude Sonnet 3.7 and Claude Sonnet 4, the second the default, on the
+  day it was read, and *Cross-region processing* states Q is *"powered by Amazon Bedrock"*. The models are
+  AWS's choice, not this estate's pinned set.
+
+- **[Claude] Not the same control as Bedrock.** Read from the vendor's pages the same day: Q *"stores your
+  questions, its responses, and additional context, such as console metadata and code"*, at the Free tier
+  in `us-east-1`, under AWS owned keys, with no retention period stated. In SageMaker Studio its content is
+  not used to improve the service *"regardless of whether you use the Free-tier or Pro-tier subscription"*;
+  in a third-party IDE at the Free tier it may be, *"for model training"* among other uses, with an opt-out
+  the administrator cannot enforce; the AI services opt-out policy does not reach the IDE. The `codewhisperer`
+  endpoint exists in `us-east-1` alone. **As written, the Free tier does not meet the persistence clause
+  Stage 6e was built on**, and Pro changes who may read the content, not where it is stored.
+
+- **[Claude] Step 10 written** into the stage, with decision due 9 (open it at all) gating everything and
+  decision due 10 (which surface) before the test. If opened: the three actions the managed policy grants
+  as explicit `NotAction`s, never `q:*`; a Region deny and an outright `q:PassRequest` deny in the
+  `Interactive` document, since the managed policy is AWS's and moves without this repository; no network
+  change; and `docs/plan/runbooks/amazon-q.md` for both audiences, with a section for the move to Pro —
+  whose Q Developer profile exists only in `us-east-1` and `eu-central-1`, so this estate's Pro data would
+  live in `us-east-1`. Decision due 1 was struck: `codewhisperer` never needed to join the proxy list.
+
+### Every read the stage allows
+
+- **[user] The instruction.** *"Avance em todas as leituras que conseguir e registre todo o andamento no
+  log. Abra branch e suba PR."*
+
+- **[Claude] 10.1 — the domain's Amazon Q switch does not exist.** A direct `get-parameter` on
+  `/amazon/datazone/q/<domain-id>` and `…/q-enabled` returned **`ParameterNotFound`** in `Data Governance`
+  and in `Sandbox`. A named refusal distinguishes absence from a missing permission, so the default holds,
+  and closing Amazon Q again is the deny rather than a switch nobody created.
+
+- **[Claude] 10.8 — the Free tier's limits, from the vendor's pricing page** (undated): **50 agentic
+  requests per month**, applied *"at the account level when logged in as an IAM user"*. The page says IAM
+  user and a space is a role, so a shared allowance for all of `Sandbox` is likely and not yet seen. The
+  Unified Studio user-guide pages that may carry the same sentence did not render for reading, twice.
+
+- **[Claude] 3.4, the half the logs carry.** Twenty-four hours of the proxy log: the domain's own URL,
+  `dzd-<id>.sagemaker.us-west-2.on.aws`, **refused six times from six source addresses**, one per space
+  start — a Studio component that honours the proxy, still decision due 6's. Twenty-four hours of the
+  Sandbox DNS Firewall log: **`time.aws.com` blocked 76 times from spaces as well as from the probes** an
+  earlier sitting had attributed it to; time synchronisation is UDP, which no HTTP proxy carries. The
+  DataZone agent and the S3 Access Grants plugin appear in neither log, since their services have
+  endpoints.
+
+- **[Claude] 3.7 — the AL2023 mirror path: two hosts missed it.** 2026-09-07: `10.30.34.210` (24) and
+  `10.30.41.92` (53) in the build plane sent `al2023-repos-us-west-2-de612dc2` to the proxy and were refused,
+  the day before that plane went `open`; since 2026-09-08 no build host has sent it through the proxy.
+  2026-09-12: `probe-perimeter`, booted 14:17:30Z, asked for **`cdn.amazonlinux.com`** and was blocked
+  at DNS, while `probe-peering`, booted the same second, resolved the repository bucket.
+
+- **[Claude] 3.7 — `lakeformation`.** Seven days of Lake Formation events held only four operator reads,
+  and no lake flow ran — not evidence. Widened to the 90-day window: **202 events between 2026-08-19 and
+  2026-09-12, none with a `vpcEndpointId`**. Credential vending for real reads (`GetDataAccess`,
+  2026-08-20, `DataScientistAccess`) came from `athena.amazonaws.com` and `glue.amazonaws.com`, provisioning
+  from `datazone.amazonaws.com`, the rest from a laptop. Written as decision due 11, recommended to wait
+  for Stage 10's engines.
+
+- **[Claude] 5.3 — the layers, into `conventions.md` §5.1.** One table: owner, layer, cost at rest, what
+  `make down` does. **A space is not `[E]`** — the step's own wording had it there — because it holds a
+  home directory, the `RemoteAccess` flag and a project's S3 connection. Its volume was priced the same
+  sitting through the Price List Query API (`pricing:*` is exempt from the ceiling):
+  **`UnifiedStudio:VolumeUsage.gp3` USD 0.112 per GB-month in `us-west-2`, 0.2128 in `sa-east-1`**; the
+  three spaces of the day, 56 GB, cost **USD 6.27 a month at rest**. Added to `docs/PRICING.md`.
+
+- **[Claude] 6.2 — both halves negative.** `/awsds/sandbox/studio`, created on purpose with 30-day
+  retention: **0 bytes, no stream**. `/aws/sagemaker/studio`, AWS's default: **13.6 MB, no retention**,
+  holding every app's streams. No SageMaker metric namespace exists to alarm on. Recorded as `AWS_STATE.md`
+  `EXC-10`; the repair is a decision.
+
+- **[Claude] 2.4 — the before half.** `./aws/studio.py`: `US-1`..`US-10` pass; its one failed-call list is
+  the persona profiles nobody had signed in. The domain names image version 4 on both app types.
+
+- **[Claude] 7.9 — `./aws/remote-ide.py`, written and run.** `RI-1` the seven endpoints available; `RI-2`
+  the one remote-access space, `code-v4`, `ml.t3.large`, 8,192 MiB, 0.100/h; **`RI-3` AWS's
+  `AllowStartSessionForSpaceRemoteConnection`** (`SageMakerStudioProjectRoleMachineLearningPolicy` v43,
+  created 2026-09-04) as the project role's only `StartSession` grant, conditioned on both tags; **`RI-4`
+  all six persona sets carrying both deny Sids on the same two keys**; and `RI-5`, **14 `StartSession` calls
+  in seven days, all from a laptop's own uplink**, none from the proxy's address or the VPN host's. The
+  RI-3 and RI-4 rules were run against fabricated statements — an unconditioned Allow, a one-tag wildcard,
+  a renamed tag — and each fails.
+
+- **[Claude] A label of Claude's corrected before it was committed.** `RI-5` first called a laptop-uplink
+  address *"a session opened off the VPN"*. The split-tunnel profile sends public AWS API calls out of the
+  laptop's own uplink by design, so the same address appears with the tunnel up. The check now says what
+  it can: no session came through the monitored profile.
+
+- **[Claude] A stale sentence in step 7.2.** It still said a project-role session succeeds **unscoped**,
+  where this log had recorded on 2026-09-07 that AWS's conditioned Allow scopes it. The stage now says
+  the call is scoped by AWS and not by this estate, and that the VPN-only half is scoped by nobody.
+
+- **[Claude] What still needs a write or a person.** 2.4's after half needs a reconciliation; 3.4's
+  endpoint half is CloudTrail's `vpcEndpointId` for the two plugins; 5.2 and 5.4 are `make` runs; 6.1
+  needs the user for four of its rows; 6.3 rewrites `SMUS.md`; 7.6 and 7.7 need a session provoked; step
+  10 waits on decision due 9. The two Stage 3 probes were found running since 14:17:30Z, `[E]`.

@@ -236,13 +236,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
   `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. The image's Python is a
   second uv env under `/opt/awsds` on CPython **3.13** (no TF wheel past `cp313`), own kernel; R on
-  conda, `rust-src` since v0.3.0. Owed: 2.4; 1.1's persona half, 1.2/1.3; 3.4, 3.7; step 5 beyond
-  the idle shutdown seen unasked; step 6; 7.6, 7.7, 7.9; step 10 (Amazon Q, dec 9 first).
+  conda, `rust-src` since v0.3.0. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
+  half; 5.2, 5.4; 6.1, 6.3; 7.6, 7.7; step 10 (Amazon Q, dec 9 first). Apps log to a never-expiring
+  group (`EXC-10`).
 - **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
   Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
   deep link is that principal from the browser, so `DenyControlPlaneOffVpn` and 6a's tag pair never
-  evaluate: decision 4's repair lands on the project role — `aws:SourceIdentity` or the space's
-  `OwnerUserProfileName` for *whose space*, `aws:SourceIp` for *VPN-only*. Decision 5: the space's own
+  evaluate: *whose space* is AWS's tag-scoped Allow on the project role (`remote-ide.py` `RI-3`),
+  *VPN-only* is nobody's (decision 4). Decision 5: the space's own
   fetch of the server and of each `.vsix` is refused (`403`) and Remote - SSH copies both from the
   laptop — **no Microsoft name joins the plane**, and the session is a **file channel in both
   directions that no hostname list describes**. **Two IDE servers run in one container**, separate
