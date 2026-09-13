@@ -628,6 +628,29 @@ and a metadata database holding state nothing else persists) is not built: D7 am
 **MWAA Serverless the only orchestrator**, and a serverless workflow bills nothing at rest, so the
 `orchestration/` slices stay `[E]` with no idle cost and nothing to lose on a destroy.
 
+**Where each SageMaker Unified Studio object sits** (Stage 6d step 5.3, read 2026-09-12). Three owners
+share the surface — Terraform, the `Tooling` blueprint and the portal — and only the first appears in a
+plan, so the layer of the other two is written here rather than inferred from a slice:
+
+| Object | Layer | Owner | At rest | `make down` |
+|---|---|---|---|---|
+| the DataZone V2 domain, its project profiles and the catalog | `[P]` | `data-governance/governance/` | metadata and storage | never |
+| blueprint configurations | `[P]` | the member account, by hand; immutable through `awscc` | nothing | never |
+| the project and its role, `datazone_usr_role_*` | `[P]` | the `Tooling` blueprint | nothing | never |
+| the D13 boundary on that role | `[P]` | `sandbox/sagemaker/` (the `sagemaker-prereqs` module) | nothing | never |
+| the project's SageMaker AI domain, its `DefaultUserSettings` and the `CustomImages` attachment | `[P]` | the blueprint; the attachment by hand ([`dev-env.md`](runbooks/dev-env.md) §C6) | nothing until an app runs | never |
+| the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
+| the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
+| **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
+| an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
+| a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |
+
+**A space is not `[E]`**, although the step that asked for this table first listed it there: it holds a
+user's home directory and, since [Stage 6d](stages/stage-06d-unified-studio-remainder.md) step 7, the
+`RemoteAccess` flag and a project's S3 connection, so destroying it is a data loss rather than a cost
+saving. It also carries **its own copy of the image version number**, so a version bump reaches it only
+through `dev-env.md` §B step 6 (`AWS_STATE.md` `EXC-09`).
+
 **Rules this imposes:**
 
 1. Terraform slices are split along these lines. `terraform destroy` of an `[E]` slice must never be able
