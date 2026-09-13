@@ -121,6 +121,13 @@ readings; the only console half is the user's.
   `CreateWorkflow`, manages the service's networking, and carries
   `AmazonMWAAServerlessServiceRolePolicy` — enumerate it **when it appears** (verification (iii)), so it
   is a recorded principal rather than a discovered one (Lesson 17).
+- **0.5 — [Claude] Re-read the `lakeformation` endpoint question 6d left here** (6d step 3.7, decision due
+  11). On 2026-09-12 every Lake Formation call in Sandbox's 90-day CloudTrail window — 202 events —
+  arrived service-side (`athena.amazonaws.com`, `glue.amazonaws.com`, `datazone.amazonaws.com`) or from an
+  operator's laptop, and **none through the endpoint**. The flow that would need it is an engine vending
+  its own Lake Formation credentials from inside a VPC, which this stage is the first to name. When the
+  first such engine runs, read its Lake Formation events for `vpcEndpointId`, and remove or keep the
+  Sandbox endpoint on that reading.
 - **0.4 — [user] Read the Workflows surface in the `engineering` project** (open question 15; Lesson 16 —
   record every field): what the portal offers today for **serverless** workflows, and which toggle
   (blueprint, profile parameter, or nothing) enables it. Two facts fix the boundaries: the **OnDemand
