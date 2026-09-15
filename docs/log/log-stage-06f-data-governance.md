@@ -133,3 +133,90 @@ this entry at the user's request. Times are UTC.*
   `integrations.md`; the stage's rows in `GENERAL_PLAN.md` and `stages/INDEX.md`; this log and its row in
   `docs/log/INDEX.md`; the catalog half of 6d's thirteenth sitting moved here; the sources in
   `REFERENCES.md`.
+
+- **[user] The catalog's scope and the domain's place.** *"SageMaker Catalog e Glue Catalog são coisas
+  diferentes?"*; *"Se a publicação/assinatura/share ocorre apenas dentro do domínio sagemaker, então a
+  instituição inteira teria que usar um único domínio sagemaker para utilizar esta feature de forma
+  institucional?"*; *"Pode aplicar as alterações necessárias e subir no PR. O runtime de produção vai ser
+  associado ao mesmo domínio sagemaker? Esse domínio mora em qual conta? Os dados dos lakes de produção
+  estão desenhados para morar na conta data governance ou produção?"*
+
+- **[Claude] Answered, and a row corrected.** The Glue Data Catalog is per account and Region, the
+  SageMaker Catalog per domain. The domain lives in `Data Governance`, Production is never associated
+  (D26, `DenyDataZoneEntirely`), and the lake's data live in `Data Governance` (D22). The domain-topology
+  row of `institutional-delta.md` named a domain per business data domain; it now reads one DataZone
+  domain for the institution with a domain unit per business data domain, and the lake-placement and
+  approval rows say "business data domain" too. The stage's boundary item 4 gained the domain units.
+  Committed to the PR with the stage.
+
+- **[user]** *"Então os catálogos (glue e sagemaker) moram na conta data governance. O domínio SageMaker
+  também. E as outras contas todas se associam a este domínio. A conta Data Governance deveria ter camada
+  interativa para permitir configuração do catálogo do sagemaker?"*
+
+- **[Claude] Answered: no.** Two premises corrected: each account holds its own Glue Data Catalog
+  (`mydatabase` and `house-price` are in Sandbox's), and only the interactive accounts are associated.
+  Configuring the catalog is DataZone control-plane work from the portal or the API, whose catalog calls
+  already run in `Data Governance` as the domain execution role; D22 and D26 keep compute out of the
+  account, and `US-3` fails on any blueprint configuration there. Nothing was written.
+
+## 2026-09-15 — the third sitting: LF-Tags beside the catalog, and the data-product cycle in `GOVERNANCE.md`
+
+*No AWS call was made. Claude answered from the repository and the vendor documentation and wrote the
+files at the user's requests; this entry was written at the user's request. Times are UTC.*
+
+- **[user] 02:06Z.** *"No quadro comparando Glue Data Catalog e SageMaker Catalog, onde se encaixa nesse
+  processo o controle de acesso por LF Tags?"*
+
+- **[Claude] Answered.** An LF-Tag is Lake Formation's: it is assigned to a Glue object, and Lake
+  Formation holds it, its inheritance and the evaluation. Two grant forms reach the same Lake Formation:
+  the register's TBAC, with the attribute on the data, and the named-resource grants SMUS writes under
+  `context.datazone.projectId`, with the attribute on the session.
+
+- **[user] 02:15Z.** *"Registre essa distinção (TBAC vs ABAC) no stage 6f e no SMUS.md. Considerando que
+  o SMUS é utilizado como ferramenta de desenvolvimento de produtos de dados, fornecendo as features de
+  governança, em qual momento no fluxo de desenvolvimento de um produto de dados pelo SageMaker seriam
+  atribuídas as LF Tags? O SageMaker não é autosuficiente ?"*
+
+- **[Claude] Written, and answered.** The distinction went into the stage's catalog section and
+  `SMUS.md` §S3 1b. No act read on 2026-09-12/13 assigned an LF-Tag; the tag belongs to the table's
+  declaration in `Data Governance`, before the promotion that writes it. SageMaker covers development
+  and the catalog, and the lake's entitlement is policy in the register.
+
+- **[user] 02:34Z.** *"Pode ajustar tb GOVERNANCE.md. Considerando estas limitações do SageMaker, isso
+  inutiliza as features de governança de dados disponibilizadas pela interface do SageMaker?"*
+
+- **[Claude] Written, and answered: no.** `GOVERNANCE.md` §Access control gained the second form. The
+  catalog keeps discovery, business metadata, ownership and the request record, data products, lineage,
+  domain units and access between projects' own tables; a subscription as the entitlement to a lake
+  table is what stays out. A shape (d) was proposed: the lake published as unmanaged assets, with the
+  grant made in the register.
+
+- **[user] 03:19Z.** *"Sim, inclua a forma (d) na 6f. Revise `GOVERNANCE.md` considerando as discussões
+  desta sessão."* The instruction asked for the development cycle, publishing and sharing, business
+  metadata, promotion between environments, the rite for assigning LF-Tags and the infrastructure it
+  changes, in a text that *"vai apoiar a criação de uma apresentação sobre o tema"*, with an outline:
+  accounts, catalogs and Lake Formation, access controls and LF-Tags, the development cycle.
+
+- **[Claude] Written.**
+  - The stage: shape (d) in 3.1, with 3.2, 3.3, verification v and decision due 1, which now recommends
+    (d) if 3.1 finds it possible and (c) otherwise; 7.1 points at the new cycle section; the three-system
+    table moved to `GOVERNANCE.md`.
+  - `GOVERNANCE.md`: §Accounts, a diagram and a table of what each account holds; §Catalogs, the three
+    systems side by side, a data product beside the lake and a warehouse, and a subsection each, the
+    SageMaker Catalog's with its features; §Access control, the two forms side by side; §"The
+    development cycle of a data product", a diagram and four subsections, the last the rite for a
+    curated table's tags. Both diagrams rendered in a local browser without a syntax error.
+  - `CLAUDE.md`'s routing row for `GOVERNANCE.md`.
+  - One premise of the outline was not carried: Staging writes nothing into `Data Governance` (D20).
+
+- **[user] 11:58Z.** *"Sim, escreva o log e suba no PR."*
+
+- **[Claude] Corrected before the commit, reading the new text against its sources.**
+  - "Lake Formation has no deny" had no source. Lake Formation's metadata-permissions page states the
+    rule the argument needs, that a principal's permissions are the union of its grants, named-resource
+    and LF-Tag alike (`REFERENCES.md`); the stage, `SMUS.md` and `GOVERNANCE.md` carry that rule instead.
+  - A fulfilment grant had been written as the conditioned form. DataZone documents it as a
+    named-resource grant, and its condition is verification i.
+  - The chat had said the catalog does not read LF-Tags; whether a published asset shows them is 4.1.
+  - Sentences about Stages 7-10 were narrowed to what those stages say, and the rite is marked designed
+    and not exercised.

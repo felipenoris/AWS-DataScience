@@ -735,6 +735,17 @@
   `context.datazone` namespace:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/abac-granting-permissions.html>.
 
+- Lake Formation grant evaluation (read 2026-09-15, for `GOVERNANCE.md` §Access control). The
+  metadata-permissions page names two grant methods, named resource and LF-TBAC, says an LF-Tag policy
+  applies to every catalog resource associated with its tag values, and that Lake Formation *"evaluates
+  permissions as a union of all the policies for that user"*: its example adds columns granted by name
+  to columns granted by LF-Tag on one table, data filters and rows included. Table creators receive all
+  permissions on the tables they create:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/metadata-permissions.html>. The overview page
+  describes the model as DBMS-style grant and revoke, and a request succeeds only after passing both the
+  IAM and the Lake Formation check. Neither page describes a deny grant:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-permissions-overview.html>.
+
 - AWS data governance framing — the curate/understand/protect triad (read 2026-08-17; the "curate" third is the one this plan has no owner for): <https://aws.amazon.com/what-is/data-governance/>.
 
 - AWS Well-Architected Data Analytics Lens (design principles: least privilege for analytics users, classify data, govern data changes): <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/analytics-lens.html>. Machine Learning Lens, data-protection section (non-production environments get restricted or anonymized datasets — the row the Sandbox share deviates from): <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/data-protection.html>.
