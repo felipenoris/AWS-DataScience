@@ -583,8 +583,12 @@ creates (measured 2026-09-12: CloudTrail since 2026-08-20, and the objects read 
 - **The service grants to a condition, not to a role.** The provisioning role runs
   `BatchGrantPermissions` to `<account-id>:IAMPrincipals` and `arn:aws:identitystore:::user/*`, each with
   the condition `context has datazone && context.datazone has projectId &&
-  context.datazone.projectId=="<project-id>"`, Lake Formation's attribute-based grant. At project
-  creation it grants `DATA_LOCATION_ACCESS` on the `dev/` location and `DESCRIBE` on `default`, the
+  context.datazone.projectId=="<project-id>"`, Lake Formation's ABAC grant: the attribute is on the
+  caller's session, never on the data. LF-TBAC, the lake's form (`GOVERNANCE.md` §Access control), puts
+  it on the object as an LF-Tag. Lake Formation evaluates a principal's permissions as the union of its
+  grants, named-resource and LF-Tag alike (`REFERENCES.md`), so a tag on a project table neither gates
+  nor blocks these grants, and DataZone documents no LF-TBAC support for the Glue assets it manages
+  (Stage 6f 3.2). At project creation it grants `DATA_LOCATION_ACCESS` on the `dev/` location and `DESCRIBE` on `default`, the
   database the first project created (2026-08-22); at deletion `BatchRevokePermissions` removes the
   same pair. Lake Formation's ABAC page does not describe `context.datazone` (`REFERENCES.md`), and
   which sessions carry it is unmeasured. Neither SMUS role has granted, revoked or registered anything

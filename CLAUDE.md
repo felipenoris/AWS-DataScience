@@ -187,7 +187,7 @@ This table is the only routing map; every other file points here rather than rep
 | Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
 | Design, or where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md): target architecture, region portability, the data perimeter, the two egress designs |
 | A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md): also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
-| The data-governance model: the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions, the drop-box and derived-zone contracts | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
+| The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
 | Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
 | How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
 | What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
@@ -264,7 +264,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
   catalog acts already taken. Publishing is metadata only (no grant); the portal's catalog calls run as
   `awsds-data-studio-domain-execution` in Data Governance; DataZone documents no LF-TBAC support for
-  managed Glue assets. Five decisions due; `INT-23` new.
+  managed Glue assets, and LF unions a named-resource grant with the TBAC ones, so no tag gates it.
+  Five decisions due; `INT-23` new; decision due 1 recommends (d), the lake as unmanaged assets with
+  the grant in the register. `GOVERNANCE.md` holds the data-product cycle and the tag rite, designed
+  on Stages 7-10 and unexercised.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

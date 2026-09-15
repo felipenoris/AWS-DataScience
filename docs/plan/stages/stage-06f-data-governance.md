@@ -21,15 +21,14 @@ without giving a deployment target a domain.
 
 ## Glue Data Catalog, Lake Formation and the SageMaker Catalog
 
-| | Glue Data Catalog | Lake Formation | SageMaker Catalog (DataZone V2) |
-|---|---|---|---|
-| Holds | databases, tables, schemas, S3 locations | grants on those objects, LF-Tags, registered locations | assets, listings, data products, glossaries, metadata forms, subscriptions, lineage nodes |
-| Scope | one per account and Region | one per account and Region | the domain, across its associated accounts and Regions |
-| In this estate | the lake's in `Data Governance`; each consumer's own, holding resource links | TBAC shares from `Data Governance`; the conditioned grants SMUS writes in `Sandbox` | domain `awsds-studio` in `Data Governance`; `Sandbox` the only associated account |
-| Written by | Glue, the crawlers (D27), the engines, the SMUS provisioning role | Terraform (the register), the SMUS service roles | the portal, as `awsds-data-studio-domain-execution` |
-
-A publish writes to the third column only (measured 2026-09-13). Access reaches the second column when
-a subscription or a Share is fulfilled, which is INT-23.
+The three systems, their scopes and what each holds here are `GOVERNANCE.md` §Catalogs. A publish
+writes to the SageMaker Catalog only (measured 2026-09-13); access reaches Lake Formation when a
+subscription or a Share is fulfilled, which is INT-23. The two grant forms Lake Formation carries, TBAC
+with the attribute on the data and ABAC with it on the caller's session, are `GOVERNANCE.md` §Access
+control's: the grants SMUS writes are the second form (`SMUS.md` §S3 1b), a fulfilment is documented as
+a named-resource grant (3.2) whose condition is verification i, and Lake Formation evaluates a
+principal's permissions as the union of its grants, so no tag gates either. On the catalog road the
+control is the owner project's approval; on the register road, the tag and the expression.
 
 ## Production, Redshift and the domain boundary
 
@@ -139,14 +138,20 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   - **(b) a publishing configuration in `Data Governance`**: the smallest blueprint configuration that
     carries a manage-access role and no compute, which `US-3` fails today;
   - **(c) the lake kept out of the catalog**: projects read it through TBAC re-grants to project roles in
-    `sandbox/data/`, the register discipline unchanged, and the catalog carries project assets only.
+    `sandbox/data/`, the register discipline unchanged, and the catalog carries project assets only;
+  - **(d) the lake published as unmanaged assets**: discovery, the request and the approval in the
+    catalog, the grant in the register. DataZone fulfils a managed asset itself and emits an EventBridge
+    event for the rest (`REFERENCES.md`, the concepts page), so an approval becomes a register change in
+    TBAC form, reviewed by the Governance Manager. To read: whether a Glue table can be published
+    unmanaged or needs a custom asset type, and from which project.
 - **3.2 [Claude] Record the constraint that separates them.** The DataZone user guide says *"Access
   management for the AWS Glue Data Catalog assets using the AWS Lake Formation LF-TBAC method is not
   supported"*, and requires the manage-access role to hold `DESCRIBE` and `SELECT` with the grant option
   on each published table. Under (a) or (b), every published lake table takes a named-resource grant, the
-  kind `GOVERNANCE.md` §Grants keeps for exceptions.
-- **3.3 [user] Exercise (a) on `curated.sample_trades` if 3.1 finds it possible**, with `publishOnImport`
-  and name generation off. [Claude] reads what the run imported and what a subscription would require.
+  kind `GOVERNANCE.md` §Grants keeps for exceptions; under (d) the catalog writes none.
+- **3.3 [user] Exercise (a), or (d) if 3.1 finds a table publishable unmanaged, on
+  `curated.sample_trades`**, with `publishOnImport` and name generation off. [Claude] reads what the run
+  imported and what a subscription would require.
 - **3.4 Decision due 1.**
 
 ### 4. Classification and approval in the catalog
@@ -175,9 +180,10 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ### 7. Publishing Production's outputs
 
-- **7.1 [Claude] Write `GOVERNANCE.md` §"Business catalog"**: a project listing is an experiment with an
-  owner project; the authoritative product is a governed table that Production's pipeline writes and the
-  governance side publishes under decision 1; Production stays unassociated.
+- **7.1 [Claude] Revise `GOVERNANCE.md` §"The development cycle of a data product" against decision 1**:
+  a project listing is an experiment with an owner project; the authoritative product is a governed
+  table that Production's pipeline writes and the governance side publishes under decision 1; Production
+  stays unassociated.
 - **7.2 [Claude] If decision 1 publishes the lake, write the publish act into Stage 8 or 9**: the role in
   `Data Governance` that runs the data source or the listing change after a deploy, and its `datazone:`
   allow.
@@ -211,7 +217,7 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 | ii | Does a direct Share write the same grant, and does the trail show any approver? | 2.5 |
 | iii | Does revocation remove the grant, and does a credential issued before it survive? | 2.4 |
 | iv | Does one approval of a data product fulfil every item? | 2.6 |
-| v | Does a Glue data source accept a resource link, and what would a subscription need in `Data Governance`? | 3.1, 3.3 |
+| v | Does a Glue data source accept a resource link, can a Glue table be published unmanaged, and what would a subscription need in `Data Governance`? | 3.1, 3.3 |
 | vi | Does a published asset show its LF-Tags? | 4.1 |
 | vii | Which policy decides an approval made in the portal? | 4.3 |
 | viii | Where does AI metadata generation run, and what does it send? | 5.1 |
@@ -219,9 +225,10 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ## Decisions due
 
-1. **How the governed lake enters the catalog**: shape (a), (b) or (c) of step 3. Provisional
-   recommendation: (c) until 2.2 and 3.1 are read, because (a) and (b) both put named-resource grants beside
-   the TBAC shares, and (b) also reverses D22's rule that nothing is configured in `Data Governance`.
+1. **How the governed lake enters the catalog**: shape (a), (b), (c) or (d) of step 3. Provisional
+   recommendation: (d) if 3.1 finds it possible, else (c), because (a) and (b) both put named-resource
+   grants beside the TBAC shares, (b) also reverses D22's rule that nothing is configured in
+   `Data Governance`, and (c) leaves the lake undiscoverable in the catalog.
 2. **How a fulfilment grant enters the grant register**, and whether `restricted` and `personal` tables
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
