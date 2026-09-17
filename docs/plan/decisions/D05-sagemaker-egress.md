@@ -20,13 +20,13 @@ Two designs rather than one mechanism, implemented behind a switch and evaluated
 **Re-scoped 2026-08-25** (the user's clarification; `docs/plan/objectives.md` carries it as requirement).
 Consequences, each correcting a reading some file had made:
 
-1. D5's subject is **one plane of two.** The estate has a *client plane* — the laptop on the VPN, whose
-   internet runs through the cloud's egress under an institutional HTTP/HTTPS proxy, monitored but broad
-   (D6, Stage 11) — and a *compute plane*, the SageMaker-managed compute this decision restricts. The
-   two designs apply to the compute plane only. The **SMUS portal's public-internet requirements**
-   (AWS's network-isolation page, its public-internet-access tables) are the client plane's to serve:
-   the browser loads them through the monitored client egress, so neither (A) nor (B) is measured
-   against the portal. This corrects the 2026-08-24 reading in `docs/plan/architecture.md` §4.3 that
+1. D5's subject is **one plane of two.** The estate has a *client plane* — the laptop, whose internet
+   runs through the cloud's egress under an institutional HTTP/HTTPS proxy while it is on the monitored
+   VPN profile, monitored but broad (D6, D39, Stage 11) — and a *compute plane*, the SageMaker-managed
+   compute this decision restricts. The two designs apply to the compute plane only. The **SMUS portal's
+   public-internet requirements** (AWS's network-isolation page, its public-internet-access tables) are
+   the client plane's to serve: the browser loads them from whatever network the laptop is on, so neither
+   (A) nor (B) is measured against the portal. This corrects the 2026-08-24 reading in `docs/plan/architecture.md` §4.3 that
    called the portal "a hard limit of (B)" — the limit was real, the plane was wrong.
 2. The (A)/(B) gap is smaller than the two names suggest: with an internet whitelist as the
    mechanism, (B) is the empty list and (A) a short one (package registries, perhaps data providers).

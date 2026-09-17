@@ -137,9 +137,11 @@ structure, in every account that has one.
   **The results zone is deliberately not a bucket of its own**: it is the `results/` prefix family of
   `awsds-prod-derived`, which arrives with the `consumer-data` call — the shape passes 4a/4b applied
   twice, 30-day expiry included ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone owns it).
-  Bucket policy on `awsds-prod-outputs`: the perimeter branches from Stage 5 step 1.3
-  (`aws:SourceVpce` = the `[P]` gateway endpoint from `production/foundation/` outputs, `aws:SourceIp` =
-  the WireGuard EIP list, the `aws:ViaAWSService` carve-out — Athena writes results as the caller).
+  Bucket policy on `awsds-prod-outputs`: the perimeter branches from Stage 5 step 1.3 as Stage 6g leaves
+  them (`aws:SourceVpce` = the `[P]` gateway endpoint from `production/foundation/` outputs, the
+  `aws:ViaAWSService` carve-out — Athena writes results as the caller) and, in place of an `aws:SourceIp`
+  branch, a principal branch admitting `DataScientistProdAccess`'s read of the named prefixes from any
+  network ([D39](../decisions/D39-access-by-identity.md), `./aws/deploytargets.py` `DT-1`).
 - **1.2 — [Claude] The workgroup `awsds-prod-athena` arrives with the `consumer-data` call**:
   `enforce_workgroup_configuration = true` (the console's "override client-side settings" — documented
   to replace the client's result location, encryption and expected-bucket-owner with the workgroup's),
@@ -484,10 +486,11 @@ read every denial by its wording, never its exit code.
   (`docs/plan/architecture.md` §4.2 — exercised, not amended; an amendment would go through battery
   phase 4b); the drop-box accepts `PutObject` and refuses the matching `GetObject`.
 - **8.2 — [user] From a Production session as the data scientist**: 5.4's proofs, plus INT-06 — how
-  much of the S3 **console** survives the `aws:SourceVpce` condition, recorded as a fraction and written
-  into `README.md` if the answer is "use the CLI over the tunnel".
-- **8.3 — [user] From the laptop over the tunnel**: a lake-object read succeeds through the
-  `aws:SourceIp` branch, and the same read with the tunnel down fails (INT-05's two halves).
+  much of the S3 **console** works for the persona under 1.1's principal branch, recorded as a fraction
+  and written into `README.md` if part of it does not.
+- **8.3 — [user] From the laptop, off the VPN**: a read of the named output prefixes succeeds through
+  1.1's principal branch, and the same persona's read outside them fails, its wording naming the policy
+  that refuses it (INT-05's laptop half, as D39 shapes it).
 - **8.4 — [user] From a Staging session as the data scientist** (`DataScientistStagingAccess`, which 6b assigned): everything readable,
   nothing writable — including the buckets the pipeline writes to; the wording names
   `DenyEveryWrite`.
@@ -575,8 +578,8 @@ Record every answer, including the ones that come out fine.
 | vi | Does the enforced workgroup override a client-requested result location, and does the scan limit cancel (the documented behaviour, observed)? | 5.4 |
 | vii | Are the Production negatives denied naming the **set's** deny — `CreateTrainingJob`, `StartJobRun` (D18)? | 5.4 |
 | viii | Does `DataScientistStagingAccess` read back with `DenyEveryWrite` and no Athena, and is its assignment the one 6b made (Lesson 22)? | 5.2 |
-| ix | Does INT-05 hold from both directions — the VPC branch and the tunnel branch, and fail with the tunnel down? | 8.3 |
-| x | What fraction of the S3 console survives the `aws:SourceVpce` condition (INT-06, open question 8) — and is `README.md` told? | 8.2 |
+| ix | Does INT-05 hold from both directions — the VPC branch for workloads and the principal branch for the persona from any network, with every other principal refused off the endpoint? | 8.3 |
+| x | What fraction of the S3 console works for the persona under 1.1's principal branch (INT-06, open question 8) — and is `README.md` told? | 8.2 |
 | xi | Is the escape hatch closed at rest, open only in the window, alarmed on every assumption — and does a `CreateSpace` under it die on the OU policy? | 6.3 |
 | xii | Does the Staging role read an approved model version (INT-07's registry half)? | 4.6 |
 | xiii | Does the end-to-end promotion pass against the real catalogs — and does a schema drift planted in the mirror fail the integration tests, not the deploy? | 8.5 |

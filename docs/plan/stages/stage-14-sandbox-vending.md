@@ -65,7 +65,7 @@ The two shapes not taken, kept because the trigger to revisit them is real:
   revision trigger, with `10.60.0.0/16` already reserved.
 - **Per-unit VPN endpoints** — the strongest isolation, no shared path, the largest per-unit cost. Ruled
   out by the same argument that ruled out per-account NAT: one internet-facing host per unit is N hosts to
-  patch and N addresses to key every condition on.
+  patch and N client endpoints to distribute.
 
 **What this stage still owes the topology at each vend:** a CIDR drawn from `10.16.0.0/13`, **two** peering
 pairs (to `VPC-Networking` for the proxy and the tunnel, to `VPC-SharedServices` for GitLab), one more child

@@ -10,6 +10,8 @@
 
 **Closes:** open question 23, in all five of its parts.
 
+**Amended by [D39](D39-access-by-identity.md):** no access condition names the hub's addresses; §3, §4, §5 and §6 carry the change.
+
 ---
 
 ## Rationale and consequences
@@ -116,14 +118,15 @@ own address**, i.e. 0.050/h ≈ **36.50/month** standing.
 **The estate's steady state is two public addresses and no NAT gateway, and it does not grow with N.**
 The default Elastic IP quota is five per Region, which leaves headroom for the cut-over peak and for one
 contingency; Stage 12 step 9.1 alarms it. Both addresses are `[P]` **anchors in `networking/`, never in the
-`[D]` slice** — a `make down` that released either would invalidate every client `.conf` (the WireGuard one)
-or every VPN-only IAM condition (the proxy's).
+`[D]` slice** — a `make down` that released the WireGuard one would invalidate every client `.conf`. The
+proxy's anchored every VPN-only IAM condition until D39 removed them; whether it stays `[P]` is Stage 6g's
+decision due 1.
 
 The **WireGuard host's** Elastic IP is *transferred* from Sandbox rather than reallocated (AWS supports
 this within a Region, at no charge, with a seven-day acceptance window; the source account must
 **disassociate the address before the recipient accepts**, or the accept fails with
 `InvalidTransfer.AddressAssociated`, and the transfer **resets every tag**), so every client keeps its
-`Endpoint` line. The **proxy's** address is new, and becomes the anchor of every VPN-only condition.
+`Endpoint` line. The **proxy's** address is new, and anchored every VPN-only condition until D39.
 
 ### 4. The client plane is not special
 
@@ -134,18 +137,15 @@ A laptop with no proxy configured reaches the intranet and nothing else.
 
 Three consequences, easy to get backwards:
 
-- **The anchor moves to the proxy's address.** A laptop's control-plane call exits through Squid, so
-  `DenyControlPlaneOffVpn`'s `aws:SourceIp` is the proxy's EIP; `aws:SourceVpc` is `VPC-Networking`; and
-  the lake's `aws:SourceVpce` branch gains the hub's S3 gateway endpoint, because S3 from the proxy still
-  leaves through it.
-- **AWS's own VPC-only policy cannot be copied verbatim here.** The SMUS network-isolation guide's
-  `DenyUserAccessFromUnauthorizedVPCs` keys on `StringNotEquals` over `aws:SourceVpc`, which **matches
-  whenever the key is absent** — every browser-origin call. Under this design the hub holds no interface
-  endpoint, so a portal user's calls carry the proxy's public address and no `aws:SourceVpc` at all, and
-  the documented policy would deny the portal outright. INT-16's fallback (i) is therefore authored in
-  `policies-shared.tf`'s existing shape: `NotIpAddress` on `aws:SourceIp` **and**
-  `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping AWS's `aws:userid` `*:user-*` and
-  `aws:ViaAWSService` carve-outs (Stage 6c step 6.6).
+- **No access condition names the hub** (D39). Until Stage 6g, `DenyControlPlaneOffVpn`'s
+  `aws:SourceIp` is the proxy's EIP and its `aws:SourceVpc` is `VPC-Networking`, and the lake's
+  `aws:SourceVpce` branch carries the hub's S3 gateway endpoint. 6g removes all three, and a laptop's call
+  through the proxy is then admitted or refused by its identity alone.
+- **AWS's own VPC-only policy for the portal matches every browser-origin call.** The SMUS
+  network-isolation guide's `DenyUserAccessFromUnauthorizedVPCs` keys on `StringNotEquals` over
+  `aws:SourceVpc`, which **matches whenever the key is absent**, and a portal user's calls carry none.
+  INT-16's fallback (i) was to be written around that; D39 retired the fallback with the requirement it
+  served.
 - **Per-device attribution is preserved by routing, not by logging.** Inside `VPC-Networking` the proxy's
   subnet carries a route for `10.90.0.0/24` to the WireGuard host's ENI and the host does not masquerade
   traffic bound for the proxy, so the access log records `10.90.0.<device>`. That range appears in no other
@@ -165,9 +165,8 @@ service-name private zone**. Client-plane names then answer publicly while the c
 endpoints. Sandbox may re-add `datazone`, removed on 2026-08-25 for this reason.
 
 This is also why **interface endpoints are never centralized in the hub**, though that is the institutional
-pattern: it would put the compute plane's zones back on the client's resolver, and it would make every
-spoke's AWS call carry the hub's `aws:SourceVpc`, satisfying the personas' VPN-only condition from any
-account. Revisit only when a second business unit makes the endpoint bill dominant (D35).
+pattern: it would put the compute plane's zones back on the client's resolver. Revisit only when a second
+business unit makes the endpoint bill dominant (D35).
 
 ### 6. What the filters become
 
@@ -178,8 +177,9 @@ allow-lists, one per plane, with a private-destination deny in front of all of t
 become an L7 bridge between VPCs that peering deliberately keeps apart:
 
 - **The tunnel range is the institutional web filter** (decided 2026-09-05, user). What a person on a
-  company laptop may reach is a list on this proxy and nowhere else: no second place enforces a browsing
-  decision, and no path from a laptop to the internet avoids it.
+  company laptop may reach while on the monitored profile is a list on this proxy and nowhere else: no
+  second place in the estate enforces a browsing decision. A laptop off the VPN or on the split-tunnel
+  profile browses through its own uplink, under the institution's endpoint controls (D39).
 - **The Sandbox range is SageMaker's stricter list**, the second filter the objectives name. It is the
   current DNS Firewall allow-list moved verbatim, minus its wildcard and minus the portal families, which
   are the browser's and belong to the tunnel list.

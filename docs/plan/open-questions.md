@@ -63,7 +63,8 @@ follows is still unanswered:
    two conditional EMR roles carry none — and INT-16 is answered in the strong form (VPN-only APIs and
    console, **not** a VPN-only portal: off-VPN the whole interactive surface works, JupyterLab included).
    The INT-16 closing choice was taken 2026-09-07: **recorded acceptance (ii)**, a recorded deviation from
-   the objectives, revisited at Stage 11 step 3.4 and alarmed by its 5.2.
+   the objectives. D39 then removed the requirement it deviated from, so INT-16 is superseded rather than
+   revisited.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
    cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19**
    (pass 3, confirmed per account at pass 4 — see the row). The credential-vending half of
@@ -76,7 +77,9 @@ follows is still unanswered:
    fallback: check it while building Stage 7, when GitLab first exists.
 8. **How much of the S3 console survives the `aws:SourceVpce` condition** (INT-06, Stage 9). This
    decides whether D18's "read named S3 prefixes in Production" is usable through the console at all, or
-   whether it is a CLI-over-the-tunnel operation that `README.md` has to say so about.
+   whether it is a CLI operation that `README.md` has to say so about. **D39 changes its shape**: the
+   persona's branch becomes a principal (Stage 9 step 1.1), so the answer no longer depends on which
+   network the console's calls leave from, only on which of them carry the persona.
    **Informed 2026-08-19 by 4d's measurement, not closed**: S3 traffic from a tunneled laptop exits
    through the **VPN home's gateway endpoint** and presents `aws:SourceVpce` = that endpoint id, never
    the Elastic IP (CloudTrail, one session: S3 as the host's private address + the vpce id, Glue as the
@@ -267,9 +270,9 @@ load-bearing against principle 4.
     **project role** with the two tags as Allow conditions, the deep link makes that call server-side
     (usable off the VPN — `DenyControlPlaneOffVpn` never sees it), and a persona session carries neither
     tag, so the 6a pair on the persona sets would deny every space rather than scope one. **The method
-    decides the perimeter, and no method is both VPN-bound and scoped today** — 6d decision due 4 carries
-    the choice and the recommended repair (Method 3, an `IDC_UserName`-keyed Allow, `StartSession` denied
-    on the D13 boundary). The residual (12 h) is still 6d 7.7's to measure.
+    decided the perimeter, and no method was both VPN-bound and scoped** until D39 removed the VPN half:
+    6d decision due 4 now carries the method and the file channel. The residual (12 h) is still 6d 7.7's
+    to measure.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
@@ -326,7 +329,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
 
 ### Raised by Stage 4 step 8.3, 2026-08-17
 
-17. **`InfrastructureAccess` stays reachable from any network — decided (option a), not deferred.**
+17. **Closed by D39: no permission set is bound to a network.** `InfrastructureAccess` stayed reachable
+    from any network (option a, below) while the six persona sets carried `DenyControlPlaneOffVpn`; D39
+    extends that shape to the six (Stage 6g step 1), so the deadlock, the exemption and its reopeners are
+    moot. The record follows.
+    **`InfrastructureAccess` stays reachable from any network — decided (option a), not deferred.**
     Stage 4's `DenyControlPlaneOffVpn` pins the six persona sets to the WireGuard Elastic IP and was
     measured doing so (the control-plane pair, log entry ten); the seventh set was to gain it in a separate
     diff. **Writing that diff surfaced a deadlock the stage's Risks row had predicted in one line:**
@@ -344,8 +351,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     this, none of it a current stage's prerequisite: a second operator (one person's recovery
     path is another's standing bypass); GuardDuty giving the off-VPN use of that credential a
     watcher, which weakens the "nothing would notice" half of the risk — **Stage 15 since the 2026-08-18
-    split (it was Stage 4's pass 4), which defers this reopener with it; Stage 15 step 6 re-reads this
-    question the day it closes**; or Stage 14's multiplication
+    split (it was Stage 4's pass 4)**; or Stage 14's multiplication
     of VPN homes making option (c)'s hatch list a maintained table rather than two actions. The
     institutional shape of this trade is in
     [`institutional-delta.md`](institutional-delta.md) — the lab's admin credential is
