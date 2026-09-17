@@ -15,13 +15,14 @@
 #   branch 1  aws:SourceVpce in the consumers' [P] gateway endpoints, never the [E] interface
 #             endpoints (Lesson 3, INT-05): those change id on every make up and live in
 #             accounts this policy cannot see change.
-#   branch 2  aws:SourceIp = the WireGuard Elastic IPs - a list, per D35 (D18's laptop path).
-#   branch 3  aws:PrincipalAccount = this account - the stage's own "looser and easier to
+#   branch 2  aws:PrincipalAccount = this account - the stage's own "looser and easier to
 #             get right" option, chosen over naming the maintenance role alone: the crawler
-#             runs in Glue with no VPC and no tunnel (D27's collision), and the infrastructure
-#             user works off-VPN by decision (open question 17, option a), so a role-only
-#             branch would lock the account's own administrator out of the console path to its
-#             own lake.
+#             runs in Glue with no VPC (D27's collision), and the infrastructure user works from
+#             any network, so a role-only branch would lock the account's own administrator out
+#             of the console path to its own lake.
+#
+# No branch names an address (D39). The one laptop path the lake carries, D18's drop-box write,
+# is admitted by principal on the drop-box alone (dropbox_statements below).
 #
 # The carve-outs the deny must carry, or it breaks the design it protects:
 #   aws:ViaAWSService       - D13 forces every tabular read through Athena/Lake Formation
@@ -37,35 +38,45 @@
 # Milliseconds, per the condition key.
 
 locals {
+  # The test every perimeter statement shares: the call came through no consumer's gateway
+  # endpoint, from no principal of this account, and not from a service acting for its caller.
+  outside_trusted_networks = {
+    StringNotEquals = {
+      "aws:SourceVpce"       = local.trusted_vpce_ids
+      "aws:PrincipalAccount" = data.aws_caller_identity.current.account_id
+    }
+    BoolIfExists = {
+      "aws:ViaAWSService"         = "false"
+      "aws:PrincipalIsAWSService" = "false"
+    }
+  }
+
+  # The drop-box's network deny is in dropbox_statements, split so the writer's put is the one call
+  # the lake admits from any network. A for-expression filter rather than a ternary, for the
+  # reason the module call below gives.
   perimeter_statements = {
-    for k, arn in local.bucket_arns : k => [
-      {
-        Sid       = "DenyOutsideTrustedNetworks"
-        Effect    = "Deny"
-        Principal = { AWS = "*" }
-        Action    = "s3:*"
-        Resource  = [arn, "${arn}/*"]
-        Condition = {
-          StringNotEquals = {
-            "aws:SourceVpce"       = local.trusted_vpce_ids
-            "aws:PrincipalAccount" = data.aws_caller_identity.current.account_id
-          }
-          NotIpAddress = { "aws:SourceIp" = local.wireguard_eip_cidrs }
-          BoolIfExists = {
-            "aws:ViaAWSService"         = "false"
-            "aws:PrincipalIsAWSService" = "false"
-          }
-        }
-      },
-      {
-        Sid       = "DenyStalePresignedUrls"
-        Effect    = "Deny"
-        Principal = { AWS = "*" }
-        Action    = "s3:*"
-        Resource  = [arn, "${arn}/*"]
-        Condition = { NumericGreaterThan = { "s3:signatureAge" = "900000" } }
-      },
-    ]
+    for k, arn in local.bucket_arns : k => concat(
+      [for s in [
+        {
+          Sid       = "DenyOutsideTrustedNetworks"
+          Effect    = "Deny"
+          Principal = { AWS = "*" }
+          Action    = "s3:*"
+          Resource  = [arn, "${arn}/*"]
+          Condition = local.outside_trusted_networks
+        },
+      ] : s if k != "dropbox"],
+      [
+        {
+          Sid       = "DenyStalePresignedUrls"
+          Effect    = "Deny"
+          Principal = { AWS = "*" }
+          Action    = "s3:*"
+          Resource  = [arn, "${arn}/*"]
+          Condition = { NumericGreaterThan = { "s3:signatureAge" = "900000" } }
+        },
+      ],
+    )
   }
 
   # The drop-box asymmetry (step 1.4; D18, D25, D27): three principals, three statements, nobody
@@ -82,6 +93,37 @@ locals {
   # uncollectable until then - AWS_STATE.md EXC-02 declares it so a later snapshot does not read
   # it as someone writing to the drop-box outside a recorded proof.
   dropbox_statements = [
+    # The drop-box's network deny, in three statements so the writer's put is the one call the
+    # lake admits from any network (D39): outside the trusted networks every other action is
+    # refused to everyone, a put into the letterbox to everyone but the writer, and a put anywhere
+    # else in the bucket to everyone. The writer is named by its own pattern and not through
+    # writer_role_patterns, which grows with workload roles that keep the network test.
+    {
+      Sid       = "DenyOutsideTrustedNetworks"
+      Effect    = "Deny"
+      Principal = { AWS = "*" }
+      NotAction = "s3:PutObject"
+      Resource  = [local.bucket_arns["dropbox"], "${local.bucket_arns["dropbox"]}/*"]
+      Condition = local.outside_trusted_networks
+    },
+    {
+      Sid       = "DenyLetterboxPutOutsideTrustedNetworksToAllButTheWriter"
+      Effect    = "Deny"
+      Principal = { AWS = "*" }
+      Action    = "s3:PutObject"
+      Resource  = "${local.bucket_arns["dropbox"]}/${local.dropbox_prefix}/*"
+      Condition = merge(local.outside_trusted_networks, {
+        ArnNotLike = { "aws:PrincipalArn" = [local.data_scientist_writer_pattern] }
+      })
+    },
+    {
+      Sid         = "DenyPutOutsideTheLetterboxOffTrustedNetworks"
+      Effect      = "Deny"
+      Principal   = { AWS = "*" }
+      Action      = "s3:PutObject"
+      NotResource = "${local.bucket_arns["dropbox"]}/${local.dropbox_prefix}/*"
+      Condition   = local.outside_trusted_networks
+    },
     {
       Sid       = "AllowInteractiveWriterPutOnly"
       Effect    = "Allow"

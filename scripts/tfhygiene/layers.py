@@ -52,10 +52,8 @@ LAYER_NAMES = {
 # different rank, and Stage 3 owns it.
 RANKS = {
     "bootstrap": 0,
-    # The one row whose rank is not its dependency: identity/sso/ reads slices that rank below
-    # it. Since Stage 4 step 8.1 it reads each VPN home's foundation/ (rank 20) for the Elastic
-    # IP, and since Stage 5 pass 4c the lake's data/ state (rank 45) for the drop-box ARNs (the
-    # two consumer data/ reads left 2026-08-26 with the derived zone, D19 revised). The rank is
+    # The one row whose rank is not its dependency: identity/sso/ reads a slice that ranks below
+    # it, the lake's data/ state (rank 45), for the drop-box ARNs. The rank is
     # not moved: every slice on both ends is [P], so `up`/`down` refuse them all and no ordering
     # ever acts on the inversion; moving `sso` to 46 would change only the `make slices` display
     # and would falsely suggest a teardown ordering exists. The real order is enforced by the
@@ -98,8 +96,9 @@ RANKS = {
     "registry": 31,
     # Below egress on purpose (Stage 4 step 1.3): `up` ascends rank and `down` descends it, so
     # a rank under egress starts the tunnel before the [E] slices exist and stops it after they
-    # are gone. Step 8.3 makes that order load-bearing: from then on every API call must exit
-    # through the VPN EIP, so the tunnel is the first thing up and the last down. The row itself
+    # are gone. The monitored profile makes that order load-bearing: an operator on it sends every
+    # AWS call through the tunnel and the proxy, so the tunnel is the first thing up and the last
+    # down. No permission set needs the tunnel (D39); the route is the constraint. The row itself
     # lands with the slice, in one commit (step 1.3), because this check fails on a declared
     # slice that is not on disk: a row with nothing behind it makes the table stop being
     # evidence.
@@ -344,7 +343,7 @@ SLICES = [
         "production",
         "vpn",
         DORMANT,
-        "WireGuard host in the hub - the only human path in (D38)",
+        "WireGuard host in the hub - the only human path into the private network (D38, D39)",
         0.0052,
     ),
     # 6c step 4.8 - the estate's single internet exit, and the reason there is no NAT gateway

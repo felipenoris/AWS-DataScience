@@ -66,9 +66,9 @@ output "tier_security_group_ids" {
 
 # ------------------------------------------------- Stage 6c step 4.1, the hub's [P] anchors
 #
-# These carry the same output names sandbox/foundation/ exports for the VPN, so flipping
-# VPN_HOMES at 4.12 changes an address and not a shape: identity/sso/ and data-governance/data/
-# read a home's slice by key and must find the same keys here.
+# production/vpn/ and production/proxy/ read the ids below. The two public addresses have no reader
+# in this tree, since no policy names either (D39); they are published for a person to read with
+# `terraform output`.
 #
 # `wireguard_eip_public_ip` is backed by an allocation transferred from Sandbox (4.5) and imported
 # (4.6), never allocated here. Allocating one would produce a second address and a re-issue of
@@ -85,7 +85,7 @@ output "wireguard_host_key_secret_arn" {
 }
 
 output "proxy_eip_public_ip" {
-  description = "The address 4.12 re-keys the whole control plane onto. A VPN client's internet now crosses Squid, so every VPN-only condition that named the WireGuard EIP names this instead. Read through terraform_remote_state, never pasted."
+  description = "The estate's internet egress address. No policy names it (D39); whether it stays [P] is Stage 6g decision due 1."
   value       = aws_eip.proxy.public_ip
 }
 
@@ -120,6 +120,6 @@ output "wireguard_eip_allocation_id" {
 }
 
 output "wireguard_eip_public_ip" {
-  description = "The address every client .conf pins, and the one thing the account move does not change. Read by identity/sso/ and data-governance/data/ through terraform_remote_state once VPN_HOMES flips at 4.12 - never pasted, because a paste is a copy nothing keeps in step and the failure mode is every persona denied every API call."
+  description = "The address every client .conf pins as Endpoint, and the one thing the account move does not change. No policy names it (D39)."
   value       = aws_eip.wireguard.public_ip
 }

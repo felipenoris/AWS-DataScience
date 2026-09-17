@@ -18,15 +18,15 @@ READWRITE-vended session itself carries ``s3:DeleteObject`` on the granted
 prefix, because Access Grants' WRITE level includes delete. A convention
 here, not a control.
 
-Run it on the VPN, signed in as the data-scientist persona::
+Run it from any network, signed in as the data-scientist persona (under
+the monitored VPN profile, with the proxy variables exported)::
 
     uv run examples/demo.py --profile awsds-scientist-sandbox
 
 Failures it explains rather than hides: ``AccessDenied`` on the discovery
-call (the persona's vending permission is not applied, or the tunnel is
-down), an empty grant list (no grant was created for this persona yet),
-and ``AccessDenied`` on the vend (a grant exists but not for this
-identity or permission level).
+call (the persona's vending permission is not applied), an empty grant
+list (no grant was created for this persona yet), and ``AccessDenied`` on
+the vend (a grant exists but not for this identity or permission level).
 """
 
 import argparse
@@ -68,10 +68,7 @@ def main() -> int:
         grants = vending.list_caller_grants(persona)
     except ClientError as error:
         print(f"Discovery failed ({error_code(error)}): {error}")
-        print(
-            "Checks: is the VPN tunnel up? Is the persona's "
-            "vending policy applied (see README.md, prerequisite 1)?"
-        )
+        print("Check: is the persona's vending policy applied (see README.md, prerequisite 1)?")
         return 1
 
     print(f"Grants available to this identity: {len(grants)}")

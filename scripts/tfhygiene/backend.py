@@ -277,61 +277,18 @@ WIREGUARD_PEER_CIDR_V6 = "fd90::/64"
 # are one caller's.
 RFC1918_CIDRS = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
 
-# Where the tunnel is built, which is not the question VPN_HOMES below answers (6c step 4.1).
-# Two intents, one list until this pass because they named the same slice (Lesson 51):
-#
-#   (a) whose exported Elastic IP the control-plane deny and the lake's perimeter pin to
-#       - VPN_HOMES, read by identity/sso/ and data-governance/data/
-#   (b) which slice owns the WireGuard anchors and needs the tunnel's address range
-#
-# Pass 4 is the sitting in which they must differ. (b) moves to the hub at 4.1, because the
-# security group and the route are built before any host exists; (a) may not move until 4.12,
-# because flipping it earlier makes identity/sso read an empty state and `DenyControlPlaneOffVpn`
-# then denies every call from every network. Deriving (b) from VPN_HOMES makes a change for one
-# intent silently for the other, and the symptom is a total lockout rather than a plan error.
+# Where the tunnel is built: the slice that owns the WireGuard anchors and needs the tunnel's
+# address range.
 #
 # A single tuple and not a list on purpose: the estate terminates one tunnel. When a second
-# business unit terminates its own (D35), this becomes a list and VPN_HOMES stays the separate
-# question it now is.
+# business unit terminates its own (D35), this becomes a list.
 VPN_HOST_SLICE = ("production", "networking")
 
-# The accounts that play the VPN-home role (Stage 4 step 8.1) - a role an account plays, not a
-# property. Stage 4's forward constraint from D35 says it in those words: the VPN home is a role,
-# not "the Sandbox account", so what identity/sso/ pins the control plane to is a list from day
-# one - one Elastic IP per home as D35 multiplies business units, and adding unit 2 is appending
-# a row here rather than editing a policy document.
-#
-# Authored, never derived from VPC_CIDRS or PROFILES. Every account in PROFILES has a state
-# bucket and most will have a VPC; almost none of them terminates a tunnel. Deriving this would
-# silently pin the control plane to whatever slice happened to export a
-# `wireguard_eip_public_ip`, and an account that stopped being a VPN home would keep its address
-# in the allow-list until somebody noticed. The row is the decision.
-#
-# What consumes it: two emissions, both named `vpn_homes` - to identity/sso (below), which turns
-# each row into a terraform_remote_state read of that slice, and to data-governance/data since
-# Stage 5 pass 1, where the same addresses become a branch of the lake's perimeter deny. An entry
-# must therefore be a slice that exports the EIP.
-#
-# Each row is (account, slice) since 6c step 0.5: the slice name was hard-coded in
-# identity/sso/data.tf's key, and D38 moves the tunnel into `VPC-Networking`, whose Elastic IP,
-# VPC id and gateway-endpoint id live in `production/networking/`, so the slice stopped being
-# derivable from the account.
-#
-# The Sandbox row left at 6c step 6.5 (2026-09-07), after the readings the union it stood in was
-# waiting for: both laptop proofs passed from the new tunnel, and CloudTrail read the two doors
-# the hub's row covers - `sts` arriving from the proxy's Elastic IP, `s3control` arriving from
-# the proxy host's private address through VPC-Networking's S3 gateway endpoint (verification 4:
-# both branches of DenyControlPlaneOffVpn are load-bearing, by service family). The Elastic IP
-# `52.89.212.1` transferred with the host, so no persona presents Sandbox's VPC or an old address
-# any more. Removing the row also unblocked `removed {}` on `sandbox/foundation`'s Elastic IP.
-VPN_HOMES = [("production", "networking")]
-
-# The lake's consumers and its pickup producer (Stage 5 pass 1), authored like VPN_HOMES and for
-# the same reason: which accounts consume the governed lake is a decision (INT-03's N+2;
+# The lake's consumers and its pickup producer (Stage 5 pass 1), authored rather than derived:
+# which accounts consume the governed lake is a decision (INT-03's N+2;
 # decision 5 granted to the two named accounts), not something derivable from PROFILES. Consumed
-# by three emissions - `consumers`, `vpn_homes` and `producers` to data-governance/data, where
-# each row becomes a terraform_remote_state read (the [P] gateway-endpoint ids, the WireGuard
-# EIPs) or an aliased-provider identity read (the account ids the drop-box statements are built
+# by two emissions - `consumers` and `producers` to data-governance/data, where each row becomes
+# a terraform_remote_state read (the [P] gateway-endpoint ids) or an aliased-provider identity read (the account ids the drop-box statements are built
 # from, which aws/INDEX.md rule 1 keeps out of tracked files) - and by the `lake` map to each
 # consumer's own data/ slice (pass 4). The `data_consumers` emission to identity/sso, pass 4c's
 # workgroup and derived-bucket ARNs, left on 2026-08-26 with the derived zone itself (D19
@@ -643,8 +600,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # resources in the hub need it and neither may carry it as a literal (Stage 3
             # decision 1 - address allocation lives in this file): the proxy's security group
             # admits `10.90.0.0/24` on TCP/3128, and the public route table sends it at the
-            # WireGuard host's ENI. Keyed on VPN_HOST_SLICE and not on VPN_HOMES: see that
-            # tuple's comment for why the two questions stopped sharing one list.
+            # WireGuard host's ENI. Keyed on VPN_HOST_SLICE.
             if (account, slice_name) == VPN_HOST_SLICE:
                 values["wireguard_peer_cidr"] = WIREGUARD_PEER_CIDR
                 # And not the ULA. The hub's two consumers are a security group and a route
@@ -735,23 +691,15 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # which is what makes step 6.3's proxy readings possible at all.
                 values["peer_cidrs"] = probe_peer_cidrs(account)
 
-    # The first non-network emission, and the repository's first cross-account remote-state read
-    # (Stage 4 step 8.1); Stage 5's maps below follow the same shape. identity/sso/ pins the six
-    # persona sets to the WireGuard Elastic IP, and the address may not be pasted: it is read
-    # from each VPN home's state. That read crosses an account boundary, so, unlike every
-    # same-account read in this tree, it needs a profile in the data source's config, and pass
-    # 2's rule is that a profile literal never sits in a .tf file (Lesson 14; peers.tf's own
-    # comment). So it arrives the same way `peers` does for foundation/: keyed by account folder,
-    # carrying the profile and the env token the bucket name is built from. One SSO login covers
-    # both profiles, because they share the `awsds` sso-session.
-    # Stage 5's cross-account reads - the identity/sso shape, three maps (see DATA_CONSUMERS).
+    # Stage 5's cross-account reads, two maps (see DATA_CONSUMERS). A read that crosses an
+    # account boundary needs a profile in the data source's config, unlike every same-account read
+    # in this tree, and pass 2's rule is that a profile literal never sits in a .tf file (Lesson 14;
+    # peers.tf's own comment). So each map arrives the way `peers` does for foundation/: keyed by
+    # account folder, carrying the profile and the env token the bucket name is built from. One SSO
+    # login covers every profile, because they share the `awsds` sso-session.
     if account == "data-governance" and slice_name == "data":
         values["consumers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
-        }
-        values["vpn_homes"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "slice": sl}
-            for acct, sl in VPN_HOMES
         }
         values["producers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
@@ -829,10 +777,6 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
     if account == "identity" and slice_name == "sso":
-        values["vpn_homes"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "slice": sl}
-            for acct, sl in VPN_HOMES
-        }
         # Stage 5 pass 4c put two cross-account reads here. The `data_consumers` map (each
         # consumer's workgroup + derived-bucket ARNs) left on 2026-08-26 with the derived zone
         # itself (D19 revised - the zone re-homed onto the SMUS project path, the persona's
@@ -928,13 +872,6 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["registry"].items()
         )
         out += f"registry = {{\n{rows}}}\n"
-    if "vpn_homes" in v:
-        rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '
-            f'slice = "{p["slice"]}" }}\n'
-            for acct, p in v["vpn_homes"].items()
-        )
-        out += f"vpn_homes = {{\n{rows}}}\n"
     if "data_consumers" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'

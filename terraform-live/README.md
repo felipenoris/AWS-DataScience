@@ -147,8 +147,7 @@ ephemeral slice, a bill nobody is told about. `make slices` prints the table.
 6c pass 4. `sandbox/vpn/`, the tree's first `[D]` slice (Stage 4), was retired at 6c step 6.5 (2026-09-08).
 **`make hub-up` / `make hub-down` start and stop the two hub hosts together** and destroy nothing; a
 spoke's `make up ENV=…` **refuses** while either is stopped, naming the stopped host, because under D38 a
-stopped proxy is the estate's whole internet gone and a stopped tunnel is every persona's control plane
-gone. Creating or changing either host is always a deliberate `terraform apply`: an SSM-resolved AMI
+stopped proxy is the estate's whole internet gone and a stopped tunnel is the private network gone. Creating or changing either host is always a deliberate `terraform apply`: an SSM-resolved AMI
 re-plans as a *replacement*, and a routine bring-up is no place to rebuild the only way in. `make status`
 reads a `[D]` row's **power state from EC2**, not its state file, or a stopped host would report a burn
 forever.
@@ -181,16 +180,15 @@ things — **two** Elastic IPs (the WireGuard one **transferred** from Sandbox a
 6c step 4.3, so no client `.conf` moved; a new one for the proxy), two security groups, the **host private
 key's Secrets Manager container** and the proxy's allow-list parameter — are `[P]` and live in
 [`production/networking/hub-anchors.tf`](production/networking/), one slice away from the two `[D]`
-instances that consume them. Each is named from outside the slice (the permission sets and Stage 5's
-bucket policy pin **the proxy's** address since 6c step 4.12 — every VPN-only condition is keyed on the
-address a client's calls *present*, and under D38 that is the proxy's, not the tunnel's; Stage 7's GitLab
-rule names the group; every instance the `[D]` slices ever boot reads the key), and **a reference is only
-worth writing if what it names outlives the thing using it**: an address that changed would deny every
-persona every API call until each client config and the permission-set fragment were edited together.
+instances that consume them. Each is named from outside the slice (every client `.conf` pins the
+WireGuard address as its `Endpoint`; Stage 7's GitLab rule names the group; every instance the `[D]`
+slices ever boot reads the key), and **a reference is only worth writing if what it names outlives the
+thing using it**: a WireGuard address that changed would strand every client config until each was
+edited. No policy names either address (D39, Stage 6g); whether the proxy's stays `[P]` is 6g's decision
+due 1.
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
 the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
-event that touches it). The Sandbox copies went at 6c step 6.5 (2026-09-08), once the `VPN_HOMES` trim had
-removed the last remote-state read of them; `sandbox/foundation/vpn-anchors.tf` is now one `removed {}`
+event that touches it). The Sandbox copies went at 6c step 6.5 (2026-09-08), once nothing read them; `sandbox/foundation/vpn-anchors.tf` is now one `removed {}`
 block with `destroy = false`, forgetting the Elastic IP this account no longer owns without releasing it.
 
 Three of the checks exist because nothing else can enforce their rule: **no `.tf` in this tree may declare
@@ -223,11 +221,10 @@ apply runs as. Users and groups are not here and never will be — the identity 
 a group is resolved by **display name**, and the assignments are **enumerated** while the policy floor is
 discovered (D34). It reads data sources it does not own: `aws_organizations_organization`, for the single
 purpose of turning an authored account **name** into the id an assignment requires — the same shape
-`attachments.json` uses from the other side — and **two cross-account `terraform_remote_state` data
-sources: the VPN home's `foundation/` (Stage 4 step 8.1) and the lake's `data/`** (Stage 5 pass 4c), for
-the drop-box and lake-CMK ARNs the persona statements name exactly instead of wildcarding — pass 4c's
-third read, the two consumers' `data/` slices, **left 2026-08-26 with the derived zone** (D19 revised).
-**So `identity/sso/` applies AFTER those slices, despite ranking above them** —
+`attachments.json` uses from the other side — and **one cross-account `terraform_remote_state` data
+source, the lake's `data/`** (Stage 5 pass 4c), for the drop-box and lake-CMK ARNs the persona statements
+name exactly instead of wildcarding. **So `identity/sso/` applies AFTER that slice, despite ranking above
+it** —
 `scripts/tfhygiene/layers.py`'s `RANKS` comment owns the inversion and says why the rank is not moved.
 
 [`identity/org-policies/`](identity/org-policies/README.md) holds the organization's **preventive policy

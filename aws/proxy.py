@@ -18,8 +18,7 @@
 #   writes:   aws/output/proxy.txt   (untracked - see .gitignore)
 #   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
 #             ssm:GetParameter, logs:DescribeLogGroups, DescribeSubscriptionFilters,
-#             DescribeExportTasks, sso-admin:ListInstances, ListPermissionSets,
-#             DescribePermissionSet, GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
+#             DescribeExportTasks, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything - see the next line for the
 #             single, typed exception.
 #   sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
@@ -30,16 +29,14 @@
 #             squid.conf the host is serving, which no describe call can reach.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# This script is two-profile because PX-5 asks whether the address the perimeter names is the
-# address the estate actually leaves under, and those two facts live in two accounts: the
-# permission sets are in Identity, the Elastic IP is in Production. One login covers both (they
-# share the `awsds` sso-session).
+# It reads the proxy's account alone. PX-5, which compared the proxy's Elastic IP with the
+# permission sets in Identity, is retired rather than renumbered: after D39 no policy names the
+# address, and the 6c log cites PX-5 by that name.
 #
 # The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag is awsds-<env>-proxy                     (6c step 4.8)
 #   - the security group's name is awsds-<env>-proxy                 (6c step 4.1)
 #   - the allow-list parameter is /datascience/<env>/proxy/allowlist (6c step 4.10)
-#   - the deny statement's Sid is DenyControlPlaneOffVpn             (Stage 4 step 8.1)
 #
 # What it cannot see, since a clean run here is not a working proxy:
 #   - Whether a request succeeds. Every check below reads configuration; the behavioural proof
@@ -69,14 +66,11 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 OUT_NAME = "proxy.txt"
 
 PROXY_HOME_PROFILE = "awsds-infra-prod"
-IDENTITY_PROFILE = "awsds-infra-identity"
 
 NAME_TAG_PATTERN = "awsds-*-proxy"
 PROXY_PORT = 3128
 PARAMETER = "/datascience/prod/proxy/allowlist"
 LOG_GROUP = "/awsds/prod/proxy"
-DENY_SID = "DenyControlPlaneOffVpn"
-INFRA_SET = "InfrastructureAccess"
 
 # The committed configuration, read from this repository rather than from AWS. PX-2's default
 # source: the order of `http_access` lines is the security property, and it is decidable from the
@@ -311,8 +305,8 @@ def main(argv: list) -> int:
     if argv:
         selected, source = profiles.select(argv)
     else:
-        selected = [PROXY_HOME_PROFILE, IDENTITY_PROFILE]
-        source = "the two profiles this file needs (the proxy's account and Identity)"
+        selected = [PROXY_HOME_PROFILE]
+        source = "the profile this file needs (the proxy's account)"
 
     errors = ErrorLog()
     callers = profiles.preflight(selected, errors, out_label=out_label)
@@ -462,64 +456,6 @@ def main(argv: list) -> int:
         elif on_host:
             host_status = "(no host found)"
 
-    # ------------------------------------------------------- Identity: which sets name the address
-    deny_addresses: dict = {}  # permission set name -> [addresses in the deny]
-    identity_live = IDENTITY_PROFILE in live
-    if identity_live:
-        cli = cli_for(IDENTITY_PROFILE)
-        res = cli.run("sso-admin", "list-instances", "--output", "json", log=False)
-        arn = ""
-        if res.ok:
-            insts = json.loads(res.stdout or "{}").get("Instances", [])
-            arn = insts[0].get("InstanceArn", "") if insts else ""
-        else:
-            logerr(IDENTITY_PROFILE, "sso-admin list-instances", res.stderr)
-        if arn:
-            res = cli.run(
-                "sso-admin",
-                "list-permission-sets",
-                "--instance-arn",
-                arn,
-                "--query",
-                "PermissionSets",
-                "--output",
-                "text",
-                log=False,
-            )
-            for ps in res.stdout.split() if res.ok else []:
-                name = cli.run(
-                    "sso-admin",
-                    "describe-permission-set",
-                    "--instance-arn",
-                    arn,
-                    "--permission-set-arn",
-                    ps,
-                    "--query",
-                    "PermissionSet.Name",
-                    "--output",
-                    "text",
-                    log=False,
-                )
-                inline = cli.run(
-                    "sso-admin",
-                    "get-inline-policy-for-permission-set",
-                    "--instance-arn",
-                    arn,
-                    "--permission-set-arn",
-                    ps,
-                    "--output",
-                    "text",
-                    log=False,
-                )
-                if not (name.ok and inline.ok):
-                    continue
-                doc = inline.stdout or ""
-                if DENY_SID not in doc:
-                    continue
-                deny_addresses[name.stdout.strip()] = sorted(
-                    set(re.findall(r"\b(\d{1,3}(?:\.\d{1,3}){3})/32\b", doc))
-                )
-
     # ------------------------------------------------------------------------------ the report
     template_path = ctx.repo_root.joinpath(*TEMPLATE)
     template_text = template_path.read_text(encoding="utf-8") if template_path.is_file() else ""
@@ -631,15 +567,8 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
             or ["LOG GROUP\tFILTER\tDESTINATION", "none\t-\t-"]
         )
 
-        rep.h1("6. Which permission sets name an address (PX-5)")
-        rep.tabulate(
-            ["PERMISSION SET\tADDRESSES IN " + DENY_SID]
-            + [f"{k}\t{', '.join(v) or '(none)'}" for k, v in sorted(deny_addresses.items())]
-            or ["PERMISSION SET\tADDRESSES IN " + DENY_SID, "not read\t-"]
-        )
-
         # ------------------------------------------------------------------------ the checks
-        rep.h1("7. Checks")
+        rep.h1("6. Checks")
 
         rules = [r for r in ingress if r[2] == "tcp" and r[3] == PROXY_PORT and r[4] == PROXY_PORT]
         others = [r for r in ingress if r not in rules]
@@ -775,40 +704,6 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
                 f"{log_groups[0][0]} -> " + ", ".join(d for _, _, d in subscriptions),
             )
 
-        proxy_ips = {p for _, p, i in addresses if i != "-" and any(i == x[0] for x in instances)}
-        if not deny_addresses:
-            checks.note(
-                "PX-5",
-                "the perimeter names the address the estate leaves under",
-                "no permission set carrying the deny was read (Identity profile absent?)",
-            )
-        elif not proxy_ips:
-            checks.note(
-                "PX-5",
-                "the perimeter names the address the estate leaves under",
-                "the proxy's Elastic IP could not be read, so there is nothing to compare",
-            )
-        else:
-            missing = {
-                s: sorted(proxy_ips - set(a))
-                for s, a in deny_addresses.items()
-                if s != INFRA_SET and (proxy_ips - set(a))
-            }
-            if missing:
-                checks.fail(
-                    "PX-5",
-                    "the perimeter names the address the estate leaves under",
-                    "; ".join(f"{s} does not name {', '.join(v)}" for s, v in missing.items()),
-                )
-            else:
-                checks.ok(
-                    "PX-5",
-                    "the perimeter names the address the estate leaves under",
-                    f"{', '.join(sorted(proxy_ips))} appears in {DENY_SID} on "
-                    f"{len([s for s in deny_addresses if s != INFRA_SET])} persona set(s); "
-                    f"{INFRA_SET} is exempt by decision (open question 17's recovery path)",
-                )
-
         rep.checks_table(checks)
         rep.text("""
 PX-1 and PX-2 are the two halves of one sentence: WHO may connect, and WHAT they may then
@@ -826,7 +721,7 @@ internet without the proxy, 403 to a private address through it, 200 to a name o
 403 to a name on none. Four readings, four different ways to be wrong.
 """)
 
-        rep.h1("8. Calls that failed")
+        rep.h1("7. Calls that failed")
         failed_calls_epilogue(rep, errors)
 
     note(f"\nwrote {out_label}")

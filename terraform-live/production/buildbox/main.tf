@@ -29,11 +29,10 @@
 #        AL2023 runs sshd, so it left port 22 reachable from the tunnel on a host with zero
 #        authorized keys, one `key_name` away from a second way in (Lesson 5).
 #
-#        "Reachable only over the VPN" is therefore not delivered for this host. The access path is
-#        IAM, and for InfrastructureAccess it does not require the tunnel (open question 17, the
-#        user's option (a)). A port served during a build is reached with SSM port forwarding -
-#        AWS-StartPortForwardingSession - which is still Session Manager and still needs no ingress
-#        rule.
+#        The access path is IAM, and no permission set is bound to a network (D39): the shell is
+#        an AWS API call, never a private-network reach. A port served during a build is reached
+#        with SSM port forwarding - AWS-StartPortForwardingSession - which is still Session Manager
+#        and still needs no ingress rule.
 #
 #   OUT  As a client of the proxy. There is no default route in this tier and none is created here.
 #        Three paths leave this host, and reading them apart is what makes a failure diagnosable:

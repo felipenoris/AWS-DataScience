@@ -120,6 +120,7 @@ def main(argv: list) -> int:
 
     # ----------------------------------------------------- the lake buckets, Data Governance
     buckets: list = []  # (name, versioning, sse, bucketkey, policy summary, lifecycle)
+    policies: dict = {}  # bucket name -> the policy document's text, for DL-2's statement reading
     if data_live:
         cli = cli_for(DATA_PROFILE)
         note(f"measuring {DATA_PROFILE} ...")
@@ -165,6 +166,7 @@ def main(argv: list) -> int:
                 tolerate="NoSuchBucketPolicy",
             )
             pol = r.stdout if r.ok else ""
+            policies[b] = pol
             summary = []
             for token, tag in (
                 ("aws:SourceVpce", "vpce"),
@@ -633,6 +635,38 @@ def main(argv: list) -> int:
             )
         else:
             checks.ok("DL-2", f"bucket policy on {b}", f"carries {policy} (presence only)")
+        # No lake bucket names an address (D39): a person reaches AWS by identity from any network,
+        # and the laptop's one path is the drop-box writer's principal branch below.
+        if "ip" in policy.split("+"):
+            checks.fail(
+                "DL-2",
+                f"no address branch on {b}",
+                "aws:SourceIp is in the policy - D39 removed the address branch from every lake "
+                "bucket (Stage 6g step 2); the drop-box admits its writer by principal instead.",
+            )
+        # The principal branch is bound to the action (D39, Lesson 29): a network deny that exempts
+        # a principal may name s3:PutObject and nothing else, or a later allow inherits the exemption.
+        try:
+            doc = json.loads(policies.get(b) or "{}")
+        except json.JSONDecodeError:
+            doc = {}
+        stmts = doc.get("Statement", [])
+        stmts = stmts if isinstance(stmts, list) else [stmts]
+        for s in stmts:
+            if "aws:PrincipalArn" not in s.get("Condition", {}).get("ArnNotLike", {}):
+                continue
+            action = s.get("Action", [])
+            action = [action] if isinstance(action, str) else action
+            sid = s.get("Sid", "(no Sid)")
+            if s.get("Effect") == "Deny" and action == ["s3:PutObject"] and "NotAction" not in s:
+                checks.ok("DL-2", f"principal branch {sid} on {b}", "names s3:PutObject alone")
+            else:
+                checks.fail(
+                    "DL-2",
+                    f"principal branch {sid} on {b}",
+                    f"exempts a principal for {s.get('Action', s.get('NotAction'))} - the "
+                    "exemption must name s3:PutObject alone (D39, Stage 6g step 2.1).",
+                )
 
     # DL-3: crawler shape - never scheduled, never at an Iceberg/catalog target (step 3.6).
     if data_live and not crawlers and buckets:
@@ -1112,8 +1146,9 @@ Do not copy one into a tracked file.""")
             )
             rep.text("""
 POLICY BRANCHES greps the bucket policy for the step 1.3 conditions: vpce
-(aws:SourceVpce), ip (the WireGuard EIP branch), prin (the maintenance-role
-branch), via (aws:ViaAWSService), sigage (s3:signatureAge). Presence only.""")
+(aws:SourceVpce), ip (aws:SourceIp, which DL-2 refuses since D39), prin
+(aws:PrincipalAccount or aws:PrincipalArn), via (aws:ViaAWSService), sigage
+(s3:signatureAge). Presence only.""")
         elif data_live:
             rep.line(f"No bucket matching {LAKE_PREFIX}*. Expected before Stage 5 pass 1.")
         else:
@@ -1304,7 +1339,8 @@ principals and FOUR delegations, not ten - when it lands.""")
         rep.text("""
 What the checks are, and where each comes from:
   DL-1   lake buckets: versioned, SSE-KMS, Bucket Keys (step 1.2)
-  DL-2   bucket policy carries vpce + via + sigage - presence only (step 1.3)
+  DL-2   bucket policy carries vpce + via + sigage - presence only (step 1.3); no
+         address branch, and a principal branch names s3:PutObject alone (D39)
   DL-3   crawlers: never scheduled, never at a catalog/Iceberg target (step 3.6)
   DL-4   awsds-data-catalog-maintenance exists, trusts glue.amazonaws.com only
          (steps 3.2, 3.5)

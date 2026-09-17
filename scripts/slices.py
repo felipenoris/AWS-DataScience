@@ -138,9 +138,10 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
 # ----------------------------------------------------------- the hub (6c steps 7.1 and 7.2)
 #
 # The hub is one account's pair of [D] hosts, and every other account's session depends on them.
-# D38 gives the estate one way in (the WireGuard host) and one way out (the Squid proxy), both in
-# `production/networking`'s VPC. `make up` / `make down` act on one env and have no concept of
-# that, so two things follow, and both are here rather than in a runbook (Lesson 5):
+# D38 gives the estate one way into the private network (the WireGuard host) and one way out (the
+# Squid proxy), both in `production/networking`'s VPC. `make up` / `make down` act on one env and
+# have no concept of that, so two things follow, and both are here rather than in a runbook
+# (Lesson 5):
 #
 #   7.1  a Sandbox session must be able to start the two hub hosts without starting GitLab or
 #        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
@@ -185,7 +186,10 @@ def refuse_if_hub_down(env: str, dry: bool) -> bool:
     """
     if env == HUB_ENV:
         return True
-    print(f"\n  {BOLD}the hub (step 7.2){RESET} - one way in, one way out, in another account:")
+    print(
+        f"\n  {BOLD}the hub (step 7.2){RESET} - the private network's way in and the estate's way"
+        " out, in another account:"
+    )
     rows = hub_state(dry)
     stopped = [r for r in rows if r[2] not in ("running", "UNREADABLE")]
     for tag, iid, state in rows:
@@ -430,11 +434,11 @@ def cmd_updown(args) -> int:
             return 1
 
     # The [D] hook runs on the side of the [E] loop its rank says it should. Stage 4 step 1.3
-    # put `vpn` at 40, below `egress` at 50, for one reason stated in words: "the tunnel is the
-    # first thing up and the last thing down", because from step 8.3 onwards every AWS API call
-    # has to exit through its Elastic IP. Stopping the host and only then destroying two slices
-    # over the AWS API is the order that becomes a self-inflicted lockout the day
-    # InfrastructureAccess joins the deny.
+    # put `vpn` at 40, below `egress` at 50: "the tunnel is the first thing up and the last thing
+    # down". An operator on the monitored profile sends every AWS call through the tunnel and the
+    # proxy, so stopping the hosts and only then destroying slices over the AWS API would strand
+    # the destroys. The constraint is that route, never a policy: no permission set needs the
+    # tunnel (D39).
     #
     # A rank is not an intention (Lesson 5): it decides the order inside the [E] loop, and it
     # has to decide which side of that loop the hook sits on too.
@@ -465,14 +469,15 @@ def cmd_updown(args) -> int:
             cmd.append("-auto-approve")
         res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
         if res is not None and res.returncode != 0:
-            # The host is left running on purpose when a destroy fails: the operator has
-            # something to fix over the tunnel this hook would otherwise have closed.
+            # The host is left running on purpose when a destroy fails: the fix may need the
+            # private network, or the monitored profile's route to AWS, and this hook would close
+            # both.
             print(
-                "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the",
+                "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the fix may",
                 file=sys.stderr,
             )
             print(
-                "  tunnel is how the account is reached. Re-run `make down` once it is fixed.",
+                "  need the tunnel. Re-run `make down` once it is fixed.",
                 file=sys.stderr,
             )
             return 1

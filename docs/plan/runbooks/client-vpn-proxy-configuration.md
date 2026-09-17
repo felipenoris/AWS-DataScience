@@ -49,8 +49,8 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
    this, then stop and start the space. From its terminal, `getent hosts sts.us-west-2.amazonaws.com`
    must answer `10.20.x.x`.
 
-4. Tunnel up on the device (§3.4), in the profile the day needs (§3.3), then the proxy (§4) — which
-   under the split-tunnel profile is only for the applications acting as a persona.
+4. Tunnel up on the device (§3.4), in the profile the day needs (§3.3), then, under the monitored
+   profile, the proxy (§4).
 
 ## 2. Down — the session, in order
 
@@ -134,7 +134,7 @@ host.
 | `Address` | `<n>` is this device's `host` number from the roster. The `fd90::` half must be present: without it `AllowedIPs = ::/0` is inert and every IPv6-capable application leaves outside the tunnel (`vpn.md` §C6) |
 | `DNS` | the hub's resolver, `VPC-Networking`'s `.2`. A VPC's resolver answers no query from across a peering, so any other value leaves the tunnel up and every name unresolvable |
 | `MTU` | the one path-dependent value; `1280` passes every path met so far — phone tethering is where a derived value fails (`vpn.md` §C4) |
-| `AllowedIPs` | full tunnel in the monitored profile: a persona's AWS call must leave through the proxy, whose address is the one `DenyControlPlaneOffVpn` accepts. The split-tunnel profile lists the private ranges instead (above; `vpn.md` §C7): the internet leaves direct, and a persona's call still needs the proxy — pointed at it by the application (§4) |
+| `AllowedIPs` | full tunnel in the monitored profile: the laptop's whole internet, AWS calls included, leaves through the proxy and is logged. The split-tunnel profile lists the private ranges instead (above; `vpn.md` §C7): the internet leaves direct, AWS calls included, with no proxy. No permission set tests the network a call comes from (`vpn.md` §S4) |
 
 `PublicKey` and `Endpoint` are stable by design: if either ever changes without `vpn.md` §K3 having
 been run, that is a finding, not a reconnection problem.
@@ -145,8 +145,9 @@ been run, that is a finding, not a reconnection problem.
 sudo wg-quick up ~/mbp.conf
 ```
 
-(Or activate the tunnel in the app.) Bring the tunnel up before starting anything that talks to AWS: a
-socket opened earlier keeps the laptop's own uplink. Then, in order — each proves a different claim:
+(Or activate the tunnel in the app.) Bring the tunnel up before starting anything the monitored profile
+should log: a socket opened earlier keeps the laptop's own uplink. Then, in order — each proves a
+different claim:
 
 | # | Command | Must read |
 |---|---|---|
@@ -179,16 +180,16 @@ The file stays and nothing is revoked. Then proxy off (§4).
 ## 4. The device and the proxy
 
 The profile decides who needs this section (`vpn.md` §C7): under the **monitored** profile, every
-application; under the **split-tunnel** profile, only the applications that act as a persona — a
-terminal running a persona profile, a Chrome opened on the console or the portal as a persona — while
-everything else, the infrastructure user's terminal included, goes direct and needs nothing here.
+application; under the **split-tunnel** profile, none — every application goes direct, AWS calls
+included, whichever permission set makes them.
 
 The estate's only internet is an explicit proxy, `proxy.awsds.internal:3128`, resolvable only through
 the tunnel. Explicit means not transparent: a program that has not been told about it does not fail
 over to it, it hangs — check 3 above is that hang, on purpose. The rules for every setting below:
 
 - **Everything public goes through it, AWS included.** `*.amazonaws.com` never goes in a bypass list:
-  the perimeter accepts the proxy's address and nothing else.
+  with the monitored tunnel up the proxy is the only path to a public address, so a bypassed name has
+  none.
 - **Nothing private goes through it.** The proxy refuses private destinations, so the estate's own
   names — `.awsds.internal`, `.awsds-pages.internal` — and `localhost` are bypassed.
 - **Off with the tunnel.** Down, the proxy's name does not resolve, and a setting left behind breaks
@@ -228,8 +229,8 @@ proxy-off() { unset https_proxy http_proxy HTTPS_PROXY HTTP_PROXY no_proxy NO_PR
 ```
 
 `proxy-on` reaches `aws`, `uv run` and boto3, `curl`, `git` and `pip`; it reaches no GUI application.
-A persona call denied with the tunnel up is a socket that predates the tunnel, or a shell without
-`proxy-on`.
+An AWS call that cannot connect with the monitored tunnel up is a shell without `proxy-on`, refused as
+check 3 is.
 
 **[c] Google Chrome — the flag, verified 2026-09-07.** Chrome reads the system proxy by default, which
 [a] says is empty; the flag replaces it and binds to a new process, so quit Chrome completely first:

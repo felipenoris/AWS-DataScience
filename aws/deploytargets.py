@@ -87,11 +87,15 @@ MIRROR_DBS = ("raw", "curated")  # the lake databases the Staging catalog mirror
 SETS_READ = ("DataScientistProdAccess", "DataScientistStagingAccess")
 LOOKUP_MAX = 50
 
+# The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
+# and service branches, and a principal branch for DataScientistProdAccess's read of the named
+# prefixes. An address branch is refused: a person reaches AWS by identity from any network.
 POLICY_BRANCHES = (
     ("vpce", "aws:SourceVpce"),
-    ("ip", "aws:SourceIp"),
     ("via", "aws:ViaAWSService"),
+    ("prin", "aws:PrincipalArn"),
 )
+REFUSED_BRANCH = ("ip", "aws:SourceIp")
 
 
 def _stmts(doc: dict) -> list:
@@ -198,7 +202,8 @@ def main(argv: list) -> int:
             else:
                 text = p.stdout or ""
                 branches = (
-                    "/".join(tag for tag, key in POLICY_BRANCHES if key in text) or "(none match)"
+                    "/".join(tag for tag, key in (*POLICY_BRANCHES, REFUSED_BRANCH) if key in text)
+                    or "(none match)"
                 )
             expiry = "-"
             if bucket == RESULTS_BUCKET:
@@ -767,8 +772,12 @@ def main(argv: list) -> int:
                 problems.append(f"SSE {sse}")
             if bucket == OUT_BUCKET:  # the derived bucket's policy is module-shaped (header)
                 for tag, _key in POLICY_BRANCHES:
-                    if tag not in branches:
+                    if tag not in branches.split("/"):
                         problems.append(f"policy branch '{tag}' missing")
+                if REFUSED_BRANCH[0] in branches.split("/"):
+                    problems.append(
+                        "an address branch (aws:SourceIp) - D39 admits the persona by principal"
+                    )
             if bucket == RESULTS_BUCKET and expiry in ("(none)", "-"):
                 problems.append("no lifecycle expiry (D19's shape, step 1.1)")
             if problems:
@@ -1237,7 +1246,8 @@ Athena allow is that set read back correct (5.2, Lesson 22).""")
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  DT-1   the two buckets: versioned, SSE-KMS, perimeter branches, results expiry (1.1)
+  DT-1   the two buckets: versioned, SSE-KMS, perimeter branches (vpce, via, prin; never
+         ip, D39), results expiry (1.1)
   DT-2   the workgroup enforces location + scan limit (1.2, D19)
   DT-3   every awsds-prod-model-* group carries a resource policy (3.2, D28 item 6)
   DT-4   the job role: service-only trust, no s3 allow on lake buckets (3.1, D13)

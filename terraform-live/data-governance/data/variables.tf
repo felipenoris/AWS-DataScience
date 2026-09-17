@@ -37,12 +37,6 @@ variable "consumers" {
   nullable    = false
 }
 
-variable "vpn_homes" {
-  description = "The accounts playing the VPN-home role (VPN_HOMES in scripts/tfhygiene/backend.py) - one Elastic IP each, read from the slice the row names. The aws:SourceIp branch of the perimeter deny (step 1.3, D18) is built from this list, per D35. The slice field arrived at Stage 6c step 0.5, when D38 moved the tunnel out of a foundation/ slice and into production/networking/."
-  type        = map(object({ profile = string, env = string, slice = string }))
-  nullable    = false
-}
-
 variable "producers" {
   description = "The account whose job role empties the drop-box (D25, INT-10) - production, resolved to an id by an aliased provider. The role itself (awsds-prod-job-exec) does not exist until Stage 9; the statements name it by ArnLike condition, which S3 does not validate - a nonexistent Principal ARN would reject the whole policy."
   type        = map(object({ profile = string, env = string }))

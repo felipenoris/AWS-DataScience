@@ -11,7 +11,7 @@ output "domain_arn" {
 }
 
 output "portal_url" {
-  description = "The AWS-issued portal URL - INT-16's portal half is read against it (step 1.7), and D15 phase 1 needs no domain name of ours because of it."
+  description = "The AWS-issued portal URL, reached from any network with an Identity Center session (D39). D15 phase 1 needs no domain name of ours because of it."
   value       = aws_datazone_domain.this.portal_url
 }
 
@@ -21,7 +21,7 @@ output "root_domain_unit_id" {
 }
 
 output "domain_execution_role_arn" {
-  description = "The domain execution role - the principal AWS's own network-isolation deny (DenyUserAccessFromUnauthorizedVPCs) would be written against if INT-16's fallback (i) is ever adopted (step 1.7)."
+  description = "The domain execution role - what the portal and the SageMaker Catalog act as in this account."
   value       = module.domain_execution_role.role_arn
 }
 

@@ -118,7 +118,7 @@ variable "peerings" {
 # arrives here as well as at the vpn/ slice because D38 puts the tunnel endpoint and the proxy in
 # one VPC: step 4.7 stops masquerading packets bound for the proxy, so this range becomes a source
 # the proxy's security group must admit and a destination the hub's public route table must send
-# at the WireGuard host. Emitted on VPN_HOST_SLICE, not VPN_HOMES - see that tuple's comment.
+# at the WireGuard host. Emitted on VPN_HOST_SLICE.
 variable "wireguard_peer_cidr" {
   description = "The WireGuard client range. Generated - never authored here."
   type        = string

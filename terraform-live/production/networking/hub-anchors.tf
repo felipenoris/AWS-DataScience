@@ -111,10 +111,10 @@ resource "aws_security_group" "proxy" {
 # ------------------------------------------------------------------ the proxy address
 #
 # ~USD 3.65/month, measured (docs/PRICING.md 3), billed from this apply rather than from the host's
-# first boot: an Elastic IP is charged whether or not it is associated. That is the price of [P],
-# and it buys what 4.12 depends on - the address the control-plane deny re-keys onto has to be
-# knowable and stable before the host that wears it exists, because the union-then-trim of that
-# step is written against it.
+# first boot: an Elastic IP is charged whether or not it is associated. That is the price of [P]: the
+# estate's egress address survives every rebuild of the host that wears it. No policy names it
+# (D39); what binds to it is CloudTrail attribution, and whether it stays [P] is Stage 6g decision
+# due 1.
 #
 # Between this apply and 4.8 the allocation is unassociated, which is why ./aws/vpn.py VP-2 reads
 # "orphan allocation" as a NOTE and not a FAIL.

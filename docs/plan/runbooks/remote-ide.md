@@ -4,9 +4,9 @@
 |---|---|
 | **Scope** | Connecting VS Code on a laptop to a SageMaker space in Sandbox, and everything that decides whether it works: the space's `RemoteAccess` flag, the identity that calls `sagemaker:StartSession`, the two IDE servers that end up running in the same container, where an extension installs and which gallery serves it, which of those calls cross the estate's proxy, and the files that cross the session itself in either direction. The space itself is the portal's ([`dev-env.md`](dev-env.md) owns the image it starts on); the network it sits in is [`docs/NETWORK.md`](../../NETWORK.md)'s |
 | **Operator** | The **data scientist** at the laptop, through the portal identity (Identity Center). Every reading in §V is the **infrastructure user**'s — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`, and the proxy log is Production's `awsds-infra-prod`. One SSO login covers both |
-| **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so neither `DenyControlPlaneOffVpn` nor 6a's tag pair evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
+| **The rules** | **`RemoteAccess` is per space**, and settable after creation with the space stopped. **The space needs ≥ 8 GB**: `ml.t3.medium`, the estate's default, is named unsupported. **The call is the project role's**, so 6a's tag pair never evaluates — §I. **The compute plane refuses both Microsoft names and the session works anyway**, by a documented fallback — §N, and it is what makes this channel cost the estate nothing |
 | **The picture around it** | Why there is one egress and an explicit proxy: [D38](../decisions/D38-single-egress-hub.md). What a space reaches: [`docs/NETWORK.md`](../../NETWORK.md). The proxy inside a space by hand: [`sg-proxy.md`](sg-proxy.md). The image the space starts on: [`dev-env.md`](dev-env.md) |
-| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, every §V instrument but the laptop-side logs, and three of §F's rows. Unexercised, and each says so in place: the tunnel-down negative control (7.5), the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), §C's bundle path, and §W's **macOS** client — its download, portable-mode rules and connect path are read from the vendor's pages and the Toolkit's own source on 2026-09-11, and nothing on a Mac has been run here. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-11 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 7.8, from **two** sessions measured that day — one on a current client, one on a client pinned to the image's version, which is what §N's comparison of the two client settings rests on. Exercised: §W end to end on Windows x64, §E's two surfaces and its three routes out of a version conflict, §N's readings, every §V instrument but the laptop-side logs, and three of §F's rows. Unexercised, and each says so in place: the 12-hour residual (7.7), the tag pair on a principal that carries it (7.6), §C's bundle path, and §W's **macOS** client — its download, portable-mode rules and connect path are read from the vendor's pages and the Toolkit's own source on 2026-09-11, and nothing on a Mac has been run here. The vendor pages are the 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -55,9 +55,10 @@ user's own address.
 **Two keys exist for scoping it**, and neither needs Identity Center *attributes for access control*:
 `aws:SourceIdentity` on the role session, and the space's `OwnershipSettings.OwnerUserProfileName`,
 which carries the same user id. A condition on the **D13 permissions boundary** is the one instrument
-this estate has that reaches a role the blueprint writes. Which shape it takes is decision due 4 in
-[Stage 6d](../stages/stage-06d-unified-studio-remainder.md), still open; until it is taken, this channel
-is reachable from any network by anyone the domain admits.
+this estate has that reaches a role the blueprint writes. The channel is reachable from any network,
+and that is the design ([D39](../decisions/D39-access-by-identity.md)): what is left of decision due 4 in
+[Stage 6d](../stages/stage-06d-unified-studio-remainder.md) is the connection method, and whether the
+file channel in both directions (§N) is acceptable.
 
 ## W. Configuring the client for a remote session
 

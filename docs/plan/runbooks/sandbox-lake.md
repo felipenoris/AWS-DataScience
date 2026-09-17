@@ -1,15 +1,14 @@
 # Runbook — the sandbox lake
 
-> **What the hub changes is the *address* the laptop presents** — not the bucket, the grants, the access
-> role or any procedure below ([Stage 6c](../stages/stage-06c-networking-hub.md), 2026-09-05). Once it is
-> built, `s3control:GetDataAccess` leaves through the Squid proxy and the S3 calls through
-> `VPC-Networking`'s gateway endpoint, so §T's laptop half and `s3-read-write` are re-run in that stage's
-> pass 6 as the proof that the VPN-only conditions were re-keyed completely.
+> **No step below needs the VPN** ([D39](../decisions/D39-access-by-identity.md)): no permission set,
+> no statement on the bucket and none on the access role carries a network condition, so discovery, the
+> vend and the vended session's calls answer from any network. Under the monitored profile they cross
+> the proxy like every other call ([client runbook](client-vpn-proxy-configuration.md) §4.1).
 
 | | |
 |---|---|
 | **Scope** | The fourth Sandbox bucket, `awsds-sandbox-lake` — permanent per-SSO-group artifacts — and every recurring act its life needs: the prefix contract, wiring a SageMaker Unified Studio project to a prefix (the portal's **S3 connection**), the two read/write tests, and revocation when a project dies. The build itself is [Stage 16](../stages/stage-16-sandbox-lake.md)'s, once; this file is what runs *per project*, forever |
-| **Operator** | §W and §R: the **infrastructure user** — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`; every write is authorized per occurrence. §T's in-project half: a **data-scientist persona, in the portal**, no CLI. §T's out-of-project half: a Sandbox SSO user through [`s3-read-write/`](../../../s3-read-write/README.md), profile `awsds-scientist-sandbox`, on the VPN. §P: the tenant's own code — a wired project's notebook, or the laptop as the group's SSO user on the VPN |
+| **Operator** | §W and §R: the **infrastructure user** — account **Sandbox**, permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`; every write is authorized per occurrence. §T's in-project half: a **data-scientist persona, in the portal**, no CLI. §T's out-of-project half: a Sandbox SSO user through [`s3-read-write/`](../../../s3-read-write/README.md), profile `awsds-scientist-sandbox`, from any network. §P: the tenant's own code — a wired project's notebook, or the laptop as the group's SSO user |
 | **The rules** | **This is not the governed lake**: nothing here is catalogued, LF-tagged or granted through Lake Formation — the governed lake's questions belong to [`data-governance/data/README.md`](../../../terraform-live/data-governance/data/README.md), and moving data between the two is a deliberate act (§G), never a mount. **A project's access is a pair of registered objects** — a grant and a trust entry — so it dies with the project or §R is owed; an orphaned grant is `SL-4`'s finding and the orphaned trust half surfaces under `SL-2`, neither of them housekeeping |
 | **The picture around it** | Why the bucket exists and what its existence costs: the stage file's own argument. What is *expected* on the instance at any moment: [`docs/AWS_STATE.md`](../../AWS_STATE.md)'s lake-bucket and vending rows. The instrument: `./aws/sandboxlake.py` (`SL-1`–`SL-5`), the first thing to run when anything here surprises |
 | **Written** | 2026-08-26, at Stage 16 planning, from designs read out of AWS's documentation (the 2026-08-26 rows of [`docs/REFERENCES.md`](../../REFERENCES.md)) — and **exercised the same day**: §W (steps 4.1-4.2), §T's both halves (4.4 and 5.1, with the in-image amendment the exercise forced), §R's **grant half** (6.1, sacrificial; the **trust half** waits a real project's death). Each section's marker carries its date and its limits (Lesson 37) |
@@ -104,8 +103,8 @@ below.
   that 200 as a hole is Lesson 30's mistake. The direct-refusal control lives in the laptop half alone.
   The third refusal the first draft named — the same read from a *second* project holding no grant —
   stays unexercised until a second project exists.
-- **From the laptop, no project in the path** (proves the *persona* path): on the VPN, as the group's SSO
-  user, the `s3-read-write` sequence unchanged — discover (`ListCallerAccessGrants`), vend
+- **From the laptop, no project in the path** (proves the *persona* path): from any network, as the
+  group's SSO user, the `s3-read-write` sequence unchanged — discover (`ListCallerAccessGrants`), vend
   (`GetDataAccess` on `s3://awsds-sandbox-lake/<sso-group>/*`), write, list, read back. The vended
   session's ARN names **the access role** (the project-path vend names the project role — the difference
   is the diagnostic if a vend surprises). The persona's *direct* `aws s3` call on the bucket must still
@@ -155,9 +154,10 @@ trail (step 4.4's reading).
 
 ### On the laptop — the explicit vend is the only door
 
-Preconditions: **VPN up**, signed in as the group's SSO user — for `sso-group-data-scientists`, profile
-`awsds-scientist-sandbox` (account **Sandbox**, permission set **`DataScientistAccess`** — today the
-only set carrying the vending policy, §G).
+Preconditions: signed in as the group's SSO user, from any network — for `sso-group-data-scientists`,
+profile `awsds-scientist-sandbox` (account **Sandbox**, permission set **`DataScientistAccess`** — today
+the only set carrying the vending policy, §G). Under the monitored profile, `proxy-on` in that terminal
+first.
 
 ```python
 import boto3

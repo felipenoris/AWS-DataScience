@@ -45,11 +45,10 @@ API → the agent's outbound channel, which the group never sees. And it was a g
 runs `sshd`, so the rule left port 22 *reachable* from the tunnel on a host with zero authorized keys, one
 `key_name` away from a second way in.
 
-**What gates the shell is IAM.** For the six persona sets the VPN still does (`DenyControlPlaneOffVpn`
-denies `*` on `*` off-VPN); for `InfrastructureAccess` it does not, by **open question 17**, option (a) —
-the administrative credential is outside the VPN because it is also the fire escape. A port served during a
-build is reached from the laptop with SSM **port forwarding** (`AWS-StartPortForwardingSession`), which is
-still Session Manager and still needs no ingress rule.
+**What gates the shell is IAM**, from any network (D39): `ssm:StartSession` is `InfrastructureAccess`'s,
+and no persona set grants it. A port served during a build is reached from the laptop with SSM **port
+forwarding** (`AWS-StartPortForwardingSession`), which is still Session Manager and still needs no ingress
+rule.
 
 ## Using it
 

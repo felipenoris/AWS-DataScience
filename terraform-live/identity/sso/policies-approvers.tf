@@ -37,7 +37,6 @@ data "aws_iam_policy_document" "deployment_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
-    data.aws_iam_policy_document.control_plane_vpn.json,
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 
@@ -198,7 +197,6 @@ data "aws_iam_policy_document" "governance_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
-    data.aws_iam_policy_document.control_plane_vpn.json,
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 
@@ -365,7 +363,6 @@ data "aws_iam_policy_document" "dev_env_steward" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
-    data.aws_iam_policy_document.control_plane_vpn.json,
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 

@@ -26,9 +26,9 @@ Typical use::
     bucket, prefix = s3.split_s3_uri(target)
     s3.list_objects(project, bucket, prefix)
 
-See ``README.md`` for the prerequisites (VPN up, the persona's vending
-permission, and a grant for the project) — none of them is this
-library's to create.
+See ``README.md`` for the prerequisites (the persona's vending permission,
+a grant for the project, and the proxy variables under the monitored VPN
+profile) — none of them is this library's to create.
 """
 
 from s3_read_write import s3, vending

@@ -1194,8 +1194,8 @@
   [`stage-06a-unified-studio.md`](plan/stages/stage-06a-unified-studio.md):
   - *Network isolation in SMUS* — the required VPC-endpoint table (`datazone` included), the
     three-control Athena Spark disable (the SCP on `athena:StartSession`/`UpdateSession` being the only
-    one that spares Athena SQL), and the network-conditioned deny for the domain execution role that
-    INT-16's fallback (i) names:
+    one that spares Athena SQL), and the network-conditioned deny for the domain execution role
+    (`DenyUserAccessFromUnauthorizedVPCs`):
     <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/network-isolation.html>.
     Re-read 2026-08-19: AWS ships the deny statement verbatim (`Sid` `DenyAthenaSparkStartSession`,
     `Resource` `arn:aws:athena:*:*:workgroup/*`); the Tooling Athena flag applies to new projects only;

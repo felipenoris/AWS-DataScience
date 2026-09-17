@@ -1,17 +1,12 @@
-# The deny fragments every persona set carries - Stage 2 step 5.2 and Stage 4 step 8.2.
+# The deny fragment every persona set carries - Stage 2 step 5.2.
 #
 # Written once and referenced six times (Lesson 14: a condition that must appear in N places by
 # hand will be missing from one of them). Each set composes them through
 # `source_policy_documents`, so a statement added here reaches all six in one diff and
 # `terraform plan` shows six changes rather than five.
 #
-# Two fragments rather than one (Stage 4 decision 1, 8.2). The first is unconditional denies of
-# acts nobody should perform - true forever, reviewable on their own terms, and nothing outside
-# this file can change what they mean. The second is conditioned on an address that is read from
-# another account's state and that moves the day a VPN home is added or rebuilt. Merged, a
-# statement whose truth depends on live infrastructure would sit inside a document reviewed as
-# if it were static, and the first plan showing a diff in `shared_denies` would read as
-# "somebody changed the denies" when it was an Elastic IP.
+# No statement here tests the network a caller calls from: a person reaches AWS by identity
+# from any network (D39).
 #
 # A deny and not a boundary. Step 5.2 asks for two of these denies to live in a permissions
 # boundary, and decision 4 (settled 2026-08-16) defers the boundary object to Stage 3: a
@@ -176,129 +171,5 @@ data "aws_iam_policy_document" "shared_denies" {
     ]
 
     resources = ["*"]
-  }
-}
-
-# ============================================================ the second fragment - Stage 4 8.1
-#
-# The other half of the objective. docs/plan/objectives.md says all user access goes through the
-# VPN. The tunnel alone delivers the data plane - a private network a laptop cannot reach
-# without it - and delivers nothing about the control plane, which stays reachable from any
-# network on earth with a valid SSO session until this statement lands. Stage 4's own framing:
-# role 1 is held by construction, role 2 is held by this, and only this.
-#
-# It is `*` on `*` and not a list of sensitive actions, because a list would be an enumeration
-# of what somebody thought of on the day they wrote it, and every service added afterwards
-# arrives outside it. The requirement is not "these calls come from the VPN", it is "this person
-# works from the VPN"; the exceptions are argued one by one below rather than implied by an
-# omission.
-#
-# The three conditions are ANDed, and each one does different work:
-#
-#   NotIpAddress aws:SourceIp   the deny fires when the call did not come from a VPN home's
-#                               Elastic IP. This only means anything because step 5 routes
-#                               `0.0.0.0/0, ::/0` - a split tunnel would leave every API call
-#                               on the laptop's own connection and this statement would then
-#                               deny the user everything, tunnel up or not. Step 5 and step 8
-#                               stand or fall together, which is why pass 3 runs after pass 2.
-#
-#   BoolIfExists aws:ViaAWSService = false      the carve-out, and not the one people expect.
-#                               Forward access sessions preserve the caller's source IP - the
-#                               deny-by-IP example in AWS's own data-perimeter guidance says so
-#                               in a note - so an Athena-to-S3 flow would survive the bare
-#                               condition on its own. What this defends is the on-behalf calls
-#                               that are not FAS, where the service calls with its own network
-#                               identity and the caller's IP is simply absent. `IfExists` keeps
-#                               a request context missing the key from being read as `false`.
-#
-#   StringNotEqualsIfExists aws:SourceVpc     added 2026-08-20 as aws:SourceVpce and widened
-#                               to the VPC on 2026-08-23, when the endpoint-shaped form was
-#                               measured one case short. locals.tf carries the same argument
-#                               beside the values.
-#                               The original half corrected a measured defect rather than
-#                               extending the design (Lesson 33; stage 5 log, 4d's controls
-#                               entry). Tunnel traffic splits by destination in the VPN home's
-#                               public subnet: S3 and DynamoDB leave through the [P] gateway
-#                               endpoints - their prefix-list routes are more specific than
-#                               the IGW default - and arrive carrying the host's private
-#                               address plus aws:SourceVpce, never the Elastic IP. CloudTrail,
-#                               one session: ListBuckets as a 10.20.x.x source plus the home's
-#                               vpce id, the same minute's Glue call as the EIP. Without this
-#                               test the statement explicitly denied every direct S3 call a
-#                               persona made from inside the perimeter - the scientist ran the
-#                               query and could not fetch the CSV. The values are the VPN
-#                               homes' endpoints (locals.tf), not the consumers'. IfExists
-#                               holds the polarity: off-VPN traffic carries no such key, the
-#                               test passes, the deny still fires.
-#                               The case it missed, measured 2026-08-23 with a negative
-#                               control: while `egress/` is up, every service holding an
-#                               interface endpoint resolves - through the VPC resolver the
-#                               client config points at - to a private address, so the call
-#                               takes that endpoint and presents its id. `dig sts...` answered
-#                               10.20.12.229 while `dig s3...` answered public addresses (the
-#                               gateway does no private DNS), and the persona was explicitly
-#                               denied sts:GetCallerIdentity with the tunnel up and `curl
-#                               checkip` reading the EIP - two true readings of two paths. An
-#                               interface endpoint id cannot be listed here: they are [E], new
-#                               on every `make up` (Lesson 3). So the key became aws:SourceVpc,
-#                               which is [P] and subsumes the gateway ids the branch used to
-#                               carry - a request through any endpoint in the VPC presents
-#                               both keys, so nothing that passed before stops passing.
-#                               What it widens: anything inside the home's own VPC that wears
-#                               a persona identity - and a persona role is reachable only
-#                               through the IdC sign-in, never by an instance profile.
-#                               Applied and proven 2026-08-20, and the document changing is
-#                               not the evidence. The statement is shared, so it was read back
-#                               off both provisioned roles, and the behavioural check was the
-#                               same call that diagnosed the defect (ListBuckets, explicit ->
-#                               implicit deny) beside a contrast pair - one action, a granted
-#                               bucket and a non-granted one, one session - because "the
-#                               network refuses S3" and "this bucket is not granted" read the
-#                               same otherwise. While this statement over-fired, every implicit
-#                               deny behind it was unmeasurable, D13's whole mechanism
-#                               included.
-#
-# This fragment is not composed into InfrastructureAccess: step 8.3 applies it to the six
-# personas only. Getting it wrong on a persona costs a data-scientist session; getting it wrong
-# on the credential every Terraform apply in the organization runs as costs break-glass (D16).
-# The seventh set gains the statement in a separate diff, after the recorded control-plane pair.
-# What the statement pins is a single Elastic IP and, since 2026-08-23, the home's VPC - both
-# [P], allocated in foundation/ where `make down` cannot reach them (step 2.1; INT-05).
-#
-# What it does not protect (8.4, INT-16): the Unified Studio portal is entered by an IdC
-# sign-in, not by an IAM call, and this statement does not reach that sign-in. Measured
-# 2026-08-22 (Stage 6 step 1.7), both directions in one sitting: off the tunnel a persona
-# session opened the portal and enumerated its project profiles, while the console refused
-# logs:DescribeLogGroups "with an explicit deny in an identity-based policy" - the wording that
-# names this statement and nothing else, because an SCP says "service control policy", a
-# boundary says "permissions boundary", and no other deny these six documents carry reaches
-# logs: at all. With the tunnel up, both surfaces were clean. So: VPN-only APIs and console, and
-# nothing more than that.
-data "aws_iam_policy_document" "control_plane_vpn" {
-
-  statement {
-    sid    = "DenyControlPlaneOffVpn"
-    effect = "Deny"
-
-    actions   = ["*"]
-    resources = ["*"]
-
-    condition {
-      test     = "NotIpAddress"
-      variable = "aws:SourceIp"
-      values   = local.vpn_egress_cidrs
-    }
-
-    condition {
-      test     = "StringNotEqualsIfExists"
-      variable = "aws:SourceVpc"
-      values   = local.vpn_egress_vpc_ids
-    }
-
-    condition {
-      test     = "BoolIfExists"
-      variable = "aws:ViaAWSService"
-      values   = ["false"]
-    }
   }
 }

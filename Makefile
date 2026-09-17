@@ -102,7 +102,7 @@ help:
 	@printf '  whatever its row says (D36). A layer is a cost judgement and can move (5.1 rule\n'
 	@printf '  7): demote a [D] that proves cheap to rebuild, promote an [E] that proves slow.\n'
 	@printf '\n'
-	@printf '\033[1mTHE HUB\033[0m - one way in, one way out, in the Production account (D38; 6c 7.1/7.2)\n'
+	@printf '\033[1mTHE HUB\033[0m - the way into the private network and the way out, in Production (D38; 6c 7.1/7.2)\n'
 	@printf '  The WireGuard host and the Squid proxy are [D] hosts every other account depends\n'
 	@printf '  on. `make hub-up` starts the pair without raising Production endpoints or GitLab.\n'
 	@printf '  A spoke `make up` refuses while either is stopped, naming it: with a stopped hub\n'
@@ -196,10 +196,10 @@ down:
 	@$(MAKE) --no-print-directory guard-env TARGET=down
 	@./scripts/slices.py down --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# The hub (6c step 7.1): D38 gives the estate one way in (the WireGuard host) and one way out (the
-# Squid proxy), both [D] hosts in Production. Every other account's session depends on them, and
-# `make up ENV=production` would also raise that account's [E] endpoint slices and probes, so the two
-# hosts get a lifecycle of their own. No ENV argument: there is exactly one hub.
+# The hub (6c step 7.1): D38 gives the estate one way into the private network (the WireGuard host)
+# and one way out (the Squid proxy), both [D] hosts in Production. Every other account's session
+# depends on them, and `make up ENV=production` would also raise that account's [E] endpoint slices
+# and probes, so the two hosts get a lifecycle of their own. No ENV argument: there is exactly one hub.
 hub-up:
 	@./scripts/slices.py up --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 

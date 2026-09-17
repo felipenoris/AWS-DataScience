@@ -99,50 +99,14 @@ data "aws_identitystore_group" "dev_env_stewards" {
 # else this returns is incidental and nothing below consumes it.
 data "aws_organizations_organization" "this" {}
 
-# ---------------------------------------------------------------- the VPN homes' Elastic IPs
-#
-# Stage 4 step 8.1, the first read in this repository that crosses an account boundary.
-# Everything above is read from the account this slice is applied into; this reads the Sandbox
-# account's foundation/ state from the Identity account.
-#
-# Remote state rather than an aws_eip data source, because of what happens when the answer is
-# wrong. A tag-filtered aws_eip lookup returns whatever carries the tag, in whatever account the
-# provider happens to point at, and an address that matched nothing is an empty result rather
-# than an error - the shape that turns into the empty allow-list variables.tf refuses. Remote
-# state names the slice that owns the address (step 2.1: allocated in foundation/, never in
-# vpn/, so it survives every `make down`), so a home whose foundation/ has not been applied
-# fails by name here instead of resolving to nothing three resources later.
-#
-# The profile is in the config because a same-account read inherits AWS_PROFILE from the command
-# line (sandbox/vpn/main.tf reads foundation/ that way and passes no profile) and this one
-# cannot: the apply runs as awsds-infra-identity and the bucket lives in Sandbox. Both profiles
-# sit on the `awsds` sso-session, so one sign-in covers the pair - aws/AWS-CLI.md, "Signing in".
-#
-# Beyond S3 the read needs kms:Decrypt on the home's own alias/awsds-<env>-tfstate key, because
-# the state object is SSE-KMS. The profile is that account's InfrastructureAccess, which holds
-# it, so the failure mode of a mis-generated tfvars is an AccessDenied naming KMS rather than a
-# silently stale address.
-data "terraform_remote_state" "vpn_home" {
-  for_each = var.vpn_homes
-
-  backend = "s3"
-
-  config = {
-    # The key is built from the account folder, which is the map key - the same rule
-    # scripts/tfhygiene/backend.py's backend_values() applies, and the reason the folder rides
-    # in the tfvars rather than being re-derived from the env token (that reverse map would be
-    # a second copy of ENV_TOKENS - Lesson 14).
-    bucket  = "awsds-${each.value.env}-tfstate"
-    key     = "${each.key}/${each.value.slice}/terraform.tfstate"
-    region  = var.region
-    profile = each.value.profile
-  }
-}
-
 # ------------------------------------------------------------------------------ the lake
 #
-# Stage 5 pass 4c. Same mechanics as vpn_home above: cross-account, the profile rides in the
-# generated tfvars, one sign-in covers every profile on the `awsds` sso-session.
+# Stage 5 pass 4c, and the one read here that crosses an account boundary: it reads the lake
+# account's data/ state from the Identity account. The profile is in the config because a
+# same-account read inherits AWS_PROFILE from the command line and this one cannot; it rides in
+# the generated tfvars, since a profile literal never sits in a .tf file, and one sign-in covers
+# every profile on the `awsds` sso-session. The state object is SSE-KMS, so the read also needs
+# kms:Decrypt on that account's state key, which its InfrastructureAccess holds.
 #
 # There is no consumer_data read and no workgroup or derived-bucket ARN: the derived zone
 # re-homed onto the SMUS project path and the persona's query surface is a SMUS project

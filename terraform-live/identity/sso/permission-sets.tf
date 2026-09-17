@@ -84,39 +84,6 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
       condition     = length(local.inline_policies[each.key]) <= var.inline_policy_max_bytes
       error_message = "Inline policy for ${local.persona_sets[each.key].name} is ${length(local.inline_policies[each.key])} characters, over the ${var.inline_policy_max_bytes} the plan allows. See step 5.2: the way out is a customer-managed policy, not a larger threshold."
     }
-
-    # The addresses are checked for being addresses - Stage 4 step 8.1. This is the one
-    # precondition in this repository that guards against a lockout rather than against a
-    # failed apply, and it fails at plan naming the home.
-    #
-    # `DenyControlPlaneOffVpn` denies `*` on `*` unless aws:SourceIp matches this list. IAM
-    # does not validate the list: a value that is not a CIDR simply matches nothing, so a
-    # foundation/ output that came back null, empty or renamed renders as `/32` and the
-    # statement becomes an unconditional deny of everything for all six personas - applied
-    # successfully, reported as a clean apply, discovered by a person who cannot sign in.
-    # variables.tf refuses an empty vpn_homes map for the same reason; this is the other half,
-    # where the map has rows and the state behind one of them did not answer.
-    precondition {
-      condition = alltrue([
-        for cidr in local.vpn_egress_cidrs :
-        can(cidrnetmask(cidr)) && endswith(cidr, "/32")
-      ])
-      error_message = "A VPN home's Elastic IP did not read back as an address: ${jsonencode(local.vpn_egress_cidrs)}. DenyControlPlaneOffVpn would apply cleanly and deny every call from every network for all six personas. Check that each vpn_homes account's foundation/ slice is applied and still exports wireguard_eip_public_ip (Stage 4 step 2.1)."
-    }
-
-    # The endpoint ids get the same guard (2026-08-20), because the precondition above
-    # predicted the right symptom for the wrong cause: it guards a malformed address list, and
-    # the defect arrived through a well-formed list whose key was absent on the S3 path (4d's
-    # controls entry). A bad entry here is not a lockout - it silently un-fixes the S3 path, a
-    # regression to the 4d defect that only a behavioural proof would notice. Same price for
-    # the cheap version: a plan-time failure naming the value.
-    precondition {
-      condition = alltrue([
-        for id in local.vpn_egress_vpc_ids :
-        can(regex("^vpc-[0-9a-f]+$", id))
-      ])
-      error_message = "A VPN home did not read back as a vpc id: ${jsonencode(local.vpn_egress_vpc_ids)}. DenyControlPlaneOffVpn's aws:SourceVpc branch would go quiet and every call a persona makes THROUGH A VPC ENDPOINT from the tunnel would be explicitly denied - the 4d defect for S3, and the 2026-08-23 one for every service holding an interface endpoint. Check that each vpn_homes account's foundation/ still exports vpc_id (Stage 3 step 1)."
-    }
   }
 }
 
@@ -140,8 +107,8 @@ resource "aws_ssoadmin_permission_set_inline_policy" "persona" {
 # Get*, List*, StartQuery, StopQuery, TestMetricFilter, FilterLogEvents, StartLiveTail,
 # StopLiveTail, cloudwatch:GenerateQuery, GenerateQueryResultsSummary and three
 # observabilityadmin reads. No Put*, no Delete*, no Create*. It composes under every deny already
-# on these sets: the shared fragment and DenyControlPlaneOffVpn both still apply, a deny always
-# winning, so the blast radius of a future AWS change is bounded by them.
+# on these sets: the shared fragment still applies, a deny always winning, so the blast radius of a
+# future AWS change is bounded by it.
 #
 # What is accepted (decided by the user, 2026-08-17):
 #

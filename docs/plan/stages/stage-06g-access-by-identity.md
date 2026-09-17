@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Not started. Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. No AWS reading has been taken for it yet |
+| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. Owed: the behavioural pairs 1.4 and 2.4, which need the Data Scientist User's session, and decisions due 1 and 2 |
 | **Prerequisites** | **None that block.** The hub up (`make hub-up`) only for the monitored-profile halves of 1.4 and 2.4 |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
@@ -53,14 +53,55 @@ apply, the documents that describe the deny are true (Lesson 37).
 `DenyControlPlaneOffVpn` had been masking the drop-box write and D13's refusal until an on-tunnel session
 exercised both (Lesson 20's mirror).
 
+- **0.1 read 2026-09-17, from the deployed sets**: `sso-admin` in Identity, the AWS-managed
+  `CloudWatchLogsReadOnlyAccess` (v12) and the customer-managed `awsds-org-project-storage-vending` (v1) in
+  Sandbox. The six sets match the code. `InfrastructureAccess` carries `AdministratorAccess` and no inline
+  policy, so every reach below already exists, from any network, for that one set.
+
+  | Set | Accounts | Reads | Writes | Credential vending |
+  |---|---|---|---|---|
+  | `DataScientistAccess` | Sandbox | SageMaker `Search`/`List*`/`Describe*`, Glue metadata, LF-Tag reads, CloudWatch Logs | the drop-box `s3:PutObject` with the lake key through S3, still confined by the bucket until step 2 | `lakeformation:GetDataAccess`; `s3:GetDataAccess` and `s3:ListCallerAccessGrants` on Sandbox's Access Grants instance; `ecr:GetAuthorizationToken` |
+  | `DataScientistStagingAccess` | Staging | SageMaker, Glue metadata, CloudWatch Logs | none (`DenyEveryWrite`) | none |
+  | `DataScientistProdAccess` | Production | SageMaker, Glue metadata, ECR metadata, Athena discovery, CloudWatch Logs | none (`DenyProductionControlPlane`) | `ecr:GetAuthorizationToken` |
+  | `DeploymentManagerAccess` | Sandbox, Staging, Production | SageMaker job and registry status, Glue metadata, ECR scan findings, Step Functions and Scheduler, CloudWatch Logs | none (`DenyControlPlaneInFull`, `DenyDataReadPaths`) | none |
+  | `DevEnvStewardAccess` | Production, Sandbox | ECR, SageMaker image registration, build logs | none (`DenyShippingTheArtifactItApproves`, `DenyReadingData`) | none |
+  | `GovernanceManagerAccess` | Data Governance | Glue metadata, Lake Formation, DataZone, Macie findings | **Lake Formation grants, revocations and LF-Tag administration; DataZone subscription decisions and project membership** | none (`DenyReadingTheRows`) |
+
+  **Two reaches no decision names.** The Governance Manager's entitlement writes become callable from any
+  network: who may read the lake can be changed from a laptop anywhere. And the contents of CloudWatch Logs
+  become readable from any network by four sets. Neither exceeds `InfrastructureAccess`'s standing reach,
+  and no step in Stages 11 or 12 alarms on a Lake Formation grant or a DataZone subscription decision.
+  **Taken the same day by the user: both accepted without an alarm**, named in D39 §3, with the
+  organization trail as the record.
+  **The vending path does not open the governed lake.** Data Governance's `DataLakeSettings` read
+  `AllowExternalDataFiltering: false`, `AllowFullTableExternalDataAccess` unset and no authorized session
+  tag value. As the vendor documents those settings, that leaves no Lake Formation credential for a
+  governed table to a caller outside an integrated engine; unexercised. Sandbox reads
+  `AllowFullTableExternalDataAccess: true`, set by SMUS (Stage 16), which reaches the projects' own tables.
 - **0.1 [Claude] List, per persona set, what becomes callable from any network**: every action its allows
   grant, grouped as control plane, data plane and credential vending. The data-plane calls the inventory
   already names are `lakeformation:GetDataAccess`, `s3:GetDataAccess` and `s3:ListCallerAccessGrants`,
   `ecr:GetAuthorizationToken`, Production's Athena discovery, and the drop-box write with its KMS pair.
   Anything the list shows that no decision names is a question before 1.3, not after.
+- **0.2 read 2026-09-17.** `./aws/vpn.py` `VP-7` pass: all six sets carry the deny, each testing
+  `aws:SourceVpc` as well as the address, and `InfrastructureAccess` does not. `./aws/proxy.py` `PX-5`
+  pass: `184.33.8.126` is in the deny on six sets. `./aws/datalake.py` `DL-2` pass on the five lake
+  buckets, each carrying `ip+prin+sigage+via+vpce`; the script's persona reads failed for want of a Data
+  Scientist session, which `DL-2` does not use. **CloudTrail, 2026-09-10T04:41Z onwards, `us-west-2` and
+  `us-east-1` in Sandbox, Staging, Production and Data Governance: about 146,000 management events and
+  none by a persona set.** The absence is evidence: the same filter on `sessionIssuer.userName` returns the
+  `InfrastructureAccess` sessions, all from a laptop's own uplink or a service and none through either hub
+  address. So no refusal of the deny is on record for the window, and 1.4's before half is provoked rather
+  than read.
 - **0.2 [Claude] Read the before state.** `get-bucket-policy` on the five lake buckets and `./aws/datalake.py`
   `DL-2`; `./aws/vpn.py` `VP-7` and `./aws/proxy.py` `PX-5` green; seven days of the six sets' CloudTrail
   events by `sourceIPAddress`, which should read the proxy's and the WireGuard host's addresses only.
+- **0.3 read 2026-09-17** (`git grep` over tracked files, the stage logs excluded). The hub's addresses
+  are a policy value in `identity/sso/` and `data-governance/data/` only, both fed by `backend.py`'s
+  `VPN_HOMES`, and `production/networking/` outputs them. Every other hit is a comment or a document,
+  `sandbox/foundation/` included. No instrument reads them from the repository, and the repository records
+  no third party that allow-lists the egress address. So `VPN_HOMES` goes entirely at 2.1, and decision due
+  1 finds no consumer outside the documents once steps 1 and 2 have applied.
 - **0.3 [Claude] Enumerate every consumer of the hub's addresses as a value**: `VPN_HOMES`, `vpn_homes`,
   `wireguard_eip_public_ip`, `proxy_eip_public_ip`, and the two addresses as literals, across code,
   instruments and documents (Lesson 48). The list decides whether `VPN_HOMES` goes entirely in 2.1, and it
@@ -68,6 +109,13 @@ exercised both (Lesson 20's mirror).
 
 ### 1. Delete the persona deny — `identity/sso/`
 
+- **1.1-1.3 done 2026-09-17.** The code: the fragment, its six compositions, both address
+  preconditions, both locals, the `vpn_home` read, the `vpn_homes` variable and `backend.py`'s emission
+  to this slice. Plan `0 to add, 6 to change, 0 to destroy`, each inline policy losing
+  `DenyControlPlaneOffVpn` alone (273 bytes; every other statement identical); applied; re-plan
+  `No changes`. Read back on the nine provisioned persona roles in Sandbox, Staging, Production and Data
+  Governance: no `DenyControlPlaneOffVpn` and no network-origin key on any (`DataScientistAccess` 19 →
+  18 statements). 1.4 is owed: it needs the Data Scientist User's session.
 - **1.1 [Claude] The code, in one commit.** The `control_plane_vpn` document in `policies-shared.tf` and its
   composition into the six sets (`policies-data-scientists.tf`, `policies-approvers.tf`); the two
   preconditions in `permission-sets.tf`; the `vpn_egress_cidrs` and `vpn_egress_vpc_ids` locals; the
@@ -92,6 +140,15 @@ exercised both (Lesson 20's mirror).
 
 ### 2. Admit the laptop to the lake by principal — `data-governance/data/`
 
+- **2.1-2.3 done 2026-09-17.** `DenyOutsideTrustedNetworks` lost the `aws:SourceIp` branch
+  (`184.33.8.126/32`, `52.89.212.1/32`) and `VPC-Networking`'s gateway endpoint from `aws:SourceVpce`,
+  keeping Sandbox's. On the drop-box it denies every action but `s3:PutObject`, beside
+  `DenyLetterboxPutOutsideTrustedNetworksToAllButTheWriter`, which names the persona through
+  `data_scientist_writer_pattern` rather than `writer_role_patterns`, and
+  `DenyPutOutsideTheLetterboxOffTrustedNetworks`, which keeps the exemption on the prefix. `VPN_HOMES`
+  left `backend.py` with its renderer. Plan `0 to add, 5 to change, 0 to destroy`, read statement by
+  statement against this design; applied; re-plan `No changes`. The five deployed policies read back with
+  no `aws:SourceIp` and no hub endpoint, the drop-box at nine statements. 2.4 is owed with 1.4.
 - **2.1 [Claude] The code, in one commit.** `DenyOutsideTrustedNetworks` loses the `aws:SourceIp` branch
   and `vpn_home_vpce_ids` (`trusted_vpce_ids` keeps `consumer_vpce_ids`). On the drop-box, a principal
   branch admits `s3:PutObject` from the principal `AllowInteractiveWriterPutOnly` already names, bound to
@@ -111,6 +168,14 @@ exercised both (Lesson 20's mirror).
 
 ### 3. The instruments, in the sitting of each apply
 
+- **Step 3 done 2026-09-17, each instrument run after its edit.** `VP-7` passes: none of the seven
+  sets carries a network-origin key, and its classifier separates all three keys against fabricated
+  policies. `proxy.py` reads the proxy's account alone, `PX-1`..`PX-4`. `DL-2` passes on the five
+  buckets with no `ip` tag and the drop-box's principal branch naming `s3:PutObject` alone, while
+  fabricated `s3:*` and `NotAction` exemptions and an address branch fail. `DT-1` expects `vpce`, `via`
+  and `prin` and refuses `ip` on `awsds-prod-outputs`, which reads as a note until Stage 9 builds it.
+  `RI-5`, `studio.py`, `NT-9`, `eip-transfer.py`, `aws/INDEX.md` and `AWS-CLI.md` state the channel
+  and the addresses without a network requirement. Decision due 3 was taken as recommended: inverted.
 - **3.1 [Claude] `./aws/vpn.py` `VP-7`, inverted into D39's regression guard** (decision due 3): pass when no
   permission set, `InfrastructureAccess` included, carries a statement testing `aws:SourceIp`,
   `aws:SourceVpc` or `aws:SourceVpce`; fail when one appears. The constants, the Identity read and the
@@ -129,6 +194,10 @@ exercised both (Lesson 20's mirror).
 
 ### 4. The documents that describe the running estate, in the sitting of the applies
 
+- **4.1 done 2026-09-17.** `README.md`'s tunnel section and `s3-read-write` line,
+  `terraform-live/README.md`, `docs/NETWORK.md`'s client rows and instruments (`check-network-doc.py`
+  clean), `docs/AWS_STATE.md` with `INV-19` and §C's rows struck with their dates, `docs/GLOSSARY.md`,
+  `docs/SMUS.md`, `docs/REFERENCES.md`, `POLICIES.md`'s serial-console row and `CLAUDE.md`.
 - **4.1 [Claude] The estate's descriptions.** `README.md` items 2 and 3 and the `s3-read-write` line;
   `terraform-live/README.md`; `docs/NETWORK.md`'s client rows and its instrument line, with
   `./scripts/check-network-doc.py`; `docs/AWS_STATE.md` §C's rows on the deny and the lake perimeter,

@@ -41,12 +41,12 @@ only on the `terraform import` command line (`aws/output/import-ids.txt` §3).
 half** (D34). Every assignment is a row somebody typed in [`locals.tf`](locals.tf); a `for_each`
 over a *data source* would let an account acquire `DataScientistAccess` by simply existing.
 Where a `for_each` does appear here it runs over an **authored map**: `locals.tf`'s own maps for
-the sets and assignments, and `backend.py`'s generated tfvars for the three cross-account state
-reads. The name-resolving lookup, `aws_organizations_organization`, turns an authored **name**
+the sets and assignments, and `backend.py`'s generated tfvars for the cross-account state
+read. The name-resolving lookup, `aws_organizations_organization`, turns an authored **name**
 into the id the API requires, and the names are exact — Control Tower vended every account with
 an ` Account` suffix, and a **suspended** account called plain `Sandbox` is still in the roster.
-The cross-account `terraform_remote_state` reads (`vpn_home` since Stage 4; `consumer_data` +
-`lake_data` since Stage 5 pass 4c) supply ARNs no naming convention may compose.
+The cross-account `terraform_remote_state` read (`lake_data`, Stage 5 pass 4c) supplies ARNs no
+naming convention may compose.
 
 ## What is complete, and what a later stage owes
 

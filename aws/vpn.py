@@ -2,8 +2,8 @@
 # vpn.py - Stage 4's evidence, side by side: the WireGuard host ([D]) and its IMDS
 # setting, the Elastic IP, the one world-open security-group rule and the host-key secret
 # ([P] anchors - the secret must carry its value-read deny and keep rotation off), the
-# handshake log and health alarm, and which permission sets carry the control-plane deny
-# of step 8 (read back from Identity Center, never assumed).
+# handshake log and health alarm, and the guard that no permission set tests the caller's
+# network (D39; read back from Identity Center, never assumed).
 #
 # The GuardDuty reading is ./aws/guardduty.py (GD-1..GD-3) since 2026-08-18, the day
 # GuardDuty left Stage 4 for Stage 15. VP-8 is retired here, not renumbered - the Stage 4
@@ -34,25 +34,20 @@
 #             which peers the running wg0 actually holds, which no describe answers.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# It is two-profile, which aws/INDEX.md admits only for a reason: the step 8 deny lives in
-# the Identity account's permission sets while the Elastic IP it names lives in the VPN
-# home, so the two halves of one control sit in two accounts by design. Since the GuardDuty
-# reading left (2026-08-18) those two are the whole subject, and the default run selects
-# exactly them; naming profiles on the command line still measures any set. Section 1 pays
-# the rule back with the caller ARN of every profile.
+# It is two-profile, which aws/INDEX.md admits only for a reason: the WireGuard host and its
+# anchors live in the VPN home, while VP-7 reads the permission sets in the Identity account.
+# The default run selects exactly those two; naming profiles on the command line still measures
+# any set. Section 1 pays the rule back with the caller ARN of every profile.
 #
 # The contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the instance Name tag matches awsds-*-vpn (Stage 4 step 1.1)
-#   - the deny statement's Sid is DenyControlPlaneOffVpn (Stage 4 step 8.1)
+#   - the network-origin condition keys VP-7 refuses on a permission set (D39)
 #   - the host-key secret's name ends in -vpn-host-key (Stage 4 step 2.2a)
 #   - its resource policy's Sid is DenyValueReadExceptHostAndInfrastructure (2.2a)
 #
 # What it cannot see, stated because an empty listing and a missing account look alike:
-#   - The behavioural proofs - the tunnel pair, the control-plane deny pair, the
-#     on-behalf carve-out - are the stage's own, run from the laptop with the tunnel up
-#     and down. A describe call proves none of them (Lesson 20).
-#   - Whether the deny actually gates the Unified Studio portal is INT-16 and is answered
-#     by opening the portal, not by reading a policy.
+#   - The behavioural proofs - the tunnel pair, and Stage 6g's persona pair off the VPN - are
+#     the stages' own, run from the laptop. A describe call proves none of them (Lesson 20).
 #   - Management, Log Archive and Audit hold no CLI profile; nothing here reads them.
 
 from __future__ import annotations
@@ -84,22 +79,10 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 
 # The contracts (see header).
 NAME_TAG_PATTERN = "awsds-*-vpn"
-DENY_SID = "DenyControlPlaneOffVpn"
-# The deny's third condition, which has had two spellings. Until 2026-08-23 it was
-# aws:SourceVpce over the VPN home's two gateway endpoint ids, one case short: with egress/
-# up, every service holding an interface endpoint resolves to a private address through the
-# VPC resolver and the call presents that endpoint's id, which the list did not carry and
-# may never carry ([E], new on every make up - Lesson 3). It was widened to aws:SourceVpc,
-# which is [P] and subsumes the two gateway ids (AWS_STATE.md). This file went on grepping for
-# the retired key and reported the six correct sets as "present and wrong" for a week (Lesson 30,
-# a tool's failure written down as a property of the world). The retired form is still read here,
-# so the narrower predecessor is named rather than lumped in with the address-only defect.
-#
-# Both are matched quoted: "aws:SourceVpc" is a prefix of "aws:SourceVpce", so a bare
-# substring test cannot tell the current form from the retired one, which is the distinction
-# the check has to make.
-VPC_CONDITION_KEY = "aws:SourceVpc"
-RETIRED_VPCE_CONDITION_KEY = "aws:SourceVpce"
+# The condition keys no permission set may test (D39): a person reaches AWS by identity from
+# any network, so a statement conditioned on the caller's network is a control D39 removed.
+# Matched quoted, because "aws:SourceVpc" is a prefix of "aws:SourceVpce".
+NETWORK_ORIGIN_KEYS = ("aws:SourceIp", "aws:SourceVpc", "aws:SourceVpce")
 HOST_KEY_SECRET_SUFFIX = "-vpn-host-key"
 HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 
@@ -131,8 +114,8 @@ BASELINE_INSTANCE_TYPE = "t3.nano"
 # different cost lines.
 BASELINE_ROOT_VOLUME_SIZE_GIB = 8
 
-# The six persona sets the step 8 fragment reaches, and the one it deliberately does not
-# (8.2/8.3). Control Tower's own sets are ignored entirely.
+# The seven sets VP-7 reads: the six persona sets and InfrastructureAccess. Control Tower's own
+# sets are ignored entirely.
 PERSONA_SETS = (
     "DataScientistAccess",
     "DataScientistStagingAccess",
@@ -502,9 +485,9 @@ def main(argv: list) -> int:
                     deny = "yes" if HOST_KEY_DENY_SID in r.stdout else "no"
                 host_key_secrets.append((name, bool(rot), deny))
 
-    # ------------------------------------------- the step 8 deny, read back from Identity Center
+    # ------------------------------ the network-origin guard (VP-7), read back from Identity Center
     identity_live = IDENTITY_PROFILE in live
-    set_rows: list = []  # (set name, carries sid: yes/no/(no inline policy))
+    set_rows: list = []  # (set name, network-origin keys found | none | (no inline policy))
     if identity_live:
         cli = cli_for(IDENTITY_PROFILE)
         note(f"reading permission sets through {IDENTITY_PROFILE} ...")
@@ -572,20 +555,8 @@ def main(argv: list) -> int:
                 elif not r.stdout.strip():
                     set_rows.append((name, "(no inline policy)"))
                 else:
-                    # Presence of the Sid is not enough: on 2026-08-20 the statement carried
-                    # the right Sid and the wrong condition set for three days while this
-                    # check reported "all six carry it" (Lesson 31). Tunnel traffic splits by
-                    # destination, so an aws:SourceIp-only test denies every direct S3 call
-                    # made from inside the perimeter. The third condition is read as well,
-                    # in the spelling that is current (see VPC_CONDITION_KEY).
-                    if DENY_SID not in r.stdout:
-                        set_rows.append((name, "no"))
-                    elif f'"{VPC_CONDITION_KEY}"' in r.stdout:
-                        set_rows.append((name, "yes"))
-                    elif f'"{RETIRED_VPCE_CONDITION_KEY}"' in r.stdout:
-                        set_rows.append((name, "yes, vpce only"))
-                    else:
-                        set_rows.append((name, "yes, IP only"))
+                    found = [k for k in NETWORK_ORIGIN_KEYS if f'"{k}"' in r.stdout]
+                    set_rows.append((name, ", ".join(found) if found else "none"))
 
     # -------------------------------------------------------------------------------- the checks
     # VP-1: exactly one WireGuard host in the VPN home. Absent = not built yet; two = a
@@ -670,8 +641,7 @@ def main(argv: list) -> int:
                     "VP-2",
                     "Elastic IP associated with the host",
                     f"{len(addresses)} address(es) allocated, none associated with {iid} - "
-                    "clients are pinned to an IP that reaches nothing (step 2.1), and "
-                    "step 8's deny would then deny everyone everywhere.",
+                    "clients are pinned to an IP that reaches nothing (step 2.1).",
                 )
 
     # World-open ingress, read in every live infra account (6c step 6.5). Reading the VPN home
@@ -779,80 +749,39 @@ def main(argv: list) -> int:
     elif home_live:
         checks.note("VP-5", "handshake log + alarm", "no host yet - expected before Stage 4.")
 
-    # VP-7: which permission sets carry the step 8 deny. The six persona sets move together
-    # (one shared fragment, 8.2). InfrastructureAccess stays off-VPN (open question 17,
-    # 2026-08-17, option a): the VPN host is a [D] instance that credential must be able to
-    # start from anywhere, or the tunnel's own outage is unrecoverable without break-glass, so
-    # for the seventh set the deny is judged in the opposite direction.
+    # VP-7: no permission set tests the caller's network (D39, Stage 6g step 1). A person reaches
+    # AWS by identity from any network, so a network-origin key on any of the seven sets is a
+    # control D39 removed, and nothing else would notice it: every call still succeeds from
+    # inside the tunnel.
     if identity_live and set_rows:
-        persona = {n: v for n, v in set_rows if n in PERSONA_SETS}
-        carrying = [n for n, v in persona.items() if v.startswith("yes")]
-        missing = [n for n in PERSONA_SETS if not persona.get(n, "").startswith("yes")]
-        ip_only = sorted(n for n, v in persona.items() if v == "yes, IP only")
-        vpce_only = sorted(n for n, v in persona.items() if v == "yes, vpce only")
-        if not carrying:
+        clean = ("none", "(no inline policy)")
+        carrying = sorted(
+            f"{n} ({v})" for n, v in set_rows if v not in clean and v != "(call failed)"
+        )
+        unanswered = sorted(n for n, v in set_rows if v == "(call failed)")
+        read = {n for n, _ in set_rows}
+        unanswered += sorted(n for n in (*PERSONA_SETS, INFRA_SET) if n not in read)
+        if carrying:
+            checks.fail(
+                "VP-7",
+                "no permission set tests the caller's network",
+                f"{'; '.join(carrying)} - D39 removed every network-origin condition from the "
+                "permission sets: a person reaches AWS by identity from any network (Stage 6g "
+                "step 1).",
+            )
+        elif unanswered:
             checks.note(
                 "VP-7",
-                f"{DENY_SID} in the persona sets",
-                "absent from all six - expected before Stage 4 step 8.",
-            )
-        elif missing:
-            checks.fail(
-                "VP-7",
-                f"{DENY_SID} in the persona sets",
-                f"present in {len(carrying)} of six, missing from: {', '.join(missing)} - "
-                "a partial rollout is Lesson 14; the fragment reaches all six in one diff "
-                "(step 8.2).",
-            )
-        elif ip_only:
-            checks.fail(
-                "VP-7",
-                f"{DENY_SID} tests {VPC_CONDITION_KEY}",
-                f"MISSING from: {', '.join(ip_only)} - the statement is present and "
-                "wrong, which is the Stage 5 pass 4d defect (Lesson 33). Tunnel traffic "
-                "SPLITS BY DESTINATION: S3 and DynamoDB leave through the VPN home's [P] "
-                "gateway endpoints and arrive with the host's PRIVATE address plus a "
-                "vpcEndpointId, never the Elastic IP - so an address-only test denies "
-                "every direct S3 call a persona makes from INSIDE the perimeter (the "
-                "scientist runs the query and cannot fetch the CSV). The fix is a third "
-                "condition, StringNotEqualsIfExists over the HOME's VPC - see "
-                "terraform-live/identity/sso/policies-shared.tf.",
-            )
-        elif vpce_only:
-            checks.fail(
-                "VP-7",
-                f"{DENY_SID} tests {VPC_CONDITION_KEY}",
-                f"{', '.join(vpce_only)} still test {RETIRED_VPCE_CONDITION_KEY}, the "
-                "spelling retired 2026-08-23. A list of the HOME's two GATEWAY endpoint "
-                "ids cannot carry the INTERFACE endpoint a call presents while egress/ is "
-                "up - those ids are [E], new on every make up (Lesson 3) - so a persona is "
-                "denied sts:GetCallerIdentity with the tunnel UP and curl reading the "
-                "Elastic IP. aws:SourceVpc is [P] and SUBSUMES both gateways, so nothing "
-                "that passed before stops passing - see "
-                "terraform-live/identity/sso/policies-shared.tf.",
+                "no permission set tests the caller's network",
+                f"not answered for {', '.join(unanswered)} - the inline policy was not read "
+                "(section 7).",
             )
         else:
             checks.ok(
                 "VP-7",
-                f"{DENY_SID} in the persona sets",
-                f"all six carry it, each testing {VPC_CONDITION_KEY} as well as the address",
-            )
-        infra = dict(set_rows).get(INFRA_SET, "")
-        if infra.startswith("yes"):
-            checks.fail(
-                "VP-7",
-                f"{DENY_SID} in {INFRA_SET}",
-                "PRESENT - open question 17 decided this set stays off-VPN (option a, "
-                "2026-08-17): with the deny on it, a stopped VPN host cannot be started "
-                "except from the address of the host that is stopped, and break-glass "
-                "(D16) becomes the routine way back in. Somebody applied what the "
-                "decision declined.",
-            )
-        elif carrying:
-            checks.ok(
-                "VP-7",
-                f"{DENY_SID} absent from {INFRA_SET}",
-                "by decision (open question 17): the recovery path stays off-VPN",
+                "no permission set tests the caller's network",
+                f"none of the {len(read)} sets read carries {', '.join(NETWORK_ORIGIN_KEYS)} "
+                "in its inline policy",
             )
 
     # VP-9: the [P] host-key secret (step 2.2a; decision 4, third review): present once the
@@ -892,7 +821,7 @@ def main(argv: list) -> int:
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
-        rep.banner("VPN - the Stage 4 evidence: host, anchors, the step 8 deny")
+        rep.banner("VPN - the Stage 4 evidence: host, anchors, the network-origin guard")
         rep.text(f"""generated : {context.utc_stamp()}
 profiles  : {source}
 region    : {context.REGION}
@@ -904,16 +833,15 @@ SECTIONS
   2a. Inside the host - OPT-IN, --on-host
   3. The Elastic IP, the world-open rules and the host-key secret ([P] anchors)
   4. Handshake log and health alarm
-  5. The control-plane deny (step 8), per permission set
+  5. Network-origin condition keys, per permission set (D39)
   6. CHECKS
   7. Calls that failed
 
 HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 4 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
-  - THIS IS A CONTROL-PLANE READING. The tunnel pair, the deny pair and the
-    on-behalf carve-out are behavioural proofs run from the laptop (Lesson 20);
-    INT-16's portal reading is a browser, not an API.
+  - THIS IS A CONTROL-PLANE READING. The tunnel pair and Stage 6g's persona pair
+    off the VPN are behavioural proofs run from the laptop (Lesson 20).
   - THE GUARDDUTY READING IS ./aws/guardduty.py SINCE 2026-08-18 (Stage 15); its
     former id here, VP-8, is retired.
 
@@ -1015,8 +943,7 @@ then the handshake log calls it `peer=unknown`.""")
                     if assoc:
                         rep.line()
                         rep.line(f"WG_EIP={assoc[0][1]}")
-                        rep.line("  - the value step 8's NotIpAddress list names, and a branch of")
-                        rep.line("    Stage 5 step 1.3's bucket-policy condition (INT-05).")
+                        rep.line("  - the Endpoint every client .conf pins (step 2.1).")
             else:
                 rep.line("No Elastic IP allocated. Expected before Stage 4 step 2.")
             rep.line()
@@ -1058,16 +985,11 @@ then the handshake log calls it `peer=unknown`.""")
             rep.line(f"{VPN_HOME_PROFILE} was not measured - nothing to show.")
 
         # ==============================================================================
-        rep.h1("5. The control-plane deny (step 8), per permission set")
-        rep.text(f"""The reading greps each set's inline policy for the Sid `{DENY_SID}` and for the
-condition key `{VPC_CONDITION_KEY}` inside it. Presence of the Sid alone was the
-reading until 2026-08-20, and it reported "all six carry it" for three days over a
-statement that denied every direct S3 call a persona made from inside the perimeter
-(Stage 5 pass 4d; Lesson 33). `yes, IP only` is that defect. `yes, vpce only` is its
-NARROWER SUCCESSOR, retired 2026-08-23: {RETIRED_VPCE_CONDITION_KEY} over the home's two
-gateway ids, which no interface endpoint can ever appear in. It is still not
-sufficiency - the values in the lists, and aws:ViaAWSService, are proven by the
-stage's deny pair and by a behavioural probe, not by this file.
+        rep.h1("5. Network-origin condition keys, per permission set (D39)")
+        rep.text(f"""The reading greps each set's inline policy for the quoted condition keys
+{", ".join(NETWORK_ORIGIN_KEYS)}. `none` is the answer D39 requires of every set: a person
+reaches AWS by identity from any network. The customer-managed policy DataScientistAccess
+references is authored in sandbox/foundation/ and is not read here.
 
 """)
         if not identity_live:
@@ -1076,7 +998,7 @@ stage's deny pair and by a behavioural probe, not by this file.
             rep.line("No project permission set was found - see section 7.")
         else:
             rep.tabulate(
-                [f"PERMISSION SET\tCARRIES {DENY_SID}"] + [f"{n}\t{v}" for n, v in sorted(set_rows)]
+                ["PERMISSION SET\tNETWORK-ORIGIN KEYS"] + [f"{n}\t{v}" for n, v in sorted(set_rows)]
             )
 
         # ==============================================================================
@@ -1099,9 +1021,8 @@ What the checks are, and where each comes from:
   VP-4  IMDSv2 required on the host
   VP-5  the handshake log group exists, with retention (step 7)
   VP-6  the health alarm exists (step 7)
-  VP-7  the persona sets carry the step 8 deny together, or not at all (8.2), each
-        testing aws:SourceVpc as well as the address (the 2026-08-23 spelling);
-        InfrastructureAccess must NOT carry it (open question 17, option a)
+  VP-7  no permission set, InfrastructureAccess included, tests the caller's network
+        in its inline policy: aws:SourceIp, aws:SourceVpc, aws:SourceVpce (D39, 6g)
   VP-8  RETIRED 2026-08-18 - the GuardDuty reading moved to ./aws/guardduty.py
         (GD-1..GD-3) when GuardDuty left Stage 4 for Stage 15; the id is kept
         out of use so the Stage 4 log's VP-8 readings stay unambiguous

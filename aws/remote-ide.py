@@ -17,8 +17,7 @@
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # WHAT THE CHANNEL IS, as Stage 6d step 7 measured it (2026-09-07/11). `sagemaker:StartSession` is
-# called by the client AS THE PROJECT ROLE, so the persona sets' deny pair and DenyControlPlaneOffVpn
-# never evaluate on it. What scopes the call is therefore AWS's managed policy on the project role -
+# called by the client AS THE PROJECT ROLE, so the persona sets' deny pair never evaluates on it. What scopes the call is therefore AWS's managed policy on the project role -
 # an Allow conditioned on two tag pairs - and that policy is AWS's, versioned, and moves without this
 # repository. The pair in the persona sets is ours and matches it key for key today. RI-3 and RI-4 read
 # both, because the day they diverge the scoping this estate relies on is the one it did not write.
@@ -32,11 +31,9 @@
 #         project tag and the user tag. An unconditioned Allow is the failure.
 #   RI-4  the persona sets carry both deny Sids, on the same resource-tag keys RI-3's Allow reads.
 #   RI-5  the StartSession calls of the last N days, by caller and by source address - the proxy's
-#         Elastic IP (the monitored VPN profile), the VPN host's, or anything else. An "other public
-#         address" is a laptop's own uplink, which is either off the VPN or on the split-tunnel
-#         profile: split-tunnel sends public AWS API calls out of the laptop's uplink by design, so
-#         the two read identically here. Reported, not asserted: "VPN-only" for this channel is
-#         Stage 6d decision 4, which is open.
+#         Elastic IP (the monitored VPN profile), the VPN host's, or anything else, which is a
+#         laptop's own uplink off the VPN or on the split-tunnel profile. Reported, not asserted:
+#         the channel carries no network requirement (D39).
 #
 # What it cannot see (Lesson 13): whether a session is live, whether it outlived the tunnel or a
 # portal logout (6d step 7.7), and which user a project-role call stands for - the role's session
@@ -538,7 +535,7 @@ def main(argv: list) -> int:
                 ", ".join(f"{n} from {w}" for w, n in by_where.most_common())
                 + (
                     "; an 'other public address' is a laptop's own uplink - off the VPN or on the "
-                    "split-tunnel profile, which this reading cannot tell apart (6d decision 4)"
+                    "split-tunnel profile, both allowed by D39"
                     if by_where.get("other public address")
                     else ""
                 ),
@@ -568,8 +565,8 @@ HOW TO READ THIS FILE
     what scopes it, and its version moves without this repository.
   - "OTHER PUBLIC ADDRESS" IN SECTION 6 IS A LAPTOP'S OWN UPLINK: off the VPN, or on the
     split-tunnel profile, which sends public AWS API calls out of the laptop by design. Only
-    the monitored profile arrives from the proxy's address. Nothing refuses either today;
-    that is Stage 6d decision 4, open.
+    the monitored profile arrives from the proxy's address. Neither is refused, by design
+    (D39).
   - A SPACE AT LESS THAN 8 GiB WITH REMOTE ACCESS ON starts, and then its session fails.
 
 This file is not versioned (aws/output/ is in .gitignore). Regenerate it rather than

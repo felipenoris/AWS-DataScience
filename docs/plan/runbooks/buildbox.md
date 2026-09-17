@@ -52,9 +52,9 @@ route tables and not in the isolated one, so an isolated-tier host could not rea
 
 **In: nothing.** Session Manager needs no inbound rule — the agent holds its channel open outbound. The
 "reachable only over the VPN" rule was withdrawn on 2026-08-21: it never gated the shell, and it left port
-22 open on a host with no keys. **What gates the shell is IAM**: the persona sets are VPN-bound;
-`InfrastructureAccess` is not, by open question 17 (a). A port served during a build is reached with SSM
-port forwarding, never with an ingress rule.
+22 open on a host with no keys. **What gates the shell is IAM**, from any network (D39):
+`ssm:StartSession` is `InfrastructureAccess`'s, and no persona set grants it. A port served during a build
+is reached with SSM port forwarding, never with an ingress rule.
 
 **Out: only through the proxy, and only if told.** An explicit proxy is not transparent — a client that was
 not told does not fail over, it **hangs**. The first boot tells four things, each in its own place:
@@ -87,7 +87,7 @@ boot on 2026-09-06.
 
 The identity is `awsds-infra-prod` — the infrastructure user, account **Production**, permission set
 **`InfrastructureAccess`**. **The tunnel is not needed**: that permission set is reachable from any network.
-With the tunnel up, export the proxy variables in that terminal first
+Under the monitored profile, export the proxy variables in that terminal first
 ([client runbook](client-vpn-proxy-configuration.md)).
 
 **1. The door.** `production/egress/` up, and only it — `make up ENV=production` would also raise
