@@ -129,16 +129,17 @@ for a key of its own.
 | `Sid` | What it denies |
 |---|---|
 | `DenyInsecureTransport` | `s3:*` where `aws:SecureTransport = false` — the `s3-bucket` module's own statement, prepended to every bucket's single policy in both trees (the module README owns its reasoning; the consumer README carries the sibling row) |
-| `DenyOutsideTrustedNetworks` | `s3:*` to every principal **unless** one of the branches below matches. It is a `Deny` with negated conditions, so a caller matching *no* branch is refused |
+| `DenyOutsideTrustedNetworks` | `s3:*` to every principal **unless** one of the branches below matches. It is a `Deny` with negated conditions, so a caller matching *no* branch is refused. On the drop-box it denies every action **but** `s3:PutObject`, and the put is split across the two statements of the drop-box's network deny |
 | `DenyStalePresignedUrls` | `s3:*` where `s3:signatureAge > 900000` ms. A presigned link is a **bearer credential**; 15 minutes bounds how long a leaked one works. The preventive counterpart of Stage 11's presigned-URL detection |
 
 The branches of `DenyOutsideTrustedNetworks`:
 
 | Branch | Condition | The rule behind it |
 |---|---|---|
-| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids **∪ the VPN homes'** (a union since 2026-08-20; it renders identically today) | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted. **The homes joined on their own axis** ([Lesson 33](../../../docs/plan/lessons.md)'s second finding, 4d): every tunnel call exits through the *home's* gateway endpoint whichever account the persona works in, so its id was in this list only because the single home happens to consume — correct by coincidence until the host moves or a second home appears |
-| 2 | `aws:SourceIp` ∈ the WireGuard Elastic IPs | D18's laptop path. A **list**, per D35 — one entry per VPN home |
-| 3 | `aws:PrincipalAccount` = this account | The stage's own "looser and easier to get right" option, taken over naming the maintenance role alone: the crawler runs in Glue with no VPC and no tunnel (D27's collision), and the infrastructure user works off-VPN by decision (open question 17a). A role-only branch would lock the account's own administrator out of its own lake |
+| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted |
+| 2 | `aws:PrincipalAccount` = this account | The stage's own "looser and easier to get right" option, taken over naming the maintenance role alone: the crawler runs in Glue with no VPC (D27's collision), and the infrastructure user works from any network. A role-only branch would lock the account's own administrator out of its own lake |
+
+**No branch names an address** ([D39](../../../docs/plan/decisions/D39-access-by-identity.md)). The one laptop path the lake carries, D18's drop-box write, is admitted by principal on the drop-box alone (below).
 
 The carve-outs the deny **must** carry, or it breaks the design it protects:
 
@@ -159,6 +160,15 @@ build.
 | `AllowProductionPickupReadDelete` | Production root, `ArnLike` to `awsds-prod-job-exec` | `GetObject` + `DeleteObject` | Reads **and** empties — a letterbox nobody empties fills up. Stage 9's half |
 | `AllowProductionPickupList` | idem | `ListBucket`, `s3:prefix` scoped | Listing is separate because it is a **bucket** action, not an object one |
 | `AllowMaintenanceSchemaRead` | the maintenance role | `GetObject` + `ListBucket` | Reads to infer schema, **cannot delete**. Same-account IAM would suffice (its inline policy carries the read); the statement is here so the whole asymmetry is readable in **one place** |
+
+The drop-box's network deny admits one call from any network, the writer's put (D39), and binds that
+exemption to the action, the bucket and the prefix, so an allow added later inherits nothing:
+
+| `Sid` | Principal | Denies, outside the trusted networks | Why it is its own statement |
+|---|---|---|---|
+| `DenyOutsideTrustedNetworks` | `*` | every action but `s3:PutObject`, on the bucket and its objects | The perimeter's statement, with the put carved out for the two below |
+| `DenyLetterboxPutOutsideTrustedNetworksToAllButTheWriter` | `*`, `ArnNotLike` the data-scientist persona | `s3:PutObject` on the dated prefix | The persona's put is the call the lake admits from any network. It is named by `data_scientist_writer_pattern`, never by `writer_role_patterns`, which grows with workload roles that keep the network test |
+| `DenyPutOutsideTheLetterboxOffTrustedNetworks` | `*` | `s3:PutObject` outside the dated prefix | Keeps the exemption on the prefix: a put anywhere else in the bucket still needs a trusted network |
 
 **A bucket policy validates its `Principal`**, so statements naming roles that do not exist yet
 (`awsds-prod-job-exec`, the Stage 6 project roles) name the **account root** and narrow with an `ArnLike`

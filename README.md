@@ -73,7 +73,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   pipeline building the same files from a GitLab repository the data scientist writes to. `images/README.md`
   carries that seam and the three constraints that shape both files.
 - `s3-read-write/` — an independent Python library (`uv`, boto3 the only runtime dependency): a data
-  scientist's laptop, on the VPN, reading, writing and listing the S3 storage of its SMUS project by
+  scientist's laptop, from any network, reading, writing and listing the S3 storage of its SMUS project by
   **vending the project role** through S3 Access Grants — the surface SMUS itself provisions (merged
   2026-08-24). Its README carries the mechanism, the two prerequisites administered outside the library
   (the vending policy, the per-project grant) and the accepted grain; the applied state is
@@ -147,48 +147,31 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 
 ## Connecting through the tunnel
 
-A WireGuard tunnel into the VPN home account (D4, Stage 4). It buys three guarantees, held by three
-different mechanisms: the first two are proven, the third was measured **not** to hold.
+A WireGuard tunnel into the VPN home account (D4, Stage 4). It is the only way into the private
+network, and nothing else is conditioned on it ([D39](docs/plan/decisions/D39-access-by-identity.md)).
 
 1. **The private network, by construction.** GitLab, Pages and the private hosted zones have no
    public address at all. A laptop without the tunnel does not fail to reach them — for that laptop they
    do not exist.
-2. **The AWS APIs and the console, by policy.** The six persona permission sets carry a `Deny` on
-   everything unless the call arrives from the tunnel's Elastic IP (`DenyControlPlaneOffVpn`, step 8).
-   This half needs a policy, because nothing about a tunnel stops a valid SSO session from working over
-   café Wi-Fi. It is also the half that can lock a person out, which is why `InfrastructureAccess` is
-   deliberately outside it.
-3. **The Unified Studio portal — measured, and the deny does not reach it** (INT-16, answered
-   2026-08-22 at Stage 6 step 1.7). The portal is entered by an Identity Center sign-in rather than by
-   an IAM call, and a permission-set condition does not gate that sign-in: off the tunnel, a Data
-   Scientist session opened the portal and enumerated its project profiles in the same sitting in which
-   the AWS console refused `logs:DescribeLogGroups` *with an explicit deny in an identity-based policy*.
-   The reach is the full interactive surface, not just the lobby (the off-VPN reading, 2026-08-22
-   evening): with the tunnel down a Data Scientist created a project, started its space and worked in
-   JupyterLab, identically to on-VPN. `VpcOnly` does not narrow this — it governs the *app's* traffic,
-   the ENIs and egress living in the VPC, while the *user's* ingress arrives through the Studio
-   front-end under the portal session, a path neither a permission-set deny nor a VPC boundary touches.
-   So "all user access through the VPN" is items 1 and 2 — the private network and the AWS control
-   plane — and not item 3. Narrowing it further means adopting AWS's
-   `DenyUserAccessFromUnauthorizedVPCs` shape on the domain execution role, re-keyed on the WireGuard
-   address (INT-16 fallback (i)). That re-keying was measured viable before being recommended: the
-   portal's calls run under the domain execution role and CloudTrail records them carrying the *end
-   user's* address — the Elastic IP with the tunnel up, the carrier's with it down, in the same hour —
-   so a condition there discriminates where a permission-set one cannot. In a real institution the VPN
-   stands in for *device trust*, the data-leakage controls living on the managed endpoint (see
-   [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md)), so item 3's gap is an
-   unmanaged laptop reaching the surface those controls exist to bound.
-   Since 2026-08-25 `docs/plan/objectives.md` states, as requirement, that the client reaches the
-   organization's cloud infrastructure only through the VPN — and that once connected, *all* of the
-   client's internet (the portal's public names included) runs through the cloud's own egress behind an
-   institutional HTTP/HTTPS proxy (Stage 11).
-   **Taken 2026-09-07 (Stage 6c step 6.6): recorded acceptance, fallback (ii).** So this item is a
-   **recorded deviation**: the portal is reachable from any network by anyone holding an Identity Center
-   session for the domain, and the objectives' VPN-only statement holds for items 1 and 2 only. The
-   Identity Center sign-in is the whole control on this surface. What compensates it is detective and is
-   Stage 11's: an alarm on a portal session whose source is not the proxy's address (its step 5.2), the
-   threat model's ledger row, and the choice re-taken there with the inputs its step 3.4 lists — fallback
-   (i)'s condition shape kept ready in 6c's step 6.6.
+2. **The AWS APIs, the console and the Unified Studio portal, by identity, from any network.** No
+   permission set tests the caller's network: read back on 2026-09-17 on the nine provisioned persona
+   roles (Stage 6g step 1.3), and `./aws/vpn.py` `VP-7` fails if a network-origin condition returns.
+   An Identity Center session is the whole gate. The portal was never behind a network condition:
+   INT-16 measured on 2026-08-22 that its interactive surface, JupyterLab included, works with the
+   tunnel down, because `VpcOnly` governs the app's traffic and never the user's ingress. The governed
+   lake keeps a network deny of its own: it admits a consumer's gateway endpoint, a Data Governance
+   principal or a service acting for its caller, and the laptop's one direct path, the data scientist's
+   drop-box write, by principal.
+3. **The data-leakage circuit, by premise.** `docs/plan/objectives.md` grants an identity only on a
+   laptop the institution monitors, carrying Microsoft 365 DLP, so what leaves through SageMaker, the
+   console or the APIs lands on a managed device. The lab models that premise and does not enforce it,
+   because Identity Center's own directory checks no device. Stage 11's threat model carries the
+   residual, and [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) what an
+   institution enforces at its identity provider instead.
+
+The client has two profiles. On the **monitored** profile a connected laptop's whole internet crosses the
+institutional proxy and is logged; on the **split-tunnel** profile only the private ranges enter the
+tunnel.
 
 The procedure is
 [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md)
@@ -343,10 +326,10 @@ The same 2026-09-05 re-scope made the network a hub: three VPCs in Production �
 estate's only internet gateway, an explicit Squid proxy and the VPN endpoint), `VPC-SharedServices`
 (GitLab, Pages, runners) and `VPC-Workloads` (the production runtime) — with five peerings, **zero NAT
 gateways** and no default route in any spoke ([D38](docs/plan/decisions/D38-single-egress-hub.md),
-[Stage 6c](docs/plan/stages/stage-06c-networking-hub.md)). The VPN client is a private-network client:
-its whole internet, the AWS control plane included, crosses that proxy, which also fixes the
-portal-over-VPN break item 3 of "Connecting through the tunnel" describes — the client stops resolving
-through a VPC that holds the compute plane's endpoints.
+[Stage 6c](docs/plan/stages/stage-06c-networking-hub.md)). A laptop on the monitored profile is a
+private-network client whose whole internet crosses that proxy, and either profile resolves through
+`VPC-Networking`, which holds none of the compute plane's endpoints, so the portal opens over the
+tunnel with no browser grant (6c step 6.2).
 
 Data crosses in the other direction: the governed lake lives in the Data Governance account, and its catalog
 is shared read-only to Sandbox through Lake Formation, so that all interactive work happens

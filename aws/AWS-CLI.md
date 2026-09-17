@@ -46,8 +46,8 @@ time, which is neither an IAM `AccessDenied` nor a missing grant (Stage 4 step 8
 Lesson 25 is the general form.
 
 `aws sso logout` clears the cache for every session, not only the one named, so switching persona by
-persona costs the infrastructure user's token too. That is a re-login, never a lockout:
-`InfrastructureAccess` is outside `DenyControlPlaneOffVpn` and signs in from any network.
+persona costs the infrastructure user's token too. That is a re-login, never a lockout: every
+permission set signs in and calls AWS from any network (D39).
 
 ## Account names and ids
 

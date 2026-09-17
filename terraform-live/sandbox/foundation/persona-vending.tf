@@ -35,27 +35,12 @@
 # resource that does not exist: an IAM policy may do that, and it matches nothing until the account's
 # first project creates one.
 #
-# On-VPN only, by the persona's own pin. The set's `DenyControlPlaneOffVpn` denies `*` off the
-# tunnel, and these calls carry none of its keys when the tunnel is down. On the tunnel, the vending
-# path needs both of the deny's admitting branches, for two different reasons:
-#   - `sts:GetCallerIdentity`, which the library calls to learn the account id s3control requires,
-#     takes the VPC's `sts` interface endpoint (private DNS through the client's own resolver) and is
-#     admitted by `aws:SourceVpc`. Before that branch existed the whole path was explicitly denied
-#     here, with the tunnel up.
-#   - `s3control` has no interface endpoint here, and that does not put it on the IGW: it takes the
-#     S3 gateway endpoint, because `s3-control.<region>.amazonaws.com` resolves inside the ranges the
-#     `pl-s3` prefix-list route captures - the 4d mechanism. So the vending calls were admitted by
-#     the old `aws:SourceVpce` list all along, and are admitted by `aws:SourceVpc` now.
-# Both bullets are read in CloudTrail from the first full run (2026-08-24T02:28Z): `GetDataAccess`
-# carries `sourceIPAddress 10.20.160.87` - the WireGuard host's private address - with
-# `vpcEndpointId vpce-0cc3e139c1167ca83`, a gateway id; `GetCallerIdentity` from the same session
-# carries the same private address with `vpce-0b3231af86fbedd72`, the STS interface endpoint. Two
-# doors, one session, and neither is the Elastic IP. Only `sts` ever needed the `aws:SourceVpc` swap:
-# a library that did not call STS would have run on the old policy untouched.
+# No network condition, here or on the permission set that references this policy (D39): the
+# handshake answers from any network, tunnel up or down.
 #
-# The credentials this vends are bearer for their duration once issued - they keep working off the
-# tunnel until they expire. That is the OQ-14 shape (remote-IDE sessions), accepted there and here,
-# and it is why the library asks for the shortest duration a task needs.
+# The credentials this vends are bearer for their duration once issued - they work wherever they are
+# presented until they expire. That is the OQ-14 shape (remote-IDE sessions), accepted there and
+# here, and it is why the library asks for the shortest duration a task needs.
 
 
 locals {

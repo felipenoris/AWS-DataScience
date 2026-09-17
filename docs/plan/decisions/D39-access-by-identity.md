@@ -2,6 +2,8 @@
 
 **Status:** Decided (2026-09-17, user): no network condition binds a person's access to AWS; the VPN is required only to reach private addresses and names; the laptop's one direct write to the governed lake is admitted by principal; both VPN client profiles stay.
 
+**Applied 2026-09-17** ([Stage 6g](../stages/stage-06g-access-by-identity.md) steps 1.3 and 2.3): the six persona sets read back without a network-origin condition, and the lake's five bucket policies without an address (`INV-19`).
+
 **In one line:** A person reaches the AWS console, the AWS APIs and the SageMaker Unified Studio portal from any network with an Identity Center session, which the institution grants only on a laptop it monitors; the VPN carries the private network and nothing else is conditioned on it.
 
 **Related decisions:** [D4](D04-vpn-wireguard.md), [D5](D05-sagemaker-egress.md), [D6](D06-dlp-approach.md), [D13](D13-lake-formation-enforcement.md), [D15](D15-tls-internal.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md), [D38](D38-single-egress-hub.md)
@@ -46,6 +48,12 @@ included, and 6c step 6.6 accepted that as a recorded deviation on 2026-09-07.
   against the action and the bucket as well as the principal, so an allow added later inherits nothing
   (Lesson 29). Every other request to the lake still arrives through a consumer's gateway endpoint, from a
   `Data Governance` principal, or from a service acting for its caller.
+- **Two reaches the deny held are accepted without an alarm** (the user, after Stage 6g step 0.1): the
+  Governance Manager's entitlement writes in `Data Governance` — Lake Formation grants, revocations and
+  LF-Tag administration, DataZone subscription decisions and project membership — and the contents of
+  CloudWatch Logs for the four sets holding `CloudWatchLogsReadOnlyAccess`. Neither exceeds
+  `InfrastructureAccess`'s standing reach. The organization trail records each write as a management
+  event, read by hand when needed; no rule alarms on it.
 - **`awsds-prod-outputs` takes the same shape** when Stage 9 builds it: `DataScientistProdAccess` reads its
   named prefixes by identity, and the bucket's network deny keeps its endpoint and service branches for
   every other principal.

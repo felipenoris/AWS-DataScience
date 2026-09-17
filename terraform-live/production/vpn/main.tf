@@ -13,8 +13,7 @@
 # argued at their site below.
 #
 # The Elastic IP did not change. It is the same address the Sandbox slice held, transferred at 4.5
-# and imported at 4.6, so no client `.conf` moved, and neither did `DenyControlPlaneOffVpn`'s
-# WireGuard branch until 4.12 re-keyed it onto the proxy.
+# and imported at 4.6, so no client `.conf` moved: every one pins it as `Endpoint`.
 #
 # The module arrives by git tag, never by branch (conventions 6; Stage 3 step 1.1a), and the tag is
 # cut between two commits: the validate hook inits from origin, so a module and its first caller

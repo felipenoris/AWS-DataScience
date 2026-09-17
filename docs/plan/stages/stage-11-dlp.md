@@ -312,6 +312,8 @@ control at all. A threat model that lists a control nobody implemented is worse 
   sign-in policy that admits only a managed, compliant device, federated into Identity Center (the
   device-trust row of `institutional-delta.md`); and the lab's detective half, CloudTrail's per-principal
   record of every data call, 5.1's data events, and GuardDuty's findings on credential use (Stage 15). The
+  row also carries the two reaches D39 §3 accepted without an alarm: the Governance Manager's entitlement
+  writes and CloudWatch Logs contents, from any network, recorded by the organization trail alone. The
   portal's ingress from any network, INT-16's recorded acceptance until D39, is this premise's case rather
   than a row of its own. **The row goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled
   column with the date and the premise's revision trigger (D39).**

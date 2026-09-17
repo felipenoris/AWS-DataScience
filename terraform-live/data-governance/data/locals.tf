@@ -34,36 +34,11 @@ locals {
   bucket_names = { for k in local.bucket_keys : k => "awsds-${var.env}-${k}" }
   bucket_arns  = { for k, n in local.bucket_names : k => "arn:${data.aws_partition.current.partition}:s3:::${n}" }
 
-  # INT-05's two allow-list branches, read live from [P] state - never pasted.
+  # INT-05's allow-list branch, read live from [P] state - never pasted.
   consumer_vpce_ids = [
     for k, s in data.terraform_remote_state.consumer_foundation : s.outputs.s3_gateway_endpoint_id
   ]
-  # The union of every VPN home's tunnel address and proxy address (6c step 4.12). Under D38 a
-  # persona's direct S3 call from a laptop leaves through the hub's Squid proxy, so the lake
-  # perimeter must know that address too. `try(..., null)` because a VPN home need not hold a
-  # proxy (Sandbox does not, and is still a home); `compact()` drops the nulls. `distinct()` and
-  # `sort()` because two homes can share one address - the Elastic IP was transferred between
-  # accounts rather than reallocated - and without them the bucket policy carries the same /32
-  # twice. The name says wireguard because the whole list is the VPN home's egress.
-  wireguard_eip_cidrs = sort(distinct(compact(flatten([
-    for k, s in data.terraform_remote_state.vpn_home : [
-      "${s.outputs.wireguard_eip_public_ip}/32",
-      try("${s.outputs.proxy_eip_public_ip}/32", null),
-    ]
-  ]))))
-
-  # The VPN homes' own S3 endpoints, on the axis that carries them (measured 2026-08-20; Lesson
-  # 33's second finding, stage 5 log's controls entry). Every tunnel call, whichever account's
-  # persona makes it, exits through the home's gateway endpoint, so its id belongs in the trusted
-  # list because the home is the tunnel's exit and not because the home consumes the lake. The
-  # two lists intersect today (the single home is also a consumer) and the rendered policy is
-  # unchanged by this line; the day a second home appears, or the host moves to a non-consumer
-  # account, this keeps the perimeter's S3 branch honest instead of correct by coincidence
-  # (Lessons 10, 29).
-  vpn_home_vpce_ids = [
-    for k, s in data.terraform_remote_state.vpn_home : s.outputs.s3_gateway_endpoint_id
-  ]
-  trusted_vpce_ids = sort(distinct(concat(local.consumer_vpce_ids, local.vpn_home_vpce_ids)))
+  trusted_vpce_ids = sort(distinct(local.consumer_vpce_ids))
 
   # The peer account roots the cross-account statements hang off. A bucket policy VALIDATES
   # its Principal, so a role that does not exist yet (awsds-prod-job-exec, Stage 9's
@@ -79,8 +54,12 @@ locals {
   # Staging holds no writer: `DataScientistStagingAccess` carries `DenyEveryWrite`, and a pattern
   # matching a role that cannot write reads like a live grant.
   writer_role_patterns = [
-    "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*",
+    local.data_scientist_writer_pattern,
   ]
+
+  # The data-scientist persona in Sandbox: the one principal the drop-box admits from any network
+  # (D39), and the first of the writers above.
+  data_scientist_writer_pattern = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.sandbox.account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*"
 
   # Stage 9 step 3's contract - the exact name deploytargets.py reads from both sides.
   prod_job_exec_pattern = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.production.account_id}:role/awsds-prod-job-exec"

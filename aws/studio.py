@@ -37,7 +37,7 @@
 #   - the D13 boundary on project roles is named awsds-<env>-project-boundary (step 2)
 #
 # What it cannot see, since an empty listing and a missing account look alike:
-#   - The behavioural proofs - the portal opening (INT-16), a notebook reading the lake
+#   - The behavioural proofs - a notebook reading the lake
 #     through the LF share, the egress pair under designs A and B - are the stage's own,
 #     run from a browser and a notebook (Lesson 20).
 #   - Whether a boundary survives a blueprint reconciliation (INT-15) is answered by
@@ -883,7 +883,7 @@ HOW TO READ THIS FILE
     is a note, not a failure; it becomes a regression the moment the stage closes.
   - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 9 names what nothing here
     reached.
-  - THIS IS A CONTROL-PLANE READING. The portal reading (INT-16), the lake reads,
+  - THIS IS A CONTROL-PLANE READING. The lake reads,
     the egress pairs and the boundary's SURVIVAL of a blueprint reconciliation
     (INT-15) are behavioural proofs; re-running this file after provisioning is
     how the survival half is diffed.
@@ -1097,7 +1097,8 @@ What the checks are, and where each comes from:
     until then (its absence from section 1 is the design, not coverage).
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - re-run after
     each vend; the domain association list must grow with N (D35, INT-12).
-  - The portal (INT-16) is a browser surface; no profile reads it.""")
+  - The portal is a browser surface, reached from any network with an Identity
+    Center session (D39); no profile reads it.""")
 
         # ==============================================================================
         rep.h1("10. Calls that failed")

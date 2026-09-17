@@ -556,8 +556,8 @@ singleton instance (`default`) and one Access Grants **location** per project �
 project prefix, the location's IAM role = the **project role** — with
 `enableS3AccessGrantsForTools = true` on the Tooling environment and **zero grants**. This is the
 surface the 2026-08-23 laptop-access decision (strategy 1-A, user-approved) builds on: one
-per-project, user-authorized **grant** to the `DataScientistAccess` role lets a laptop on the VPN
-vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — the same identity
+per-project, user-authorized **grant** to the `DataScientistAccess` role lets a laptop, from any network
+(D39), vend prefix-scoped **project-role** credentials (`s3control GetDataAccess`) — the same identity
 Studio uses, so no second permission surface appears over the projects bucket or the project CMK.
 The persona's half is a **customer-managed policy**, `awsds-org-project-storage-vending`, created by
 each member's `foundation/` slice and referenced by name from `DataScientistAccess` (applied

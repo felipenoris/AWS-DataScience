@@ -58,9 +58,9 @@ runs. M5 is the exception — it is a Control Tower control and is changed from 
 
 **The identity:** the **infrastructure user**, account **Sandbox**, permission set
 **InfrastructureAccess** — the CLI profile `awsds-infra-sandbox-1`, and the same identity picked in
-the browser for the console half. That set is `AdministratorAccess` alone and carries **no
-`DenyControlPlaneOffVpn`**, so none of it needs the VPN. M5 is signed in as **AWS Control Tower
-Admin** on **Management** instead. Check before, not after:
+the browser for the console half. That set is `AdministratorAccess` alone, and no permission set is
+bound to a network ([D39](../decisions/D39-access-by-identity.md)), so none of it needs the VPN. M5
+is signed in as **AWS Control Tower Admin** on **Management** instead. Check before, not after:
 
 ```bash
 aws sts get-caller-identity --profile awsds-infra-sandbox-1

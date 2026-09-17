@@ -12,8 +12,7 @@
 # single `describe-addresses` can do.
 #
 # The address may not change (Stage 4 step 2.1): every client `.conf` pins it as
-# `Endpoint =`, and `DenyControlPlaneOffVpn` and the lake's bucket policy carry it as a
-# branch. Transferring it keeps a cut-over between two AWS accounts invisible to every
+# `Endpoint =`. Transferring it keeps a cut-over between two AWS accounts invisible to every
 # device. The fallback, a fresh allocation in Production, is a new `Endpoint` line in every
 # configuration - a client-side edit in the stage's risk table, not the plan.
 #

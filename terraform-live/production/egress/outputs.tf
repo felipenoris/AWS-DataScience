@@ -9,8 +9,8 @@ output "interface_endpoint_ids" {
 
 # `nat_gateway_id` and `nat_public_ip` went with the NAT itself at `vpc-egress-v0.6.0` (6c step
 # 5.1), consumed by nothing across terraform-live/, aws/, scripts/ and docs/. The address the
-# internet now sees for this estate is the proxy's, a [P] output of `production/networking/`: it
-# survives `make down`, so unlike these two it can be named by a condition, which is what 4.12 does.
+# internet sees for this estate is the proxy's, a [P] output of `production/networking/` that
+# survives `make down`. No policy names it (D39).
 
 # ------------------------------------------------------------------- NO_PROXY (6c step 5.6)
 #

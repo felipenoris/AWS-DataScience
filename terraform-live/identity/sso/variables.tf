@@ -46,39 +46,6 @@ variable "environment_tag" {
   }
 }
 
-# The VPN homes whose Elastic IP the control plane is pinned to - Stage 4 step 8.1.
-#
-# A map rather than a string, by design. D35 vends one Sandbox per business unit and the tunnel
-# lives on exactly that multiplied side (Stage 4's forward constraint), so the deny names a list
-# of addresses from day one: adding unit 2 appends a row to VPN_HOMES in
-# scripts/tfhygiene/backend.py and changes no policy document. INT-05 gives the same reason from
-# the other end.
-#
-# The profile rides in the value because each row becomes a terraform_remote_state read of that
-# account's foundation/ slice, a read that crosses an account boundary, so the data source needs
-# a profile the way a same-account read does not. Pass 2's rule is that a profile literal never
-# sits in a .tf file, so it arrives here instead; `env` is the name token the state bucket is
-# built from, a third vocabulary this slice may not derive (backend.py's own table).
-#
-# An empty map is refused rather than tolerated: no homes means no addresses means a
-# `NotIpAddress` over an empty list, which IAM reads as "matches nothing" - the deny would fire
-# on every call from every network and lock all six personas out of everything. An empty
-# allow-list is the one input shape whose failure is total.
-variable "vpn_homes" {
-  description = "Account folder -> { profile, env, slice } for every account terminating a WireGuard tunnel. Generated (backend.py VPN_HOMES); read for that slice's Elastic IP. The slice field arrived at Stage 6c step 0.5: the tunnel moves into VPC-Networking, whose EIP lives in production/networking/ rather than in a foundation/, so the slice stopped being derivable from the account."
-  type = map(object({
-    profile = string
-    env     = string
-    slice   = string
-  }))
-  nullable = false
-
-  validation {
-    condition     = length(var.vpn_homes) > 0
-    error_message = "vpn_homes is empty. An empty allow-list makes DenyControlPlaneOffVpn match every call from every network - see the note above. Regenerate with ./scripts/gen-tfvars.py identity sso."
-  }
-}
-
 # The account that owns the lake - Stage 5 pass 4c, the same one-element table the consumer
 # slices take (backend.py DATA_LAKE). Read for the drop-box bucket ARN, its write prefix and
 # the lake data-key ARN: the drop-box write is cross-account, so the bucket policy's grant is

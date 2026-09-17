@@ -220,8 +220,7 @@ tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8.3 and 8.
 | **the internet** | only through the proxy, by name, on the `tunnel` plane | the laptop's own uplink — any protocol, both families, **unmonitored, by decision**: `https://1.1.1.1` answers in 10 ms, `checkip` prints the laptop's address |
 | **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host | the same — the proxy is still there for whoever asks (`checkip` through it: `184.33.8.126`) |
 | **DNS** | the hub's `.2`, every query | the same, **every query**: the App Store client applies a `DNS` line to all of them whatever `AllowedIPs` says (`scutil --dns`: the tunnel's resolver first, no domain restriction) |
-| **a persona's AWS call** | through the proxy, because everything is | **through the proxy, or refused**: `list-buckets` direct is an *explicit* deny (`DenyControlPlaneOffVpn`), through the proxy an *implicit* one; `list-caller-access-grants` direct the explicit deny, through the proxy the two grants — same session, same call |
-| **`InfrastructureAccess`** | through the proxy | direct — no proxy anywhere |
+| **an AWS call, any permission set** | through the proxy, because everything is | **direct**: no permission set tests the caller's network (read back 2026-09-17 on the nine provisioned persona roles, Stage 6g step 1.3; D39). The behavioural pair is 6g step 1.4, owed. On 2026-09-08 a persona's direct `list-buckets` was an *explicit* deny, `DenyControlPlaneOffVpn`'s, the statement 6g deleted |
 | **the laptop's routes** | the tunnel's default is primary in both families | the `utun`'s default carries the **`I`** flag in both families — interface-scoped, inert; `en0` keeps the primary |
 
 The refusal is real and the sender usually cannot see it. `curl https://1.1.1.1` from a client
@@ -428,8 +427,8 @@ is no fourth path"*, met from inside an app.
 | instrument | reads | run it when |
 |---|---|---|
 | `./aws/networking.py` | VPCs, routes, peerings, zones, endpoints — `NT-1`..`NT-12` | any network change, and before trusting this file |
-| `./aws/proxy.py` | the proxy host, its `[P]` anchors, the ORDER of its rules, running-vs-committed — `PX-1`..`PX-5` | any allow-list or `squid.conf` change |
+| `./aws/proxy.py` | the proxy host, its `[P]` anchors, the ORDER of its rules, running-vs-committed — `PX-1`..`PX-4` | any allow-list or `squid.conf` change |
 | `./aws/dns-allowlist.py` | every name on every proxy plane, re-resolved — `DN-1`..`DN-4` | before adding a name, and when one stops working |
-| `./aws/vpn.py` | the tunnel host, the EIP, the world-open rule, the deny — `VP-1`..`VP-9` | any VPN question, `--on-host` for what the interface holds |
+| `./aws/vpn.py` | the tunnel host, the EIP, the world-open rule, no network condition on a permission set — `VP-1`..`VP-9` | any VPN question, `--on-host` for what the interface holds |
 | `./aws/egress.py` | the interface endpoints as deployed | while an `egress/` slice is up — it is vacuous otherwise |
 | `./scripts/check-network-doc.py` | this file against the code | every commit; it decides the mechanical half only |

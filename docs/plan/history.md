@@ -528,7 +528,7 @@ changed, not just the plan.
   records it and amends D5, D6, D15, D18, D20 and D38; Stage 6g carries the two applies, the instruments
   and the documents that describe the running estate; Stage 11 writes the identity premise as a modelled
   residual in place of the INT-16 re-take; 6d decision due 4 loses its VPN half; open question 17 is
-  closed. **Provisioned things this touches:** none yet — Stage 6g removes the two statements.
+  closed. **Provisioned things this touches:** six inline policies in Identity and five bucket policies in Data Governance, applied the same day (Stage 6g steps 1.3 and 2.3), each re-planning `No changes` and read back from the deployed documents.
 
 ---
 

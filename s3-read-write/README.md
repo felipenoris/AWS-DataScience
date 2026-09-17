@@ -1,7 +1,7 @@
 # `s3-read-write` — the project's S3 storage, from the laptop
 
 A small Python library (boto3 as the only runtime dependency) that lets a data scientist,
-**outside SageMaker Unified Studio and on the VPN**, read, write and list files in the S3
+**outside SageMaker Unified Studio and from any network**, read, write and list files in the S3
 storage of their SMUS project — the same `awsds-sandbox-smus-projects` paths the Studio file
 browser shows.
 
@@ -14,7 +14,7 @@ session.
 ## The vending path
 
 ```
-persona session (SSO, on VPN)                      Studio session
+persona session (SSO, any network)                 Studio session
         │                                                │
         │ s3control GetDataAccess                        │ (same identity, different door)
         ▼                                                ▼
@@ -82,14 +82,17 @@ S3 Access Grants instance ──assumes──▶ datazone_usr_role_<project>_<en
    without touching any policy. `READWRITE` is Access Grants' write level and **includes
    `s3:DeleteObject`** — the service has no put-without-delete level, so the library's
    no-delete promise is its own API surface, never a control.
-3. **The VPN tunnel up** — the persona's `DenyControlPlaneOffVpn` covers the vending calls, so
-   off-VPN the handshake itself is denied.
+3. **Under the monitored VPN profile, the proxy variables** in the terminal (`proxy-on`,
+   [client runbook](../docs/plan/runbooks/client-vpn-proxy-configuration.md) §4.1): that profile
+   sends the laptop's internet, AWS included, through the proxy. From any other network nothing
+   is needed, because no permission set carries a network condition
+   ([D39](../docs/plan/decisions/D39-access-by-identity.md)).
 
 ## First-run probe sequence
 
 Each step distinguishes a different failure, in order:
 
-| # | Command (persona, VPN up) | Before the policy is applied | After the policy, before the grant | After both |
+| # | Command (persona) | Before the policy is applied | After the policy, before the grant | After both |
 |---|---|---|---|---|
 | 1 | `aws s3control list-caller-access-grants --account-id <sandbox-account-id> --profile awsds-scientist-sandbox` | `AccessDenied` | empty list | the grant's row |
 | 2 | `uv run examples/demo.py --profile awsds-scientist-sandbox` | fails at discovery | fails: "No grants found" | full read/write/list cycle |
@@ -99,18 +102,6 @@ run, 2026-08-23:** the identity came back as
 `assumed-role/datazone_usr_role_<project>_<env>/access-grants-<uuid>`, and the write/list/read-back
 cycle passed. SSE-KMS under the project CMK works through a vended, scope-reduced session, with
 nothing granted to the persona on either the bucket or the key.
-
-**The two calls take two different doors.** `sts:GetCallerIdentity` — which this library calls to
-learn the account id `s3control` requires — takes the VPC's **`sts` interface endpoint**, so it
-presents a VPC key rather than the Elastic IP; `DenyControlPlaneOffVpn` listed only *gateway*
-endpoint ids and denied it explicitly **with the tunnel up**, and the fix swapped that branch to
-`aws:SourceVpc`. `s3control` has no *interface* endpoint here, which does not put it on the IGW: it
-takes the **S3 gateway** endpoint, because `s3-control.<region>.amazonaws.com` resolves inside the
-ranges the `pl-s3` prefix-list route captures. CloudTrail reads both halves on the first full run:
-`GetDataAccess` carries the WireGuard host's private address with a gateway endpoint id,
-`GetCallerIdentity` the same address with the STS interface endpoint id. Neither is the Elastic IP,
-so only `sts` needed the fix, and a library that did not call STS would have run on the unchanged
-policy.
 
 ## Usage
 
@@ -155,8 +146,8 @@ expires).
 ## Limits
 
 - **Vended credentials are bearer tokens** for their lifetime (default 3600 s, min 900): once
-  issued they work off-VPN too, the same accepted shape as the remote-IDE sessions (open
-  question 14). Prefer short durations.
+  issued they work wherever they are presented, the same accepted shape as the remote-IDE
+  sessions (open question 14). Prefer short durations.
 - **Both member accounts, one object each.** Each copy of the policy names its **own** account's
   Access Grants instance, so nothing here is Sandbox-specific. Development's instance does not
   exist until that account's first project is born — until then the policy is inert there (an

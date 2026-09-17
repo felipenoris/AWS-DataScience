@@ -229,10 +229,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Development account, ever; interactive compute is Sandbox only. All 39 decisions are closed. Still needed from the user: the domain name (blocks Stage 13).
 - **D39 (2026-09-17): AWS is reached by identity, the VPN reaches the private network** (`objectives.md`).
   An identity is granted only on an institution-monitored laptop (M365 DLP): modelled, not enforced
-  (Stage 11 3.4). **Stage 6g, planned**, deletes `DenyControlPlaneOffVpn` from the six persona sets and
-  turns the lake's laptop branch into a principal branch for the drop-box `PutObject`; both VPN profiles
-  stay. Until 6g applies, the deny still binds persona calls to the hub. It closed INT-16's deviation,
-  OQ 17 and 6d decision 4's VPN half.
+  (Stage 11 3.4). **Stage 6g applied 2026-09-17**: `DenyControlPlaneOffVpn` deleted from the six persona
+  sets, the lake's laptop branch a principal branch for the drop-box `PutObject` (`INV-19`; `VP-7`
+  inverted, `PX-5` retired); both VPN profiles stay. Owed: 1.4/2.4's pairs (a Data Scientist session),
+  decisions due 1-2. It closed INT-16's deviation, OQ 17 and 6d decision 4's VPN half.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
   is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
@@ -265,7 +265,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
   stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
-  PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
+  PX-1..PX-4; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
 - **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it
   (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
   plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged. The
@@ -296,8 +296,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   changes nothing. `update-workflow` is a full replace (Lesson 60) and severs the domain/project the
   portal injects.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
-  the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only. The reach difference is by
-  identity, never by network. The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
+  the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
+  laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as
   (c). `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates

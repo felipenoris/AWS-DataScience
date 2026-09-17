@@ -162,7 +162,7 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host proxy whose alarm is on the free basic status checks - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the shape is the measured baseline of docs/PRICING.md 3
-  # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit, and the [P] Elastic IP below is the address every VPN-only condition re-keys onto at 4.12. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
+  # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit, and the [P] Elastic IP below is the estate's egress address. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type
 
@@ -171,7 +171,7 @@ resource "aws_instance" "this" {
   iam_instance_profile   = aws_iam_instance_profile.this.name
 
   # No auto-assigned address: the [P] Elastic IP below is the address, and a second one would be a
-  # second thing to reason about in every condition that names it.
+  # second egress address to attribute.
   associate_public_ip_address = false
 
   user_data = local.user_data
