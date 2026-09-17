@@ -26,9 +26,9 @@ Stage 15 (2026-08-18) deliberately breaks that coupling**, and the trade should 
 - **What it costs:** the exposed host runs through Stages 5-14 — the lake, the Studio, GitLab, the
   pipelines — with no detector behind it. The failure modes GuardDuty exists to catch on exactly that
   host (role credentials used from outside AWS, outbound to known-bad destinations, mining patterns) go
-  unwatched for the whole build-out. And one of [open question 17](../open-questions.md)'s named reopeners — the
-  off-VPN administrative credential gaining a watcher — is deferred with it: the one credential outside
-  `DenyControlPlaneOffVpn` stays unobserved for as long as this stage waits.
+  unwatched for the whole build-out. And since [D39](../decisions/D39-access-by-identity.md) no
+  credential is bound to a network, so GuardDuty's findings on credential use are the lab's detective half
+  of D39's identity premise (Stage 11 step 3.4), and they stay unwritten for as long as this stage waits.
 - **What it buys:** the 30-day free window (every account at once, every protection plan) now opens over
   a **populated estate** instead of an empty one. At Stage 4 the trial could only have priced S3
   Protection against nothing — a number near zero that flatters the option it tests (Lesson 7). Opening
@@ -158,9 +158,8 @@ every Region**, so a second Region later repeats step 1's command, never picks a
 - **6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in
   [`docs/AWS_STATE.md`](../../AWS_STATE.md) (nine trusted-access principals, `guardduty` delegated to
   Audit — §C already predicts it); re-run `./aws/org-trusted-access-services.py` and
-  `./aws/guardduty.py`; and **re-read [open question 17](../open-questions.md)** — the reopener it names
-  for this stage (the off-VPN administrative credential gaining a watcher) is met the day this stage closes, so the
-  question is re-read against that fact, which is not the same as reopening it. **[user]** Record
+  `./aws/guardduty.py`; and write the first findings on credential use into Stage 11 step 3.4's row, the
+  detective half of D39's identity premise. **[user]** Record
   steps 1-4 in the stage log — including the feature list `get-detector` actually returned, which is
   this stage's only measurement of what "the defaults" mean on the day it ran.
 

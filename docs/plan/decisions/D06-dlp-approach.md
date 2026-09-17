@@ -5,6 +5,8 @@ leg widened 2026-08-25 to the two-plane model (see the last section)
 
 **Amended 2026-09-05:** the egress-control leg's topology is decided — [D38](D38-single-egress-hub.md), built at [Stage 6c](../stages/stage-06c-networking-hub.md). Stage 11 keeps the policy and the detection, and inherits a built proxy with an access log rather than a design.
 
+**Amended by [D39](D39-access-by-identity.md):** the client plane's circuit closes on the identity, granted only on an institution-monitored laptop, and no longer on the VPN.
+
 **In one line:** DLP is four problems with four native controls on top of the data perimeter, and IAM Access Analyzer is the one component that checks the others instead of adding to them.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D13](D13-lake-formation-enforcement.md), [D19](D19-derived-zone.md)
@@ -36,16 +38,16 @@ verification half of two of the four problems, and of the perimeter beneath them
 **Revised 2026-08-25 — the egress-control leg covers two planes** (`docs/plan/objectives.md` carries the
 requirement text; D5 carries the compute half). Egress control was written above as "D5 plus the
 SageMaker VPC-only domain", which is one plane: the **compute's**. The clarification adds the **client
-plane** — the laptop reaches the organization's cloud infrastructure only through the VPN, and once
-connected, *all* of its internet runs through the cloud's single egress behind an institutional
-**HTTP/HTTPS proxy** (Stage 11; topology is open question 23). What makes this DLP rather than networking
-is the circuit it closes: in the modelled institution only institution-owned laptops hold a VPN peer, and
-those laptops carry their own endpoint DLP (a Microsoft 365 service) — so data pulled out of SageMaker *by
-any means, file download to the laptop included*, still sits inside a monitored perimeter: SageMaker's own
-filter (D5), then the institutional proxy, then the endpoint DLP on the only devices that can connect.
-`docs/plan/institutional-delta.md`'s device-trust row carries what the lab's VPN does and does not stand
-in for here — the lab has no managed endpoint, so its VPN is the *observation* and the endpoint controls
-remain the institution's half.
+plane**, the laptop. What makes it DLP rather than networking is the circuit it closes, and D39 moved the
+closure from the network to the identity: an Identity Center session is granted only on an
+institution-owned laptop carrying its own endpoint DLP (a Microsoft 365 service), so data pulled out of
+SageMaker, the console or the APIs *by any means, file download to the laptop included*, lands inside a
+monitored perimeter: SageMaker's own filter (D5), then the endpoint DLP on the only devices that hold an
+identity. While such a laptop is on the monitored VPN profile, its whole internet also runs through the
+cloud's single egress behind an institutional **HTTP/HTTPS proxy** (D38). The lab does not enforce the
+identity premise, because Identity Center's own directory checks no device:
+`docs/plan/institutional-delta.md`'s device-trust row carries the delta, and Stage 11's threat model the
+residual.
 
 Two boundaries on what Access Analyzer proves. First, it reports **reachability, never
 movement**: a finding says a path exists, not that a byte travelled — so it does not shorten the exfiltration-

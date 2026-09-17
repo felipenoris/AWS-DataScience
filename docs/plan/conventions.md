@@ -318,7 +318,7 @@ terraform-live/
     ├── proxy/            # [D] the Squid host - the estate's single egress. The instance only:
     │                     #     its Elastic IP, security group and allow-list parameter are
     │                     #     networking/'s [P] anchors, so a `make down` cannot release the
-    │                     #     address every VPN-only condition is keyed on. Its access log
+    │                     #     address (6g decision due 1 re-reads that, D39). Its access log
     │                     #     is Stage 11's egress evidence
     ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
     │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
@@ -664,8 +664,9 @@ through `dev-env.md` §B step 6 (`AWS_STATE.md` `EXC-09`).
    only works by hand is a bug.
 4. Anything slow or awkward to create — Control Tower, accounts, ACM DNS validation, Identity Center —
    belongs in `[P]` by construction.
-5. Keep addresses stable: private DNS names instead of IPs, and retained Elastic IPs for the WireGuard
-   host and the proxy, so client configs and every VPN-only condition survive a rebuild.
+5. Keep addresses stable: private DNS names instead of IPs, and a retained Elastic IP for the WireGuard
+   host, so client configs survive a rebuild. The proxy's is retained too until Stage 6g's decision due 1
+   re-reads it, since after D39 no condition is keyed on it.
 6. Each stage documents its teardown as well as its build, and records the measured rebuild time.
 7. The layer assignment is a cost judgement and can change. If a `[D]` service turns out to be cheap to
    rebuild, demote it to `[E]`; if an `[E]` rebuild proves slow or fragile, promote it to `[D]` and pay

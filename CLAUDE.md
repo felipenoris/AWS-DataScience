@@ -1,6 +1,6 @@
 # General Objective
 
-A Data Science environment on AWS, in one personal account tree: VPN-only access, SageMaker Unified Studio
+A Data Science environment on AWS, in one personal account tree: a VPN-only private network with AWS reached by identity, SageMaker Unified Studio
 as the workbench, a governed Iceberg lake, GitLab and its pipelines promoting artifacts along
 **Sandbox → Development → Staging → Production**, and data-leakage protection as its own requirement.
 
@@ -226,35 +226,31 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Stages 0-1d, 2, 3, 4, 5, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5 register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 38 decisions are closed. Still needed from the user: the domain name (blocks Stage 13).
+  Development account, ever; interactive compute is Sandbox only. All 39 decisions are closed. Still needed from the user: the domain name (blocks Stage 13).
+- **D39 (2026-09-17): AWS is reached by identity, the VPN reaches the private network** (`objectives.md`).
+  An identity is granted only on an institution-monitored laptop (M365 DLP): modelled, not enforced
+  (Stage 11 3.4). **Stage 6g, planned**, deletes `DenyControlPlaneOffVpn` from the six persona sets and
+  turns the lake's laptop branch into a principal branch for the drop-box `PutObject`; both VPN profiles
+  stay. Until 6g applies, the deny still binds persona calls to the hub. It closed INT-16's deviation,
+  OQ 17 and 6d decision 4's VPN half.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
-  as a decision (the portal's notebook operator dies on the D13 boundary; Stage 10's own DAGs can pass a
-  full `VpcConfig`). `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
+  as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
   is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
   what a new space's picker reads, both app types. INT-01/INT-17 closed (image role by tag, project
   role by digest). **The app image config caps each env value at 256 chars** vs a `NO_PROXY` of ~1,500,
   so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
-  `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. The image's Python is a
-  second uv env under `/opt/awsds` on CPython **3.13** (no TF wheel past `cp313`), own kernel; R on
-  conda, `rust-src` since v0.3.0. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
+  `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
   half; 5.2, 5.4; 6.1, 6.3; 7.6, 7.7; step 10 (Amazon Q, dec 9 first). Apps log to a never-expiring
   group (`EXC-10`).
-- **The remote IDE works, and it is outside every control written for it** (6d step 7, 2026-09-11, a
-  Windows laptop off the VPN). `StartSession` is called **by the client as the project role**, and the
-  deep link is that principal from the browser, so `DenyControlPlaneOffVpn` and 6a's tag pair never
-  evaluate: *whose space* is AWS's tag-scoped Allow on the project role (`remote-ide.py` `RI-3`),
-  *VPN-only* is nobody's (decision 4). Decision 5: the space's own
-  fetch of the server and of each `.vsix` is refused (`403`) and Remote - SSH copies both from the
-  laptop — **no Microsoft name joins the plane**, and the session is a **file channel in both
-  directions that no hostname list describes**. **Two IDE servers run in one container**, separate
-  extension directories and settings, so a version complaint is the client's marketplace, never the
-  remote runtime. A remote space needs **≥ 8 GB** (`ml.t3.large` 0.100/h); the space
-  path carries no instance ceiling since `sagemaker-denies-v0.2.0`, and `session-manager-plugin`
-  honours `HTTPS_PROXY` only if the environment reaches its process.
-  Runbook: `remote-ide.md`.
+- **The remote IDE works** (6d step 7, 2026-09-11, a Windows laptop off the VPN). `StartSession` is
+  called **as the project role**, by the Toolkit or from the browser, so 6a's tag pair never evaluates:
+  *whose space* is AWS's tag-scoped Allow (`remote-ide.py` `RI-3`). The space's own fetch of the server
+  and each `.vsix` is refused (`403`) and Remote - SSH copies both from the laptop — **no Microsoft name
+  joins the plane**, and the session is a **file channel in both directions that no hostname list
+  describes**. **Two IDE servers run in one container**. A remote space needs **≥ 8 GB**. Runbook:
+  `remote-ide.md`.
 - **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
-  `bedrock-runtime` endpoint. **The agreement enables a model, not the form**
-  (`create-foundation-model-agreement`, per model). CT's `CT.MULTISERVICE.PV.1` on `Interactive` carries
+  `bedrock-runtime` endpoint. **The agreement enables a model, not the form**. CT's `CT.MULTISERVICE.PV.1` on `Interactive` carries
   six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
   dec 15's compensating deny. **Retention mode is per
   account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
@@ -262,29 +258,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
   to three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
 - **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
-  catalog acts already taken. Publishing is metadata only (no grant); the portal's catalog calls run as
-  `awsds-data-studio-domain-execution` in Data Governance; DataZone documents no LF-TBAC support for
-  managed Glue assets, and LF unions a named-resource grant with the TBAC ones, so no tag gates it.
-  Five decisions due; `INT-23` new; decision due 1 recommends (d), the lake as unmanaged assets with
-  the grant in the register. `GOVERNANCE.md` holds the data-product cycle and the tag rite, designed
-  on Stages 7-10 and unexercised.
+  catalog acts already taken. Publishing is metadata only (no grant). Five decisions due; `INT-23` new;
+  decision due 1 recommends (d), the lake as unmanaged assets with the grant in the register.
+  `GOVERNANCE.md` holds the data-product cycle and the tag rite, unexercised.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
   stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
-  PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `production/egress/` is a prerequisite of a build
-  (the buildbox's SSM door). `10.40.0.0/16` stays unallocated.
+  PX-1..PX-5; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
 - **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it
   (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
   plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged. The
   compute plane `sandbox-foundation` is an allow-list of 25 names (`docs/NETWORK.md` counts it, dated);
   `github.com` was removed 2026-09-09 by the user, CRAN added 2026-09-11, conda refused. **An empty
-  allow-list refuses everything and an empty deny-list permits everything**; an `open` plane emits no
-  `dstdeny_` ACL and an empty allow-list plane emits nothing. `DN-4` reads "no plane is `open` except the
-  ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next half-hourly association
-  tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running file) are two questions
-  (`terraform-changes.md` Recipe A step 8). The three global denies, the absent default route and the
-  3128-only SG are unchanged.
+  allow-list refuses everything and an empty deny-list permits everything**. `DN-4` reads "no plane is
+  `open` except the ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next
+  half-hourly association tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running
+  file) are two questions.
 - **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is invisible,
   an HTTP redirect is a new name, and a bare entry matches exactly (`github.com` covers neither
   `api.github.com` nor `raw.githubusercontent.com`). A refusal over https reads `000` at the client. A missing name can also fail **without** a `403`: the
@@ -292,34 +282,30 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `ENOTFOUND` comes from a compute VPC.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: it reads each endpoint's `dns_entry`
   rather than the service's one canonical name (`v0.14.1`, 52 entries on `sandbox/egress`), and a gateway
-  endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. The other three
-  `egress/` slices are down and take v0.11.1 on their next `make up`. **The first question about a `403`
+  endpoint has no private DNS at all, so S3/DynamoDB are hand-named in both spellings. **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.
 - **Inside a space**: since `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the
-  four kernels work as they are (earlier images: `sg-proxy.md`). A space started while
+  four kernels work as they are. A space started while
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
   2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
   one workflow, `READY`, `manual_only`; every run is two attempts, so read the task's
-  `DurationInSeconds`, never the run's. The surface needs nothing — 6a's eleven configurations
-  unchanged, and the `Workflows` blueprint is the provisioned shape, not this one. It runs as the
-  project role inside the D13 boundary; workers in two AZs, private subnets, no proxy (a priced D9
-  exception), CMK `alias/awsds-sandbox-project`. A "Notebook task" is a `CreateTrainingJob` and dies on
+  `DurationInSeconds`, never the run's. It runs as the project role inside the D13 boundary, workers
+  with no proxy (a priced D9 exception). A "Notebook task" is a `CreateTrainingJob` and dies on
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
   changes nothing. `update-workflow` is a full replace (Lesson 60) and severs the domain/project the
-  portal injects. The SMUS CI/CD tool deploys only into existing projects; the pipeline stays the
-  deployer (D26/D28).
+  portal injects.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only. The reach difference is by
   identity, never by network. The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as
-  (c); 6.6 as (ii), re-taken at Stage 11 3.4. `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
+  (c). `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
   none, and a cached token is keyed by `sso-session` name, never by user.
 - **Module tags**: `vpc-egress-v0.14.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
-  a module change is exercised by planning a caller, never by `validate` (it passed on all three).
+  a module change is exercised by planning a caller, never by `validate`.
 - **SMUS mechanics**: a blueprint configuration is applied from the member account; an existing one is
   immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
   configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);

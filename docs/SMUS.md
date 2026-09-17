@@ -702,8 +702,8 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   endpoint's private zone shadows exactly such subdomains (`NETWORK.md` §5, the measured break). A
   no-egress VPC can host the *apps*; it cannot host the *portal experience*. **The portal experience is
   assigned to the client plane by requirement** (the 2026-08-25 objectives clarification; D5
-  re-scoped): the user's browser reaches those public names through the VPN's egress — monitored by the
-  institutional HTTP/HTTPS proxy once Stage 11 builds it, today the plain masquerade — never through
+  re-scoped; D39): the user's browser reaches those public names from whatever network the laptop is on
+  — through the institutional HTTP/HTTPS proxy while it is on the monitored VPN profile — never through
   the compute VPC's. What the compute VPC owes the portal is only that its endpoints not shadow the
   client's DNS.
 - **The required table's framing carries a premise this design does not meet** (Lesson 41). The page
@@ -711,7 +711,8 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   services"*, and its `DenyUserAccessFromUnauthorizedVPCs` example is written for *"portal calls to AWS
   service APIs from outside the allowed Amazon VPC"* — AWS is describing an estate in which **the
   user's browser resolves and routes through the same VPC as the compute**. Ours does not, by decision:
-  the client plane resolves through `VPC-Networking` and leaves through the institutional proxy (D38),
+  the client plane resolves through `VPC-Networking` and, on the monitored profile, leaves through the
+  institutional proxy (D38),
   while the compute plane keeps its own endpoints. So **the compute needs only the subset of that list
   that its own calls use**, and chasing the rest buys nothing — every name in the page's *public
   internet* tables is the browser's, which the page states three times (*"These endpoints are used by

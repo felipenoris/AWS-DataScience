@@ -516,6 +516,20 @@ changed, not just the plan.
   each exception's reason into its pass line. D38 §6 amended in place. The same sitting added `open-vsx.org`
   to the Sandbox plane after a Code Editor space failed to update AWS's own extensions.
 
+- **2026-09-17 — The VPN stopped being a condition of reaching AWS (D39; Stage 6g planned).** The user
+  changed the requirement in `objectives.md`: the VPN is a prerequisite only for reaching resources on the
+  private network, being on it is not required for SageMaker Unified Studio or the AWS console, and an IAM
+  identity is granted only to users who sign in from institution-monitored laptops carrying Microsoft 365
+  DLP. Two read-only inventories of the repository found the previous rule enforced by exactly two
+  statements, `DenyControlPlaneOffVpn` on the six persona sets and the laptop branch of the lake's
+  `DenyOutsideTrustedNetworks`, and carried as a recorded deviation by INT-16, 6c step 6.6 and Stage 11
+  steps 3.4 and 5.2. The user chose identity alone for the data plane (the deny deleted rather than
+  narrowed, the laptop's drop-box write admitted by principal) and kept both VPN client profiles. D39
+  records it and amends D5, D6, D15, D18, D20 and D38; Stage 6g carries the two applies, the instruments
+  and the documents that describe the running estate; Stage 11 writes the identity premise as a modelled
+  residual in place of the INT-16 re-take; 6d decision due 4 loses its VPN half; open question 17 is
+  closed. **Provisioned things this touches:** none yet — Stage 6g removes the two statements.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

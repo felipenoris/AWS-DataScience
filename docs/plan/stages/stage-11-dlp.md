@@ -18,15 +18,17 @@ list as a map keyed by consumer (Stage 5's rule), so unit 2 is a row, not a rewr
 **Objective:** the data-specific detection layer, built on top of a working environment rather than before
 it — and the honest ledger of what has no control at all.
 
-**The client plane's egress control is this stage's to monitor, not to build.** A VPN-connected client's *whole* internet runs
+**The client plane's egress control is this stage's to monitor, not to build.** A client on the monitored VPN profile has its *whole* internet run
 through the cloud's single egress behind an institutional **HTTP/HTTPS proxy**, and **[6c](stage-06c-networking-hub.md)
 builds it** — open question 23 is closed. What arrives here is a **Squid access log** in CloudWatch,
 exported to Log Archive so the author of the allow-list does not own its record (Lesson 18), carrying time,
 source, CONNECT host, status and byte counts. That log is the evidence this stage's threat model reasons
 over, and the two filters the objectives require (the proxy's list for people, SageMaker's stricter list
 for notebooks) are **source-scoped Squid ACLs** rather than anything this stage creates. The closed circuit
-it belongs to is unchanged: VPN-only access + endpoint DLP on institution laptops + the proxied egress
-(`docs/plan/institutional-delta.md`, the device-trust row).
+it belongs to closes on the identity ([D39](../decisions/D39-access-by-identity.md)): an Identity Center
+session granted only on institution laptops carrying endpoint DLP, plus the proxied egress while a laptop
+is on the monitored profile. The lab models that premise and does not enforce it, and 3.4 writes its
+residual (`docs/plan/institutional-delta.md`, the device-trust row).
 
 **What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1;
 the detective services moved to the stage that first gave each one something to observe (principle 9):
@@ -293,40 +295,26 @@ control at all. A threat model that lists a control nobody implemented is worse 
   `StartSession` is tag-scoped to the user's own spaces — a *scoping* control, not a *transfer* control —
   **(re-read 2026-09-07 at 6d 7.1/7.2: the scoping that exists is AWS's Allow on the project role, if
   attached; the estate's pair sits on the persona sets, which never make the call, and a persona session
-  carries no DataZone tag, so the pair would deny every space — 6d decision due 4 owns the repair, and the
-  connection method decides whether the VPN perimeter applies to this channel at all)** —
+  carries no DataZone tag, so the pair would deny every space — 6d decision due 4 owns the connection
+  method)** —
   and remote sessions authenticate with **IAM credentials even in IdC domains, persisting up to 12 h after
   portal logout**. Accepted, with the kill-switch named: the `sagemaker:RemoteAccess` condition key on
   `CreateSpace`/`UpdateSpace`. **Measured 2026-09-12 by `./aws/remote-ide.py`**: the AWS Allow is attached
   (`SageMakerStudioProjectRoleMachineLearningPolicy` v43, both tags, `RI-3`), so the scoping is real and
   is AWS's; and **all 14 `StartSession` calls of that week came from a laptop's own uplink** (`RI-5`) —
-  none through the monitored profile. The row this step writes therefore reads *scoped by AWS, VPN-only by
-  nobody* until 6d decision 4 is taken.
-- **3.4 — [Claude reads, user decides] Re-take INT-16's closing choice — the portal's off-VPN ingress,
-  accepted on 2026-09-07 (6c step 6.6, fallback (ii)) as a recorded deviation from `objectives.md`'s
-  VPN-only statement.** The acceptance was taken with the proxy's address newly stable and nothing yet
-  watching the surface; this step re-takes it with what the stage has built. Inputs, all read before the
-  choice: **(a)** 5.2's off-proxy-session rule — how many portal sessions arrived from an address other than
-  the proxy's since it was armed (CloudTrail's `sourceIPAddress` under the domain execution role, which
-  INT-16 measured carrying the end user's own address); **(b)** whether AWS has shipped a private door for
-  the portal — `NT-9` red means one exists, and the choice is then a different one (D38's client-plane
-  premise, re-read); **(c)** the cost of (i): a condition on a role that exists, nothing metered;
-  **(d)** the one admissible shape of (i) — `NotIpAddress` on the proxy's EIP **and**
-  `StringNotEqualsIfExists` on `aws:SourceVpc`, keeping the `aws:userid` `*:user-*` and
-  `aws:ViaAWSService` carve-outs; AWS's own `StringNotEquals` example matches whenever the key is absent,
-  which is every browser-origin call, and would deny the portal outright — so the on-tunnel positive
-  control after the apply is mandatory (Lesson 13), and the off-tunnel refusal's wording goes into the
-  log; **(e)** whether the institution's answer has moved closer — a managed device or a posture check
-  (the device-trust row of `institutional-delta.md`) makes (i) the observation and the endpoint the
-  control; **(f)** how many of (a)'s off-proxy sessions were the lab's own
-  **split-tunnel** profile (6c pass 8) — under it a portal session arrives from the laptop's own address, so 5.2's rule
-  fires on the lab's own sessions unless the portal is opened in the proxied Chrome; the arming test of
-  5.2 (quiet with the tunnel up) is taken under the **monitored** profile, and a session count that is
-  all the lab's own is no evidence against (i). **Either outcome goes into `docs/plan/threat-model.md`'s
-  accepted-rather-than-controlled column with the date, the inputs and the verdict.**
-  Recommended: **(i)** unless (b) changed the picture — it costs nothing, it was measured viable on
-  2026-08-22, and it closes the one surface where an unmanaged laptop reaches governed data; acceptance
-  stays defensible only while 5.2's rule stays quiet.
+  none through the monitored profile. The row this step writes therefore reads *scoped by AWS*: D39
+  removed the requirement that the channel be VPN-only, and what it leaves to record is the file channel in
+  both directions and the 12-hour residual.
+- **3.4 — [Claude] Write D39's identity premise into the threat model.** A person reaches the console, the
+  APIs and the portal from any network with an Identity Center session, which the institution grants only
+  on a laptop it monitors ([D39](../decisions/D39-access-by-identity.md) §4). The lab's directory checks no
+  device, so the row reads **modelled, not enforced**, and names both halves: the institution's control, a
+  sign-in policy that admits only a managed, compliant device, federated into Identity Center (the
+  device-trust row of `institutional-delta.md`); and the lab's detective half, CloudTrail's per-principal
+  record of every data call, 5.1's data events, and GuardDuty's findings on credential use (Stage 15). The
+  portal's ingress from any network, INT-16's recorded acceptance until D39, is this premise's case rather
+  than a row of its own. **The row goes into `docs/plan/threat-model.md`'s accepted-rather-than-controlled
+  column with the date and the premise's revision trigger (D39).**
 - **3.5 — [Claude] Write the last barrier down: a space on the wrong image.** Measured 2026-09-12 (6d
   step 7.9's sitting, 6e verification (v)): a space created on AWS's SageMaker Distribution had no proxy
   variables and no Claude Code settings, something in it — by every sign the Claude Code client — asked
@@ -436,18 +424,6 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   - **`awsds-data-unexpected-writer`** (Data Governance only) — `PutObject` on lake + drop-box where
     `userIdentity`'s role is **anything-but** the three designed writers (the Interactive-OU writer roles,
     `awsds-data-catalog-maintenance`, `awsds-prod-job-exec` — D25's asymmetry, alarmed).
-  - **`awsds-data-portal-offproxy`** (Data Governance only — the domain lives there) — **the compensation
-    for INT-16's recorded acceptance (6c step 6.6)**: a portal session whose `sourceIPAddress` is
-    **anything but the proxy's Elastic IP**, on `datazone.amazonaws.com` events under the domain
-    execution role (INT-16 measured 770 of them carrying the user's own address, tunnel up and down
-    in the same hour). Management events, so the org trail already carries them and no member trail is
-    needed. **The matching shape is measured before it is written** (Lesson 54): EventBridge's CIDR
-    matcher against the `/32`, if it composes with `anything-but`, else a Logs metric filter over the
-    trail — and the rule is armed only after a tunnel-up session **under the monitored profile** proves it quiet
-    and a tunnel-down one proves it loud (Lesson 13; verification xi) — a **split-tunnel** session (6c pass
-    8) trips it like a tunnel-down one, since the portal's session then arrives from the laptop's own address. Target: the SNS topic. What it cannot do is stop the
-    session; what it does is make the acceptance *monitored* rather than merely written (Lesson 5), and
-    feed 3.4's input (a).
   - **`awsds-data-athena`** (Data Governance only) — on `StartQueryExecution` (a management event: the
     org trail already logs it, so this rule needs no member trail). **Conditional on Stage 5 decision 4's
     outcome:** if the Athena hole was closed by SCP amendment, *any* occurrence — allowed or denied — is
@@ -516,9 +492,8 @@ residuals, not against fear. **Explanation:** a reading, recorded in the threat 
 
 - **6.1 — [Claude] Walk the threat model's residual column** — the remote-IDE
   channel, design A's raw-IP bypass (if A survived), `UpdateTrail`, the within-persona result visibility
-  (Stage 9's stated limit), **and the portal's off-VPN user ingress** (INT-16 — a recorded acceptance
-  since 2026-09-07, 6c step 6.6 fallback (ii); step 3.4 re-takes the choice and 5.2 monitors it, so read
-  the row as 3.4 left it) — and ask which, if any, an agent would actually close, at what cost, with what
+  (Stage 9's stated limit), **and D39's identity premise** (3.4's row: modelled, not enforced) — and ask
+  which, if any, an agent would actually close, at what cost, with what
   new principals (Lesson 17). Recommended answer at lab scale: none — record it and the reasoning in
   `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
   lineage first, D19 practice v).
@@ -534,7 +509,7 @@ delivering to the logs bucket), the rules and alarms, the GuardDuty features now
 the tampering `Sid`. The behavioural proofs are the stage's own (Lesson 20):
 
 - **The threat model, `docs/plan/threat-model.md`** — one control (or one named acceptance) per item —
-  INT-16's portal ingress among the acceptances, dated 2026-09-07 and re-dated by 3.4 — and
+  D39's identity premise among the acceptances (3.4) — and
   a **reachability row per governed resource**: who outside the organization can reach it (the external
   analyzer's answer), who inside can (the internal analyzer's, for the types it covers; a reading, for the
   CMKs and the catalog layer).
@@ -602,7 +577,9 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
    here is the same procedure. Recommended: **whichever the Stage 15 log answers** — a carve-out written against a
    role that already exists is the one shape this plan trusts (D27).
 5. **Malware Protection for S3 on the drop-box** (4.5) — recommended: **off**, priced (USD 0.09/GB +
-   0.000215/object); revisit if the drop-box ever ingests files from outside the tunnel.
+   0.000215/object). Its revisit condition, a file arriving from outside the tunnel, is met by D39: the
+   drop-box admits the persona's write from any network after Stage 6g step 2. So the decision is re-read
+   here against the drop-box's writes since then, not inherited.
 6. **The CloudTrail-tampering statement** (5.4) — recommended: **`DenyCloudTrailKill`**
    (`StopLogging` + `DeleteTrail`, unconditional) via battery phases 1-3, with the `UpdateTrail` residual
    recorded rather than chased.
@@ -614,9 +591,8 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 9. **ECR enhanced scanning** (4.6, Stage 7 decision 2's deferral) — recommended: **stay on basic** until a
    Stage 8 gate reading misses a language-package CVE that mattered; if adopted, standalone Inspector in
    Production only, and re-read the re-scan churn against the bill at Stage 12.
-10. **INT-16's choice, re-taken** (3.4) — recorded acceptance since 2026-09-07 (6c 6.6, the user's)
-    versus fallback (i) on the domain execution role. Recommended: **(i)**, for the reasons 3.4 lists —
-    unless `NT-9` says a private door for the portal now exists, which reopens the question differently.
+10. **INT-16's choice** — closed by D39, which removed the requirement the portal's ingress deviated from;
+    3.4 writes the premise that replaced it.
 11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)
     step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`). Recommended: **on in
     `Sandbox` only, to S3 with the account's CMK and a lifecycle**, inside decision 3's map — the
@@ -639,7 +615,6 @@ Record every answer, including the ones that come out fine.
 | viii | Does presigned **use** arrive as `AuthenticationMethod=QueryString` and drive its rule — while creation, as predicted, appears nowhere? | 5.5 |
 | ix | Do the trails read back data-event-only (`get-event-selectors`: no management events) with validation on, delivering cross-account into `awsds-data-logs`? | 5.3 |
 | x | Does the Athena rule match Stage 5 decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
-| xi | Does the off-proxy portal rule stay quiet through a tunnel-up portal session and fire on a tunnel-down one — and what did the tunnel-down session's events carry as `sourceIPAddress`? | 5.2, 5.5, 3.4 |
 
 ## Risks
 

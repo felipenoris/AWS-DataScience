@@ -1,6 +1,6 @@
 # Decisions — index
 
-D1-D38, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both
+D1-D39, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both
 keeping their files. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
@@ -11,7 +11,7 @@ reasoning, its consequences or its revision trigger.
 | [D3](D03-terraform-state.md) | Terraform state location | Terraform state in a per-account S3 bucket with native S3 locking; no DynamoDB, nothing in Management. | S2 |
 | [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on the smallest burstable instance, layer `[D]`; Client VPN documented as the managed alternative. Amended 2026-08-20: **amd64 `t3.nano`**, not the `t4g.nano` decided. | S4 |
 | [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs for the SageMaker **compute** (re-scoped 2026-08-25: never the client's machine), behind a switch and compared: (A) NAT plus a small allowlist, (B) internet fully blocked — either way behind the institution's single egress + HTTP/HTTPS proxy. | S3, S6, S8, S11 |
-| [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, IAM Access Analyzer checks the others instead of adding to them — and since 2026-08-25 the egress-control leg is two planes: D5 on the compute, VPN + single proxied egress (+ endpoint DLP on institution laptops) on the client. | S1b, S11, S12 |
+| [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, IAM Access Analyzer checks the others instead of adding to them — and since 2026-08-25 the egress-control leg is two planes: D5 on the compute, and on the client an identity granted only on institution laptops carrying endpoint DLP (D39), with the proxied egress while a laptop is on the monitored VPN profile. | S1b, S11, S12 |
 | [D7](D07-orchestration.md) | Workflow orchestration in production | Two orchestrators built and compared: (A) MWAA Serverless, (B) EventBridge Scheduler + Step Functions. | S10 |
 | [D8](D08-gitlab-hosting.md) | GitLab hosting | GitLab CE self-managed on EC2 in Production, layer `[D]` — stopped between sessions, not destroyed. | S7, S8 |
 | [D9](D09-az-count.md) | Number of AZs | Two AZs for free subnet plumbing, one AZ for metered interface endpoints. | S3 |
@@ -44,6 +44,7 @@ reasoning, its consequences or its revision trigger.
 | [D36](D36-internal-pki.md) | Custody of the internal PKI | The CA root D15 created gets **its own slice, state and KMS key** (`production/pki/`), built at Stage 7 pass 1 with the leaves — **§3 amended 2026-08-21**, which withdrew the "applied early, before Stage 6" schedule: nothing serves an internal name until Stage 7, so the `dev-env` image takes the root at Stage 7 step 2.6 instead of carrying it from Stage 6. **The second credential IAM cannot revoke** (after D16's root) and the one with *no* revocation path at all, so its controls are detective: data events on the state prefix, a KMS alarm, the fingerprint in `docs/log/log-stage-07-gitlab-runners-ecr.md`, and a rehearsed rotation. | S7, S12, S14 |
 | [D37](D37-nested-ou-inheritance.md) | What a nested OU carries: inherit rather than copy | Nothing is attached or enabled on `Sandboxes` unless it *differs* from `Interactive` — sameness is inherited, never copied. Measured against both halves of verification (xi) first: the OU *is* a registered target, so declining is a choice. The price is that Control Tower reports it as zero controls while its accounts are fully governed. | S1c, S14 |
 | [D38](D38-single-egress-hub.md) | The single egress hub — where it lives, what reaches it, where the client plane resolves | Peering shares an **address, never a path**, so the estate's one egress is an **explicit proxy** in `VPC-Networking` (Production) and every spoke loses its default route; **zero NAT gateways**, two `[D]` hosts, and the VPN client resolves through a VPC that holds no compute-plane endpoint — which is Lessons 40-43's structural repair. Closes open question 23. | S6c, S7, S8, S10, S11, S13, S14 |
+| [D39](D39-access-by-identity.md) | Access to AWS by identity, and the VPN for the private network | A person reaches the console, the APIs and the SageMaker Unified Studio portal from any network with an Identity Center session, granted only on an institution-monitored laptop; the VPN is required only for private addresses and names. The persona deny is deleted, the lake admits the laptop's drop-box write by principal, both client profiles stay. Closes open question 17 and INT-16's deviation. | S4, S6c, S6d, S6g, S9, S11, S15 |
 
 ---
 
@@ -51,6 +52,8 @@ reasoning, its consequences or its revision trigger.
 line: D4, D5, D6, D7, D9, D11, D12, D14, D15, D17, D18, D19, D20, D22, D23, D26, D35, D36 — plus D21
 superseded and D38 written. **D38 amended again on 2026-09-08** (§6): the build plane is `open`, not an
 allow-list — the restriction belongs to the compute, and a build host's control is the reviewed Dockerfile.
+**D39 amends D5, D6, D15, D18, D20 and D38 in place**: a person reaches AWS by identity, and the VPN
+reaches the private network.
 A decision is normally revisited only through its own *revision trigger*;
 when one is revisited — for whatever reason — edit its file in place and add a line to
 [`docs/plan/history.md`](../history.md). **A reverted decision keeps its file and its number**, because the

@@ -101,7 +101,7 @@ AWS Organization (Management account - console only)                        [P]
         │     the awsds.internal apex zone; peering accepter                [P]
         ├── VPC-Networking (10.31/16): the estate's only internet gateway,
         │     the peering accepter for every spoke, both hub anchors        [P]
-        │     ├── WireGuard EC2 <- the only human entry point (see below)   [D]
+        │     ├── WireGuard EC2 <- the only way into the private network    [D]
         │     └── Squid EC2     <- the single egress, an explicit proxy     [D]
         ├── VPC-Workloads (10.32/16): the production runtime, no IGW route  [P]
         ├── ECR (dev-env images, application images)          <- D14        [P]
@@ -148,26 +148,25 @@ plane, not the account.
 2026-09-06; Sandbox before) and, in the **monitored** profile, is a **full tunnel** (Stage 4 step 5; the
 **split-tunnel** profile of 6c pass 8, named in `objectives.md`, leaves the cloud side identical and only
 the laptop's own internet outside the tunnel), so *all* the laptop's traffic enters it and leaves the
-estate only through the **proxy's** Elastic IP (D38). That, not a route into every VPC, is what makes the
-single entry point true for a laptop with the tunnel up; the Unified Studio portal is the measured
-exception (INT-16, 2026-08-22 — a portal session works with the tunnel down; closed 2026-09-07 as a
-recorded acceptance, revisited at Stage 11 step 3.4). There are two paths, and they should not be
-confused:
+estate only through the **proxy's** Elastic IP (D38). The tunnel is the only way into the private network,
+and nothing else is conditioned on it: a person reaches AWS by identity from any network, with an Identity
+Center session the institution grants only on a laptop it monitors ([D39](decisions/D39-access-by-identity.md)).
+There are two paths, and they should not be confused:
 
 - **VPC-level reach**. The tunnel terminates in `VPC-Networking`, and the five peerings extend it to
   every VPC — an address, never a path (Lesson 44). This is the path for private DNS
   names and anything addressed by a private IP.
-- **AWS API and portal reach**, which every account has, over public AWS endpoints exited through the
-  **proxy's** Elastic IP (6c 4.12). This is how **the unified domain is used (D26)**: the Unified
+- **AWS API and portal reach**, which every account has, over public AWS endpoints from whatever network
+  the laptop is on — through the proxy while it is on the monitored profile, through its own uplink
+  otherwise. This is how **the unified domain is used (D26)**: the Unified
   Studio portal — like the presigned Studio URL before it — is a public endpoint even when project
   compute is `VpcOnly`; VPC-only governs how the *app containers* reach the network, not how the browser
   reaches the UI. The laptop needs no route into the Staging VPC.
 
-The control that makes the second path VPN-only is **`aws:SourceIp` on the proxy's Elastic IP** (Stage 4
-step 8), not `aws:SourceVpce`. Measured 2026-08-22: it gates the API/console half of this path and **not
-the portal half**, because the portal is entered by an IdC sign-in the permission-set deny never sees
-(INT-16; `README.md` item 3 carries the full statement — a recorded acceptance since 2026-09-07, which
-Stage 11 step 3.4 revisits and whose 5.2 alarms on an off-proxy portal session).
+The second path's control is the identity. Until Stage 6g, `aws:SourceIp` on the proxy's Elastic IP
+(Stage 4 step 8) still binds the six persona sets' API and console calls to the hub; it never reached the
+portal (INT-16, measured 2026-08-22), and D39 retires it. The identity premise it leaves is Stage 11
+step 3.4's row: modelled, not enforced, since Identity Center's own directory checks no device.
 
 **Where the humans are (D17, D18, D21).** *Humans run code in the Interactive OU and nowhere else; they
 read the deployment targets' data planes; nobody changes a Workloads-OU control plane by hand; and the
@@ -338,10 +337,11 @@ what the strict one costs in day-to-day friction.
 
 **Whose internet this is about** (user clarification, 2026-08-25; `docs/plan/objectives.md` carries the
 requirement text). Both designs constrain the **SageMaker-managed compute** and nothing else. The **client
-plane** — the laptop on the VPN — has its own egress: all of its internet runs through the cloud's single
+plane** is the laptop. On the monitored VPN profile all of its internet runs through the cloud's single
 egress point behind an institutional **HTTP/HTTPS proxy** (monitored, broad; D6's territory, Stage 11's
-build, the topology [D38](decisions/D38-single-egress-hub.md) settled), and that plane serves the SMUS
-portal's public-internet requirements.
+build, the topology [D38](decisions/D38-single-egress-hub.md) settled); off the VPN or on the split-tunnel
+profile it runs through the laptop's own uplink (D39). Either way that plane serves the SMUS portal's
+public-internet requirements.
 Three consequences. The (A)/(B) gap is smaller than the names suggest: with a whitelist as the mechanism,
 (B) is the empty list and (A) a short one, and under both designs the compute reaches the *intranet*
 (GitLab included) identically. Every allowed compute connection still crosses the institutional proxy —
@@ -422,14 +422,14 @@ measure.
 (2026-08-24, re-scoped by the user 2026-08-25). AWS's network-isolation page carries a *Public internet
 access* table beside its required-endpoints one: client assets, client APIs
 (`agent.datazone.<region>.api.aws` among them) and the IdC sign-in endpoints, *"for client operations that
-do not handle customer data"* in the page's own words. The portal is loaded by the *client's browser*, and
-the client plane has its own monitored egress — VPN → institutional proxy → the cloud's single egress —
-which is where those public names are served; (B) constrains the compute VPC, which never needed to host
-the portal experience. What is still load-bearing: **the client's DNS path must not be shadowed by the
+do not handle customer data"* in the page's own words. The portal is loaded by the *client's browser*, from
+whatever network the laptop is on — VPN → institutional proxy → the cloud's single egress on the monitored
+profile — which is where those public names are served; (B) constrains the compute VPC, which never needed
+to host the portal experience. What is still load-bearing: **the client's DNS path must not be shadowed by the
 compute's endpoints**. An interface endpoint installs a private zone **authoritative for the whole
 subtree** of its service name (Lesson 40; `NETWORK.md` §5 carries the measured case, the `datazone` zone
-shadowing exactly the `agent.datazone…` name the portal needs), and the full-tunnel laptop shares the VPC
-resolver by requirement. So the constraint on (B) — and on (A) equally — is which endpoints may exist in a
+shadowing exactly the `agent.datazone…` name the portal needs), and a laptop on the VPN resolves through a
+VPC resolver. So the constraint on (B) — and on (A) equally — is which endpoints may exist in a
 VPC whose resolver the *client* also uses, not whether the portal can live at all.
 
 **The user's reservation about (B), recorded as a constraint:** this environment must support **Python,
@@ -544,17 +544,15 @@ A mental model, not a status. Every old habit contradicts some part of it.
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
   compute); **D19** keeps the derived zone designed rather than left over — since 2026-08-26 it is the
   SMUS project path, per project, the service's hand.
-- **There are two access paths.** "The VPN is the only entry point" is true because the tunnel is *full*,
-  not because it routes into every VPC. Only Sandbox and Production are reachable at the VPC level;
-  Development and Staging are used entirely through AWS API endpoints exited via the WireGuard Elastic IP
-  — including the Unified Studio portal, which is a public endpoint even when project compute is
-  VPC-only. The control there is `aws:SourceIp`, never `aws:SourceVpce` (`docs/plan/architecture.md` §3),
-  and **INT-16 answered** (2026-08-22, at Stage 6): that control does not reach the portal. The portal is
-  entered by an Identity Center sign-in, not by an IAM-authorized call under a permission set, and the
-  off-VPN reading took the strong form — the whole interactive surface works with the tunnel down,
-  JupyterLab included (`VpcOnly` governs the app's egress, never the user's ingress). The condition covers
-  the API/console half only; the closing choice — fallback (i) on the domain execution role versus
-  recorded acceptance — is the user's, deferred, presumed nowhere.
+- **There are two access paths.** The VPN is the only way into the private network: VPC-level reach, over
+  the peerings, for private names and private addresses. Every account is also used through public AWS
+  API endpoints — including the Unified Studio portal, which is a public endpoint even when project
+  compute is VPC-only — and that path is reached by identity from any network
+  ([D39](decisions/D39-access-by-identity.md)). **INT-16 answered** (2026-08-22, at Stage 6) that the
+  `aws:SourceIp` control never reached the portal: the portal is entered by an Identity Center sign-in,
+  and the whole interactive surface works with the tunnel down, JupyterLab included (`VpcOnly` governs
+  the app's egress, never the user's ingress). The user accepted that as a deviation on 2026-09-07, and
+  D39 removed the requirement it deviated from.
 - **D24 (withdrawn 2026-08-17):** the NFS requirement left `objectives.md`, and the shared filesystem
   with it; the exchange between Sandbox and the pipeline is S3 and git. **D25:** the ingestion drop-box is
   picked up by Production's job role on the producer path — which also closed a hole where the `Data` OU

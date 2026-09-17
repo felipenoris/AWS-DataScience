@@ -234,7 +234,7 @@ shape is `when: manual` under `rules:` on a protected tag.
   `attribute_statements email: ['email']`; `block_auto_created_users = false`;
   `omniauth_auto_link_saml_user = true`. **[Claude⚡]** Apply and reconfigure. **[user]** Prove the
   round-trip as a data-scientist user and record which NameID/attribute shape worked (verification iii).
-  The IdC portal is reachable off-VPN (INT-16's recorded reading); the *GitLab* half is VPN-only, so
+  The IdC portal is reachable from any network (D39); the *GitLab* half is on the private network, so
   sign-in works only with the tunnel up.
 - **3.3 — [user] Read the edition answer off the running instance** (verification iv): in a test project's
   settings, are **Protected environments** and **deployment approval rules** present at all? Expected:
@@ -433,7 +433,8 @@ and 8.4's two new checks. The behavioural proofs are the stage's own (Lesson 20)
 
 1. Run `./aws/supplychain.py` — all `SC-*` pass, including 8.4's `SC-9`/`SC-10`; diff two runs across 8.1's
    cycle.
-2. Run `./aws/proxy.py` — `PX-1`..`PX-5` pass with the SharedServices source block present.
+2. Run `./aws/proxy.py` — `PX-1`..`PX-4` pass with the SharedServices source block present (`PX-5` is
+   retired at Stage 6g).
 3. Run `./aws/egress.py` §6 at the session's end — zero burn; a forgotten runner is this stage's likeliest
    leak.
 4. Read every denial by its wording, never its exit code (standing rule since 1c).

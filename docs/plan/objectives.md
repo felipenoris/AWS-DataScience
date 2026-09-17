@@ -10,31 +10,33 @@ The objective of this project is to create a Data Science environment based on A
 
 The goal is to achieve the following:
 
-- All user access to the cloud infrastructure will be performed through a VPN.
+- The VPN is a prerequisite only for reaching resources on the private network by IP address. The user
+  connects to it to navigate inside the private network, its IP addresses and its DNS, and to reach the
+  resources that are not exposed to the public internet. Being connected to the VPN is not required to
+  access SageMaker Unified Studio or the AWS console.
+
+- An IAM identity is granted only to users who sign in from laptops monitored by the institution, which
+  carry their own DLP implemented by Microsoft 365.
 
 - Two types of VPN access *(the second added 2026-09-08)*:
 
   - **monitored**: once connected to the VPN, all of the client's internet access will go through an
-    egress inside the AWS cloud *(added 2026-08-25)*. This has two implications, both tied to the DLP
-    objective (Stage 11): (1) the client can reach the organization's cloud infrastructure only while
-    connected to the VPN; (2) all internet access will be monitored — there will be an HTTP/HTTPS proxy
-    between the VPN-connected client and the cloud's internet egress. Once on the VPN, the user can
-    therefore use the browser to reach the internet, which includes the SageMaker portal and the public
-    links that are usage requirements of SageMaker (the network-isolation guide's
+    egress inside the AWS cloud *(added 2026-08-25)*, and all of it will be monitored: there will be an
+    HTTP/HTTPS proxy between the VPN-connected client and the cloud's internet egress. Once on the VPN,
+    the user can therefore use the browser to reach the internet, which includes the SageMaker portal and
+    the public links that are usage requirements of SageMaker (the network-isolation guide's
     public-internet-access section). In the real-world institution this models, only institution-owned
     laptops can connect to the VPN, and those laptops carry their own endpoint DLP (a Microsoft 365
-    service) — so requiring the VPN closes the circuit: nothing extracted through SageMaker, even by
-    downloading files to the laptop, leaves the institution unmonitored.
+    service).
 
   - **split-tunnel**: a client connected in this profile reaches the private address space through the
     tunnel, but its internet access is routed by the client through its own uplink — without crossing
     the private network, and unchecked by the private proxy. As a consequence the client needs no proxy
-    configuration for its internet access; a persona's calls to AWS must still leave through the proxy,
-    because the cloud's perimeter accepts only that address, so only the infrastructure user's work is
-    proxy-free. Nothing on the cloud side changes between the two profiles: the difference is one line
-    of the client's own configuration, which in the institution would be fixed by MDM. This profile is
-    used to proceed with the plan's implementation; the monitored profile is the institution's, used
-    whenever an aspect that models the institution is being tested.
+    configuration for its internet access, its calls to AWS included. Nothing on the cloud side changes
+    between the two profiles: the difference is one line of the client's own configuration, which in the
+    institution would be fixed by MDM. This profile is used to proceed with the plan's implementation;
+    the monitored profile is the institution's, used whenever an aspect that models the institution is
+    being tested.
 
 - Use SageMaker Unified Studio as a development tool for Data Scientists.
 
@@ -61,8 +63,8 @@ The goal is to achieve the following:
 - SageMaker should have access to the internet. We'll explore implementing some restrictions, keeping the possibility of software updates, installing packages, and accessing a few websites.
 
   *Clarified 2026-08-25 — scope and mechanism:* the restriction is on the **SageMaker-managed compute**,
-  never on the user's (client's) machine — the client, on the VPN, has monitored internet through the
-  institutional proxy (see the VPN bullet above). The compute's restriction is stricter: under D5's
+  never on the user's (client's) machine — a client on the monitored VPN profile has monitored internet
+  through the institutional proxy (see the VPN bullets above). The compute's restriction is stricter: under D5's
   design (A) only a few sites are allowed, for downloading programming-language packages and perhaps
   data from providers associated with data-science work; under design (B) the compute's internet access
   is fully blocked, packages arriving through the image and CodeArtifact as D5 already describes. The

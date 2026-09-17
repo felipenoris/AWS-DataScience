@@ -10,7 +10,7 @@ exists before Stage 13.**
 hosted zone and public ACM certificates arrive only at **Stage 13**, with the public web tier.
 Split-horizon DNS is not built.
 
-**Related decisions:** [D4](D04-vpn-wireguard.md) (the VPN is the only way in), [D8](D08-gitlab-hosting.md),
+**Related decisions:** [D4](D04-vpn-wireguard.md) (the VPN is the only way into the private network), [D8](D08-gitlab-hosting.md),
 [D14](D14-supply-chain-account.md), [D26](D26-unified-studio.md)
 
 **Referenced by stages:** [Stage 1c](../stages/stage-01c-preventive-policies.md),
