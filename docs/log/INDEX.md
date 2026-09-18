@@ -1,20 +1,23 @@
 # Log — index
 
 One file per stage records what was done in AWS by hand. The user and Claude write these files
-cooperatively; Claude writes only when the user asks, in that sitting. Plan narrative goes in
+cooperatively: Claude records each step of the plan it executes, in the sitting the step ran, and the
+user writes whenever they want — their own acts, a correction, a measurement they hold. A step is not
+finished while the log is silent about it. Plan narrative goes in
 [`docs/plan/history.md`](../plan/history.md), not here.
 
-Claude never edits a stage log on its own initiative: not to tidy it, not to correct it, not as a side
-effect of another task, and not because an entry looks incomplete. An unrequested edit to the record of
-what happened is the one change nobody would think to review. Entries up to Stage 4 word their
-provenance notes as named exceptions to an earlier, stricter rule.
+Claude adds entries; it does not rewrite the ones already there. Not to tidy them, not as a side effect
+of another task, and not because an entry looks incomplete: an amendment is a new entry that names what
+it amends and why, so the record keeps the order things were learnt in. The user's words are never
+edited. Entries up to Stage 4 word their provenance notes as named exceptions to an earlier rule, which
+had Claude write only on request.
 
 **Provenance** is mandatory. Every file's header states who wrote it; where one file has entries from
 both hands, each entry says which, and so does anything inside an entry that came from the other hand: a
 measurement quoted verbatim, an explanation added on request. A reading pasted by the user is data and
 stays verbatim; what Claude adds around it is analysis and is marked as such.
 
-Claude maintains this index without asking. After reading a stage log, Claude brings that stage's
+Claude maintains this index too. After writing or reading a stage log, Claude brings that stage's
 `Records` cell to what the file holds.
 
 One log file mirrors one stage file: `docs/log/log-stage-NN-*.md` ↔
@@ -53,18 +56,20 @@ so no stage requires reading another stage's log.
 
 ## How an entry gets written
 
-Claude writes into a `docs/log/log-stage-*` file only on a request in that sitting. The request takes
-one of two shapes; the difference is who holds the pen, not what is allowed.
+Claude writes into a `docs/log/log-stage-*` file as part of executing a step, and the user writes
+whenever they want. The modes below decide who holds the pen, never what is allowed.
 
 | Mode | When it is the right one |
 |---|---|
-| **Claude drafts, the user pastes** | The user is at the keyboard and wants the file to stay in their hand. The only mode when the entry is about acts Claude did not observe |
-| **Claude writes the file directly** | The entry is long, interleaves Claude's readings with the user's, or amends an entry already there. The user says so explicitly ("escreva no log", "atualize o log") and Claude states what it wrote |
+| **Claude writes the file directly** | The default, for an act Claude ran or observed: a reading, an apply, a write, a measurement. It lands as the step closes, and Claude says in chat what it wrote |
+| **Claude drafts, the user pastes** | The entry is about acts Claude did not observe, or the user wants the file to stay in their hand. The draft goes to the chat as one fenced block, so it is pasted untouched |
+| **The user writes** | Their own acts and corrections, and any measurement they want kept verbatim. Claude reads what is there and builds on it rather than restating it |
 
-In either mode the entry names its hands (see Provenance above) and follows the rules below. In the
-drafting mode the entry goes to the chat as one fenced block, so it is pasted untouched.
+In every mode the entry names its hands (see Provenance above) and follows the rules below. A step
+executed with no session on AWS — a plan written, a document corrected — belongs to the stage file,
+not here: these files record what was done in AWS, and git records the rest.
 
-- **English and Markdown** in both modes; the chat is in Portuguese and these files are not. In the
+- **English and Markdown** in every mode; the chat is in Portuguese and these files are not. In the
   drafting mode, one fenced code block and never chat prose: a ` ```markdown ` fence, or a longer outer
   fence (` ````markdown `) when the draft itself contains one.
 - **No identifiers.** An account id becomes the account's AWS `Account.Name` in angle brackets

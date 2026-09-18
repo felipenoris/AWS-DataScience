@@ -131,8 +131,8 @@ are never cut; the words around them are.
 
 | File | What it holds, and the rule |
 |---|---|
-| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix. Written cooperatively; Claude writes only when the user asks, in that sitting, never on its own initiative. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
-| [`docs/log/INDEX.md`](docs/log/INDEX.md) | The one file under `docs/log/` Claude maintains on its own. After reading a stage log, bring its `Records` cell to what the file contains: one line saying what is inside, never a restated step |
+| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix. Written cooperatively: Claude records each step of the plan it executes, in that sitting, and the user writes whenever they want. Claude adds entries and never rewrites one already there. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
+| [`docs/log/INDEX.md`](docs/log/INDEX.md) | After writing or reading a stage log, bring its `Records` cell to what the file contains: one line saying what is inside, never a restated step |
 | [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout |
@@ -260,7 +260,6 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
   catalog acts already taken. Publishing is metadata only (no grant). Five decisions due; `INT-23` new;
   decision due 1 recommends (d), the lake as unmanaged assets with the grant in the register.
-  `GOVERNANCE.md` holds the data-product cycle and the tag rite, unexercised.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
