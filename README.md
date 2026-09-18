@@ -2,7 +2,7 @@
 
 Blueprint for using AWS as a Data Science infrastructure provider.
 
-- `CLAUDE.md` — the working rules and the current position. Size-budgeted (40 KB, enforced by
+- `CLAUDE.md` — the working rules and the current position. Size-budgeted (50 KB, enforced by
   `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
 - `docs/` — the documentation tree, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
