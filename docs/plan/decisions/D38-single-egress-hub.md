@@ -111,16 +111,18 @@ own address**, i.e. 0.050/h ≈ **36.50/month** standing.
 |---|---|---|
 | **Today, in code, with every `egress/` slice up** | **4** — one `[P]` for WireGuard in `sandbox/foundation/`, plus one `[E]` per NAT in `sandbox`, `development` and `production` | **3** — all three `egress/` slices carry `egress_mode = "A"` |
 | **Target, after Stage 6c** | **2**, both `[P]`, both in `production/networking/`: the WireGuard host's (**transferred**, not reallocated) and the Squid proxy's (new) | **0** |
+| **Since Stage 6g decision 1** | **1** `[P]`, the WireGuard host's; the proxy wears its instance's own address, billed while it runs and released at every stop | **0** |
 | **During the 6c cut-over, at peak** | **3** in Production for one sitting — the proxy's, the transferred one, and Production's own NAT address until pass 5 destroys it. Sandbox goes 1 → 0 | 3 → 0 |
 | **Stage 13's public ALB** | **0** — an internet-facing *Application* Load Balancer takes AWS-managed addresses; only a Network Load Balancer can be given Elastic IPs | 0 |
 | **Per additional Sandbox (D35)** | **0** — a vended unit peers to the hub and reaches the internet through the same proxy | 0 |
 
-**The estate's steady state is two public addresses and no NAT gateway, and it does not grow with N.**
+**The estate's steady state is one Elastic IP, the proxy's own address while it runs, and no NAT
+gateway; it does not grow with N.**
 The default Elastic IP quota is five per Region, which leaves headroom for the cut-over peak and for one
-contingency; Stage 12 step 9.1 alarms it. Both addresses are `[P]` **anchors in `networking/`, never in the
-`[D]` slice** — a `make down` that released the WireGuard one would invalidate every client `.conf`. The
-proxy's anchored every VPN-only IAM condition until D39 removed them; whether it stays `[P]` is Stage 6g's
-decision due 1.
+contingency; Stage 12 step 9.1 alarms it. The WireGuard address is a `[P]` **anchor in `networking/`,
+never in the `[D]` slice** — a `make down` that released it would invalidate every client `.conf`. The
+proxy's address is not an anchor at all: nothing names it, so its instance carries its own (D39;
+Stage 6g decision 1).
 
 The **WireGuard host's** Elastic IP is *transferred* from Sandbox rather than reallocated (AWS supports
 this within a Region, at no charge, with a seven-day acceptance window; the source account must

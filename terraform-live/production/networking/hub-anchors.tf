@@ -2,8 +2,8 @@
 # pass 4's blackout contains only the address transfer and the host builds.
 #
 # It re-makes sandbox/foundation/vpn-anchors.tf's argument in a new account, plus a second host: a
-# reference is worth writing only if what it names outlives the thing that uses it. The addresses,
-# the security groups and the key's custody are [P] and created here; the instances that consume
+# reference is worth writing only if what it names outlives the thing that uses it. The tunnel's
+# address, the security groups and the key's custody are [P] and created here; the instances that consume
 # them are [D] in production/vpn/ and production/proxy/ and may be replaced whenever the
 # SSM-resolved AMI moves.
 #
@@ -102,25 +102,6 @@ resource "aws_security_group" "proxy" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  tags = merge(local.hub_anchor_tags, {
-    Name = "awsds-${var.env}-proxy"
-  })
-}
-
-# ------------------------------------------------------------------ the proxy address
-#
-# ~USD 3.65/month, measured (docs/PRICING.md 3), billed from this apply rather than from the host's
-# first boot: an Elastic IP is charged whether or not it is associated. That is the price of [P]: the
-# estate's egress address survives every rebuild of the host that wears it. No policy names it
-# (D39); what binds to it is CloudTrail attribution, and whether it stays [P] is Stage 6g decision
-# due 1.
-#
-# Between this apply and 4.8 the allocation is unassociated, which is why ./aws/vpn.py VP-2 reads
-# "orphan allocation" as a NOTE and not a FAIL.
-resource "aws_eip" "proxy" {
-  # checkov:skip=CKV2_AWS_19:the association is deliberately in another slice - this address is [P] so that a [D] instance rebuild cannot change it, and aws_eip_association lives in production/proxy/ where the instance does. The check cannot see across two state files
-  domain = "vpc"
 
   tags = merge(local.hub_anchor_tags, {
     Name = "awsds-${var.env}-proxy"

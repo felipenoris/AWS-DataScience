@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. Owed: the behavioural pairs 1.4 and 2.4, which need the Data Scientist User's session, and decisions due 1 and 2 |
+| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. Owed: the behavioural pairs 1.4 and 2.4, which need the Data Scientist User's session |
 | **Prerequisites** | **None that block.** The hub up (`make hub-up`) only for the monitored-profile halves of 1.4 and 2.4 |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
@@ -238,17 +238,45 @@ exercised both (Lesson 20's mirror).
    `[P]` Elastic IP it bills USD 0.005/h while the hub is stopped; the instance's own public IPv4 is
    released at every stop and bills only while it runs. Recommended: the instance's own address, if 0.3
    finds no consumer outside the documents.
+
+   **Taken 2026-09-17 as recommended: the instance's own address.** 0.3 found no consumer outside these
+   documents. `aws_eip.proxy` and its two outputs left `production/networking/`; `production/proxy/` sets
+   `associate_public_ip_address = true` and lost both the association and the `ignore_changes` that the
+   `[P]` address needed. The proxy plan read `1 to add, 2 to change, 2 to destroy`: **the host
+   replacement was already owed** before this edit, forced by the SSM-resolved `ami` and by a `user_data`
+   comment changed in `c70e73e`, and the address change alone would not have replaced it. Applied —
+   `i-0d42d0393c39eefdb`, private `10.31.160.140` with `proxy.awsds.internal` re-pointed to it, public
+   `35.90.250.102` — then `production/networking/` `0 to add, 0 to change, 1 to destroy` released
+   `184.33.8.126`. Both re-plans `No changes`, `52.89.212.1` is the estate's only Elastic IP, and
+   `make hub-down` stopped the host again. The hub ran **68.7 hours in the previous 30 days**, so the
+   released allocation saves ≈ **USD 3.3/month** and the instance's own address costs ≈ 0.34 at that rate.
+
+   **A replacement is pending from the same sitting.** `user-data.sh.tftpl`'s first-render comment was
+   corrected after the apply — it named the Elastic IP association — and the deployed host reads back
+   carrying the old text, so the next apply of `production/proxy/`, which `make hub-up` runs, replaces
+   the host. It is stateless and rebuilds from this template; only the public address moves with it.
 2. **The spoke precondition of `make up`** (6c step 7.2), which refuses while either hub host is stopped. After
    step 1 a Sandbox session needs the proxy, and the WireGuard host only to reach a private name.
    Recommended: keep both hosts in the precondition. `hub-up` starts both anyway, and one rule is easier to
    read than a rule per purpose.
+
+   **Taken 2026-09-17: the proxy alone**, not both hosts. Since D39 nothing a spoke applies, and no session
+   it opens, needs the private network, so a stopped tunnel is no longer a reason to refuse an apply;
+   `hub-up` still starts both, and `slices.py` reports the tunnel's state beside the proxy's without
+   refusing on it. Exercised with both hosts stopped: the refusal named `awsds-prod-proxy` and the tunnel
+   row read `(the private network only - no refusal, D39)`. Fabricated states cover the rest — proxy
+   running and tunnel stopped proceeds, proxy stopped and tunnel running refuses, both `UNREADABLE`
+   waives (Lesson 13's asymmetry, unchanged).
 3. **`VP-7`: inverted or retired.** Recommended: inverted. A network condition re-added to a persona set by a
    later change breaks nothing on the tunnel, so no other instrument would notice it.
 
+   **Taken 2026-09-17 as recommended: inverted**, and run after 1.3 (step 3).
+
 ## Cost
 
-None. Both applies change policy documents only. Decision due 1 would remove USD 0.005/h for every hour the
-hub is stopped.
+None from the two applies: they change policy documents only. **Decision 1 removes USD 0.005/h for every
+hour the hub is stopped** — ≈ USD 3.3/month at the measured 68.7 hours of uptime per 30 days — and adds
+the same rate while the proxy runs, ≈ 0.34/month.
 
 ## Risks
 

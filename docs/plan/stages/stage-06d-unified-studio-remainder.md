@@ -1252,7 +1252,7 @@ second. Opening the ceiling before 10.2 is answered would turn an accident into 
 - **10.7 — [user provokes, Claude records] Use it, and read the channels.** After 10.4 and 10.5, from the
   surface 10.3 chose: one chat prompt, and one inline completion in a Python file. Claude reads CloudTrail
   `us-east-1` for `q:SendMessage`, `q:StartConversation` and `codewhisperer:GenerateRecommendations`
-  succeeding as the project role from the proxy's Elastic IP; any new `AccessDenied` names an action 10.4
+  succeeding as the project role from the proxy's address; any new `AccessDenied` names an action 10.4
   did not list; the proxy log's names for the window; and the picker's model entries, dated. **10.1's
   refusal is the negative control**: the same principal, the same call, before the exemption.
 

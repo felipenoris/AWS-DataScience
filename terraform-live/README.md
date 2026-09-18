@@ -176,9 +176,9 @@ because under design B there is no route to fail over to. Both are code in the h
 here (Lesson 5).
 
 **The `[D]` slices are where the layer decides the folder rather than the topic.** The hub's durable
-things — **two** Elastic IPs (the WireGuard one **transferred** from Sandbox at
-6c step 4.3, so no client `.conf` moved; a new one for the proxy), two security groups, the **host private
-key's Secrets Manager container** and the proxy's allow-list parameter — are `[P]` and live in
+things — the WireGuard Elastic IP (**transferred** from Sandbox at 6c step 4.3, so no client `.conf`
+moved; the proxy wears its instance's own address since 6g decision 1), two security groups, the **host
+private key's Secrets Manager container** and the proxy's allow-list parameter — are `[P]` and live in
 [`production/networking/hub-anchors.tf`](production/networking/), one slice away from the two `[D]`
 instances that consume them. Each is named from outside the slice (every client `.conf` pins the
 WireGuard address as its `Endpoint`; Stage 7's GitLab rule names the group; every instance the `[D]`

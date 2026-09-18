@@ -38,9 +38,8 @@ chmod 0755 /usr/local/sbin/awsds-render-squid
 
 say "(4) first render - squid is not running yet, so the reconfigure inside is a no-op"
 # Not fatal at first boot, and this is the one place that is true: if SSM is briefly unreachable
-# while the Elastic IP is still being associated, the proxy still comes up, with an empty
-# allow-list that refuses everything by name. The State Manager association fills it within one
-# interval, and `./aws/proxy.py` says whether it did.
+# here, the proxy still comes up with an empty allow-list that refuses everything by name. The
+# State Manager association fills it within one interval, and `./aws/proxy.py` says whether it did.
 /usr/local/sbin/awsds-render-squid || say "(4) first render FAILED - starting with an empty allow-list; State Manager will retry"
 
 say "(5) squid"

@@ -145,16 +145,19 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
 #
 #   7.1  a Sandbox session must be able to start the two hub hosts without starting GitLab or
 #        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
-#   7.2  a spoke's `make up` must refuse while either hub host is down, naming it. Left alone a
-#        stopped hub is a blackhole rather than an error: the apply succeeds, and every symptom
+#   7.2  a spoke's `make up` must refuse while the PROXY is down, naming it. Left alone a stopped
+#        proxy is a blackhole rather than an error: the apply succeeds, and every symptom
 #        afterwards is a timeout that looks like a broken mirror or a broken package index. That
-#        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide.
+#        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide. The
+#        tunnel is reported beside it and never refuses: since D39 nothing a spoke applies, and
+#        no session it opens, needs the private network (6g decision due 2).
 HUB_ENV = "production"
 HUB_SLICES = ("vpn", "proxy")
+EGRESS_SLICE = "proxy"
 
 
 def hub_state(dry: bool) -> list:
-    """[(name, id, power state)] for the two hub hosts, or [] when nothing could be read.
+    """[(slice, name tag, id, power state)] for the two hub hosts, or [] when nothing could be read.
 
     A direct `describe-instances` rather than `./aws/vpn.py`, which step 7.2 names ("reads the
     hub hosts' state through ./aws/vpn.py"). `vpn.py` writes a full report and is what a person
@@ -167,11 +170,11 @@ def hub_state(dry: bool) -> list:
         states = instance_states(HUB_ENV, name, dry)
         tag = instance_name(HUB_ENV, name)
         if states is None:
-            out.append((tag, "-", "UNREADABLE"))
+            out.append((name, tag, "-", "UNREADABLE"))
         elif not states:
-            out.append((tag, "-", "absent"))
+            out.append((name, tag, "-", "absent"))
         else:
-            out.append((tag, states[0][0], states[0][1]))
+            out.append((name, tag, states[0][0], states[0][1]))
     return out
 
 
@@ -191,19 +194,24 @@ def refuse_if_hub_down(env: str, dry: bool) -> bool:
         " out, in another account:"
     )
     rows = hub_state(dry)
-    stopped = [r for r in rows if r[2] not in ("running", "UNREADABLE")]
-    for tag, iid, state in rows:
-        mark = "" if state in ("running", "UNREADABLE") else "  <-- this one"
+    stopped = [r for r in rows if r[0] == EGRESS_SLICE and r[3] not in ("running", "UNREADABLE")]
+    for slice_name, tag, iid, state in rows:
+        if state in ("running", "UNREADABLE"):
+            mark = ""
+        elif slice_name == EGRESS_SLICE:
+            mark = "  <-- this one"
+        else:
+            mark = "  (the private network only - no refusal, D39)"
         print(f"    {tag:<22} {state} {iid}{mark}")
     if not stopped:
-        if any(r[2] == "UNREADABLE" for r in rows):
+        if any(r[3] == "UNREADABLE" for r in rows):
             print(
                 "    NOT READ - no session on the hub account, so this refusal is waived rather\n"
                 "    than failed. `make hub-up` from an identity that has one if a spoke misbehaves."
             )
         return True
     print(
-        f"\n  {RED}REFUSED{RESET}: the hub is not up, and a stopped hub is a BLACKHOLE rather than\n"
+        f"\n  {RED}REFUSED{RESET}: the proxy is not up, and a stopped proxy is a BLACKHOLE rather than\n"
         "  an error - this apply would succeed and every symptom afterwards would be a timeout.\n"
         "  Start it:  make hub-up",
         file=sys.stderr,

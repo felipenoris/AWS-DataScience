@@ -162,7 +162,7 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host proxy whose alarm is on the free basic status checks - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the shape is the measured baseline of docs/PRICING.md 3
-  # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit, and the [P] Elastic IP below is the estate's egress address. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
+  # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type
 
@@ -170,9 +170,10 @@ resource "aws_instance" "this" {
   vpc_security_group_ids = [data.terraform_remote_state.networking.outputs.proxy_security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.this.name
 
-  # No auto-assigned address: the [P] Elastic IP below is the address, and a second one would be a
-  # second egress address to attribute.
-  associate_public_ip_address = false
+  # The estate's egress address is this instance's own, assigned at start and released at stop, so
+  # a public IPv4 is billed while the host runs and not while it is stopped (D11; 6g decision due 1).
+  # No policy names the address (D39), and every spoke reaches the proxy by the private name below.
+  associate_public_ip_address = true
 
   user_data = local.user_data
   # The user data carries the whole Squid configuration, so a change to it must produce a new host:
@@ -210,19 +211,6 @@ resource "aws_instance" "this" {
     Name = "awsds-${var.env}-proxy"
   }
 
-  # The same read-back trap the WireGuard host hit on its first apply (2026-08-17): with the [P]
-  # address associated below, the refresh reports this attribute from the instance's current public
-  # address and the next plan wants to replace the instance on
-  # `associate_public_ip_address = true -> false # forces replacement`. The argument stays false
-  # because it is load-bearing at launch; only the read-back is ignored.
-  lifecycle {
-    ignore_changes = [associate_public_ip_address]
-  }
-}
-
-resource "aws_eip_association" "this" {
-  instance_id   = aws_instance.this.id
-  allocation_id = data.terraform_remote_state.networking.outputs.proxy_eip_allocation_id
 }
 
 # ------------------------------------------------------- the reload path (step 4.10)

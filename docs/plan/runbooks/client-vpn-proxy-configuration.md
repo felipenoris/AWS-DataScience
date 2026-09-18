@@ -9,7 +9,7 @@
 |---|---|
 | **Scope** | §1 up and §2 down — the session: the two hub hosts, and a spoke's `[E]` slices when the day needs them. §3 — the device and the tunnel: enrol, write the `.conf` in one of two profiles, monitored and split-tunnel (§3.3; the rule for choosing is `vpn.md` §C7), up with its checks, down. §4 — the device and the proxy: macOS (system, terminal, Chrome) and Linux |
 | **Operator** | §1-§2: the **infrastructure user** (`sso-session awsds`), account **Production**, permission set **`InfrastructureAccess`**, profile `awsds-infra-prod` — plus the spoke's profile on the same session (`awsds-infra-sandbox-1` for `ENV=sandbox`). §3-§4: the **device's owner, on the device** — no AWS profile, no SSO session |
-| **The values** | `Endpoint` **`52.89.212.1:51820`** · the host's `PublicKey` **`LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=`** · `DNS` **`10.31.0.2`** · `MTU` **`1280`** · this device's `Address` **`10.90.0.<n>/32, fd90::<n>/128`** · the proxy **`proxy.awsds.internal:3128`**, whose internet-facing address is **`184.33.8.126`**. All `[P]`: they survive every host stop, start and replacement. The proxy's private address is the one thing looked up by name and never written down |
+| **The values** | `Endpoint` **`52.89.212.1:51820`** · the host's `PublicKey` **`LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=`** · `DNS` **`10.31.0.2`** · `MTU` **`1280`** · this device's `Address` **`10.90.0.<n>/32, fd90::<n>/128`** · the proxy **`proxy.awsds.internal:3128`**. All `[P]`: they survive every host stop, start and replacement. The proxy's private address is the one thing looked up by name and never written down |
 
 ---
 
@@ -154,7 +154,7 @@ different claim:
 | 1 | `sudo wg show` — or, with the App Store app, its window: `wg` does not list a Network Extension tunnel (2026-09-08) | `latest handshake` seconds ago and non-zero `transfer`; in the app, *Latest handshake* and *Data received / sent* under the peer; the interface is a `utun*` on macOS |
 | 2 | `dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal` | the first **answers**, the second is **empty** — the resolver in use is the hub's. Then `dig +short proxy.awsds.internal` → a **private** address in `10.31.160.0/24` |
 | 3 | `curl -sS --max-time 15 https://1.1.1.1` | **fails** — as `curl: (28)` timeout or as `curl: (7) … after 194 ms`, both measured 2026-09-07: the host refuses every time and rate-limits the ICMP that says so (Lesson 55). A `200` is the finding |
-| 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | **`184.33.8.126`**, the proxy's address — the tunnel, the peering, the return route and the client plane, in one line |
+| 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | an address that is **not** the laptop's own — the proxy's current one, which `./aws/proxy.py` prints and which changes at every start (6g decision 1). The tunnel, the peering, the return route and the client plane, in one line |
 
 Under the split-tunnel profile the third reading inverts and the other three hold (measured
 2026-09-08, 6c step 8.3): check 3 answers — `301` in 10 ms, the site redirects — and

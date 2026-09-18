@@ -72,7 +72,7 @@ module's arithmetic:
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
 | **WireGuard host** `awsds-prod-vpn` | VPC-Networking · public · az1 | `10.31.160.22` (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
-| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.181` (moves) + the `[P]` Elastic IP **`184.33.8.126`** | `[D]` `production/proxy/` |
+| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1) | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
@@ -90,10 +90,10 @@ module's arithmetic:
 |---|---|---|
 | `sandbox/foundation/` · `staging/foundation/` | `[P]` | one VPC 3×2, its gateway endpoints, its flow log, the per-account child zone |
 | `production/foundation/` | `[P]` | **VPC-SharedServices**, the `awsds.internal` **apex** and `awsds-pages.internal`, the cross-account authorisation for the apex, four peering ends |
-| `production/networking/` | `[P]` | **VPC-Networking** — the estate's only IGW route — both hub security groups, both Elastic IPs, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
+| `production/networking/` | `[P]` | **VPC-Networking** — the estate's only IGW route — both hub security groups, the WireGuard Elastic IP, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
 | `production/workloads/` | `[P]` | **VPC-Workloads** and `prod.awsds.internal` |
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
-| `production/proxy/` | `[D]` | the Squid host, its Elastic IP association, `proxy.awsds.internal`, the reconfigure association |
+| `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs, the DNS Firewall |
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/buildbox/` | `[E]` | the build host and its egress-only security group — **and no route at all** |
@@ -218,7 +218,7 @@ tunnel — and it was measured from both ends on 2026-09-08 (6c steps 8.3 and 8.
 | **the private space** | through the tunnel | through the tunnel — the same six routes, on the `utun` |
 | **out of the host** | the `FORWARD` chain accepts **RFC1918 only** and REJECTs the rest with `icmp-admin-prohibited`; a second rule REJECTs **all** forwarded IPv6 — **never reached** (measured 2026-09-07): the host has no IPv6 route, so a tunnelled IPv6 packet is answered *no route* before the chain (`Icmp6OutDestUnreachs` 17197 by 2026-09-08, the rule's counter 0) | **never exercised**: nothing bound for the internet enters the tunnel — `REJECT` **82009 → 82009** across a deliberate burst (four public sites, an IPv6 attempt, three names, two proxied calls), every ICMP counter flat |
 | **the internet** | only through the proxy, by name, on the `tunnel` plane | the laptop's own uplink — any protocol, both families, **unmonitored, by decision**: `https://1.1.1.1` answers in 10 ms, `checkip` prints the laptop's address |
-| **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host | the same — the proxy is still there for whoever asks (`checkip` through it: `184.33.8.126`) |
+| **the masquerade** | everything except traffic bound for the **public tier** — so Squid's log carries `10.90.0.2`, the **device**, not the host | the same — the proxy is still there for whoever asks, and `checkip` through it prints the proxy's current address, never the laptop's |
 | **DNS** | the hub's `.2`, every query | the same, **every query**: the App Store client applies a `DNS` line to all of them whatever `AllowedIPs` says (`scutil --dns`: the tunnel's resolver first, no domain restriction) |
 | **an AWS call, any permission set** | through the proxy, because everything is | **direct**: no permission set tests the caller's network (read back 2026-09-17 on the nine provisioned persona roles, Stage 6g step 1.3; D39). The behavioural pair is 6g step 1.4, owed. On 2026-09-08 a persona's direct `list-buckets` was an *explicit* deny, `DenyControlPlaneOffVpn`'s, the statement 6g deleted |
 | **the laptop's routes** | the tunnel's default is primary in both families | the `utun`'s default carries the **`I`** flag in both families — interface-scoped, inert; `en0` keeps the primary |

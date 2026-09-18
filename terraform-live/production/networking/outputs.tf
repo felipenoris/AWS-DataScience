@@ -66,8 +66,8 @@ output "tier_security_group_ids" {
 
 # ------------------------------------------------- Stage 6c step 4.1, the hub's [P] anchors
 #
-# production/vpn/ and production/proxy/ read the ids below. The two public addresses have no reader
-# in this tree, since no policy names either (D39); they are published for a person to read with
+# production/vpn/ and production/proxy/ read the ids below. The WireGuard address has no reader
+# in this tree, since no policy names it (D39); it is published for a person to read with
 # `terraform output`.
 #
 # `wireguard_eip_public_ip` is backed by an allocation transferred from Sandbox (4.5) and imported
@@ -82,16 +82,6 @@ output "wireguard_security_group_id" {
 output "wireguard_host_key_secret_arn" {
   description = "The [P] host-key container. production/vpn/ passes it into the wireguard module, which grants its instance role GetSecretValue on exactly this ARN. The value is copied in by the user at 4.3 and never crosses Terraform."
   value       = aws_secretsmanager_secret.wireguard_host_key.arn
-}
-
-output "proxy_eip_public_ip" {
-  description = "The estate's internet egress address. No policy names it (D39); whether it stays [P] is Stage 6g decision due 1."
-  value       = aws_eip.proxy.public_ip
-}
-
-output "proxy_eip_allocation_id" {
-  description = "The [P] proxy allocation - production/proxy/ associates it with the [D] host."
-  value       = aws_eip.proxy.allocation_id
 }
 
 output "proxy_security_group_id" {

@@ -148,7 +148,7 @@ plane, not the account.
 2026-09-06; Sandbox before) and, in the **monitored** profile, is a **full tunnel** (Stage 4 step 5; the
 **split-tunnel** profile of 6c pass 8, named in `objectives.md`, leaves the cloud side identical and only
 the laptop's own internet outside the tunnel), so *all* the laptop's traffic enters it and leaves the
-estate only through the **proxy's** Elastic IP (D38). The tunnel is the only way into the private network,
+estate only through the **proxy's** address (D38). The tunnel is the only way into the private network,
 and nothing else is conditioned on it: a person reaches AWS by identity from any network, with an Identity
 Center session the institution grants only on a laptop it monitors ([D39](decisions/D39-access-by-identity.md)).
 There are two paths, and they should not be confused:

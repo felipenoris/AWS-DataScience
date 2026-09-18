@@ -34,7 +34,7 @@ Measured 2026-09-11 from CloudTrail in Sandbox, two `StartSession` calls at 16:0
 |---|---|
 | principal | `datazone_usr_role_<project>_<env>` — **the project role**, resolved by role id |
 | session name and `sourceIdentity` | `<idc-user-id>@<env-id>` — the Identity Center user travels inside the role session |
-| `sourceIPAddress` | the **laptop's own public address**, not the proxy's Elastic IP and not an AWS-internal one |
+| `sourceIPAddress` | the **laptop's own public address**, not the proxy's and not an AWS-internal one |
 | `userAgent` | `aws-sdk-js/… os/win32 lang/js md/nodejs` — the call is made **client-side** |
 | resource | `space/<domain-id>/<space-name>` |
 

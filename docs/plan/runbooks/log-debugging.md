@@ -217,7 +217,7 @@ addresses; only CloudTrail carries `vpcEndpointId`.
 | field | reading |
 |---|---|
 | `vpcEndpointId` **present** | the call took that interface or gateway endpoint — it stayed inside, and `aws:SourceVpce` applied |
-| `vpcEndpointId` **absent** | it left publicly; `sourceIPAddress` then says by which egress (the proxy's Elastic IP, the VPN's, a private address, a laptop's own uplink) |
+| `vpcEndpointId` **absent** | it left publicly; `sourceIPAddress` then says by which egress (the proxy's current address, the VPN's Elastic IP, a private address, a laptop's own uplink) |
 | `errorCode` + the message | **the denial wording is the evidence, never the exit code**: *"explicit deny in a service control policy"* vs *"…in an identity-based policy"* vs an implicit deny that names nothing |
 | `userAgent` | separates a person from a service: `Mozilla/…` is the console, `sagemaker.amazonaws.com` or an `AWSServiceRoleFor…` arn is the service acting on its own |
 | `requestParameters` | what was actually asked — which space, which app, which resource |

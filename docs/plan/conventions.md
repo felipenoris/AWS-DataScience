@@ -306,9 +306,9 @@ terraform-live/
     ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the
     │                     #     estate's only internet gateway and its only internet-facing
     │                     #     tier, the peering accepter for every spoke, and the [P]
-    │                     #     anchors of both hub hosts (two Elastic IPs - one transferred
-    │                     #     from Sandbox with the WireGuard host - two security groups,
-    │                     #     the host-key secret, the proxy allow-list parameter).
+    │                     #     anchors of both hub hosts (the WireGuard Elastic IP, transferred
+    │                     #     from Sandbox with its host, two security groups, the host-key
+    │                     #     secret, the proxy allow-list parameter).
     │                     #     Carries no interface endpoint with private DNS and no
     │                     #     service-name private zone: the VPN client resolves here
     │                     #     (Lessons 40-43)
@@ -664,9 +664,10 @@ through `dev-env.md` §B step 6 (`AWS_STATE.md` `EXC-09`).
    only works by hand is a bug.
 4. Anything slow or awkward to create — Control Tower, accounts, ACM DNS validation, Identity Center —
    belongs in `[P]` by construction.
-5. Keep addresses stable: private DNS names instead of IPs, and a retained Elastic IP for the WireGuard
-   host, so client configs survive a rebuild. The proxy's is retained too until Stage 6g's decision due 1
-   re-reads it, since after D39 no condition is keyed on it.
+5. Keep addresses stable where something pins them: private DNS names instead of IPs, and a retained
+   Elastic IP for the WireGuard host, so client configs survive a rebuild. The proxy wears its
+   instance's own address, released at every stop, because no condition and no client names it
+   (D39; 6g decision 1).
 6. Each stage documents its teardown as well as its build, and records the measured rebuild time.
 7. The layer assignment is a cost judgement and can change. If a `[D]` service turns out to be cheap to
    rebuild, demote it to `[E]`; if an `[E]` rebuild proves slow or fragile, promote it to `[D]` and pay
