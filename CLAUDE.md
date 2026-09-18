@@ -167,6 +167,8 @@ Sometimes I'll commit the changes myself; in that case, there's nothing left for
 
 When I authorize you, you can commit, push and open Pull Requests on GitHub. I'll merge them. After the merge, always synchronize the local folder with the upstream repo.
 
+While a Pull Request of yours is open and unmerged, keep committing to its branch: new work joins that PR and its description is brought up to date, never a second PR. A new `claude/` branch starts only after I merge the open one.
+
 ## Claude LOG
 
 For every project step, review this section and add your own LOG, so that you can remember the current
