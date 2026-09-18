@@ -1345,7 +1345,9 @@ and `user_data` differed from what the running host carried because a **comment*
 `user-data.sh.tftpl` had been edited in `c70e73e` and never applied: nothing had touched the slice since.
 With `user_data_replace_on_change = true`, every byte of that file is the host's identity. The same
 afternoon it happened again in the other direction — the first-render comment was corrected *after* the
-apply, so the next `make hub-up`, which applies the `[D]` slices, replaces the host once more.
+apply, so the host now carries text the repository has replaced, and the next apply of that slice rebuilds
+it. Not the next `make hub-up`: that starts a `[D]` host and never applies its slice, which is why the
+debt sat through a full stop and start on 2026-09-18 without being paid.
 
 **Why it is a class rather than a slip.** A comment in a `.tf` file is free: the plan never sees it. A
 comment in a file that is *rendered into an argument* is content — `templatefile` hashes it, and a

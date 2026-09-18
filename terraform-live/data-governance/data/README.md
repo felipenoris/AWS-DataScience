@@ -170,6 +170,17 @@ exemption to the action, the bucket and the prefix, so an allow added later inhe
 | `DenyLetterboxPutOutsideTrustedNetworksToAllButTheWriter` | `*`, `ArnNotLike` the data-scientist persona | `s3:PutObject` on the dated prefix | The persona's put is the call the lake admits from any network. It is named by `data_scientist_writer_pattern`, never by `writer_role_patterns`, which grows with workload roles that keep the network test |
 | `DenyPutOutsideTheLetterboxOffTrustedNetworks` | `*` | `s3:PutObject` outside the dated prefix | Keeps the exemption on the prefix: a put anywhere else in the bucket still needs a trusted network |
 
+**None of the three can be provoked from a laptop, measured 2026-09-18** (Stage 6g step 2.4). A refusal
+here needs a principal that identity allows, that the lake CMK admits, and that is outside the trusted
+networks; no laptop identity is all three at once. `DataScientistAccess` holds `s3:PutObject` on the dated
+prefix alone, which is the call the deny exempts, and every other action on every lake bucket stops at its
+own identity policy — *"because no identity-based policy allows"*, the wording that names no bucket policy.
+`InfrastructureAccess` in Sandbox, which identity does allow, is refused by the **key** policy instead:
+`kms:GenerateDataKey` is admitted to exactly two cross-account ARNs, `AWSReservedSSO_DataScientistAccess_*`
+and `awsds-prod-job-exec`, both only `ViaService s3`. So these statements are verified by reading
+(Lesson 22): the principal they are written against is a compute role holding lake grants and calling from
+outside its VPC endpoint, which nobody can assume by hand.
+
 **A bucket policy validates its `Principal`**, so statements naming roles that do not exist yet
 (`awsds-prod-job-exec`, the Stage 6 project roles) name the **account root** and narrow with an `ArnLike`
 condition. That is why the principals above read as roots.
