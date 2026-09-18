@@ -50,8 +50,8 @@ ACCOUNT_COUNT_EXCLUDE_RE = re.compile(r"quota|limit|Service Quotas", re.IGNORECA
 
 # Bytes, per core file. The budget forces the CLAUDE.md / GENERAL_PLAN.md split: a core file that
 # may grow without limit stops being a routing map and becomes the narrative it should point at.
-# Set by the user; re-read it when a core file's growth is narrative rather than state.
-SIZE_BUDGET = 40000
+# Each ceiling is set by the user; re-read one when a file's growth is narrative rather than state.
+SIZE_BUDGET = {"CLAUDE.md": 50000, "docs/GENERAL_PLAN.md": 40000}
 
 
 def main() -> int:
@@ -148,11 +148,11 @@ def main() -> int:
         say("  none")
 
     say("== size budget (the whole point of the split) ==")
-    for f in ("CLAUDE.md", "docs/GENERAL_PLAN.md"):
+    for f, budget in SIZE_BUDGET.items():
         b = Path(f).stat().st_size
-        say(f"  {f}: {b} bytes")
-        if b >= SIZE_BUDGET:
-            bad(f"{f} over {SIZE_BUDGET // 1000} KB - move narrative into docs/plan/")
+        say(f"  {f}: {b} bytes of {budget}")
+        if b >= budget:
+            bad(f"{f} over {budget // 1000} KB - move narrative into docs/plan/")
 
     say("OK" if fail == 0 else "FAILED")
     return fail

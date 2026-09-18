@@ -299,7 +299,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
-  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c).
+  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
+  every cached session's token, not only the one named, so switching persona costs the other
+  identity's session; a browser sign-out invalidates none.
 - **Module tags**: `vpc-egress-v0.14.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
