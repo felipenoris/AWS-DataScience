@@ -1,8 +1,8 @@
 # Log — Stage 6b — `Development` becomes `Staging`
 
-*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
-only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
-provenance rule). **An entry carrying no provenance note of its own is the user's.**
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude
+([`INDEX.md`](INDEX.md) carries the writing and provenance rules). **An entry carrying no provenance
+note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-06b-development-becomes-staging.md`](../plan/stages/stage-06b-development-becomes-staging.md).*
 
 *Provenance is named by SUBJECT rather than by ordinal — the convention

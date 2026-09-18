@@ -1,8 +1,8 @@
 # Log — Stage 1b — Identity Center, permission sets, and the alarm above them
 
-*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude — **Claude
-only when the user asks, never on its own initiative** ([`INDEX.md`](INDEX.md), which also carries the
-provenance rule). **An entry carrying no provenance note of its own is the user's.**
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude
+([`INDEX.md`](INDEX.md) carries the writing and provenance rules). **An entry carrying no provenance
+note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-01b-identity-and-controls.md`](../plan/stages/stage-01b-identity-and-controls.md).*
 
 *One mechanical substitution was made on **2026-08-17**, by Claude at the user's request, and is named

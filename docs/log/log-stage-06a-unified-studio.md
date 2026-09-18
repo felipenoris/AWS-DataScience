@@ -1,8 +1,8 @@
 # Log — Stage 6 — SageMaker Unified Studio
 
-*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude; Claude only
-when the user asks, never on its own initiative ([`INDEX.md`](INDEX.md), which also carries the
-provenance rule). **An entry carrying no provenance note of its own is the user's.**
+*Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude
+([`INDEX.md`](INDEX.md) carries the writing and provenance rules). **An entry carrying no provenance
+note of its own is the user's.**
 Stage: [`docs/plan/stages/stage-06a-unified-studio.md`](../plan/stages/stage-06a-unified-studio.md).*
 
 *Provenance is named by subject rather than by ordinal, the convention
