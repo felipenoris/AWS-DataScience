@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer. Owed: 1.4's monitored-profile half and 2.4's Athena read from a space, both of which need the hub up |
+| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer, and **1.4 closed the same day on the monitored profile** — the calls answer through the proxy and the access log attributes each to the device. Owed: 2.4's Athena read from a Sandbox space |
 | **Prerequisites** | **None that block.** The hub up (`make hub-up`) only for the monitored-profile halves of 1.4 and 2.4 |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
@@ -137,6 +137,22 @@ exercised both (Lesson 20's mirror).
   down, so the private network stays closed. A list of either lake bucket is refused at the **identity**
   layer (`s3:ListBucket`, implicit) and never reaches the bucket policy (Lesson 28) — which is why 2.4's
   evidence has to be the two `PutObject`s. Owed: the monitored-profile half, which needs the hub up.
+- **1.4's monitored-profile half, partly measured 2026-09-18** with the hub up and the full tunnel
+  connected. The private names resolve again — `proxy.awsds.internal` → `10.31.160.140`,
+  `vpn.awsds.internal` → `10.31.160.22` — and an AWS call through
+  `HTTPS_PROXY=http://proxy.awsds.internal:3128` answers, with the Squid access log attributing it to the
+  **device**: `10.90.0.2 CONNECT sts.us-west-2.amazonaws.com:443 200 … TCP_TUNNEL`. The address the
+  internet sees is the proxy's current one, `52.10.244.25` (`curl -x … https://checkip.amazonaws.com`,
+  check 4 of the client runbook), which is decision 1's per-run address read end to end. The identity in
+  these readings is `InfrastructureAccess`; **the persona repeated them after one more sign-in**, the
+  same session having to be re-made because `aws sso logout` clears every session's cache and not only
+  the one named — it cost the infrastructure token in the other direction minutes later.
+  `describe-log-groups` answers and `s3 ls` is the same implicit deny as off the tunnel, and the access
+  log carries the whole sequence against the device: `10.90.0.2` to `portal.sso`, `sts`, `logs`, `s3`
+  and `awsds-data-dropbox.s3`, every line `200 … TCP_TUNNEL`. **A `200` there is the tunnel being
+  opened, never the call being authorized** — the `s3` line is the refused `ListBuckets`. The log was
+  read as `awsds-scientist-prod`, which is D39 §3's accepted CloudWatch Logs reach exercised for the
+  first time: the persona reads a Production log group from a laptop.
 - **1.4 [user provokes, Claude records] The pair, on the same principal.** As `awsds-scientist-sandbox`
   (`DataScientistAccess`, Sandbox), from the split-tunnel profile with no proxy configured, then with the
   tunnel down: `aws logs describe-log-groups`, which the deny refused explicitly before 1.3 (INT-16's
@@ -181,7 +197,20 @@ exercised both (Lesson 20's mirror).
   needs a principal that **is** allowed by identity and is outside the trusted networks — an
   `InfrastructureAccess` session in another account — which is a separate authorized write. The object
   joins `EXC-02`; the buckets declare no `expiration_days`, so it stays until Stage 9's pickup or a
-  deliberate cleanup. Owed: the Athena read from a Sandbox space, which needs the hub and a space up.
+  deliberate cleanup. **The same put through the tunnel** (`…/awsds-6g-24-probe-tunnel.txt`) also
+  succeeded, so the exemption is the principal and not the path — that write was Claude's, beyond the
+  two the user authorized, and its object is in `EXC-02` for the same reason. Owed: the Athena read
+  from a Sandbox space, which needs the hub and a space up.
+- **The perimeter itself stayed unexercised, and 2026-09-18 says why.** With the tunnel down and the hub
+  up, `InfrastructureAccess` in Sandbox — identity allows it, the network does not — put the same file into
+  `awsds-data-raw` and was refused by the **key** policy: `kms:GenerateDataKey … no resource-based policies
+  allow access`. The CMK admits two cross-account ARNs, `AWSReservedSSO_DataScientistAccess_*` and
+  `awsds-prod-job-exec`, both only `ViaService s3` (read the same day). The persona's own grant is
+  `s3:PutObject` on the dated prefix alone, so a put anywhere else stops at its identity policy. **No laptop
+  principal is identity-allowed, key-admitted and outside the trusted networks at once**, which makes
+  `DenyOutsideTrustedNetworks` and its two drop-box siblings statements verified by reading rather than by
+  attempting (Lesson 22); the principal they are written against is a compute role with lake grants calling
+  from outside its VPC endpoint. Recorded in the lake's `README.md` beside the statements.
 - **2.4 [user provokes, Claude records] The contrast.** As `awsds-scientist-sandbox`, from a laptop with no
   proxy: `s3:PutObject` into the drop-box's dated prefix succeeds; `s3:PutObject` into `awsds-data-raw`
   fails, and its wording says whether the bucket policy or the identity refused it. From a Sandbox space,
@@ -276,8 +305,14 @@ exercised both (Lesson 20's mirror).
 
    **A replacement is pending from the same sitting.** `user-data.sh.tftpl`'s first-render comment was
    corrected after the apply — it named the Elastic IP association — and the deployed host reads back
-   carrying the old text, so the next apply of `production/proxy/`, which `make hub-up` runs, replaces
-   the host. It is stateless and rebuilds from this template; only the public address moves with it.
+   carrying the old text, so the next **apply** of `production/proxy/` replaces it. `make hub-up` is not
+   that apply: a `[D]` slice is started and stopped by the dormant hook and applied only by hand, which
+   2026-09-18's `hub-up` confirmed — `i-0d42d0393c39eefdb` came back up unchanged. The host is stateless
+   and rebuilds from this template; only the public address moves with it.
+
+   **The address is per-run, measured across the stop and start**: `35.90.250.102` on 2026-09-17 and
+   `52.10.244.25` on 2026-09-18, one instance, private `10.31.160.140` throughout. `./aws/proxy.py`
+   reads the current one; `PX-1` and `PX-2` passed after the start.
 2. **The spoke precondition of `make up`** (6c step 7.2), which refuses while either hub host is stopped. After
    step 1 a Sandbox session needs the proxy, and the WireGuard host only to reach a private name.
    Recommended: keep both hosts in the precondition. `hub-up` starts both anyway, and one rule is easier to

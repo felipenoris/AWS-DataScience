@@ -72,7 +72,7 @@ module's arithmetic:
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
 | **WireGuard host** `awsds-prod-vpn` | VPC-Networking · public · az1 | `10.31.160.22` (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
-| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1) | `[D]` `production/proxy/` |
+| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |

@@ -231,9 +231,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   An identity is granted only on an institution-monitored laptop (M365 DLP): modelled, not enforced
   (Stage 11 3.4). **Stage 6g applied 2026-09-17**: `DenyControlPlaneOffVpn` deleted from the six persona
   sets, the lake's laptop branch a principal branch for the drop-box `PutObject` (`INV-19`; `VP-7`
-  inverted, `PX-5` retired); both VPN profiles stay. The proxy wears its instance's own address
-  (`52.89.212.1` is the last Elastic IP) and `make up` refuses on the proxy alone. 1.4/2.4 measured from the laptop 2026-09-18 (`list-buckets` now an
-  implicit deny, the drop-box put admitted); owed: the halves that need the hub up. It closed INT-16's deviation, OQ 17 and 6d decision 4's VPN half.
+  inverted, `PX-5` retired); both VPN profiles stay. The proxy wears its instance's own address,
+  re-assigned at every start, and `make up` refuses on the proxy alone. 1.4 closed on both profiles 2026-09-18 (`list-buckets` now an implicit
+  deny, the drop-box put admitted by principal on either path); owed: 2.4's Athena read. It closed INT-16's deviation, OQ 17 and 6d decision 4's VPN half.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
   is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
