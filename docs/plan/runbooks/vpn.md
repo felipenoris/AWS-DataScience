@@ -46,7 +46,7 @@ forever versus what is powered off between sessions (D11). All of it is in Produ
 | Its **name** `vpn.awsds.internal` | `production/vpn/` · `[D]` | an A record at the host's private address, in the `[P]` apex zone. It did not exist until 2026-09-06: step 2.1 said pass 4 would write it and pass 4 did not (§S2) |
 | The **handshake log + alarm** | `production/vpn/` · `[D]` | log group `/awsds/prod/vpn` (30 days) with per-peer named lines, and the health alarm `awsds-prod-vpn-health` |
 | The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's public key and `host` number. Public halves only; the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
-| **The proxy** — not part of the VPN | `production/proxy/` · `[D]` + `production/networking/` · `[P]` | a second `[D]` host in the same subnet: Squid, at `proxy.awsds.internal:3128`, wearing its own `[P]` Elastic IP. It is the estate's only way to the internet, and therefore the client's; it is a separate slice with its own instrument (`./aws/proxy.py`, `PX-1`..`PX-4`). It is listed here because a VPN session that cannot reach it has no internet, and because `make hub-up` starts both (§S5) |
+| **The proxy** — not part of the VPN | `production/proxy/` · `[D]` + `production/networking/` · `[P]` | a second `[D]` host in the same subnet: Squid, at `proxy.awsds.internal:3128`, wearing the public address its instance is given at start. It is the estate's only way to the internet, and therefore the client's; it is a separate slice with its own instrument (`./aws/proxy.py`, `PX-1`..`PX-4`). It is listed here because a VPN session that cannot reach it has no internet, and because `make hub-up` starts both (§S5) |
 
 `./aws/vpn.py` reads all of it, `VP-1` through `VP-9`, and is the first thing to run when a question
 about this system comes up. It reads Production (step 4.7 re-homed `VPN_HOME_PROFILE`).
@@ -227,8 +227,9 @@ down` runs):
 AWS_PROFILE=awsds-infra-prod aws ec2 stop-instances --region us-west-2 --instance-ids <INSTANCE_ID>
 ```
 
-**What bills while everything is stopped** is the monthly floor, not an hourly rate: two Elastic IPs
-(~USD 3.65 each, the tunnel's and the proxy's), the host-key secret ~0.40, and the two 8 GB gp3 volumes.
+**What bills while everything is stopped** is the monthly floor, not an hourly rate: the tunnel's
+Elastic IP (~USD 3.65), the host-key secret ~0.40, and the two 8 GB gp3 volumes. The proxy's address is
+its instance's own and bills only while it runs (6g decision 1).
 `make status` sums the hourly side; the floor is `docs/plan/cost-model.md`'s.
 
 ### S6. Switch the host's shape — `instance_type` and `root_volume_size`

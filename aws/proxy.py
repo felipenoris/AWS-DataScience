@@ -1,8 +1,8 @@
 #!/usr/bin/env -S uv run --quiet
-# proxy.py - Stage 6c's evidence for the estate's single internet exit: the Squid host ([D]),
-# the [P] anchors it wears (the Elastic IP, the security group, the allow-list parameter, the
-# access log group), the order of its `http_access` rules, and whether the config actually
-# running on the host is the one this repository committed.
+# proxy.py - Stage 6c's evidence for the estate's single internet exit: the Squid host ([D]) with the
+# public address it wears while it runs, the [P] anchors beside it (the security group, the allow-list
+# parameter, the access log group), the order of its `http_access` rules, and whether the config
+# actually running on the host is the one this repository committed.
 #
 # The shape is ./aws/vpn.py's: same two-mode structure, same --on-host fence, same "an empty
 # answer and a failed answer are different things" discipline. The two files are the instruments

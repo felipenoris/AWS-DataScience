@@ -1336,6 +1336,37 @@ correct whether the API replaces or merges, and a template is correct only if it
 failed to start against the destroyed version, with no fallback to the domain default. The user
 repaired it in the portal and it came up with those three fields intact.
 
+## Lesson 64 — a comment inside a rendered template is a host replacement in waiting
+
+**What happened.** Stage 6g decision 1 took the proxy off its `[P]` Elastic IP: two arguments changed in
+`production/proxy/main.tf` and nothing else. The plan read `1 to add, 2 to change, 2 to destroy` — the
+host was going to be **replaced**, and neither reason was the address. The SSM-resolved `ami` had moved,
+and `user_data` differed from what the running host carried because a **comment** inside
+`user-data.sh.tftpl` had been edited in `c70e73e` and never applied: nothing had touched the slice since.
+With `user_data_replace_on_change = true`, every byte of that file is the host's identity. The same
+afternoon it happened again in the other direction — the first-render comment was corrected *after* the
+apply, so the next `make hub-up`, which applies the `[D]` slices, replaces the host once more.
+
+**Why it is a class rather than a slip.** A comment in a `.tf` file is free: the plan never sees it. A
+comment in a file that is *rendered into an argument* is content — `templatefile` hashes it, and a
+force-new argument turns prose into a rebuild. The two files sit side by side in the same slice and read
+the same way in review; what separates them is which side of the rendering boundary they are on, which
+no diff shows. The cost is also displaced: the person who improves the wording pays nothing, and the plan
+that proposes the replacement is read by whoever next applies the slice for an unrelated reason, against
+their own change.
+
+**The rule.** Treat every file rendered into a resource argument as deployable code: `templatefile`
+inputs, `user_data`, cloud-init, a rendered proxy or agent configuration. Editing one for prose is a
+decision about a replacement, so either accept it and write it where the next operator reads it, or leave
+the text alone. And when a plan proposes a replacement, **attribute each forcing argument before
+applying** — the reason may predate the change in front of you by several commits.
+
+**What makes it expensive.** The repository cannot answer the attribution question, because the drift is
+between the tree and AWS: `describe-instance-attribute --attribute userData` reads what the host actually
+carries and settles whose edit is pending. Here the replacement was harmless — the proxy is stateless,
+rebuilt from this template at every boot, and its address is no longer `[P]`. On a host that keeps
+anything, this is Lesson 4's shape arriving through a comment.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

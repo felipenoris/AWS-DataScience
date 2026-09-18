@@ -1,6 +1,6 @@
-# Outputs - what a reader needs to diagnose the exit, and nothing a client pins. The address is
-# networking/'s [P] output, which is what keeps a rebuild of this host from changing the estate's
-# egress address.
+# Outputs - what a reader needs to diagnose the exit, and nothing a client pins. The public address
+# is not among them: it belongs to the instance and is re-assigned at every start (6g decision 1),
+# so ./aws/proxy.py reads it live rather than from state.
 
 output "instance_id" {
   description = "The proxy host. First reading of a bad first boot is its cloud-init output through Session Manager; if SSM itself is what failed, `aws ec2 get-console-output --instance-id <this> --latest` needs no endpoint at all."

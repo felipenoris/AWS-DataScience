@@ -231,15 +231,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   An identity is granted only on an institution-monitored laptop (M365 DLP): modelled, not enforced
   (Stage 11 3.4). **Stage 6g applied 2026-09-17**: `DenyControlPlaneOffVpn` deleted from the six persona
   sets, the lake's laptop branch a principal branch for the drop-box `PutObject` (`INV-19`; `VP-7`
-  inverted, `PX-5` retired); both VPN profiles stay. Owed: 1.4/2.4's pairs (a Data Scientist session),
-  decisions due 1-2. It closed INT-16's deviation, OQ 17 and 6d decision 4's VPN half.
+  inverted, `PX-5` retired); both VPN profiles stay. The proxy wears its instance's own address
+  (`52.89.212.1` is the last Elastic IP) and `make up` refuses on the proxy alone. Owed: 1.4/2.4's
+  pairs (a Data Scientist session). It closed INT-16's deviation, OQ 17 and 6d decision 4's VPN half.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
   is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
   what a new space's picker reads, both app types. INT-01/INT-17 closed (image role by tag, project
   role by digest). **The app image config caps each env value at 256 chars** vs a `NO_PROXY` of ~1,500,
   so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
-  `fc11caaa3…`); `./aws/devenv.py` reads the drift, bump order `dev-env.md` §B. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
+  `fc11caaa3…`); `./aws/devenv.py` reads the drift. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
   half; 5.2, 5.4; 6.1, 6.3; 7.6, 7.7; step 10 (Amazon Q, dec 9 first). Apps log to a never-expiring
   group (`EXC-10`).
 - **The remote IDE works** (6d step 7, 2026-09-11, a Windows laptop off the VPN). `StartSession` is
@@ -247,8 +248,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   *whose space* is AWS's tag-scoped Allow (`remote-ide.py` `RI-3`). The space's own fetch of the server
   and each `.vsix` is refused (`403`) and Remote - SSH copies both from the laptop — **no Microsoft name
   joins the plane**, and the session is a **file channel in both directions that no hostname list
-  describes**. **Two IDE servers run in one container**. A remote space needs **≥ 8 GB**. Runbook:
-  `remote-ide.md`.
+  describes**. **Two IDE servers run in one container**. A remote space needs **≥ 8 GB**.
 - **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
   `bedrock-runtime` endpoint. **The agreement enables a model, not the form**. CT's `CT.MULTISERVICE.PV.1` on `Interactive` carries
   six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
@@ -256,7 +256,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
   (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`);
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
-  to three US regions (D1's exception). Runbook: `claude-code-sagemaker.md`.
+  to three US regions (D1's exception).
 - **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
   catalog acts already taken. Publishing is metadata only (no grant). Five decisions due; `INT-23` new;
   decision due 1 recommends (d), the lake as unmanaged assets with the grant in the register.
@@ -299,9 +299,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
-  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as
-  (c). `aws sso logout` invalidates every cached session's token, a browser sign-out invalidates
-  none, and a cached token is keyed by `sso-session` name, never by user.
+  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c).
 - **Module tags**: `vpc-egress-v0.14.1`, `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
@@ -441,6 +439,7 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     and the lagging log both answer "nothing", and the pleasant answer is the one nobody challenges.**
 63. **A default is read once, when the consumer is created — the copy outlives it, and an alias
     survives a bump where an id does not.**
+64. **A comment inside a rendered template is a host replacement in waiting.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
