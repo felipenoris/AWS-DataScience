@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. Owed: the behavioural pairs 1.4 and 2.4, which need the Data Scientist User's session |
+| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer. Owed: 1.4's monitored-profile half and 2.4's Athena read from a space, both of which need the hub up |
 | **Prerequisites** | **None that block.** The hub up (`make hub-up`) only for the monitored-profile halves of 1.4 and 2.4 |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
@@ -126,6 +126,17 @@ exercised both (Lesson 20's mirror).
 - **1.2 [Claude] Plan to a file and read it** (`-input=false`, Lesson 47). Expected: the six inline policies
   updated and nothing else.
 - **1.3 [Claude⚡] Apply**, then re-plan `No changes`.
+- **1.4's off-tunnel half done 2026-09-18**, as `awsds-scientist-sandbox` (`DataScientistAccess`) with
+  the tunnel down and no proxy configured. `aws logs describe-log-groups` **answers** — five groups,
+  `/aws/sagemaker/studio` and `/awsds/sandbox/studio` among them — where it was an explicit refusal
+  before 1.3. `aws s3 ls` is refused **implicitly**: *"not authorized to perform: s3:ListAllMyBuckets
+  because no identity-based policy allows"*, the set's own silence, so the explicit
+  `DenyControlPlaneOffVpn` refusal measured 2026-09-08 has no successor. The negative control,
+  `iam:ListUsers`, reads the same shape and names no policy, which is what separates the two kinds of
+  refusal (Lesson 24). Neither `proxy.awsds.internal` nor `vpn.awsds.internal` resolves with the tunnel
+  down, so the private network stays closed. A list of either lake bucket is refused at the **identity**
+  layer (`s3:ListBucket`, implicit) and never reaches the bucket policy (Lesson 28) — which is why 2.4's
+  evidence has to be the two `PutObject`s. Owed: the monitored-profile half, which needs the hub up.
 - **1.4 [user provokes, Claude records] The pair, on the same principal.** As `awsds-scientist-sandbox`
   (`DataScientistAccess`, Sandbox), from the split-tunnel profile with no proxy configured, then with the
   tunnel down: `aws logs describe-log-groups`, which the deny refused explicitly before 1.3 (INT-16's
@@ -159,6 +170,18 @@ exercised both (Lesson 20's mirror).
   slice's `README.md` rows change in the same commit, since that README is reviewed with the `.tf` files.
 - **2.2 [Claude] Plan to a file and read it.** Expected: the five bucket policies updated and nothing else.
 - **2.3 [Claude⚡] Apply**, then re-plan `No changes`.
+- **2.4's laptop half done 2026-09-18**, same session as 1.4, tunnel down. The `PutObject` into
+  `s3://awsds-data-dropbox/incoming/2026/09/18/awsds-6g-24-probe.txt` (213 bytes) **succeeded** — the
+  principal branch admits the write from any network, and the lake CMK vended a data key on the same
+  call, so no part of the path still asks where the laptop is. The same file into `awsds-data-raw` was
+  refused, and **the refusal is the identity policy's implicit deny**, not the bucket policy's:
+  *"not authorized to perform: s3:PutObject … because no identity-based policy allows"*. So
+  `DenyOutsideTrustedNetworks` is attached rather than exercised for this principal (Lesson 20), and a
+  list of either bucket stops at the same identity layer (1.4). Exercising the lake perimeter itself
+  needs a principal that **is** allowed by identity and is outside the trusted networks — an
+  `InfrastructureAccess` session in another account — which is a separate authorized write. The object
+  joins `EXC-02`; the buckets declare no `expiration_days`, so it stays until Stage 9's pickup or a
+  deliberate cleanup. Owed: the Athena read from a Sandbox space, which needs the hub and a space up.
 - **2.4 [user provokes, Claude records] The contrast.** As `awsds-scientist-sandbox`, from a laptop with no
   proxy: `s3:PutObject` into the drop-box's dated prefix succeeds; `s3:PutObject` into `awsds-data-raw`
   fails, and its wording says whether the bucket policy or the identity refused it. From a Sandbox space,
