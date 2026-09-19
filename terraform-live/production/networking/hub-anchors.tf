@@ -310,18 +310,28 @@ locals {
     # run inside a space would move the SageMaker Distribution's own pins, which is a mechanism
     # argument rather than a perimeter one. `repo.anaconda.com` was read as `403 TCP_DENIED` from a
     # space the same day, the negative control for the entry above.
-    # Source control is deliberately absent: `github.com` was removed by the user 2026-09-09 (6d
-    # 8.6), and it worked while it stood - 3.1 measured a clone from a JupyterLab space 2026-09-08.
-    # A name is judged by whether an interactive compute plane should reach it, and source control
-    # is the path by which code, and whatever a notebook has put beside it, leaves a governed
-    # environment; `objectives.md` names data-leakage protection as a requirement of its own.
-    # `api.github.com` and `raw.githubusercontent.com` came off for the same reason, though they
-    # are the IDE's own startup traffic rather than anyone's clone - measured 2026-09-09, both
-    # firing in bursts where the gallery is not touched at all.
+    # Source control, restored 2026-09-19 (the user). These three names were on this plane until
+    # 2026-09-09, when the same user removed them (6d 8.6) on the argument that source control is
+    # the path by which code, and whatever a notebook has put beside it, leaves a governed
+    # environment - `objectives.md` names data-leakage protection as a requirement of its own. That
+    # argument is not withdrawn by this restore and is what a reviewer re-reads before widening the
+    # three further. What the restore buys back is `git clone`, `fetch` and `push` from a Sandbox
+    # space, which 6d 3.1 had measured working from a JupyterLab space on 2026-09-08, and the IDE's
+    # own startup traffic on the other two - measured 2026-09-09, both firing in bursts where the
+    # gallery is not touched at all.
     #
-    # What this costs, so nobody re-adds it as a bug fix: `git clone`, `fetch` and `push` from a
-    # Sandbox space fail. The build plane is unaffected - `production-foundation` is `open`, so the
-    # buildbox and the future pipeline still reach GitHub, which is where a build belongs.
+    # Three names and not a namespace, because `dstdomain` matches a bare entry exactly: `github.com`
+    # covers neither of the others, and `.github.com` would authorise every host anyone puts under
+    # it. The cost of that exactness, so nobody reports it as a defect: an HTTP redirect is a new
+    # request with a new name, so a release tarball or a `go get` that lands on
+    # `codeload.github.com` or `objects.githubusercontent.com` is still refused. Neither was ever on
+    # this plane, and adding one is the same decision again rather than a repair of this one.
+    #
+    # The build plane never lost GitHub - `production-foundation` is `open` - so nothing here
+    # changes what a build reaches.
+    "github.com",
+    "api.github.com",
+    "raw.githubusercontent.com",
     #
     # The IDE's own hosts, allowed as one block 2026-09-09 (6d 8.6). Each was read as a `403` in
     # `/awsds/prod/proxy` after 8.4 put the proxy in the process, each fires at startup without
