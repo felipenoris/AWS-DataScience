@@ -327,8 +327,10 @@ Remote-SSH output channels, outside the estate.
 **The channel is also a file path the plane cannot see.** The `.vsix` that arrived on 2026-09-11 arrived
 *through the session*, not through the proxy, and the same tunnel carries any file in either direction.
 The compute plane's allow-list is a list of **names**, so it says nothing about this; `github.com` was
-removed from that list on 2026-09-09 to keep code from leaving a governed environment, and this channel
-is not covered by that removal. It is an input to decision due 4 and to
+removed from that list on 2026-09-09 to keep code from leaving a governed environment, and the channel
+was not covered by that removal either way. **The removal was reversed on 2026-09-19** and the three
+GitHub names are back ([`NETWORK.md`](../../NETWORK.md) ‖), so the plane no longer even attempts what
+this paragraph says it could not reach. It is an input to decision due 4 and to
 [Stage 11](../stages/stage-11-dlp.md)'s threat model, recorded here as a property of the channel rather
 than as a defect in the list.
 
@@ -339,9 +341,12 @@ travel inside the data channel, so no name reaches Squid and no query reaches th
 same property carries the procedures below and makes this channel a
 [Stage 11](../stages/stage-11-dlp.md) subject.
 
-**Why a procedure is needed at all.** The compute plane carries no source control: `github.com` came off
-it on 2026-09-09, and `git clone`, `fetch` and `push` from a space fail by that decision rather than by
-accident. **This is the path for today and not the design.** The estate's GitLab is internal — it lands
+**Why a procedure was needed at all.** The compute plane carried no source control between 2026-09-09
+and 2026-09-19: `github.com` came off it on the first date and returned on the second
+([`NETWORK.md`](../../NETWORK.md) ‖), so `git clone`, `fetch` and `push` from a space failed by decision
+in that window and work now. The procedure below stays written because it is the path for a host that
+still cannot reach GitHub, and because a redirect target such as `codeload.github.com` is refused even
+today. **This is the path for today and not the design.** The estate's GitLab is internal — it lands
 in `VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
 [INT-09](../integrations.md) already carries — so from
 [Stage 7](../stages/stage-07-gitlab-runners-ecr.md) a space clones over private addresses with no laptop

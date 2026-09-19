@@ -317,7 +317,7 @@ comes back a 403 naming the host.
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 29 † ‡ ¶ |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 32 † ‡ ¶ ‖ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
@@ -362,8 +362,22 @@ laptop and listed so a half-finished sign-in does not cost a second apply.
 endpoint answers for these names, so no `vpcEndpointId` attributes a call, and the account's Bedrock
 retention mode is an AWS setting that says nothing about this destination. Four hosts from the same
 vendor table stay off, each for its own reason — `mcp-proxy.anthropic.com` (claude.ai's MCP
-connectors, on by default for that login), `raw.githubusercontent.com` (removed 2026-09-09),
-`registry.npmjs.org` (plugin and `npx` code download) and the two Datadog telemetry intakes.
+connectors, on by default for that login), `registry.npmjs.org` (plugin and `npx` code download) and
+the two Datadog telemetry intakes. `raw.githubusercontent.com` was a fourth until the same day, when
+the restore below put it back for a different reason than this footnote refused it for.
+
+‖ **Source control returned on 2026-09-19** (the user), reversing the removal of 2026-09-09:
+`github.com`, `api.github.com` and `raw.githubusercontent.com`. `git clone`, `fetch` and `push` from a
+Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
+argument that removed them is not withdrawn by the restore and stays written where the entries are:
+source control is the path by which code, and whatever a notebook has put beside it, leaves a governed
+environment.
+
+**Three names, not a namespace, and the exactness costs something.** `dstdomain` matches a bare entry
+exactly, so `github.com` covers neither of the other two, and an HTTP redirect is a new request with a
+new name. A release tarball or anything else landing on `codeload.github.com` or
+`objects.githubusercontent.com` is still refused. Neither was ever on this plane. The build plane never
+lost GitHub, since `production-foundation` is `open`.
 
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
