@@ -268,7 +268,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    hides the serious one.** On 2026-08-14 `awsds-org-rcp-perimeter` was attached to the root with an STS
    statement naming `sts:AssumeRoleWithSAML` and `sts:TagSession`. Those are the only two actions the
    trust policy of an `AWSReservedSSO_*` role permits, so the deny did not restrict a perimeter — it made
-   every permission-set role in all six member accounts unreachable, from the CLI and the access portal
+   every permission-set role in every member account unreachable, from the CLI and the access portal
    alike. The battery contained six probes written for exactly this (`rcp floor: credentials still
    vend in …`), and not one of them could run: `ensure_session` tested credentials with a bare exit-code
    check and aborted the run as a *dead SSO session*, which is the hardening added after two mid-battery

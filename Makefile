@@ -14,13 +14,15 @@
 #
 #   make check       step 9's offline checks - what a commit must pass
 #   make check-ou    step 9.3 - needs a live SSO session as the infrastructure user on Identity
-#   make check-docs  the plan's reference check, known red (see below)
+#   make check-docs  the plan's reference check (see below)
 #   make check-all   all three
 #
 # `check` never runs 9.3 and says so; `check-ou` exits 2 without a session rather than passing, so an
 # unreachable organization is not reported as a clean one (Lesson 13). check-plan-refs.py is a target
-# of its own because it is red on prose that predates Stage 2 (dated measurements phrased as account
-# counts), and a known-red check inside the commit gate trains people to ignore the gate.
+# of its own: its rules are editorial rather than mechanical, and it reads the whole repository's
+# prose rather than the tree a commit touches. It was red until 2026-09-18 on prose that predates
+# Stage 2 (dated measurements phrased as account counts); those sentences now name the set instead
+# of counting it, and the target passes.
 #
 # The `check` list, each offline and failing on one mistake: check-tf-conventions (9.1),
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
@@ -42,7 +44,7 @@ help:
 	@printf '              policy index, the network doc, account ids and e-mails, provider locks\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
-	@printf '  check-docs  the plan reference check (known red - see the note in this file)\n'
+	@printf '  check-docs  the plan reference check (see the note in this file)\n'
 	@printf '  check-all   the three above\n'
 	@printf '  slices      the D11 layer table, offline - which slice is [P], [D] or [E]\n'
 	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3).\n'

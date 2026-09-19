@@ -564,7 +564,7 @@ principal calls `sagemaker:StartSession`, and so which perimeter applies:
 | **2 — AWS Toolkit** | the **project role**, from the client — measured 2026-09-11 16:02:15Z and 16:02:28Z: `aws-sdk-js` on `win32`, the laptop's own public address, role session `<idc-user-id>@<env-id>` with `sourceIdentity` the same id. The Toolkit signs in to the **domain**, so it never holds persona credentials | never evaluates |
 | **3 — SSH `ProxyCommand`** with a persona profile | the laptop's credentials (the persona) — **unmeasured**. The sets hold no `Allow`, so the expected outcome is an access-denied that is *not* the deny pair | evaluates, and denies every space |
 
-**Rows 1 and 2 carry readings; row 3 is the only prediction left.** Both measured methods put the
+**Methods 1 and 2 carry readings; method 3 is the only prediction left.** Both measured methods put the
 **project role** in front of the call, from the user's own address, which is the answer 7.2 was written
 to get — and the reason neither of the estate's two controls is exercised by this channel.
 
