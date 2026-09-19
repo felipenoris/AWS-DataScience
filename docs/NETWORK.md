@@ -366,7 +366,13 @@ nobody is looking at. The check that answers it is `PX-3`, and only `--on-host` 
 hub was raised and the association's next tick rendered the file: 32 against 32, both applies in force
 on the host. **A session from a space then reached the direct API the same evening** (the user),
 with the managed-settings file deleted by hand inside the container — the behavioural proof, which
-`PX-3` cannot give. The proxy-log reading that would name which of the four hosts carried it is owed. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
+`PX-3` cannot give. **Read back from `/awsds/prod/proxy`**, all from one space address: `api.anthropic.com`
+200 × 298 and 5.6 MB over an hour, `platform.claude.com` 200 × **2** (the token exchange), and
+`claude.ai` and `claude.com` **not at all** — so the browser's half does run on the laptop and those two
+entries are justified by no measurement. `mcp-proxy.anthropic.com` was refused twice and
+`http-intake.logs.us5.datadoghq.com` ninety-eight times, both kept off deliberately. **CloudTrail is
+empty for the window**: no `InvokeModelWithResponseStream` at all, so this access log is the estate's
+only record of that hour, and it carries hostnames and bytes and no principal. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
 instead of Amazon Bedrock: the first carries the model calls, the second the OAuth token exchange,
 which the vendor documents as the path for a Console **and** a claude.ai sign-in. `claude.ai` and
 `claude.com` are the browser's half, reached from the tunnel plane when the login is driven from a
@@ -386,9 +392,12 @@ the restore below put it back for a different reason than this footnote refused 
 `0 to add, 1 to change, 0 to destroy`, the re-plan `No changes`, the parameter **version 9 to 10 at
 20:13:23Z**, and `DN-3` passing against it. `PX-3` closed at 20:32Z together with the footnote above's,
 and the paragraph on how long an edit takes to bite carries what the wait measured. **A connection to
-GitHub from the SageMaker environment then succeeded** (the user, the same evening), which is the
-behavioural half; which operation ran, and whether all three names carried it, is owed to the proxy
-log. `git clone`, `fetch` and `push` from a
+GitHub from the SageMaker environment then succeeded** (the user, the same evening) and is read back
+from the same log: `github.com` 200 × 54 and 9.68 MB, `api.github.com` 200 × 29,
+`raw.githubusercontent.com` 200 × 7, all from one space address. **Ten GitHub-family names were refused
+in the same window**, the most frequent being `release-assets.githubusercontent.com` at eighteen — more
+than the two redirect targets this file first named, and none of them needed for a clone, a fetch or a
+push. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed

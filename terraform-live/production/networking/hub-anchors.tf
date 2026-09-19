@@ -323,9 +323,15 @@ locals {
     # Three names and not a namespace, because `dstdomain` matches a bare entry exactly: `github.com`
     # covers neither of the others, and `.github.com` would authorise every host anyone puts under
     # it. The cost of that exactness, so nobody reports it as a defect: an HTTP redirect is a new
-    # request with a new name, so a release tarball or a `go get` that lands on
-    # `codeload.github.com` or `objects.githubusercontent.com` is still refused. Neither was ever on
-    # this plane, and adding one is the same decision again rather than a repair of this one.
+    # request with a new name. A session from a space on 2026-09-19 measured which names that leaves
+    # out, and the list is longer than the two this comment first guessed at -
+    # `release-assets.githubusercontent.com` was refused eighteen times, more than any other GitHub
+    # name, with `cli.github.com` three, `gist.github.com`, `ssh.github.com` and
+    # `objects.githubusercontent.com` two each, and `codeload.github.com`, `uploads.github.com`,
+    # `github-cloud.githubusercontent.com`, `pipelines.actions.githubusercontent.com` and `ghcr.io`
+    # one each. None was ever on this plane. Adding one is the same decision again rather than a
+    # repair of this one, and the clone, fetch and push that the restore was asked for do not need
+    # any of them: `github.com` carried 54 requests and 9.68 MB in the same session.
     #
     # The build plane never lost GitHub - `production-foundation` is `open` - so nothing here
     # changes what a build reaches.
@@ -383,9 +389,14 @@ locals {
     #   claude.com            the sign-in page, which redirects to claude.ai
     #
     # The last two are the browser's half, and a login driven from a laptop reaches them from the
-    # tunnel plane, which is `open`. They are listed because an allow-list edit costs an apply plus
+    # tunnel plane, which is `open`. They were listed because an allow-list edit costs an apply plus
     # an association interval, and discovering them missing halfway through a sign-in costs that
-    # twice.
+    # twice. **The first session measured them unnecessary**: on 2026-09-19 a space signed in and
+    # ran for an hour with `api.anthropic.com` at 298 requests and `platform.claude.com` at exactly
+    # two, the token exchange, while `claude.ai` and `claude.com` appear in the access log **not at
+    # all**. The browser's half does run on the laptop. These two entries are therefore justified by
+    # no measurement, which is the standard every other name here meets, and removing them is a
+    # plane edit waiting on a decision rather than a cleanup.
     #
     # What the same vendor table lists and this plane does not take, so nobody adds one as a repair:
     # `mcp-proxy.anthropic.com` carries claude.ai's MCP connectors, which are on by default for a

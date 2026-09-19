@@ -287,8 +287,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Bedrock; parameter v10 after the GitHub restore, `DN-1`..`DN-4` and `PX-1`..`PX-3` all green 2026-09-19.
   **Both exercised from a space that evening by the user**: GitHub connects, and Claude Code answered on
   the direct API with `managed-settings.json` deleted by hand — so 6e verification (v) is false and a
-  session can run outside every Bedrock control. The proxy-log readings that would name the hosts are
-  owed (SSO expired);
+  session can run outside every Bedrock control — **read back 2026-09-19**: one space address,
+  `api.anthropic.com` 298 requests, `platform.claude.com` **2** (needed), `claude.ai`/`claude.com`
+  **never touched** (so two entries no measurement justifies), `mcp-proxy` refused twice and the Datadog
+  intake 98 times, and **CloudTrail empty** — the access log is the only record of that hour. On the
+  GitHub side ten family names were refused, `release-assets.githubusercontent.com` the most at 18;
   the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
   (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
   redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty

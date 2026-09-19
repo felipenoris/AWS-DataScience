@@ -2549,3 +2549,34 @@ fire when an instance starts.
 - **[Claude] What stays true regardless**, and is the thing to check first if a later fetch fails:
   a redirect is a new request with a new name, so anything landing on `codeload.github.com` or
   `objects.githubusercontent.com` is still refused. Neither was ever on this plane.
+
+### The GitHub session read back
+
+**[Claude] The proxy access log over the same window**, all from the one space address
+`10.20.127.202`, 20:59:37 → 22:17:13Z, 122 requests across the family.
+
+| host | reading | bytes |
+|---|---|---|
+| `github.com` | **200 `TCP_TUNNEL` × 54** | 9,682,214 |
+| `api.github.com` | **200 `TCP_TUNNEL` × 29** | 217,601 |
+| `raw.githubusercontent.com` | **200 `TCP_TUNNEL` × 7** | 66,164 |
+| `release-assets.githubusercontent.com` | **403 `TCP_DENIED` × 18** | 62,020 |
+| `cli.github.com` | 403 × 3 | 10,218 |
+| `gist.github.com`, `ssh.github.com`, `objects.githubusercontent.com` | 403 × 2 each | ~6,850 each |
+| `codeload.github.com`, `uploads.github.com`, `github-cloud.githubusercontent.com`, `pipelines.actions.githubusercontent.com`, `ghcr.io` | 403 × 1 each | ~3,430 each |
+
+**[Claude] The restore does what it was asked for, and the refused names are a longer list than the
+code comment guessed.** The three restored names carried 9.9 MB and every clone, fetch and API call in
+the session. The entry written when they went back named `codeload.github.com` and
+`objects.githubusercontent.com` as the redirect targets left out; the log names **ten**, and the
+most-refused by a wide margin is `release-assets.githubusercontent.com` at eighteen, which neither of
+the two guesses would have covered. The comment now carries the measured list instead of the guess.
+**None of them is needed for what the restore was asked for**, which is why they stay off rather than
+joining as a repair.
+
+**[Claude] Two refusals in the same window are the perimeter working and are worth noting where
+someone will find them.** `169.254.170.2` — the container credentials endpoint — was requested twice
+through the proxy and refused twice by `deny to_private`, as was `10.32.0.10`. That is `PX-2`'s
+ordering property doing its job on live traffic rather than in a configuration read. `example.com`,
+`conda.anaconda.org`, `repo.anaconda.com` and `registry.npmjs.org` were each refused too, the standing
+negative controls.

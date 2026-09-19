@@ -1444,3 +1444,41 @@ intends to take.
   could be.** Owed, with `/awsds/prod/proxy` over the window and a CloudTrail check for the absence
   of a Bedrock invocation in it — the negative control that makes the absence mean something
   (Lesson 62).
+
+### The session read back from both channels
+
+**[Claude] The proxy access log, `/awsds/prod/proxy`, over 2026-09-19 18:25-22:25Z.** Every Anthropic
+request came from **one Sandbox space address, `10.20.127.202`**, and none from the tunnel.
+
+| host | reading | bytes |
+|---|---|---|
+| `api.anthropic.com` | **200 `TCP_TUNNEL` × 298**, 21:08:59 → 22:17:54Z | 5,639,350 |
+| `platform.claude.com` | **200 `TCP_TUNNEL` × 2**, 21:10:33 and 21:11:27Z | 13,091 |
+| `claude.ai`, `claude.com` | **no record at all** | — |
+| `mcp-proxy.anthropic.com` | **403 `TCP_DENIED` × 2** | 6,848 |
+| `http-intake.logs.us5.datadoghq.com` | **403 `TCP_DENIED` × 98** | 337,218 |
+
+**[Claude] CloudTrail is the negative control, and it is empty.** `InvokeModelWithResponseStream` in
+`Sandbox`, `us-west-2`, since 20:00Z: **zero events**. So the hour of work has **no** AWS record of
+any kind — the proxy access log is the estate's only evidence that it happened, and it carries
+hostnames and byte counts and no principal. That is the whole of what "outside every Bedrock control"
+means, measured rather than argued (Lesson 62's shape: the instrument that would have shown the
+presence was asked, and answered nothing).
+
+**[Claude] Three of the sitting's predictions were right and one entry was not.**
+
+- **`platform.claude.com` was necessary, and it is two requests.** The vendor's sentence about the
+  token exchange serving a claude.ai sign-in too is now measured here: two calls, 13 KB, ninety
+  seconds after the session's first request. A plane carrying `api.anthropic.com` alone would have
+  failed at exactly that point.
+- **`claude.ai` and `claude.com` were never touched.** The argument that put them on the plane — that
+  the browser's half runs on the laptop — is confirmed, and it is the argument for **not** listing
+  them. They are now the only two entries on this plane that no measurement justifies. Removing them
+  is a plane edit and a decision, recorded here rather than taken.
+- **The connectors fired.** `mcp-proxy.anthropic.com` was requested twice and refused twice. Keeping
+  it off the plane was the right call and it was not theoretical: a claude.ai login does try to load
+  that account's MCP connectors, and the refusal is what stopped it.
+- **The telemetry fired ninety-eight times.** `http-intake.logs.us5.datadoghq.com` is reached *only*
+  on the direct API, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` left the space with the deleted
+  file. 98 refusals in one session is the measured cost of that coupling, and the reason the same
+  file holds the provider switch and the suppression key is worth naming when either is edited.
