@@ -439,6 +439,19 @@
 
 - Sharing and data products in SageMaker Unified Studio (read 2026-09-13). *Share* gives S3, Glue (SageMaker Lakehouse) and QuickSight assets to other projects or to users and groups; for S3 it makes the data *"available to the projects you specify right away, without needing a subscription process"*, and the asset then shows under approved subscription requests, revocable: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/share-assets.html>. A data product groups assets into *"well-defined, self-contained packages"* for a business use case, published and subscribed as one unit, and is created from *Manage → Catalog management → Assets* by choosing assets: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>. The concepts page scopes the SageMaker Catalog to the domain, with discovery crossing the account and Region boundary; it names no sharing across domains.
 
+- Amazon DataZone data lineage, read 2026-09-18 for Stage 6f step 6.2. It is
+  **OpenLineage-compatible**, and arrives three ways: automatically *"from AWS Glue and Amazon
+  Redshift databases when added to Amazon DataZone"*; from *"Spark ETL job runs in AWS Glue (v5.0 and
+  higher) console or notebooks"* configured to send events; and through the OpenLineage-compatible
+  APIs for *"transformations in Amazon S3, AWS Glue, and other services"*. **The automatic half is
+  switched on in the blueprint**: *"domain administrators can configure lineage while setting up data
+  lake and data warehouse built-in blueprints which ensures that all data source runs created from
+  those resources are enabled for automatic lineage capture"* — Terraform here, never a console
+  toggle. Two node types, **dataset** (auto-generated with a Glue or Redshift icon for published
+  assets, created by hand for anything else) and **job (run)**, keyed by a `sourceIdentifier` whose
+  shape is given per type. The page names no orchestrator, so whether MWAA Serverless emits anything
+  is unanswered and is [Stage 10](plan/stages/stage-10-orchestration-promotion.md) step 3.3:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-data-lineage.html>.
 - Amazon DataZone's Glue data source, read 2026-09-18 for Stage 6f step 3.1, and it carries three
   sentences the step needed. **A data source takes any database by name**: *"You can either choose an
   AWS Glue database from the dropdown or type a database name… If you want to bring assets from a
