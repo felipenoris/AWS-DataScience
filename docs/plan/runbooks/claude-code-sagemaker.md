@@ -889,7 +889,7 @@ copied by the Dockerfile to that path and `chmod 0444`. It is the whole file:
 
 | Key | What it decides |
 |---|---|
-| `CLAUDE_CODE_USE_BEDROCK` | the provider. Without it the client calls `api.anthropic.com`, which the compute plane refused 17 times on 2026-09-11 ([`remote-ide.md`](remote-ide.md) §N) |
+| `CLAUDE_CODE_USE_BEDROCK` | the provider, and the first entry in the client's credential precedence. Without it the client calls `api.anthropic.com`, which the compute plane refused 17 times on 2026-09-11 ([`remote-ide.md`](remote-ide.md) §N) and permits since 2026-09-19 ([`NETWORK.md`](../../NETWORK.md) ¶), so this key is now the only thing holding a session on Bedrock |
 | `AWS_REGION` | the Region. The client resolves `AWS_REGION` → `AWS_DEFAULT_REGION` → the profile's → `us-east-1`, and the last would be a silent wrong answer |
 | `ANTHROPIC_MODEL` | the session's model. It also decides the background model: the vendor states that when a session sets it, background tasks use it too |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL` | what each alias resolves to. Without the pins an alias follows the client's built-in default, which moves with the client version |
@@ -937,8 +937,15 @@ The chain is [`dev-env.md`](dev-env.md) §B, and its shape is:
 
 **An unparseable file is ignored silently.** Claude Code neither refuses to start nor warns: every
 key above stops applying, the client falls back to its own defaults, and the session goes to
-`api.anthropic.com` — which the compute plane refuses. The symptom is an assistant that reaches
-nothing, with no message naming this file.
+`api.anthropic.com` with no message naming this file.
+
+**What that failure looks like changed on 2026-09-19**, when four Anthropic names entered the compute
+plane for a direct-API measurement ([`NETWORK.md`](../../NETWORK.md) ¶). Until then the plane refused
+the call and the symptom was an assistant that reached nothing. Now the call leaves, the client asks
+for a login, and a user who has an Anthropic account of their own can complete one — which puts the
+session outside Bedrock, outside the endpoint, outside CloudTrail's attribution and outside the model
+scope `availableModels` locks. The file failing to parse and the file being absent produce the same
+session, so the readings in §V are what separate them, and `/status` is the one that answers first.
 
 ### Reading it back inside a space
 

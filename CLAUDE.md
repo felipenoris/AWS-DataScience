@@ -280,7 +280,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it
   (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
   plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged. The
-  compute plane `sandbox-foundation` is an allow-list of 25 names (`docs/NETWORK.md` counts it, dated);
+  compute plane `sandbox-foundation` is an allow-list of 29 names (`docs/NETWORK.md` counts it, dated);
+  **four of them are Anthropic's direct API, applied 2026-09-19** (`api.anthropic.com`,
+  `platform.claude.com`, `claude.ai`, `claude.com`), for a measurement, so 6e's "no Anthropic host"
+  no longer holds and `CLAUDE_CODE_USE_BEDROCK` in the image is the only thing keeping a session on
+  Bedrock; parameter v9, `DN-3` green, `PX-3` unmeasured (hub stopped);
   `github.com` was removed 2026-09-09 by the user, CRAN added 2026-09-11, conda refused. **An empty
   allow-list refuses everything and an empty deny-list permits everything**. `DN-4` reads "no plane is
   `open` except the ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next

@@ -299,7 +299,7 @@ Read from `/awsds/prod/proxy` on 2026-09-11, one space's address:
 | `marketplace.visualstudio.com` | **403 TCP_DENIED** × 7, at 16:08-16:09 | the space trying to fetch a `.vsix` |
 | `aws-language-servers.us-east-1.amazonaws.com` | 200, 50.73 MiB | the Toolkit's language servers, allowed by the plane's `.amazonaws.com` entry and therefore a **public** call, carrying neither `aws:SourceVpc` nor `aws:SourceVpce` |
 | `idetoolkits.amazonwebservices.com`, `idetoolkits-hostedfiles.amazonaws.com`, `ide-toolkits.app-composer.aws.dev`, `sagemaker-unified-studio-mcp.<region>.api.aws` | 200 | the IDE's own startup traffic, four names, three of them decided at 6d 8.6 |
-| `api.anthropic.com` | **403 TCP_DENIED** × 17 | an extension the user installed reaching its own service; on no plane, so it does not work in a space |
+| `api.anthropic.com` | **403 TCP_DENIED** × 17 | an extension the user installed reaching its own service. It was on no plane that day, and Stage 6e answered it with Amazon Bedrock; four Anthropic names entered `sandbox-foundation` on 2026-09-19 for a direct-API measurement ([`NETWORK.md`](../../NETWORK.md) ¶) |
 | `*.in.applicationinsights.azure.com` | **403 TCP_DENIED** | editor telemetry nobody asked for, refused |
 
 **Neither refusal breaks the session**, and that is the design working rather than luck. Remote - SSH
