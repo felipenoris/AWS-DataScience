@@ -367,7 +367,10 @@ the two Datadog telemetry intakes. `raw.githubusercontent.com` was a fourth unti
 the restore below put it back for a different reason than this footnote refused it for.
 
 ‖ **Source control returned on 2026-09-19** (the user), reversing the removal of 2026-09-09:
-`github.com`, `api.github.com` and `raw.githubusercontent.com`. `git clone`, `fetch` and `push` from a
+`github.com`, `api.github.com` and `raw.githubusercontent.com`. Applied the same day for
+`0 to add, 1 to change, 0 to destroy`, the re-plan `No changes`, the parameter **version 9 to 10 at
+20:13:23Z**, and `DN-3` passing against it. `PX-3` is unmeasured for the same reason as the footnote
+above: both hub hosts were stopped. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed

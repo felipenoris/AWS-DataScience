@@ -285,9 +285,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `platform.claude.com`, `claude.ai`, `claude.com`), for a measurement, so 6e's "no Anthropic host"
   no longer holds and `CLAUDE_CODE_USE_BEDROCK` in the image is the only thing keeping a session on
   Bedrock; parameter v9, `DN-3` green, `PX-3` unmeasured (hub stopped);
-  the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user** (in code,
-  unapplied; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a redirected
-  download still fails), CRAN added 2026-09-11, conda refused. **An empty
+  the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
+  (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
+  redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty
   allow-list refuses everything and an empty deny-list permits everything**. `DN-4` reads "no plane is
   `open` except the ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next
   half-hourly association tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running
