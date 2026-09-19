@@ -53,7 +53,7 @@ done. The numbers are kept because other files reference them.
 | 7 | **M3** | the SCPs that freeze M1 and close the models that retain — **last**, and the order is argued in M1 |
 
 All of it is `Sandbox` only, by decision 2: principle 1 keeps `Management` bootstrap-only, and an
-org-wide form would open Anthropic models in five accounts where D17 says no interactive compute
+org-wide form would open Anthropic models in the accounts where D17 says no interactive compute
 runs. M5 is the exception — it is a Control Tower control and is changed from `Management`.
 
 **The identity:** the **infrastructure user**, account **Sandbox**, permission set

@@ -332,7 +332,7 @@ they are independent, so the order is a convenience: `development`, `data-govern
 `identity`. Each runs as the **infrastructure user** on **that account** through **`InfrastructureAccess`**
 (`awsds-infra-dev`, `awsds-infra-data`, `awsds-infra-prod`, `awsds-infra-identity`), and `AWS_PROFILE` is set
 on every command rather than exported once (**Lesson 25**). `./aws/tf-backends.py` is the read-back, and its
-section 5 states the expected shape: **five state buckets**, and it stays five after
+section 5 states the expected shape: **one state bucket per controlled account**, and it keeps that shape after
 [Stage 6b](stage-06b-development-becomes-staging.md), which creates `awsds-staging-tfstate`, migrates
 every surviving slice into it and destroys `awsds-dev-tfstate`.
 
@@ -1081,7 +1081,7 @@ same scripts, so a gate and a target cannot disagree.**
   thing that is applied (Lesson 14). A map living only inside the configuration would be checked by nothing
   until after an apply.
 - **`make check` excludes `check-plan-refs.py`, which is red on prose that predates this stage** — three
-  stage files record dated measurements phrased as *"all six accounts with a profile"*, and the check cannot
+  stage files record dated measurements phrased as a count of the accounts with a profile, and the check cannot
   tell a historical measurement from a count that goes stale. It keeps a target of its own, `make
   check-docs`. Folding a known-red check into the commit gate teaches people to bypass the gate, which costs
   more than the drift it catches.

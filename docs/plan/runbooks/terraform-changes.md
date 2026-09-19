@@ -350,7 +350,7 @@ what it would do. Split, applied, read: `DbDefaults: []`, and then the consequen
 database. **What the good reading did not do is retire the split** ([Lesson 27](../lessons.md)): that
 omission clears is a fact about one provider version, obtained by looking, so the read-back stays.
 
-**Where this recipe has run, and where it runs next.** The same resource lands in four accounts beyond the
+**Where this recipe has run, and where it runs next.** The same resource lands in every account beyond the
 lake, each creating its own catalog objects in the same slice.
 
 **Two of the four are done: Sandbox and Development, 2026-08-19** ([Stage 5](../stages/stage-05-data-foundation.md)

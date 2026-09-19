@@ -838,7 +838,7 @@ explicitly. Either way the association is what enables Security Hub in the membe
 
 **13.1c — Management is designated self-managed.** Decided by the user 2026-08-20, before the step ran.
 Management is unrecorded by AWS Config (Stage 1d decision 8, taken 2026-08-14; `INV-13` — the
-organization aggregator lists eight accounts and Management is correctly not among them).
+organization aggregator lists the governed accounts and Management is correctly not among them).
 A root-associated policy would otherwise reach it, which is the wrong outcome:
 
 > **Enabling Security Hub CSPM does not record an account.** With CSPM alone, AWS requires that *"you
@@ -853,8 +853,8 @@ reads *"if Management becomes recorded for any other reason, the rule costs noth
 and it names *"Stage 5's Security Hub central configuration"* as the candidate. That candidate does not
 fire. The only Security Hub path that creates a recorder is enabling the v2 product alongside CSPM,
 which manufactures a service-linked recorder in every account — and 13.0 refuses that, because the same
-act takes the recorder away from Control Tower in all eight governed accounts. One account's free
-recorder against eight accounts' recorder ownership is a trade, and it was invisible while the two facts
+act takes the recorder away from Control Tower in every governed account. One account's free
+recorder against every governed account's recorder ownership is a trade, and it was invisible while the two facts
 sat in different stages. Stage 1d decision 8 is corrected in place: its trigger now says this candidate
 was checked and does not fire.
 

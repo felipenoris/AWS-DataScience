@@ -5,9 +5,11 @@
 #   reads:    *.md across the repository. No AWS session, no side effect.
 #   exit:     0 clean | 1 at least one broken reference
 #
-# Known red (see the Makefile): stage files record dated measurements phrased as account counts, and
-# the account-count scan cannot tell a historical measurement from a count that goes stale. That is
-# why this is its own `make check-docs` target rather than part of the commit gate.
+# Its own `make check-docs` target rather than part of the commit gate (see the Makefile): the rules
+# here are editorial rather than mechanical, and the scan reads the whole repository's prose rather
+# than the tree a commit touches. It was red until 2026-09-18 on stage files whose dated measurements
+# were phrased as account counts - the account-count scan cannot tell one of those from a count that
+# goes stale, so those sentences were rewritten to name the set.
 
 from __future__ import annotations
 

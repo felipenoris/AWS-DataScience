@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **DONE — 2026-08-14, 7.0 through 7.8.** Ten documents attached across four policy types, full battery **93 as expected, 0 unexpected, 0 untested**, read-back clean. **7.8's RCP locked every SSO user out of all six member accounts** by naming `sts:AssumeRoleWithSAML`/`TagSession`, the only actions an `AWSReservedSSO_*` trust policy permits — rescoped to `sts:AssumeRole` + `sts:SetContext` after AWS's `CT.STS.PV.1`, and **no `sts:` action is added to that document without reading that control's exclusion note** (Lesson 24). *The history of the sittings follows, because the order the work happened in is the reason several things were caught.* **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`docs/log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md); what each statement does is in [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md) |
+| **Status** | **DONE — 2026-08-14, 7.0 through 7.8.** Ten documents attached across four policy types, full battery **93 as expected, 0 unexpected, 0 untested**, read-back clean. **7.8's RCP locked every SSO user out of every member account** by naming `sts:AssumeRoleWithSAML`/`TagSession`, the only actions an `AWSReservedSSO_*` trust policy permits — rescoped to `sts:AssumeRole` + `sts:SetContext` after AWS's `CT.STS.PV.1`, and **no `sts:` action is added to that document without reading that control's exclusion note** (Lesson 24). *The history of the sittings follows, because the order the work happened in is the reason several things were caught.* **Sitting A done; 7.6 done too** (2026-08-13). Attached and exercised: the two root documents (7.5) and **one per-OU document on each of `Workloads`, `Data`, `Interactive` and `Identity`** (7.6), each parked on `Policy Test` first, then moved and re-probed from that OU's own account. **The three amendments of 7.5a and 7.6a are uploaded and exercised** (2026-08-13): the EC2 launch siblings and the D27 service guard in `Data` and `Identity`, and the GuardDuty vocabulary fix plus the new `DenyImageAndSnapshotExport` in the root baseline — read back from Organizations, then re-probed, the OU pair through phase 4b and the root document through phases 1-3 on the canary. **What is left of the stage is 7.7 and 7.8.** Policy ids are in [`docs/log/log-stage-01c-preventive-policies.md`](../../log/log-stage-01c-preventive-policies.md); what each statement does is in [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md) |
 | **Prerequisites** | **[Stage 1b](stage-01b-identity-and-controls.md) is complete** (closed 2026-08-12; its log is authoritative). What this stage actually consumes from it: the six SSO profiles of step 5 — `awsds-infra-sandbox-1`, `-dev`, `-prod`, `-data`, `-identity` and **`awsds-policy-canary`** — and an administrator principal in the canary account (1b step 3.1). **Not its permission sets**: no policy written here names one, which is why the `Consumes` row carries no persona decision. `Staging` is unvended, so nothing in the `Workloads` tier can be exercised against it |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D10](../decisions/D10-identity-center-delegation.md), [D15](../decisions/D15-tls-internal.md), [D16](../decisions/D16-break-glass.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D29](../decisions/D29-policy-canary.md), [D30](../decisions/D30-scp-recovery.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | **Constrains** [INT-12](../integrations.md), whose fallback 7.6 forbids until the policy is amended. **Touches [INT-01](../integrations.md) and [INT-07](../integrations.md)**: the perimeter RCP now covers ECR, so both cross-account image paths run through its service carve-out — admitted by `aws:PrincipalOrgID`, but only exercised in 7.8 |
@@ -91,7 +91,7 @@ it lands, not here.
 | 7.0 step 5 measures the policy quota | **Service Quotas publishes no policy quota for `organizations`** — only account counts | **7.1**: the budget is the documentation's number. The count fits regardless, and the documents are now written and sized |
 | The Organizations read surface may not reach the *policy* calls | **It does** — every policy read answered from Identity; only `controltower list-enabled-controls` needs Management | **7.0 step 3** is the only part of the preflight still owed, and it is a CloudShell run |
 
-**What 7.0 did *not* change:** account-level BPA is **unset in all six accounts** that have a profile,
+**What 7.0 did *not* change:** account-level BPA is **unset in every account** that has a profile,
 exactly as 7.4 assumed. Nothing there is a no-op, and the interlock with 7.5 is unaffected.
 
 ## The stage at a glance
@@ -102,7 +102,7 @@ exactly as 7.4 assumed. Nothing there is a no-op, and the interlock with 7.5 is 
 | 7.1 | What makes this step different, and the rules that survive from D30 | — (read first) | both |
 | 7.2 | Preconditions, in this order — **DONE** | CT Admin @ Management | A |
 | 7.3 | The battery, against `Policy Canary` before anything real (D29) — **phases 0-3 done; it runs again per 7.6 document** | Infra user, laptop (`awsds-policy-canary`) | both — it runs per policy |
-| 7.4 | The order of attachment — an instruction, not a listing order — **step 1 DONE in all nine accounts** | CT Admin @ Management; step 1 of 7.4 also in each member account | A |
+| 7.4 | The order of attachment — an instruction, not a listing order — **step 1 DONE in every account** | CT Admin @ Management; step 1 of 7.4 also in each member account | A |
 | 7.5 | The organization-root SCP set — **DONE, both documents attached and exercised** | CT Admin @ Management | A |
 | 7.6 | The per-OU sets, one tier per OU policy set (D23) | CT Admin @ Management | B |
 | 7.7 | The Control Tower managed controls — use theirs | CT Admin @ Management | B |
@@ -260,11 +260,11 @@ done
 Archive and Audit have no profile** — run the same call for them from CloudShell as CT Admin, with
 `--account-id` set to that account's own id.
 
-**Measured 2026-08-13: all six accounts with a profile are `NOT SET`**, `awsds-policy-canary` included. So
+**Measured 2026-08-13: every account with a profile is `NOT SET`**, `awsds-policy-canary` included. So
 7.4 step 1 has real work in every one of them, nothing is a no-op, and decision 7 got neither easier nor
 harder. `./aws/account-bpa.py` is the loop above with the failure modes separated — a `(failed)` profile is
 never counted as compliant, and `NoSuchPublicAccessBlockConfiguration` is reported as `NOT SET` rather than
-as an error. **The three accounts with no profile are still unread**; the same script with `-` answers each
+as an error. **The accounts with no profile are still unread**; the same script with `-` answers each
 one from its own CloudShell.
 
 **5. The quota that decides whether the set fits.** The policy count per node is the constraint 7.1
@@ -493,7 +493,7 @@ Two pairs interlock, and attaching to the OUs in listing order breaks one of the
    module-level block from Stage 2 only covers buckets the module creates; the account-level setting is
    the blanket that also covers the bucket someone creates outside it — so "every member account" has to
    be a list, or the one account nobody had a profile for is the one that keeps the hole. **Measured
-   2026-08-13 (7.0 step 4): every one of the six accounts with a profile is `NOT SET`**, so none of this is
+   2026-08-13 (7.0 step 4): every one of the accounts with a profile is `NOT SET`**, so none of this is
    a no-op and the list below is the work rather than a checklist to tick. The three without a profile are
    still unread. **Re-run `./aws/account-bpa.py` after setting them** — every row must read `ALL FOUR true`
    *before* 7.5 attaches the deny:

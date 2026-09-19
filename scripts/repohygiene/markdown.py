@@ -19,9 +19,22 @@ _CODE_SPAN = re.compile(r"`[^`]*`")
 _QUOTED_SPAN = re.compile(r'"[^"]*"')
 
 
+# Directories holding markdown this repository did not author: git's own store, Terraform's module
+# cache (which vendors git-sourced modules along with the `docs/` snapshot of whatever commit they
+# were fetched at), the Claude session worktrees (each a full copy of the repository), the uv
+# environment and any vendored node package. All of them are ignored by `.gitignore` or by git
+# itself, and a broken link inside one belongs to a copy nobody here edits.
+#
+# Pruned as *directories* rather than by substring, so a path that merely contains one of these
+# names is not excluded by accident - the rule `tfhygiene/scan.py` already applies to `.tf`.
+# Measured 2026-09-18, before this prune existed: 753 of the 755 reported failures came from
+# `.terraform/modules/` and `.claude/worktrees/`, which is enough noise to make the target unread.
+_PRUNED_DIRS = frozenset({".git", ".claude", ".terraform", ".venv", "node_modules"})
+
+
 def iter_md_files(root: Path) -> Iterator[Path]:
-    """Every ``*.md`` under ``root``, pruning ``.git``, sorted for stable output."""
-    return iter(sorted(p for p in root.rglob("*.md") if ".git" not in p.parts))
+    """Every ``*.md`` under ``root`` this repository authored, sorted for stable output."""
+    return iter(sorted(p for p in root.rglob("*.md") if _PRUNED_DIRS.isdisjoint(p.parts)))
 
 
 def relative_links(path: Path) -> Iterator[tuple[Path, str]]:

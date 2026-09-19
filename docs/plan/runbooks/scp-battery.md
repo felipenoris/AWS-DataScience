@@ -422,7 +422,7 @@ form denies **unconditionally**.
 **On 2026-08-14 that is what happened.** **Identity Center *is* the external federation**: every account
 holds a SAML provider `AWSSSO_<id>_DO_NOT_DELETE`, and the trust policy of `AWSReservedSSO_*` permits
 **only** `sts:AssumeRoleWithSAML` + `sts:TagSession` from it — two lines, read them. The document named
-both, so the root attach made every permission-set role in all six member accounts unreachable, by CLI and
+both, so the root attach made every permission-set role in every member account unreachable, by CLI and
 by browser alike. The document is now scoped to `sts:AssumeRole` + `sts:SetContext`, matching AWS's own
 `CT.STS.PV.1`, whose usage note is the authority on which STS actions may not appear here.
 

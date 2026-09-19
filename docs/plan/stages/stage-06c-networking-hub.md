@@ -316,7 +316,7 @@ by a check; nothing derives it.
   `production/foundation/`, `prod.awsds.internal` in `production/workloads/`, `sandbox.awsds.internal` and
   `staging.awsds.internal` in the accounts that own them. **All five carry `ignore_changes = [vpc]` from
   the first apply** — 2.5 reverses the direction, so without it every later plan in an owning account
-  would try to remove the association Production made. **Eight zones stand across three accounts**; the
+  would try to remove the association Production made. **Eight zones stand across Production, Sandbox and Staging**; the
   old three go at 2.6.
 - **Step 1.1 had broken both spokes, and this pass surfaced it.** Renaming Production's VPC `Name`
   tag to `awsds-prod-shared-vpc` broke `data "aws_vpc" "production"` in **both** spokes' `peering.tf`:
@@ -669,7 +669,7 @@ the single filter, and makes the SMUS network-isolation page's required endpoint
 premise (no public egress) becomes true.
 
 - **5.1 — Done 2026-09-06 as code; it was never a destroy.** Measured first: **zero NAT gateways,
-  zero default routes and zero interface endpoints in all three accounts** — the `egress/` slices are
+  zero default routes and zero interface endpoints in every spoke account** — the `egress/` slices are
   `[E]` and were all down, so there was nothing to destroy. The act is a code change so that the next
   `make up` never creates one. `vpc-egress-v0.6.0` deletes `nat.tf` and **`egress_mode`,
   `nat_public_subnet_id` and `private_route_table_ids` with it** (nothing else read the route tables),
