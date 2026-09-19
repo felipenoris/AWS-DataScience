@@ -242,8 +242,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   what a new space's picker reads, both app types. INT-01/INT-17 closed (image role by tag, project
   role by digest). **The app image config caps each env value at 256 chars** vs a `NO_PROXY` of ~1,500,
   so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal (52 entries, sha256
-  `fc11caaa3…`); `./aws/devenv.py` reads the drift. Owed: 2.4's after half; 1.1's persona half, 1.2/1.3; 3.4's endpoint
-  half; 5.2, 5.4; 6.1, 6.3; 7.6, 7.7; step 10 (Amazon Q, dec 9 first). Apps log to a never-expiring
+  `fc11caaa3…`); `./aws/devenv.py` reads the drift. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
+  private door (the agent its endpoint, the Access Grants plugin the **S3 gateway endpoint** — the
+  same id 6.1 (xix) wanted); the blueprint's manage-access role **is** an LF admin (OQ 24's other
+  half); a blueprint database arrives with no `IAMAllowedPrincipals`; and `q:PassRequest` is granted
+  today on the domain execution role (v23), the door 10.5 closes. Owed: 2.4's after half; 1.1's
+  persona half, 1.2/1.3; 5.2, 5.4; 6.1's (iii)/(viii)/(xvi)/(xvii); 7.6, 7.7; step 10 (dec 9 first). Apps log to a never-expiring
   group (`EXC-10`).
 - **The remote IDE works** (6d step 7, 2026-09-11, a Windows laptop off the VPN). `StartSession` is
   called **as the project role**, by the Toolkit or from the browser, so 6a's tag pair never evaluates:
@@ -259,9 +263,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`);
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
   to three US regions (D1's exception).
-- **Stage 6f (data governance on the SageMaker Catalog) is planned, not started**; its log holds the
-  catalog acts already taken. Publishing is metadata only (no grant). Five decisions due; `INT-23` new;
-  decision due 1 recommends (d), the lake as unmanaged assets with the grant in the register.
+- **Stage 6f: step 1 is done, no access act has run.** `./aws/catalog.py` (`CT-1`..`CT-9`) is the
+  instrument; publishing is metadata only (no grant) and **`CT-7` says the catalog road has not
+  reached the lake**. Nothing at the domain level restricts a direct Share and
+  `ADD_TO_PROJECT_MEMBER_POOL` is open to every user, so decision 5's control is a deny on the
+  **domain execution role** — which itself holds `AddPolicyGrant`, `GetEnvironmentCredentials` and
+  `q:PassRequest` at policy v23. A published asset shows **no** LF-Tag (verification vi), and Sandbox
+  defines no ontology at all. The `Tooling` blueprint creates a data source on a **daily cron**
+  nobody wrote. Five decisions due; `INT-23` new; decision 1 recommends (d) — and (d) needs no custom
+  asset type (23 managed types), while (b) would be the first object configured in `Data Governance`.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Not started as a plan; its first acts were taken by hand before it was written** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. No access act (subscription or direct Share) has run, and the decisions below are open |
+| **Status** | **In progress: step 1 is done and no access act has run.** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`, twelve SMUS grants, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint created a **second data source on a daily cron** (Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run |
 | **Prerequisites** | **None that block.** Stage 5's lake and its TBAC shares, 6a's domain and association, and one live project (`eighth-experimentation`) holding a published asset and a published data product. Step 2 creates the second project it needs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-23](../integrations.md) (new): a catalog access act becomes a Lake Formation grant in the account that owns the table |
@@ -98,6 +98,33 @@ control is the owner project's approval; on the register road, the tag and the e
 
 ### 1. The catalog's authorization
 
+- **Step 1 is done, 2026-09-18, read-only** ([log](../../log/log-stage-06f-data-governance.md)).
+  - **1.1 — of the policy types that apply to a domain unit, one carries a grant and one carries the
+    default.** On the root domain unit: `CREATE_PROJECT`, `CREATE_DOMAIN_UNIT`, `CREATE_GLOSSARY`,
+    `CREATE_FORM_TYPE` and `CREATE_ASSET_TYPE` are empty; `CREATE_PROJECT_FROM_PROJECT_PROFILE` names
+    one Identity Center group; **`ADD_TO_PROJECT_MEMBER_POOL` is `allUsersGrantFilter`** — every user
+    of the domain, which is DataZone's default and open question 20's axis. **Both override types are
+    empty**, so the owner project's approval is the control on the catalog road; nothing at the domain
+    level restricts a direct Share, which puts decision due 5 on the role or on `catalog.py`.
+    `CREATE_ENVIRONMENT` and `USE_ASSET_TYPE` are refused to `InfrastructureAccess` (0.6 again) and
+    read `DENIED` rather than empty.
+  - **1.2 — the domain execution role's reach is one AWS-managed policy at version 23**, no inline
+    policy and no boundary. It grants the whole approval cycle (`AcceptSubscriptionRequest`,
+    `RejectSubscriptionRequest`, `CreateSubscriptionGrant`, `DeleteSubscriptionGrant`,
+    `RevokeSubscription`), **`AddPolicyGrant` and `RemovePolicyGrant`** over the very policies 1.1
+    reads, `datazone:GetEnvironmentCredentials`, `sts:SetContext` and **`q:PassRequest`** — the last
+    being a door [Stage 6d](stage-06d-unified-studio-remainder.md) step 10.5 assumed shut. So a
+    preventive control over publishing or sharing has one home at the identity layer, and it is a
+    deny on this role; a domain-level policy will not carry it.
+  - **1.3 — [`./aws/catalog.py`](../../../aws/catalog.py) exists**, `CT-1`..`CT-9`, run for the first
+    time the same day: `CT-1`, `CT-2`, `CT-4`, `CT-7`, `CT-8`, `CT-9` pass; `CT-3`, `CT-5` and `CT-6`
+    are notes. **`CT-7` is the check the stage exists for** and it passes: twelve grants are held by
+    SMUS-managed principals and every one is on a project-owned object, so the catalog road has not
+    reached the lake. **`CT-1` had to be rewritten**: `list-domains` in an associated member account
+    returns the shared domain, so the draft read the association as a second domain — the
+    discriminator is `managedAccountId`. Two readings the step did not ask for: a second data source
+    the `Tooling` blueprint created on a **daily cron** (`CT-6`, Lesson 17), and `enableBusinessName
+    Generation: true` on the Glue source, which is decision due 3's first measurement.
 - **1.1 [Claude] Map DataZone's authorization model**: domain units and their authorization policies
   (project creation and membership, glossary, metadata-form and asset-type creation), owner-project
   approval, and whether any domain or unit policy restricts a direct Share. Source: the DataZone
@@ -131,6 +158,22 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ### 3. The lake in the catalog
 
+- **3.1's API half read 2026-09-18; the documentation half is what remains.** What the estate
+  reports:
+  - **(a) has its targets**: Sandbox's Glue catalog carries the resource links `raw` and `curated`,
+    both pointing at the registry account's databases. Whether a DataZone Glue data source accepts a
+    resource link as its `databaseName` is the vendor question this step still owes.
+  - **(b) starts from nothing**: `Data Governance` holds **zero** blueprint configurations, which is
+    `US-3` passing and also the whole cost of shape (b) — it would be the first object ever configured
+    there, against D22's rule.
+  - **(d) needs no custom asset type**: the domain offers **23 managed asset types**, including
+    `GlueTableAssetType`, all owned by the domain's own project. What the reading does not settle is
+    whether a Glue table can be published as an **unmanaged** asset, which is a property of the
+    fulfilment rather than of the type, and is the second vendor question.
+  - **The manage-access role already holds the shape 3.2 names**, on a project table: `DESCRIBE` and
+    `SELECT` **with the grant option** on `mydatabase.house-price`. So the grant form (a) and (b)
+    would need is one the service already writes for project-owned objects; what neither reading
+    covers is the same grant on a lake table in another account.
 - **3.1 [Claude] Read the prerequisites of three shapes**, without writing:
   - **(a) a Glue data source in a Sandbox project over the resource links** `raw` and `curated`: whether
     DataZone accepts a resource link, and which grants the manage-access role would need on the target
@@ -156,6 +199,13 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ### 4. Classification and approval in the catalog
 
+- **4.1 is half answered, 2026-09-18: a published asset shows no LF-Tag, and this one had none to
+  show.** `get-listing` on `house-price` carries `lakeFormationDetails: {}` and five forms, none
+  carrying a tag; `list-lf-tags` in **Sandbox returns none** — the ontology lives in `Data Governance`
+  alone — and the project table carries no assignment. So verification vi reads **no**, and the case
+  that separates *the catalog does not display LF-Tags* from *this asset has none* is a **lake** table
+  published under decision 1. What holds either way is the step's own alternative: `classification`
+  and `layer` reach the catalog through a glossary or a required metadata form.
 - **4.1 [Claude] Read whether a published Glue asset shows its LF-Tags.** If it does not, `classification`
   and `layer` need a glossary or a required metadata form in the catalog.
 - **4.2 [user] Create the glossary or the form**, and [Claude] reads which project owns it: glossaries are
@@ -174,6 +224,8 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ### 6. Lineage
 
+- **6.1 — `list-lineage-events` is empty, 2026-09-18.** The two nodes 0.4 recorded were written by the
+  publish itself; no OpenLineage event has ever been posted, so 6.2's engine list starts from zero.
 - **6.1 [Claude] Read the two nodes the publish created** and what they link.
 - **6.2 [Claude] List the engines that emit lineage events** (Glue ETL, EMR, the workflows), and write
   Stage 10's part into that stage file when it is decided (Lesson 34).

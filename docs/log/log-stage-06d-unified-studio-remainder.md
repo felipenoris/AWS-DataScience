@@ -2355,3 +2355,82 @@ are UTC; the sitting ran from 2026-09-13 01:45Z.*
 
 - **[Claude] Owed once the requests are approved.** The querybook compute's first run: its calls, their
   path through the endpoints and the proxy, and the usage type it bills under.
+
+---
+
+## 2026-09-18 — the fourteenth sitting: which door the SMUS components take, and three of 6.1's rows
+
+*Claude's sitting, read-only throughout, as `awsds-infra-sandbox-1` and `awsds-infra-data`. It closes
+3.4's endpoint half and three of 6.1's seven rows. Times are UTC. `sandbox/egress` was **down** the
+whole sitting — two gateway endpoints and nothing else — so every reading here is CloudTrail history,
+never a live call from a space.*
+
+### 3.4 — the two components the logs could not name, named from the door they took
+
+- **[Claude] The DataZone agent uses the endpoint, and the public half is the laptop.** Fifty
+  `datazone.amazonaws.com` events since 2026-09-09 split cleanly by source, and the split is the
+  attribution 3.4 was missing:
+
+  | source | calls | user agent | door |
+  |---|---|---|---|
+  | `10.20.21.239`, `10.20.74.222` (spaces) | 19 | Boto3, `aws-cli/2.35.21` | `vpce-0af6db1ab91108db6` |
+  | a laptop's own uplink | 31 | Mozilla on Windows, `aws-sdk-js` on `win32` | public |
+
+  `GetDomainExecutionRoleCredentials` (12), `ListConnections` (6) and `GetUserProfile` (1) went through
+  the endpoint; `ListEnvironments`, `ListEnvironmentBlueprints`, `GetEnvironment`, `GetConnection`,
+  `GetProject`, `GetDomain` and `GetProjectProfile` are the browser's. **`ListConnections` appears on
+  both sides**, which is what makes the per-name reading useless and the per-source reading the answer:
+  the same API is called by the agent in the space and by the portal in the browser, and only the
+  second is public.
+
+- **[Claude] The S3 Access Grants plugin uses the gateway endpoint, and the first reading of it was
+  wrong.** Fifty `GetDataAccess` events since 2026-08-20 carry `vpce-0cc3e139c1167ca83` from six space
+  addresses. That id was read as an Access Grants interface endpoint until `describe-vpc-endpoints`
+  named it: it is the account's **S3 gateway endpoint**, `com.amazonaws.us-west-2.s3`, one of the two
+  gateway endpoints that are all `sandbox/egress` leaves behind when it is down. So the vending call
+  takes the private door, and the door is the one `[P]` endpoint the estate never tears down (INT-05).
+
+- **[Claude] Two `GetDataAccess` shapes are not the plugin.** Four calls carry
+  `sourceIPAddress: athena.amazonaws.com` — Athena vending service-side for a query, the shape 3.7
+  already found for `lakeformation` — and eight arrive from laptops with no `vpcEndpointId`, as the
+  project role, on the days the portal was used. Neither is a space, and neither is a finding; they are
+  recorded so the next reader does not attribute them to the image.
+
+### 6.1 — three rows answered by reading, four still needing a provocation
+
+- **[Claude] (xiv) The blueprint's manage-access role is a Lake Formation administrator.** Sandbox's
+  `DataLakeSettings` names **three** `DataLakeAdmins`: `InfrastructureAccess`, which
+  `consumer-data-v0.5.0` declares and holds under `ignore_changes`, plus
+  **`awsds-sandbox-smus-provisioning`** and **`awsds-sandbox-smus-manage-access`**, which this
+  repository never wrote. That is open question 24's other half, answered: the seat is real, the
+  service took it, and `DL-13` is what notices it moving.
+
+- **[Claude] (xv) A blueprint-created database arrives without `IAMAllowedPrincipals`.**
+  `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` are both `[]` in Sandbox, and
+  `list-permissions` for `IAM_ALLOWED_PRINCIPALS` returns nothing on `mydatabase`, on `default` or on
+  `mydatabase.house-price`. Stage 5's clearing therefore holds for the objects the portal creates, not
+  only for the ones Terraform does.
+
+- **[Claude] (xix) An S3 call from a project subnet presents the account's gateway endpoint.**
+  `vpce-0cc3e139c1167ca83`, on every `GetDataAccess` from a space — the only candidate, as the step
+  predicted, and now measured rather than reasoned.
+
+- **[Claude] Two settings were read in the same call and are recorded because nothing else names
+  them**: `AllowExternalDataFiltering` is `false` with an empty allow-list, and `Parameters` carries
+  `CROSS_ACCOUNT_VERSION: 4` (Stage 1d step 11's setting, read back here) and `SET_CONTEXT: TRUE`.
+
+- **Still owed in 6.1**: (iii) the two-AZ blueprint acceptance, (viii) a VPC-only space starting on the
+  endpoint set, (xvi) the grant the portal writes when it fulfils a subscription — which needs a
+  subscription, so it belongs with [6f](log-stage-06f-data-governance.md) step 2.2 — and (xvii)
+  whether `datazone:Get*` reaches `GetEnvironmentCredentials`, which is an attempt and not a read
+  (open question 20).
+
+### One sentence of step 10 changes
+
+- **[Claude] `q:PassRequest` is granted today, on a role step 10.5 does not name.** Reading the domain
+  execution role for [6f](log-stage-06f-data-governance.md) step 1.2 found
+  `SageMakerStudioDomainExecutionRolePolicy` **v23** granting `q:PassRequest` to
+  `awsds-data-studio-domain-execution`. Step 10.5 argues for denying that action on the grounds that
+  *"the managed policy does not grant it today"* — which is true of the **project** role's policy, the
+  one 10.1 read, and false of the domain execution role's. The statement stays worth writing; what the
+  reading changes is that it is closing an open door rather than pre-empting a future one.
