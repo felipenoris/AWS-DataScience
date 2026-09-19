@@ -439,6 +439,24 @@
 
 - Sharing and data products in SageMaker Unified Studio (read 2026-09-13). *Share* gives S3, Glue (SageMaker Lakehouse) and QuickSight assets to other projects or to users and groups; for S3 it makes the data *"available to the projects you specify right away, without needing a subscription process"*, and the asset then shows under approved subscription requests, revocable: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/share-assets.html>. A data product groups assets into *"well-defined, self-contained packages"* for a business use case, published and subscribed as one unit, and is created from *Manage → Catalog management → Assets* by choosing assets: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>. The concepts page scopes the SageMaker Catalog to the domain, with discovery crossing the account and Region boundary; it names no sharing across domains.
 
+- Amazon DataZone's Glue data source, read 2026-09-18 for Stage 6f step 3.1, and it carries three
+  sentences the step needed. **A data source takes any database by name**: *"You can either choose an
+  AWS Glue database from the dropdown or type a database name… If you want to bring assets from a
+  database that is not created by the environment, then you must type the name of the database
+  instead of selecting it from the dropdown"* — the dropdown offers only the environment's publishing
+  and subscription databases. **Creating one writes Lake Formation grants**: *"When an AWS Glue data
+  source is created, Amazon DataZone creates the Lake Formation 'read only' permissions for the IAM
+  role of the environment that is used to create the data source to access **all the tables** in the
+  AWS Glue databases used in the data source"*. **And it tags the database**:
+  `DataZoneDiscoverable_${domainId}: true` (Lesson 29 — an attribute assigned to describe becomes a
+  selector). The same page names the two publish-time switches, *Publishing settings* and *Automated
+  business name generation*:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/create-glue-data-source.html>. The
+  managed-asset page adds that **cross-Region sharing of Glue assets is not supported** (this estate's
+  shares are cross-account, same Region) and gives the manage-access role's four permissions as
+  `DESCRIBE` + `DESCRIBE GRANTABLE` on the database and `DESCRIBE`, `SELECT`, `DESCRIBE GRANTABLE`,
+  `SELECT GRANTABLE` on the table:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>.
 - Amazon DataZone concepts and managed-asset fulfilment (read 2026-09-13, for Stage 6f). The concepts page: *"An AWS account can be associated with one or more Amazon DataZone domain"*; an approved subscription is fulfilled *"by creating the necessary grants in AWS Lake Formation or Amazon Redshift"*, automatically only for managed assets (Glue tables, Redshift tables and views), with an EventBridge event for the rest; project members are owners, contributors, consumers, stewards and viewers: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>. The Glue-asset page: *"Access management for the AWS Glue Data Catalog assets using the AWS Lake Formation LF-TBAC method is not supported"*, cross-Region sharing is not supported, the table *"must be Lake Formation-managed"*, and the manage-access role needs `DESCRIBE` and `DESCRIBE GRANTABLE` on the database and `DESCRIBE`, `SELECT` and both grantable on the table: <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>. The SageMaker Unified Studio subscription page says a project is subscribed *"when the publisher approves your request"*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
 
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.

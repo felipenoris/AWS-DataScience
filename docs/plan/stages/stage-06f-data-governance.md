@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress: step 1 is done and no access act has run.** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`, twelve SMUS grants, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint created a **second data source on a daily cron** (Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run |
+| **Status** | **In progress: step 1 is done and no access act has run.** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`, twelve SMUS grants, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint created a **second data source on a daily cron** (Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run. **Step 3.1 is read on both halves the same day, and decision due 1's recommendation moved to (c)**: shape (d) needs a custom asset type, because *managed* is a property of the asset type and `GlueTableAssetType` is one; and shape (a) **writes Lake Formation grants at creation**, over every table in the database named, before any subscription exists |
 | **Prerequisites** | **None that block.** Stage 5's lake and its TBAC shares, 6a's domain and association, and one live project (`eighth-experimentation`) holding a published asset and a published data product. Step 2 creates the second project it needs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-23](../integrations.md) (new): a catalog access act becomes a Lake Formation grant in the account that owns the table |
@@ -174,6 +174,29 @@ The same-account half of INT-23, and the reading open question 24 still owes.
     `SELECT` **with the grant option** on `mydatabase.house-price`. So the grant form (a) and (b)
     would need is one the service already writes for project-owned objects; what neither reading
     covers is the same grant on a lake table in another account.
+- **3.1's documentation half read 2026-09-18, and it moves decision due 1.** Three sentences from
+  the Glue data-source page ([`REFERENCES.md`](../../REFERENCES.md)) settle what the API half could
+  not:
+  - **(a) is mechanically possible and is not metadata-only.** A data source takes **any database by
+    name** — the dropdown offers only the environment's own two, and a database the environment did
+    not create *"must be typed"*, which is what a resource link would be. But **creating the data
+    source writes Lake Formation grants**: read-only permissions for the environment's IAM role over
+    **all the tables** in every database named. So pointing one at `raw` or `curated` is an access
+    act at creation time, before any subscription, and it lands on the whole database rather than on
+    a table. It also **tags the database** `DataZoneDiscoverable_${domainId}: true` (Lesson 29).
+  - **(d) as this stage wrote it does not exist for a Glue table.** *"Managed assets"* is defined by
+    **asset type**, not by a publisher's choice: the concepts page names Glue tables and Redshift
+    tables and views, and *"for all other asset types (unmanaged assets)"* DataZone emits the
+    EventBridge event instead. A Glue table published as `GlueTableAssetType` is therefore managed by
+    definition, and the domain's 23 managed types include it. Publishing the lake unmanaged would
+    mean a **custom asset type** standing for a table DataZone can see and has been told not to
+    fulfil — which keeps the grant in the register at the price of a type nobody else's tooling
+    understands, and of an asset whose schema the catalog no longer derives.
+  - **What this leaves for the decision.** (a) and (b) both write named-resource grants beside the
+    TBAC shares, and (a) writes them **earlier and wider** than 3.2 assumed. (d) is available only
+    through a custom type. (c) — the lake kept out of the catalog, read through TBAC re-grants —
+    costs discoverability and nothing else, and is the only shape that writes no grant. The
+    recommendation below is re-read against that.
 - **3.1 [Claude] Read the prerequisites of three shapes**, without writing:
   - **(a) a Glue data source in a Sandbox project over the resource links** `raw` and `curated`: whether
     DataZone accepts a resource link, and which grants the manage-access role would need on the target
@@ -277,10 +300,17 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ## Decisions due
 
-1. **How the governed lake enters the catalog**: shape (a), (b), (c) or (d) of step 3. Provisional
-   recommendation: (d) if 3.1 finds it possible, else (c), because (a) and (b) both put named-resource
-   grants beside the TBAC shares, (b) also reverses D22's rule that nothing is configured in
-   `Data Governance`, and (c) leaves the lake undiscoverable in the catalog.
+1. **How the governed lake enters the catalog**: shape (a), (b), (c) or (d) of step 3.
+   **The reading of 2026-09-18 changed what each shape costs.** (a) is possible — a data source takes
+   a resource link by name — but **creating it grants the environment role read on every table in the
+   database**, so it is an access act at creation time, wider than a subscription and earlier than
+   any approval. (b) adds D22's reversal on top of the same grants. **(d) is not available for a Glue
+   table as written**: *managed* is a property of the asset type, and `GlueTableAssetType` is managed,
+   so unmanaged publication needs a **custom asset type** — a type whose schema the catalog does not
+   derive and whose meaning no other tooling shares. (c) writes no grant at all and costs only
+   discoverability in the catalog. **Recommendation: (c), with (d) as the shape to revisit** if
+   discoverability of the lake turns out to matter more than keeping every lake grant in the
+   register — the two are the only shapes that leave the TBAC model intact.
 2. **How a fulfilment grant enters the grant register**, and whether `restricted` and `personal` tables
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
