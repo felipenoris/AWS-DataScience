@@ -1692,6 +1692,17 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   The second is a call, and the vendor documents neither. The mode enum is also four values —
   `default`, `none`, `provider_data_share`, `inherit` — where this plan had discussed two. Where:
   `claude-code-sagemaker.md` M3.
+- **A schedule-only State Manager association does not fire when an instance starts** (measured
+  2026-09-19 on the proxy host). The association is `cron(0/30 * * * ? *)` and its
+  `LastExecutionDate` was **20:00:40Z**; `make hub-up` started the host at **20:04:55Z**; at 20:25Z
+  the host was still serving the `squid.conf` of its previous session - 25 entries against the
+  parameter's 32, missing both of that day's applies, one of which had been written while the host
+  was stopped. The next scheduled run at **20:30:53Z** reported `Success` with **empty stdout**, and
+  `PX-3` read 32 against 32 immediately after. What it means here: **starting the hub does not put
+  the committed policy in force**, and for up to one cron interval the proxy enforces the previous
+  session's allow-list. A parameter written while the host is stopped is not rendered by the start
+  either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
+  `log-stage-06d` the fifteenth sitting.
 
 ---
 

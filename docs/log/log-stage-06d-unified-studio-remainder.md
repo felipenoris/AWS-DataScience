@@ -2489,3 +2489,45 @@ cannot reach GitHub still needs it and because a redirect target is refused even
 where the removal is argued, and a reader who finds the entries back on the plane needs both this entry
 and those, which is why the code comment names the date it reverses rather than only the date it was
 written.
+
+### `PX-3` closed, and what the wait measured
+
+**[user] Ran `make hub-up`, then `./aws/proxy.py --on-host`.** The first reading, 20:25Z, **failed
+`PX-3`**: the parameter carried 32 entries on `sandbox-foundation` and the host's own `squid.conf`
+carried 25, missing all seven names added that day — the four Anthropic ones and the three GitHub
+ones.
+
+**[Claude] The cause is the clock, not the configuration**, and four read-only calls settled it.
+
+| Event | UTC |
+|---|---|
+| association last ran | 20:00:40 |
+| `make hub-up` started the host | 20:04:55 |
+| parameter to v10 | 20:13:23 |
+| first `--on-host` reading, `PX-3` fail | ~20:25 |
+| association ran again, `Success` | 20:30:53 |
+| second `--on-host` reading, `PX-3` pass | ~20:32 |
+
+The association is `cron(0/30 * * * ? *)`, so the host came up four minutes after a tick and waited
+for the next one. **Starting the host renders nothing**: it served the `squid.conf` on its root volume
+from its previous session throughout. Version 9 is the proof that the lag is not bounded by how recent
+the edit is — it was written at 17:12Z, while the host was stopped, and no start ever rendered it.
+
+**[Claude] The association's own report is useless for this, by construction.**
+`get-command-invocation` on the execution returns `Status: Success` and **empty stdout**: the render
+script says nothing about what it wrote. That is the sentence already in `proxy.py`'s section 4 —
+*"its silence is indistinguishable from success, which is the whole reason this check exists"* — and
+this sitting is the first time it was the difference between a right and a wrong answer.
+
+**[Claude] Second reading, 20:32Z: `PX-3` passes**, *"5 planes, entry for entry - the render is
+current"*, 32 against 32. The chain `code -> parameter -> host` is closed on both of the day's applies,
+and every check in both instruments is green: `DN-1`..`DN-4` and `PX-1`, `PX-2`, `PX-3`, with `PX-4`
+the standing note about the absent Log Archive export.
+
+**[Claude] What this corrects, and where it is written.** `NETWORK.md` said an allow-list edit is
+*"an apply plus at most one interval"*. That is true of a running host and false after `make hub-up`,
+where the proxy enforces the **previous session's** allow-list for up to one interval, whatever the
+edit's age — so a spoke raised inside that window is filtered by a policy nobody is looking at. The
+paragraph now carries both halves, and the platform behaviour joins
+[`lessons.md`](../plan/lessons.md)'s second list: a schedule-only State Manager association does not
+fire when an instance starts.
