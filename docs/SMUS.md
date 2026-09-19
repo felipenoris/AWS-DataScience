@@ -8,18 +8,11 @@ Stage 6 decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified
 `./aws/studio.py`'s `US-3` measures them.
 
 
-> **The domain has one associated account, not two.** `Development` became the headless `Staging` at
-> [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on 2026-09-06, so its eleven blueprint
-> configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
-> and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). Two more
-> corrections touch this file's subject. The SageMaker Unified Studio CI/CD feature is the open-source
-> `aws-smus-cicd-cli`, and it deploys only into projects that already exist — a deployment target has
-> none, so it is an *exporter* on the Sandbox side and the pipeline stays the deployer (D28). The
-> `Workflows` surface is **MWAA Serverless only** (D7 amended), which moves the provisioned `Workflows`
-> blueprint out of category 2 — its cost trigger no longer exists. Whether a Studio-authored workflow
-> produces a promotable definition is measured at
-> [6d](plan/stages/stage-06d-unified-studio-remainder.md) step 4, and this file's roster claim about the
-> serverless surface being separate from the eleven configurations is that measurement's first question.
+**The domain has one associated account.** `Development` became the headless `Staging` at
+[Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on 2026-09-06, so its eleven blueprint
+configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
+and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). One project profile
+survives, `experimentation`, pinned to Sandbox.
 
 ## The object model — domain, project, and the profiles between them
 
@@ -445,7 +438,7 @@ can be diffed against this table directly.
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
 | `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Measured at step 1.5 (2026-08-21): a base variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
-| `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is separate: Stage 10 verification (i) finds what enables it | **2** |
+| `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is **not** this blueprint and needs no configuration of its own: 6d step 4 found it already provided by the eleven category-1 configurations (§The workflow surface) | **2** |
 
 **All 23 rows carry a category** (user, 2026-08-21), settled against the measured roster rather than
 against the console grouping decision 5 had addressed: closed at 12/5/6 and re-cut to 11/5/7 the same
@@ -506,6 +499,71 @@ profile, never as an extra on these two.
 > registered locations is **unmeasured** — INT-15 and Stage 6 verification (v)'s question, what a
 > service-authored role can do that this project did not grant. The boundary's S3 deny names the
 > **LF-registered** buckets, so it says nothing about the derived zone, where a project's outputs live.
+
+## The workflow surface
+
+Measured at [6d](plan/stages/stage-06d-unified-studio-remainder.md) step 4, 2026-09-09/10, against a
+workflow a person authored in the portal on 2026-08-27.
+
+- **Nothing enables it.** The surface exists with the eleven category-1 blueprint configurations 6a
+  applied; no twelfth configuration, no blueprint change and no flag stands between a project and a
+  workflow. The roster claim that the serverless surface is separate from the eleven is therefore
+  false: it is one of the things they already provide.
+- **It is MWAA Serverless** (D7 amended), billed at USD 0.088 per task-hour. The provisioned
+  `Workflows` blueprint stays out of daily use, and its only remaining role is D28's last-rung
+  fallback.
+- **A run is two attempts**, so the task's `DurationInSeconds` is the reading and the run's is double
+  it.
+- **A "Notebook task" is a `CreateTrainingJob`.** `SageMakerNotebookOperator` executes the notebook as
+  a training job, which is why it meets `DenySageMakerJobsOffVpc` in the **D13 boundary's** copy of
+  the statement and not in the persona sets' (Lesson 33). Filling the portal's empty `compute` block
+  satisfies one of the boundary's five conditions and changes nothing else, so the portal's notebook
+  operator does not run in this estate by design.
+- **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
+  no field of that API restores, so an update authored outside the portal severs it.
+
+## The CI/CD tool is an exporter
+
+The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and it deploys only
+into projects that already exist. A deployment target under D26 has no project and no domain
+association, so the tool cannot reach one: on the Sandbox side it exports a project's artifacts, and
+the GitLab pipeline stays the deployer (D28). Stage 8 step 5.6 writes the lint that enforces the
+difference.
+
+## The catalog surface
+
+The business catalog over this domain is [Stage 6f](plan/stages/stage-06f-data-governance.md)'s
+subject and [`GOVERNANCE.md`](GOVERNANCE.md) holds the model. What belongs here is what the SMUS
+objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/catalog.py).
+
+- **A project's Tooling environment creates a data source nobody asked for.**
+  `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`
+  and runs on a **daily cron**, `cron(32 17 * * ? *)`, created with the environment. It publishes
+  nothing (`publishOnImport: false`) and had found no asset when read, but it is a scheduled run this
+  repository did not write (Lesson 17). The Glue data source a person creates in the portal carries no
+  schedule and **`enableBusinessNameGeneration: true`**, which sends table and column names to a
+  generative model — 6f decision 3.
+- **The domain offers 23 managed asset types**, `GlueTableAssetType` among them, all owned by the
+  domain's own project. A custom type is not needed to publish a Glue table.
+- **`list-domains` in an associated member account returns the shared domain.** The listing alone
+  cannot say where a domain lives; `managedAccountId` can, and it names the registry account on both
+  sides of an association. Any check that reads the listing reports the association as a second
+  domain.
+- **The blueprint's manage-access role is a Lake Formation administrator.** Sandbox's
+  `DataLakeSettings` names `awsds-sandbox-smus-provisioning` and `awsds-sandbox-smus-manage-access`
+  beside the one this repository declares, and neither was written here (open question 24;
+  `consumer-data-v0.5.0` holds the declared seat under `ignore_changes`, and `DL-13` is what notices a
+  change).
+- **Every user of the domain may be added to any project's member pool.**
+  `ADD_TO_PROJECT_MEMBER_POOL` on the root domain unit reads `allUsersGrantFilter`, DataZone's
+  default. Both override policy types are empty, so the owner project's approval is the control on a
+  subscription — and nothing at the domain level restricts a direct Share.
+- **The domain execution role carries more than the approval verbs.**
+  `SageMakerStudioDomainExecutionRolePolicy`, at **v23**, grants the whole subscription cycle plus
+  `AddPolicyGrant` and `RemovePolicyGrant` over the policies above, `datazone:GetEnvironmentCredentials`,
+  `sts:SetContext` and `q:PassRequest`. It is AWS's document and moves without this repository being
+  asked (Lesson 11), which is why a preventive control over publishing or sharing belongs on this role
+  rather than in an OU document.
 
 ## S3 — the project's own storage, and where the lake is not
 

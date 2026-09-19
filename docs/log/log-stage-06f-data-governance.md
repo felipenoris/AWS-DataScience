@@ -220,3 +220,138 @@ files at the user's requests; this entry was written at the user's request. Time
   - The chat had said the catalog does not read LF-Tags; whether a published asset shows them is 4.1.
   - Sentences about Stages 7-10 were narrowed to what those stages say, and the rite is marked designed
     and not exercised.
+
+## 2026-09-18 — `catalog.py`, the domain's authorization, and what a publish did not do
+
+*Claude's sitting, read-only throughout, as `awsds-infra-data` and `awsds-infra-sandbox-1`. It closes
+steps 1.1, 1.2 and 1.3 and answers verification vi ahead of step 4.1. Times are UTC.*
+
+### The instrument
+
+- **[Claude] `./aws/catalog.py` written and run.** Two fixed profiles, nine checks `CT-1`..`CT-9`,
+  `aws/output/catalog.txt`. First run: `CT-1`, `CT-2`, `CT-4`, `CT-7`, `CT-8`, `CT-9` pass; `CT-3`,
+  `CT-5`, `CT-6` are notes. Its row is in [`aws/INDEX.md`](../../aws/INDEX.md).
+
+- **[Claude] `CT-1`'s first draft was wrong, and the way it was wrong is the finding.**
+  `datazone list-domains` **in an associated member account returns the shared domain**, so the draft
+  read the association as a second domain and failed `CT-1` against `D26`. The discriminator is
+  `managedAccountId`, which names the owning account and reads the same on both sides of an
+  association. Rewritten against that field: the consumer account **sees** the domain and **owns**
+  none.
+
+- **[Claude] The three classifiers were exercised against fabricated grants** (Lesson 13's discipline):
+  `touches_lake` on seven cases — the lake's three databases, a tag expression and the registered raw
+  prefix caught, the project's own database, table and `dev/` scope not — and `is_smus_principal` on
+  six, with `DataScientistAccess` and `awsds-data-catalog-maintenance` as the negative controls. No
+  account id reaches the report.
+
+### 1.1 — the domain's authorization, read on the root domain unit
+
+- **[Claude] Of the policy types that apply to a domain unit, one carries a grant and one carries the
+  default.** `CREATE_PROJECT`, `CREATE_DOMAIN_UNIT`, `CREATE_GLOSSARY`, `CREATE_FORM_TYPE` and
+  `CREATE_ASSET_TYPE` are **empty**; `CREATE_PROJECT_FROM_PROJECT_PROFILE` names **one Identity Center
+  group**; and **`ADD_TO_PROJECT_MEMBER_POOL` reads `{"user":{"allUsersGrantFilter":{}}}`** — every user
+  of the domain may be added to any project's member pool, which is DataZone's default and the axis
+  open question 20 is written on.
+
+- **[Claude] Both override types are empty**, so the owner project's approval is the control on the
+  catalog road: `OVERRIDE_DOMAIN_UNIT_OWNERS` and `OVERRIDE_PROJECT_OWNERS` name nobody. `CT-9` is that
+  reading.
+
+- **[Claude] Two policy types are refused to `InfrastructureAccess`** — `CREATE_ENVIRONMENT` and
+  `USE_ASSET_TYPE`, `AccessDeniedException` on `ListPolicyGrants` — and four are rejected as not
+  applicable to a domain unit. The report prints `DENIED` for the first pair and does not ask for the
+  second: a refused read and an empty policy are different facts (0.6's ceiling, measured again).
+
+### 1.2 — the domain execution role, and what its managed policy carries
+
+- **[Claude] `awsds-data-studio-domain-execution` holds one AWS-managed policy and no inline policy**:
+  `SageMakerStudioDomainExecutionRolePolicy`, **at version 23**, trusted by `datazone.amazonaws.com`,
+  with **no permissions boundary**. Three of its statements decide where decision due 5 can live:
+  - `DataZonePermissions` grants the **whole approval cycle** — `AcceptSubscriptionRequest`,
+    `RejectSubscriptionRequest`, `CreateSubscriptionGrant`, `DeleteSubscriptionGrant`,
+    `RevokeSubscription` — **and `AddPolicyGrant` / `RemovePolicyGrant`**, so the role can change the
+    domain's own authorization policies, the ones 1.1 just read.
+  - It also grants `datazone:GetEnvironmentCredentials`, the API open question 20 is about, on the
+    service's own role rather than on a persona.
+  - `AmazonQPermissionsStatement` grants **`q:PassRequest`**, which lets Amazon Q act with the caller's
+    credentials. [Stage 6d](../plan/stages/stage-06d-unified-studio-remainder.md) step 10.5 proposes
+    denying that action on the argument that *"the managed policy does not grant it today"* — true of the
+    **project** role's policy, and **false of this one**. The deny that step writes is therefore not
+    redundant, and its target list is what the reading changes.
+  - `AllowSetTrustedIdentity` grants `sts:SetContext`, trusted identity propagation's own action, on a
+    role in a domain where the Tooling parameter is locked `"false"` (open question 13).
+
+  The policy is AWS's and versioned, so every sentence above is dated to v23 (Lesson 11).
+
+### The catalog as it stands, and what publishing did not change
+
+- **[Claude] Two listings, no access act.** `house-price` (a `GlueTableAssetType`, revision 2) and
+  `my-data-product`, both owned by `eighth-experimentation`. Subscriptions, subscription requests and
+  subscription grants are **zero on both**, which confirms 0.4 from the other side: a publish is
+  metadata, and nothing on the catalog road has granted anything.
+
+- **[Claude] A second data source exists, and the blueprint wrote it.** Beside the Glue source 0.4
+  recorded, `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks
+  `SageMakerModelPackageGroupAssetType` and **runs on `cron(32 17 * * ? *)`** — a daily schedule nobody
+  in this repository chose, created with the project's Tooling environment (Lesson 17). It was `RUNNING`
+  when read, at 17:38Z, with `lastRunAssetCount` 0. `CT-6` names it rather than leaving it to be
+  discovered.
+
+- **[Claude] The AI half of decision due 3 has a reading now**: the Glue source carries
+  `enableBusinessNameGeneration: true` and the SageMaker source `false`. Neither publishes on import
+  (`CT-4`), so no listing has ever been created without a person asking for it.
+
+- **[Claude] `CT-7` passes, and it is the check the stage exists for.** Twelve grants are held by
+  SMUS-managed principals — the conditioned `IAMPrincipals` entries, the project role, the provisioning
+  role and the manage-access role — and **every one is on a project-owned object**: `mydatabase`,
+  `default`, `mydatabase.house-price` and the project's `dev/` data location. None reaches `raw`,
+  `curated`, `dropbox` or an LF-Tag. The lake and the catalog do not touch yet, measured rather than
+  assumed.
+
+- **[Claude] Every `IAMPrincipals` grant carries the project condition** (`CT-8`): all five read
+  `context has datazone && context.datazone has projectId && context.datazone.projectId=="<project>"`,
+  written by `awsds-sandbox-smus-provisioning`. Without that condition the principal is the whole
+  account.
+
+### Verification vi, answered before its step: a published asset shows no LF-Tag
+
+- **[Claude] `get-listing` on `house-price` carries `lakeFormationDetails: {}`** — the field exists and
+  is empty. The listing's forms are `AwsConfigurationForm`, `CommonDetails`, `DataSourceReferenceForm`,
+  `GlueTableForm` and `SubscriptionTermsForm`; `GlueTableForm` carries the column names and types and
+  no tag.
+
+- **[Claude] There was nothing for it to show.** `list-lf-tags` in **Sandbox returns none** — the
+  ontology (`layer`, `businessunit`, `classification`) is defined in `Data Governance` alone — and
+  `get-resource-lf-tags` on `mydatabase.house-price` returns no assigned tag. So the answer to
+  verification vi is **no**, and this reading cannot yet separate *the catalog does not display
+  LF-Tags* from *this asset has none*: the separating case is a lake table published under decision 1,
+  and 4.1 stays open for it. What follows today is 4.1's own alternative — `classification` and `layer`
+  reach the catalog through a glossary or a required metadata form, not for free.
+
+- **[Claude] `list-lineage-events` returns empty.** The two lineage nodes 0.4 recorded were written by
+  the publish itself; no OpenLineage event was ever posted, which is 6.2's starting point.
+
+### 3.1's API half, and what it leaves to the vendor pages
+
+- **[Claude] Shape (a) has its targets.** Sandbox's Glue catalog carries the resource links `raw` and
+  `curated`, both with `TargetDatabase` in the registry account's catalog — Stage 5 pass 4's objects,
+  still there. Whether a DataZone Glue data source accepts a resource link as its `databaseName` is
+  not answerable by reading and stays this step's first vendor question.
+
+- **[Claude] Shape (b) starts from nothing.** `list-environment-blueprint-configurations` in
+  `Data Governance` returns **zero**. That is `US-3` passing, and it is also (b)'s whole cost: the
+  configuration would be the first object ever configured in that account, against D22.
+
+- **[Claude] Shape (d) needs no custom asset type.** `search-types --managed --search-scope
+  ASSET_TYPE` returns **23**, including `GlueTableAssetType` — the type `house-price` already carries
+  — all owned by `dzd_amazon_datazone_domain_project`. What this does not settle is whether a Glue
+  table can be published **unmanaged**, which is a property of the fulfilment and not of the type, and
+  is the second vendor question.
+
+- **[Claude] The manage-access role already writes the grant form 3.2 describes, on a project
+  object.** `awsds-sandbox-smus-manage-access` holds `DESCRIBE` on `mydatabase.house-price` and
+  `SELECT` on its columns, **both with the grant option**. So the shape (a) and (b) would need is one
+  the service already produces for project-owned tables; the untested case is the same grant on a lake
+  table across the account boundary, where every cross-account grant must carry the option anyway
+  (Stage 5 pass 3's finding).
