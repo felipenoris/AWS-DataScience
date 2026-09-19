@@ -1412,3 +1412,35 @@ the plane admits the name, and the only thing holding a session on Bedrock is
 `CLAUDE_CODE_USE_BEDROCK` in the image. The four entries carry a revision trigger in the code — every
 other name on this plane is a dependency the environment has, and these are a measurement someone
 intends to take.
+
+## 2026-09-19 — the direct API answered from a space, with the file deleted by hand
+
+- **[user] "Funcionou utilizar o Claude Code na extensão VSCode apagando o arquivo
+  `managed-settings.json` direto do space."** The measurement the four names were opened for. It
+  confirms the chain this stage's previous entry predicted, end to end: the compute plane admits the
+  Anthropic hosts, deleting the file is the whole provider switch, and a login completed from inside
+  a space.
+
+- **[Claude] The estate's Bedrock controls did not apply to that session**, and this is the entry to
+  cite when someone asks what changed. The call did not go to `bedrock-runtime`, so it carries no
+  `vpcEndpointId` and CloudTrail has no row for it; `availableModels` did not constrain the model;
+  the account's retention mode, frozen at `none` by step 7.5, is an AWS setting that says nothing
+  about this destination; and the session's model choice was the client's, not the use-case form's.
+  **Verification (v) — "does a session reach no Anthropic host?" — is now false by construction**,
+  and what holds a session on Bedrock is `CLAUDE_CODE_USE_BEDROCK` in the image and nothing else.
+
+- **[Claude] The deletion is a measurement, not a configuration** (Lesson 35's shape, as on
+  2026-09-12). It lives in the container's writable layer, dies with the space, and diverges from
+  what the image declares. A space started tomorrow from `default-v0.4.0` carries the file again and
+  is on Bedrock again.
+
+- **[Claude] What this entry does not say.** **Which account type signed in is not recorded**, nor
+  which model answered, nor how the browser step was completed — the callback through the editor's
+  forwarding and the pasted-code path are different flows and the report names neither. Whether the
+  proxy log carries `api.anthropic.com` and `platform.claude.com`, and whether `claude.ai` and
+  `claude.com` were touched from the space at all, is the reading that would settle both halves; the
+  four names were listed on the argument that the browser's half runs on the laptop, and this session
+  is the first chance to test it. **The reading was not taken: the SSO session expired before it
+  could be.** Owed, with `/awsds/prod/proxy` over the window and a CloudTrail check for the absence
+  of a Bedrock invocation in it — the negative control that makes the absence mean something
+  (Lesson 62).

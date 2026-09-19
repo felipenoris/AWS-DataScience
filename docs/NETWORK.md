@@ -364,7 +364,9 @@ nobody is looking at. The check that answers it is `PX-3`, and only `--on-host` 
 `0 to add, 1 to change, 0 to destroy` with the re-plan reading `No changes`. The parameter went
 **version 8 to 9 at 17:12:12Z** and `DN-3` passes against it. **`PX-3` closed at 20:32Z**, after the
 hub was raised and the association's next tick rendered the file: 32 against 32, both applies in force
-on the host. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
+on the host. **A session from a space then reached the direct API the same evening** (the user),
+with the managed-settings file deleted by hand inside the container — the behavioural proof, which
+`PX-3` cannot give. The proxy-log reading that would name which of the four hosts carried it is owed. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
 instead of Amazon Bedrock: the first carries the model calls, the second the OAuth token exchange,
 which the vendor documents as the path for a Console **and** a claude.ai sign-in. `claude.ai` and
 `claude.com` are the browser's half, reached from the tunnel plane when the login is driven from a
@@ -383,7 +385,10 @@ the restore below put it back for a different reason than this footnote refused 
 `github.com`, `api.github.com` and `raw.githubusercontent.com`. Applied the same day for
 `0 to add, 1 to change, 0 to destroy`, the re-plan `No changes`, the parameter **version 9 to 10 at
 20:13:23Z**, and `DN-3` passing against it. `PX-3` closed at 20:32Z together with the footnote above's,
-and the paragraph on how long an edit takes to bite carries what the wait measured. `git clone`, `fetch` and `push` from a
+and the paragraph on how long an edit takes to bite carries what the wait measured. **A connection to
+GitHub from the SageMaker environment then succeeded** (the user, the same evening), which is the
+behavioural half; which operation ran, and whether all three names carried it, is owed to the proxy
+log. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed

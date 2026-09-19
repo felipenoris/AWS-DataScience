@@ -284,7 +284,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **four of them are Anthropic's direct API, applied 2026-09-19** (`api.anthropic.com`,
   `platform.claude.com`, `claude.ai`, `claude.com`), for a measurement, so 6e's "no Anthropic host"
   no longer holds and `CLAUDE_CODE_USE_BEDROCK` in the image is the only thing keeping a session on
-  Bedrock; parameter v10 after the GitHub restore, `DN-1`..`DN-4` and `PX-1`..`PX-3` all green 2026-09-19;
+  Bedrock; parameter v10 after the GitHub restore, `DN-1`..`DN-4` and `PX-1`..`PX-3` all green 2026-09-19.
+  **Both exercised from a space that evening by the user**: GitHub connects, and Claude Code answered on
+  the direct API with `managed-settings.json` deleted by hand — so 6e verification (v) is false and a
+  session can run outside every Bedrock control. The proxy-log readings that would name the hosts are
+  owed (SSO expired);
   the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
   (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
   redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty

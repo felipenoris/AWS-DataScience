@@ -2531,3 +2531,21 @@ edit's age — so a spoke raised inside that window is filtered by a policy nobo
 paragraph now carries both halves, and the platform behaviour joins
 [`lessons.md`](../plan/lessons.md)'s second list: a schedule-only State Manager association does not
 fire when an instance starts.
+
+### The restore exercised from a space
+
+- **[user] "Testei o ambiente SageMaker e a conexão com github funcionou."** The first behavioural
+  proof of the restore, and the only kind `PX-3` cannot give — its own report says *"What it cannot
+  see: whether a request succeeds"*. Code, parameter, host and a real request now agree.
+
+- **[Claude] What this entry does not say**, so a later reader does not take it for more than it is
+  (Lesson 37). **Which operation ran is not recorded here** — `clone`, `fetch`, `push` and a plain
+  `https` fetch are four different things and the report names none of them. Neither is the space's
+  address, the repository, nor whether any of the three names carried the request or only
+  `github.com`. The confirming reading is the proxy access log for the window, `/awsds/prod/proxy`,
+  which carries the requested hostname and the byte counts; **it was not taken, because the SSO
+  session expired before it could be**. It is owed, and it is cheap.
+
+- **[Claude] What stays true regardless**, and is the thing to check first if a later fetch fails:
+  a redirect is a new request with a new name, so anything landing on `codeload.github.com` or
+  `objects.githubusercontent.com` is still refused. Neither was ever on this plane.
