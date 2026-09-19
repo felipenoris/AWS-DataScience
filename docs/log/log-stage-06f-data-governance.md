@@ -471,3 +471,57 @@ steps 1.1, 1.2 and 1.3 and answers verification vi ahead of step 4.1. Times are 
   people either way; with two it is the difference between units that can see each other's projects
   and units that cannot, and nothing in Stage 14's module touches it. Recorded there as the first
   reading the second vend takes, rather than as a decision taken now with N = 1.
+
+## 2026-09-19 — the blueprint's own data source has been failing since the day it was created
+
+*Claude's sitting, read-only, as `awsds-infra-data` and `awsds-infra-sandbox-1`, after the merge. It
+began as a re-run of the instruments and turned up something no instrument was reading.*
+
+### The three instruments agree, and one reading did not fit
+
+- **[Claude] `catalog.py`, `studio.py` and `datalake.py` all clean.** `catalog.py` every check green;
+  `studio.py` **0 checks FAILED** (`US-1`..`US-9`, with `US-2`'s two notes the resting state);
+  `datalake.py` 30 passes and two notes, both recorded — `DL-13`'s two service-appointed Lake
+  Formation seats and `DL-14`'s project `dev/` registration.
+
+- **[Claude] What did not fit was `CT-6`'s subject.** The check named
+  `Tooling-default-sagemaker-modelpackagegroup-datasource` as a cron nobody wrote, and the live
+  `status` field read `RUNNING` — so the reading looked healthy. `list-data-source-runs` says
+  otherwise: **25 `FAILED` and one `RUNNING`**, every run `SCHEDULED`, the oldest **2026-08-24**, the
+  day after the Tooling environment created it.
+
+### Why the live status hid it
+
+- **[Claude] A run's `stoppedAt` equals its successor's `startedAt`.** The 2026-09-17 run started at
+  17:38:11Z and stopped at 2026-09-18 17:38:11Z, when the next one fired. So a daily source always
+  shows exactly one `RUNNING` run — the current 24-hour window — and **the field that describes the
+  data source reads healthy however long it has been failing**. The history is the only place the
+  failure is visible.
+
+- **[Claude] The error is the same on every run**, read from 2026-09-17's:
+  `VALIDATION_EXCEPTION`, *"Failed to run the data source. Please check if RAM share is correctly
+  configured between Amazon SageMaker and Amazon DataZone"*. Its configuration snapshot tracks
+  `SageMakerModelPackageGroupAssetType` over an **empty list**, with
+  `enableBusinessNameGeneration: false`.
+
+- **[Claude] It costs nothing and creates nothing**: `lastRunAssetCount` 0 on every run, no asset, no
+  hourly meter. Recorded as [`AWS_STATE.md`](../AWS_STATE.md) **`EXC-11`** rather than fixed — the
+  source tracks an asset type this estate has never produced, and the RAM share its error names
+  belongs to a SMUS↔DataZone path no stage has built. It becomes a real gap when the Model Registry
+  is used (Stage 9), and the alternative is a decision to delete the data source.
+
+### The check that missed it, and the shape of the repair
+
+- **[Claude] `CT-6` read the schedule and stopped there.** It was written to name a cron nobody
+  wrote (Lesson 17) and passed over 26 days of daily failures, because it never asked how the runs
+  ended. It now reads `list-data-source-runs` per source and judges on the **completed** runs.
+
+- **[Claude] It is a note, not a failure, and the reason is Lesson 50.** A check that fails every run
+  while a recorded exception stands teaches its reader to skip it. `FAILING_BY_EXCEPTION` names this
+  one source with its exception id and date; `CT-6` reports it as a note citing `EXC-11`, and
+  **fails on any other scheduled source whose completed runs have all failed**. Exercised against
+  fabricated names, including a near-miss (`…-datasource-2`), which fails as it should. Closing
+  `EXC-11` means deleting the row, and the check turns red the same day if the failure survives.
+
+- **[Claude] The report's data-source table gained a `RUNS` column**, so the contrast that hid this —
+  `STATUS RUNNING` beside `25 FAILED, 1 RUNNING` — is on one line.

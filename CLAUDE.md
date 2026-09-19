@@ -270,7 +270,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **domain execution role** — which itself holds `AddPolicyGrant`, `GetEnvironmentCredentials` and
   `q:PassRequest` at policy v23. A published asset shows **no** LF-Tag (verification vi), and Sandbox
   defines no ontology at all. The `Tooling` blueprint creates a data source on a **daily cron**
-  nobody wrote. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
+  nobody wrote — and it has **failed every day since 2026-08-24** (`EXC-11`), invisible in its own
+  `status` field because each run stops when its successor starts. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
