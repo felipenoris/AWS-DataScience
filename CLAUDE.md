@@ -291,7 +291,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `api.anthropic.com` 298 requests, `platform.claude.com` **2** (needed), `claude.ai`/`claude.com`
   **never touched** (so two entries no measurement justifies), `mcp-proxy` refused twice and the Datadog
   intake 98 times, and **CloudTrail empty** — the access log is the only record of that hour. On the
-  GitHub side ten family names were refused, `release-assets.githubusercontent.com` the most at 18;
+  GitHub side ten family names were refused and **nine were added 2026-09-19** (parameter v11, 41 entries), `release-assets.githubusercontent.com` the most-refused at 18; **`ssh.github.com` stays off by the user's decision** — it serves SSH on 443 and the port guard permits `CONNECT` there, so it would open `git` over SSH from a space;
   the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
   (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
   redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty

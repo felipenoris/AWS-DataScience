@@ -317,7 +317,7 @@ comes back a 403 naming the host.
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 32 † ‡ ¶ ‖ |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 41 † ‡ ¶ ‖ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
@@ -397,17 +397,29 @@ from the same log: `github.com` 200 × 54 and 9.68 MB, `api.github.com` 200 × 2
 `raw.githubusercontent.com` 200 × 7, all from one space address. **Ten GitHub-family names were refused
 in the same window**, the most frequent being `release-assets.githubusercontent.com` at eighteen — more
 than the two redirect targets this file first named, and none of them needed for a clone, a fetch or a
-push. `git clone`, `fetch` and `push` from a
+push. **Nine of those ten joined the plane the same evening** (the user), applied for
+`0 to add, 1 to change, 0 to destroy` with the re-plan `No changes` and the parameter **version 10 to
+11 at 22:35:18Z**, `DN-1`..`DN-4` green against it. `PX-3` waits for the association's next tick, the
+parameter having been written four minutes past one. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed
 environment.
 
-**Three names, not a namespace, and the exactness costs something.** `dstdomain` matches a bare entry
-exactly, so `github.com` covers neither of the other two, and an HTTP redirect is a new request with a
-new name. A release tarball or anything else landing on `codeload.github.com` or
-`objects.githubusercontent.com` is still refused. Neither was ever on this plane. The build plane never
-lost GitHub, since `production-foundation` is `open`.
+**Twelve names, not a namespace.** `dstdomain` matches a bare entry exactly, so each host is its own
+entry and `.github.com` would authorise anything anyone publishes under it. The nine added on the
+reading are, in its order: `release-assets.githubusercontent.com` (403 × 18, release and asset
+downloads), `cli.github.com` (× 3), `gist.github.com` and `objects.githubusercontent.com` (× 2 each),
+then `codeload.github.com`, `uploads.github.com`, `github-cloud.githubusercontent.com`,
+`pipelines.actions.githubusercontent.com` and `ghcr.io` (× 1 each).
+
+**`ssh.github.com` is the tenth and stays off**, refused by the user when the entry was proposed. It
+serves SSH on 443, and the global port guard permits `CONNECT` to 443 while the proxy does not inspect
+what the tunnel carries — so allowing it would make `git` over SSH from a space work, with a key, which
+no entry here does. A `Connection refused` on that name is this decision, not a fault. Two of the nine
+are not fetch paths either: `ghcr.io` makes an arbitrary container image pullable into a space, and
+`uploads.github.com` is the release-asset upload endpoint. The build plane never lost GitHub, since
+`production-foundation` is `open`.
 
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
