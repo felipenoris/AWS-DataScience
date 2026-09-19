@@ -347,11 +347,24 @@ and 70,816 of tarball, from the **same container address** as the refusals. An a
 apply plus at most one interval, which is why `DN-3` (code against parameter) and `PX-3` (parameter
 against the running file) are two checks and not one.
 
+**That sentence assumes the host is running, and 2026-09-19 measured what happens when it is not.**
+The association is `cron(0/30 * * * ? *)` and had last run at **20:00:40Z**; `make hub-up` started
+the host at **20:04:55Z**, four minutes past the tick; at 20:25Z the host was still serving the
+`squid.conf` of its **previous session** — 25 entries against the parameter's 32, missing both of
+that day's applies, and one of those had been written at 17:12Z while the host was stopped. **Starting
+the hub renders nothing.** The scheduled run at **20:30:53Z** reported `Success` with empty stdout,
+which is the silence `PX-3` exists to break, and `PX-3` then read 32 against 32.
+
+So the operating rule has two halves. On a running host an edit is an apply plus at most one
+interval. **After `make hub-up` the proxy enforces the previous session's allow-list for up to one
+interval**, however old the edit is, and a spoke raised inside that window is filtered by a policy
+nobody is looking at. The check that answers it is `PX-3`, and only `--on-host` can ask.
+
 ¶ **Four Anthropic names entered the plane on 2026-09-19** (the user), applied the same day for
 `0 to add, 1 to change, 0 to destroy` with the re-plan reading `No changes`. The parameter went
-**version 8 to 9 at 17:12:12Z** and `DN-3` passes against it. **`PX-3` is unmeasured**: both hub hosts
-were stopped, so no running `squid.conf` existed to compare, and the second link closes after the next
-`make hub-up`. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
+**version 8 to 9 at 17:12:12Z** and `DN-3` passes against it. **`PX-3` closed at 20:32Z**, after the
+hub was raised and the association's next tick rendered the file: 32 against 32, both applies in force
+on the host. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
 instead of Amazon Bedrock: the first carries the model calls, the second the OAuth token exchange,
 which the vendor documents as the path for a Console **and** a claude.ai sign-in. `claude.ai` and
 `claude.com` are the browser's half, reached from the tunnel plane when the login is driven from a
@@ -369,8 +382,8 @@ the restore below put it back for a different reason than this footnote refused 
 ‖ **Source control returned on 2026-09-19** (the user), reversing the removal of 2026-09-09:
 `github.com`, `api.github.com` and `raw.githubusercontent.com`. Applied the same day for
 `0 to add, 1 to change, 0 to destroy`, the re-plan `No changes`, the parameter **version 9 to 10 at
-20:13:23Z**, and `DN-3` passing against it. `PX-3` is unmeasured for the same reason as the footnote
-above: both hub hosts were stopped. `git clone`, `fetch` and `push` from a
+20:13:23Z**, and `DN-3` passing against it. `PX-3` closed at 20:32Z together with the footnote above's,
+and the paragraph on how long an edit takes to bite carries what the wait measured. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed

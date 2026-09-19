@@ -284,14 +284,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **four of them are Anthropic's direct API, applied 2026-09-19** (`api.anthropic.com`,
   `platform.claude.com`, `claude.ai`, `claude.com`), for a measurement, so 6e's "no Anthropic host"
   no longer holds and `CLAUDE_CODE_USE_BEDROCK` in the image is the only thing keeping a session on
-  Bedrock; parameter v9, `DN-3` green, `PX-3` unmeasured (hub stopped);
+  Bedrock; parameter v10 after the GitHub restore, `DN-1`..`DN-4` and `PX-1`..`PX-3` all green 2026-09-19;
   the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
   (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
   redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty
   allow-list refuses everything and an empty deny-list permits everything**. `DN-4` reads "no plane is
   `open` except the ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next
   half-hourly association tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running
-  file) are two questions.
+  file) are two questions. **`make hub-up` renders nothing**: the host serves its previous session's
+  `squid.conf` for up to one interval, whatever the edit's age (measured 2026-09-19), and the
+  association reports `Success` with empty stdout.
 - **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is invisible,
   an HTTP redirect is a new name, and a bare entry matches exactly (`github.com` covers neither
   `api.github.com` nor `raw.githubusercontent.com`). A refusal over https reads `000` at the client. A missing name can also fail **without** a `403`: the
