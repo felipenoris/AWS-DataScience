@@ -2580,3 +2580,40 @@ through the proxy and refused twice by `deny to_private`, as was `10.32.0.10`. T
 ordering property doing its job on live traffic rather than in a configuration read. `example.com`,
 `conda.anaconda.org`, `repo.anaconda.com` and `registry.npmjs.org` were each refused too, the standing
 negative controls.
+
+### The refused names joined the plane, less one
+
+**[user] "Adicione as urls do github que foram negadas."** Then, while the first plan was being
+saved: **"não precisa incluir na allow-list url que utiliza ssh."** So nine of the ten the reading
+named, and `ssh.github.com` left off.
+
+**[Claude] The nine, in the order the log ranked them**: `release-assets.githubusercontent.com` (403
+× 18), `cli.github.com` (× 3), `gist.github.com` and `objects.githubusercontent.com` (× 2 each),
+`codeload.github.com`, `uploads.github.com`, `github-cloud.githubusercontent.com`,
+`pipelines.actions.githubusercontent.com` and `ghcr.io` (× 1 each). Thirty-two entries to forty-one.
+
+**[Claude] Why `ssh.github.com` was worth naming before it was added, and why it is worth a sentence
+now that it was not.** It serves SSH on 443. The proxy's global guard permits `CONNECT` to 443 and the
+proxy does not inspect what the tunnel then carries, so that one entry would have made `git` over SSH
+from a space work, with a key — a channel no other name here opens, and one the HTTPS entries do not
+imply. Its two refusals in the reading stay refusals. A later `Connection refused` on that name is
+this decision rather than a fault, which is the sentence the code comment now carries.
+
+**[Claude] Two of the nine are not fetch paths either**, recorded where the entry is rather than
+here alone: `ghcr.io` makes an arbitrary container image pullable into a space, and
+`uploads.github.com` is the release-asset upload endpoint, a write path.
+
+**[Claude] Applied 2026-09-19, Recipe A, `awsds-infra-prod`.** `0 to add, 1 to change, 0 to destroy`,
+`Modifications complete after 1s`, the re-plan `No changes`. The parameter went **version 10 to 11 at
+22:35:18Z** and carries forty-one entries with the twelve GitHub names among them and
+`ssh.github.com` absent. `DN-1`, `DN-2`, `DN-3` and `DN-4` pass against it.
+
+**[Claude] `PX-3` is owed, and this time the wait was predicted rather than discovered.** The
+association had last run at **22:30:49Z** and the parameter was written at 22:35:18Z, four and a half
+minutes past the tick, so the render lands at the next one and the host serves forty-one entries only
+after it. That is the behaviour the previous section measured, used here as a forecast — the first
+time this estate has read the association clock before rather than after being surprised by it.
+
+**[Claude] The first plan was saved and discarded.** It carried ten names; the user's second message
+arrived while it was being written, so it was deleted unapplied rather than edited, and the plan that
+ran was built from the nine-name list. No apply ever held `ssh.github.com`.

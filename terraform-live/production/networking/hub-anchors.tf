@@ -338,6 +338,43 @@ locals {
     "github.com",
     "api.github.com",
     "raw.githubusercontent.com",
+    # Nine of the ten the same session was refused, added 2026-09-19 (the user) once the log named
+    # them. They are listed in descending order of that reading, so the file records which names a
+    # space actually reaches for rather than which ones a person thought of:
+    #
+    #   release-assets.githubusercontent.com  403 x 18 - release and asset downloads, the redirect
+    #                                         target neither earlier guess covered
+    #   cli.github.com                        403 x 3  - the `gh` client's own host
+    #   gist.github.com                       403 x 2
+    #   objects.githubusercontent.com         403 x 2  - LFS and blob storage
+    #   codeload.github.com                   403 x 1  - tarball and zipball of a ref
+    #   uploads.github.com                    403 x 1  - release asset upload, a write path
+    #   github-cloud.githubusercontent.com    403 x 1
+    #   pipelines.actions.githubusercontent.com 403 x 1 - Actions artifacts
+    #   ghcr.io                               403 x 1  - the container registry
+    #
+    # `ssh.github.com` is the tenth and stays OFF, refused by the user 2026-09-19 when the entry was
+    # proposed. It serves SSH on 443, and the global port guard permits `CONNECT` to 443 while the
+    # proxy does not inspect what the tunnel carries - so allowing it would make `git` over SSH from
+    # a space work, with a key, which no other entry here does. Its two refusals in the reading stay
+    # refusals, and a later `Connection refused` on that name is this decision rather than a fault.
+    #
+    # Two of the nine are not fetch paths either, and the difference belongs beside the entry.
+    # `ghcr.io` makes an arbitrary container image pullable into a space. `uploads.github.com` is the
+    # release-asset upload endpoint, so it is a write path.
+    #
+    # The data-leakage argument above covers all twelve and is not weakened by the count: each of
+    # these is another name by which code leaves a space, and `objectives.md` still names that
+    # protection as a requirement of its own. What changed is the decision, not the reasoning.
+    "release-assets.githubusercontent.com",
+    "cli.github.com",
+    "gist.github.com",
+    "objects.githubusercontent.com",
+    "codeload.github.com",
+    "uploads.github.com",
+    "github-cloud.githubusercontent.com",
+    "pipelines.actions.githubusercontent.com",
+    "ghcr.io",
     #
     # The IDE's own hosts, allowed as one block 2026-09-09 (6d 8.6). Each was read as a `403` in
     # `/awsds/prod/proxy` after 8.4 put the proxy in the process, each fires at startup without
