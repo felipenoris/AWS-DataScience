@@ -1340,3 +1340,75 @@ while looking at 6d's.*
   added and removed — or to accept the vendor's sentence with its date. Verification (xiii) now reads that
   no instrument is left in the estate as built. Verification (v)'s text was corrected the same sitting to
   separate the 46 measured DNS blocks from the inference that the Claude Code client made them.
+
+## 2026-09-19 — the direct API opened on the compute plane, for a measurement
+
+**[user] "Gostaria apenas de fazer um teste utilizando a api padrão da anthropic."** The question was
+whether commenting the managed-settings `COPY` out of the Dockerfile, or deleting the file inside a
+space, would return the extension to its stock state, and what else that would take. The stage's own
+premise is the opposite one — 6d step 7 installed an extension whose first act was `api.anthropic.com`,
+refused 17 times, and this stage answered that refusal with Amazon Bedrock. So this entry records a
+departure from it, taken deliberately.
+
+**[Claude] What the reading found, and what it corrected in this file's neighbours.**
+
+- **`api.anthropic.com` alone does not complete a login.** The vendor's network table, re-read
+  2026-09-19, gives `platform.claude.com` as the OAuth token exchange, refresh and revocation host —
+  *for a claude.ai sign-in as well as a Console one*. Two more, `claude.ai` and `claude.com`, are the
+  browser's half.
+- **The DNS Firewall is not in this path.** Under an explicit proxy the client resolves nothing and
+  Squid resolves in `VPC-SharedServices`, which carries no firewall. The proof was already in the
+  record rather than newly taken: the 17 refusals of 2026-09-11 read `403 TCP_DENIED` in the proxy
+  log, not NXDOMAIN. `sandbox/egress`'s `dns_firewall_allow_domains` was not touched.
+- **Removing the file is the whole provider switch, and it authenticates nothing.** Cloud-provider
+  credentials are the first entry of the client's precedence and exist only while
+  `CLAUDE_CODE_USE_BEDROCK` is set; without it the client falls to the subscription OAuth of `/login`,
+  which needs an Anthropic account this estate does not issue. The loopback is not the obstacle: the
+  vendor names *"WSL2, SSH sessions, and containers"* as where the browser shows a code to paste
+  instead of redirecting.
+- **`claude setup-token` is refused here**, not weighed: it mints a one-year OAuth token, the
+  long-lived credential principle 2 admits nowhere, the same ground on which
+  `AWS_BEARER_TOKEN_BEDROCK` was refused at §U.
+- **The provider switch turns two quiet hosts loud.** `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` lives
+  in the same file as the switch, and the two Datadog intakes are reached *"only when the CLI uses the
+  Anthropic API directly, never for Amazon Bedrock"*. A claude.ai login also enables that account's MCP
+  connectors by default. Both were read before the edit, and both are why the plane took four names
+  and not the vendor's table.
+
+**[user] "Ajuste o allow-list do projeto para permitir acesso a anthropic."** Four names into
+`proxy_allow_sandbox`, the plane 6d step 9 owns: `api.anthropic.com`, `platform.claude.com`,
+`claude.ai`, `claude.com`. Twenty-five entries to twenty-nine. Four hosts from the same vendor table
+stayed off, each named in the code comment with its reason — `mcp-proxy.anthropic.com`,
+`raw.githubusercontent.com` (removed from this plane 2026-09-09), `registry.npmjs.org`, and the two
+telemetry intakes.
+
+**[user] "Autorizo o apply."**
+
+- **Applied 2026-09-19, Recipe A, `awsds-infra-prod`.** `0 to add, 1 to change, 0 to destroy` — the SSM
+  parameter and nothing else — and the re-plan reads `No changes`.
+- **`/datascience/prod/proxy/allowlist` went version 8 to 9 at 17:12:12Z**, and the deployed value
+  carries the four names.
+- **`DN-1`, `DN-2`, `DN-3` and `DN-4` all pass**, `DN-3` against the parameter: 5 planes, entry for
+  entry. `make check`, `make check-docs` and the commit hooks are green, `checkov` and `tflint`
+  included.
+- **`PX-3` is unmeasured and that is the state, not an omission.** Both hub hosts are stopped, so no
+  `squid.conf` exists to compare the parameter against. The second link closes after `make hub-up`,
+  read with the fenced `./aws/proxy.py --on-host`.
+
+**[Claude] What this makes false elsewhere, corrected the same sitting** (Lesson 38: a name travels
+further than the sentence that carried it). [`remote-ide.md`](../plan/runbooks/remote-ide.md) §N said
+`api.anthropic.com` is *"on no plane"*; the 2026-09-11 measurement stands and the status clause is
+now dated. [`claude-code-sagemaker.md`](../plan/runbooks/claude-code-sagemaker.md) §I said an
+unparseable managed-settings file produces a session that reaches nothing. **It no longer does, and the
+new failure is worse**: the call leaves, the client asks for a login, and a user with an Anthropic
+account of their own can complete one — outside Bedrock, outside the endpoint, outside CloudTrail's
+attribution and outside the model scope `availableModels` locks. A file that fails to parse and a file
+that is absent produce the same session, so `/status` is what separates them.
+
+**[Claude] What this stage's verification (v) now means.** *"Does a session reach no Anthropic host?"*
+held twice, the second time on a space with neither the proxy variables nor the managed settings, where
+the DNS Firewall blocked `api.anthropic.com` 46 times. **That control is gone for the proxied path**:
+the plane admits the name, and the only thing holding a session on Bedrock is
+`CLAUDE_CODE_USE_BEDROCK` in the image. The four entries carry a revision trigger in the code — every
+other name on this plane is a dependency the environment has, and these are a measurement someone
+intends to take.

@@ -354,6 +354,50 @@ locals {
     # puts under it.
     "open-vsx.org",
     "openvsx.eclipsecontent.org",
+    # Anthropic's direct API, allowed 2026-09-19 (the user). Claude Code reaches this family when it
+    # is not pointed at Amazon Bedrock. `CLAUDE_CODE_USE_BEDROCK` is the first entry in the client's
+    # credential precedence and it lives in `images/dev-env/claude-code/managed-settings.json`, so a
+    # space whose copy of that file is edited or removed falls back to the OAuth login these names
+    # serve. The house image as shipped reaches none of them: its call goes to the `bedrock-runtime`
+    # endpoint, and `skipWebFetchPreflight` closes the one call that would come here whatever the
+    # provider.
+    #
+    # The four are the sign-in half of the vendor's network table (`docs/REFERENCES.md`, read
+    # 2026-09-19), and the first two are what the space itself needs:
+    #
+    #   api.anthropic.com     the model calls
+    #   platform.claude.com   the OAuth token exchange, refresh and revocation. The vendor states
+    #                         that a claude.ai sign-in also goes through this host, so both account
+    #                         types need it and neither works without it
+    #   claude.ai             a claude.ai account's own authentication
+    #   claude.com            the sign-in page, which redirects to claude.ai
+    #
+    # The last two are the browser's half, and a login driven from a laptop reaches them from the
+    # tunnel plane, which is `open`. They are listed because an allow-list edit costs an apply plus
+    # an association interval, and discovering them missing halfway through a sign-in costs that
+    # twice.
+    #
+    # What the same vendor table lists and this plane does not take, so nobody adds one as a repair:
+    # `mcp-proxy.anthropic.com` carries claude.ai's MCP connectors, which are on by default for a
+    # claude.ai login and are a data path an account decides rather than this estate;
+    # `raw.githubusercontent.com` left this plane on 2026-09-09 and serves only a changelog;
+    # `registry.npmjs.org` is plugin and `npx` code download; the two Datadog intakes carry
+    # telemetry that fires only on the direct API, and the key that suppressed it sits in the same
+    # file as the provider switch, so it leaves when the switch does.
+    #
+    # This is a notebook's reach and not the assistant's. A plane is a CIDR (Lesson 29), so every
+    # process in Sandbox compute can post to these names, and none of the Bedrock path's controls
+    # carry over: there is no VPC endpoint, so no `vpcEndpointId` in CloudTrail to attribute a call
+    # by, and the retention mode 6e step 7.5 froze at `none` is an AWS setting that says nothing
+    # about this destination. The argument that removed `github.com` above holds here in the same
+    # words, and `objectives.md` names data-leakage protection as a requirement of its own.
+    #
+    # Revision trigger: every other entry on this plane is a dependency the environment has, and
+    # these four are a measurement someone intends to take. They come off when it is taken.
+    "api.anthropic.com",
+    "platform.claude.com",
+    "claude.ai",
+    "claude.com",
   ]
 
   # (iii) The build plane's deny list (2026-09-08, the user, amending D38 section 6; 6d step 9).
