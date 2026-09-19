@@ -73,6 +73,34 @@ zone in the `awsds.internal` family with its association authorization **toward*
 reversed choreography), and one more source block in the proxy's allow-list. All four are generated from
 the same peering map 6c step 3.1 wrote — a vend adds a row, not a design.
 
+**What a vend owes the catalog, written at [6f](stage-06f-data-governance.md) step 9.1
+(2026-09-18).** A **domain unit** is DataZone's own container for a business unit, and it is the
+object this stage's cardinality maps onto — never a second domain, which the vendor documents no
+publishing, subscription or Share between (`institutional-delta.md`, "Domain topology"). What a
+domain unit scopes, read from the concepts page and from the live domain:
+
+- **The authorization policies**, which are per unit and per type. On this domain's root unit, of the
+  types that apply there, exactly one carries a grant: `CREATE_PROJECT_FROM_PROJECT_PROFILE`, naming
+  one Identity Center group. `CREATE_PROJECT`, `CREATE_DOMAIN_UNIT`, `CREATE_GLOSSARY`,
+  `CREATE_FORM_TYPE` and `CREATE_ASSET_TYPE` are empty, and both `OVERRIDE_*` types are empty. So a
+  per-unit domain unit is where *"who in this business unit may create a project"* stops being one
+  answer for the whole estate.
+- **`ADD_TO_PROJECT_MEMBER_POOL` is the one to look at before vending the second unit.** It reads
+  `allUsersGrantFilter` today — every user of the domain may be added to any project's member pool,
+  DataZone's default. With one business unit that is the same set of people either way; with two it
+  is the difference between units that can see each other's projects and units that cannot, and
+  nothing in this stage's module touches it.
+- **Delegation**, which is the reason the object exists: a domain unit grants a unit's own owner the
+  authority to set those policies, *"a delegated authority from account owners to domain unit
+  owners"*. That is the governance half of what this stage does for the network half.
+- **Glossaries, metadata forms and custom asset types** are owned per unit by the same policies, so a
+  unit can carry its own vocabulary without the estate's.
+
+**It fits D35 and costs one decision.** `Sandbox` multiplies per business unit and the domain does
+not, so a vend adds a **domain unit** beside its account rather than a domain — one more row in the
+same shape as the CIDR, the peerings and the zone. What is not decided here is whether the member
+pool stays open across units, and that is the first reading the second vend takes.
+
 **To execute:**
 
 1. **`terraform-modules/sandbox-unit/`** — one module, one input (the unit name), composing what already

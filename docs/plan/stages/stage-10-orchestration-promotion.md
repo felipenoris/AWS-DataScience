@@ -252,6 +252,21 @@ definition rather than configured beside it.
   and the console page. **Record the diagnosis session**: with no environment to log into, what those APIs
   report is the whole operational surface.
 
+- **3.3 — [Claude] Does the orchestrator emit lineage, and if not, what does?** Handed over from
+  [6f](stage-06f-data-governance.md) step 6.2 (2026-09-18) rather than left in that stage's log
+  (Lesson 34). What the vendor page **does** say: DataZone captures lineage automatically from Glue
+  and Redshift databases added to the domain, from **Spark ETL job runs in AWS Glue v5.0 and higher**,
+  and from anything that posts to its **OpenLineage-compatible API**; the automatic half is switched
+  on **in the blueprint configuration**, which in this estate is Terraform (`sandbox/sagemaker/`),
+  so it is a code change rather than a console toggle. What it **does not** say is whether
+  **MWAA Serverless** emits anything — and MWAA is this estate's only orchestrator (D7 amended). The
+  reading: run the `app-etl` workflow once, then `list-lineage-events` on the domain. Three outcomes,
+  and they are different work: it emits (nothing to build); it can be made to emit through Airflow's
+  own OpenLineage provider (a dependency and a configuration in the workflow image); or nothing
+  emits and a lineage event is something the job posts itself, which makes it a line in the
+  `app-etl` contract rather than a platform feature. **Today the domain's `list-lineage-events` is
+  empty**, so whatever this finds is the first event the estate ever produces.
+
 ### 4. The fallback ladder — documented, not built (INT-14)
 
 **Action:** write down, in order, what is tried if 1.5's apply is refused — and what is *no longer* on the

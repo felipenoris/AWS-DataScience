@@ -413,3 +413,61 @@ steps 1.1, 1.2 and 1.3 and answers verification vi ahead of step 4.1. Times are 
   page that says **where the generation runs and what it sends**, which is the half 5.1 exists for
   and the half decision due 3 needs. Four slug guesses missed and the doc search returned only API
   and SDK pages for `BusinessNameGenerationConfiguration`.
+
+## 2026-09-18 — steps 6.2, 8.1 and 9.1, the three that needed no AWS call
+
+*Claude's sitting. One vendor page read for 6.2 and recorded in [`REFERENCES.md`](../REFERENCES.md);
+8.1 and 9.1 are written from what 1.1 and 1.3 already measured.*
+
+### 6.2 — the engines, and a switch that is not where the step looked for it
+
+- **[Claude] Lineage arrives three ways, and only one of them is a toggle.** Automatic capture from
+  **AWS Glue and Amazon Redshift databases** added to the domain; **Spark ETL job runs in AWS Glue
+  v5.0 and higher**, from the console or a notebook; and the **OpenLineage-compatible APIs** for
+  anything else. Two node types carry it, a dataset node (auto-generated for published Glue and
+  Redshift assets, hand-made for the rest) and a job (run) node with its history.
+
+- **[Claude] The automatic half is configured on the blueprint.** *"Domain administrators can
+  configure lineage while setting up data lake and data warehouse built-in blueprints, which ensures
+  that all data source runs created from those resources are enabled for automatic lineage capture."*
+  The eleven blueprint configurations here are **Terraform** (`US-3`), so turning lineage on is a
+  reviewed code change to `sandbox/sagemaker/`, not a console click. That fits the reading this
+  stage already had: `list-lineage-events` is **empty**, and the two nodes 0.4 recorded came from the
+  publish itself.
+
+- **[Claude] What the page does not say went to the stage that owns it** (Lesson 34): it names no
+  orchestrator, and **MWAA Serverless is this estate's only one**. [Stage 10](../plan/stages/stage-10-orchestration-promotion.md)
+  gained step **3.3** — run `app-etl` once, read `list-lineage-events`, and take one of three
+  branches depending on whether the service emits, can be made to emit through Airflow's own
+  OpenLineage provider, or emits nothing and the event becomes a line in the `app-etl` contract.
+
+### 8.1 — the warehouse row
+
+- **[Claude] Written into [`institutional-delta.md`](../plan/institutional-delta.md).** The lab builds
+  **nothing** — D26 and D12 exclude `RedshiftServerless` — and the catalog is ready for it anyway:
+  `RedshiftTableAssetType` and `RedshiftViewAssetType` are two of the 23 managed asset types 1.3 read.
+  The institution registers the warehouse to the Glue Data Catalog as a **federated catalog**, which
+  puts its schemas under the same Lake Formation permissions as the lake, publishes both asset types
+  in one catalog, and lets scientists read governed schemas while writing only their own. The delta
+  that matters: **one permission system over two storage engines**, and a warehouse outside Lake
+  Formation needs its own grants, its own review and its own register, with the classification an
+  LF-Tag carries stopping at the warehouse's edge. The revision trigger is the first workload Athena
+  serves badly, and the reading to take then is whether federation preserves the TBAC expressions
+  this estate grants by — DataZone's own Glue path already refuses LF-TBAC (3.2).
+
+### 9.1 — what a domain unit scopes, written into Stage 14
+
+- **[Claude] A domain unit is the object this estate's cardinality maps onto**, and
+  [Stage 14](../plan/stages/stage-14-sandbox-vending.md) now says so beside the CIDR, the peerings and
+  the zone: a vend adds a **domain unit**, never a second domain (the vendor documents no publishing,
+  subscription or Share between domains). What it scopes, from the concepts page and from 1.1's
+  reading of the live domain: the **authorization policies** per unit and per type — on this domain's
+  root unit exactly one carries a grant — the **delegation** those policies exist for (*"a delegated
+  authority from account owners to domain unit owners"*), and **glossaries, metadata forms and custom
+  asset types** owned per unit.
+
+- **[Claude] One thing a second vend has to look at first.** `ADD_TO_PROJECT_MEMBER_POOL` reads
+  `allUsersGrantFilter` — every user of the domain. With one business unit that is the same set of
+  people either way; with two it is the difference between units that can see each other's projects
+  and units that cannot, and nothing in Stage 14's module touches it. Recorded there as the first
+  reading the second vend takes, rather than as a decision taken now with N = 1.
