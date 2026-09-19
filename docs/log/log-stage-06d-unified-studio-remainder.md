@@ -2434,3 +2434,58 @@ never a live call from a space.*
   *"the managed policy does not grant it today"* — which is true of the **project** role's policy, the
   one 10.1 read, and false of the domain execution role's. The statement stays worth writing; what the
   reading changes is that it is closing an open door rather than pre-empting a future one.
+
+## 2026-09-19 — the fifteenth sitting: source control returns to the compute plane
+
+**[user] "Peço voltar com as URLs do github no allow-list do sandbox."** This reverses step 8.6's
+removal of 2026-09-09, taken by the same hand. The question that led here was a different one — whether
+GitHub was still on the plane at all — and the answer was read from both sides before the request:
+**no GitHub name appeared on any of the five planes**, in the code or in the deployed parameter, the
+only non-comment match in `hub-anchors.tf` being a module `source` URL.
+
+**[Claude] What the reading found, and is worth keeping when the entries change again.** GitHub was
+reachable from two of the five planes the whole time, and by a different mechanism than a list.
+`production-foundation` and `tunnel` are `open`, so their empty list is a **deny** list and permits
+everything; `production-workloads` and `staging-foundation` are allow-lists that are empty and
+therefore refuse everything. Only `sandbox-foundation` was refusing GitHub by name. So the buildbox
+and a laptop on the tunnel never lost it, and the removal only ever bound a space.
+
+**[Claude] The three names restored**, unchanged from what came off: `github.com`, `api.github.com`,
+`raw.githubusercontent.com`. Twenty-nine entries to thirty-two.
+
+- **The argument that removed them is not withdrawn by the restore**, and it now sits beside the
+  entries rather than in git history, where an editor of this list would not find it: source control
+  is the path by which code, and whatever a notebook has put beside it, leaves a governed environment,
+  and `objectives.md` names data-leakage protection as a requirement of its own. What the restore buys
+  back is a `git clone`, `fetch` and `push` from a space — measured working at step 3.1 on 2026-09-08,
+  while the names still stood.
+- **Three names and not a namespace.** `dstdomain` matches a bare entry exactly, so `github.com` covers
+  neither of the other two and `.github.com` would authorise every host anyone publishes under it. The
+  exactness has a cost worth writing down before someone reports it as a defect: **an HTTP redirect is
+  a new request with a new name**, so a release tarball or anything else landing on
+  `codeload.github.com` or `objects.githubusercontent.com` is still refused. Neither was ever on this
+  plane, and adding one is this decision again rather than a repair of it.
+
+**[Claude] Applied 2026-09-19, Recipe A, `awsds-infra-prod`.**
+
+- `0 to add, 1 to change, 0 to destroy` — the SSM parameter alone — `Modifications complete after 2s`,
+  and the re-plan reads `No changes`.
+- **`/datascience/prod/proxy/allowlist` went version 9 to 10 at 20:13:23Z.** The deployed value carries
+  thirty-two entries on this plane and the three GitHub names among them.
+- **`DN-1`, `DN-2`, `DN-3` and `DN-4` pass**, `DN-3` against the parameter: 5 planes, entry for entry.
+  `make check`, `make check-docs` and the commit hooks are green.
+- **`PX-3` is unmeasured**, as at the sitting's other apply: both hub hosts are stopped, so there is no
+  running `squid.conf` to compare the parameter against. The second link closes after `make hub-up`,
+  read with the fenced `./aws/proxy.py --on-host`.
+
+**[Claude] What this dates elsewhere.** [`remote-ide.md`](../plan/runbooks/remote-ide.md) carried the
+removal twice — once in the paragraph on the session as a **file channel**, once as the reason its
+file-copy procedure exists. The first was never a claim about the list and its point survives: a
+tunnel that carries any file in either direction is not described by a list of names, whatever is on
+it. The second is now a window with two dates, and the procedure stays written because a host that
+cannot reach GitHub still needs it and because a redirect target is refused even today.
+
+**[Claude] What this sitting did not do.** No decision file was opened. Step 8.6 and 6d decision 6 are
+where the removal is argued, and a reader who finds the entries back on the plane needs both this entry
+and those, which is why the code comment names the date it reverses rather than only the date it was
+written.
