@@ -355,3 +355,61 @@ steps 1.1, 1.2 and 1.3 and answers verification vi ahead of step 4.1. Times are 
   the service already produces for project-owned tables; the untested case is the same grant on a lake
   table across the account boundary, where every cross-account grant must carry the option anyway
   (Stage 5 pass 3's finding).
+
+## 2026-09-18 — step 3.1's documentation half, and what it costs decision due 1
+
+*Claude's sitting, no AWS call: four vendor pages read in the browser, recorded in
+[`REFERENCES.md`](../REFERENCES.md) the same sitting.*
+
+- **[Claude] A Glue data source takes any database by name, and the dropdown is the tell.** *"You can
+  either choose an AWS Glue database from the dropdown or type a database name… If you want to bring
+  assets from a database that is not created by the environment, then you must type the name of the
+  database instead of selecting it from the dropdown."* The dropdown offers the environment's
+  publishing and subscription databases and nothing else. So shape (a) is mechanically possible: the
+  resource links `raw` and `curated` are local databases and can be typed.
+
+- **[Claude] Creating the data source is an access act, and this is what the step did not know.**
+  *"When an AWS Glue data source is created, Amazon DataZone creates the Lake Formation 'read only'
+  permissions for the IAM role of the environment that is used to create the data source to access
+  **all the tables** in the AWS Glue databases used in the data source."* That grant is written at
+  **creation**, over the **whole database**, before any subscription exists and before anyone
+  approves anything. Under shape (a) pointing a data source at the lake's resource links would grant
+  a Sandbox environment role read over every table in `raw` or `curated` — wider than the TBAC share
+  it sits beside, and invisible to the register unless somebody reads for it. `catalog.py`'s `CT-7`
+  is what would report it.
+
+- **[Claude] It also tags the database.** `DataZoneDiscoverable_${domainId}: true` on the Glue
+  database, written when the grant is made. An attribute assigned to describe becomes a selector the
+  moment a rule is written over it (Lesson 29), and this one is AWS's, on a database this repository
+  owns.
+
+- **[Claude] Shape (d) does not exist for a Glue table as this stage wrote it.** *Managed* is a
+  property of the **asset type**, not a publisher's choice: the concepts page names Glue tables and
+  Redshift tables and views as managed, and says that *"for all other asset types (unmanaged assets)"*
+  DataZone emits an EventBridge event instead of fulfilling. The domain's 23 managed types include
+  `GlueTableAssetType`, which is what `house-price` already carries. Publishing the lake unmanaged
+  therefore needs a **custom asset type** standing for a table DataZone can see and has been told not
+  to fulfil — at the price of a type whose schema the catalog does not derive and whose meaning no
+  other tooling shares.
+
+- **[Claude] Two riders, recorded because they will be looked for.** Cross-**Region** sharing of Glue
+  assets is not supported; this estate's shares are cross-**account**, same Region, so it does not
+  bite. And the manage-access role's requirement is four permissions, not two: `DESCRIBE` and
+  `DESCRIBE GRANTABLE` on the database, `DESCRIBE`, `SELECT`, `DESCRIBE GRANTABLE` and
+  `SELECT GRANTABLE` on the table — which is the shape 1.3 found it already holding on the project's
+  own table.
+
+- **[Claude] Decision due 1's recommendation is re-read, and it moved.** It recommended (d) if
+  possible and (c) otherwise. (d) is not possible without a custom asset type; (a) is possible and
+  costs more than the step credited it with — a grant at creation, over a whole database. So the
+  recommendation is now **(c)**, the lake kept out of the catalog and read through TBAC re-grants,
+  with **(d) as the shape to revisit** if discoverability of the lake turns out to matter more than
+  keeping every lake grant in the register. The choice is the user's, and both remaining shapes leave
+  the TBAC model intact.
+
+- **[Claude] Step 5.1 is not closed.** The Glue data-source page names the switch — *Automated
+  business name generation*, *"whether to automatically generate metadata for assets as they're
+  imported from the source"* — and `CT-5` has read it **on**. What the sitting did not find is the
+  page that says **where the generation runs and what it sends**, which is the half 5.1 exists for
+  and the half decision due 3 needs. Four slug guesses missed and the doc search returned only API
+  and SDK pages for `BusinessNameGenerationConfiguration`.
