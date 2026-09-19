@@ -14,19 +14,21 @@
 #
 #   make check       step 9's offline checks - what a commit must pass
 #   make check-ou    step 9.3 - needs a live SSO session as the infrastructure user on Identity
-#   make check-docs  the plan's reference check (see below)
-#   make check-all   all three
+#   make check-docs  the plan's reference check on its own; `check` runs it too
+#   make check-all   check and check-ou
 #
 # `check` never runs 9.3 and says so; `check-ou` exits 2 without a session rather than passing, so an
-# unreachable organization is not reported as a clean one (Lesson 13). check-plan-refs.py is a target
-# of its own: its rules are editorial rather than mechanical, and it reads the whole repository's
-# prose rather than the tree a commit touches. It was red until 2026-09-18 on prose that predates
-# Stage 2 (dated measurements phrased as account counts); those sentences now name the set instead
-# of counting it, and the target passes.
+# unreachable organization is not reported as a clean one (Lesson 13). check-plan-refs.py joined this
+# list on 2026-09-19, once it was green: it was red on prose that predates Stage 2 (dated
+# measurements phrased as account counts) and on the untracked copies of this repository under
+# `.terraform/` and `.claude/`, which it no longer reads. `check-docs` stays as a name so the prose
+# check can be run alone. It reads the whole repository's prose rather than the tree a commit
+# touches, so it is the one entry here whose cost does not scale with the size of the commit.
 #
 # The `check` list, each offline and failing on one mistake: check-tf-conventions (9.1),
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
 # copied), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc,
+# check-plan-refs (the plan's relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file) and check-provider-locks (6.3: three
 # platforms in every committed lock file).
 
@@ -41,11 +43,12 @@ help:
 	@printf '  help        this text\n'
 	@printf '  check       Stage 2 step 9, offline - what a commit must pass: conventions,\n'
 	@printf '              wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the\n'
-	@printf '              policy index, the network doc, account ids and e-mails, provider locks\n'
+	@printf '              policy index, the network doc, the plan references, account ids\n'
+	@printf '              and e-mails, provider locks\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
-	@printf '  check-docs  the plan reference check (see the note in this file)\n'
-	@printf '  check-all   the three above\n'
+	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
+	@printf '  check-all   check and check-ou\n'
 	@printf '  slices      the D11 layer table, offline - which slice is [P], [D] or [E]\n'
 	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3).\n'
 	@printf '              Reads the [D] power states from EC2 and each [E] state file after a\n'
@@ -148,6 +151,7 @@ check:
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \
 	         "./scripts/check-network-doc.py" \
+	         "./scripts/check-plan-refs.py" \
 	         "./scripts/check-identifiers.py" \
 	         "./scripts/check-provider-locks.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
@@ -227,6 +231,4 @@ check-all:
 	$(MAKE) --no-print-directory check     || fail=1; \
 	printf '\n\033[1m--- make check-ou\033[0m\n'; \
 	$(MAKE) --no-print-directory check-ou  || fail=1; \
-	printf '\n\033[1m--- make check-docs\033[0m\n'; \
-	$(MAKE) --no-print-directory check-docs || fail=1; \
 	exit $$fail
