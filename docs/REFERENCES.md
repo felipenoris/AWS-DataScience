@@ -685,7 +685,25 @@
   `api.anthropic.com` *"regardless of which model provider you use"* unless `skipWebFetchPreflight` is
   set: <https://code.claude.com/docs/en/network-config>. The managed settings file, which is where an
   institution puts a configuration a user cannot override, is `/etc/claude-code/managed-settings.json` on
-  Linux: <https://code.claude.com/docs/en/managed-settings>.
+  Linux: <https://code.claude.com/docs/en/managed-settings>. **The host table re-read 2026-09-19** for the
+  four names now on `sandbox-foundation`: `platform.claude.com` carries the OAuth token exchange, refresh
+  and revocation for a **claude.ai** sign-in as well as a Console one, so neither account type signs in
+  without it; `mcp-proxy.anthropic.com` carries claude.ai's MCP connectors, *"enabled by default for
+  claude.ai-authenticated users"*; and the two Datadog intakes are reached *"only when the CLI uses the
+  Anthropic API directly, never for Amazon Bedrock"*, which is the provider switch turning a quiet host
+  loud.
+
+- **Claude Code authentication** (read 2026-09-19, for the direct-API measurement the four Anthropic names
+  on `sandbox-foundation` were opened for): <https://code.claude.com/docs/en/iam>. The credential
+  precedence puts cloud-provider credentials first *when* `CLAUDE_CODE_USE_BEDROCK` is set and subscription
+  OAuth from `/login` last, so removing that key is what moves a session to the direct API and nothing else
+  has to change. A machine with no reachable callback is covered: when the browser shows a code instead of
+  redirecting, it is pasted at the terminal's prompt, and the page names *"WSL2, SSH sessions, and
+  containers"* as where that happens — so a space is not blocked by the loopback. On Linux the login is
+  stored at `~/.claude/.credentials.json`, mode `0600`, which in a space dies with it. `claude setup-token`
+  mints a **one-year** OAuth token for environments without a browser, which is the long-lived credential
+  principle 2 admits nowhere in this estate, so it is refused here for the same reason
+  `AWS_BEARER_TOKEN_BEDROCK` is.
 
 ## Data platform
 

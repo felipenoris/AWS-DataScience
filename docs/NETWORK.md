@@ -317,7 +317,7 @@ comes back a 403 naming the host.
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 25 † ‡ |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 29 † ‡ ¶ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
@@ -331,7 +331,7 @@ plane emits no `dstdeny_` ACL, and an `allowlist` plane with an empty list emits
 the rendered file cannot distinguish *refuses everything* from *does not exist*, which is why `PX-3`
 compares it against the parameter rather than reading it alone.
 
-‡ **The twenty-fifth entry is `cloud.r-project.org`, applied 2026-09-11** (6d decision 6). CRAN was
+‡ **`cloud.r-project.org` was applied 2026-09-11** (6d decision 6). CRAN was
 read as `403 TCP_DENIED` from a space on `default-v0.2.0` — three refusals in one second, because R
 tries more than one index candidate — and allowed on the reasoning that already put `pypi.org` and
 `index.crates.io` here: the plane carries code download for three of the four languages, and R was the
@@ -346,6 +346,24 @@ parameter reached version 8 at 19:05:43Z; State Manager's half-hourly associatio
 and 70,816 of tarball, from the **same container address** as the refusals. An allow-list edit is an
 apply plus at most one interval, which is why `DN-3` (code against parameter) and `PX-3` (parameter
 against the running file) are two checks and not one.
+
+¶ **Four Anthropic names entered the plane on 2026-09-19** (the user), applied the same day for
+`0 to add, 1 to change, 0 to destroy` with the re-plan reading `No changes`. The parameter went
+**version 8 to 9 at 17:12:12Z** and `DN-3` passes against it. **`PX-3` is unmeasured**: both hub hosts
+were stopped, so no running `squid.conf` existed to compare, and the second link closes after the next
+`make hub-up`. `api.anthropic.com` and `platform.claude.com` are what a space needs to use Anthropic's API directly
+instead of Amazon Bedrock: the first carries the model calls, the second the OAuth token exchange,
+which the vendor documents as the path for a Console **and** a claude.ai sign-in. `claude.ai` and
+`claude.com` are the browser's half, reached from the tunnel plane when the login is driven from a
+laptop and listed so a half-finished sign-in does not cost a second apply.
+
+**They are the first entries here that are not a dependency of the environment**, and the entry
+`hub-anchors.tf` carries says so. The Bedrock path's controls do not extend to them: no interface
+endpoint answers for these names, so no `vpcEndpointId` attributes a call, and the account's Bedrock
+retention mode is an AWS setting that says nothing about this destination. Four hosts from the same
+vendor table stay off, each for its own reason — `mcp-proxy.anthropic.com` (claude.ai's MCP
+connectors, on by default for that login), `raw.githubusercontent.com` (removed 2026-09-09),
+`registry.npmjs.org` (plugin and `npx` code download) and the two Datadog telemetry intakes.
 
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
 tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
