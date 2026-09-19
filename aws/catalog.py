@@ -34,8 +34,10 @@
 #   CT-5  the data sources that generate business names with AI, reported with their schedule.
 #         A note until Stage 6f decision 3 settles it (Lesson 50: a check written to a stage's
 #         final expectation is red on every pass until that stage ends).
-#   CT-6  every scheduled data source run is one somebody chose. A blueprint-created data source
-#         on a cron nobody wrote is Lesson 17's shape and is named here rather than discovered.
+#   CT-6  every scheduled data source run is one somebody chose, AND succeeds. A blueprint-created
+#         data source on a cron nobody wrote is Lesson 17's shape; one whose completed runs have all
+#         failed is EXC-11's, and the live `status` field does not show it - a run's stoppedAt is its
+#         successor's startedAt, so a daily source reads RUNNING however long it has been failing.
 #   CT-7  no SMUS-managed principal holds a grant on a lake database, a lake table or an LF-Tag.
 #         The design reads the lake through TBAC re-grants to a persona (GOVERNANCE.md §Grants),
 #         so a project role or a conditioned IAMPrincipals entry reaching `raw`, `curated` or
@@ -94,6 +96,16 @@ DOMAIN_UNIT_POLICY_TYPES = (
     "OVERRIDE_DOMAIN_UNIT_OWNERS",
     "OVERRIDE_PROJECT_OWNERS",
 )
+
+# A scheduled data source already known to fail, with the exception that records it. CT-6 reports
+# these as a note and fails on anything else, so the check stays readable while the exception stands
+# (Lesson 50). Remove a row here when its exception is closed, and CT-6 turns red the same day.
+FAILING_BY_EXCEPTION = {
+    "Tooling-default-sagemaker-modelpackagegroup-datasource": (
+        "EXC-11, since 2026-08-24: the Tooling blueprint's own source, tracking an asset type this "
+        "estate has never produced; it bills nothing and creates nothing"
+    ),
+}
 
 # The two that must stay empty for the owner project's approval to be the control (CT-9).
 OVERRIDE_TYPES = ("OVERRIDE_DOMAIN_UNIT_OWNERS", "OVERRIDE_PROJECT_OWNERS")
@@ -368,11 +380,33 @@ def main(argv: list) -> int:
                     (body.get("schedule") or {}).get("schedule", "-"),
                     body.get("status", "-"),
                     body.get("lastRunAssetCount", "-"),
+                    dsid,
                 )
             )
 
+    # The run history, which the data source's own `status` field does not give. A run's stoppedAt is
+    # its successor's startedAt, so a daily source always shows one RUNNING however long it has been
+    # failing: the live status reads healthy while every completed run failed (EXC-11).
+    runs: dict = {}
+    for src in sources:
+        dsid = src[-1]
+        res = dat.run(
+            "datazone",
+            "list-data-source-runs",
+            "--domain-identifier",
+            domain_id,
+            "--data-source-identifier",
+            dsid,
+            "--query",
+            "items[].status",
+            "--output",
+            "json",
+        )
+        statuses = json_or_none(res.stdout) or []
+        runs[dsid] = {s: statuses.count(s) for s in set(statuses)}
+
     # ---------------------------------------------------------------- CT-4 publish on import
-    publishing = [n for _, n, _, poi, _, _, _, _ in sources if poi]
+    publishing = [n for _, n, _, poi, _, _, _, _, _ in sources if poi]
     if not sources:
         checks.note("CT-4", "no data source publishes on import", "no data source read")
     elif publishing:
@@ -389,7 +423,7 @@ def main(argv: list) -> int:
         )
 
     # ---------------------------------------------------------------- CT-5 AI business names
-    ai_on = [n for _, n, _, _, ai, _, _, _ in sources if ai]
+    ai_on = [n for _, n, _, _, ai, _, _, _, _ in sources if ai]
     checks.note(
         "CT-5",
         "the data sources that generate business names with AI",
@@ -397,16 +431,52 @@ def main(argv: list) -> int:
     )
 
     # ---------------------------------------------------------------- CT-6 the schedules
-    scheduled = [(n, s) for _, n, _, _, _, s, _, _ in sources if s != "-"]
+    # The first draft of this check read the schedule and stopped there, and passed over 26 days of
+    # daily failures because the data source's own `status` read RUNNING (EXC-11). What decides the
+    # verdict is the run history: a scheduled source whose COMPLETED runs all failed is a failure,
+    # however healthy the live status looks.
+    scheduled = [(n, s, d) for _, n, _, _, _, s, _, _, d in sources if s != "-"]
+    failing = []
+    for n, s, dsid in scheduled:
+        by_status = runs.get(dsid, {})
+        done = {k: v for k, v in by_status.items() if k != "RUNNING"}
+        if done and all(k == "FAILED" for k in done):
+            failing.append((n, s, sum(done.values())))
+    # The discriminator (Lesson 50). One source is failing by a recorded exception, so reporting it
+    # as a failure every run would leave this check permanently red and teach the reader to skip it.
+    # It reads as a note naming EXC-11; anything ELSE failing is the finding this check exists for.
+    excepted = [f for f in failing if f[0] in FAILING_BY_EXCEPTION]
+    unexpected = [f for f in failing if f[0] not in FAILING_BY_EXCEPTION]
     if not scheduled:
         checks.ok(
-            "CT-6", "every scheduled run is one somebody chose", "no data source is scheduled"
+            "CT-6",
+            "every scheduled run is one somebody chose, and succeeds",
+            "no data source is scheduled",
+        )
+    elif unexpected:
+        checks.fail(
+            "CT-6",
+            "every scheduled run is one somebody chose, and succeeds",
+            "; ".join(f"{n} on {s}: every completed run FAILED ({c})" for n, s, c in unexpected)
+            + " - a service-created source on a service-chosen cron, failing unwatched (Lesson 17)",
+        )
+    elif excepted:
+        checks.note(
+            "CT-6",
+            "every scheduled run is one somebody chose, and succeeds",
+            "; ".join(
+                f"{n} on {s}: {c} completed runs, all FAILED - {FAILING_BY_EXCEPTION[n]}"
+                for n, s, c in excepted
+            ),
         )
     else:
         checks.note(
             "CT-6",
-            "every scheduled run is one somebody chose",
-            "; ".join(f"{n} on {s}" for n, s in scheduled)
+            "every scheduled run is one somebody chose, and succeeds",
+            "; ".join(
+                f"{n} on {s} ({', '.join(f'{v} {k}' for k, v in sorted(runs.get(d, {}).items())) or 'no run'})"
+                for n, s, d in scheduled
+            )
             + " - a blueprint-created source arrives with a cron nobody wrote (Lesson 17)",
         )
 
@@ -589,10 +659,13 @@ def main(argv: list) -> int:
             rep.text("No data source.")
         else:
             rep.tabulate(
-                ["PROJECT\tSOURCE\tTYPE\tPUBLISH ON IMPORT\tAI NAMES\tSCHEDULE\tSTATUS\tASSETS"]
+                [
+                    "PROJECT\tSOURCE\tTYPE\tPUBLISH ON IMPORT\tAI NAMES\tSCHEDULE\tSTATUS\tASSETS\tRUNS"
+                ]
                 + [
-                    f"{p}\t{n}\t{t}\t{'YES' if poi else 'no'}\t{'yes' if ai else 'no'}\t{s}\t{st}\t{a}"
-                    for p, n, t, poi, ai, s, st, a in sources
+                    f"{p}\t{n}\t{t}\t{'YES' if poi else 'no'}\t{'yes' if ai else 'no'}\t{s}\t{st}\t{a}\t"
+                    + (", ".join(f"{v} {k}" for k, v in sorted(runs.get(d, {}).items())) or "none")
+                    for p, n, t, poi, ai, s, st, a, d in sources
                 ]
             )
 
