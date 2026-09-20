@@ -1810,11 +1810,19 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   client gave up polling after 242 s and exited; **the statement ran for 23,601 seconds — 6 h 33 min —
   at base capacity**, and `ComputeSeconds` reported a flat 7,230 RPU-seconds per 30-minute interval
   throughout, which is 4.017 RPU sustained. The workgroup's `max_query_execution_time` was **1800**,
-  set at creation and reading back as 1800. The leading explanation is that the statement ran as a
-  **superuser** — `pg_user` reports `usesuper = true` for the namespace admin — and Redshift exempts
-  the superuser queue from WLM and from query-monitoring rules, of which
-  `max_query_execution_time` is one; that is a hypothesis, and confirming it needs the same query run
-  as a non-superuser. Until then the parameter is **possibly inert** (Lesson 56). What stopped it:
+  **Why it did not bite is unresolved, and the obvious
+  explanation lost its support within the hour.** The first hypothesis was the superuser queue —
+  `pg_user` reports `usesuper = true` for the namespace admin, and Redshift exempts that queue from WLM
+  and QMR. But AWS's serverless query-queues page says *"Query monitoring rules (QMR) apply only at the
+  Redshift Serverless workgroup level, **affecting all queries run in this workgroup uniformly**"*, and
+  its example exempts an admin by giving them a **queue with no rules** — implying that without queues
+  (none here; enabling them is permanent) the rule reaches everyone. So the live candidates are the
+  exemption *after all*, or that **`max_query_execution_time` as a standalone `config_parameter` is not
+  enforced at all** and a per-query ceiling exists only through `wlm_json_configuration` — Lesson 56 in
+  its purest form. **One test separates them**: the same query as a non-superuser. Until then the
+  parameter is **possibly inert**. The unit is not in doubt: **seconds**, from the 86,399-second service
+  maximum and the QMR examples' own wording; `statement_timeout` is the millisecond parameter and is
+  not in the Serverless list. What stopped it:
   `pg_terminate_backend(<session_id>)`, then destroying the workgroup. What would have stopped it
   eventually: the `serverless-compute` usage limit, 3.4 hours later, at 14.40 USD. Where:
   `log-stage-05b` the third amendment, and the comments on

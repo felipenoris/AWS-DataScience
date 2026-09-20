@@ -115,22 +115,36 @@ resource "aws_redshiftserverless_workgroup" "this" {
   # limit - at base capacity, costing 9.44 USD. The client had stopped polling after 242 s; the Data
   # API does not cancel a statement when its client goes away, and nothing else stopped it either.
   #
-  # THE LEADING EXPLANATION IS THE SUPERUSER QUEUE, and it is a hypothesis rather than a measurement:
-  # `max_query_execution_time` is a query-monitoring-rule metric, Redshift exempts the superuser queue
-  # from WLM and from QMR, and the statement ran as `dbadmin`, which `pg_user` reports as a superuser.
-  # If that is right, this parameter does not bind the one identity most likely to run an expensive
-  # ad-hoc query, and the per-query ceiling has to come from a WLM configuration with a non-superuser
-  # queue plus database users that are not superusers. Confirming it needs the same query run as a
-  # non-superuser, which needs a credential this estate does not yet issue.
+  # THE UNIT IS SECONDS, settled from three readings (2026-09-20): the quotas page gives the service
+  # maximum as "86,399 seconds (24 hours)", which is also this value's validation ceiling; the
+  # serverless query-queues page's own QMR examples read `query_execution_time > 60` as "more than 60
+  # seconds" and `> 3600` as "more than an hour"; and the millisecond parameter in this family,
+  # `statement_timeout`, is a different one and is not in the Serverless config_parameters list at all.
+  # So 1800 is thirty minutes.
   #
-  # IT IS LEFT SET, and the reason is not optimism. It costs nothing, it may well bind a project's
+  # WHY IT DID NOT BITE IS STILL OPEN, and the first hypothesis lost its support the same day. It was
+  # "the superuser queue is exempt from WLM and QMR, and the statement ran as `dbadmin`, which pg_user
+  # reports as a superuser". Then AWS's query-queues page turned out to say the opposite: "Query
+  # monitoring rules (QMR) apply only at the Redshift Serverless workgroup level, AFFECTING ALL QUERIES
+  # RUN IN THIS WORKGROUP UNIFORMLY" - and its example exempts an admin by giving them a QUEUE with no
+  # rules, which implies that without queues (this workgroup has none, and enabling them is a permanent
+  # change) the workgroup-level rule reaches everyone. Two candidates remain:
+  #
+  #   (a) the superuser exemption after all - weakened, not excluded: the sentence above describes the
+  #       behaviour queues were introduced to improve on, and does not say superusers are included.
+  #   (b) `max_query_execution_time` as a standalone config_parameter is simply NOT ENFORCED, and a
+  #       per-query ceiling only exists through `wlm_json_configuration`. That is Lesson 56 in its
+  #       purest form: a vendor-documented line that reads back with the right value and does nothing.
+  #
+  # ONE TEST SEPARATES THEM: run a long query as a NON-superuser. Aborting at 1800 s means (a); not
+  # aborting means (b). That needs a database credential this estate does not yet issue, so it arrives
+  # with Stage 6h's project user.
+  #
+  # IT IS LEFT SET, and the reason is not optimism. It costs nothing, under (a) it binds a project's
   # database user (which is not a superuser), and removing it would leave nothing at all on this axis.
-  # What changed instead is what is relied on: the guards that DID hold are the usage limit
-  # (breach_action = deactivate, which would have capped the runaway at 14.40 USD at the amount then in
-  # force, and at 3.60 now) and `make down`,
-  # which is the only one that is not a setting. Read this comment before treating this line as a
-  # control - Lesson 56: a configuration line naming a capability the surrounding configuration does
-  # not have is inert and reads exactly like a working one.
+  # What changed is what is RELIED ON: the guards that did hold are the usage limit (breach_action =
+  # deactivate, 10 RPU-hours since 2026-09-20) and `make down`, which is the only one that is not a
+  # setting. Read this comment before treating this line as a control.
   config_parameter {
     parameter_key   = "max_query_execution_time"
     parameter_value = tostring(local.capacity.max_query_execution_time)

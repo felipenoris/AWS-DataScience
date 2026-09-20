@@ -721,3 +721,57 @@ CloudWatch's CLI makes the aggregate easier to ask for than the last datapoint. 
 | reclaim the 1,596 MB | **does not arise** — the `DROP` freed it, and 130 MB is the namespace's floor |
 | lower the usage limit | **done** in the previous entry, 10 RPU-hours |
 | whether `max_query_execution_time` binds anyone | **still open**, and it needs a non-superuser database session |
+
+---
+
+## 2026-09-20 — the unit of `max_query_execution_time`, and the hypothesis about it withdrawn as leading
+
+*Written by Claude, at the user's question "is 1800 in seconds?". It amends the third amendment above,
+which named a leading explanation that a reading taken to answer this question no longer supports.*
+
+### It is seconds. 1800 is thirty minutes
+
+Three independent readings, and the question was worth asking because a neighbouring parameter is in
+milliseconds:
+
+| Source | What it gives |
+|---|---|
+| *Quotas and limits in Amazon Redshift* | *"Timeout for a running query \| **86,399 seconds** (24 hours)"* — and 86399 is this stage's own validation ceiling, which is only coherent in seconds |
+| *Setting query queues* (serverless) | its QMR examples: `query_execution_time > 60` is described as *"aborted if they run more than 60 **seconds**"*, `> 3600` as *"logged if they run more than an **hour**"* |
+| `statement_timeout` | **is** the millisecond parameter in this family, and it is **not** in the Serverless `config_parameters` list, so the two cannot be confused in practice |
+
+### The superuser hypothesis is no longer the leading one
+
+The third amendment wrote, in this log and in `sandbox/warehouse-compute/main.tf` and in
+`lessons.md`, that *the leading explanation* for the 23,601-second query was the superuser queue's
+exemption from WLM and QMR. The page read to answer the unit question says the opposite:
+
+> *"Query monitoring rules (QMR) apply only at the Redshift Serverless workgroup level, **affecting
+> all queries run in this workgroup uniformly**."*
+
+And the same page's example exempts an admin by giving them a **queue with no rules** — which implies
+that **without** queues the workgroup-level rule reaches everyone, superuser included. This workgroup
+has no queues, and *"enabling query queues is a permanent change"*.
+
+So there are two live candidates and neither is favoured:
+
+| | |
+|---|---|
+| **(a)** the superuser exemption after all | weakened, not excluded: the sentence above describes the behaviour queues were introduced to improve on, and it does not say superusers are inside the rule |
+| **(b)** `max_query_execution_time` as a standalone `config_parameter` is **not enforced at all**, and a per-query ceiling exists only through `wlm_json_configuration` | **Lesson 56 in its purest form** — a vendor-documented line that reads back with the right value and does nothing |
+
+**One test separates them: the same long query run as a non-superuser.** Aborting at 1800 s is (a);
+running past it is (b). It needs a database credential this estate does not yet issue, so it arrives
+with [6h](../plan/stages/stage-06h-redshift-connection.md)'s project database user — and it is worth
+running deliberately then, because under (b) the per-query axis has **no** control on it at all and the
+repair is a `wlm_json_configuration` whose enabling is irreversible.
+
+**Nothing about what is relied on changes.** The guards that held are the usage limit (10 RPU-hours
+since this sitting) and `make down`. The parameter stays set at 1800: it costs nothing, under (a) it
+binds a project's database user, and removing it would leave the axis empty rather than uncertain. All
+three places that carried "the leading explanation" now carry both candidates and the test.
+
+**Why this is an entry rather than an edit**: the first hypothesis was reasonable when written and was
+undermined by a page read for an unrelated reason an hour later. That sequence is the thing worth
+keeping — a plausible explanation, written into three files as *leading*, and demoted by a question
+about units.
