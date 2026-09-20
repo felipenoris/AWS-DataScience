@@ -301,8 +301,11 @@ only inside an `[E]` resource).
   - `security_group_ids` = 1.4's group.
   - `config_parameter`: `require_ssl = true`, `enable_user_activity_logging = true` (without it
     `useractivitylog` carries no SQL text, which is the half Stage 11 wants), `max_query_execution_time`
-    set to **1800** — the per-query ceiling, valid `1`–`86399`, and `86,399` is also what a query with no
-    limit gets, so leaving it unset is a 24-hour runaway at 1.44 USD/h.
+    the per-query ceiling, valid `1`–`86399` **seconds**, and `86,399` is also what a query with no limit
+    gets, so leaving it unset is a 24-hour runaway at 1.44 USD/h. Applied at **1800**, and **lowered to
+    120 by the user the same day** once 5.1's runaway showed that 1800 had bought nothing — a 2-minute
+    ceiling bounds one query at 0.048 USD, and what it could abort (a `VACUUM` above all) has no demander
+    while the warehouse holds one empty schema.
     > ***[corrected 2026-09-20] `search_path` cannot be "left alone", and nor can five others.***
     > `config_parameter` is a **set the provider owns whole**: a workgroup created with three parameters
     > reads back with **nine**, because the service fills `auto_mv`, `datestyle`,

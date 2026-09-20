@@ -148,10 +148,31 @@ variable "usage_limit_period" {
   }
 }
 
+# 120 SINCE 2026-09-20, LOWERED BY THE USER from 1800 in the same sitting the ceiling was tightened.
+# THE UNIT IS SECONDS, settled the same day: the service maximum is "86,399 seconds (24 hours)" (which
+# is this validation's ceiling), and the serverless query-queues page reads its own QMR examples as
+# "more than 60 seconds" and "more than an hour". `statement_timeout` is the millisecond parameter in
+# this family and is not in the Serverless config_parameters list, so the two cannot be confused.
+#
+# 120 s bounds one query at 4 RPU x 120 s = 0.048 USD, against 0.72 at the 1800 it replaces.
+#
+# WHAT A 2-MINUTE CEILING CAN ABORT, and it is worth knowing before a legitimate job hits it:
+#
+#   VACUUM   the only way to reclaim space after a DELETE, and at 4 base RPUs it is the plain form
+#            with no vacuum boost. On a large table it takes far longer than two minutes, so if this
+#            parameter is enforced at all (see warehouse-compute/main.tf - it is not yet settled that
+#            it is), space reclamation becomes impossible until the value is raised.
+#   COPY     a first load of any size.
+#   an aggregation over a real table, as opposed to the empty schema this warehouse holds today.
+#
+# NONE OF THOSE HAS A DEMANDER YET, which is what makes 120 the right default now: the warehouse holds
+# one empty schema, every query so far has been sub-second except the deliberate runaway, and raising
+# it is one variable and one apply with a named requester. The failure it guards against has already
+# happened once and cost 9.44 USD.
 variable "max_query_execution_time" {
-  description = "The per-query ceiling in seconds - the counterpart of the Athena scan limit (Stage 9 1.2 sets that one). 1800 bounds one runaway query at 0.72 USD of compute at 4 RPUs. The service maximum is 86,399 seconds (24h), which is also what a query with no limit gets."
+  description = "The per-query ceiling in SECONDS. 120 since 2026-09-20 (was 1800), bounding one query at 0.048 USD of compute at 4 RPUs. The service maximum is 86,399 seconds (24h), which is also what a query with no limit gets. Whether the parameter is enforced at all is not settled - see sandbox/warehouse-compute/main.tf."
   type        = number
-  default     = 1800
+  default     = 120
 
   validation {
     condition     = var.max_query_execution_time > 0 && var.max_query_execution_time <= 86399

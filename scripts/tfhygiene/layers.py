@@ -516,7 +516,7 @@ SLICES = [
     #                      The user lowered it to 10 the same day - 3.60 USD/month - because a guard
     #                      that lets two thirds of the damage through first is sized for the wrong
     #                      failure.
-    #   max_query_execution_time  DID NOT STOP IT. Set to 1800 s, read back as 1800, and the query
+    #   max_query_execution_time  DID NOT STOP IT. It was 1800 s, read back as 1800, and the query
     #                      ran 23,601 s. The leading explanation is that it ran as a superuser and
     #                      Redshift exempts the superuser queue from query-monitoring rules - a
     #                      hypothesis, not a measurement (log-stage-05b, the third amendment).

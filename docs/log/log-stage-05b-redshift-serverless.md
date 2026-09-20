@@ -775,3 +775,50 @@ three places that carried "the leading explanation" now carry both candidates an
 undermined by a page read for an unrelated reason an hour later. That sequence is the thing worth
 keeping — a plausible explanation, written into three files as *leading*, and demoted by a question
 about units.
+
+---
+
+## 2026-09-20 — `max_query_execution_time` lowered to 120 s, at the user's instruction
+
+**1800 → 120 seconds** in `sandbox/warehouse/variables.tf`, applied to that slice —
+`0 added, 0 changed, 0 destroyed`, because the value is an **output** the `[E]` compute reads and the
+compute is down. `terraform output -json capacity` now reports `"max_query_execution_time": 120`, and
+**the parameter reaches a workgroup at the next `make up ENV=sandbox`**. The slice re-plans
+`No changes`.
+
+| | Before | After |
+|---|---|---|
+| Per-query ceiling | 1800 s (30 min) | **120 s (2 min)** |
+| Worst case for one query at 4 RPUs | 0.72 USD | **0.048 USD** |
+
+Together with the previous entry, the two cost guards now stand at **10 RPU-hours/month** and
+**120 s/query**, against the 40 and 1800 this stage first applied. Both moved because of one
+measurement rather than a preference.
+
+### What a 2-minute ceiling can abort, and why nothing needs more than that today
+
+This is the part worth writing down, because the value will eventually be wrong in the other direction
+and the reader should know which way:
+
+| Would exceed 120 s | Why it matters |
+|---|---|
+| **`VACUUM`** | the only way to reclaim space after a `DELETE`, and at 4 base RPUs it is the plain form with no vacuum boost. On a real table it takes far longer than two minutes, so **if this parameter is enforced at all, space reclamation stops working until the value is raised** |
+| **`COPY`** | a first load of any size |
+| an aggregation over a real table | as opposed to the single empty schema this warehouse holds today |
+
+**None of those has a demander.** The warehouse holds `lab`, empty; every statement this stage ran was
+sub-second except the deliberate runaway; and raising the value is one variable and one apply with a
+named requester. The failure it guards against, by contrast, has already happened once and cost
+9.44 USD.
+
+### It is a tighter setting on a control that may not be enforced
+
+The amendment above left two candidates for why 1800 did not stop a 23,601-second query: the superuser
+exemption, or **the parameter not being enforced at all** outside a `wlm_json_configuration`. Lowering
+it does not settle that, and **it must not be read as having fixed anything**. What it does is make the
+ceiling correct *if* it binds — and the test that says whether it binds is unchanged: the same long
+query as a non-superuser, which arrives with [6h](../plan/stages/stage-06h-redshift-connection.md)'s
+project database user.
+
+**So the guards actually relied on are still the other two**: the usage limit at 10 RPU-hours, whose
+refusal was measured, and `make down`, which is the only one that is not a setting.

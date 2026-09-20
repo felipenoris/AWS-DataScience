@@ -110,7 +110,7 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = "true"
   }
 
-  # The per-query ceiling - AND IT DID NOT HOLD (2026-09-20). Set to 1800 s at creation, read back as
+  # The per-query ceiling - AND IT DID NOT HOLD (2026-09-20). It was 1800 s at creation, read back as
   # 1800 by WH-2, and a `count(*)` over a triple cross join ran 23,601 seconds - thirteen times the
   # limit - at base capacity, costing 9.44 USD. The client had stopped polling after 242 s; the Data
   # API does not cancel a statement when its client goes away, and nothing else stopped it either.
@@ -120,7 +120,9 @@ resource "aws_redshiftserverless_workgroup" "this" {
   # serverless query-queues page's own QMR examples read `query_execution_time > 60` as "more than 60
   # seconds" and `> 3600` as "more than an hour"; and the millisecond parameter in this family,
   # `statement_timeout`, is a different one and is not in the Serverless config_parameters list at all.
-  # So 1800 is thirty minutes.
+  # **120 SINCE 2026-09-20**, lowered by the user from 1800 in the same sitting: two minutes, bounding
+  # one query at 0.048 USD. sandbox/warehouse/variables.tf carries what a 2-minute ceiling can abort -
+  # VACUUM above all - and why nothing needs more than that yet.
   #
   # WHY IT DID NOT BITE IS STILL OPEN, and the first hypothesis lost its support the same day. It was
   # "the superuser queue is exempt from WLM and QMR, and the statement ran as `dbadmin`, which pg_user
@@ -136,7 +138,7 @@ resource "aws_redshiftserverless_workgroup" "this" {
   #       per-query ceiling only exists through `wlm_json_configuration`. That is Lesson 56 in its
   #       purest form: a vendor-documented line that reads back with the right value and does nothing.
   #
-  # ONE TEST SEPARATES THEM: run a long query as a NON-superuser. Aborting at 1800 s means (a); not
+  # ONE TEST SEPARATES THEM: run a long query as a NON-superuser. Aborting at the ceiling means (a); not
   # aborting means (b). That needs a database credential this estate does not yet issue, so it arrives
   # with Stage 6h's project user.
   #
