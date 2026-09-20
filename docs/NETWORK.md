@@ -401,7 +401,13 @@ push. **Nine of those ten joined the plane the same evening** (the user), applie
 `0 to add, 1 to change, 0 to destroy` with the re-plan `No changes` and the parameter **version 10 to
 11 at 22:35:18Z**, `DN-1`..`DN-4` green against it. **`PX-3` closed at 23:02Z**, 41 against 41, after
 the association's tick at 23:00:59Z — the parameter having been written four and a half minutes past
-the previous one, so the wait was forecast from the reading above rather than discovered. `git clone`, `fetch` and `push` from a
+the previous one, so the wait was forecast from the reading above rather than discovered.
+
+**All nine were then exercised from a space** on 2026-09-20, 01:58:21 → 01:58:25Z: each answered
+`200 TCP_TUNNEL` at the proxy, and the two redirect chains completed — a release asset through
+`github.com` to `release-assets.githubusercontent.com` at `206`, and a `codeload.github.com` tarball
+at `200`. **`ssh.github.com`, `example.com` and `repo.anaconda.com` were refused `403 TCP_DENIED`** in
+the same seconds, so the decision to leave the SSH host off is measured and not assumed. `git clone`, `fetch` and `push` from a
 Sandbox space work again, as 6d step 3.1 measured them on 2026-09-08 while the names still stood. The
 argument that removed them is not withdrawn by the restore and stays written where the entries are:
 source control is the path by which code, and whatever a notebook has put beside it, leaves a governed
