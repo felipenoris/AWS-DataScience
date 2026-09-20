@@ -161,6 +161,27 @@ RANKS = {
     # PROJECT must exist in the portal, because the role this slice attaches to is named after
     # it (runbooks/claude-code-sagemaker.md section P).
     "bedrock": 52,
+    # Stage 5b step 1.7 - the Redshift Serverless warehouse, split across two ranks because the two
+    # halves have different lifecycles and the order between them is a real dependency:
+    #
+    #   warehouse          [P] the namespace, its admin secret, its three audit log groups, the
+    #                      namespace role, the workgroup's security group and the alarms. Above
+    #                      `data` (45), whose CMK encrypts the namespace, and above `foundation`
+    #                      (20), whose private subnets the compute lands in. Nothing in up/down
+    #                      ever acts on the number: every [P] row is skipped by both.
+    #   warehouse-compute  [E] the workgroup and its usage limit, nothing else. Above `warehouse`
+    #                      because a workgroup needs its namespace, and `up` ascends rank while
+    #                      `down` descends it - so the compute is created after the namespace
+    #                      exists and destroyed before anything under it, the same reasoning that
+    #                      put `vpn` below `egress`.
+    #
+    # The split is not a preference. Redshift Serverless has `create-workgroup` and
+    # `delete-workgroup` and nothing in between - no pause, no stop, no zero-capacity setting - so
+    # "powered off" means "does not exist", which is the definition of [E]. The namespace stays [P]
+    # because it holds the schemas, the database users, the roles and the GRANTs, which Terraform
+    # never wrote and no plan could re-create (5.1 rule 2).
+    "warehouse": 53,
+    "warehouse-compute": 54,
     # The proxy is [D] and its rank decides the session (Stage 6c step 0.3). `up` ascends and
     # `down` descends, so 41 puts it up before any egress/ (50, 51) and down after them, which
     # keeps a spoke's package path alive for the entire life of an [E] session. Under D38 there
@@ -459,6 +480,30 @@ SLICES = [
     # hand-written once per project, which decision 8 took deliberately.
     Slice(
         "sandbox", "bedrock", PERSISTENT, "the Bedrock grant: 1 policy + 1 attachment per project"
+    ),
+    # Stage 5b pass 1 - the data half of the warehouse. [P] and free at rest in the sense this
+    # column measures: nothing in it is metered by the hour. What it DOES cost is Redshift Managed
+    # Storage at 0.024 USD/GB-month (docs/PRICING.md 5), which `make down` does not remove and
+    # which a schema filled to its 1 TB quota takes to 24.58 USD/month - so this row's 0.0 is true
+    # and incomplete at once, exactly as `sandbox/lake`'s is, and the bill it does generate is the
+    # stage's Cost section rather than `make status`'s.
+    Slice(
+        "sandbox",
+        "warehouse",
+        PERSISTENT,
+        "the Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
+    ),
+    # Stage 5b pass 1 - the compute half, and the whole point of the split. usd_per_hour is 0.0 and
+    # that is the MEASURED rate of an existing workgroup serving no query: Redshift Serverless
+    # bills 0.36 USD/RPU-hour of query time and nothing while idle, so 4 base RPUs are 1.44 USD for
+    # every hour a query runs and 0.00 for every hour none does. `make status` prices hours, and
+    # there is no hourly number to print here - which is why the guard that matters is the usage
+    # limit in this slice (breach_action = deactivate) and not this column.
+    Slice(
+        "sandbox",
+        "warehouse-compute",
+        EPHEMERAL,
+        "the 4-RPU workgroup + its serverless-compute usage limit - no pause exists, so [E]",
     ),
 ]
 

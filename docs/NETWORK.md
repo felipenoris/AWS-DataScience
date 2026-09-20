@@ -79,6 +79,7 @@ module's arithmetic:
 | **SMUS project app ENIs** | Sandbox · private · both AZs offered | one per running app | created by the blueprint, not by this repository |
 | **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
 | **Build host** `awsds-prod-buildbox` | **VPC-SharedServices · private** · az1 | `[E]` | `[E]` `production/buildbox/` |
+| **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path** | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
 
 **No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
 
@@ -98,6 +99,8 @@ module's arithmetic:
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/buildbox/` | `[E]` | the build host and its egress-only security group — **and no route at all** |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
+| `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
+| `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
 
 ---
 
@@ -264,6 +267,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-<env>-endpoints` `[P]` | TCP/443 from that VPC's own range |
 | `awsds-prod-buildbox` `[E]` | **nothing** — no ingress rule at all; Session Manager needs none |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
+| `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in |
 
 **The second world-open rule closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is destroyed,
 the estate holds **one** world-open rule again, and `VP-3` reads **every** account's security groups to

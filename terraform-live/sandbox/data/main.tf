@@ -78,5 +78,55 @@ module "consumer_data" {
         StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
       }
     },
+
+    # ---------------------------------------- the warehouse's own encryption (Stage 5b step 1.1)
+    #
+    # WHY IT HAS TO BE HERE. `CreateNamespace` was refused on 2026-09-20 with `ValidationException:
+    # Unable to create namespace. The key '...' is inaccessible`, and the cause is D31 working as
+    # designed: this key's policy grants the account root the administrative actions and NONE of the
+    # cryptographic ones, so no identity policy in this account can reach it. The refusal names the
+    # resource-based policy in as many words - `no resource-based policy allows the kms:Encrypt
+    # action` - which is also how it was separated from an identity-policy gap (Lesson 42's shape at
+    # the KMS layer: read the wording, never the exit code).
+    #
+    # WHY THE WAREHOUSE TAKES THIS KEY AT ALL. docs/GOVERNANCE.md's per-account encryption rule: one
+    # data CMK per account, and a Redshift namespace in Sandbox is a data store in Sandbox exactly as
+    # awsds-sandbox-lake is. The alternative - an AWS-managed key for the warehouse - would make
+    # "who can read this account's data" two answers instead of one.
+    #
+    # WHY THE SHAPE IS `root` + ViaService AND NOT A NAMED ROLE. A key policy naming a role ARN
+    # grants that role directly, whatever its IAM says; the `root` form delegates to IAM, so this
+    # statement admits only a principal whose own identity policy already allows the action AND whose
+    # call arrives through Redshift Serverless. Both halves must hold. That keeps D31's line intact
+    # where D31 draws it: an approver with ReadOnlyAccess gains nothing, because ReadOnlyAccess
+    # carries no kms:Decrypt, and a persona gains nothing, because reading data through this service
+    # needs a database session and `redshift-serverless:GetCredentials` is withheld from
+    # DataScientistAccess (Stage 5b step 2.3).
+    #
+    # THE ACTION LIST IS AWS'S OWN for this service, and each one is load-bearing at a different
+    # moment: DescribeKey and Encrypt/GenerateDataKey* at `CreateNamespace`, which is where the
+    # refusal above happened; CreateGrant because Redshift Serverless creates a grant and then uses
+    # THAT for every later read and write - so this statement is the door to creating the warehouse,
+    # not the door the warehouse uses afterwards; ReEncrypt* and Decrypt for the key rotation path.
+    # AWS's note on the service: Redshift Serverless "does not support encryption context or confused
+    # deputy headers, so access for this service is scoped using kms:ViaService only" - which is why
+    # there is no EncryptionContext condition to add and why the ViaService pin is the whole scope.
+    {
+      Sid       = "AllowRedshiftServerlessViaServiceInThisAccount"
+      Effect    = "Allow"
+      Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
+      Action = [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:CreateGrant",
+        "kms:DescribeKey",
+      ]
+      Resource = "*"
+      Condition = {
+        StringEquals = { "kms:ViaService" = "redshift-serverless.${var.region}.amazonaws.com" }
+      }
+    },
   ]
 }

@@ -715,6 +715,25 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
 
+    # Stage 5b step 1.7 - the two warehouse slices. Both read a sibling's state through
+    # terraform_remote_state, and the state key is built from the ACCOUNT FOLDER, which no .tf file
+    # may re-derive from the env token (Lesson 14) - so the folder name rides along, exactly as it
+    # does for every non-foundation network slice above.
+    #
+    #   warehouse          reads data/ for the account data CMK (docs/GOVERNANCE.md Encryption: one
+    #                      data key per account, and the namespace is a data store in this one) and
+    #                      foundation/ for the VPC the workgroup's security group lives in.
+    #   warehouse-compute  reads foundation/ for the two private subnets and warehouse/ for the
+    #                      namespace name and the security group. It needs `zone_ids` as well,
+    #                      because foundation/ reports its subnets as a map KEYED BY ZONE ID - the
+    #                      standing rule that a subnet is anchored on its AZ zone_id and never on a
+    #                      list position, since us-west-2a is not the same physical zone in two
+    #                      accounts.
+    if slice_name in ("warehouse", "warehouse-compute"):
+        values["account_folder"] = account
+        if slice_name == "warehouse-compute":
+            values["zone_ids"] = ZONE_IDS[account]
+
     # Stage 6d step 2.1 - the member's dev-env/ slice, which registers an image that lives in the
     # registry account: the repository URL its version is built from and the ARNs its image role
     # names are read from production/registry/'s state, so neither is a literal here.
