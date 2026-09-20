@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)), so every "after 6b" gate in this file is unblocked: the account arrives on **10.50.0.0/16** with its `[P]` S3 gateway endpoint intact, peered with `VPC-Networking` only (D20 amended), no default route, and an `[E]` endpoint set still to build. It arrives carrying what D20 forbids — a lake share, resource links, a read-write persona — which 6b removes and `DT-8` proves gone. **The Staging data CMK is created here**, under its own name `alias/awsds-staging-data`. **The off-VPC job deny moves from the persona sets to the job-execution roles**, as a permissions boundary (3.5), and serverless inference is settled at 3.7. **The SageMaker runtime is the whole of both targets' compute** — job execution roles, Pipelines, batch transform, the Model Registry consumer and, from Stage 10, a `staging/orchestration/` slice; no domain, no space, no interactive surface, and none of those APIs needs a domain object. **Amended 2026-09-19 by [D40](../decisions/D40-redshift-warehouse.md)**: this stage gains the **governed half of the Redshift warehouse** — `production/warehouse/` and the estate's first `gov_*` database, written only by `awsds-prod-job-exec` and registered to the Glue Data Catalog as a federated catalog. Until then the warehouse has one class of database and one account: [Stage 5b](stage-05b-redshift-serverless.md) built the Sandbox namespace and [Stage 6h](stage-06h-redshift-connection.md) the first `sbx_*` database. The specification `production/warehouse/` is built from is 5b §7's table; step 9 is where it applies |
+| **Status** | not started. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)), so every "after 6b" gate in this file is unblocked: the account arrives on **10.50.0.0/16** with its `[P]` S3 gateway endpoint intact, peered with `VPC-Networking` only (D20 amended), no default route, and an `[E]` endpoint set still to build. It arrives carrying what D20 forbids — a lake share, resource links, a read-write persona — which 6b removes and `DT-8` proves gone. **The Staging data CMK is created here**, under its own name `alias/awsds-staging-data`. **The off-VPC job deny moves from the persona sets to the job-execution roles**, as a permissions boundary (3.5), and serverless inference is settled at 3.7. **The SageMaker runtime is the whole of both targets' compute** — job execution roles, Pipelines, batch transform, the Model Registry consumer and, from Stage 10, a `staging/orchestration/` slice; no domain, no space, no interactive surface, and none of those APIs needs a domain object. **Amended 2026-09-19 by [D40](../decisions/D40-redshift-warehouse.md)**: this stage gains the **governed half of the Redshift warehouse** — `production/warehouse/` and the estate's first governed schema, written only by `awsds-prod-job-exec` and registered to the Glue Data Catalog as a federated catalog. Until then the warehouse has one class of database and one account: [Stage 5b](stage-05b-redshift-serverless.md) built the Sandbox namespace and [Stage 6h](stage-06h-redshift-connection.md) the first sandbox schema. The specification `production/warehouse/` is built from is 5b §7's table; step 9 is where it applies |
 | **Prerequisites** | Stage 3 — `production/foundation/` (VPC, the `[P]` gateway endpoint, KMS). Stage 5a — the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1** — step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5's promotion. **6b** — the account is `Staging`, in `Workloads`, on 10.50.0.0/16, its tree at `terraform-live/staging/`. **6c** — Staging peers with `VPC-Networking` only, has no default route, and reaches AWS through its own endpoints; `VPC-Workloads` carries the **two private subnets in two AZs** step 9's workgroup needs, the estate's one D9 exception, already built. **[Stage 5b](stage-05b-redshift-serverless.md)** — for step 9 alone: the warehouse's shape, its cost guards and its verification (i) answer (two subnets or three), so the Production namespace copies a measured configuration rather than repeating its unknowns. Nothing here waits on a quota, save 5b 0.4's namespace-per-account reading; **passes 4-5 are gated by 6b, which runs long before this stage** |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** — the two read shares are Stage 5a's; [INT-05](../integrations.md) (the Production and laptop branches); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part** — the model-registry read half, **which absorbed INT-04 at 6b** (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** — the writer and maintenance halves are Stage 5a's; **[INT-24](../integrations.md)** — a Sandbox project reading a governed Redshift table that lives in Production, the warehouse's only cross-account leg (D40) |
@@ -27,7 +27,7 @@ the data platform, the SageMaker runtime and the sharing model.
 | `production/data/` (new) | the `consumer-data` call — LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it. **`consumer-data-v0.6.0` provides no derived zone and no workgroup** (D19 revised re-homed the Interactive zone onto the SMUS project path; Production has no SMUS, D28), so where this account's query results land — a stage-authored results bucket and workgroup beside the call, or nothing — is **this stage's to decide**; `aws/deploytargets.py` carries the same note | `[P]` |
 | `staging/data/`, `staging/sagemaker/` (new) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else. Staging has no SMUS either (D17/D28 — the runtime without the domain), so the re-homed zone does not exist here and step 4.2's enforced workgroup has **no supplier and no named result location**. One re-decision covers both deployment targets | `[P]` |
 | `production/workloads-egress/` (amended), `staging/egress/` (amended) | the endpoints a job needs where there is no default route: `sagemaker.api`, `sagemaker.runtime`, `sts`, `logs`, `glue`, `athena`, `ecr.api`, `ecr.dkr`, `kms`, `secretsmanager` — **with the job subnets pinned to the endpoints' AZ** (6c step 5.4's `sagemaker.runtime` affinity) | `[E]` |
-| `production/warehouse/` (new, rank 53 — step 9) | the governed half of [D40](../decisions/D40-redshift-warehouse.md)'s warehouse: the namespace `awsds-prod-warehouse` at `base_capacity = 4` in `VPC-Workloads`' private tier, its usage limit, its three audit log groups, the namespace role, **the first `gov_*` database written by `awsds-prod-job-exec`**, and the namespace **registered to the Glue Data Catalog as a federated catalog** so Lake Formation governs its schemas as it governs the lake's. Copies [Stage 5b](stage-05b-redshift-serverless.md) §7's specification — nothing here re-decides it | `[P]` |
+| `production/warehouse/` (new, rank 53 — step 9) | the governed half of [D40](../decisions/D40-redshift-warehouse.md)'s warehouse: the namespace `awsds-prod-warehouse` at `base_capacity = 4` in `VPC-Workloads`' private tier, its usage limit, its three audit log groups, the namespace role, **the first governed schema written by `awsds-prod-job-exec`**, and the namespace **registered to the Glue Data Catalog as a federated catalog** so Lake Formation governs its schemas as it governs the lake's. Copies [Stage 5b](stage-05b-redshift-serverless.md) §7's specification — nothing here re-decides it | `[P]` |
 | `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows: the workgroup, the named prefixes, the debug-role assumption — **and, for the warehouse, the read side only**: no `redshift-serverless:GetCredentials` anywhere (5b 2.3's absence, repeated in the account where it matters more) | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for the five new slices (all `[P]` — `make up`/`down` never touch them) | — |
 
@@ -54,7 +54,7 @@ flowchart LR
         WG["awsds-prod-athena [P]<br/>enforced · scan limit"]
         OUT["outputs + results [P]<br/>own CMK (D31)"]
         DBG["awsds-prod-debug [P]<br/>closed by default · alarmed"]
-        WH["awsds-prod-warehouse [P] · step 9 · D40<br/>gov_* databases · 4 RPU · usage limit<br/>federated catalog under Lake Formation<br/>no project tag, no connection"]
+        WH["awsds-prod-warehouse [P] · step 9 · D40<br/>the governed database · 4 RPU · usage limit<br/>federated catalog under Lake Formation<br/>no project tag, no connection"]
     end
     subgraph STG["Staging"]
         MIR["catalog mirror · sampled data<br/>awsds-staging-job-exec only"]
@@ -98,7 +98,7 @@ item 6 (the registry Stage 10 consumes rather than invents); step 2 from Stage 5
 | **3** | 1, 2 | the consumer slice, then the producer proofs (the write pair, the pickup) | `production/data/` `[P]` | `awsds-infra-prod` |
 | **4** | 5, 6, 8 | the persona layer and the boundary sweep | `identity/sso/` `[P]` + sessions | `awsds-infra-identity`; persona sessions |
 | **5** | 4, 8 | the Staging platform, then the end-to-end promotion | `staging/data/`, `staging/sagemaker/` `[P]` | `awsds-infra-staging`; the pipeline |
-| **6** | 9 | the governed warehouse: the namespace and its guards, the first `gov_*` database written by the job role, the federated-catalog registration, and INT-24's cross-account read | `production/warehouse/` `[P]` | `awsds-infra-prod`; then the pipeline for 9.4 |
+| **6** | 9 | the governed warehouse: the namespace and its guards, the first governed schema written by the job role, the federated-catalog registration, and INT-24's cross-account read | `production/warehouse/` `[P]` | `awsds-infra-prod`; then the pipeline for 9.4 |
 
 Pass 1 precedes pass 2 because the grantor's regrant target and Stage 5a's drop-box statements both name
 the job role; pass 3 cannot precede pass 2 (a resource link to a share that does not exist resolves
@@ -512,7 +512,7 @@ read every denial by its wording, never its exit code.
 ### 9. `production/warehouse/` — the governed class of database (D40)
 
 **Action:** the second half of the warehouse: a Redshift Serverless namespace in `VPC-Workloads`, the
-estate's first `gov_*` database, written by `awsds-prod-job-exec` and by nothing else, registered to the Glue
+estate's first governed schema, written by `awsds-prod-job-exec` and by nothing else, registered to the Glue
 Data Catalog so Lake Formation governs it — and the pipeline's path for deploying a database a Production
 workload produced. **Why:** [Stage 5b](stage-05b-redshift-serverless.md) built the sandbox class and
 [6h](stage-06h-redshift-connection.md) filled it, and a warehouse with one class is not the requirement. The
@@ -526,7 +526,7 @@ namespace deliberately does not have.
 > **This is the first governed store outside Data Governance, and D22 is the line it crosses.** D40 argues
 > the trade and names the compensation: the namespace is a **federated catalog**, so its schemas and tables
 > carry the same permission layer as the lake's. The consequence is that the **grant register gains a second
-> grantor account** — Production grants on `gov_*`, Data Governance grants on `raw`/`curated` — and 9.5 is
+> grantor account** — Production grants on the `governed` database, Data Governance grants on `raw`/`curated` — and 9.5 is
 > where the register is told, in the same sitting, or the estate has two registers and one of them is nobody's.
 
 - **9.1 — [Claude] Write the namespace and workgroup**, copying 5b §7's table: `awsds-prod-warehouse` under
@@ -546,7 +546,7 @@ namespace deliberately does not have.
   whole of D13 is that the engine asks Lake Formation instead of reading the files. A direct `PutObject` from
   this role to a lake bucket is denied for the same reason 2.4 proves it is denied for the job role, and 9.6
   measures it rather than assuming the symmetry.
-- **9.3 — [Claude⚡] Create the first `gov_*` database and grant only the job role.** As 6h 1.1-1.5 did for
+- **9.3 — [Claude⚡] Create the first governed schema and grant only the job role.** As 6h 1.1-1.5 did for
   `sbx_lab`, and with the same two pieces of hygiene: **`REVOKE` on `public`** in the new database *and* in
   the namespace's own first database, and a **named schema** rather than `public`. The grantee is
   `awsds-prod-job-exec`'s database identity — 6h verification (iii) settled the identifier's spelling, so this
@@ -615,9 +615,9 @@ namespace deliberately does not have.
   > (Lesson 53: two systems expressing one intent in the same-looking syntax are not translatable by
   > transcription, and they agree on the easy cases).
 - **9.6 — [user] Prove the governed pair, the way 2.4 proved the lake's.** Under `awsds-prod-job-exec`: a
-  write into the `gov_*` schema succeeds; the same role's direct `PutObject` to a lake bucket is still denied;
+  write into the governed schema succeeds; the same role's direct `PutObject` to a lake bucket is still denied;
   and the namespace role reaches no lake prefix. Read every wording.
-- **9.7 — [user] Prove INT-24 — a Sandbox project reading a `gov_*` table, by whichever of the two
+- **9.7 — [user] Prove INT-24 — a Sandbox project reading a governed table, by whichever of the two
   Lake-Formation-governed shapes 9.5a chose.** **There is no network path and there does not need to be**:
   Sandbox does not peer with `VPC-Workloads`, and its absence is a control (`docs/NETWORK.md` §3); neither
   shape opens a Redshift connection from the project.
@@ -669,7 +669,7 @@ behavioural proofs are the stage's own (Lesson 20):
 - **The escape hatch:** closed at rest, open only inside an approved window, alarmed on every
   assumption, and unable to become a notebook (the OU SCP names the denial).
 - **The promotion (8.5):** Stage 8's chain against real catalogs, end to end.
-- **The governed warehouse (step 9):** a `gov_*` database written by the job role and by nothing else, its
+- **The governed warehouse (step 9):** a governed schema written by the job role and by nothing else, its
   namespace a federated catalog whose databases do **not** carry `IAMAllowedPrincipals`, no project tag
   anywhere on it, and INT-24 answered by measurement rather than by intention.
 
@@ -700,7 +700,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 | Athena queries | 5 USD/TB scanned — the workgroup limit is the guard | metered |
 | Staging's own account overhead (Config recorder etc.) | ~USD 0.5-1/month, already being paid — the account exists | — |
 | **`production/warehouse/` compute** (step 9) | **0.00/h at rest · 1.44 USD/h while a query runs** at `base_capacity = 4` (0.36/RPU-h, 60-second minimum) — **the most expensive item in this stage by an order of magnitude**, and the reason the usage limit lands in the same apply | `[P]` |
-| Redshift Managed Storage for the `gov_*` database | 0.024 USD/GB-month | `[P]` |
+| Redshift Managed Storage for the governed schema | 0.024 USD/GB-month | `[P]` |
 | Its admin secret + three log groups | ~0.40 USD/secret-month + cents | `[P]` |
 | **The managed Redshift cluster AWS Glue creates** if 9.5's Iceberg-engine switch is enabled | **unpriced and unsized** — a *cluster*, always-on in shape, which is the item that could break this stage's cost profile on its own. Priced before the switch is enabled, never after (Lesson 6); 9.5a's recommendation is the shape that avoids it | — |
 
@@ -761,7 +761,7 @@ Record every answer, including the ones that come out fine.
 | xvii | Does a Staging job resolve `sagemaker.runtime` from the subnet it actually landed in (the AZ affinity D9 collides with)? | 4.3a |
 | xviii | Does the governed namespace read back at `base_capacity = 4` with its usage limit, its capped `max_capacity` and **no project tag** — and do its three log groups carry a retention period, so `EXC-10` stays at one? | 9.1 |
 | xix | Does the federated catalog's database carry `IAMAllowedPrincipals` after registration — the Recipe D reading, third instance — and did the two-step apply prevent it? | 9.5 |
-| xx | Does the governed pair hold: a `gov_*` write under the job role succeeds, and its direct `PutObject` to a lake bucket is still denied? | 9.6 |
+| xx | Does the governed pair hold: a a governed schema write under the job role succeeds, and its direct `PutObject` to a lake bucket is still denied? | 9.6 |
 | xxi | Which of the two Lake-Formation-governed mechanisms carries INT-24, and does a Lake Formation share of a **federated** resource preserve the TBAC expressions this estate grants by — given that both AWS pages say tags may be used, where DataZone's Glue path refuses them? | 9.5a, 9.7 |
 | xxiii | Does enabling the Iceberg-engine switch create a **managed Redshift cluster in this account** — under which principal, visible as which CloudTrail call, at what size and under which key — and does `DenyRedshiftProvisionedClusters` refuse it? | 9.5, 9.5a |
 | xxiv | On the datashare path, does a producer-side revoke leave Lake Formation permissions behind, as documented — and does the register notice? | 9.7 |

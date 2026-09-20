@@ -156,6 +156,13 @@ idle warehouse bills anyway — an unclosed transaction (up to **8.64 USD** befo
 connection pool's keep-alive, a cancelled query — are why the guard is a hard ceiling rather than a
 notification. The rates and their reading date are `docs/PRICING.md` §5.
 
+**The warehouse's storage has its own ceiling, and it is not small.** A sandbox schema carries a **1 TB**
+quota (`objectives.md`, 2026-09-20), which at 0.024 USD/GB-month is **24.58 USD a month if filled — 49% of the
+D12 ceiling from one schema**, and **nothing bounds the number of schemas**: 32 of them at 1 TB reach the 32 TB
+a 4-RPU workgroup supports, at roughly 786 USD a month. So the quota bounds a *runaway*, not the bill, and the
+thing that bounds the bill is an alarm on the namespace's `DataStorage` metric
+([Stage 6h](stages/stage-06h-redshift-connection.md) decision 7).
+
 **Guardrail:** AWS Budgets with e-mail alerts must exist before any compute is created (Stage 1). **For the
 warehouse that is not enough**: a budget notifies after the money is spent, and D12's budget notifies nobody
 (the defect [Stage 6e](stages/stage-06e-claude-code-bedrock.md) 8.3 re-opened). The usage limit is the guard

@@ -36,7 +36,7 @@ with data stored on S3 buckets, using ICEBERG format, as Data Warehouse"* — an
 not fork.** So this decision extends D13, D22 and the producer path rather than re-opening them, and three of
 its readings stopped being assumptions on 2026-09-20:
 
-- *"A query engine is a choice per workload, not per estate"*, with Athena the default — so a `gov_*` database
+- *"A query engine is a choice per workload, not per estate"*, with Athena the default — so a governed schema
   with no workload Athena served badly is this decision's own revision trigger, restated by the brief.
 - *"One Redshift environment from a data scientist's point of view… where its databases physically live is an
   implementation matter"* — which is what makes the two-account split below **admissible** rather than a
@@ -117,8 +117,13 @@ separates:
 
 | Class | Written by | Lives in | Governed by | Stage |
 |---|---|---|---|---|
-| **sandbox** | SageMaker project roles, per database × project | `Sandbox` — `sandbox/warehouse/` | **nothing in the catalog.** `objectives.md` (2026-09-20) has the sandbox class **bypass the catalog and Lake Formation**: access goes directly to the project role, and a member *"creates tables freely inside that project's own schema"*. The schema is owned by the project and bounded by a `QUOTA` a superuser sets | [5b](../stages/stage-05b-redshift-serverless.md) builds the warehouse, [6h](../stages/stage-06h-redshift-connection.md) the first database |
-| **governed** | a Production workload alone | `Production` — `production/warehouse/` | **Lake Formation**, through the federated registration — *"the governance model does not fork"* | [9](../stages/stage-09-deployment-targets.md) builds both |
+| **sandbox** — themed **schemas** in a `sandbox` database | SageMaker project roles, per **schema × project**, and **one schema may be shared by several projects** | `Sandbox` — `sandbox/warehouse/` | **nothing in the catalog.** `objectives.md` (2026-09-20) has the sandbox class **bypass the catalog and Lake Formation**: access goes directly to the project role, and a member *"creates tables freely inside that schema"*. The grants sit on a **role per schema**, the schema is owned by a non-login role, and its **1 TB `QUOTA`** — which only a superuser may change — is what bounds a free hand | [5b](../stages/stage-05b-redshift-serverless.md) builds the warehouse, [6h](../stages/stage-06h-redshift-connection.md) the first schema |
+| **governed** — a `governed` database | a Production workload alone | `Production` — `production/warehouse/` | **Lake Formation**, through the federated registration — *"the governance model does not fork"* | [9](../stages/stage-09-deployment-targets.md) builds both |
+
+> **A Redshift `schema` is what the brief calls a *base***, settled 2026-09-20. So the Redshift `database` is
+> only a class container — `sandbox` and `governed`, one per account, no name prefixes — every grain in this
+> decision is per schema, and a schema's **thematic name carries no authorization information at all**, which is
+> both what lets a schema be shared and what makes `sandbox/warehouse/`'s map the only record of who uses it.
 
 **The asymmetry is a requirement, not a compromise this decision made to save work.** It is the same one
 `awsds-sandbox-lake` already carries (Stage 16, a compensated shadow store outside Lake Formation by design):

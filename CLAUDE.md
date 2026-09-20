@@ -232,13 +232,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13) — the only one left.
 - **D40 (2026-09-19): a Redshift Serverless warehouse, built by hand, blueprints still disabled.** **Stage 5
   is now 5a** (file, log, 94 files re-pointed). Three new files: **5b** the warehouse + the access model,
-  **6h** the first `sbx_*` database + the SMUS connection, **Stage 9 step 9** the `gov_*` class. Nothing
+  **6h** the first sandbox schema + the SMUS connection, **Stage 9 step 9** the the governed class. Nothing
   applied. **`objectives.md` revised 2026-09-20, Claude drafting at the user's request** (5b 0.0, a departure
   from Stage 16 0.1's shape, recorded): Redshift is a **second possible engine**, the Glue/Iceberg lake stays
   the **warehouse of record**, an engine is a choice **per workload not per estate** (Athena the default),
   **one environment to a data scientist and where its databases live is an implementation matter** — which is
   what makes D40's two-account split admissible — and **the controls do not change: one more execution
-  environment**, no new class of reader, no second governance model. Consequences: **a `gov_*` database gets no project
+  environment**, no new class of reader, no second governance model. Consequences: **a governed schema gets no project
   connection** (6h's three layers are sandbox-class only), and `INT-24` is narrowed to what **LF governs** —
   **two** shapes: a federated catalog read by Athena, or a **LF-managed datashare** (LF enforces db/table/
   column/row permissions on it and **tags may be used**; cross-Region not supported; a producer revoke leaves
@@ -247,13 +247,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   unpriced, read+write, AWS-managed key by default — which **collides with 5b 3.1's
   `DenyRedshiftProvisionedClusters`**; Stage 9 **9.5a** settles it and recommends the datashare. The per
   database × project grant is the only new rule. **The sandbox class bypasses the catalog** (user,
-  2026-09-20): access direct to the project role, and a member creates tables freely in **its own schema** —
-  so layer 3 is `CREATE SCHEMA … AUTHORIZATION <project user> QUOTA n GB`, **ownership not a verb list** (no
-  `ALTER DEFAULT PRIVILEGES`), one schema per project, and a **datashare is not the mechanism** (same account,
-  same namespace). **The quota default is `UNLIMITED`** — `WH-13` fails on an unbounded `sbx_` schema; a
-  superuser alone may change it; it refuses **at commit**; and `DELETE` frees nothing until `VACUUM` (plain
-  `VACUUM` at 4 RPUs, boost needs ≥ 8). `SVV_SCHEMA_QUOTA_STATE`/`STL_SCHEMA_QUOTA_VIOLATIONS` are the
-  instruments. **0.36 USD/RPU-h measured** (offer
+  2026-09-20): access direct to the project role, and a member creates tables freely in the schema. **A schema
+  IS a base** (user): the Redshift `database` is only a class container (`sandbox` / `governed`, no prefixes),
+  the grain is **per schema × project**, **one schema may be shared by several projects**, and its name is
+  **thematic — chosen at creation, no relation to a project**, so a schema name is not an authorization fact and
+  the relation lives only in `sandbox/warehouse/`'s map + the `GRANT ROLE` statements. Layer 3 is therefore a
+  **role per schema** (`sbx_<theme>_rw`) granted per project — not ownership, which is singular; the owner is a
+  non-login role. **Quota 1 TB** (user) = **24.58 USD/mo if filled, 49% of the D12 ceiling, and nothing bounds
+  the schema count** (32 at 1 TB = the 4-RPU 32 TB limit) → an alarm on `DataStorage` is the compensating
+  control. **Quota default is `UNLIMITED`** (`WH-13`); a superuser alone may change it; it refuses **at
+  commit**; `DELETE` frees nothing until `VACUUM` (plain at 4 RPUs, boost needs ≥ 8);
+  `SVV_SCHEMA_QUOTA_STATE`/`STL_SCHEMA_QUOTA_VIOLATIONS` are the instruments. **Sharing has one cost ownership
+  would have avoided**: a table belongs to its creator, so `ALTER DEFAULT PRIVILEGES` per contributing project
+  may be owed — 6h 5.2b reads it. A **datashare is not the mechanism** (same account, same namespace).
+  **0.36 USD/RPU-h measured** (offer
   file 2026-09-11) → 4 RPU = **1.44/query-hour, 0.00 at rest**, the estate's dearest object per unit of time,
   so the usage limit (`breach_action = deactivate`, default `log`) lands in the **same apply** as the
   workgroup. Two classes on two accounts because **a namespace is not a boundary between its databases** (one

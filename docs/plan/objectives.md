@@ -128,8 +128,18 @@ The goal is to achieve the following:
   *Clarified 2026-09-20 — the sandbox databases bypass the catalog:* for a sandbox database the catalog and
   Lake Formation are **not** in the path. Access is granted **directly to the project role**, by whichever
   mechanism is simplest to configure, and **a data scientist who is a member of the project creates tables
-  freely inside that project's own schema** in Redshift. The asymmetry is deliberate and it is the same one
-  the `sandbox-lake` already has: governed data is governed, and a project's working data is the project's.
+  freely inside that schema** in Redshift. The asymmetry is deliberate and it is the same one the
+  `sandbox-lake` already has: governed data is governed, and a project's working data is the project's.
+
+  *Clarified 2026-09-20 — what a "database" means here, and who shares one:* in Redshift, **a schema is a
+  database** in the sense this brief uses the word. So the unit that is granted per base x project is a
+  **schema**, and:
+
+  - **one sandbox schema can be shared with more than one SageMaker project** — access is given to a project
+    profile, and several may hold it on the same schema.
+  - **a schema's name is chosen when the schema is created, after the theme of the data it will hold**, and it
+    bears no necessary relation to any SageMaker project.
+  - **the disk quota on a sandbox schema is 1 TB.**
 
 - Use Amazon ECR as container registry.
 

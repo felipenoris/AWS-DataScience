@@ -198,7 +198,7 @@ terraform-live/
 │   │                     #     the usage limit (breach_action = deactivate) is applied in the
 │   │                     #     SAME apply as the workgroup, since a workgroup with no ceiling
 │   │                     #     for one plan cycle is exactly when a mistake costs 1.44 USD/h.
-│   │                     #     Holds the sbx_* class of database and the per-project tags
+│   │                     #     Holds the `sandbox` database, its themed schemas and the tags
 │   │                     #     Stage 6h's connections need. No Lake Formation object: the
 │   │                     #     sandbox class is outside it by design, like lake/ beside it
 │   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
@@ -381,7 +381,7 @@ terraform-live/
     │                     #     namespace + workgroup awsds-prod-warehouse in VPC-Workloads'
     │                     #     private tier - the two-AZ pair 6c built as the estate's one D9
     │                     #     exception, so this account needs no new network work. Holds the
-    │                     #     gov_* class, written by awsds-prod-job-exec alone, and the
+    │                     #     `governed` database, written by awsds-prod-job-exec alone, and the
     │                     #     namespace is REGISTERED to the Glue Data Catalog as a federated
     │                     #     catalog (aws_glue_catalog's federated_catalog), which is what puts
     │                     #     a warehouse schema under the same Lake Formation permissions as the

@@ -573,7 +573,7 @@ kinds, and both exist because the alternative was a blueprint provisioning somet
 | Kind | Reaches | Written by | Stage |
 |---|---|---|---|
 | **S3** | `awsds-sandbox-lake`, per SSO-group prefix | by hand, per project ([`runbooks/sandbox-lake.md`](plan/runbooks/sandbox-lake.md)) | [16](plan/stages/stage-16-sandbox-lake.md) |
-| **Redshift** | `awsds-sandbox-warehouse`, one `sbx_*` database | decision 1 of [6h](plan/stages/stage-06h-redshift-connection.md): the portal for the first, `awscc_datazone_connection` after | [6h](plan/stages/stage-06h-redshift-connection.md) |
+| **Redshift** | `awsds-sandbox-warehouse`, one themed **schema** in its `sandbox` database — shareable with several projects | decision 1 of [6h](plan/stages/stage-06h-redshift-connection.md): the portal for the first, `awscc_datazone_connection` after | [6h](plan/stages/stage-06h-redshift-connection.md) |
 
 **A Redshift connection is three layers, and none of them is the connection.** Read 2026-09-19, for
 [6h](plan/stages/stage-06h-redshift-connection.md); the requirement it implements is *access per database ×
@@ -603,8 +603,8 @@ and password enables Amazon SageMaker Unified Studio to display more information
 **Two doors, and they have different prerequisites.** *"If you want to query the Amazon Redshift resources
 using JupyterLab within Amazon SageMaker Unified Studio, the Amazon Redshift resource must use the same VPC as
 the Amazon SageMaker Unified Studio project"*, while *"You can still query using the Data page of your project
-if you are using different VPCs."* That is why the `sbx_*` warehouse is in Sandbox's own VPC and why the
-`gov_*` one in `VPC-Workloads` is unreachable from a notebook by construction — Sandbox does not peer with it,
+if you are using different VPCs."* That is why the sandbox warehouse is in Sandbox's own VPC and why the
+the governed one in `VPC-Workloads` is unreachable from a notebook by construction — Sandbox does not peer with it,
 and the absence is a control (`docs/NETWORK.md` §3).
 
 **`lineageSync` is a scheduled query on an hourly meter.** `awscc_datazone_connection`'s

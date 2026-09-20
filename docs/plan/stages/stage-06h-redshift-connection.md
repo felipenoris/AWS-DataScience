@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. Written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one `sbx_*` database in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
+| **Status** | not started. Written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
 | **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
@@ -20,7 +20,7 @@ is attributable to one of them.
 
 **Everything here is a sandbox-class mechanism.** `objectives.md` (2026-09-20) makes the per database ×
 project grant *"the sandbox databases' rule… the only new rule here"*, and says the controls over governed
-data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a `gov_*`
+data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a a governed schema
 database**: that class is read through the federated catalog Lake Formation governs
 ([Stage 9](stage-09-deployment-targets.md) 9.5) and written by a pipeline, and reusing this stage's wiring
 there would put a Redshift `GRANT` beside a Lake Formation grant over governed data — the fork the brief
@@ -38,37 +38,45 @@ the database*, which is the same symptom three times over (Lesson 28's intersect
 |---|---|---|---|---|
 | 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup** | the compute does not appear in the project's dropdown at all |
 | 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, plus `redshift-data:` if the Data API is the path | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
-| 3 | **The project's own schema**, created `AUTHORIZATION <its database user>` with a `QUOTA` — plus whatever the project needs to reach the database it sits in | SQL, run once from the admin credential, per database × project | per **database**, and the freedom is per **schema** | the project connects, sees the cluster, and the database is invisible or read-only |
+| 3 | **A database role per schema**, holding `USAGE, CREATE` on it, granted to each admitted project's database user — the schema itself carrying a `QUOTA` | SQL, run once per schema from the admin credential; one `GRANT ROLE` per admitted project | per **schema × project**, many-to-many | the project connects, sees the cluster, and the schema is invisible or read-only |
 
 **Layer 3 is the requirement's grain.** Layers 1 and 2 are gates in front of it, and they are per-warehouse:
-admitting a second project to the warehouse does not give it anything in any database. That asymmetry is the
+admitting a second project to the warehouse does not give it anything in any schema. That asymmetry is the
 design, and 5.2 is where it is proved rather than asserted.
 
-**And layer 3 is ownership, not a list of verbs** (`objectives.md`, 2026-09-20: *"a data scientist who is a
-member of the project creates tables freely inside that project's own schema"*). A schema created
-`AUTHORIZATION <the project's database user>` makes that user its **owner**, so it creates, alters and drops
-its own tables with no further grant and nothing to keep in step as the project works — which is the *"simplest
-to configure"* the requirement asks for, and it removes the `ALTER DEFAULT PRIVILEGES` bookkeeping a
-grant-list shape would have needed. **What bounds "freely" is the schema's `QUOTA`**, which a superuser sets
-and the project cannot raise (1.3). **A datashare is not the mechanism here**: the project, the workgroup and
-the database are in one account and one namespace, so a datashare would add a producer/consumer chain to reach
-something already local. It enters only if a sandbox database ever has to be read from another namespace, which
-nothing asks for.
+> **One vocabulary note, and it decides every grain below.** `objectives.md` (2026-09-20) settles that *"in
+> Redshift, a schema is a database"* in the sense the brief uses the word. **This file uses Redshift's own
+> words**: a Redshift **`database`** is the container, and a Redshift **`schema`** is what the brief calls a
+> *base*. So *per base × project* is **per schema × project**, one Redshift database holds every sandbox
+> schema, and the class of data is carried by the **account and the enclosing database**, never by a schema
+> name — because a schema name is *"chosen when the schema is created, after the theme of the data it will
+> hold"* and *"bears no necessary relation to any SageMaker project"*. Spelling the two words as one is
+> Lesson 32's shape, and the reason the note is at the top rather than in a step.
+
+**Layer 3 is a grant on a schema that several projects may hold** (`objectives.md`: *"one sandbox schema can be
+shared with more than one SageMaker project"*), which rules out the shape this file carried until 2026-09-20 —
+a schema owned by *the* project's database user. Ownership is singular and the relation is many-to-many, so
+**the grants live on a Redshift database role, one per schema**, and admitting a project is a single
+`GRANT ROLE` (1.5). **What bounds "freely" is the schema's `QUOTA`**, which a superuser sets and no project can
+raise (1.3). **A datashare is not the mechanism here**: the projects, the workgroup and the database are in one
+account and one namespace, so a datashare would add a producer/consumer chain to reach something already local.
+It enters only if a sandbox schema ever has to be read from another namespace, which nothing asks for.
 
 ## What this stage builds, and in which accounts
 
 | Where | What | Layer |
 |---|---|---|
-| the warehouse, by SQL | the database **`sbx_lab`**, its schema, the project's database user and the `GRANT`s | data, not a resource |
+| the warehouse, by SQL | the database **`sandbox`**, its first themed **schema** with a 1 TB quota, the schema's owner and `_rw` roles, the project's database user, and the `GRANT ROLE` that admits it | data, not a resource |
 | `sandbox/warehouse/` (amended) | the project tag on workgroup **and** namespace, and the project role's IAM policy for layer 2 | `[P]` |
 | the domain, one connection | the project's Redshift compute connection — portal or `awscc_datazone_connection` (decision 1) | `[P]` |
 | `identity/sso/` (possibly amended) | only if decision 4 gives a persona a direct query path; **the default is that it does not** | `[P]` |
 | `aws/warehouse.py` (extended) | `WH-9`..`WH-12` — the tag pair, the project role's reach, the connection, and the database inventory with its grants | — |
 | `runbooks/redshift-connection.md` (new) | the recurring procedure: adding a database, wiring a project, unwiring one | — |
 
-**Contracts this stage fixes:** the database **`sbx_lab`** (the naming rule is `sbx_<purpose>`, 5b 2.1), **one
-schema per project** inside it, owned by the project and carrying a `QUOTA` (never `public` — 1.3), and the
-database user's identifier, whose exact spelling is **1.4's reading and not this file's claim**.
+**Contracts this stage fixes:** the one sandbox **database** `sandbox` (the container — the class is the
+account plus this name, 5b 2.1), the first **schema** in it named after its data, its owner role and its
+`sbx_<theme>_rw` access role, the **1 TB** quota, and the database user's identifier, whose exact spelling is
+**1.4's reading and not this file's claim**.
 
 ```mermaid
 flowchart LR
@@ -80,7 +88,7 @@ flowchart LR
         CONN["the connection<br/>workgroup · database · credential"]
         subgraph WH["awsds-sandbox-warehouse"]
             TAG["tag AmazonDataZoneProject = the project id<br/>on workgroup AND namespace"]
-            DB["sbx_lab · one schema per project<br/>AUTHORIZATION the project user · QUOTA n GB<br/>no catalog, no Lake Formation"]
+            DB["database sandbox<br/>schema per theme · QUOTA 1 TB<br/>role sbx_theme_rw · many projects<br/>no catalog, no Lake Formation"]
         end
     end
     DATA["the project's Data page<br/>Query Editor · no VPC path needed"]
@@ -88,7 +96,7 @@ flowchart LR
     ROLE ==>|"GetCredentials · layer 2"| WH
     CONN --> WH
     TAG -.->|"layer 1: which project may use the compute"| WH
-    DB -.->|"layer 3: which database · the schema is the project's"| ROLE
+    DB -.->|"layer 3: which schema, per project · GRANT ROLE"| ROLE
     DATA -->|"sqlworkbench · layer 1+2 only"| WH
 ```
 
@@ -174,38 +182,40 @@ to write. **Why:** this is layer 3, the requirement's own grain. **Explanation:*
 the admin credential — there is no Terraform resource for a Redshift `GRANT`, and inventing one out of a
 `local-exec` would put a credential in a plan.
 
-- **1.1 — [Claude⚡] Create the database** `sbx_lab`, from the admin credential
+- **1.1 — [Claude⚡] Create the one sandbox database** `sandbox`, from the admin credential
   ([5b](stage-05b-redshift-serverless.md) 1.1's Secrets Manager secret), through the Query Editor or
-  `redshift-data`. The prefix is the class (5b 2.1) and **nothing enforces it** — `CREATE DATABASE gov_x`
+  `redshift-data`. **One database holds every sandbox schema**: the schema is what the brief calls a base, so a
+  database per base would put the container at the wrong level and make cross-schema work a cross-database
+  query. The class is the **account plus this name**, and **nothing enforces it** — a second database created
   here would succeed and `WH-6` would fail afterwards, which is the designed order: checked, not prevented.
 - **1.2 — [Claude⚡] Revoke `PUBLIC` on the new database**, the same statement 5b 1.6 wrote for `warehouse`.
   Redshift creates a `public` schema with `USAGE` and `CREATE` granted to the group `PUBLIC`, so **every**
   database user in the namespace can create objects in it until that is revoked. A database created and not
   revoked is a database where layer 3 has a hole nobody granted.
-- **1.3 — [Claude⚡] Create the project's own schema, owned by it and bounded by a quota.** One schema per
-  project inside the sandbox database — not one shared schema, and never `public`:
-  `CREATE SCHEMA <name> AUTHORIZATION "<the project's database user>" QUOTA <n> GB`. Three things this one
-  statement buys, and each replaces something the earlier draft did by hand:
-  - **`AUTHORIZATION` makes the project the owner**, so *"creates tables freely"* needs no grant list and no
-    `ALTER DEFAULT PRIVILEGES` — the requirement's *"simplest to configure"*.
+- **1.3 — [Claude⚡] Create the schema — named after its data, owned by nobody's project, bounded by a quota.**
+  `CREATE SCHEMA <theme> AUTHORIZATION "<the schema-owner role>" QUOTA 1 TB`, inside the one sandbox database,
+  and never `public`.
+  - **The name is thematic** (`objectives.md`, 2026-09-20): *"chosen when the schema is created, after the theme
+    of the data it will hold"*, with *"no necessary relation to any SageMaker project"*. So decision 6 is
+    answered against both shapes this file used to offer, and the consequence is worth stating: **a schema name
+    carries no authorization information at all**, which is what lets the same schema be shared and what makes
+    the map in `sandbox/warehouse/` the only place the schema × project relation is written down.
+  - **`AUTHORIZATION` does not name a project.** Ownership is singular and the relation is many-to-many, so the
+    owner is a **non-login role this stage creates for the purpose** — never a project's database user, which
+    would make one project privileged over the others sharing the schema, and never a person.
   - **`QUOTA` is what makes "freely" bounded.** *"The maximum amount of disk space that the specified schema
     can use… You must be a database superuser to set and change a schema quota"*, and Redshift *"checks each
-    transaction for quota violations before committing"*. So the project cannot raise its own ceiling, and the
-    refusal happens at commit rather than at some later audit.
-  - **One schema per project is what makes the freedom safe**: a project owns its schema and holds nothing in
-    another's, so *"freely"* and *"per database × project"* stop pulling against each other.
+    transaction for quota violations before committing"*. So no project can raise the ceiling, and the refusal
+    happens at commit rather than at some later audit. **The value is 1 TB** (`objectives.md`) — decision 7,
+    answered, and its cost arithmetic is in §Cost, because 1 TB is a runaway guard rather than a cost guard.
   > **The default is `UNLIMITED`, and that is the failure mode to name.** *"When you create a schema without
   > defining a quota, the schema has an unlimited quota."* A schema created in a hurry is an unbounded one, on
   > a store nothing expires — the same shape as an empty deny-list permitting everything. `WH-13` fails on any
-  > `sbx_*` schema whose quota reads unlimited.
+  > sandbox schema whose quota reads unlimited.
   > **Freeing the space is not automatic either:** *"A DELETE statement deletes data from a table and disk space
   > is freed up only when `VACUUM` runs"* — and at 4 base RPUs vacuum boost is unavailable, so it is the plain
   > `VACUUM` command ([Stage 5b](stage-05b-redshift-serverless.md)'s capacity reading, which is where that fact
   > was recorded before anything needed it).
-  **The schema's name is decision 6**: readable (the project's name, which a user can change) or stable (the
-  project id, which is opaque). Recommended: **the project's name, slugged**, with the project id in a comment
-  on the schema — `docs/plan/conventions.md`'s ordinal argument in reverse, because here the human reading a
-  connection string is the one who needs it.
 - **1.4 — [Claude⚡] Create the project's database user, and read its identifier rather than assuming it.**
   With IAM credentials (0.3), Redshift derives the database user from the calling IAM identity, and the
   documented spellings in this family are **`IAM:<user>`** and **`IAMR:<role>`** — plus, on the cross-account
@@ -225,16 +235,25 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   > **Take (a).** If the identifier turns out to be wrong, the symptom is a second, auto-created user
   > appearing beside the hand-made one at the first connection — a clean, readable diff in
   > `SVV_USER_GRANTS`/`pg_user`, and the correction is one `DROP USER`.
-- **1.5 — [Claude⚡] Grant only what ownership does not already give**, and read what that is rather than
-  assuming it. 1.3's `AUTHORIZATION` covers everything inside the schema, so what is left is **reaching the
-  database the schema sits in** — and the exact statement for that is a reading, not a claim: Redshift has
-  grown `GRANT … ON DATABASE` alongside the older model where connecting was enough, and which applies to a
-  serverless namespace at this version is settled by trying the connection, not by this file (Lesson 38).
-  **What must stay absent, whatever that answer is:** no `GRANT ALL ON DATABASE`, nothing on any other
-  database, nothing on another project's schema, and no `CREATE` on `public` (1.2 revoked it). Record the exact
-  statements in the log — they are the register for this layer, and there is no `list-permissions` equivalent
-  that shows them from outside (`WH-12` reads `SVV_*`, which means the instrument needs a database session,
-  itself a finding worth stating).
+- **1.5 — [Claude⚡] Put the grants on a role, and admit each project by granting it that role.** One database
+  role per schema — `sbx_<theme>_rw` — holding `USAGE, CREATE ON SCHEMA <theme>`; then
+  `GRANT ROLE sbx_<theme>_rw TO "<each admitted project's database user>"`. **Admitting or removing a project is
+  then one statement against one object**, which is what makes the many-to-many maintainable and what a
+  per-project grant list would not have been (Lesson 14: a value that must appear in N places by hand will be
+  missing from one).
+  > **Sharing has one cost this shape does not remove, and it has to be read rather than assumed.** A table is
+  > owned by the user that created it, so a table project A creates is not automatically alterable or droppable
+  > by project B, even though both hold the schema's role. Redshift's answer is `ALTER DEFAULT PRIVILEGES`, which
+  > is set **per granting user**, so a shared schema needs one such statement per contributing project — the
+  > `ALTER DEFAULT PRIVILEGES` bookkeeping this file thought ownership had removed, arriving back through the
+  > sharing requirement. **Read what the projects actually need before writing it** (verification xiii): if
+  > *"creates freely"* means only *creates and reads its own*, nothing more is needed; if it means a second
+  > project may drop the first's table, the default-privileges statements are the price, and they are per pair.
+  **What must stay absent, whatever that answer is:** no `GRANT ALL ON DATABASE`, nothing on a schema the
+  project's map row does not name, and no `CREATE` on `public` (1.2 revoked it). Record the exact statements in
+  the log — they are the register for this layer, and there is no `list-permissions` equivalent that shows them
+  from outside (`WH-12` reads `SVV_*`, which means the instrument needs a database session, itself a finding
+  worth stating).
 - **1.6 — [Claude] Write the grant register row.** [Stage 5a](stage-05a-data-foundation.md)'s grants are
   registered in `docs/AWS_STATE.md`; Redshift grants are a second system with no LF-Tag and no
   `GetDataAccess`, so they need their own table rather than a row in the LF register. One line per
@@ -331,12 +350,16 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   reading that says the tag is a control rather than a label.
   *(If no second project exists, this is deferred with a named owner rather than skipped — Stage 16 §T
   deferred exactly this and said so.)*
-- **5.2 — [user] The admitted project cannot reach another database, nor another project's schema.** From the
-  project that *is* admitted: its own schema works; the namespace's first database `warehouse` does not; and a
-  second project's schema in the *same* database does not either, once one exists. This is layer 3 alone, with
-  layers 1 and 2 satisfied — the asymmetry the three-layer design exists to produce, and the proof that
-  admitting a project to the warehouse grants it nothing in any database, and that *"creates freely"* stops at
-  its own schema.
+- **5.2 — [user] The admitted project reaches the schema its map row names, and no other.** From the project
+  that *is* admitted: the schema it holds the role for works; a **second schema in the same database**, whose
+  role it does not hold, does not; and the namespace's own first database does not either. This is layer 3
+  alone, with layers 1 and 2 satisfied — the asymmetry the three-layer design exists to produce, and the proof
+  that admitting a project to the warehouse grants it nothing in any schema.
+- **5.2b — [user] Two projects on one schema, which is the case the requirement adds.** Admit a second project
+  to the same schema with one `GRANT ROLE`, and read what each can do to the other's tables: `SELECT`, then
+  `INSERT`, then `DROP`. **This is where 1.5's callout gets its answer** — whether *"creates freely"* on a shared
+  schema means each project works beside the others or over them, and therefore whether the per-pair
+  `ALTER DEFAULT PRIVILEGES` statements are owed. Record the verbs that worked and the verbs that did not.
 - **5.2a — [user] The quota refuses, and the project cannot raise it.** Write into the project's schema past
   its `QUOTA` from inside the project — the refusal arrives **at commit**, as documented — then attempt
   `ALTER SCHEMA … QUOTA` as the project's own database user, which needs a superuser and must fail. Read
@@ -359,8 +382,12 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   recurring procedure, in the shape [`sandbox-lake.md`](../runbooks/sandbox-lake.md) takes for the S3
   connection — add a database, wire a project (the three layers, in order), unwire one, and what a failure at
   each layer looks like. **Unwiring is the half that gets forgotten**: a project removed from the map loses
-  layer 1 and layer 2 at the next apply, and keeps its layer-3 `GRANT` forever, because Terraform never wrote
-  it. `WH-12` is what finds that; the runbook is what prevents it.
+  layer 1 and layer 2 at the next apply, and keeps its layer-3 **role membership** forever, because Terraform
+  never wrote it — `REVOKE ROLE` is a second, manual act, and on a **shared** schema it is the only thing that
+  distinguishes a project that left from one that never came. `WH-12` is what finds that; the runbook is what
+  prevents it. The runbook also carries **adding a schema**, which is now a distinct procedure from adding a
+  project: a schema is created once with its theme, its owner role, its `_rw` role and its 1 TB quota, and
+  projects come and go against it.
 - **6.2 — [Claude] Extend `./aws/warehouse.py`** with `WH-9`..`WH-12` (the connection, the tag pair, the
   project role's reach and boundary, the database/grant inventory).
 - **6.3 — [Claude] Bring the documents up**: `docs/SMUS.md` (the connection surface, beside §S3's S3
@@ -424,20 +451,21 @@ refuses, and none of these has ever been measured on this surface. **Explanation
    Revisit when 6f's lineage step has an owner.
 4. **Whether a persona ever queries the warehouse directly** (step 4). Recommended: **no** — every query
    arrives through a project, which keeps the `GRANT` register complete and the shared RPU meter attributable.
-5. **One database per project, or shared databases with a schema per project.** Recommended: **shared
-   databases, one schema per project** — which is what the requirement's two halves together imply: *per
-   database × project* is the admission, and *"creates freely inside that project's own schema"* is the
-   freedom. A database per project would make layer 3 redundant with layer 1 and would hide the case the
-   register exists for, two projects on one database.
-6. **The schema's name** (1.3): readable — the project's name, slugged, which a user can rename — or stable,
-   the project id, which is opaque. Recommended: **readable, with the project id in a `COMMENT ON SCHEMA`**.
-   `docs/plan/conventions.md` argued the opposite for account tokens, where nothing human reads them; here the
-   name lands in a connection string and in a query, so the reader is a person. The comment is what keeps the
-   stable id available when a rename happens.
-7. **The quota value** (1.3). Recommended: **10 GB per project schema** to start, revised against real usage at
-   Stage 12 rather than set high and forgotten — the same shape as the Athena scan limit's decision. At
-   0.024 USD/GB-month, ten projects at their ceiling is USD 2.40 a month, so the quota is about bounding
-   surprise rather than about the bill.
+5. **~~One database per project, or shared databases with a schema per project~~ — answered by the brief**
+   (2026-09-20): *a schema is a base*, one database holds them all, and **a schema may be shared with more than
+   one project**. What remains is the mechanism, and it is 1.5's: **a database role per schema**, granted to each
+   admitted project. Recommended over a per-project grant list, because admitting or removing a project is then
+   one statement against one object.
+6. **~~The schema's name~~ — answered by the brief**: *"chosen when the schema is created, after the theme of the
+   data it will hold"*, with no relation to a project. Both shapes this file offered — the project's name, the
+   project id — are wrong. **The consequence to carry:** a schema name is not an authorization fact, so the
+   schema × project relation exists **only** in `sandbox/warehouse/`'s map and in the `GRANT ROLE` statements,
+   and `WH-12` comparing the two is the only thing that can find a drift.
+7. **~~The quota value~~ — answered by the brief: 1 TB.** What is left to decide is the **compensating control**,
+   because at 1 TB the quota is a runaway guard and not a cost guard: one filled schema is **USD 24.58 a month**,
+   half the D12 ceiling, and nothing bounds the *number* of schemas. Recommended: a **CloudWatch alarm on
+   `DataStorage`** for the namespace, at a threshold the user sets in USD rather than GB, applied with the
+   schema — the same discipline that puts the RPU usage limit in the workgroup's own apply.
 
 ## Verifications to answer while executing
 
@@ -481,7 +509,7 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   sandbox database is exactly the case the register exists for, and nothing in this stage decides *who
   approves* it. That belongs with the Governance Manager, the same way `INT-11`'s "should every business unit
   get the same data" does — and it arrives with the second project, not with the second database.
-- **Nothing here is governed data, and nothing here may become the path to it.** A `sbx_*` database carries no
+- **Nothing here is governed data, and nothing here may become the path to it.** A sandbox schema carries no
   LF-Tag, no classification and no Lake Formation grant, and a project can write anything into it — including a
   copy of something governed, read through the lake share and written here. That is
   [D19](../decisions/D19-derived-zone.md)'s shape in a fourth store, and the compensation is the same: the

@@ -48,22 +48,24 @@ apply.
 **Contracts this stage fixes, so that a rename fails in a check rather than in Stage 6h or 9:** the
 namespace and workgroup **`awsds-sandbox-warehouse`** (the same name on two object types — Redshift allows
 it, and the **audit log group path is derived from the namespace name**, so a namespace rename moves three
-log groups), the namespace role **`awsds-sandbox-warehouse-exec`**, the first database **`warehouse`**, and
-the two database-name prefixes **`sbx_`** and **`gov_`** that make a database's class readable in a `GRANT`
-and in `SVV_REDSHIFT_DATABASES`.
+log groups), the namespace role **`awsds-sandbox-warehouse-exec`**, the namespace's inert first database
+**`warehouse`**, and the class container **`sandbox`** — the database every themed schema lives in
+([6h](stage-06h-redshift-connection.md) 1.1). **There is no name prefix on anything**: the class is the account
+plus the database name, because a schema's name is thematic by requirement and carries no authorization
+information at all.
 
 ```mermaid
 flowchart LR
     subgraph SBX["Sandbox · 10.20.0.0/16 · the only interactive account (D17)"]
         WG["workgroup awsds-sandbox-warehouse [P]<br/>base 4 RPU · max_capacity capped<br/>private tier · 2 AZs · no default route"]
-        NS["namespace awsds-sandbox-warehouse [P]<br/>alias/awsds-sandbox-data · RMS<br/>databases: warehouse · sbx_*"]
+        NS["namespace awsds-sandbox-warehouse [P]<br/>alias/awsds-sandbox-data · RMS<br/>database sandbox · themed schemas"]
         UL["usage limit · serverless-compute<br/>breach_action = deactivate"]
         LG["/aws/redshift/awsds-sandbox-warehouse/{user,connection,useractivity}log<br/>retention set, never Never-Expire"]
         ROLE["awsds-sandbox-warehouse-exec<br/>NO S3 on any lake prefix (D13)"]
-        PRJ["SMUS project roles<br/>write per database x project · Stage 6h"]
+        PRJ["SMUS project roles<br/>write per schema x project, many-to-many · Stage 6h"]
     end
     subgraph PRD["Production · Stage 9"]
-        GOV["namespace awsds-prod-warehouse<br/>databases: gov_* · written by awsds-prod-job-exec<br/>federated catalog under Lake Formation"]
+        GOV["namespace awsds-prod-warehouse<br/>database governed · written by awsds-prod-job-exec<br/>federated catalog under Lake Formation"]
     end
     WG --> NS
     UL -.->|"refuses queries at the ceiling"| WG
@@ -111,10 +113,10 @@ stage** — 0.1's answer decides whether the estate's two-AZ plumbing is enough.
   | What it settled | What follows |
   |---|---|
   | **Redshift is a second possible engine; the Glue/Iceberg lake stays the warehouse of record** | D13, D22 and the producer path **extend** rather than re-open, which is what [D40](../decisions/D40-redshift-warehouse.md) assumed and is no longer assuming |
-  | **A query engine is a choice per workload, not per estate** — Athena stays the default | the warehouse needs a demander per workload, and a `gov_*` database with no query that Athena served badly is the revision trigger D40 already carries |
+  | **A query engine is a choice per workload, not per estate** — Athena stays the default | the warehouse needs a demander per workload, and a governed schema with no query that Athena served badly is the revision trigger D40 already carries |
   | **The governance model does not fork**: a governed Redshift database is governed by Lake Formation like a lake table | the federated-catalog registration at [Stage 9](stage-09-deployment-targets.md) 9.5 is a *requirement*, not a compensation Claude chose |
   | **One Redshift environment from a data scientist's point of view, and where its databases live is an implementation matter** | the two-account split is **admissible** rather than a deviation — the sentence that makes D40's hardest choice legal. What it also imposes: the portal must present one thing, so 6h's connection naming and any second connection are a user-facing question, not just a wiring one |
-  | **A governed database is never written from the sandbox** | stated as a requirement, so the absence of a Sandbox writer on `gov_*` is a control with a line behind it rather than a consequence of the account split |
+  | **A governed database is never written from the sandbox** | stated as a requirement, so the absence of a Sandbox writer on a governed schema is a control with a line behind it rather than a consequence of the account split |
 
   **The read side was answered in the same sitting** (the user, 2026-09-20): *the controls stay the same, it is
   just one more execution environment.* So there is no new class of reader and no second governance model, and
@@ -123,10 +125,10 @@ stage** — 0.1's answer decides whether the estate's two-AZ plumbing is enough.
   | Consequence | What it replaces |
   |---|---|
   | **`INT-24` is narrowed to the mechanisms Lake Formation governs** — and **two** qualify, not one: a federated catalog read by Athena, or a Lake Formation-**managed datashare** (LF enforces database, table, column and row permissions on it, and tags may be used). Only shape (iii), a cross-account connection, is out: it makes a Redshift `GRANT` the control over governed data | **corrected 2026-09-20, hours after the first draft**, which had excluded the datashare on the assumption that data sharing is always Redshift's own permission system. It is not. The exclusion that survives rests on two independent grounds — the fork, and `sqlworkbench:*` on `*`, which `check-iam-wildcards.py` refuses |
-  | **A governed database gets no project connection.** The SMUS Redshift connection of [6h](stage-06h-redshift-connection.md) is a **sandbox-class** mechanism; its three layers, the `AmazonDataZoneProject` tag included, never apply to `gov_*` | the temptation to reuse 6h's wiring in Production "because it already works" — which would put a Redshift `GRANT` in the path of governed data beside a Lake Formation grant, two systems answering one question |
+  | **A governed database gets no project connection.** The SMUS Redshift connection of [6h](stage-06h-redshift-connection.md) is a **sandbox-class** mechanism; its three layers, the `AmazonDataZoneProject` tag included, never apply to a governed schema | the temptation to reuse 6h's wiring in Production "because it already works" — which would put a Redshift `GRANT` in the path of governed data beside a Lake Formation grant, two systems answering one question |
   | **The engine is subject to the controls, not the reverse.** D13 binds the namespace role exactly as it binds a Glue job's role (1.5, 9.2); the persona still gets no `GetCredentials` (2.3) | the reading that a new engine deserves a new grant shape |
 
-  **What the answer does not do** is make the sandbox class governed. `sbx_*` remains outside Lake Formation
+  **What the answer does not do** is make the sandbox class governed. The sandbox class stays outside Lake Formation
   by design, on the sandbox lake's argument (Stage 16) — the per database × project grant is, in the user's
   words, *"the only new rule here"*, and it applies there and nowhere else.
 
@@ -269,26 +271,33 @@ this file defines and an instrument reads, or it is nothing (Lesson 5). **Explan
 *"access granted per database × project"*, and that grain exists in **two** systems at once — which is
 Lesson 28's intersection in a third permission layer.
 
-- **2.1 — [Claude] Fix the class convention**: a database's class is its **name prefix**, `gov_` or `sbx_`,
-  plus the account it is in. **Inside a `sbx_` database the unit is the schema**, one per project, owned by that
-  project's database user and carrying a `QUOTA` — `objectives.md` (2026-09-20) makes the sandbox class *bypass
-  the catalog* and lets a project member *"create tables freely inside that project's own schema"*, so the
-  schema is where the freedom lives and the quota is what bounds it. A `sbx_` database therefore has no
-  catalog object, no LF-Tag and no Lake Formation grant, exactly as `awsds-sandbox-lake` has none (Stage 16),
-  and for the same reason: a project's working data is the project's. The prefix is chosen because it is the one attribute a `GRANT` statement, a
-  `SVV_REDSHIFT_DATABASES` row and a human reading a connection string can all see. Two consequences to
-  accept out loud:
-  - **the prefix is a selector the moment a rule is written over it** (Lesson 29), so a database created
-    with the wrong prefix inherits the wrong rule and nothing refuses the `CREATE DATABASE`;
-  - the class is therefore **checked, not enforced**: `WH-6` fails on any database whose name carries
-    neither prefix, and on any `gov_` database in Sandbox or `sbx_` database in Production.
+- **2.1 — [Claude] Fix the class convention, and note that Redshift's two words do not map onto the brief's
+  one.** `objectives.md` (2026-09-20) settles that *"in Redshift, a schema is a database"* in the sense the brief
+  uses the word. So:
+  - **a Redshift `database` is the class container**, one per class per account: **`sandbox`** in Sandbox,
+    **`governed`** in Production. The class is the **account plus the database name** — no prefix on anything.
+  - **a Redshift `schema` is what the brief calls a base.** Its name is *"chosen when the schema is created,
+    after the theme of the data it will hold"*, with *"no necessary relation to any SageMaker project"*, so a
+    schema name is **not an authorization fact** and no check can read the class or the tenant off it.
+  - **a sandbox schema may be shared by several projects**, so the relation is many-to-many and lives in
+    `sandbox/warehouse/`'s map plus the `GRANT ROLE` statements, nowhere else
+    ([6h](stage-06h-redshift-connection.md) 1.5).
+  - **the sandbox class bypasses the catalog**: no catalog object, no LF-Tag, no Lake Formation grant — as
+    `awsds-sandbox-lake` has none (Stage 16), and for the same reason, a project's working data being the
+    project's. The governed class is the opposite, and Lake Formation governs it through the federated
+    registration ([Stage 9](stage-09-deployment-targets.md) 9.5).
+  **What that costs the checks:** `WH-6` cannot classify by name. It reads instead that each account holds
+  **exactly one** class database under its expected name, that **no sandbox database exists in Production**, and
+  that every schema in the sandbox database appears in the authored map — the three things readable when the name
+  says nothing. Lesson 29 read backwards: an attribute deliberately carrying no meaning cannot become a selector,
+  which is a property to rely on rather than to regret.
 - **2.2 — [Claude] Write the two-layer grain, because one layer does not reach.** A SageMaker project gets
-  write on one sandbox database through **both** of these, and neither is sufficient:
+  write on one sandbox **schema** through **both** of these, and neither is sufficient:
 
   | Layer | What it admits | Where it is written | Grain |
   |---|---|---|---|
   | The **workgroup tag** | *which project may use this warehouse at all* — AWS: the admin adds `AmazonDataZoneProject={{projectID}}` *"to the Amazon Redshift cluster or workgroup **and its namespace**"* | `sandbox/warehouse/` (Terraform), one tag per admitted project | per **workgroup** |
-  | The **Redshift `GRANT`** | *which database, schema and table the project's database user may read or write* | SQL, run at [Stage 6h](stage-06h-redshift-connection.md) per database × project | per **database** |
+  | The **Redshift `GRANT`** | *which schema and table the project's database user may read or write* — held by a role per schema, granted to each admitted project | SQL, run at [Stage 6h](stage-06h-redshift-connection.md) per schema × project | per **schema**, many-to-many |
 
   So the requirement's grain is the second layer, and the first is a gate in front of it.
   **Two things about the tag have to be said now:**
@@ -436,7 +445,7 @@ and the deploy credential, so the governed class costs it one slice rather than 
 |---|---|---|
 | Slice | `sandbox/warehouse/` | `production/warehouse/`, same rank 53 |
 | VPC | Sandbox's private tier, 2 AZs | **`VPC-Workloads`**' private tier — the two subnets in two AZs 6c built, the estate's one D9 exception, already there for MWAA Serverless |
-| Databases | `sbx_*` | `gov_*` |
+| The class container | the database `sandbox`, holding themed schemas | the database `governed` |
 | Written by | SMUS project roles, per database × project | **`awsds-prod-job-exec` alone** — no project, no connection, no tag |
 | Read from Sandbox | directly, same VPC | **not over the network**: Sandbox↔`VPC-Workloads` has no peering, and its absence is the control (`docs/NETWORK.md` §3) |
 | Under Lake Formation | no | **yes** — the namespace registered to the Glue Data Catalog as a **federated catalog** (`aws_glue_catalog`'s `federated_catalog` block), which is how a governed schema gets the same permission layer as the lake |
@@ -447,7 +456,7 @@ and the deploy credential, so the governed class costs it one slice rather than 
   is a promise the receiving stage never gets (Lesson 34 — and this plan has already paid for it once, on
   the lake's registration role).
 - **7.2 — [Claude] Open `INT-24`** in [`integrations.md`](../integrations.md) for the one thing that is
-  genuinely cross-account: a Sandbox project reading a `gov_` table that lives in Production. The fallback
+  genuinely cross-account: a Sandbox project reading a governed table that lives in Production. The fallback
   and the mechanism go in the row; the proof is Stage 9's.
 
 ---
@@ -465,10 +474,10 @@ absences as expected readings:
 | `WH-3` | a `serverless-compute` usage limit exists on the workgroup, with `breach_action = deactivate` — **and no second, looser one beside it** |
 | `WH-4` | all three log groups exist with a retention period that is not `Never Expire` |
 | `WH-5` | `admin_password_secret_arn` is set, `manage_admin_password` is true, and no password string appears in the slice's state |
-| `WH-6` | every database carries a class prefix, and no class is in the wrong account |
+| `WH-6` | each account holds exactly one class database under its expected name, no sandbox database exists in Production, and every schema in the sandbox database appears in the authored map — the classification a thematic schema name cannot provide |
 | `WH-7` | the project tags on **both** workgroup and namespace match the authored map — and `for-use-with-all-datazone-projects` appears on neither |
 | `WH-8` | the namespaces and workgroups in every profiled account, so a hand-made one is a diff |
-| `WH-13` | every schema in a `sbx_` database has an **owner that is a project's database user** and a **quota that is not unlimited** — read from `SVV_SCHEMA_QUOTA_STATE`, because *"when you create a schema without defining a quota, the schema has an unlimited quota"* and an unbounded schema on a store nothing expires is the failure this check exists for |
+| `WH-13` | every schema in the `sandbox` database has a **quota that is not unlimited** and an owner that is the **schema-owner role, never a project's database user** — read from `SVV_SCHEMA_QUOTA_STATE`, because *"when you create a schema without defining a quota, the schema has an unlimited quota"* and an unbounded schema on a store nothing expires is the failure this check exists for. It also **sums the quotas**, since nothing bounds the number of schemas and 32 at 1 TB reach what a 4-RPU workgroup supports |
 | `WH-14` | `STL_SCHEMA_QUOTA_VIOLATIONS`, reported rather than failed: a violation is the control working, and a *rising* count is the signal that a quota is too low for real work rather than too high |
 
 The behavioural proofs are the stage's own (Lesson 20):
@@ -575,9 +584,11 @@ Record every answer, including the ones that come out fine.
   bullet and writable-with-permissions in the next, so if the two classes ever share a namespace the only
   thing between them is a `GRANT`. Two accounts is what keeps that from being true; a future "just one
   namespace, it's cheaper" edit reverses a control, not a cost (Lesson 41's shape, on one page).
-- **The class is a naming convention, not a control.** `sbx_`/`gov_` is checked by `WH-6` and enforced by
-  nobody: `CREATE DATABASE gov_x` in Sandbox succeeds. The account boundary is the real control and the
-  prefix is documentation — read as a selector, it inherits Lesson 29's whole failure mode.
+- **The class is a convention, not a control, and since 2026-09-20 it is not even a name.** A schema's name is
+  thematic by requirement, so nothing about a schema says which class it is or which projects use it: that lives
+  only in `sandbox/warehouse/`'s map and in the `GRANT ROLE` statements, and a schema whose theme has outlived
+  its projects looks exactly like one in use. **The account boundary is the real control**; `WH-6` and `WH-12`
+  are the only things that can see a drift, and neither can be inferred from an object's name.
 - **Online patching can make the endpoint briefly unavailable.** AWS: the update is applied *"within 14 days
   of release during idle periods… If no 15-minute idle period occurs within 14 days, your Serverless
   endpoint may experience brief unavailability."* In this lab idle periods are the normal state, so the risk

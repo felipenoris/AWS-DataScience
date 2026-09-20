@@ -69,9 +69,11 @@ flowchart LR
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
 
-**The warehouse adds a store to two of those rows** (D40, 2026-09-19, neither built): `Sandbox` gains
-`awsds-sandbox-warehouse` with its `sbx_*` databases, outside Lake Formation like the sandbox lake beside it;
-`Production` gains `awsds-prod-warehouse` with its `gov_*` databases, inside Lake Formation as a federated
+**The warehouse adds a store to two of those rows** (D40, 2026-09-19, neither built). **What the brief calls
+a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
+container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
+database of themed schemas, outside Lake Formation like the sandbox lake beside it;
+`Production` gains `awsds-prod-warehouse` with its the `governed` database, inside Lake Formation as a federated
 catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
 no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
 two accounts that have VPCs. `Staging` gains nothing either: D20 keeps a deployment target off the lake, and
@@ -233,14 +235,15 @@ sandbox lake. Two classes of database, on the two axes this file already separat
 
 | Class | Account | Written by | Under Lake Formation | Stage |
 |---|---|---|---|---|
-| `sbx_*` | `Sandbox` | SageMaker project roles, per database × project | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in **that project's own schema**, owned by it and bounded by a `QUOTA`. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
-| `gov_*` | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
+| **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a role, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
+| **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
 
 Three consequences this file has to carry rather than leave to a stage:
 
-- **The two classes are governed by different systems, by requirement.** A `gov_*` database is a Lake Formation
-  resource; a `sbx_*` database is **outside the catalog altogether**, and what stands between two projects there
-  is schema **ownership**, with a schema `QUOTA` bounding how much a project may write. Reading a `sbx_*` schema
+- **The two classes are governed by different systems, by requirement.** A governed schema is a Lake Formation
+  resource; a sandbox schema is **outside the catalog altogether**, and what stands between two schemas there
+  is a **role per schema**, granted to each admitted project, with the schema's **1 TB `QUOTA`** bounding how
+  much may be written into it. Two projects sharing one schema is the normal case, not the exception. Reading a sandbox schema
   as if the register described it is the mistake to avoid: it does not, and `WH-13` is what says so.
 - **A Redshift `GRANT` is a fourth permission system**, beside IAM, Lake Formation and S3 Access Grants. It
   carries no LF-Tag, it is not readable by `list-permissions` — only from `SVV_*` inside a database session —
@@ -248,13 +251,13 @@ Three consequences this file has to carry rather than leave to a stage:
   [`docs/AWS_STATE.md`](AWS_STATE.md) rather than a row beside the LF grants.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
   federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
-- **A `sbx_*` database is D19's shape in a fourth store**: a project can write into it anything it can read,
+- **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
   a governed copy included. The copy is not prevented; the destination is inside the perimeter, under the
   account's own data CMK, and Lesson 1 applies — a copy somewhere less governed is not a hole to be closed.
 
 Stage 6f step 8 wrote the institutional pattern this half-implements, and
 [`plan/institutional-delta.md`](plan/institutional-delta.md)'s warehouse row carries what is still missing:
-one permission system over both storage engines, which is exactly what the `sbx_*` class does not have.
+one permission system over both storage engines, which is exactly what the the sandbox class does not have.
 
 ### Glue Data Catalog
 
