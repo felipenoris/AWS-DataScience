@@ -655,6 +655,40 @@ changed, not just the plan.
   month. So the quota bounds a runaway and not the bill, and what bounds the bill is a new compensating control:
   an alarm on the namespace's `DataStorage` metric. **Provisioned things this touches: none.**
 
+- **2026-09-20 — the compute gets an off switch, and two gaps the user found by asking.** Three questions closed
+  the day's design work, and each found something the plan had either assumed or missed. **Can the compute be
+  turned off?** The plan had the whole warehouse `[P]` on the strength of *a workgroup serving no query bills no
+  compute* — true, and conditional, since D40's own three ways an idle warehouse bills anyway are all real.
+  **Redshift Serverless has no pause**: `create-workgroup` and `delete-workgroup` and nothing in between, no
+  stop, no suspend, no zero-capacity setting. So the slice became a **pair** — `warehouse/` `[P]` for the
+  namespace (the data, the schemas, the database users, the roles and the `GRANT`s, state no plan re-creates,
+  §5.1 rule 2) and `warehouse-compute/` `[E]` at rank 54 for the workgroup and its usage limit and nothing else.
+  *Powered off* therefore means *does not exist*, the strongest guarantee available, and `make down` is it. What
+  `make down` does **not** stop is RMS: a schema filled to its 1 TB quota is 24.58 USD a month with no workgroup
+  in the account, which went into `docs/PRICING.md` and the cost model beside the GitLab-volume trade it
+  resembles. **The split rests on one unmeasured property** — that the endpoint host survives a delete and
+  re-create under the same name, since [6h](stages/stage-06h-redshift-connection.md)'s SMUS connection stores it
+  as a field — so 5b gained step **1.9** to read it before anything depends on it, and decision 8 as the
+  fallback. This estate has been bitten by the same shape before: the Elastic IP whose *allocation id* did not
+  survive a transfer while its address did. **Second gap: the endpoints**, which the user asked about and which
+  were foreseen nowhere. `terraform-modules/vpc-egress` admits exactly `bedrock`, `emr` and `mwaa`, enforced by a
+  precondition, so a fourth group is a **module change** under Recipe B. The list needed correcting too: the
+  load-bearing endpoint is **`redshift-serverless`**, because `GetCredentials` is a serverless call and not a
+  `redshift` one; `redshift-data` is needed only if the Data API is the query path; `redshift` probably not, which
+  is a CloudTrail reading at 6h 3.5; and the **5439 data path needs no endpoint at all**, the workgroup's ENIs
+  being in the VPC, which makes it the security group's job. Written down beside it: the API's private name and
+  the workgroup's own host are **different subtrees**, so private DNS does not shadow the workgroup — close
+  enough to a collision to deserve the sentence rather than the assumption. **Third: the free trial.** USD 300
+  over 90 days, **per account**, eligible only if the account has not used Redshift Serverless yet — so the two
+  namespaces carry two independent windows opened four stages apart, which makes building the governed one late
+  an accidental win. Its trap is the one that matters: *"billing details for free trial usage does not appear in
+  the billing console"*, so every cost verification in 5b would read **0.00 whether the design is right or
+  wrong** (Lesson 13). During the trial the instruments are `SYS_SERVERLESS_USAGE` and the console credit
+  balance, and the trial's status is recorded beside every cost figure. When the 90 days start is **not defined**
+  on AWS's page, so 0.3a reads the credit balance across the first apply rather than paraphrasing *sign-up*.
+  `CLAUDE.md`'s Redshift entry went over the 50 KB file budget in the same sitting and was re-trimmed to state
+  only, as its own rule requires. **Provisioned things this touches: none.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
