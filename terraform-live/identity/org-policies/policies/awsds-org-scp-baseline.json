@@ -111,6 +111,31 @@
         "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5",
         "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1"
       ]
+    },
+    {
+      "Sid": "DenyRedshiftProvisionedClusters",
+      "Effect": "Deny",
+      "Action": [
+        "redshift:CreateCluster",
+        "redshift:RestoreFromClusterSnapshot",
+        "redshift:RestoreTableFromClusterSnapshot"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyRedshiftCostGuardTamperingExceptInfrastructure",
+      "Effect": "Deny",
+      "Action": [
+        "redshift-serverless:DeleteUsageLimit",
+        "redshift-serverless:UpdateUsageLimit",
+        "redshift-serverless:UpdateWorkgroup"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*"
+        }
+      }
     }
   ]
 }

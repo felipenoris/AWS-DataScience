@@ -146,6 +146,56 @@ probe("root", "canary", "deny", None, "creates", "ecr-public:CreateRepository",
       ["ecr-public", "create-repository", "--repository-name", "awsds-canary-probe",
        "--region", "us-east-1"])
 
+# --- DenyRedshiftProvisionedClusters (Stage 5b step 3.1). `blocked`, and the reason is the
+#     negative control Lesson 26 asks for: the snapshot named does not exist, so lifting the deny
+#     leaves the call failing one step later with ClusterSnapshotNotFound - a different wording
+#     from the deny, which is what makes the deny attributable. CreateCluster itself is NOT
+#     probed: nothing blocks it, so it belongs to the `creates` class, and a provisioned cluster
+#     that really appeared in Policy Canary would be the estate's most expensive probe by orders
+#     of magnitude - an always-on node, billed by the hour, in the account the battery empties.
+#     The restore pair proves the same statement's reach without that risk.
+probe("root", "canary", "deny", None, "blocked",
+      "redshift:RestoreFromClusterSnapshot (no such snapshot)",
+      ["redshift", "restore-from-cluster-snapshot",
+       "--cluster-identifier", "awsds-canary-probe",
+       "--snapshot-identifier", "awsds-canary-probe-nosuchsnapshot",
+       "--region", "us-west-2"])
+probe("root", "canary", "deny", None, "blocked",
+      "redshift:RestoreTableFromClusterSnapshot (no such cluster)",
+      ["redshift", "restore-table-from-cluster-snapshot",
+       "--cluster-identifier", "awsds-canary-probe",
+       "--snapshot-identifier", "awsds-canary-probe-nosuchsnapshot",
+       "--source-database-name", "nosuchdb", "--source-table-name", "nosuchtable",
+       "--new-table-name", "nosuchtable2", "--region", "us-west-2"])
+
+# --- DenyRedshiftCostGuardTamperingExceptInfrastructure (Stage 5b step 3.2). The canary signs in
+#     as AWSAdministratorAccess, NOT as InfrastructureAccess, so it is on the denied side of the
+#     ArnNotLike carve-out - the same relationship the BPA probe above has to decision 7, and the
+#     reason this statement can be probed at all.
+#
+#     `blocked`: no workgroup and no usage limit exist in Policy Canary, so lifting the deny
+#     leaves both calls failing with a not-found. UpdateWorkgroup is the one that would really do
+#     something if a workgroup existed there - it does not, and the account the battery empties is
+#     also the account that never gets one.
+#
+#     THE RESOURCE IS NOT NAMED BY ARN, IN THE STATEMENT OR HERE, and 5b 1.9 is why: a workgroup's
+#     ARN carries a service-minted UUID that changes on every destroy and re-create under the same
+#     name, and the compute slice is [E].
+#     UpdateWorkgroup IS NOT PROBED, and that is a measurement rather than an omission (2026-09-20,
+#     Stage 5b step 3.3). With the statement attached, `update-workgroup --workgroup-name
+#     awsds-canary-probe` still answers `ResourceNotFoundException: Serverless workgroup
+#     awsds-canary-probe not found` - the action VALIDATES BEFORE IT AUTHORIZES, which is Lesson
+#     21's shape, and Lesson 21's remedy ("retry with a real id") has nowhere to go: Policy Canary
+#     holds no workgroup and the statement exists so that it never will. A probe that can only ever
+#     report UNTESTED is Lesson 50's permanently-red check, so it is absent and the reason is here.
+#     DeleteUsageLimit below proves the statement; UpdateWorkgroup and UpdateUsageLimit are
+#     attached and not exercised (Lesson 20), and POLICIES.md says so.
+probe("root", "canary", "deny", None, "blocked",
+      "redshift-serverless:DeleteUsageLimit (canary is NOT exempt; no such limit)",
+      ["redshift-serverless", "delete-usage-limit",
+       "--usage-limit-id", "00000000-0000-0000-0000-000000000000",
+       "--region", "us-west-2"])
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])
