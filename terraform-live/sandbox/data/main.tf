@@ -1,4 +1,4 @@
-# The consumer side of the lake (Stage 5 pass 4, steps 8 and 9), layer [P].
+# The consumer side of the lake (Stage 5a pass 4, steps 8 and 9), layer [P].
 #
 # This slice is thin. Everything in it is the same design in both Interactive accounts - and in
 # every business unit's Sandbox once D35's N passes 1 - so the design lives in

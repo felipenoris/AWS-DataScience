@@ -204,7 +204,7 @@ count cell above is therefore a year-one figure: the Stage 2 bootstrap keys (cre
 creation date. The multi-year consequence belongs to `docs/plan/cost-model.md`'s Floor row, which defers a
 full recompute to Stage 12 step 5. The levers: fewer keys; rotation disabled on a named key — not free,
 because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a policy edit
-that turns that policy custom (Stage 5 step 13.3); or D12's ceiling revised.
+that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
 | AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
 | Route 53 **private** hosted zones (**5 at N=1 since 6c** — the `awsds.internal` apex, its `sandbox.`/`staging.`/`prod.` children and `awsds-pages.internal`; **6 today**, `sandbox.internal` standing until 6c step 6.5; `prod.internal`/`pages.internal` destroyed 2026-09-07. Before 6c: 3) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | **3.00 today, 2.50 steady** | idem |
@@ -339,6 +339,10 @@ São Paulo as in Oregon.
 | **EMR Serverless** x86 (USD/vCPU-h · USD/GB-h) | 0.09048 · 0.00988 | 0.052624 · 0.0057785 | 1.72 |
 | EMR Serverless ARM (USD/vCPU-h · USD/GB-h) | 0.07241 · 0.007956 | 0.042094 · 0.004628 | 1.72 |
 | EMR Serverless storage beyond 20 GB (USD/GB-h) | 0.000211 | 0.000111 | 1.90 |
+| **Redshift Serverless** compute (USD per RPU-hour) | 0.5976 | **0.36** | 1.66 |
+| — at `base_capacity = 4`, the documented floor (USD per hour **a query runs**) | 2.3904 | **1.44** | 1.66 |
+| — a workgroup serving no query | 0.00 | **0.00** | — |
+| Redshift Managed Storage, serverless (USD/GB-mo) | 0.043 | 0.024 | 1.79 |
 | **Lake Formation** filtering (USD per TB scanned) | 2.75 | 2.25 | 1.22 |
 | Lake Formation storage optimizer (USD per TB) | 2.75 | 2.25 | 1.22 |
 | Lake Formation metadata objects (USD per 100k-mo) | 1.00 | 1.00 | **1.00** |
@@ -353,6 +357,40 @@ São Paulo as in Oregon.
 
 Athena at 9.00 USD/TB in São Paulo makes the two cost levers in `docs/plan/cost-model.md` — **S3 Bucket Keys** and
 partition/format discipline on the Iceberg tables — worth roughly twice as much there as in Oregon.
+
+### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md)
+
+Read from `AmazonRedshift/current/{us-west-2,sa-east-1}/index.json`, both published **2026-09-11**; the SKU
+is the `Serverless` product family entry with no `term` attribute (the two `…-CR-1YR-…` SKUs beside it are
+reservations, which this estate does not buy). The row was owed before
+[Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s first apply, because the whole shape of that stage
+turns on the number.
+
+**Four RPUs is the documented floor and `us-west-2` is one of the ten Regions where it is offered.** Base
+capacity takes 4, then units of 8 from 8 upward, so there is nothing between 4 and 8 and the next step up is a
+doubling of the hourly rate. One RPU is 16 GB of memory, so 4 RPUs is 64 GB, up to 32 TB of managed storage,
+and a recommendation of at most 100 columns per table.
+
+The billing shape is **per second with a 60-second minimum charge**, and a workgroup serving no query bills no
+compute — which is what makes the slice `[P]` rather than `[D]`, the same argument D7 amended made for MWAA
+Serverless. Storage bills separately and always, at the RMS rate above: cents at this scale.
+
+**Against the USD 50 ceiling, this is the estate's most expensive object per unit of time** — 1.44 USD/h
+against the WireGuard host's 0.0052 and the whole `egress/` estate's 0.410 (§3). Ten hours of querying a month
+is 14.40 USD, roughly a third of the ceiling, which is why the guard is the service's own **usage limit** with
+`breach_action = deactivate` rather than a budget notification.
+
+Three documented ways an *idle* warehouse bills anyway, each priced at 4 RPUs so the number is in front of
+whoever reads this file: an **unclosed transaction** burns RPUs until `SESSION TIMEOUT` ends it at six hours —
+**8.64 USD** from one forgotten `BEGIN`; a **connection pool's keep-alive** `SELECT 1` is a billed query; and a
+**cancelled query** bills for the time it ran. Autonomics are free unless *extra compute for automatic
+optimization* is enabled, which has its own meter
+(`ExtraComputeForAutomaticOptimizationChargedSeconds`).
+
+**Not priced here:** a provisioned Redshift cluster, which is the always-on shape D12 rules out and
+[Stage 5b](plan/stages/stage-05b-redshift-serverless.md) step 3.1 denies outright; concurrency scaling and
+cross-Region data sharing, neither of which this estate uses; and the free trial, whose usage *"does not appear
+in the billing console"* until it ends — a reason not to read the first month's bill as the steady state.
 
 ### SageMaker Unified Studio — the DataZone V2 domain (D26)
 
@@ -373,7 +411,13 @@ blueprints provision, not the domain:
 - Of the two Lakehouse-named blueprints only the Glue/Athena one is enabled — `LakeHouseDatabase` (API
   name `DataLake`), Stage 6 decision 4. `LakehouseCatalog` (Redshift Managed Storage) and the separate
   `RedshiftServerless` blueprint provision a query path whose per-RPU minimum would put a second, larger
-  bill on top of Athena's; both are excluded by decision (`docs/SMUS.md` carries the category table).
+  bill on top of Athena's; **both remain excluded by decision** (`docs/SMUS.md` carries the category table).
+  **What changed on 2026-09-19 is the warehouse, not the blueprints**
+  ([D40](plan/decisions/D40-redshift-warehouse.md)): one warehouse exists, built by Terraform at
+  `base_capacity = 4` with a usage limit, and the blueprints that would let any project member provision
+  another stay off. The measured rates are the Redshift Serverless rows above; a blueprint-provisioned
+  workgroup would arrive at the service default of **128 RPUs**, which at 0.36/RPU-hour is **46.08 USD per
+  query-hour** — the number behind "sized by the service, capped by nothing".
 - The per-project SageMaker AI apps (provisioned by the **Tooling** blueprint — read 2026-08-16; D26
   wrote "ML experience", a name the blueprint list does not carry) bill like the Studio apps in §8
   (`ml.t3.medium` at 0.081/0.050 USD/h); the domain adds nothing to the hourly rate.
@@ -762,7 +806,7 @@ environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
 storage bill), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
 window — the first 30 days of **Security Hub CSPM** per account, from that account's first enablement.
-The two windows open at different stages (Security Hub at Stage 5 step 13, GuardDuty at Stage 15), so "the
+The two windows open at different stages (Security Hub at Stage 5a step 13, GuardDuty at Stage 15), so "the
 first thirty days" is never one date for the whole floor. Neither trial covers the AWS Config cost
 underneath: Security Hub's checks run as Config rules, and each control's compliance-state change writes
 an `AWS::Config::ResourceCompliance` item from day one.

@@ -19,7 +19,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    never a permission error — which is the failure class a cross-account promotion actually produces.
    That is why D20 exists.
 3. **When a decision moves a resource across an account boundary, re-check every condition that
-   referenced it — especially conditions pointing at ephemeral things.** This nearly shipped: Stage 5
+   referenced it — especially conditions pointing at ephemeral things.** This nearly shipped: Stage 5a
    pinned the Data Governance bucket policies to the consumers' `aws:SourceVpce`, but interface endpoints
    are `[E]` (new IDs on every `make up`) and since D22 live in a *different* account, so nothing would
    ever repair them. Anchor on the `[P]` S3 **gateway** endpoint, or on `aws:SourceVpc`.
@@ -236,7 +236,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    while *writing* a verification rather than after: can this harness produce a principal that satisfies
    the condition? If not, the plan must state what to read and which string proves it, never what to
    attempt. Three statements in this project are already in that class — the root control
-   (`aws:AssumedRoot`), the positive half of D27's catalog-maintenance carve-out (needs Stage 5's role to
+   (`aws:AssumedRoot`), the positive half of D27's catalog-maintenance carve-out (needs Stage 5a's role to
    exist), and the positive half of the `aws:PrincipalIsAWSService` guard (needs a service principal) —
    and the counter-example proves the discriminator does work: decision 7's BPA carve-out names
    `InfrastructureAccess`, a principal that *does* exist, and was measured in both directions.
@@ -419,7 +419,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    outcome, not a reason to create an object so the probe becomes available.
 
 27. **A declarative plan is silent about the values the provider owns — so the setting that has to be
-   right *before anything else exists* is precisely the one Terraform will not promise.** Stage 5 step
+   right *before anything else exists* is precisely the one Terraform will not promise.** Stage 5a step
    5.2 rests entirely on D13: the lake's databases must be born without the `IAM_ALLOWED_PRINCIPALS`
    default grants, because those act at creation time and clearing them afterwards does not reach a
    database that already exists. That obligation is an *emptying*, and
@@ -461,7 +461,7 @@ can be recognised without opening this file; the reasoning that makes each one u
 
 28. **When a service keeps its own permission layer above IAM, a principal's reach is the
    *intersection* — and this repository's layout puts the two halves in different slices, so a slice
-   is never the unit that answers "what can this persona do".** Stage 5 pass 2 made the governance
+   is never the unit that answers "what can this persona do".** Stage 5a pass 2 made the governance
    manager's first grants. `identity/sso/policies-approvers.tf` carries a statement called
    `AdministerLakeFormation` (`AddLFTagsToResource`, `GrantPermissions`, `CreateLFTag`), which reads
    like the complete answer to what the persona may do, and on its own grants nothing. Lake
@@ -484,7 +484,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    [`data/README.md`](../../terraform-live/data-governance/data/README.md) §"A permission here is
    the intersection of two systems").
 
-   Amended 2026-08-19 (Stage 5 pass 4c), because the lesson listed "an S3 bucket policy" and still
+   Amended 2026-08-19 (Stage 5a pass 4c), because the lesson listed "an S3 bucket policy" and still
    did not fire. The intersection has a second trigger, which is not a service: the account
    boundary. Cross-account access requires an allow in the resource policy of the account that owns
    the object and an allow in the identity policy of the account that owns the principal. No second
@@ -500,7 +500,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    policy that names a foreign principal is by itself always incomplete, in every service, so it
    marks either an identity-side statement somewhere or a dead permission.
 
-   Amended again 2026-08-20 (Stage 5 pass 4d, when the drop-box `PutObject` ran), because "the two
+   Amended again 2026-08-20 (Stage 5a pass 4d, when the drop-box `PutObject` ran), because "the two
    halves" is the wrong arity on an encrypted write path: there are three. The write succeeded only
    because the identity half (`WriteIngestionDropBox`), the resource half
    (`AllowInteractiveWriterPutOnly`) and the lake CMK's key policy meeting `UseLakeDataKeyViaS3` all
@@ -518,7 +518,7 @@ can be recognised without opening this file; the reasoning that makes each one u
 
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule
    over it — and the rule inherits every resource that wears the attribute for an unrelated
-   reason.** Stage 5 pass 3 was one expression away from sharing the drop-box. The classification
+   reason.** Stage 5a pass 3 was one expression away from sharing the drop-box. The classification
    ontology gives `classification=internal` to the drop-box database for a considered reason:
    arrivals are user-supplied, and the fail-open default says an unclassified arrival is ordinary
    working data rather than invisible. The default consumer share was then written as
@@ -538,7 +538,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    later control happens to cover it, because nobody chose the coverage.
 
 30. **A tool's failure is not a property of the world — and if it gets written down as one, the
-   record carries the tool's limit forever.** Stage 5 pass 2 could not fetch AWS's Lake Formation
+   record carries the tool's limit forever.** Stage 5a pass 2 could not fetch AWS's Lake Formation
    pages: they are JavaScript-rendered and the plain fetcher returned no body. The handling was
    right in every visible way: the missing information was not asserted from memory, the gap was
    recorded, the question deferred to the stage that could measure it. But the caveat in
@@ -565,7 +565,7 @@ can be recognised without opening this file; the reasoning that makes each one u
 31. **A check inherits the scope of the account it was written in, and keeps reporting `pass` about
    that one while the design spreads past it.** `DL-6` decides whether Lake Formation's
    create-defaults still grant `IAM_ALLOWED_PRINCIPALS`, the reading D13 rests on. It was written at
-   Stage 5 pass 1, when Data Governance was the only account with a `DataLakeSettings`, so it read
+   Stage 5a pass 1, when Data Governance was the only account with a `DataLakeSettings`, so it read
    `DATA_PROFILE`. By pass 4 two more accounts had one, both in the failing state, and the check was
    green. It answered its question correctly about a population that had stopped being the whole
    population. This is not Lesson 13, whose check cannot tell success from failure; this one
@@ -593,7 +593,7 @@ can be recognised without opening this file; the reasoning that makes each one u
 
 32. **Two spellings of the same object survive indefinitely while nothing has to build it — and the
    side that has to build it is the one that was right.** For weeks the plan said both "scratch +
-   derived-zone **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5 table) and
+   derived-zone **buckets**" (`architecture.md`, `conventions.md` §6, the Stage 5a table) and
    "scratch and derived **prefixes**" (D13, `identity/sso/`'s owed-grants note, Stage 1b, the
    permission set's own description). Both entered in the same commit, so it was one object with two
    vocabularies, and neither spelling failed anything because no code had yet had to pick. The
@@ -612,7 +612,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    twice in this estate: `DenyOutsideTrustedNetworks` in the lake's bucket policy, and
    `DenyControlPlaneOffVpn` in the six persona permission sets. The resource half carries three
    branches (`aws:SourceVpce`, `aws:SourceIp`, `aws:PrincipalAccount`), because traffic can arrive
-   by more than one path; the identity half carries one, `aws:SourceIp`. Stage 5 pass 4d measured
+   by more than one path; the identity half carries one, `aws:SourceIp`. Stage 5a pass 4d measured
    the difference: tunnel traffic to S3 leaves through the `[P]` gateway endpoint carrying the
    WireGuard host's private address (`10.20.160.254`) and an endpoint id, while Glue and Athena
    leave by the internet gateway wearing the Elastic IP, so the identity half denies every direct S3
@@ -656,9 +656,9 @@ can be recognised without opening this file; the reasoning that makes each one u
 
 34. **A deferred obligation recorded only at the deferring end is a promise the receiving stage
    never gets — and a decision scheduled around an unexercised capability inherits a premise nobody
-   measured.** The lake's registration role shipped read-only at Stage 5 pass 1, its comment
+   measured.** The lake's registration role shipped read-only at Stage 5a pass 1, its comment
    deferring the write half to "Stage 9, which amends this policy (its step 2)", and Stage 9's file
-   never carried that amendment. Meanwhile Stage 5's own file scheduled a one-way-door decision,
+   never carried that amendment. Meanwhile Stage 5a's own file scheduled a one-way-door decision,
    *load sample rows through Athena before 4.3's amendment closes that door*, on the belief that the
    in-account write path was open. Three files, three spellings of one capability: the plan said
    *open*, the code said *deferred*, the receiving stage said nothing, and all survived because
@@ -703,7 +703,7 @@ can be recognised without opening this file; the reasoning that makes each one u
    assume it is stale until checked.
 
 36. **"Auto-enable" is a word each service defines for itself — and a cross-service finding written
-    down in the stage that hit it stays in that stage.** Found 2026-08-20, checking Stage 5 step 13
+    down in the stage that hit it stays in that stage.** Found 2026-08-20, checking Stage 5a step 13
     against the service before running it: the third time this plan made the same assumption about a
     different service, and the second time it had already been corrected in writing.
 
@@ -715,9 +715,9 @@ can be recognised without opening this file; the reasoning that makes each one u
     |---|---|---|
     | GuardDuty | `ALL` — existing accounts included | Stage 4, recorded; Stage 15 step 2 inherits it |
     | Macie | **new accounts only**; existing ones added one at a time by the administrator | Stage 11, corrected 2026-08-17 |
-    | Security Hub CSPM | **new accounts only, current Region only** — so on an organization whose accounts all already exist, it covers **none of them** | Stage 5 step 13, corrected 2026-08-20 |
+    | Security Hub CSPM | **new accounts only, current Region only** — so on an organization whose accounts all already exist, it covers **none of them** | Stage 5a step 13, corrected 2026-08-20 |
 
-    The plan wrote *"auto-enable for existing and future accounts"* into Stage 5 because the shape
+    The plan wrote *"auto-enable for existing and future accounts"* into Stage 5a because the shape
     was familiar from GuardDuty; nothing about the sentence looked like a guess, because the
     sentence next door had been true.
 
@@ -730,9 +730,9 @@ can be recognised without opening this file; the reasoning that makes each one u
     changes who runs the act, from where, and what else must be true first.
 
     The second half is about this repository. The Macie instance was found, understood and written
-    down, dated, in Stage 11's Status row, because that is where it was discovered. Stage 5's step
+    down, dated, in Stage 11's Status row, because that is where it was discovered. Stage 5a's step
     13 then carried the same wrong assumption for three more days, because nothing routes a reader
-    from "I am executing Stage 5" to a paragraph in a sibling stage: `CLAUDE.md`'s routing table
+    from "I am executing Stage 5a" to a paragraph in a sibling stage: `CLAUDE.md`'s routing table
     sends you to the stage you are executing and to the decisions it consumes. A finding about the
     stage's own subject belongs in the stage. A finding about a class of thing (a service family, a
     provider behaviour, a console pattern) belongs somewhere cross-cutting, here or in

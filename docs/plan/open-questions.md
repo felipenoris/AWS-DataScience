@@ -66,7 +66,7 @@ follows is still unanswered:
    the objectives. D39 then removed the requirement it deviated from, so INT-16 is superseded rather than
    revisited.
    INT-11's organization halves were **enabled in Stage 1d** (RAM org-wide sharing on 2026-08-14; the LF
-   cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5 half **closed 2026-08-19**
+   cross-account version already read 4 with `SET_CONTEXT: TRUE`); its Stage 5a half **closed 2026-08-19**
    (pass 3, confirmed per account at pass 4 — see the row). The credential-vending half of
    `sts:SetContext` against the RCP is **exercised too** (2026-08-19, 4d groups A and B): the persona's
    cross-account queries `SUCCEEDED` through the version-4 share from two provisioned roles, so vending
@@ -208,7 +208,7 @@ load-bearing against principle 4.
     Two outcomes, and they are very different: either per-user filtering is achievable through a
     different surface (the SQL/query path, which is not the notebook path), or the design's real grain is
     the project and [`docs/plan/objectives.md`](objectives.md)'s objective is met at that grain with the difference written down.
-    **Answer at Stage 5 while granting, and at Stage 6 while running.**
+    **Answer at Stage 5a while granting, and at Stage 6 while running.**
     **Named 2026-08-16:** "compatibility permission mode" is not the documentation's vocabulary — the
     lever is trusted identity propagation, supported since 2025-09 for Athena, Redshift, Glue and EMR and
     enabled per project profile through the Tooling parameter
@@ -217,11 +217,11 @@ load-bearing against principle 4.
     grain decision and the remote-VS-Code objective pull against each other, and Stage 6 decision 2 records
     which yields. **Decision 2 delivered 2026-08-21: TIP locked `"false"`, non-editable, in both project
     profiles** — remote access won; the per-user options stay mapped, not required.
-    **The Stage 5 half is answered (2026-08-18, Stage 5 decision 6, the user's): the grain
+    **The Stage 5a half is answered (2026-08-18, Stage 5a decision 6, the user's): the grain
     target is reframed** — entitlement follows the toolset's practice (grants to roles/projects, assumed
     by people and services), and per-user attribution is an *exploration*, not a requirement; the
     objective is met at the role/project grain, stated in `docs/GOVERNANCE.md` §"The grain". What
-    survives: Stage 5 pass 2 maps the per-user options and their costs (verification viii), and the
+    survives: Stage 5a pass 2 maps the per-user options and their costs (verification viii), and the
     Stage 6 half — whether TIP is ever worth its remote-access cost — is now weighed against a *mapped
     option*, not against an objective, with remote access favoured by default. **Sharpened 2026-08-19
     (the decision 1 re-read):** the notebook's Spark Connect page lists TIP *and* FGAC as unsupported for
@@ -241,6 +241,15 @@ load-bearing against principle 4.
     became a consumer of this option on 2026-08-26**: its decision 2 recommends the IAM grain for the
     per-group lake grants and defers directory grantees to this item — choosing them there requires the
     association first, measured, never as a side effect.
+    **One premise corrected 2026-09-19, and it makes the grain of the choice finer than this item assumed:**
+    TIP is recorded above as a **project-profile** setting, whose whole documented cost is that remote access
+    stops working. `datazone create-connection` and `awscc_datazone_connection` both carry
+    **`enable_trusted_identity_propagation` per connection** — so a single Redshift connection could carry
+    the human into the SQL path while the profile's parameter stays `"false"` and remote access keeps
+    working. Unread: whether the two levers actually compose that way, or whether the profile's `"false"`
+    is a ceiling the connection cannot exceed. That reading belongs with the first connection
+    ([Stage 6h](stages/stage-06h-redshift-connection.md)); until it is taken, "remote access won" remains
+    the answer, and what changed is only that the trade may not be all-or-nothing.
 14. **The remote-IDE path is a file-transfer channel to a laptop.** `sagemaker:StartSession` plus the AWS
     Toolkit lets a local VS Code attach to a running space — an [`objectives.md`](objectives.md) objective, so it is not
     something to deny. It also bypasses whatever a browser IDE could be made to restrict, which makes it
@@ -294,7 +303,7 @@ load-bearing against principle 4.
     control and the pre-existing AWS guardrail for the root ones (11 → 13 statements, Lesson 23 again); and
     the by-hand probe answered in **both** accounts — `us-east-1` denied naming `p-idgyiios`, `us-west-2`
     `DryRunOperation`. The lasting cost the closure commits to: GuardDuty (Stage 15 since the
-    2026-08-18 split; Stage 4 when this was written), Security Hub (Stage 5) and Macie (Stage 11) are
+    2026-08-18 split; Stage 4 when this was written), Security Hub (Stage 5a) and Macie (Stage 11) are
     **not** exempt in the control, so each is `us-west-2` or it is denied. The original question, kept for
     its reasoning:
 
@@ -382,7 +391,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     host:** an exemption taken for a recovery path keeps arriving in places nobody weighed it for, and
     each arrival is a chance for a design to describe itself wrongly.
 
-### Raised by Stage 5 pass 3, 2026-08-19
+### Raised by Stage 5a pass 3, 2026-08-19
 
 18. **Does `lakeformation:CreateLFTag` in the governance manager's IAM half make it an "LF-Tag creator",
     and therefore able to *grant data* it cannot read?** The larger question this came from is
@@ -402,7 +411,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     decision to take is whether the delegation plane is wanted; **if no**, decision 5 needs no revision.
     Do not close this from the documentation — the pages that would settle it are already read.
 
-### Raised by Stage 5 pass 4d, 2026-08-19
+### Raised by Stage 5a pass 4d, 2026-08-19
 
 19. **When do the catalog crawlers run?** Nothing has ever said. `awsds-data-raw` and
     `awsds-data-dropbox` were created at pass 1 deliberately **never-run**, and pass 4d found that the

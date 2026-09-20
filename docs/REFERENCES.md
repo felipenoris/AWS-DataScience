@@ -711,13 +711,106 @@
 
 - Redshift and the Glue Data Catalog, both directions (read 2026-09-13, for Stage 6f's institutional pattern). A Redshift provisioned cluster or serverless namespace registered to the Data Catalog becomes a federated catalog (namespace → multi-level catalog, database → catalog, schema → database, table → table), governed by Lake Formation and queried by Iceberg-compatible engines such as Athena and EMR Serverless: <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>. Redshift reads the Data Catalog through the `awsdatacatalog` database (RA3 or Serverless; `data_catalog_auto_mount`), and *"Queries against the `awsdatacatalog` database can only be read-only"*: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>. The crawler's data stores: S3, DynamoDB, Delta Lake, Iceberg and Hudi natively; Amazon Redshift, Snowflake, Aurora, MariaDB, SQL Server, MySQL, Oracle and PostgreSQL over JDBC; MongoDB, MongoDB Atlas and DocumentDB through the MongoDB client: <https://docs.aws.amazon.com/glue/latest/dg/crawler-data-stores.html>.
 
+- **Redshift Serverless — capacity, billing, network and audit (read 2026-09-19, for
+  [D40](plan/decisions/D40-redshift-warehouse.md) and
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)).** Five pages, and each one contributed a fact the
+  stage is built on.
+  *Compute capacity*: *"You can adjust the **Base capacity** setting from 4 RPUs to 512 RPUs. You can set this
+  value to 4 RPUs, or in units of 8 at or above 8 RPUs"*; one RPU is 16 GB of memory; 4 RPUs supports up to
+  32 TB of managed storage, 64 GB of memory and *"a maximum of 100 columns per table"*; **the ratchet** —
+  *"Once you scale your data warehouse beyond 4 RPUs, your data warehouse will continue to use more RPUs, and
+  Amazon Redshift won't scale your data warehouse back down to 4 RPUs"*; `us-west-2` is one of the **ten
+  Regions** where 4 RPUs is offered; *"We do not recommend using this feature for 4 Base RPU"* about AI-driven
+  scaling, while *"The price-performance target is enabled by default for all new Serverless workgroups and is
+  set to **Balanced**"*; and *"**Max capacity** and **Max RPU-hours** … Amazon Redshift Serverless always
+  honors and enforces these settings, regardless of the price-performance target setting"*:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-capacity.html>.
+  *Billing*: *"The minimum charge is for 60 seconds of resource usage, metered on a per-second basis"*;
+  *"If you don't end or roll back an open transaction, Amazon Redshift Serverless continues to use RPUs"*, with
+  `SESSION TIMEOUT` at 3600 s idle and 21600 s for an open transaction; *"If you run a query and cancel it
+  before it finishes, you are still billed for the time the query ran"*; *"In some cases, RPU capacity can
+  remain at a higher setting for a period after query load falls. We recommend that you set maximum RPU hours
+  in the console to guard against unexpected cost"*; *"Amazon Redshift Serverless treats all incoming queries
+  as billable user activity, including lightweight health-check queries sent by connection pools"*; and free-trial
+  usage *"does not appear in the billing console"* until the trial ends:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-billing.html>.
+  *Considerations*: *"Two subnets (without EVR) – You must have at least two subnets, and they must span across
+  two Availability Zones"* and three only with Enhanced VPC Routing; *"you must have at least three free IP
+  addresses available in each subnet"* without EVR; online patching applies within 14 days during idle periods
+  and *"If no 15-minute idle period occurs within 14 days, your Serverless endpoint may experience brief
+  unavailability"*; max query execution time 0–86,399 s:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-usage-considerations.html>.
+  *Audit logging*: the log group is `/aws/redshift/<namespace>/<log_type>`, and *"A log group with the specified
+  name doesn't exist… The log group uses the default log-retention period of **Never Expire**"* while *"A log
+  group with the specified name exists. Redshift exports log data using the existing log group"* — the documented
+  reason [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 1.2 creates the three groups before the
+  namespace can. The same page carries the metric list: `ComputeCapacity` (*"Average number of compute units
+  allocated during the past 30 minutes"*), `ComputeSeconds`, `UsageLimitConsumed`/`UsageLimitAvailable`,
+  `DataStorage`, `DatabaseConnections` and
+  `ExtraComputeForAutomaticOptimizationChargedSeconds`:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html>.
+  *Cross-database queries*: the page carries **both** *"When you query database objects on any other
+  unconnected databases, you have read access only to those database objects"* and *"You can write from
+  databases that you are connected to, and also write from any other database that you have permissions to"* —
+  which is why D40 puts the two classes of database in two accounts rather than in one namespace:
+  <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
+
+- **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
+  [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the
+  tags are the first layer: the admin *"adds 1 of the following tags to the Amazon Redshift cluster or workgroup
+  **and its namespace**"* — `AmazonDataZoneProject={{projectID}}` for one project, or
+  `for-use-with-all-datazone-projects=true` *"to allow all Amazon SageMaker Unified Studio projects in this
+  account to access it"* (the wide form this estate refuses). *"If you want to query the Amazon Redshift
+  resources using JupyterLab within Amazon SageMaker Unified Studio, the Amazon Redshift resource must use the
+  same VPC as the Amazon SageMaker Unified Studio project"*, while *"You can still query using the Data page of
+  your project if you are using different VPCs"* — the two doors, and the reason D40's governed class is
+  unreachable from a Sandbox notebook by construction. The **cross-account** path needs an access role trusted
+  by the project role under `sts:ExternalId = <project-id>`, `sts:SetSourceIdentity` and `sts:TagSession`, a
+  `RedshiftDbUser={{Username}}` tag *"\[which\] determines the federated database user"* when IAM credentials
+  are used instead of a secret, and a sample policy carrying `sqlworkbench:*` on `*`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-prerequisite-redshift.html>.
+  The portal flow is *Compute → Data warehouse → Add compute → Connect to existing compute resources*; in the
+  same account the compute comes *"from a dropdown menu"*; *"The credential type must be one of the following
+  options: Username and password, IAM credentials, AWS Secrets Manager"*; and *"Using a username and password
+  enables Amazon SageMaker Unified Studio to display more information for a resource"* — the cost of choosing
+  IAM credentials:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/adding-a-existing-compute-connection.html>.
+
+- **The Terraform surface for a Redshift Serverless warehouse (read 2026-09-19).**
+  `aws_redshiftserverless_namespace` carries `manage_admin_password`, `admin_password_secret_kms_key_id`,
+  `kms_key_id`, `log_exports`, `iam_roles` and `default_iam_role_arn`, and exports
+  `admin_password_secret_arn` — so no password has to exist in state:
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/redshiftserverless_namespace>.
+  `aws_redshiftserverless_workgroup` carries `base_capacity`, `max_capacity`, `price_performance_target`,
+  `config_parameter`, `enhanced_vpc_routing`, `publicly_accessible`, `subnet_ids` and `security_group_ids`.
+  **Its page says `subnet_ids` "must contain at least three subnets spanning three Availability Zones" while
+  the service documentation says two without EVR — and the provider's own code validates neither**: the
+  attribute is a plain `Optional`+`Computed` `TypeSet` with no validator
+  (`internal/service/redshiftserverless/workgroup.go`, read the same day). Only an apply settles it, which is
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 0.1:
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/redshiftserverless_workgroup>.
+  `aws_redshiftserverless_usage_limit` takes `usage_type` (`serverless-compute` or
+  `cross-region-datasharing`), `amount` in RPU-hours, `period` (`daily`/`weekly`/`monthly`, default monthly)
+  and `breach_action` (`log`, `emit-metric`, `deactivate`; **default `log`**, which is why it is set
+  explicitly):
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/redshiftserverless_usage_limit>.
+  `aws_glue_catalog` carries a `federated_catalog` block — and `create_database_default_permissions`, the same
+  `IAMAllowedPrincipals` hazard `aws_lakeformation_data_lake_settings` has, one level up
+  ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.5):
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/glue_catalog>.
+  `awscc_datazone_connection` takes `redshift_properties` (`storage.workgroup_name`, `database_name`, `host`,
+  `port`, `credentials` as `secret_arn` **or** `username_password`, and `lineage_sync`) plus
+  `enable_trusted_identity_propagation` **per connection** — new information against open question 13's
+  premise that TIP is a project-profile setting:
+  <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/datazone_connection>.
+
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.
 
 - Amazon S3 Tables (managed Iceberg with automatic maintenance — the AWS-native alternative to hand-rolled Iceberg buckets): <https://aws.amazon.com/s3/features/tables/>.
 
-- Athena workgroup settings, including `EnforceWorkGroupConfiguration` — the console calls it "override client-side settings"; the control that makes D19's enforced results zone a boundary rather than a suggestion (one location per workgroup, so `results/` is per-persona; first applied at Stage 5 pass 4b in both consumers): <https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings.html>.
+- Athena workgroup settings, including `EnforceWorkGroupConfiguration` — the console calls it "override client-side settings"; the control that makes D19's enforced results zone a boundary rather than a suggestion (one location per workgroup, so `results/` is per-persona; first applied at Stage 5a pass 4b in both consumers): <https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings.html>.
 
 - Specifying an Athena query result location using a workgroup (and the CTAS `external_location` conflict it causes): <https://docs.aws.amazon.com/athena/latest/ug/query-results-specify-location-workgroup.html>.
 
@@ -731,9 +824,9 @@
 
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
 
-- Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5 governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
+- Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
 
-- LF-Tag permissions — the grants that let a persona tag rather than read (Stage 5 pass 2, the
+- LF-Tag permissions — the grants that let a persona tag rather than read (Stage 5a pass 2, the
   governance manager's own grants; read 2026-08-19 from the rendered pages). The permissions grantable
   on an LF-Tag itself are `ASSOCIATE`, `ALTER` and `DROP`; a principal holding `ASSOCIATE` may assign
   that tag to a Data Catalog resource, and granting `ASSOCIATE` implicitly grants `DESCRIBE`; the
@@ -751,7 +844,7 @@
   <https://docs.aws.amazon.com/lake-formation/latest/dg/TBAC-security.html> and the permissions
   reference <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-permissions-reference.html>.
 
-- Cross-account LF-TBAC sharing — the two statements Stage 5 pass 3 is built on (read 2026-08-19, for
+- Cross-account LF-TBAC sharing — the two statements Stage 5a pass 3 is built on (read 2026-08-19, for
   step 7). The grant option is an imperative: *"Because the data lake administrator must grant
   permissions on shared resources to the principals in the grantee account, you must always grant
   cross-account permissions with the grant option"* — a cross-account grant lands on the account, and
@@ -1207,13 +1300,13 @@
 
 - Integrating Security Hub CSPM with AWS Organizations — designating the delegated administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account", the same coupling as GuardDuty (Stage 1b step 8.1): <https://docs.aws.amazon.com/securityhub/latest/userguide/designate-orgs-admin-account.html>.
 
-- Introduction to AWS Security Hub CSPM (read 2026-08-20, before Stage 5 step 13 ran) — the product that "runs checks against security controls" for FSBP/CIS/PCI/NIST is Security Hub CSPM, distinct from the newer Security Hub beside it in the console and in the CLI (`describe-hub` vs `describe-security-hub-v2`). Also the 30-day, per-account free trial on first enablement, which is why step 13 puts nothing on the bill for a month: <https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html>.
+- Introduction to AWS Security Hub CSPM (read 2026-08-20, before Stage 5a step 13 ran) — the product that "runs checks against security controls" for FSBP/CIS/PCI/NIST is Security Hub CSPM, distinct from the newer Security Hub beside it in the console and in the CLI (`describe-hub` vs `describe-security-hub-v2`). Also the 30-day, per-account free trial on first enablement, which is why step 13 puts nothing on the bill for a month: <https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html>.
 
-- Understanding central configuration in Security Hub CSPM — Stage 5 step 13's mechanism. Local configuration (the default) auto-enables only "in *new* organization accounts in the current Region" and "doesn't apply to existing organization accounts", so "auto-enable for existing and future accounts" is not a setting anyone can choose (verification (ix), answered NO by documentation; Lesson 36). Central configuration does it: configuration policies associated with the root, covering existing accounts, future accounts and every OU; the *recommended* policy is FSBP-and-nothing-else with "all existing and new FSBP controls" enabled. A centrally managed account cannot run `BatchUpdateStandardsControlAssociations`, so disabling a control means editing the policy, not clicking in the account (step 13.3): <https://docs.aws.amazon.com/securityhub/latest/userguide/central-configuration-intro.html>.
+- Understanding central configuration in Security Hub CSPM — Stage 5a step 13's mechanism. Local configuration (the default) auto-enables only "in *new* organization accounts in the current Region" and "doesn't apply to existing organization accounts", so "auto-enable for existing and future accounts" is not a setting anyone can choose (verification (ix), answered NO by documentation; Lesson 36). Central configuration does it: configuration policies associated with the root, covering existing accounts, future accounts and every OU; the *recommended* policy is FSBP-and-nothing-else with "all existing and new FSBP controls" enabled. A centrally managed account cannot run `BatchUpdateStandardsControlAssociations`, so disabling a control means editing the policy, not clicking in the account (step 13.3): <https://docs.aws.amazon.com/securityhub/latest/userguide/central-configuration-intro.html>.
 
 - Enabling central configuration in Security Hub CSPM — the prerequisites and both paths. The home Region doubles as the finding-aggregation Region; the console workflow says "Select at least one Region to link to the home Region", which on this organization would push a configuration policy into a Region the `us-west-2` ceiling denies, while the CLI path (`update-organization-configuration --no-auto-enable --organization-configuration ConfigurationType=CENTRAL`, run from the delegated administrator) takes no linked-Region argument at all — why step 13.1a prefers CloudShell in Audit over the console. The aggregator's `NO_REGIONS` mode, "aggregates no data because no Regions are selected", is the single-Region case: <https://docs.aws.amazon.com/securityhub/latest/userguide/start-central-configuration.html>.
 
-- Enabling and configuring AWS Config for Security Hub CSPM — two things Stage 5 step 13.0 turns on. A control whose resource type is not recorded returns a `WARNING` finding that "doesn't actually evaluate the configuration state of the resource" (Lesson 13's shape as a service behaviour). With both Security Hub CSPM and Security Hub enabled, CSPM creates a service-linked recorder `AWSConfigurationRecorderForSecurityHubCSPM` and "Security Hub does not use the customer-managed configuration recorder in AWS Config" — here Control Tower's `aws-controltower-BaselineConfigRecorder` — which is why step 13.0 refuses the v2 product. Recording `AWS::Config::ResourceCompliance` is not required for the checks to work, a Stage 12 cost lever: <https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-setup-prereqs.html>.
+- Enabling and configuring AWS Config for Security Hub CSPM — two things Stage 5a step 13.0 turns on. A control whose resource type is not recorded returns a `WARNING` finding that "doesn't actually evaluate the configuration state of the resource" (Lesson 13's shape as a service behaviour). With both Security Hub CSPM and Security Hub enabled, CSPM creates a service-linked recorder `AWSConfigurationRecorderForSecurityHubCSPM` and "Security Hub does not use the customer-managed configuration recorder in AWS Config" — here Control Tower's `aws-controltower-BaselineConfigRecorder` — which is why step 13.0 refuses the v2 product. Recording `AWS::Config::ResourceCompliance` is not required for the checks to work, a Stage 12 cost lever: <https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-setup-prereqs.html>.
 
 - Monitor resource changes with AWS Config (Control Tower) — landing zone 3.0+ limits *global* resources to the home Region, and the only documented way to customise which resource types are recorded is the lifecycle-event solution, not a Control Tower setting (Stage 1d step 10): <https://docs.aws.amazon.com/controltower/latest/userguide/monitoring-with-config.html> and <https://aws.amazon.com/blogs/mt/customize-aws-config-resource-tracking-in-aws-control-tower-environment/>.
 

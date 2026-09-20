@@ -1,4 +1,4 @@
-# Lake Formation, consumer side (Stage 5 pass 4). Three things in dependency order; the first is
+# Lake Formation, consumer side (Stage 5a pass 4). Three things in dependency order; the first is
 # a prerequisite pass 3 discovered rather than planned.
 
 # --------------------------------------------------- the settings: the account joins LF at all

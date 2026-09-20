@@ -30,7 +30,7 @@
 # the persona allows live in Identity. Section 1 prints the caller ARN of every profile.
 #
 # The contracts it reads, each named in the stage file so a rename fails loudly:
-#   - the job role is awsds-prod-job-exec (step 3.1 - the name Stage 5 step 1.4's drop-box
+#   - the job role is awsds-prod-job-exec (step 3.1 - the name Stage 5a step 1.4's drop-box
 #     statement and key grant carry)
 #   - the workgroup is awsds-prod-athena; Staging's is awsds-staging-athena (steps 1.2, 4.2)
 #   - the buckets are awsds-prod-outputs and awsds-prod-derived (step 1.1 - the derived
@@ -881,7 +881,7 @@ def main(argv: list) -> int:
                 checks.fail(
                     "DT-5",
                     f"{p} parameters",
-                    f"{param_txt} - the INT-11 values regressed; stop and re-read Stage 5 step 5.4.",
+                    f"{param_txt} - the INT-11 values regressed; stop and re-read Stage 5a step 5.4.",
                 )
         else:
             if defaults_txt == "db:0 tbl:0":
@@ -922,7 +922,7 @@ def main(argv: list) -> int:
             (checks.fail if built else checks.note)(
                 "DT-7",
                 f"drop-box policy ({dropbox_bucket})",
-                dropbox_stmt + " - the Stage 5 statement and the 3.1 contract disagree.",
+                dropbox_stmt + " - the Stage 5a statement and the 3.1 contract disagree.",
             )
         elif dropbox_stmt.startswith("names"):
             checks.ok("DT-7", f"drop-box policy ({dropbox_bucket})", dropbox_stmt)
@@ -1089,7 +1089,7 @@ never a compliant one.
             else:
                 rep.line(f"workgroup {PROD_WG}: (absent)")
             rep.text("""
-The branches are PRESENCE, never sufficiency (vpce/ip/via - Stage 5 step 1.3's
+The branches are PRESENCE, never sufficiency (vpce/ip/via - Stage 5a step 1.3's
 shape). One enforced result location, not one per principal: within-persona
 visibility of query output is the stage's stated limit (risk 6), and the CMK is
 what keeps it from the approvers and from Staging (D31).""")
@@ -1159,13 +1159,13 @@ rebuild. Whether the write WORKS is 2.4's job, not this listing.""")
             rep.line(f"{DATA_PROFILE} was not measured - nothing to show.")
         elif not dropbox_bucket:
             rep.line(
-                "No bucket matching *dropbox* in Data Governance (Stage 5 decision 3 creates it)."
+                "No bucket matching *dropbox* in Data Governance (Stage 5a decision 3 creates it)."
             )
         else:
             rep.line(f"bucket {dropbox_bucket}: {dropbox_stmt}")
             rep.line(f"drop-box key names {JOB_ROLE}: {dropbox_key_names_role}")
             rep.text("""
-Stage 5 wrote both against this stage's role name before the role existed - the
+Stage 5a wrote both against this stage's role name before the role existed - the
 contract this section watches. A NO on either line is the pickup failing later
 with an error that names S3 and means KMS or a typo (2.5, D25).""")
 

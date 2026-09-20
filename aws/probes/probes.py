@@ -573,7 +573,7 @@ probe("rcp", "canary", "allow", None, "ro", "rcp floor: ecr reachable",
       ["ecr", "describe-repositories", "--max-results", "1", "--region", "us-west-2"])
 
 # Repeated in Data Governance, which is where the buckets and the catalog will actually live
-# (Stage 5) and therefore where an RCP mistake costs something. The canary is empty by
+# (Stage 5a) and therefore where an RCP mistake costs something. The canary is empty by
 # design, so a canary-only floor measures the policy against nothing.
 probe("rcp", "data", "allow", None, "ro", "rcp floor: s3 reachable in Data Governance",
       ["s3api", "list-buckets"])

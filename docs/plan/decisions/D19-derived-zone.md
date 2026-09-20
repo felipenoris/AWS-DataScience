@@ -8,13 +8,13 @@
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D6](D06-dlp-approach.md), [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D24](D24-shared-filesystem.md), [D31](D31-approver-read.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 5](../stages/stage-05-data-foundation.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 11](../stages/stage-11-dlp.md)
 
 ---
 
 ## Rationale and consequences
 
-Running a `SELECT` against the lake and storing the result is what a data science environment is *for*. Any principal that can read tabular data can materialise it outside the governed prefixes, and no configuration changes that. This is not a hole introduced by D18 — it has been true of the Sandbox since Stage 5, and of every SageMaker installation ever built. **Lake Formation's column and row filters are an entitlement mechanism, not a containment mechanism**: they decide what a principal may see at the moment of read; they say nothing about where the bytes go next. D13 makes the entitlement real; this decision covers everything after it.
+Running a `SELECT` against the lake and storing the result is what a data science environment is *for*. Any principal that can read tabular data can materialise it outside the governed prefixes, and no configuration changes that. This is not a hole introduced by D18 — it has been true of the Sandbox since Stage 5a, and of every SageMaker installation ever built. **Lake Formation's column and row filters are an entitlement mechanism, not a containment mechanism**: they decide what a principal may see at the moment of read; they say nothing about where the bytes go next. D13 makes the entitlement real; this decision covers everything after it.
 
 The practice: (i) **the output location is not the user's choice** — the Athena workgroup sets `EnforceWorkGroupConfiguration = true`, so a client cannot override the result location, and `s3:PutObject` on execution roles and permission sets is scoped to enumerated prefixes, never `*`; (ii) derived prefixes are **per principal** (`…/derived/${aws:userid}/`), so one person's copy is not a way around another person's grants; (iii) they carry a **lifecycle expiry**, so the shadow lake does not become permanent by accident; (iv) they sit **inside Macie's scan scope and carry CloudTrail data events** (Stage 11), because this is where sensitive data actually accumulates; (v) classification **inherits** — the output of a query over `restricted` data is `restricted` — stated as policy, because nothing enforces it automatically at this scale (`docs/plan/institutional-delta.md`: this is exactly where a catalog with lineage earns its price).
 
@@ -40,7 +40,7 @@ on have no RCP behind them at all (`docs/plan/architecture.md` §4.2). Two of th
   external-access findings as an accepted risk (Lesson 5). The NFS requirement was then withdrawn from
   `objectives.md` and D24 with it — no filesystem exists, and the accepted risk went with the resource.
 
-**Revised 2026-08-19 (Stage 5 pass 4, the sitting that built it) — two corrections of shape, neither of
+**Revised 2026-08-19 (Stage 5a pass 4, the sitting that built it) — two corrections of shape, neither of
 which moves the decision.** Practice (vi)'s key is `alias/awsds-<env>-zn-lab`, **not** `-derived`: the
 user amended `security-zone`'s scope so that encryption granularity is that dimension's job in every
 account rather than only inside the lake — a query result over a `zn-lab` table is still `zn-lab` data,
@@ -56,7 +56,7 @@ decision for a "scratch + derived-zone *buckets*" pairing it never contained; th
 three prefix families — `results/` (the workgroup's enforced output, per-persona because an enforced
 workgroup has exactly one), `derived/${aws:userid}/` (practice ii), `scratch/`.
 
-**Also revised 2026-08-19 (pass 4c, following Stage 5 decision 6) — practice (ii) is per principal on
+**Also revised 2026-08-19 (pass 4c, following Stage 5a decision 6) — practice (ii) is per principal on
 write only.** The applied persona statements grant `s3:PutObject` under `derived/${aws:userid}/` but
 `s3:GetObject` across `derived/*`, at decision 6's persona grain — so (ii) contains who may *create or
 overwrite* a copy, not who may read one: another holder of `DataScientistAccess` can read a materialised
@@ -99,7 +99,7 @@ action at all** now; a data scientist queries through a SMUS project, as the pro
 project path. The account data CMK (`alias/awsds-<env>-data`) **survives with a different consumer**:
 the sandbox lake encrypts under it (Stage 16), so the key stays and only the persona's statement
 leaves its policy — in Development it stands empty, held for the account's next data bucket, the
-explicit no-consumer branch dated rather than drifting. Stage 5 step 9.3's extension point (the
+explicit no-consumer branch dated rather than drifting. Stage 5a step 9.3's extension point (the
 data-key `Decrypt` second principal for project roles) **dies unconsumed** — a project role never
 needed the data key, because its results never land under it.
 
@@ -110,7 +110,7 @@ needed the data key, because its results never land under it.
   provisioning policy's path shape plus S3 Access Grants, both project-grained.
 - **(ii) per-principal prefixes** — **withdrawn**. The project path has **no person grain** (measured:
   `shared/` is project-wide); the containment grain moves from the person to the **project**, which is
-  Stage 5 decision 6's grain applied one level up. Attribution of who wrote a copy moves to Stage 11's
+  Stage 5a decision 6's grain applied one level up. Attribution of who wrote a copy moves to Stage 11's
   CloudTrail data events, which carry the principal per object write.
 - **(iii) lifecycle expiry** — **open, and currently absent**: the projects bucket has no rule on
   current objects, and a deleted project keeps its prefix (both measured 2026-08-26). **Open question
@@ -125,7 +125,7 @@ needed the data key, because its results never land under it.
   still carries its explicit `kms:Decrypt` deny.
 
 **What this gives up**: the persona-direct lake
-query (the Stage 5 pandas-pair surface — future share proofs run inside a project); the per-person
+query (the Stage 5a pandas-pair surface — future share proofs run inside a project); the per-person
 write attribution at the prefix grain; and the 30-day shedding, until OQ 25 lands. **What it buys**:
 one destination instead of two, no contract between our prefix families and the service's tree, and a
 zone whose management cost is the service's.

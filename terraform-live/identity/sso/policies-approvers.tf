@@ -190,7 +190,7 @@ data "aws_iam_policy_document" "deployment_manager" {
 # It is the mirror image of the set above (1b step 3.7): the one account the deployment manager
 # cannot enter is the only one this persona can.
 #
-# Still owed: Stage 5/6 the DataZone domain ARN, so the approval actions below can be scoped to
+# Still owed: Stage 5a/6 the DataZone domain ARN, so the approval actions below can be scoped to
 # this organization's domain rather than to any domain in the account.
 
 data "aws_iam_policy_document" "governance_manager" {
@@ -225,7 +225,7 @@ data "aws_iam_policy_document" "governance_manager" {
   # is denied below rather than merely omitted, because it is the one action in this service
   # that turns an administrator of access into a reader of data.
   #
-  # This statement on its own grants the persona nothing (recorded 2026-08-19, Stage 5 pass 2).
+  # This statement on its own grants the persona nothing (recorded 2026-08-19, Stage 5a pass 2).
   # Lake Formation runs its own authorization layer on top of IAM: holding
   # lakeformation:AddLFTagsToResource here permits the API call, while whether the call succeeds
   # is decided by an LF permission - ASSOCIATE on the tag - granted in a different account, by a
@@ -316,7 +316,7 @@ data "aws_iam_policy_document" "governance_manager" {
   #                                The set administers this mechanism; using it is the thing it
   #                                must not do.
   #   s3:Get*                      the direct route, denied whole rather than prefix-scoped:
-  #                                the lake prefixes do not exist yet (Stage 5), and a
+  #                                the lake prefixes do not exist yet (Stage 5a), and a
   #                                governance manager has no legitimate object read to lose. A
   #                                prefix-scoped deny written today would be a guess that fails
   #                                open.

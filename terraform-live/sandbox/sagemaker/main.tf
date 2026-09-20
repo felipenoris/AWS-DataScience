@@ -23,7 +23,7 @@
 # hardest: record every field the console asks for.
 
 locals {
-  # The lake's Lake Formation-registered locations - raw and curated (Stage 5 pass 1). The drop-box
+  # The lake's Lake Formation-registered locations - raw and curated (Stage 5a pass 1). The drop-box
   # is not among them: files land there by IAM and are catalogued afterwards, which is what makes
   # D18's write possible. `artifacts` and `logs` are not registered either and are not the
   # boundary's business.

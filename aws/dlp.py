@@ -724,7 +724,7 @@ What the checks are, and where each comes from:
   DP-3  each scoped account's trail: logging, validated, data-only, scoped,
         delivering into the governed logs bucket (5.1, decision 7)
   DP-4  every derived bucket is inside its own account's trail scope - the
-        Stage 5 step 9.2 promise (D19)
+        Stage 5a step 9.2 promise (D19)
   DP-5  the rules, alarms and topic of 5.2, per account
   DP-6  the two GuardDuty features move together, org-wide (step 4)
   DP-7  the tampering Sid lands with the first member trail (5.4, decision 6)""")

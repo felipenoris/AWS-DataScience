@@ -284,7 +284,7 @@ RFC1918_CIDRS = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
 # business unit terminates its own (D35), this becomes a list.
 VPN_HOST_SLICE = ("production", "networking")
 
-# The lake's consumers and its pickup producer (Stage 5 pass 1), authored rather than derived:
+# The lake's consumers and its pickup producer (Stage 5a pass 1), authored rather than derived:
 # which accounts consume the governed lake is a decision (INT-03's N+2;
 # decision 5 granted to the two named accounts), not something derivable from PROFILES. Consumed
 # by two emissions - `consumers` and `producers` to data-governance/data, where each row becomes
@@ -691,7 +691,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # which is what makes step 6.3's proxy readings possible at all.
                 values["peer_cidrs"] = probe_peer_cidrs(account)
 
-    # Stage 5's cross-account reads, two maps (see DATA_CONSUMERS). A read that crosses an
+    # Stage 5a's cross-account reads, two maps (see DATA_CONSUMERS). A read that crosses an
     # account boundary needs a profile in the data source's config, unlike every same-account read
     # in this tree, and pass 2's rule is that a profile literal never sits in a .tf file (Lesson 14;
     # peers.tf's own comment). So each map arrives the way `peers` does for foundation/: keyed by
@@ -705,7 +705,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
         }
 
-    # The consumer side of the lake (Stage 5 pass 4). Emitted for `data` in any account that
+    # The consumer side of the lake (Stage 5a pass 4). Emitted for `data` in any account that
     # consumes the lake, never for data-governance itself, which owns it and whose own `data`
     # slice takes the three maps above instead. The guard is DATA_CONSUMERS rather than "not
     # data-governance", so a new consumer arrives by being written down (Stage 9 adds
@@ -777,7 +777,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
     if account == "identity" and slice_name == "sso":
-        # Stage 5 pass 4c put two cross-account reads here. The `data_consumers` map (each
+        # Stage 5a pass 4c put two cross-account reads here. The `data_consumers` map (each
         # consumer's workgroup + derived-bucket ARNs) left on 2026-08-26 with the derived zone
         # itself (D19 revised - the zone re-homed onto the SMUS project path, the persona's
         # Athena and derived statements removed). The lake map stays: the drop-box write and its

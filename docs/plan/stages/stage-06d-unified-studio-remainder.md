@@ -512,7 +512,7 @@ than intended.
   `awsds-sandbox-smus-manage-access`, neither written here — open question 24's other half, and
   `DL-13` is what notices it moving. **(xv) a blueprint-created database arrives without
   `IAMAllowedPrincipals`**: both default-permission lists are empty and `IAM_ALLOWED_PRINCIPALS` holds
-  nothing on `mydatabase`, `default` or the project table, so Stage 5's clearing holds for what the
+  nothing on `mydatabase`, `default` or the project table, so Stage 5a's clearing holds for what the
   portal creates. **(xix) an S3 call from a project subnet presents `vpce-0cc3e139c1167ca83`**, the
   account's S3 gateway endpoint, measured on every `GetDataAccess` from a space. Read in the same
   call and recorded because nothing else names them: `AllowExternalDataFiltering` false, and

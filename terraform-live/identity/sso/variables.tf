@@ -46,7 +46,7 @@ variable "environment_tag" {
   }
 }
 
-# The account that owns the lake - Stage 5 pass 4c, the same one-element table the consumer
+# The account that owns the lake - Stage 5a pass 4c, the same one-element table the consumer
 # slices take (backend.py DATA_LAKE). Read for the drop-box bucket ARN, its write prefix and
 # the lake data-key ARN: the drop-box write is cross-account, so the bucket policy's grant is
 # only half of the permission and the identity half has to name real ARNs - the key ARN

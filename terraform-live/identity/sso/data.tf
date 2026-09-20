@@ -101,7 +101,7 @@ data "aws_organizations_organization" "this" {}
 
 # ------------------------------------------------------------------------------ the lake
 #
-# Stage 5 pass 4c, and the one read here that crosses an account boundary: it reads the lake
+# Stage 5a pass 4c, and the one read here that crosses an account boundary: it reads the lake
 # account's data/ state from the Identity account. The profile is in the config because a
 # same-account read inherits AWS_PROFILE from the command line and this one cannot; it rides in
 # the generated tfvars, since a profile literal never sits in a .tf file, and one sign-in covers

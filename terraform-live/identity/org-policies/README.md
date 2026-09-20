@@ -194,7 +194,7 @@ on the create action would have to exempt exactly the principal it was written t
 rather than a control (Lesson 18). **The event D27 is about is the run**, because a crawler run is what
 samples object contents, so that is where the deny and its one named exception sit. The exempt ARN is
 `arn:aws:iam::<ACCOUNT_ID_DATA>:role/awsds-data-catalog-maintenance`, **a contract with
-[Stage 5](../../../docs/plan/stages/stage-05-data-foundation.md) honoured 2026-08-18: pass 1 created the
+[Stage 5a](../../../docs/plan/stages/stage-05a-data-foundation.md) honoured 2026-08-18: pass 1 created the
 role under exactly this name.** Had it been created under any other name the crawlers never run: the
 failure is fail-closed and surfaces at the first crawl, which is why the name is written in two places.
 

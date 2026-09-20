@@ -354,7 +354,7 @@ whole recovery path).
 
 **Written here, not imported (1b step 3.9):** `DataScientistAccess`, `DataScientistStagingAccess`,
 `DataScientistProdAccess`, `DeploymentManagerAccess`, `GovernanceManagerAccess`, `DevEnvStewardAccess`, and
-every group assignment except the administrator's. Nothing before Stage 5 needs any of them, so hand-typing
+every group assignment except the administrator's. Nothing before Stage 5a needs any of them, so hand-typing
 them into a console and then demanding that code reproduce them byte for byte (5.5) was the same work twice
 with a gate in the middle that fails on JSON whitespace.
 

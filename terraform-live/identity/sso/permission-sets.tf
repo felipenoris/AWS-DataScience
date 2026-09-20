@@ -1,7 +1,7 @@
 # The six persona permission sets - Stage 2 step 5.2.
 #
 # Written, not imported, which is the substance of Stage 1b step 3.9. Nothing between 1b and
-# Stage 5 needs any of these six, so they were never created by hand: their first apply is a
+# Stage 5a needs any of these six, so they were never created by hand: their first apply is a
 # create, and an empty plan here would mean nothing was written.
 #
 # The seventh - InfrastructureAccess - is in infrastructure-access.tf and is imported: it is

@@ -84,7 +84,7 @@ locals {
   # response, and versioning keeps overwritten versions internally. The date in the key is a
   # convention (incoming/<yyyy>/<mm>/<dd>/...); the policy scopes the prefix.
   #
-  # Measured 2026-08-20 (Stage 5 pass 4d): the persona's PutObject succeeds; GetObject,
+  # Measured 2026-08-20 (Stage 5a pass 4d): the persona's PutObject succeeds; GetObject,
   # ListObjectsV2 and DeleteObject are each denied implicitly. The delete is worth stating - a
   # writer that can retract is a writer that can launder, so put-only is a claim about retraction
   # as well as about reading. AllowInteractiveWriterPutOnly is exercised, not merely attached

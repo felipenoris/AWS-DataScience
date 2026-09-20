@@ -285,7 +285,7 @@ persona to draw conclusions.
   GuardDuty, Security Hub, Macie and IAM Access Analyzer, and where their organization-wide findings land.
 
 - **The services arrive stage by stage**, each naming the stage that turns it on: Access Analyzer's
-  external-access findings in the landing zone (Stage 1b), because they are free; Security Hub at Stage 5,
+  external-access findings in the landing zone (Stage 1b), because they are free; Security Hub at Stage 5a,
   with the first governed data; Macie at Stage 11; GuardDuty at **Stage 15** — it was Stage 4's, coupled
   to the first internet-facing resource, until the 2026-08-18 split deferred it (the trade is an
   `institutional-delta.md` row). Guiding principle 9 carries the rule: detection is metered, and turning it
@@ -661,7 +661,7 @@ policy can detect it.
 - **Domain owner / data steward** of the SageMaker Unified Studio domain. Approving a subscription is what
   causes DataZone to write the underlying **Lake Formation grant**, so this user's decisions are what the
   fine-grained access model in D13 resolves to. Also owns the data classification scheme and the LF-Tag
-  assignments ([Stage 5](plan/stages/stage-05-data-foundation.md)): the taxonomy and the grants belong to
+  assignments ([Stage 5a](plan/stages/stage-05a-data-foundation.md)): the taxonomy and the grants belong to
   the same person, or the taxonomy becomes decoration.
 
 - **Access:** the `GovernanceManagerAccess` permission set on **Data Governance and nowhere else** —
@@ -836,7 +836,7 @@ Consequences:
   characters apart (`InfrastructureAccess` and Control Tower's `AWSAdministratorAccess`), an assignment
   against the wrong one still works, and Stage 1b steps 3.2, 5 and 5.1 all turn on reading that ARN.
 - **The suffix is generated per account, so the role ARN is never hard-coded.** A bucket policy or KMS key
-  policy naming a human principal matches `AWSReservedSSO_<Set>_*` — relevant from Stage 5 onward, where
+  policy naming a human principal matches `AWSReservedSSO_<Set>_*` — relevant from Stage 5a onward, where
   key policies are the backstop the permission sets are not.
 - **The generated role is never edited by hand and never declared as `aws_iam_role`.** Identity Center
   reconciles it back, silently.

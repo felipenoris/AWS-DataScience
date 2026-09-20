@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started. **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over. **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
-| **Prerequisites** | Stages 5, 6, 9 — by named input: Stage 5's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5 decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
+| **Prerequisites** | Stages 5a, 6, 9 — by named input: Stage 5a's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5a's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5a decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
 
@@ -11,7 +11,7 @@
 
 **Forward constraint from D35:** the Sandbox side multiplies. The monitored-bucket list, the trail in
 `sandbox/data/`, its rules and alarms and the Macie member set are all **per business unit** — write every
-list as a map keyed by consumer (Stage 5's rule), so unit 2 is a row, not a rewrite.
+list as a map keyed by consumer (Stage 5a's rule), so unit 2 is a row, not a rewrite.
 
 ---
 
@@ -32,7 +32,7 @@ residual (`docs/plan/institutional-delta.md`, the device-trust row).
 
 **What is no longer in this stage:** the data perimeter (`docs/plan/architecture.md` §4.2) moved to Stage 1;
 the detective services moved to the stage that first gave each one something to observe (principle 9):
-Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 15**, **Security Hub to Stage 5
+Access Analyzer's free external half to 1b step 8.2, **GuardDuty to Stage 15**, **Security Hub to Stage 5a
 step 13**. What remains is genuinely data-specific — plus step 2.1, where the analyzer switched on
 in 1b is finally *collected on*: a service that emits findings nobody reads is Lesson 5.
 
@@ -69,12 +69,12 @@ Region ceiling does not exempt any of the three (open question 16's closure).
 Four numbers are **stable addresses cited from other files** — `step 1` (the Macie scope) from
 `docs/plan/cost-model.md`, D19 and D22; `step 2.1` from `docs/plan/cost-model.md`'s Access Analyzer row;
 `step 4` from `docs/plan/cost-model.md`, `POLICIES.md` (the documented collision) and Stage 15 step 3;
-`step 5` from Stage 5 steps 1.3, 4.3 and 9.2. They do not change. The sequence to work in is **five
+`step 5` from Stage 5a steps 1.3, 4.3 and 9.2. They do not change. The sequence to work in is **five
 passes**:
 
 | Pass | # | What | Slice · layer | Applied as / by |
 |---|---|---|---|---|
-| **0** | 2.1 (first half), 3 | the readings: external findings triaged, the Stage 5/6 outcomes collected, the threat-model skeleton | snapshots + paper | Claude reads; **user** runs the Audit snapshot |
+| **0** | 2.1 (first half), 3 | the readings: external findings triaged, the Stage 5a/6 outcomes collected, the threat-model skeleton | snapshots + paper | Claude reads; **user** runs the Audit snapshot |
 | **1** | 2 | the filters: LF column/row/cell restrictions and the filtered grants | `data-governance/data/` `[P]` | `awsds-infra-data` |
 | **2** | 5 | the record and the alarms: trails, rules, SNS, thresholds — and decision 6's SCP amendment | the three `data/` slices `[P]`; `identity/org-policies/` | the three infra profiles; `awsds-infra-identity` |
 | **3** | 1, 2.1 (second half) | Macie delegated, members added, the job run and mapped; the internal analyzer created, read and retired | by hand in Management + Audit | **user**, `AWS Control Tower Admin` |
@@ -93,7 +93,7 @@ step 10) — and step 3's ledger wants every other answer in hand.
 ### 1. Amazon Macie — discovery, scoped to where governed data actually sits
 
 **Action:** delegate Macie to Audit, enable it in exactly the accounts that hold governed or derived data,
-and run one scoped sensitive-data discovery job whose findings are mapped onto Stage 5's classification
+and run one scoped sensitive-data discovery job whose findings are mapped onto Stage 5a's classification
 scheme. **Why:** discovery/classification is the first of D6's four problems — knowing *which* sensitive
 data exists and where — and D19 says the interesting place is not only the lake: governed data re-surfaces
 in the derived zones, which a Data-Governance-only scope would miss. **Explanation:** Macie bills S3 bucket
@@ -153,7 +153,7 @@ discount, not a measurement window).
   findings to Security Hub** (policy findings publish automatically once both services are on), and extend
   Audit's Stage 15 step 4 EventBridge→SNS rule to Macie findings — console-built, like the rule it
   extends.
-- **1.5 — [Claude] Map the findings onto the classification scheme** (Stage 5 step 2): every finding
+- **1.5 — [Claude] Map the findings onto the classification scheme** (Stage 5a step 2): every finding
   lands on a level, or the scheme gains one — a finding that fits nowhere is a scheme defect, not a Macie
   defect. The mapping is a threat-model input (step 3).
 - **1.6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in `docs/AWS_STATE.md`
@@ -165,13 +165,13 @@ discount, not a measurement window).
 
 **Action:** narrow the entitlement to the classification's grain — column restrictions through the LF-Tag
 grants, row/cell restrictions through data cells filters — **within the classification-scoped grants
-Stage 5 already enforces** (its 6.1, 2026-08-17: `restricted`/`personal` travel only on explicit grants),
+Stage 5a already enforces** (its 6.1, 2026-08-17: `restricted`/`personal` travel only on explicit grants),
 replacing those explicit grants where the scheme demands finer than a whole column set. **Why:** fine-grained access is D6's second problem, and D13 is what makes any of it real: every
 tabular read already goes through an LF-aware engine, so a filter granted here is enforced, not decorative.
 **Explanation:** a data cells filter is a named, per-table object (column include/exclude list + a PartiQL
 row expression), granted with `SELECT`; filters apply to reads only. Cross-account it follows Stage 9's
 two-step: grant the filtered `SELECT` to the consumer **account** (with grant option), local regrant to the
-reading principal. **The grain is Stage 5 decision 6's, not this stage's**: if the grain is the project,
+reading principal. **The grain is Stage 5a decision 6's, not this stage's**: if the grain is the project,
 the filter lands on project roles and says so; a row filter that silently applies to a role shared by four
 people is Lesson 5 with a `WHERE` clause.
 
@@ -190,7 +190,7 @@ people is Lesson 5 with a `WHERE` clause.
 > resource link. A filter granted only on the producer side is invisible in the account that would use it.
 
 - **2.1b — [Claude] Write the filtered grants**, replacing the corresponding explicit `restricted` grants
-  in the Stage 5 share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
+  in the Stage 5a share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
   accounts with grant option; the consumer-side regrant lands in the same slice pattern Stage 9 2.3 used.
   Column-only restrictions that the LF-Tag ontology already expresses stay on tag-scoped grants — one
   mechanism per dimension, stated in the module comments.
@@ -199,10 +199,10 @@ people is Lesson 5 with a `WHERE` clause.
   INT-11's values).
 - **2.3 — [user] Prove the filter pair from a consumer session**: the filtered principal's Athena query
   returns the restricted columns/rows and nothing else; the same table read with pandas against S3 still
-  fails (Stage 5's negative, re-run — the filter tightened the entitlement, not the perimeter). Record
+  fails (Stage 5a's negative, re-run — the filter tightened the entitlement, not the perimeter). Record
   both.
 
-  > **The row half needs rows, which is a dependency** (2026-08-19). Stage 5 applied
+  > **The row half needs rows, which is a dependency** (2026-08-19). Stage 5a applied
   > `curated.sample_trades` **empty** — created through the Glue API's Iceberg path, deliberately with no
   > Athena DDL in that account (its 4.1). A row filter over an empty table returns nothing whether it is
   > working or absent, which is Lesson 13 exactly. **So this proof depends on Stage 9's producer path
@@ -211,7 +211,7 @@ people is Lesson 5 with a `WHERE` clause.
   > states on an empty table. If Stage 9's write has not run when this stage does, the row filter is
   > authored and its proof is deferred **in writing**, never quietly recorded as passed.
   >
-  > **The table holds 12 synthetic rows since 2026-08-20** (Stage 5's log, that date — the user's
+  > **The table holds 12 synthetic rows since 2026-08-20** (Stage 5a's log, that date — the user's
   > decision, taken before 4e closed the in-account Athena path; the attempt also surfaced and fixed
   > the registration role's missing write ceiling, Lesson 34). Four distinct `counterparty` values over
   > five instruments and six trade dates, so the row filter has real variety to discriminate on. The
@@ -422,12 +422,12 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   - **`awsds-<env>-presigned-use`** — `additionalEventData.AuthenticationMethod = QueryString`: the
     detectable half of the presigned question (signing is a local SigV4 operation and appears nowhere;
     **use** arrives with a distinct authentication method). Target: the SNS topic directly. Pairs with the
-    preventive `s3:signatureAge` cap Stage 5 step 1.3 wrote.
+    preventive `s3:signatureAge` cap Stage 5a step 1.3 wrote.
   - **`awsds-data-unexpected-writer`** (Data Governance only) — `PutObject` on lake + drop-box where
     `userIdentity`'s role is **anything-but** the three designed writers (the Interactive-OU writer roles,
     `awsds-data-catalog-maintenance`, `awsds-prod-job-exec` — D25's asymmetry, alarmed).
   - **`awsds-data-athena`** (Data Governance only) — on `StartQueryExecution` (a management event: the
-    org trail already logs it, so this rule needs no member trail). **Conditional on Stage 5 decision 4's
+    org trail already logs it, so this rule needs no member trail). **Conditional on Stage 5a decision 4's
     outcome:** if the Athena hole was closed by SCP amendment, *any* occurrence — allowed or denied — is
     the signal (read `POLICIES.md` to confirm which); if it stayed open for Athena-based maintenance, the
     rule excludes the maintenance role and alarms on everyone else. The inversion is deliberate: in every
@@ -608,15 +608,15 @@ Record every answer, including the ones that come out fine.
 | # | Question | Step |
 |---|---|---|
 | i | Does Macie's auto-enable really leave existing accounts unenabled (the documented inverse of GuardDuty's `ALL`), and does the delegation alone enable Audit? | 1.1, 1.2 |
-| ii | Does every Macie finding map onto a Stage 5 step 2 classification level — or which level did the scheme gain? | 1.5 |
-| iii | Does the filtered grant hold on the SQL path at the Stage 5 decision 6 grain — filtered rows/columns returned, pandas still denied? **The column half answers on an empty table; the row half needs Stage 9's producer path to have written rows** (2.3's callout) | 2.3 |
+| ii | Does every Macie finding map onto a Stage 5a step 2 classification level — or which level did the scheme gain? | 1.5 |
+| iii | Does the filtered grant hold on the SQL path at the Stage 5a decision 6 grain — filtered rows/columns returned, pandas still denied? **The column half answers on an empty table; the row half needs Stage 9's producer path to have written rows** (2.3's callout) | 2.3 |
 | iv | Do the internal-access findings confirm D13 (no execution-role path under the catalog) and D19's reader list — and does the reading of the derived CMK's key policy match D31's enumerated list? | 2.1.5 |
 | v | Is the step 4 block observed as written — org-wide enablement succeeding, Audit's own `UpdateDetector` denied naming `DenyGuardDutyTampering`? | 4.2, 4.3 |
 | vi | After 4.3: do both features read `ENABLED` in every account, and do `GD-3` (flipped — `./aws/guardduty.py`; `VP-8` before the 2026-08-18 split) and `DP-6` agree? | 4.4 |
 | vii | Does the mass-read alarm fire on the simulated loop and stay quiet through a normal session — and what did the normal session's `MatchedEvents` baseline measure? | 5.5, decision 8 |
 | viii | Does presigned **use** arrive as `AuthenticationMethod=QueryString` and drive its rule — while creation, as predicted, appears nowhere? | 5.5 |
 | ix | Do the trails read back data-event-only (`get-event-selectors`: no management events) with validation on, delivering cross-account into `awsds-data-logs`? | 5.3 |
-| x | Does the Athena rule match Stage 5 decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
+| x | Does the Athena rule match Stage 5a decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
 
 ## Risks
 

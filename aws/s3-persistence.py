@@ -32,7 +32,7 @@
 # What this answers that nothing else does.
 #
 #   Three files already judge S3, and each judges one contract: tf-backends.py the Stage 2
-#   state buckets, datalake.py the Stage 5 lake, account-bpa.py the account-level Block
+#   state buckets, datalake.py the Stage 5a lake, account-bpa.py the account-level Block
 #   Public Access flag. Every one of them starts from a list of buckets it expects, so a
 #   bucket nobody expected is invisible to all three.
 #

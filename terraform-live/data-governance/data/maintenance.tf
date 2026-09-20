@@ -216,7 +216,7 @@ resource "aws_glue_security_configuration" "catalog_maintenance" {
 # shape exists (S3 -> EventBridge -> Glue workflow, landing on the 3.4 service-guard side) is
 # verification (iv), answered while executing, and the fallback costs only ordering.
 #
-# On-demand has no demander (measured 2026-08-19/20; stage 5 log, pass 4d). The Data OU SCP
+# On-demand has no demander (measured 2026-08-19/20; stage 5a log, pass 4d). The Data OU SCP
 # admits StartCrawler only from the maintenance role or a service principal, the role's trust
 # admits glue.amazonaws.com alone, and Schedule is null - so no person and no other service's
 # role can demand a run, and the Glue scheduler never will (Lesson 22: closed by reading, after

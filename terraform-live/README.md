@@ -90,7 +90,7 @@ will** (D22 — a registry needs no VPC), which is why `layers.py` carries an ex
 would be. What stands right now is the `[P]` half alone: the `[E]` slices are destroyed and the tree bills
 **USD 0.0000/h** between sessions, while `foundation/` re-plans `No changes` — that pair is D11's proof.
 
-**Stage 5 put the lake on disk in the one account that has no network — `data-governance/data/`**
+**Stage 5a put the lake on disk in the one account that has no network — `data-governance/data/`**
 (2026-08-18/19, applied in three passes). It is all `[P]`, and nothing in it is ever torn down: the
 account data CMK (`alias/awsds-data-data`), the five `awsds-data-*` buckets under it, the Glue databases
 and the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers,
@@ -119,7 +119,7 @@ lake, and the local re-grants without which a held share cannot be used by anybo
   at *creation* time — so the settings land alone under `-target`, are read back, and only then does the
   rest of the slice create a database. That is **Recipe D** in
   [`docs/plan/runbooks/terraform-changes.md`](../docs/plan/runbooks/terraform-changes.md), and it is the
-  procedure for **every** account that gains this resource: Sandbox and Development at Stage 5 pass 4,
+  procedure for **every** account that gains this resource: Sandbox and Development at Stage 5a pass 4,
   Production and Staging at Stage 9.
 
 **Checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, Stage 4's, `check-identifiers.py`
@@ -222,7 +222,7 @@ a group is resolved by **display name**, and the assignments are **enumerated** 
 discovered (D34). It reads data sources it does not own: `aws_organizations_organization`, for the single
 purpose of turning an authored account **name** into the id an assignment requires — the same shape
 `attachments.json` uses from the other side — and **one cross-account `terraform_remote_state` data
-source, the lake's `data/`** (Stage 5 pass 4c), for the drop-box and lake-CMK ARNs the persona statements
+source, the lake's `data/`** (Stage 5a pass 4c), for the drop-box and lake-CMK ARNs the persona statements
 name exactly instead of wildcarding. **So `identity/sso/` applies AFTER that slice, despite ranking above
 it** —
 `scripts/tfhygiene/layers.py`'s `RANKS` comment owns the inversion and says why the rank is not moved.
@@ -277,6 +277,16 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   for none). So `project_roles` is hand-written per project, guarded by a precondition that the role
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
   section P is the procedure, in both the Terraform and the `aws` CLI form.
+
+**One slice is planned and not written: `warehouse/`, rank 53, in two accounts** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md),
+[Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) in Sandbox and
+[Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9 in Production). It is the first slice
+here whose objects bill **by the hour of use rather than by the hour of existence** — a Redshift Serverless
+workgroup at `base_capacity = 4` costs nothing at rest and **1.44 USD/h while a query runs** — so it is `[P]`
+like every other store, and the thing that bounds it is not `make down` but a **usage limit applied in the
+same act as the workgroup**. Two rules follow from that and belong here rather than only in the stage:
+a plan that adds the workgroup without its `aws_redshiftserverless_usage_limit` is not applied, and
+the slice holds **no `[E]` resource at all**, so no `make up` path ever touches it.
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
 SMUS account association is **console-only — there is no public API** — so the blueprint configurations

@@ -263,7 +263,7 @@ is D5's problem, not the perimeter's.
 the service carve-outs (`aws:ViaAWSService`, `aws:PrincipalIsAWSService`) that every one of these
 conditions needs. A perimeter without the carve-outs blocks AWS services acting on your behalf — and the
 first casualty in this plan would be Athena reading S3 under Lake Formation, i.e. the exact access path
-D13 forces everything through (see Stage 5).
+D13 forces everything through (see Stage 5a).
 
 **The second casualty is AWS's own service-owned S3 buckets**, which no condition key covers.
 `aws:ResourceOrgID` is a statement about *your* organization, and the Amazon Linux repositories, the
@@ -536,7 +536,11 @@ A mental model, not a status. Every old habit contradicts some part of it.
   `experimentation` project profile provisions into Sandbox, `engineering` into Development, and nothing
   is ever provisioned into the domain account itself. Sandbox×Development is therefore *strengthened*, not
   dissolved — it stops being "which URL did the person open" and becomes a property of the project.
-  Lakehouse blueprint in its Glue/Athena form only — **never** the Redshift Serverless variant.
+  Lakehouse blueprint in its Glue/Athena form only — **never** the Redshift Serverless variant, and that
+  still holds since [D40](decisions/D40-redshift-warehouse.md) (2026-09-19): the warehouse that decision
+  admits is **one namespace per account, written by Terraform**, reached through a *connection to an existing
+  compute resource*, and no blueprint provisions one. So the domain remains a registry that provisions
+  nothing into itself and no project can create a warehouse of its own.
   Staging and Production are never associated. What crosses the gate is
   the D28 artifact set — image, workflow YAML in S3, per-workflow role, orchestration resource, log
   group, model package group — carried by the project's git repository, linted against domain-scoped

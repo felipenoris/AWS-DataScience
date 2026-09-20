@@ -37,7 +37,7 @@
 #     (design B - the documented vended-logs prefix) (steps 1A.1, 1B.2)
 #   - the definitions home is s3://awsds-prod-outputs/workflows/ (step 2.4, decision 1)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
-#   - the lake buckets carry awsds-data- (Stage 5), so OR-3 can read D13's absence
+#   - the lake buckets carry awsds-data- (Stage 5a), so OR-3 can read D13's absence
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The Studio's serverless-Workflows surface (step 0.4) is console-recorded; no stable

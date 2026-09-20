@@ -306,7 +306,7 @@ changed, not just the plan.
   against a summary of it.
 
 - **2026-08-17 — the NFS requirement is withdrawn from `objectives.md`, and D24 with it.** A user edit to
-  the requirements brief, followed through the plan in the same sitting: Stage 5 pass 5 (steps 10-12) and
+  the requirements brief, followed through the plan in the same sitting: Stage 5a pass 5 (steps 10-12) and
   Stage 6 step 7 tombstoned with their numbers retired, `DL-10` inverted into an absence reading, and the
   no-RCP EFS residual — the accepted risk D19 named and Stage 11's threat model was to carry — retired with
   the filesystem itself. This entry exists because one provisioned thing changed shape: the Sandbox
@@ -330,7 +330,7 @@ changed, not just the plan.
   for one; decisions 3 and 5 and verifications (v) and (ix) travelled with their numbers retired into
   tombstones; `VP-8` left `./aws/vpn.py` for a new `./aws/guardduty.py` (`GD-1`–`GD-3`) with the id
   retired rather than renumbered, and `vpn.py`'s default narrowed to the two profiles its remaining
-  subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5 step 13.2's
+  subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5a step 13.2's
   Security Hub ingestion is recorded as empty until Stage 15 runs.
 
 - **2026-08-19 — the `security-zone` LF-Tag dimension is withdrawn, one day after it was created: one
@@ -351,7 +351,7 @@ changed, not just the plan.
   Production key is `alias/awsds-prod-data`.
 
 - **2026-08-19 — D21's revision trigger fired and is recorded, not answered.** The trigger was "the
-  discriminating data test asked with real grants in place"; Stage 5 passes 3-4c put those grants in
+  discriminating data test asked with real grants in place"; Stage 5a passes 3-4c put those grants in
   place, identical for both consumers. The file now records that the test is askable, that today it
   still names nothing, and that the answer waits for pass 4d's first behavioural persona
   queries — nothing was changed about the account or the chain.
@@ -530,6 +530,34 @@ changed, not just the plan.
   and the documents that describe the running estate; Stage 11 writes the identity premise as a modelled
   residual in place of the INT-16 re-take; 6d decision due 4 loses its VPN half; open question 17 is
   closed. **Provisioned things this touches:** six inline policies in Identity and five bucket policies in Data Governance, applied the same day (Stage 6g steps 1.3 and 2.3), each re-planning `No changes` and read back from the deployed documents.
+- **2026-09-19 — A Redshift Serverless warehouse enters the plan, and Stage 5 becomes Stage 5a.** The user
+  asked for a warehouse with two classes of database — governed, written by a Production workload; sandbox,
+  written by SageMaker project roles with access granted per database × project. Nothing in the repository
+  admitted one: `docs/GOVERNANCE.md` said *"No warehouse is built here"*, `docs/SMUS.md` carried
+  `RedshiftServerless` as a **Never** on the strength of D26 and D12, and `docs/PRICING.md` §5 rejected the
+  cost family without a measured rate. **Reading the exclusion's own words is what decided how much of it had
+  to go**: D12's argument was the RPU bill and D26's was that a *blueprint* puts the object one click from a
+  project member, sized by the service. The second argument survives a hand-built warehouse untouched, so
+  **[D40](decisions/D40-redshift-warehouse.md) admits one warehouse per account and keeps both Redshift
+  blueprints disabled** — reached by a SageMaker **connection to an existing compute resource**, the shape
+  Stage 16 used for the sandbox lake. The rate was measured the same day from the Price List bulk API
+  (**0.36 USD/RPU-hour**, offer file published 2026-09-11), which makes 4 base RPUs **1.44 USD per query-hour
+  and 0.00 at rest** — the estate's most expensive object per unit of time, and the reason the usage limit
+  with `breach_action = deactivate` is applied in the same act as the workgroup rather than deferred to
+  Stage 12. Three new stage files: **5b** the warehouse and the access model, **6h** the first `sbx_*`
+  database and the first connection, and **Stage 9 step 9** the governed class with its federated-catalog
+  registration. `INT-24` is new. Four documentation findings shaped the design rather than decorating it: the
+  **ratchet** past 4 RPUs never comes back down; the **provider page demands three AZs where the service
+  documents two** and the provider validates neither, so the estate's two-AZ plumbing is settled only by an
+  apply; **a namespace is not a boundary between its databases** (the cross-database page carries both
+  "read-only" and "writable with permissions"), which is why the two classes are in two accounts; and Redshift
+  creates its audit log groups at **`Never Expire`** unless they exist first. **Stage 5 was renamed to
+  Stage 5a** in the same sitting, file and log file both, with 94 files re-pointed — a bare "Stage 5" would
+  have become ambiguous the moment 5b existed. The log's entries were not rewritten (one link target was
+  repointed so the reference gate stays green); one entry still names `stage-05-data-foundation.md` in prose,
+  and this row is the explanation for it. **Provisioned things this touches: none.** Nothing was applied, and
+  `objectives.md` does not yet carry the requirement — that is Stage 5b step 0.0, the user's hand, and the
+  stage's one blocking input.
 
 ---
 

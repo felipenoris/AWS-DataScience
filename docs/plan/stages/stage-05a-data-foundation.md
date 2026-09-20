@@ -1,4 +1,4 @@
-# Stage 5 — Data foundation
+# Stage 5a — Data foundation
 
 | | |
 |---|---|
@@ -850,7 +850,7 @@ A root-associated policy would otherwise reach it, which is the wrong outcome:
 
 A finding this decision surfaced belongs to Stage 1d rather than here. Decision 8's own revision trigger
 reads *"if Management becomes recorded for any other reason, the rule costs nothing and goes on then"*,
-and it names *"Stage 5's Security Hub central configuration"* as the candidate. That candidate does not
+and it names *"Stage 5a's Security Hub central configuration"* as the candidate. That candidate does not
 fire. The only Security Hub path that creates a recorder is enabling the v2 product alongside CSPM,
 which manufactures a service-linked recorder in every account — and 13.0 refuses that, because the same
 act takes the recorder away from Control Tower in every governed account. One account's free
@@ -913,7 +913,7 @@ recommended policy's semantics, expressed by hand:
 
 ```
 aws securityhub create-configuration-policy --name awsds-fsbp-only \
-  --description 'FSBP only, all controls incl. future ones (Stage 5 step 13.1b)' \
+  --description 'FSBP only, all controls incl. future ones (Stage 5a step 13.1b)' \
   --configuration-policy '{"SecurityHub":{"ServiceEnabled":true,"EnabledStandardIdentifiers":["arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0"],"SecurityControlsConfiguration":{"DisabledSecurityControlIdentifiers":[]}}}' \
   --region us-west-2
 ```
@@ -1102,7 +1102,7 @@ Hub state. The behavioural proofs are the stage's own:
 ## Decisions due while executing
 
 **Blocking questions for the user: none.** Each is decided during the stage and written into
-`docs/log/log-stage-05-data-foundation.md` (Lesson 16). Recommendations are stated so the keyboard is not
+`docs/log/log-stage-05a-data-foundation.md` (Lesson 16). Recommendations are stated so the keyboard is not
 the decision-maker.
 
 1. **The classification scheme** (step 2) — decided 2026-08-18, by the user; recorded in

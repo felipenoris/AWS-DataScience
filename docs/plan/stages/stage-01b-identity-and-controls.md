@@ -371,7 +371,7 @@ set, not seven. Typing the other six into a console and immediately re-expressin
 Stage 2 step 5.5 demanding that the second expression match the first byte for byte — is the same work done
 twice, with a gate in the middle designed to fail on JSON whitespace.
 
-- **Nothing between here and Stage 5 needs the other six.** The "Who executes what" table of this stage and
+- **Nothing between here and Stage 5a needs the other six.** The "Who executes what" table of this stage and
   of 1c, 1d and 2 contains exactly two identities — `AWS Control Tower Admin` and the infrastructure user.
   The data scientist's first sign-in is Stage 6, the governance manager's is Stage 6, and the two GitLab
   approvers consume no AWS permission at all until they diagnose something (Stage 8).
@@ -526,7 +526,7 @@ after step 1 depends on 8.3 existing. The at-a-glance table is the order.
 
 **Only the free half is enabled here.** Principle 9 argues that prevention has precedence and that the
 preventive half belongs in the landing zone because it is free; it says nothing in favour of paying for
-detection over empty accounts. Between this stage and Stage 5 there is no governed data to exfiltrate and
+detection over empty accounts. Between this stage and Stage 5a there is no governed data to exfiltrate and
 no workload to attack — what exists is empty accounts, VPCs and state buckets — while Stages 2-3 are the
 heaviest `terraform apply` period the project will ever have.
 
@@ -539,7 +539,7 @@ only one of the four is a free organization-level act:**
 |---|---|---|
 | **IAM Access Analyzer** | No — registering the delegated administrator creates no analyzer | **Here**, 8.2 |
 | **GuardDuty** | **Yes** — "GuardDuty gets enabled automatically … in the current AWS Region" for the administrator account | **Stage 15** (step 1, with the enablement — it was Stage 4 step 10 until the 2026-08-18 split) |
-| **Security Hub** | **Yes** — designating the administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account" | **Stage 5 step 13**, with the enablement |
+| **Security Hub** | **Yes** — designating the administrator "enables Security Hub CSPM in the current AWS Region for the delegated administrator account" | **Stage 5a step 13**, with the enablement |
 | **Macie** | Expect the same; **verify — at Stage 11, not here, since nothing in 1b touches Macie** | **Stage 11**, with the enablement |
 
 **What this costs:** three later stages each need one visit to the Management console. Delegating GuardDuty
@@ -641,8 +641,8 @@ table. It depends on nothing else in the stage: the groups it watches are Contro
 - **GuardDuty → [Stage 15](stage-15-guardduty.md)**, with its **delegation** (8.1). It was Stage 4 step 10,
   coupled to the WireGuard instance — the first internet-facing resource in the project; the coupling was
   broken on 2026-08-18 and the trade is argued in `institutional-delta.md`.
-- **Security Hub → Stage 5 step 13**, with the first governed data: its standards checks report on
-  resources, and before Stage 5 there are almost none to report on. Security Hub's checks are implemented
+- **Security Hub → Stage 5a step 13**, with the first governed data: its standards checks report on
+  resources, and before Stage 5a there are almost none to report on. Security Hub's checks are implemented
   as **AWS Config rules**, so enabling it adds rule evaluations on top of the configuration items Control
   Tower is already recording, precisely during the stages that create and destroy the most resources. Its
   **delegation goes with it** (8.1).

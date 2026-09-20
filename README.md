@@ -54,7 +54,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   with `POLICIES.md` indexing every statement and its reason; Stage 3's network in the three VPC accounts
   (`foundation/` `[P]`; `egress/` and `probes/` `[E]`, destroyed between sessions); Stage 4's
   `sandbox/vpn/`, the tree's first `[D]` slice, whose host moved to `production/vpn/` at 6c beside
-  `production/proxy/`; Stage 5's three `data/` slices — the governed lake in `data-governance/`, and its
+  `production/proxy/`; Stage 5a's three `data/` slices — the governed lake in `data-governance/`, and its
   consumer half in `sandbox/` and `development/`, one module (`consumer-data`) applied twice, the second
   destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
@@ -62,7 +62,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   Stage 6b), and the `[E]` `production/buildbox/`, moved there from Sandbox at 6c step 5.8.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
-  `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5's. `wireguard` has called `iam-role` by
+  `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5a's. `wireguard` has called `iam-role` by
   tag since Stage 4, and `consumer-data` is the first module a *slice pair* applies twice. The current
   roster is `terraform-modules/README.md`'s.
 - `images/` — the build code for the two container images the estate runs on: `base/`, the common
