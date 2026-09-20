@@ -64,6 +64,44 @@ locals {
     # choose that question by accident. The name is reserved so the day it is answered is one
     # edit, and the empty list means a `GROUPS=mwaa` today creates nothing rather than erroring.
     mwaa = []
+
+    # Stage 5b step 1.10 - the Redshift Serverless warehouse's API door, added 2026-09-20 because
+    # the plan did not have one (the user found it by asking, before anything was built). Without
+    # it every Redshift API call from a space leaves through the proxy as a public request: the
+    # same WRONG DOOR Stage 6e found for `bedrock-runtime`, which the compute plane's
+    # `.amazonaws.com` entry admits and the image's NO_PROXY did not cover.
+    #
+    # ONE TOKEN AND NOT THREE, and each exclusion is a reading. All six `redshift*` services exist
+    # in this Region (measured 2026-09-20 from the Region's own catalog):
+    #
+    #   redshift-serverless        HERE. `GetCredentials` is layer 2 of Stage 6h and the whole
+    #                              IAM-credentials path; `GetWorkgroup` and `ListTagsForResource`
+    #                              ride with it. This design's API is `redshift-serverless`,
+    #                              never `redshift`.
+    #   redshift-data              NOT here, and it is the one to reconsider first. A plain JDBC
+    #                              connection over 5439 does not touch the Data API at all, so the
+    #                              entry is decided by 6h's credential answer rather than added on
+    #                              spec. Note that the Data API is how this repository's own
+    #                              instruments reach the database from a laptop - but a laptop is
+    #                              not in the VPC, so that use needs no endpoint either.
+    #   redshift                   NOT here. The PROVISIONED-cluster control plane, which 5b 3.1
+    #                              denies organization-wide. AWS's own SMUS access-role sample
+    #                              lists `redshift:GetClusterCredentials`/`DescribeClusters` beside
+    #                              the serverless pair, so whether the portal calls it anyway is
+    #                              read from CloudTrail at 6h 3.5 rather than guessed. An endpoint
+    #                              bought on suspicion is 0.010/h for the whole session.
+    #   the three *-fips siblings  NOT here, for the reason every other fips sibling is excluded.
+    #
+    # THE 5439 DATA PATH NEEDS NO ENDPOINT AT ALL. The workgroup's own host resolves to ITS ENIs in
+    # the compute VPC (measured 5b 1.9: `10.20.54.29` and `10.20.77.126`, replaced on every
+    # re-create), so what admits a space is the warehouse's security group, not PrivateLink.
+    #
+    # It looks like a DNS collision and it is not. The API's private name is
+    # `redshift-serverless.<region>.amazonaws.com`; the workgroup's own host is
+    # `<workgroup>.<account>.<region>.redshift-serverless.amazonaws.com`. The region sits BEFORE the
+    # service token in one and after it in the other, so they are different subtrees and this
+    # endpoint's private DNS does not shadow the workgroup's address.
+    redshift = ["redshift-serverless"]
   }
 
   services = distinct(concat(

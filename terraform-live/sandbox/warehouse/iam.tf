@@ -86,7 +86,16 @@ data "aws_iam_policy_document" "project_warehouse" {
   # The credential call and the two reads that ride with it. GetCredentials is what mints a database
   # session; GetWorkgroup and ListTagsForResource are how the portal resolves the compute and reads
   # layer 1's tag off it. All three are scoped to the workgroup ARN pattern of this account and
-  # region - never `*`, which would admit a workgroup a future stage creates for another purpose.
+  # region - never `*`, which would admit a workgroup in any account this role might ever reach.
+  #
+  # THE WILDCARD IS ON THE ID AND IT HAS TO BE (measured at 5b step 1.9, 2026-09-20). A workgroup's
+  # ARN carries a SERVICE-MINTED UUID, not its name, and a destroy/re-create under the same name
+  # produces a different one: `workgroup/75b926c8-…` became `workgroup/4b0577a2-…` across one
+  # `make down`/`make up`. So a policy naming this workgroup's ARN exactly would authorize nothing
+  # after the next session, and the failure would arrive as a project whose queries stopped
+  # authenticating with no diff anywhere. The name is stable and the id is not; the ARN carries the
+  # id; therefore the resource is the account-and-region pattern. The same reading constrains the
+  # 5b 3.2 SCP, which must not name a usage limit by ARN either - that id moved too.
   statement {
     sid    = "MintADatabaseSessionOnThisAccountsWarehouse"
     effect = "Allow"
