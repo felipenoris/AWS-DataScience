@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. Written 2026-09-19 from the vendor documentation and one priced reading. **The slice is a pair since 2026-09-20**: `sandbox/warehouse/` `[P]` holds the **namespace** — the data, the users, the roles and the `GRANT`s — and `sandbox/warehouse-compute/` `[E]` holds the **workgroup and its usage limit** and nothing else, so `make down ENV=sandbox` removes the compute object entirely. **Redshift Serverless has no pause**, only create and delete, so *powered off* means *does not exist*, which is also the strongest guarantee available: none of D40's three ways an idle warehouse bills anyway has anything to arrive at. RMS storage still bills while down, and that is the price of keeping the data. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
+| **Status** | **passes 0-3 applied 2026-09-20** ([log](../../log/log-stage-05b-redshift-serverless.md)); what is left is three readings that need something Claude's session did not have — a console for the free trial (0.3a / verification xiii), a space for the endpoint door (1.10 / verification xv), and a later re-read of the audit groups (6.1, see below). `./aws/warehouse.py` reads **11 pass, 1 note**. **Nine sentences in this file were wrong and are corrected in place, each marked `[corrected 2026-09-20]`** — the stage had only ever been *written*, and `validate`, `render` and `run` are three verdicts (Lesson 54). Originally written 2026-09-19 from the vendor documentation and one priced reading. **The slice is a pair since 2026-09-20**: `sandbox/warehouse/` `[P]` holds the **namespace** — the data, the users, the roles and the `GRANT`s — and `sandbox/warehouse-compute/` `[E]` holds the **workgroup and its usage limit** and nothing else, so `make down ENV=sandbox` removes the compute object entirely. **Redshift Serverless has no pause**, only create and delete, so *powered off* means *does not exist*, which is also the strongest guarantee available: none of D40's three ways an idle warehouse bills anyway has anything to arrive at. RMS storage still bills while down, and that is the price of keeping the data. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
 | **Prerequisites** | **Stage 5a** — the lake exists, `sandbox/data/` holds this account's `DataLakeSettings` and the account data CMK `alias/awsds-sandbox-data`, which is the namespace's encryption key (`docs/GOVERNANCE.md` §Encryption). **Stage 3** — `sandbox/foundation/`'s VPC, whose **private** tier is where the workgroup lands: two subnets in two AZs, which is what pass 0's first reading is about. **6c** — no default route in that tier, and no NAT anywhere (D38), so nothing here reaches the internet. Nothing waits on a vend or a quota increase this stage knows of; 0.4 is where that is checked rather than assumed |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D22](../decisions/D22-data-governance-account.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: every object this stage builds lives in one account). The cross-account row the warehouse eventually needs is **INT-24**, and it belongs to [Stage 9](stage-09-deployment-targets.md) |
@@ -253,14 +253,27 @@ only inside an `[E]` resource).
   - `kms_key_id` = **`alias/awsds-sandbox-data`**'s ARN, read from `sandbox/data/`'s remote state, never
     pasted. One data CMK per account (`docs/GOVERNANCE.md` §Encryption) — the warehouse is a data store in
     Sandbox, so it takes Sandbox's data key, exactly as `awsds-sandbox-lake` does.
-  - `manage_admin_password = true` and `admin_password_secret_kms_key_id` = the same key. **Never
-    `admin_user_password`**: that would put a password in the state file and in a plan's output. The
-    resource then exports `admin_password_secret_arn`, which is what a connection consumes at
-    [Stage 6h](stage-06h-redshift-connection.md). Redshift manages the rotation.
+  - `manage_admin_password = true`, and **`admin_password_secret_kms_key_id` is NOT set**
+    *[corrected 2026-09-20]*. This step asked for the account data CMK on the secret too, and the
+    apply refused it: `ConflictException: Unable to create namespace credential secret: The KMS key
+    used to encrypt the secret is not accessible`. The cause is **D31 working as designed** — the
+    data key's policy grants the account root the administrative actions and none of the
+    cryptographic ones, so *"delegation to IAM is impossible for the operations that read data"*, and
+    a caller passing `AdminPasswordSecretKmsKeyId` needs `kms:Decrypt` and `GenerateDataKey`.
+    Granting those on the **data** key so that a **credential** could be created would widen the read
+    control D31 exists to hold. And the CMK bought nothing: AWS says a customer managed key on the
+    secret is for reading it **from another account**, which nothing here does. So the secret rides
+    `aws/secretsmanager`. **Never `admin_user_password`**: that would put a password in the state file
+    and in a plan's output. The resource exports `admin_password_secret_arn`, which is what
+    [Stage 6h](stage-06h-redshift-connection.md) consumes — and **that secret will stop rotating**,
+    because rotation fails permanently if it lands while the `[E]` workgroup is down (`EXC-13`).
   - `admin_username` — a name, not a person (the identity seam: nothing whose count grows with headcount is
     in Terraform). `db_name = "warehouse"`, because **the namespace is born with a database whether one is
     wanted or not** — the default is `dev` — and a database nobody named is a database nobody revoked
-    `PUBLIC` on (1.6).
+    `PUBLIC` on (1.6). *[corrected 2026-09-20]* **Naming it does not replace `dev`, it adds a database
+    beside it**: the namespace carries `warehouse` *and* `dev`, both with `USAGE, CREATE` to `PUBLIC`
+    on their `public` schema, so 1.6's `REVOKE` is owed **twice** and `WH-6` has to know about two
+    inert databases rather than one.
   - `log_exports = ["userlog", "connectionlog", "useractivitylog"]` — the Stage 11 feed, switched on at
     creation rather than added later, since a log that starts late has a silent gap.
   - `iam_roles` = \[the 1.5 role\], `default_iam_role_arn` = the same.
@@ -277,16 +290,30 @@ only inside an `[E]` resource).
   - `base_capacity = 4`. **`max_capacity`** set to the ceiling decision 2 picks — the documented pair
     *"**Max capacity** and **Max RPU-hours** … are the controls to limit the maximum RPUs … Amazon Redshift
     Serverless **always honors and enforces these settings**, regardless of the price-performance target"*.
-  - `price_performance_target` set **explicitly**, because the default is `Balanced` and AWS *"do not
-    recommend using this feature for 4 Base RPU"* — a default that contradicts its own page for the only
-    capacity here (decision 2).
+  - `price_performance_target { enabled = false }` *[corrected 2026-09-20]*. The premise was right and
+    the conclusion was not: the target **is enabled by default** and set to `Balanced`, its `level` takes
+    `1, 25, 50, 75, 100` (`LOW_COST` … `HIGH_PERFORMANCE`), and AWS *"do not recommend using this feature
+    for 4 Base RPU"*. So *Optimizes for cost* **is** the feature, and the intent — do not let the service
+    scale on its own judgement at the capacity floor — is to switch it **off** (decision 2). Read back:
+    `pricePerformanceTarget: {"status": "DISABLED"}`, with **no `level` key at all**.
   - `subnet_ids` = the **two private** subnets of `sandbox/foundation/`, read from remote state and anchored
     on AZ `zone_id` (the standing rule); `enhanced_vpc_routing = false` (0.1); `publicly_accessible = false`.
   - `security_group_ids` = 1.4's group.
   - `config_parameter`: `require_ssl = true`, `enable_user_activity_logging = true` (without it
-    `useractivitylog` carries no SQL text, which is the half Stage 11 wants), `max_query_execution_time` set
-    — the per-query ceiling, valid `0`–`86399`, the counterpart of the Athena scan limit
-    ([Stage 9](stage-09-deployment-targets.md) 1.2 sets that one). `search_path` left alone.
+    `useractivitylog` carries no SQL text, which is the half Stage 11 wants), `max_query_execution_time`
+    set to **1800** — the per-query ceiling, valid `1`–`86399`, and `86,399` is also what a query with no
+    limit gets, so leaving it unset is a 24-hour runaway at 1.44 USD/h.
+    > ***[corrected 2026-09-20] `search_path` cannot be "left alone", and nor can five others.***
+    > `config_parameter` is a **set the provider owns whole**: a workgroup created with three parameters
+    > reads back with **nine**, because the service fills `auto_mv`, `datestyle`,
+    > `enable_case_sensitive_identifier`, `query_group`, `search_path` and `use_fips_ssl` — and the
+    > provider then plans to **remove** the six it was not told about, forever, `1 to change` on every
+    > plan. All six are declared at their read-back values, which also discloses what a query runs
+    > under. **`auto_mv` is `true`**, so Redshift builds and refreshes materialized views on its own
+    > judgement, on a 1.44 USD/hour meter — compute nobody asked for, left at the default and named so
+    > turning it off is a decision somebody can find. `search_path` is `"$user, public"`, and `public` is
+    > the schema 1.6 revokes `CREATE` on, so an unqualified `CREATE TABLE` fails rather than landing
+    > somewhere nobody expects.
 - **1.4 — [Claude] Write the security group** `awsds-sandbox-warehouse`: ingress `5439/tcp` from the
   **project app ENIs' security group** and from nothing else — not a CIDR, and **not** the whole private
   tier. Egress: nothing. A workgroup in a tier with no default route and no NAT has no internet either way
@@ -415,11 +442,23 @@ Lesson 28's intersection in a third permission layer.
   | The **Redshift `GRANT`** | *which schema and table the project's database user may read or write* — held by a role per schema, granted to each admitted project | SQL, run at [Stage 6h](stage-06h-redshift-connection.md) per schema × project | per **schema**, many-to-many |
 
   So the requirement's grain is the second layer, and the first is a gate in front of it.
+  ***[corrected 2026-09-20] the first layer does not have the grain this table gives it.*** The row above
+  says *"one tag per admitted project"* and that is **not expressible**: AWS's instruction is to add
+  *"1 of the following tags"*, and `AmazonDataZoneProject` is a **tag key**, so it holds one value — on the
+  workgroup and on the namespace alike. **Layer 1 admits exactly one project.** The requirement's grain
+  survives in layers 2 and 3, which are per project role and per schema × project; what does not survive is
+  the assumption that the gate in front of them can be per project too.
+  `sandbox/warehouse/`'s `projects` variable refuses a second entry at plan time, because the alternative is
+  a silent overwrite that breaks the first project's connection with nothing in the plan output to say which
+  project lost access. **How a second project is admitted is [6h](stage-06h-redshift-connection.md)
+  decision 8**, new on 2026-09-20 and not taken while no second project exists.
+
   **Two things about the tag have to be said now:**
   - AWS offers a wide form — `for-use-with-all-datazone-projects=true`, *"to allow all Amazon SageMaker
     Unified Studio projects in this account to access it"*. **It is refused here**, and `WH-7` fails if it
     appears on either object: it is the same shape as an empty deny-list permitting everything, and it turns
-    "per project" into "per account" with one tag.
+    "per project" into "per account" with one tag. *It is also the only mechanism AWS gives for more than one
+    project*, which is what makes 6h decision 8 a real choice rather than a formality.
   - The tag is on **two objects**, workgroup *and* namespace, which is Lesson 14's shape — a value that must
     appear in N places by hand will be missing from one. Both are in the same Terraform resource file, from
     one `locals` map keyed by project id, so the two can only differ by an edit that fails the plan.
@@ -511,8 +550,16 @@ the wrong one to discover in production (Lesson 5, and Lesson 22's inverse — t
 **Explanation:** it costs a known amount: a temporary limit low enough to breach, a trivial query loop, and
 the limit restored in the same sitting.
 
-- **5.1 — [Claude⚡ then user] Set a throwaway `daily` limit at the smallest amount the API accepts**, on
-  the same workgroup, `breach_action = deactivate`. Then run queries until it breaches.
+- **5.1 — Done 2026-09-20, and the shape had to change twice** *[corrected]*. A **throwaway limit beside the
+  real one is impossible**: `ValidationException: Only one DISABLE usage limit allowed per feature`. So the
+  test lowered the **real** limit to 1 RPU-hour instead, breached it, and restored 40. A second limit with
+  `breach_action = log` **is** permitted — created at 9,999 RPU-hours, caught by `WH-3` as *"2 limits — the
+  loosest one wins"*, deleted — which is the hole that check exists for and is now measured rather than
+  assumed. **What the breach looks like is in the log**; the four readings that matter to a future operator:
+  the client sees `ERROR: Query reached usage limit` and nothing else; `get-workgroup` still reads
+  `status: AVAILABLE`; **leader-node queries keep answering** while anything needing the compute is refused,
+  so *"connect and `select 1`"* passes on a deactivated warehouse; and **recovery is immediate on raising the
+  amount**, with no wait for the period. The original instruction, for the record:
   **Read three things:** what the client sees when the limit is reached (the wording, never the exit code —
   the standing rule since 1c); what `UsageLimitConsumed`/`UsageLimitAvailable` report in CloudWatch; and
   **whether the workgroup is still unusable after the period rolls over**, which is the question the
@@ -529,10 +576,17 @@ irreversible thing. **Why:** a log switched on at 1.1 that carries nothing is a 
 working (Lesson 13 — a verification that returns empty on both success and failure is not a verification).
 **Explanation:** the alarm goes to the Stage 1b SNS pattern, the same chain every other alarm here uses.
 
-- **6.1 — [Claude] After pass 3's queries, read all three groups**: `connectionlog` has the session,
-  `useractivitylog` has the SQL text (which is what `enable_user_activity_logging` bought), `userlog` has the
-  user changes. Name which of the three was **empty** and why — the queries ran as one user and created
-  none, so `userlog` being empty is the correct state and not a defect.
+- **6.1 — Read 2026-09-20, and the answer is *not yet*** *[corrected]*. All three groups exist.
+  **`userlog` is empty and that is the correct state** — no user was created through a session. The other two
+  carry **1,176 events**, and **every one is `user=rdsdb`**, the service's internal user: not one `dbadmin`
+  session, and not one statement of this stage's SQL, including a query written to be searched for.
+  **That is not yet evidence that the Data API is unlogged.** The group's `lastIngestionTime` was
+  **06:15:52Z** and nothing was ingested in the 53 minutes after it while queries ran throughout, so the
+  export is batched on an interval nobody here has measured, or has stalled. The instrument works — 1,176
+  events prove it — but it has not been given the chance to show the presence, which is the condition
+  Lesson 62 puts on reading an absence. **Owed: a re-read of both groups in a later sitting.** Until then
+  [Stage 11](stage-11-dlp.md) must not assume the Data API path is in the feed, and
+  [6h](stage-06h-redshift-connection.md) 3.6 is unanswered. The original instruction:
 - **6.2 — [Claude] Write the `ComputeCapacity` alarm**: `AWS/Redshift-Serverless`, dimension `Workgroup`,
   threshold **> 4**, in `sandbox/warehouse/`. The metric is *"Average number of compute units allocated
   during the past 30 minutes"*, so the alarm is the only notice that the ratchet has moved — and since the
@@ -592,7 +646,7 @@ absences as expected readings:
 | `WH-6` | each account holds exactly one class database under its expected name, no sandbox database exists in Production, and every schema in the sandbox database appears in the authored map — the classification a thematic schema name cannot provide |
 | `WH-7` | the project tags on **both** workgroup and namespace match the authored map — and `for-use-with-all-datazone-projects` appears on neither |
 | `WH-8` | the namespaces and workgroups in every profiled account, so a hand-made one is a diff |
-| `WH-13` | every schema in the `sandbox` database has a **quota that is not unlimited** and an owner that is the **schema-owner role, never a project's database user** — read from `SVV_SCHEMA_QUOTA_STATE`, because *"when you create a schema without defining a quota, the schema has an unlimited quota"* and an unbounded schema on a store nothing expires is the failure this check exists for. It also **sums the quotas**, since nothing bounds the number of schemas and 32 at 1 TB reach what a 4-RPU workgroup supports |
+| `WH-13` | ***[corrected 2026-09-20] it cannot be read, and the check is a note that says so.*** `SVV_SCHEMA_QUOTA_STATE` **and** `STV_SCHEMA_QUOTA_STATE` answer `permission denied for relation` to the namespace admin, who is a superuser, and no other catalog view carries a schema's quota (`svv_redshift_schemas.schema_option` is empty for a schema that has one). So a quota is **authored and proven by breach, never read back** — and the breach was exercised: 2458 MB against a 2048 MB quota, refused **at commit**, with the usage exceeding the quota *inside* the transaction. The floor is also undocumented: *"Schema quota must be between 2048 and 524288000 MB"*. What survives of this check's intent lives in the runbook's `CREATE SCHEMA`, and the owner half moved to `WH-12` |
 | `WH-14` | `STL_SCHEMA_QUOTA_VIOLATIONS`, reported rather than failed: a violation is the control working, and a *rising* count is the signal that a quota is too low for real work rather than too high |
 
 The behavioural proofs are the stage's own (Lesson 20):
@@ -642,17 +696,22 @@ unchanged.
 here is built; and decision 1, but only if 0.1's apply refuses two subnets. Each decision is written into
 `docs/log/log-stage-05b-redshift-serverless.md` with a recommendation stated (Lesson 16).
 
-1. **If the service demands three AZs** (0.1): **(a)** add a third AZ's three subnets to the `vpc` module
+1. **~~If the service demands three AZs~~ (0.1) — does not arise.** The apply accepted **two** subnets in two
+   AZs with `enhanced_vpc_routing = false`, so AWS's considerations page was right and the Terraform
+   provider's page (*"at least three subnets spanning three Availability Zones"*, validated by nothing) was
+   wrong. No `vpc` module change, no `docs/NETWORK.md` arithmetic, no third AZ. The options as they stood: **(a)** add a third AZ's three subnets to the `vpc` module
    for every VPC, **(b)** add them behind a flag for Sandbox alone, or **(c)** abandon the Sandbox warehouse
    and put both classes in Production, reached only through the Data page. Recommended: **(b)** — subnets are
    free, the change is arithmetic in one module, and doing it in five VPCs to serve one is the kind of
    uniformity that costs a re-measurement of `docs/NETWORK.md` for no gain. **(c)** is on the list because it
    is the honest fallback if the module change turns out to fight `check-network-doc.py`.
-2. **`max_capacity` and the price-performance target** (1.3). Recommended: `max_capacity = 8` — one step up
-   from the floor, so a query that needs more than 4 RPUs completes instead of failing, and the worst hourly
-   rate is bounded at **2.88 USD/h** rather than at whatever the service chooses — and the target set to
-   **Optimizes for cost**, because AWS does not recommend AI-driven scaling at 4 base RPUs and the default
-   is `Balanced`.
+2. **`max_capacity` and the price-performance target** (1.3). **Taken 2026-09-20, with its second half
+   corrected**: `max_capacity = 8` — one step up from the floor, so a query that needs more than 4 RPUs
+   completes instead of failing, and the worst hourly rate is bounded at **2.88 USD/h** rather than at
+   whatever the service chooses. The target is **`enabled = false`** and not *Optimizes for cost*: that
+   phrase names a **level of the feature**, and the feature is the thing AWS does not recommend at 4 base
+   RPUs. The recommendation's premise held — the default is `Balanced` **and enabled** — so writing the
+   field explicitly was necessary rather than tidy.
 3. **The two SCP statements** (step 3). Recommended: **both**, and in the order written — 3.1 first, because
    it refuses a capability nobody asked for and can be probed cleanly; 3.2 second, because it constrains an
    object that must exist first.
@@ -663,8 +722,11 @@ here is built; and decision 1, but only if 0.1's apply refuses two subnets. Each
    `COPY` from `awsds-sandbox-lake` is the plausible first ask and it has no demander yet; a role with no
    policy makes the first grant a deliberate act with a named requester, which is how the drop-box's
    statements were eventually got right.
-8. **What to do if the endpoint host does not survive a re-create** (1.9). Recommended, and only if the
-   reading comes out badly: **keep the workgroup up and fall back to the usage limit as the only guard**, with
+8. **~~What to do if the endpoint host does not survive a re-create~~ (1.9) — does not arise.** The host is
+   byte-identical across a destroy and re-create under the same name. **The `workgroupId` is not**, and that
+   moved two pieces of code rather than a layer: layer 2's IAM policy and 3.2's SCP both scope to the
+   account-and-Region ARN pattern instead of this workgroup's ARN, because the ARN carries the id. The
+   fallback as it stood: **keep the workgroup up and fall back to the usage limit as the only guard**, with
    the layer demoted from `[E]` to `[P]` and §5.1 rule 7 cited — a layer assignment is a cost judgement and may
    change. The alternative, having `make up` rewrite the SMUS connection's `host` on every session, puts a
    generated value into an object the portal owns and would make a data scientist's saved connection wrong
@@ -684,21 +746,21 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the service accept **two** subnets in two AZs, or does it demand three — and which of the two documentation sources was right? | 0.1, 1.8 |
-| ii | Is the RPU-hour price still 0.36 in `us-west-2`, and what is the offer file's publication date? | 0.2 |
-| iii | Does the workgroup read back at `base_capacity = 4` with `max_capacity` and the target as decided — and does the price-performance target report the value set rather than `Balanced`? | 1.8 |
-| iv | Do all three log groups carry a retention period, so this estate still has exactly **one** never-expiring group (`EXC-10`)? | 1.8 |
-| v | Is the admin credential only in Secrets Manager — absent from the state file, the plan output and every `terraform output`? | 1.8 |
-| vi | Does the usage limit actually refuse queries at `deactivate`, what does the client see, and **is the workgroup usable again after the period rolls over**? | 5.1 |
-| vii | What did pass 3 cost, against the 1.44 USD/query-hour prediction — **and was the free trial active**, in which case the figure comes from `SYS_SERVERLESS_USAGE` and the credit balance rather than from the bill? | 0.3a, 5.3 |
+| i | **Answered 2026-09-20: two, and AWS's own page was right.** The provider's page says three and validates nothing | 0.1, 1.8 |
+| ii | **Answered: 0.36, offer file `2026-09-11T12:45:05Z`** — unchanged | 0.2 |
+| iii | **Answered: base 4, max 8, and `pricePerformanceTarget: {"status": "DISABLED"}` with no `level` key** | 1.8 |
+| iv | **Answered: all three at 30 days.** The estate still has exactly one never-expiring group | 1.8 |
+| v | **Answered: yes.** `admin_user_password` appears in the state four times as an attribute name whose value is `null`; the strings `"password"` and `adminUserPassword` appear zero times | 1.8 |
+| vi | **Answered: it refuses, `ERROR: Query reached usage limit`, and recovery does not wait for the period at all** — raising the amount restores service immediately. `status` stays `AVAILABLE` and leader-node queries keep working | 5.1 |
+| vii | **Answered in part: 405 RPU-seconds = 0.0405 USD** for the whole sitting, from `ComputeSeconds`, consistent with 1.44/query-hour. **The trial's status is unknown**, so the figure does not come from the bill either way | 0.3a, 5.3 |
 | xiii | Is the free trial available in this account, **which event starts its 90 days**, and did pass 1's apply move the credit balance? | 0.3a |
-| xiv | Does the endpoint **host** survive a destroy and re-create of the compute slice under the same name — and does every database, schema, user, role and `GRANT` survive with it? How long did each direction take? | 1.9 |
+| xiv | **Answered: the host survives, the `workgroupId` does not, and everything in the namespace survives.** Destroy 28 s, re-create 114 s. Two ENIs linger `available` for under two minutes | 1.9 |
 | xv | With `GROUPS=redshift` up, does a `redshift-serverless` call from a space leave through the **endpoint** and not through the proxy — read from the proxy's access log being silent on it, the way 6e read `bedrock-runtime`? And does the workgroup's own 5439 address still resolve to its VPC ENIs with the endpoint's private DNS enabled? | 1.10 |
-| viii | Does the namespace role reach any lake prefix, and does `awsdatacatalog` list anything for it? | 2.4 |
-| ix | Which of the three log groups was empty after pass 3, and is its emptiness the correct state? | 6.1 |
+| viii | **Answered: no policy at all, and `awsdatacatalog` lists zero schemas and zero tables** — and it cannot even be connected to | 2.4 |
+| ix | **Answered: `userlog`, and its emptiness is correct.** The other two carry 1,176 events, all the service's own — see 6.1's open half | 6.1 |
 | x | Does a workgroup with no query running bill **0.00** — read from Cost Explorer a day later, or from `SYS_SERVERLESS_USAGE` if the trial is active (0.3a)? And with the compute slice **destroyed**, is the remaining charge RMS storage alone? | 1.8, 1.9, 5.3 |
-| xi | What do the account's Redshift Serverless quotas allow — namespaces, workgroups, base capacity — and is any of them a blocking input for Stage 9's second namespace? | 0.4 |
-| xii | Do both SCP statements deny in the canary and permit the infrastructure principal, with the wording recorded? | 3.3 |
+| xi | **Answered: 25 namespaces, 25 workgroups, 3,200 RPU; no base-capacity quota exists. None is blocking** — Stage 9's namespace is in another account with its own 25 | 0.4 |
+| xii | **Answered: both deny, with a negative control before the attach, and the carve-out admits `InfrastructureAccess`** — `UpdateUsageLimit` succeeded as the infrastructure principal and is denied to the canary. `UpdateWorkgroup` **validates before it authorizes**, so it is attached and not exercised | 3.3 |
 
 ## Risks
 
