@@ -338,18 +338,32 @@ def read_account(cli: AwsCli, env: str, want_sql: bool) -> dict:
         "--end-time",
         context.utc_stamp(),
         "--period",
-        "86400",
+        "1800",
         "--statistics",
         "Sum",
         "--query",
-        "Datapoints[0].Sum",
+        "Datapoints[].[Timestamp,Sum]",
         "--output",
         "text",
         tolerate="",
     )
-    facts["compute_seconds_today"] = (
-        float(res.text) if res.ok and res.text.strip() not in ("", "None") else 0.0
-    )
+    # THE SERIES, NOT THE DAY'S SUM, and the reason is a mistake this file's own stage made three
+    # times: a `Sum` over a 24-hour window answers a question about the window, and reading it as
+    # "what is happening now" is how a query that ran for 6 h 33 min went unnoticed while the same
+    # metric was being quoted. `ComputeSeconds` publishes per 30-minute interval, so the series shows
+    # both the day's total and whether the meter is still turning.
+    series = []
+    if res.ok and res.text.strip():
+        for line in res.text.splitlines():
+            parts = line.split()
+            if len(parts) == 2:
+                series.append((parts[0], float(parts[1])))
+    series.sort()
+    facts["compute_series"] = series
+    facts["compute_seconds_today"] = sum(v for _t, v in series)
+    # The most recent published interval, as a rate. 7,200 RPU-seconds in a 1,800-second interval is
+    # 4 RPU sustained - a workgroup that is never going idle, which is what a runaway looks like.
+    facts["compute_last_interval"] = series[-1] if series else None
 
     if want_sql and "workgroup" in facts and "namespace" in facts:
         secret = facts["namespace"].get("adminPasswordSecretArn")
@@ -834,16 +848,39 @@ stale copy.""")
             seconds = facts.get("compute_seconds_today", 0.0)
             # 0.36 USD/RPU-hour, docs/PRICING.md 5, offer file published 2026-09-11.
             rep.line(
-                f"ComputeSeconds today: {seconds:.0f} RPU-seconds "
+                f"today, so far : {seconds:.0f} RPU-seconds "
                 f"= {seconds / 3600 * 0.36:.4f} USD at 0.36/RPU-hour"
             )
+            last = facts.get("compute_last_interval")
+            if last:
+                stamp, value = last
+                rate = value / 1800.0
+                verdict = (
+                    "IDLE - nothing is running"
+                    if rate < 0.1
+                    else f"{rate:.2f} RPU sustained = {rate * 0.36:.2f} USD/h WHILE IT LASTS"
+                )
+                rep.line(f"last interval : {value:.0f} RPU-seconds at {stamp} -> {verdict}")
+                if rate >= 3.5:
+                    rep.line(
+                        "  ^^ AT OR ABOVE BASE CAPACITY FOR A WHOLE INTERVAL. A workgroup that "
+                        "never goes idle is a query nobody is watching: check "
+                        "sys_query_history for status 'running' and how long."
+                    )
+            rep.line()
             rep.line(
-                "0.00 is the correct reading while no query runs, and 1.44/hour is what 4 "
-                "RPUs cost while one does."
+                "READ THE LAST INTERVAL, NOT THE DAY'S TOTAL, to answer 'is it costing me anything "
+                "right now'. The total is a sum over a window and stays high all day after one "
+                "expensive query; it published 405, then 4,743, then 94,767 for the same day while "
+                "a query was still running (Stage 5b, 5.3 and its three amendments)."
             )
             rep.line(
-                "WHILE THE FREE TRIAL IS ACTIVE this figure is the only one there is: AWS "
-                "does not show free-trial usage in the billing console."
+                "The metric lands per 30-minute interval, so the newest few minutes are never in it."
+            )
+            rep.line(
+                "THERE IS NO FREE TRIAL ON THIS ACCOUNT (the Management credits page, read "
+                "2026-09-20): every figure here is billed in full. Cost Explorer cannot cross-check "
+                "the same day - it returns zero groups for every service until its data lands."
             )
 
             rep.h2("the audit groups")

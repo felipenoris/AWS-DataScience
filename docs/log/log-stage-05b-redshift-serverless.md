@@ -822,3 +822,70 @@ project database user.
 
 **So the guards actually relied on are still the other two**: the usage limit at 10 RPU-hours, whose
 refusal was measured, and `make down`, which is the only one that is not a setting.
+
+---
+
+## 2026-09-20 — the environment raised by the user: the new values land, and idleness measured
+
+*Written by Claude after the user ran `make up ENV=sandbox`. Every reading below is the first one taken
+against a workgroup carrying the two tightened guards.*
+
+### The two values reached the object
+
+| | Declared | On the workgroup |
+|---|---|---|
+| `max_query_execution_time` | 120 | **`"120"`** |
+| usage limit | 10 RPU-hours, monthly, deactivate | **`amount 10, monthly, deactivate`** |
+
+`./aws/warehouse.py --sql`: **11 pass, 1 note** (`WH-13`). `WH-2` reads `max_query 120s`, `WH-3` reads
+`10 RPU-hours monthly, deactivate`.
+
+### The endpoint host is identical for the third time, and the id churned again
+
+`awsds-sandbox-warehouse.<Sandbox Account 1>.us-west-2.redshift-serverless.amazonaws.com` — unchanged
+across three create/destroy cycles. `workgroupId` is now **`914d171c-…`**, the third distinct id
+(`75b926c8` → `4b0577a2` → `914d171c`). So 1.9's reading holds on repetition, in both halves, and the
+decision to wildcard the id in every policy was right rather than lucky.
+
+### The usage-limit counter starts fresh — confirmed by behaviour, not by a gauge
+
+This month has consumed **26.3 RPU-hours** and the new limit is **10**. If the service counted the month
+per workgroup or per namespace, the workgroup would have been born deactivated. It was not:
+`CREATE TABLE lab.probe_after_up (x int)` and its `DROP` both **FINISHED** on the first attempt.
+
+So consumption is accounted **against the usage-limit object**, and a limit created by `make up` starts
+near zero. The metric's own dimensioning said so (`{UsageLimitId, UsageType, Workgroup}`) and the
+previous entry called it *evidence, not a guarantee*; this is the guarantee. The new limit id's
+`UsageLimitConsumed` has **no datapoint yet**, which is consistent — nothing has consumed against it.
+
+### An idle workgroup bills nothing, and that is now measured rather than quoted
+
+`ComputeSeconds`, last published interval: **2 RPU-seconds in 1,800 seconds** — 0.001 RPU sustained,
+with the workgroup `AVAILABLE` and nobody querying. Against the runaway's **7,230 per interval** (4.017
+RPU sustained), the contrast is three and a half orders of magnitude. **So "serverless" holds**: the
+9.48 USD was 26.3 RPU-hours of *query execution*, almost all of it one statement that kept running, and
+none of it idleness.
+
+### `./aws/warehouse.py`'s burn line rewritten, because it was the same trap
+
+It printed only `ComputeSeconds today`, a `Sum` over a 24-hour window with `--period 86400`. That is the
+aggregate-as-state mistake this stage made three times, **in the instrument written to catch it**: the
+line would have read 9.48 USD all day and said nothing about whether the meter was still turning. It
+now collects the **series** at `--period 1800` and prints both:
+
+```
+today, so far : 94769 RPU-seconds = 9.4769 USD at 0.36/RPU-hour
+last interval : 2 RPU-seconds at 2026-09-20T12:30:00-03:00 -> IDLE - nothing is running
+```
+
+and when the last interval is at or above 3.5 RPU sustained it says so in as many words, naming
+`sys_query_history` and `status = 'running'` as the next call. The free-trial sentence was also false
+from the moment the user read the credits page and now states that there is none.
+
+### What the session costs while it is up, and it is not the warehouse
+
+`make status ENV=sandbox`: `egress` **0.1800 USD/h** (29 interface endpoints), `probes` **0.0084**,
+`warehouse-compute` **1.4400**. **The last figure is a ceiling, not a rate** — it was set to 1.44 today
+precisely so the column cannot read 0.00 during a runaway — so the honest current rate is
+**~0.19 USD/h**, which is the two `[E]` network slices billing *per hour of existence* rather than per
+use. That is the real cost of leaving the environment up, and `make down ENV=sandbox` is what ends it.
