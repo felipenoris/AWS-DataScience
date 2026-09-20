@@ -115,10 +115,16 @@ The requirement names two classes. The account is the only hard boundary in this
 (`README.md` §Account segregation), and the two classes are on the two different axes this plan already
 separates:
 
-| Class | Written by | Lives in | Stage |
-|---|---|---|---|
-| **sandbox** | SageMaker project roles, per database × project | `Sandbox` — `sandbox/warehouse/` | [5b](../stages/stage-05b-redshift-serverless.md) builds the warehouse, [6h](../stages/stage-06h-redshift-connection.md) the first database |
-| **governed** | a Production workload alone | `Production` — `production/warehouse/` | [9](../stages/stage-09-deployment-targets.md) builds both |
+| Class | Written by | Lives in | Governed by | Stage |
+|---|---|---|---|---|
+| **sandbox** | SageMaker project roles, per database × project | `Sandbox` — `sandbox/warehouse/` | **nothing in the catalog.** `objectives.md` (2026-09-20) has the sandbox class **bypass the catalog and Lake Formation**: access goes directly to the project role, and a member *"creates tables freely inside that project's own schema"*. The schema is owned by the project and bounded by a `QUOTA` a superuser sets | [5b](../stages/stage-05b-redshift-serverless.md) builds the warehouse, [6h](../stages/stage-06h-redshift-connection.md) the first database |
+| **governed** | a Production workload alone | `Production` — `production/warehouse/` | **Lake Formation**, through the federated registration — *"the governance model does not fork"* | [9](../stages/stage-09-deployment-targets.md) builds both |
+
+**The asymmetry is a requirement, not a compromise this decision made to save work.** It is the same one
+`awsds-sandbox-lake` already carries (Stage 16, a compensated shadow store outside Lake Formation by design):
+governed data is governed, and a project's working data is the project's. What makes it safe here is that the
+two classes are in two accounts, so *"creates freely"* and *"never written from the sandbox"* are enforced by
+the account boundary rather than by a `GRANT` somebody has to keep right.
 
 **One namespace holding both was considered and declined on two documentation readings.** Neither is a
 measurement — nothing has been applied — so both are named with the page they come from, and both are

@@ -38,11 +38,22 @@ the database*, which is the same symptom three times over (Lesson 28's intersect
 |---|---|---|---|---|
 | 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup** | the compute does not appear in the project's dropdown at all |
 | 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, plus `redshift-data:` if the Data API is the path | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
-| 3 | **The Redshift `GRANT`** — on the database, its schema and its tables | SQL, run once from the admin credential, per database × project | per **database** | the project connects, sees the cluster, and the database is invisible or read-only |
+| 3 | **The project's own schema**, created `AUTHORIZATION <its database user>` with a `QUOTA` — plus whatever the project needs to reach the database it sits in | SQL, run once from the admin credential, per database × project | per **database**, and the freedom is per **schema** | the project connects, sees the cluster, and the database is invisible or read-only |
 
 **Layer 3 is the requirement's grain.** Layers 1 and 2 are gates in front of it, and they are per-warehouse:
 admitting a second project to the warehouse does not give it anything in any database. That asymmetry is the
 design, and 5.2 is where it is proved rather than asserted.
+
+**And layer 3 is ownership, not a list of verbs** (`objectives.md`, 2026-09-20: *"a data scientist who is a
+member of the project creates tables freely inside that project's own schema"*). A schema created
+`AUTHORIZATION <the project's database user>` makes that user its **owner**, so it creates, alters and drops
+its own tables with no further grant and nothing to keep in step as the project works — which is the *"simplest
+to configure"* the requirement asks for, and it removes the `ALTER DEFAULT PRIVILEGES` bookkeeping a
+grant-list shape would have needed. **What bounds "freely" is the schema's `QUOTA`**, which a superuser sets
+and the project cannot raise (1.3). **A datashare is not the mechanism here**: the project, the workgroup and
+the database are in one account and one namespace, so a datashare would add a producer/consumer chain to reach
+something already local. It enters only if a sandbox database ever has to be read from another namespace, which
+nothing asks for.
 
 ## What this stage builds, and in which accounts
 
@@ -55,9 +66,9 @@ design, and 5.2 is where it is proved rather than asserted.
 | `aws/warehouse.py` (extended) | `WH-9`..`WH-12` — the tag pair, the project role's reach, the connection, and the database inventory with its grants | — |
 | `runbooks/redshift-connection.md` (new) | the recurring procedure: adding a database, wiring a project, unwiring one | — |
 
-**Contracts this stage fixes:** the database **`sbx_lab`** (the naming rule is `sbx_<purpose>`, 5b 2.1), the
-schema **`lab`** (never `public` — 1.3), and the database user's identifier, whose exact spelling is
-**1.4's reading and not this file's claim**.
+**Contracts this stage fixes:** the database **`sbx_lab`** (the naming rule is `sbx_<purpose>`, 5b 2.1), **one
+schema per project** inside it, owned by the project and carrying a `QUOTA` (never `public` — 1.3), and the
+database user's identifier, whose exact spelling is **1.4's reading and not this file's claim**.
 
 ```mermaid
 flowchart LR
@@ -69,7 +80,7 @@ flowchart LR
         CONN["the connection<br/>workgroup · database · credential"]
         subgraph WH["awsds-sandbox-warehouse"]
             TAG["tag AmazonDataZoneProject = the project id<br/>on workgroup AND namespace"]
-            DB["sbx_lab · schema lab<br/>GRANT to the project's db user"]
+            DB["sbx_lab · one schema per project<br/>AUTHORIZATION the project user · QUOTA n GB<br/>no catalog, no Lake Formation"]
         end
     end
     DATA["the project's Data page<br/>Query Editor · no VPC path needed"]
@@ -77,7 +88,7 @@ flowchart LR
     ROLE ==>|"GetCredentials · layer 2"| WH
     CONN --> WH
     TAG -.->|"layer 1: which project may use the compute"| WH
-    DB -.->|"layer 3: which database, and read or write"| ROLE
+    DB -.->|"layer 3: which database · the schema is the project's"| ROLE
     DATA -->|"sqlworkbench · layer 1+2 only"| WH
 ```
 
@@ -171,9 +182,30 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   Redshift creates a `public` schema with `USAGE` and `CREATE` granted to the group `PUBLIC`, so **every**
   database user in the namespace can create objects in it until that is revoked. A database created and not
   revoked is a database where layer 3 has a hole nobody granted.
-- **1.3 — [Claude⚡] Create the schema `lab` and use it, not `public`.** A named schema is what makes a
-  `GRANT` say something: `GRANT ALL ON SCHEMA lab` is a sentence about one place, where a grant on `public`
-  is a sentence about the default everything lands in.
+- **1.3 — [Claude⚡] Create the project's own schema, owned by it and bounded by a quota.** One schema per
+  project inside the sandbox database — not one shared schema, and never `public`:
+  `CREATE SCHEMA <name> AUTHORIZATION "<the project's database user>" QUOTA <n> GB`. Three things this one
+  statement buys, and each replaces something the earlier draft did by hand:
+  - **`AUTHORIZATION` makes the project the owner**, so *"creates tables freely"* needs no grant list and no
+    `ALTER DEFAULT PRIVILEGES` — the requirement's *"simplest to configure"*.
+  - **`QUOTA` is what makes "freely" bounded.** *"The maximum amount of disk space that the specified schema
+    can use… You must be a database superuser to set and change a schema quota"*, and Redshift *"checks each
+    transaction for quota violations before committing"*. So the project cannot raise its own ceiling, and the
+    refusal happens at commit rather than at some later audit.
+  - **One schema per project is what makes the freedom safe**: a project owns its schema and holds nothing in
+    another's, so *"freely"* and *"per database × project"* stop pulling against each other.
+  > **The default is `UNLIMITED`, and that is the failure mode to name.** *"When you create a schema without
+  > defining a quota, the schema has an unlimited quota."* A schema created in a hurry is an unbounded one, on
+  > a store nothing expires — the same shape as an empty deny-list permitting everything. `WH-13` fails on any
+  > `sbx_*` schema whose quota reads unlimited.
+  > **Freeing the space is not automatic either:** *"A DELETE statement deletes data from a table and disk space
+  > is freed up only when `VACUUM` runs"* — and at 4 base RPUs vacuum boost is unavailable, so it is the plain
+  > `VACUUM` command ([Stage 5b](stage-05b-redshift-serverless.md)'s capacity reading, which is where that fact
+  > was recorded before anything needed it).
+  **The schema's name is decision 6**: readable (the project's name, which a user can change) or stable (the
+  project id, which is opaque). Recommended: **the project's name, slugged**, with the project id in a comment
+  on the schema — `docs/plan/conventions.md`'s ordinal argument in reverse, because here the human reading a
+  connection string is the one who needs it.
 - **1.4 — [Claude⚡] Create the project's database user, and read its identifier rather than assuming it.**
   With IAM credentials (0.3), Redshift derives the database user from the calling IAM identity, and the
   documented spellings in this family are **`IAM:<user>`** and **`IAMR:<role>`** — plus, on the cross-account
@@ -193,12 +225,15 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   > **Take (a).** If the identifier turns out to be wrong, the symptom is a second, auto-created user
   > appearing beside the hand-made one at the first connection — a clean, readable diff in
   > `SVV_USER_GRANTS`/`pg_user`, and the correction is one `DROP USER`.
-- **1.5 — [Claude⚡] Grant write**, scoped and enumerated: `GRANT USAGE, CREATE ON SCHEMA lab`,
-  `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA lab`, and
-  `ALTER DEFAULT PRIVILEGES IN SCHEMA lab GRANT …` so a table the project creates later carries the same
-  grant. **No `GRANT ALL ON DATABASE`, and nothing on any other database.** Record the exact statements in
-  the log — they are the register for this layer, and there is no `list-permissions` equivalent that shows
-  them from outside (`WH-12` reads `SVV_*`, which means the instrument needs a database session, which is
+- **1.5 — [Claude⚡] Grant only what ownership does not already give**, and read what that is rather than
+  assuming it. 1.3's `AUTHORIZATION` covers everything inside the schema, so what is left is **reaching the
+  database the schema sits in** — and the exact statement for that is a reading, not a claim: Redshift has
+  grown `GRANT … ON DATABASE` alongside the older model where connecting was enough, and which applies to a
+  serverless namespace at this version is settled by trying the connection, not by this file (Lesson 38).
+  **What must stay absent, whatever that answer is:** no `GRANT ALL ON DATABASE`, nothing on any other
+  database, nothing on another project's schema, and no `CREATE` on `public` (1.2 revoked it). Record the exact
+  statements in the log — they are the register for this layer, and there is no `list-permissions` equivalent
+  that shows them from outside (`WH-12` reads `SVV_*`, which means the instrument needs a database session,
   itself a finding worth stating).
 - **1.6 — [Claude] Write the grant register row.** [Stage 5a](stage-05a-data-foundation.md)'s grants are
   registered in `docs/AWS_STATE.md`; Redshift grants are a second system with no LF-Tag and no
@@ -296,10 +331,17 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   reading that says the tag is a control rather than a label.
   *(If no second project exists, this is deferred with a named owner rather than skipped — Stage 16 §T
   deferred exactly this and said so.)*
-- **5.2 — [user] The admitted project cannot reach another database.** From the project that *is* admitted:
-  `sbx_lab` works; the namespace's first database `warehouse` does not. This is layer 3 alone, with layers 1
-  and 2 satisfied — the asymmetry the three-layer design exists to produce, and the proof that admitting a
-  project to the warehouse grants it nothing in any database.
+- **5.2 — [user] The admitted project cannot reach another database, nor another project's schema.** From the
+  project that *is* admitted: its own schema works; the namespace's first database `warehouse` does not; and a
+  second project's schema in the *same* database does not either, once one exists. This is layer 3 alone, with
+  layers 1 and 2 satisfied — the asymmetry the three-layer design exists to produce, and the proof that
+  admitting a project to the warehouse grants it nothing in any database, and that *"creates freely"* stops at
+  its own schema.
+- **5.2a — [user] The quota refuses, and the project cannot raise it.** Write into the project's schema past
+  its `QUOTA` from inside the project — the refusal arrives **at commit**, as documented — then attempt
+  `ALTER SCHEMA … QUOTA` as the project's own database user, which needs a superuser and must fail. Read
+  `SVV_SCHEMA_QUOTA_STATE` and `STL_SCHEMA_QUOTA_VIOLATIONS` afterwards. **This is the one control that bounds
+  a free hand**, and it has never been exercised anywhere in this estate.
   > **Read this one carefully.** The cross-database page says an unconnected database gives *"read access
   > only"* in one bullet and *"you can write … from any other database that you have permissions to"* in the
   > next. So the expected answer is **nothing at all** (no grant, no access), and a *read* succeeding would
@@ -334,7 +376,9 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 ## Deliverables
 
 - **The three layers, separated** (5.1, 5.2): a project not in the map cannot use the compute; a project in
-  the map cannot reach a database it has no `GRANT` on.
+  the map cannot reach a database it was not admitted to, nor another project's schema.
+- **Freedom inside the schema, bounded by the quota** (3.3, 5.2a): the project creates tables with no further
+  grant, and the quota refuses at commit while the project cannot raise it.
 - **A write from a space** (3.3) and the same query from the Data page (3.4) — two doors, both recorded.
 - **The identity that reaches the database** (3.5), read from CloudTrail rather than inferred from the
   connection's configuration.
@@ -380,10 +424,20 @@ refuses, and none of these has ever been measured on this surface. **Explanation
    Revisit when 6f's lineage step has an owner.
 4. **Whether a persona ever queries the warehouse directly** (step 4). Recommended: **no** — every query
    arrives through a project, which keeps the `GRANT` register complete and the shared RPU meter attributable.
-5. **One database per project, or shared databases with per-project grants.** Recommended: **shared**, which
-   is what the requirement's *per database × project* grain implies: a database is a place, a project is a
-   grantee, and the two multiply. A database per project would make layer 3 redundant with layer 1 and would
-   hide the case the register exists for — two projects on one database.
+5. **One database per project, or shared databases with a schema per project.** Recommended: **shared
+   databases, one schema per project** — which is what the requirement's two halves together imply: *per
+   database × project* is the admission, and *"creates freely inside that project's own schema"* is the
+   freedom. A database per project would make layer 3 redundant with layer 1 and would hide the case the
+   register exists for, two projects on one database.
+6. **The schema's name** (1.3): readable — the project's name, slugged, which a user can rename — or stable,
+   the project id, which is opaque. Recommended: **readable, with the project id in a `COMMENT ON SCHEMA`**.
+   `docs/plan/conventions.md` argued the opposite for account tokens, where nothing human reads them; here the
+   name lands in a connection string and in a query, so the reader is a person. The comment is what keeps the
+   stable id available when a rename happens.
+7. **The quota value** (1.3). Recommended: **10 GB per project schema** to start, revised against real usage at
+   Stage 12 rather than set high and forgotten — the same shape as the Athena scan limit's decision. At
+   0.024 USD/GB-month, ten projects at their ceiling is USD 2.40 a month, so the quota is about bounding
+   surprise rather than about the bill.
 
 ## Verifications to answer while executing
 
@@ -396,6 +450,8 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 | v | **Whose** identity reaches the database — the project role, or a per-person identity? | 3.5 |
 | vi | Does a project outside the map fail, and at which layer does it fail? | 5.1 |
 | vii | Does the admitted project reach `warehouse` — and if it reads it, which default grant did 1.2's `REVOKE` miss? | 5.2 |
+| xiii | Does `AUTHORIZATION` alone let the project create, alter and drop tables in its schema — with no `GRANT` and no `ALTER DEFAULT PRIVILEGES` — and what, if anything, it still needs to reach the enclosing database? | 1.5, 3.3 |
+| xiv | Does the `QUOTA` refuse at commit, does `ALTER SCHEMA … QUOTA` fail for the project's own user, and do `SVV_SCHEMA_QUOTA_STATE` and `STL_SCHEMA_QUOTA_VIOLATIONS` show it? | 5.2a |
 | viii | Is `GetCredentials` an **implicit** deny for the persona, or does something name a policy? | 5.4 |
 | ix | Do `connectionlog` and `useractivitylog` carry this session, and does the SQL text appear? | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |

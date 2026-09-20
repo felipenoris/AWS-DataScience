@@ -246,7 +246,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   on `*`). **The Iceberg-engine switch on a federated catalog makes Glue create a managed Redshift CLUSTER** —
   unpriced, read+write, AWS-managed key by default — which **collides with 5b 3.1's
   `DenyRedshiftProvisionedClusters`**; Stage 9 **9.5a** settles it and recommends the datashare. The per
-  database × project grant is the only new rule. **0.36 USD/RPU-h measured** (offer
+  database × project grant is the only new rule. **The sandbox class bypasses the catalog** (user,
+  2026-09-20): access direct to the project role, and a member creates tables freely in **its own schema** —
+  so layer 3 is `CREATE SCHEMA … AUTHORIZATION <project user> QUOTA n GB`, **ownership not a verb list** (no
+  `ALTER DEFAULT PRIVILEGES`), one schema per project, and a **datashare is not the mechanism** (same account,
+  same namespace). **The quota default is `UNLIMITED`** — `WH-13` fails on an unbounded `sbx_` schema; a
+  superuser alone may change it; it refuses **at commit**; and `DELETE` frees nothing until `VACUUM` (plain
+  `VACUUM` at 4 RPUs, boost needs ≥ 8). `SVV_SCHEMA_QUOTA_STATE`/`STL_SCHEMA_QUOTA_VIOLATIONS` are the
+  instruments. **0.36 USD/RPU-h measured** (offer
   file 2026-09-11) → 4 RPU = **1.44/query-hour, 0.00 at rest**, the estate's dearest object per unit of time,
   so the usage limit (`breach_action = deactivate`, default `log`) lands in the **same apply** as the
   workgroup. Two classes on two accounts because **a namespace is not a boundary between its databases** (one

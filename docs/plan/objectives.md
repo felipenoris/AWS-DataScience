@@ -125,6 +125,12 @@ The goal is to achieve the following:
   it is written only by the production workloads. The per database x project grant is the sandbox databases'
   rule, and it is the only new rule here.
 
+  *Clarified 2026-09-20 — the sandbox databases bypass the catalog:* for a sandbox database the catalog and
+  Lake Formation are **not** in the path. Access is granted **directly to the project role**, by whichever
+  mechanism is simplest to configure, and **a data scientist who is a member of the project creates tables
+  freely inside that project's own schema** in Redshift. The asymmetry is deliberate and it is the same one
+  the `sandbox-lake` already has: governed data is governed, and a project's working data is the project's.
+
 - Use Amazon ECR as container registry.
 
 ## How this will be done

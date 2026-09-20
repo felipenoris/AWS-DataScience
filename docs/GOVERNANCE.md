@@ -233,11 +233,15 @@ sandbox lake. Two classes of database, on the two axes this file already separat
 
 | Class | Account | Written by | Under Lake Formation | Stage |
 |---|---|---|---|---|
-| `sbx_*` | `Sandbox` | SageMaker project roles, per database × project | **no** — like `awsds-sandbox-lake`, outside it by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
+| `sbx_*` | `Sandbox` | SageMaker project roles, per database × project | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in **that project's own schema**, owned by it and bounded by a `QUOTA`. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
 | `gov_*` | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
 
 Three consequences this file has to carry rather than leave to a stage:
 
+- **The two classes are governed by different systems, by requirement.** A `gov_*` database is a Lake Formation
+  resource; a `sbx_*` database is **outside the catalog altogether**, and what stands between two projects there
+  is schema **ownership**, with a schema `QUOTA` bounding how much a project may write. Reading a `sbx_*` schema
+  as if the register described it is the mistake to avoid: it does not, and `WH-13` is what says so.
 - **A Redshift `GRANT` is a fourth permission system**, beside IAM, Lake Formation and S3 Access Grants. It
   carries no LF-Tag, it is not readable by `list-permissions` — only from `SVV_*` inside a database session —
   and nothing in a Terraform plan shows it. It gets its own register table in

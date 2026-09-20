@@ -42,7 +42,7 @@ apply.
 | `identity/sso/` (amended) | what a persona may and may not do to the warehouse: the `redshift-serverless:Get*`/`List*` read side, and **no** `UpdateWorkgroup`, **no** `DeleteUsageLimit` | `[P]` |
 | `identity/org-policies/` (amended) | `DenyRedshiftProvisionedClusters` on the organization root, and `DenyRedshiftCostGuardTampering` — the two statements decision 3 settles | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for `warehouse` at rank **53** (`[P]`, outside every `make up`/`down` path) | — |
-| `aws/warehouse.py` (new) | the instrument, `WH-1`..`WH-8` | — |
+| `aws/warehouse.py` (new) | the instrument, `WH-1`..`WH-8`; `WH-13`/`WH-14` read the schema quotas, which needs a database session and so arrives with [6h](stage-06h-redshift-connection.md)'s first schema | — |
 | `production/warehouse/` | **specified here (§7), applied at [Stage 9](stage-09-deployment-targets.md)** | `[P]` |
 
 **Contracts this stage fixes, so that a rename fails in a check rather than in Stage 6h or 9:** the
@@ -270,7 +270,12 @@ this file defines and an instrument reads, or it is nothing (Lesson 5). **Explan
 Lesson 28's intersection in a third permission layer.
 
 - **2.1 — [Claude] Fix the class convention**: a database's class is its **name prefix**, `gov_` or `sbx_`,
-  plus the account it is in. The prefix is chosen because it is the one attribute a `GRANT` statement, a
+  plus the account it is in. **Inside a `sbx_` database the unit is the schema**, one per project, owned by that
+  project's database user and carrying a `QUOTA` — `objectives.md` (2026-09-20) makes the sandbox class *bypass
+  the catalog* and lets a project member *"create tables freely inside that project's own schema"*, so the
+  schema is where the freedom lives and the quota is what bounds it. A `sbx_` database therefore has no
+  catalog object, no LF-Tag and no Lake Formation grant, exactly as `awsds-sandbox-lake` has none (Stage 16),
+  and for the same reason: a project's working data is the project's. The prefix is chosen because it is the one attribute a `GRANT` statement, a
   `SVV_REDSHIFT_DATABASES` row and a human reading a connection string can all see. Two consequences to
   accept out loud:
   - **the prefix is a selector the moment a rule is written over it** (Lesson 29), so a database created
@@ -463,6 +468,8 @@ absences as expected readings:
 | `WH-6` | every database carries a class prefix, and no class is in the wrong account |
 | `WH-7` | the project tags on **both** workgroup and namespace match the authored map — and `for-use-with-all-datazone-projects` appears on neither |
 | `WH-8` | the namespaces and workgroups in every profiled account, so a hand-made one is a diff |
+| `WH-13` | every schema in a `sbx_` database has an **owner that is a project's database user** and a **quota that is not unlimited** — read from `SVV_SCHEMA_QUOTA_STATE`, because *"when you create a schema without defining a quota, the schema has an unlimited quota"* and an unbounded schema on a store nothing expires is the failure this check exists for |
+| `WH-14` | `STL_SCHEMA_QUOTA_VIOLATIONS`, reported rather than failed: a violation is the control working, and a *rising* count is the signal that a quota is too low for real work rather than too high |
 
 The behavioural proofs are the stage's own (Lesson 20):
 

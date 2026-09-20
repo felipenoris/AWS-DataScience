@@ -832,6 +832,23 @@
   the federated catalogs using Amazon Redshift."* The mapping is `catalogid.dbName.schema.table`:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/create-ns-catalog.html>.
 
+- **Redshift `CREATE SCHEMA`, ownership and the schema quota (read 2026-09-20, for
+  [Stage 6h](plan/stages/stage-06h-redshift-connection.md) step 1.3).** The statement is
+  `CREATE SCHEMA [IF NOT EXISTS] name [AUTHORIZATION username] [QUOTA {n [MB|GB|TB] | UNLIMITED}]`, and it is
+  what makes *"creates tables freely inside that project's own schema"* both true and bounded. `AUTHORIZATION`
+  *"gives ownership to a specified user"*. `QUOTA` is *"the maximum amount of disk space that the specified
+  schema can use… all permanent tables, materialized views under the specified schema, and duplicate copies of
+  all tables with ALL distribution"*, excluding temporary tables. **The default is unbounded:** *"When you
+  create a schema without defining a quota, the schema has an unlimited quota."* *"You must be a database
+  superuser to set and change a schema quota"*, while *"a user that is not a superuser but that has CREATE
+  SCHEMA permission can create a schema with a defined quota"* — so a project cannot raise its own ceiling.
+  Enforcement is at commit: *"Amazon Redshift checks each transaction for quota violations before committing
+  the transaction."* Reclaiming space is not automatic — *"A DELETE statement deletes data from a table and
+  disk space is freed up only when `VACUUM` runs"*, which at 4 base RPUs is the plain `VACUUM` command, vacuum
+  boost being unavailable below 8. The two instruments are `SVV_SCHEMA_QUOTA_STATE` (the configured quotas) and
+  `STL_SCHEMA_QUOTA_VIOLATIONS` (the records where they were exceeded). The schema name *"can't be `PUBLIC`"*:
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_SCHEMA.html>.
+
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.

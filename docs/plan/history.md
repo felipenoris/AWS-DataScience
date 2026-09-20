@@ -608,6 +608,27 @@ changed, not just the plan.
   3.1 carries the collision beside the deny so it is not attached in ignorance of what it refuses (Lesson 34).
   **`objectives.md` needed no change**: the requirement was right and the derivation from it was too narrow.
 
+- **2026-09-20 — the sandbox class bypasses the catalog, and `CREATE SCHEMA` turns "freely" into something
+  bounded.** The user's third clarification of the day: for a sandbox database the catalog and Lake Formation
+  are not in the path, access is granted **directly to the project role** by whatever is simplest, and a project
+  member *"creates tables freely inside that project's own schema"*. That confirmed the asymmetry D40 had
+  already chosen — `sbx_*` outside Lake Formation, like `awsds-sandbox-lake` — and **changed the shape of
+  layer 3** in [Stage 6h](stages/stage-06h-redshift-connection.md). It had been a grant list with
+  `ALTER DEFAULT PRIVILEGES` to keep later tables in step; it is now
+  `CREATE SCHEMA <name> AUTHORIZATION "<the project's database user>" QUOTA <n> GB` — **ownership rather than a
+  list of verbs**, one schema per project, which is the *"simplest to configure"* the requirement asks for and
+  needs no bookkeeping as the project works. **A datashare is not the mechanism** and it was named as such: the
+  project, the workgroup and the database are in one account and one namespace, so a datashare would add a
+  producer/consumer chain to reach something already local; it enters only if a sandbox database ever has to be
+  read from another namespace, which nothing asks for. **What the reading added that nobody had:** the schema
+  `QUOTA` is what bounds a free hand — a superuser alone may set or change it, Redshift *"checks each
+  transaction for quota violations before committing"*, and **the default is `UNLIMITED`**, so a schema created
+  without one is unbounded on a store nothing expires. `WH-13` fails on exactly that, `WH-14` reports the
+  violations, and 5.2a exercises the refusal — the one control here that bounds a free hand and has never been
+  exercised anywhere in this estate. Two smaller facts landed with it: `DELETE` frees no disk until `VACUUM`
+  runs, which at 4 base RPUs is the plain command because vacuum boost needs 8, closing a loop with Stage 5b's
+  own capacity reading; and a schema name *"can't be `PUBLIC`"*. **Provisioned things this touches: none.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
