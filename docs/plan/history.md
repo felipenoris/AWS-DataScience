@@ -564,6 +564,31 @@ changed, not just the plan.
   a second engine beside the Iceberg lake (what D40 assumes) or a replacement for it (which would re-open
   D13, D22 and the producer path). 0.0 now carries that fork as a table.
 
+- **2026-09-20 — the requirement reaches `objectives.md`, and Claude wrote it.** At the user's request, and
+  that is the departure worth recording: [Stage 16](stages/stage-16-sandbox-lake.md) step 0.1 had the *user*
+  write the sandbox-lake requirement, and the rule behind it is that a paraphrase written by the implementer
+  becomes the specification (Lesson 57). Here the user asked Claude to draft the revision and then answered the
+  questions the draft left open, in the same sitting. The user's own sentences from the chat — the two classes
+  of database, their writers, the per database × project grain, the minimum capacity — are transcribed; the
+  framing sentences around them are Claude's, and those are the ones to re-read if the plan ever drifts from
+  the intent. **What the revision settled**, each of which
+  [D40](decisions/D40-redshift-warehouse.md) had previously assumed on its own: Redshift is a **second
+  possible engine** and the Glue/Iceberg lake stays the warehouse of record, so D13, D22 and the producer path
+  extend rather than re-open; a query engine is a choice **per workload, not per estate**, with Athena the
+  default, which restates D40's own revision trigger as a requirement; **the governance model does not fork**,
+  which makes Stage 9 9.5's federated-catalog registration a requirement rather than a compensation Claude
+  chose; and it is **one Redshift environment from a data scientist's point of view, with where its databases
+  physically live an implementation matter** — the clause that makes D40's two-account split admissible rather
+  than a deviation to be argued. **Then the read side, answered the same day:** *the controls stay the same, it
+  is just one more execution environment.* That closed `INT-24` down from three candidate mechanisms to **one**
+  — a Lake Formation cross-account share of the federated catalog, read by Athena — and **excluded** Redshift
+  data sharing and a cross-account connection by requirement rather than by preference, each being a second
+  control path over governed data. It also fixed that a **`gov_*` database gets no project connection**:
+  Stage 6h's three layers are a sandbox-class mechanism, and `WH-7` reading *no project tag* on the Production
+  namespace is the mechanical half of a rule that now has a sentence behind it. Stage 9's decision due 5 is
+  struck; what survives of it is verification (xxi), whether a Lake Formation share of a *federated* catalog
+  preserves the TBAC expressions this estate grants by. **Provisioned things this touches: none.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

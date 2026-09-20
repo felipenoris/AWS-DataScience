@@ -18,6 +18,14 @@ stage does **not** enable), [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) and
 and from no other — and the three layers that make that true, each read back separately so a future failure
 is attributable to one of them.
 
+**Everything here is a sandbox-class mechanism.** `objectives.md` (2026-09-20) makes the per database ×
+project grant *"the sandbox databases' rule… the only new rule here"*, and says the controls over governed
+data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a `gov_*`
+database**: that class is read through the federated catalog Lake Formation governs
+([Stage 9](stage-09-deployment-targets.md) 9.5) and written by a pipeline, and reusing this stage's wiring
+there would put a Redshift `GRANT` beside a Lake Formation grant over governed data — the fork the brief
+forbids.
+
 ## The layers a grant passes through, and why no one of them is sufficient
 
 The requirement is *access granted per database × project*. No single AWS mechanism expresses it. What
@@ -417,12 +425,16 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   sandbox database is exactly the case the register exists for, and nothing in this stage decides *who
   approves* it. That belongs with the Governance Manager, the same way `INT-11`'s "should every business unit
   get the same data" does — and it arrives with the second project, not with the second database.
-- **Nothing here is governed data.** A `sbx_*` database carries no LF-Tag, no classification and no Lake
-  Formation grant, and a project can write anything into it — including a copy of something governed, read
-  through the lake share and written here. That is [D19](../decisions/D19-derived-zone.md)'s shape in a fourth
-  store, and the compensation is the same: the destination is inside the perimeter, the CMK is the account's,
-  and the copy is not prevented. Say it in `docs/GOVERNANCE.md` rather than leaving it for Stage 11 to find
-  (Lesson 1 — a copy somewhere less governed is not a hole to be closed).
+- **Nothing here is governed data, and nothing here may become the path to it.** A `sbx_*` database carries no
+  LF-Tag, no classification and no Lake Formation grant, and a project can write anything into it — including a
+  copy of something governed, read through the lake share and written here. That is
+  [D19](../decisions/D19-derived-zone.md)'s shape in a fourth store, and the compensation is the same: the
+  destination is inside the perimeter, the CMK is the account's, and the copy is not prevented. Say it in
+  `docs/GOVERNANCE.md` rather than leaving it for Stage 11 to find (Lesson 1 — a copy somewhere less governed
+  is not a hole to be closed). **The pressure this stage creates is the other direction**: a connection that
+  works is the obvious thing to point at a governed database next, and the brief forbids exactly that. `WH-7`
+  reading *no project tag* on the Production namespace is the mechanical half; the sentence above is the
+  reason.
 
 ---
 

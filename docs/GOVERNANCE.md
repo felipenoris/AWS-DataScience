@@ -218,7 +218,13 @@ the Glue Data Catalog through its auto-mounted `awsdatacatalog` database, read-o
 registered to the catalog becomes a federated catalog governed by Lake Formation.
 
 **A warehouse is built, since [D40](plan/decisions/D40-redshift-warehouse.md) (2026-09-19) — and the
-`RedshiftServerless` blueprint is still excluded.** The distinction is the whole of that decision: what D26
+`RedshiftServerless` blueprint is still excluded.** [`objectives.md`](plan/objectives.md) carries the
+requirement since 2026-09-20 and its wording is what this section implements: Redshift is a **second possible
+engine**, the lake stays the **warehouse of record**, *"the governance model does not fork"*, and *"the
+controls do not change — Redshift is one more execution environment"*, not a new class of reader. Two rules
+follow and they are requirements rather than readings: a **governed** Redshift database is read by whoever the
+grant register already admits, **through Lake Formation**, and it is therefore never reached by a SageMaker
+connection; the **per database × project** grant is the sandbox class's rule and *"the only new rule here"*. The distinction is the whole of that decision: what D26
 and D12 refused was a warehouse **any project member could provision in one click**, sized by the service at
 128 RPUs and capped by nothing. What exists instead is **one warehouse per account that has one**, written by
 Terraform at the documented floor of 4 base RPUs with a usage limit in the same apply, reached by a SageMaker

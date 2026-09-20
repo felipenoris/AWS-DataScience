@@ -1,6 +1,8 @@
 # D40 — A Redshift Serverless warehouse beside the lake, built by hand and never by blueprint
 
-**Status:** Decided (2026-09-19, user): the estate gets a Redshift Serverless warehouse, at the documented
+**Status:** Decided (2026-09-19, user; the requirement written into
+[`objectives.md`](../objectives.md) on 2026-09-20, which settled three readings this file had made on its
+own — see below): the estate gets a Redshift Serverless warehouse, at the documented
 floor of **4 base RPUs**, holding two classes of database — **governed**, written only by a Production
 workload, and **sandbox**, written by SageMaker project roles under a grant made per database × project.
 The `RedshiftServerless` and `LakehouseCatalog` **blueprints stay disabled**, and the D26/D12 argument that
@@ -24,16 +26,25 @@ grants are written down here.
 
 `docs/SMUS.md`'s blueprint table carries `RedshiftServerless` as a **Never**, on the strength of D26 and
 D12, and `docs/GOVERNANCE.md` said *"No warehouse is built here"*. The user asked for a warehouse on
-2026-09-19, **in chat — `objectives.md` does not carry it yet**
-([Stage 5b](../stages/stage-05b-redshift-serverless.md) step 0.0 is where it does). Reading the exclusion's
-own words decides how much of it has to go.
+2026-09-19 and the requirement was written into `objectives.md` on **2026-09-20**
+([Stage 5b](../stages/stage-05b-redshift-serverless.md) step 0.0). Reading the exclusion's own words decides
+how much of it has to go.
 
-**What that file already says about a warehouse is the thing to revise, and it is not silence:** *"Use AWS
-Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse."* This decision
-reads that as **still true** — the lake remains the warehouse of record, D13 still enforces it, and Redshift
-is a second engine with a store of its own beside it. If the requirement means Redshift *replaces*
-Iceberg-on-S3 as the warehouse, this decision is the wrong one and D13, D22 and the producer path re-open
-rather than extend. 5b step 0.0's table is where that fork is put to the user.
+**The requirement is a revision of a sentence that already named a warehouse** — *"Use AWS Glue Data Catalog
+with data stored on S3 buckets, using ICEBERG format, as Data Warehouse"* — and the revision keeps it:
+**Redshift is a second possible engine, the lake stays the warehouse of record, and the governance model does
+not fork.** So this decision extends D13, D22 and the producer path rather than re-opening them, and three of
+its readings stopped being assumptions on 2026-09-20:
+
+- *"A query engine is a choice per workload, not per estate"*, with Athena the default — so a `gov_*` database
+  with no workload Athena served badly is this decision's own revision trigger, restated by the brief.
+- *"One Redshift environment from a data scientist's point of view… where its databases physically live is an
+  implementation matter"* — which is what makes the two-account split below **admissible** rather than a
+  deviation to be argued.
+- *"The controls do not change — Redshift is one more execution environment"*, not a new class of reader. That
+  narrows `INT-24` to a single mechanism (a Lake Formation cross-account share of the federated catalog, read
+  by Athena) and rules out both alternatives it listed, each of which would have been a second control path
+  over governed data.
 
 D12's argument was a **per-query RPU minimum on top of Athena's bill**, and it is correct: at
 **USD 0.36/RPU-hour** in `us-west-2`, four RPUs bill **USD 1.44 for every hour a query is running**

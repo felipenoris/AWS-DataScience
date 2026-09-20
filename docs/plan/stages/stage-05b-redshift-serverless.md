@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. Written 2026-09-19 from the vendor documentation and one priced reading, against a requirement the user stated in chat the same day — **and `objectives.md` does not carry it yet**, which is step 0.0 and the stage's one unconditional blocking input. **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
+| **Status** | not started. Written 2026-09-19 from the vendor documentation and one priced reading. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That closes `INT-24` down to **one** mechanism instead of three (0.0's second table). **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
 | **Prerequisites** | **Stage 5a** — the lake exists, `sandbox/data/` holds this account's `DataLakeSettings` and the account data CMK `alias/awsds-sandbox-data`, which is the namespace's encryption key (`docs/GOVERNANCE.md` §Encryption). **Stage 3** — `sandbox/foundation/`'s VPC, whose **private** tier is where the workgroup lands: two subnets in two AZs, which is what pass 0's first reading is about. **6c** — no default route in that tier, and no NAT anywhere (D38), so nothing here reaches the internet. Nothing waits on a vend or a quota increase this stage knows of; 0.4 is where that is checked rather than assumed |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D22](../decisions/D22-data-governance-account.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: every object this stage builds lives in one account). The cross-account row the warehouse eventually needs is **INT-24**, and it belongs to [Stage 9](stage-09-deployment-targets.md) |
@@ -97,26 +97,38 @@ stage** — 0.1's answer decides whether the estate's two-AZ plumbing is enough.
 
 ### 0. Preflight — the requirement in writing, then the readings the design rests on
 
-- **0.0 — [user] Write the requirement into [`objectives.md`](../objectives.md)**, in your own words, as
-  [Stage 16](stage-16-sandbox-lake.md) step 0.1 did for the sandbox lake. **Why it is the user's hand and not
-  Claude's:** that file is the brief the stage is measured against, it is copied nowhere and summarised
-  nowhere, and a paraphrase written by the implementer becomes the specification (Lesson 57). Everything below
-  — and the whole of [D40](../decisions/D40-redshift-warehouse.md) — is an *implementation* of a sentence that
-  does not exist in that file yet. **Until it does, this stage's own justification is a chat message.**
+- **0.0 — Done 2026-09-20: the requirement is in [`objectives.md`](../objectives.md).** It was **a revision,
+  not only an addition**: that file already named a warehouse — *"Use AWS Glue Data Catalog with data stored
+  on S3 buckets, using ICEBERG format, as Data Warehouse"* — and a Redshift warehouse beside that sentence is
+  either a second engine or a replacement for it, two readings that write the same in a bullet and produce
+  different estates. **Claude drafted the revision at the user's request** (2026-09-20), which is a departure
+  from [Stage 16](stage-16-sandbox-lake.md) step 0.1's shape and from the rule that the brief is the user's
+  own words: a paraphrase written by the implementer becomes the specification (Lesson 57). It is recorded
+  here and in [`history.md`](../history.md) for that reason, and the user's own sentences from the chat — the
+  two classes, their writers, the per-database × project grain, the minimum capacity — are transcribed rather
+  than restated.
 
-  **It is a revision, not only an addition, and the sentence to revise is the one that already names a
-  warehouse:** *"Use AWS Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data
-  Warehouse."* That sentence says the estate's data warehouse **is** Iceberg-on-S3 under the Glue Data
-  Catalog, which is what Stage 5a built and what D13 enforces. A Redshift warehouse beside it is either a
-  **second engine over the same governed tables** or a **second store with its own tables**, and the two read
-  the same in a bullet while producing different estates. Three things the sentence has to settle, because the
-  plan currently guesses each one:
+  | What it settled | What follows |
+  |---|---|
+  | **Redshift is a second possible engine; the Glue/Iceberg lake stays the warehouse of record** | D13, D22 and the producer path **extend** rather than re-open, which is what [D40](../decisions/D40-redshift-warehouse.md) assumed and is no longer assuming |
+  | **A query engine is a choice per workload, not per estate** — Athena stays the default | the warehouse needs a demander per workload, and a `gov_*` database with no query that Athena served badly is the revision trigger D40 already carries |
+  | **The governance model does not fork**: a governed Redshift database is governed by Lake Formation like a lake table | the federated-catalog registration at [Stage 9](stage-09-deployment-targets.md) 9.5 is a *requirement*, not a compensation Claude chose |
+  | **One Redshift environment from a data scientist's point of view, and where its databases live is an implementation matter** | the two-account split is **admissible** rather than a deviation — the sentence that makes D40's hardest choice legal. What it also imposes: the portal must present one thing, so 6h's connection naming and any second connection are a user-facing question, not just a wiring one |
+  | **A governed database is never written from the sandbox** | stated as a requirement, so the absence of a Sandbox writer on `gov_*` is a control with a line behind it rather than a consequence of the account split |
 
-  | What is guessed today | Where the guess is | Why it changes the work |
-  |---|---|---|
-  | The Glue/Iceberg lake stays the warehouse of record, and Redshift is an **additional** engine and store | [D40](../decisions/D40-redshift-warehouse.md), which keeps the lake untouched and adds a warehouse beside it | if Redshift is meant to *replace* Iceberg-on-S3 as the warehouse, D13, D22 and the whole producer path are re-opened, not extended |
-  | **Who reads a governed database** — a data scientist, a BI tool, or only a downstream job | `INT-24` assumes a data scientist in a Sandbox project, which is the hardest case and the reason that row has three candidate mechanisms and no network path | if only a Production job reads it, INT-24 disappears and the governed class needs no cross-account anything |
-  | The two classes are **one surface with two homes**, not two environments | [D40](../decisions/D40-redshift-warehouse.md)'s account split | if they are meant to be one environment a user sees as one, the split needs a name and a story in the portal, not just two namespaces |
+  **The read side was answered in the same sitting** (the user, 2026-09-20): *the controls stay the same, it is
+  just one more execution environment.* So there is no new class of reader and no second governance model, and
+  three things this plan had left as options stop being options:
+
+  | Consequence | What it replaces |
+  |---|---|
+  | **`INT-24` has one mechanism, not three.** A governed Redshift table reaches a Sandbox project as the federated catalog **shared cross-account by Lake Formation and read by Athena** — INT-03's mechanism, one register, one control path | that row's shapes (ii) Redshift data sharing and (iii) a cross-account connection are **out**: each is a second control path over governed data, which is the fork `objectives.md` now forbids. Stage 9 9.7 stops being a ladder and becomes one step |
+  | **A governed database gets no project connection.** The SMUS Redshift connection of [6h](stage-06h-redshift-connection.md) is a **sandbox-class** mechanism; its three layers, the `AmazonDataZoneProject` tag included, never apply to `gov_*` | the temptation to reuse 6h's wiring in Production "because it already works" — which would put a Redshift `GRANT` in the path of governed data beside a Lake Formation grant, two systems answering one question |
+  | **The engine is subject to the controls, not the reverse.** D13 binds the namespace role exactly as it binds a Glue job's role (1.5, 9.2); the persona still gets no `GetCredentials` (2.3) | the reading that a new engine deserves a new grant shape |
+
+  **What the answer does not do** is make the sandbox class governed. `sbx_*` remains outside Lake Formation
+  by design, on the sandbox lake's argument (Stage 16) — the per database × project grant is, in the user's
+  words, *"the only new rule here"*, and it applies there and nowhere else.
 
 **Action:** answer, from the API and the Price List rather than from this file, the four things the design
 rests on. **Why:** every number in this stage is a documentation claim today, and a stage written on

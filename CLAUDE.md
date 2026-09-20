@@ -229,11 +229,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Stages 0-1d, 2, 3, 4, 5a, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13) and the Redshift requirement in `objectives.md` (blocks 5b).
+  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13) — the only one left.
 - **D40 (2026-09-19): a Redshift Serverless warehouse, built by hand, blueprints still disabled.** **Stage 5
   is now 5a** (file, log, 94 files re-pointed). Three new files: **5b** the warehouse + the access model,
   **6h** the first `sbx_*` database + the SMUS connection, **Stage 9 step 9** the `gov_*` class. Nothing
-  applied; `objectives.md` does not carry the requirement yet (5b 0.0). **0.36 USD/RPU-h measured** (offer
+  applied. **`objectives.md` revised 2026-09-20, Claude drafting at the user's request** (5b 0.0, a departure
+  from Stage 16 0.1's shape, recorded): Redshift is a **second possible engine**, the Glue/Iceberg lake stays
+  the **warehouse of record**, an engine is a choice **per workload not per estate** (Athena the default),
+  **one environment to a data scientist and where its databases live is an implementation matter** — which is
+  what makes D40's two-account split admissible — and **the controls do not change: one more execution
+  environment**, no new class of reader, no second governance model. Consequences: `INT-24` has **one**
+  mechanism (LF cross-account share of the federated catalog, read by Athena), Redshift data sharing and a
+  cross-account connection are **excluded by the brief**, and **a `gov_*` database gets no project
+  connection** — 6h's three layers are sandbox-class only. The per database × project grant is the only new
+  rule. **0.36 USD/RPU-h measured** (offer
   file 2026-09-11) → 4 RPU = **1.44/query-hour, 0.00 at rest**, the estate's dearest object per unit of time,
   so the usage limit (`breach_action = deactivate`, default `log`) lands in the **same apply** as the
   workgroup. Two classes on two accounts because **a namespace is not a boundary between its databases** (one

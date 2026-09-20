@@ -554,6 +554,10 @@ namespace deliberately does not have.
   `AmazonDataZoneProject` tag**: D26 keeps deployment targets out of the domain (`DenyDataZoneEntirely` on the
   `Workloads` OU), so 6h's three-layer model collapses here to layer 3 alone, and the absence of layers 1 and
   2 **is** the control. `WH-7` must therefore read **no project tag at all** on this namespace and workgroup.
+  **That absence is now a requirement rather than a consequence** (`objectives.md`, 2026-09-20): the SMUS
+  connection is a *sandbox-class* mechanism, and reusing 6h's wiring here "because it already works" would put
+  a Redshift `GRANT` in the path of governed data beside a Lake Formation grant. A governed database is read
+  through 9.5's federated catalog and written by 9.4's pipeline; it is never connected to a project.
 - **9.4 — [Claude] Write the deploy path, and make it the pipeline's rather than a person's.** A database a
   Production workload produces is an artifact class, so the question is which of D28's six it is and what
   carries it. The shape: the repository holds the **DDL and the load job**, the promotion pipeline runs them
@@ -583,17 +587,21 @@ namespace deliberately does not have.
 - **9.6 — [user] Prove the governed pair, the way 2.4 proved the lake's.** Under `awsds-prod-job-exec`: a
   write into the `gov_*` schema succeeds; the same role's direct `PutObject` to a lake bucket is still denied;
   and the namespace role reaches no lake prefix. Read every wording.
-- **9.7 — [user] Prove INT-24 — the cross-account read, and expect it to be harder than it looks.** A Sandbox
-  project reading a `gov_*` table. **There is no network path**: Sandbox does not peer with `VPC-Workloads`,
-  and its absence is a control (`docs/NETWORK.md` §3). So the candidate mechanisms are, in order of
-  preference: **(i)** the federated catalog shared by **Lake Formation cross-account** from Production to
-  Sandbox, read by Athena — the same INT-03 shape, one more grantor, and the one that keeps every grant in a
-  register; **(ii)** Redshift **data sharing** between the two namespaces, which is a second permission system
-  with its own grants and no LF-Tag; **(iii)** the project's **Data page** against a cross-account connection,
-  which needs the documented access role with `sts:ExternalId`, `sts:SetSourceIdentity` and `sts:TagSession`
-  — and whose sample policy carries **`sqlworkbench:*` on `*`**, a wildcard `./scripts/check-iam-wildcards.py`
-  will refuse. **Recommended: (i)**, and if it does not work, the row's fallback is that a governed table
-  reaches Sandbox as it does today — through the lake, not through the warehouse.
+- **9.7 — [user] Prove INT-24 — the cross-account read, by the one mechanism the requirement leaves.** A
+  Sandbox project reading a `gov_*` table, through the **federated catalog shared by Lake Formation
+  cross-account** from Production to Sandbox and read by **Athena** — INT-03's shape with one more grantor.
+  **There is no network path and there does not need to be**: Sandbox does not peer with `VPC-Workloads`, and
+  its absence is a control (`docs/NETWORK.md` §3); this read never opens a Redshift connection.
+  **The two alternatives this step used to rank are excluded by the brief, not by preference**
+  (`objectives.md`, 2026-09-20 — *"the controls do not change… the governance model does not fork"*): Redshift
+  data sharing and a cross-account Data-page connection each put a Redshift `GRANT` beside a Lake Formation
+  grant in the path of governed data. Taking either means revising `objectives.md` first, deliberately.
+  **If the one mechanism does not work**, the fallback is the row's: a governed table reaches Sandbox as it
+  does today — through the lake, not through the warehouse — and the warehouse stays a Production-internal
+  engine. What 9.7 additionally settles, and nobody has measured: whether a Lake Formation share of a
+  *federated* catalog preserves the **TBAC expressions** this estate grants by, since DataZone's own Glue path
+  already refuses LF-TBAC (Stage 6f 3.2). A share that only takes named resources is a finding, not a failure,
+  and it goes in the register as one.
 - **9.8 — [Claude] Close the paperwork in the same sitting**: `docs/AWS_STATE.md` (the Redshift grant
   register's second grantor, and Production's own residuals), `docs/GOVERNANCE.md` (§Accounts' Production row,
   and the federated catalog as the fourth thing Lake Formation governs), `terraform-live/README.md`,
@@ -675,12 +683,11 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 4. **The debug window mechanics** (6.1) — recommended: the **`DateLessThan` trust condition from a
    tfvars value defaulting to the past** — approval is a recorded apply, closure is a revert, and no
    standing machinery exists to rot.
-5. **How a Sandbox project reads a governed Redshift table** (9.7, INT-24) — recommended: **(i) a Lake
-   Formation cross-account share of the federated catalog**, read by Athena. It reuses INT-03's mechanism,
-   keeps every grant in one register, and needs no network path — which is what matters, because there is no
-   peering between Sandbox and `VPC-Workloads` and its absence is a control. Redshift data sharing is (ii) and
-   costs a second permission system; a cross-account connection is (iii) and costs a wildcard
-   (`sqlworkbench:*`) this repository's own check refuses.
+5. **~~How a Sandbox project reads a governed Redshift table~~ — no longer a decision** (9.7, INT-24). The
+   brief settled it on 2026-09-20: the controls do not change, so it is a **Lake Formation cross-account share
+   of the federated catalog, read by Athena**, and the two alternatives are excluded rather than ranked. What
+   remains for this stage to *answer* is narrower and is verification (xxi): whether such a share preserves the
+   TBAC expressions this estate grants by.
 6. **Which of D28's six artifact classes a governed database is** (9.4) — recommended: the **DDL and load job
    in the repository**, carried as ordinary application code, with the pipeline as the only runner. A database
    schema that is not in the repository is a schema whose Staging mirror (4.1) has no source, which is
