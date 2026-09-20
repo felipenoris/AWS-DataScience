@@ -557,7 +557,12 @@ changed, not just the plan.
   repointed so the reference gate stays green); one entry still names `stage-05-data-foundation.md` in prose,
   and this row is the explanation for it. **Provisioned things this touches: none.** Nothing was applied, and
   `objectives.md` does not yet carry the requirement — that is Stage 5b step 0.0, the user's hand, and the
-  stage's one blocking input.
+  stage's one unconditional blocking input. **Corrected the same day, before the branch was merged:** the
+  first draft of 5b 0.0 said that file *"says nothing about a warehouse today"*, and it does — *"Use AWS Glue
+  Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse."* So 0.0 is a
+  **revision** of an existing sentence rather than a new bullet, and the fork it hides is whether Redshift is
+  a second engine beside the Iceberg lake (what D40 assumes) or a replacement for it (which would re-open
+  D13, D22 and the producer path). 0.0 now carries that fork as a table.
 
 ---
 

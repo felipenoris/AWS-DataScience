@@ -102,10 +102,21 @@ stage** — 0.1's answer decides whether the estate's two-AZ plumbing is enough.
   Claude's:** that file is the brief the stage is measured against, it is copied nowhere and summarised
   nowhere, and a paraphrase written by the implementer becomes the specification (Lesson 57). Everything below
   — and the whole of [D40](../decisions/D40-redshift-warehouse.md) — is an *implementation* of a sentence that
-  does not exist in that file yet, and `objectives.md` says nothing about a warehouse today. **Until it does,
-  this stage's own justification is a chat message.** What the sentence has to settle, because the plan
-  currently guesses it: who reads a governed database (a data scientist, a BI tool, a downstream job), and
-  whether the two classes are *one environment* to the user or two.
+  does not exist in that file yet. **Until it does, this stage's own justification is a chat message.**
+
+  **It is a revision, not only an addition, and the sentence to revise is the one that already names a
+  warehouse:** *"Use AWS Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data
+  Warehouse."* That sentence says the estate's data warehouse **is** Iceberg-on-S3 under the Glue Data
+  Catalog, which is what Stage 5a built and what D13 enforces. A Redshift warehouse beside it is either a
+  **second engine over the same governed tables** or a **second store with its own tables**, and the two read
+  the same in a bullet while producing different estates. Three things the sentence has to settle, because the
+  plan currently guesses each one:
+
+  | What is guessed today | Where the guess is | Why it changes the work |
+  |---|---|---|
+  | The Glue/Iceberg lake stays the warehouse of record, and Redshift is an **additional** engine and store | [D40](../decisions/D40-redshift-warehouse.md), which keeps the lake untouched and adds a warehouse beside it | if Redshift is meant to *replace* Iceberg-on-S3 as the warehouse, D13, D22 and the whole producer path are re-opened, not extended |
+  | **Who reads a governed database** — a data scientist, a BI tool, or only a downstream job | `INT-24` assumes a data scientist in a Sandbox project, which is the hardest case and the reason that row has three candidate mechanisms and no network path | if only a Production job reads it, INT-24 disappears and the governed class needs no cross-account anything |
+  | The two classes are **one surface with two homes**, not two environments | [D40](../decisions/D40-redshift-warehouse.md)'s account split | if they are meant to be one environment a user sees as one, the split needs a name and a story in the portal, not just two namespaces |
 
 **Action:** answer, from the API and the Price List rather than from this file, the four things the design
 rests on. **Why:** every number in this stage is a documentation claim today, and a stage written on

@@ -23,9 +23,17 @@ grants are written down here.
 ## What is being reversed, and what is not
 
 `docs/SMUS.md`'s blueprint table carries `RedshiftServerless` as a **Never**, on the strength of D26 and
-D12, and `docs/GOVERNANCE.md` said *"No warehouse is built here"*. The requirement changed
-(`objectives.md`, 2026-09-19): the environment gets a warehouse. Reading the exclusion's own words decides
-how much of it has to go.
+D12, and `docs/GOVERNANCE.md` said *"No warehouse is built here"*. The user asked for a warehouse on
+2026-09-19, **in chat — `objectives.md` does not carry it yet**
+([Stage 5b](../stages/stage-05b-redshift-serverless.md) step 0.0 is where it does). Reading the exclusion's
+own words decides how much of it has to go.
+
+**What that file already says about a warehouse is the thing to revise, and it is not silence:** *"Use AWS
+Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse."* This decision
+reads that as **still true** — the lake remains the warehouse of record, D13 still enforces it, and Redshift
+is a second engine with a store of its own beside it. If the requirement means Redshift *replaces*
+Iceberg-on-S3 as the warehouse, this decision is the wrong one and D13, D22 and the producer path re-open
+rather than extend. 5b step 0.0's table is where that fork is put to the user.
 
 D12's argument was a **per-query RPU minimum on top of Athena's bill**, and it is correct: at
 **USD 0.36/RPU-hour** in `us-west-2`, four RPUs bill **USD 1.44 for every hour a query is running**
