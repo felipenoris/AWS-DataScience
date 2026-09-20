@@ -707,7 +707,7 @@ cryptographic action on the data key — the plan had assumed one key served bot
 None of those were catchable by reading. Two things that were: the stage's own *"re-plan `No changes`"* step
 found a perpetual diff the first time it was actually run (six `config_parameter` defaults the service fills),
 and the negative control the battery runbook asks for is what made both new denies attributable rather than
-assumed. **The cost of learning all of it was 0.0405 USD.**
+assumed. **The cost of learning all of it was 0.4743 USD** — and the first figure this project wrote down for it was ten times smaller, because `ComputeSeconds` publishes per half-hour and the expensive query had not landed yet. Four tracked files carried the under-reading for an hour.
 
 What the execution added to the plan rather than correcting: a runbook
 ([`redshift-connection.md`](runbooks/redshift-connection.md)), an instrument (`aws/warehouse.py`), two dated

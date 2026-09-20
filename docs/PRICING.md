@@ -367,21 +367,26 @@ partition/format discipline on the Iceberg tables — worth roughly twice as muc
 `2026-09-11T12:45:05Z`, SKU `KQ3J5VYQJZ5QMG9Z`, usage type `USW2-Redshift:ServerlessUsage`,
 **`0.3600000000 USD per RPU-Hr`**. And the first measured spend, for the whole of that stage's execution —
 every apply, the destroy-and-rebuild, the quota breach, the deliberate usage-limit breach and ~60 SQL
-statements: **405 RPU-seconds = 0.0405 USD**, read from `ComputeSeconds` because the free trial's status is
-unknown and a trial hides usage from the bill either way. That is consistent with 1.44 USD per query-hour at
-4 RPUs (405 RPU-seconds is 101 seconds of wall-clock query time) and it is the number to quote when somebody
-asks what exercising this stage costs.
+statements: **4,743 RPU-seconds = 1.3175 RPU-hours = 0.4743 USD**, read from `ComputeSeconds` because the free
+trial's status is unknown and a trial hides usage from the bill either way. That is 20 minutes of wall-clock
+query time at 4 RPUs, and it is the number to quote when somebody asks what exercising this stage costs.
+
+**Read `ComputeSeconds` late, or read it wrong.** The same metric was **405** at the moment the usage-limit
+breach was investigated and **4,743** an hour later, because the 30-minute cross join that caused the breach
+had not been published yet: the metric is *"accumulated compute-unit seconds used in the last 30 minutes"* and
+it lands per half-hour interval. Nearly the whole bill — **3,842 of the 4,743** — arrived in one interval. So a
+cost figure taken immediately after an expensive query is an **under**-reading, by a factor of ten here, and
+the four figures this project first recorded for this stage were that.
 
 **One meter nobody chose is on by default.** `auto_mv` reads `true` on a new workgroup: Redshift decides on
 its own to build and refresh materialized views, and a refresh is a query on the 1.44 USD/hour meter. It is
 left at the default and named in `sandbox/warehouse-compute/main.tf` so that turning it off is a decision
 somebody can find rather than a knob nobody knew about.
 
-**The usage limit's own granularity, measured**: `UsageLimitConsumed` reported **1.0** while `ComputeSeconds`
-totalled 405 RPU-seconds (0.1125 RPU-hours), and the breach fired. So the consumed metric appears to round
-**up** to whole RPU-hours, which makes a limit of N RPU-hours bite somewhere between N−1 and N of real usage.
-At the applied 40 that is **14.04-14.40 USD/month**, close enough that the arithmetic below stands; recorded
-because a limit set to 1 for a test is breached by the first fraction of an hour.
+**The usage limit's own granularity, measured**: `UsageLimitConsumed` reported **1.0** against an amount of 1
+and the breach fired, while the day's real usage settled at **1.3175 RPU-hours**. So the limit is evaluated in
+**whole RPU-hours** and a limit of N bites somewhere between N−1 and N of real usage. At the applied 40 that is
+**14.04-14.40 USD/month**, close enough that the arithmetic below stands.
 
 Read from `AmazonRedshift/current/{us-west-2,sa-east-1}/index.json`, both published **2026-09-11**; the SKU
 is the `Serverless` product family entry with no `term` attribute (the two `…-CR-1YR-…` SKUs beside it are

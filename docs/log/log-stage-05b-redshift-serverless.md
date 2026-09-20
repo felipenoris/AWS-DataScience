@@ -458,3 +458,38 @@ remaining work is a portal session and a space, and both need the workgroup to e
 ENV=sandbox` is what ends the session, and it costs nothing to defer: the warehouse bills **0.00 per
 hour** while no query runs, which is the whole reason the usage limit rather than the layer is the
 guard while it is up.
+
+---
+
+## 2026-09-20 — an amendment to 5.3: the cost figure was ten times too small
+
+*Written by Claude in the same sitting, at the end of it. It amends 5.3 above and the entry before this
+one rather than editing either, per [`INDEX.md`](INDEX.md): the order things were learnt in is the
+point.*
+
+**5.3 said `405 RPU-seconds = 0.0405 USD`. The settled figure is `4,743 RPU-seconds = 1.3175 RPU-hours
+= 0.4743 USD`** — twenty minutes of wall-clock query time at 4 RPUs, for everything this sitting did.
+
+The reason is the metric, not the arithmetic. `ComputeSeconds` is *"accumulated compute-unit seconds
+used in the last 30 minutes"* and it publishes **per half-hour interval**, so the 30-minute cross join
+that caused the usage-limit breach had not been published when 5.3 was read. Its interval, when it
+arrived, carried **3,842 of the 4,743** — nearly the whole bill in one datapoint:
+
+| Interval (local) | RPU-seconds |
+|---|---|
+| 03:00 | 85 |
+| 03:30 | 93 |
+| **04:00** | **3,842** |
+| 04:30 | 723 |
+
+**So a Redshift cost figure read immediately after an expensive query is an under-reading**, and here
+it was one by a factor of ten. It was written into `docs/PRICING.md`, `docs/plan/cost-model.md`,
+`CLAUDE.md`, this stage's verification (vii) and `docs/log/INDEX.md` before the correction, and all
+five now carry 0.4743 with the reason beside it. The lesson is not about Redshift: **a metric whose own
+description names a window has not answered until that window has closed**, and the instrument's own
+burn line (`./aws/warehouse.py`) has the same property.
+
+It also strengthens one reading and leaves another alone. **The usage limit is evaluated in whole
+RPU-hours**: `UsageLimitConsumed` said `1.0` against an amount of 1 and fired, while the real usage
+settled at 1.3175 — consistent, where against 0.1125 it had looked like aggressive rounding. And the
+prediction held: 1.44 USD per query-hour × 0.3294 hours of 4-RPU time is 0.4743.
