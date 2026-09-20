@@ -118,6 +118,57 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = tostring(local.capacity.max_query_execution_time)
   }
 
+  # THE SIX THE SERVICE SETS, DECLARED SO THE PLAN IS STABLE. `config_parameter` is a set the
+  # provider owns whole: a workgroup created with three parameters reads back with nine, because
+  # Redshift fills its own defaults, and the provider then plans to REMOVE the six it was not told
+  # about - a perpetual "1 to change" that never converges (found 2026-09-20, on the first re-plan
+  # of this slice after the apply, which is why "re-plan No changes" is a step and not a courtesy).
+  #
+  # Declaring them is the fix and it is also the disclosure: these are the values a query actually
+  # runs under, and until now no tracked file said what they were. All six are the service's
+  # defaults, read back from `get-workgroup` after the first apply. Two are worth a sentence:
+  #
+  #   auto_mv      automatic materialized views. ON by default, and it is COMPUTE the estate did
+  #                not ask for: Redshift decides on its own to build and refresh materialized
+  #                views, and a refresh is a query on a 1.44 USD/hour meter. Left at the default
+  #                for now and named here so turning it off is a decision somebody can find.
+  #   search_path  `"$user, public"`. It resolves an unqualified table name in `public` - the
+  #                schema 5b 1.6 revoked CREATE on - which means an unqualified CREATE TABLE fails
+  #                rather than landing somewhere nobody expects. That is the right behaviour, and
+  #                it is a consequence of the revoke rather than of this line.
+  config_parameter {
+    parameter_key   = "auto_mv"
+    parameter_value = "true"
+  }
+
+  config_parameter {
+    parameter_key   = "datestyle"
+    parameter_value = "ISO, MDY"
+  }
+
+  config_parameter {
+    parameter_key   = "enable_case_sensitive_identifier"
+    parameter_value = "false"
+  }
+
+  config_parameter {
+    parameter_key   = "query_group"
+    parameter_value = "default"
+  }
+
+  config_parameter {
+    parameter_key   = "search_path"
+    parameter_value = "$user, public"
+  }
+
+  # FIPS off, which is the default and is also what the estate's endpoint policy assumes: every
+  # `*-fips` sibling is deliberately excluded from `vpc-egress`'s service lists, so a client
+  # configured for FIPS would resolve a name no endpoint here serves.
+  config_parameter {
+    parameter_key   = "use_fips_ssl"
+    parameter_value = "false"
+  }
+
   # LAYER 1'S WORKGROUP HALF, from sandbox/warehouse/'s map rather than from a copy here. AWS's
   # requirement names both objects - the tag goes on "the Amazon Redshift cluster or workgroup AND
   # ITS NAMESPACE" - and the namespace's half is written by that slice. Reading the map instead of

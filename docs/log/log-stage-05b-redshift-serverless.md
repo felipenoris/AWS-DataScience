@@ -240,3 +240,176 @@ almost always land in a window with no workgroup and **stop permanently**. It is
 split rather than a defect in it — nothing else in this estate rotates a credential, and the
 alternative is keeping a workgroup up so that a secret can rotate, which costs the guarantee the split
 exists to give. Recorded in `docs/AWS_STATE.md` as a residual, with the restart call named.
+
+---
+
+## 2026-09-20 — 1.9, 1.10, pass 2, pass 3: the split holds, and the ceiling refuses
+
+*Written by Claude in the same sitting, continuing the entry above. Same identity throughout unless a
+step names another: `awsds-infra-sandbox-1`, and `awsds-infra-identity` for the two policy slices.*
+
+### 1.9 — the endpoint host survives; the workgroup id does not
+
+Destroy, then re-create, under the same name. **This is the reading the `[E]` layer rests on.**
+
+| Read | Before | After |
+|---|---|---|
+| `endpoint.address` | `awsds-sandbox-warehouse.<Sandbox Account 1>.us-west-2.redshift-serverless.amazonaws.com` | **identical** |
+| `endpoint.port` | `5439` | `5439` |
+| `workgroupId` | `75b926c8-a206-4566-a397-84e398f2f4ee` | **`4b0577a2-6f30-4d9c-b069-b6bd1b6ab010`** |
+| the usage limit's id | `cf7ced6a-…` | **`a5b0a714-…`** |
+| the workgroup's VPC endpoint | `vpce-0c740e3be5ff53369` | **`vpce-0f8ecc79b20bbfd2e`** |
+| its two ENIs | `10.20.22.101` / `us-west-2b`, `10.20.109.138` / `us-west-2a` | **`10.20.54.29` / `us-west-2b`, `10.20.77.126` / `us-west-2a`** |
+| the namespace, the admin secret, the three log groups, the security group | present | **all present** |
+
+**So decision 8 does not arise and the compute stays `[E]`.** The host is derived from the name, the
+account and the Region, and a re-create under the same name restores it — which is what
+[6h](../plan/stages/stage-06h-redshift-connection.md)'s connection needs.
+
+**The id half is the finding, and it changes code.** A workgroup's ARN carries the service-minted
+UUID, not the name, so **any policy naming this workgroup's ARN exactly would stop matching after the
+first `make down`** — silently, presenting as a project whose queries stopped authenticating with no
+diff anywhere. Two things were written against that reading: layer 2's IAM policy scopes to
+`workgroup/*` in this account and Region, and `DenyRedshiftCostGuardTamperingExceptInfrastructure`
+uses `Resource: "*"`. Both now say so in a comment.
+
+**Timings**, which §5.1 rule 6 asks for: destroy **28 s** total (the workgroup itself 9 s), re-create
+**114 s**. Comfortable for a session boundary rather than merely correct.
+
+**One transient the plan did not predict.** Immediately after the destroy the old VPC endpoint was
+gone but **its two ENIs survived in `available` state**, still referencing the `[P]` security group and
+holding two private addresses, owned by an AWS service account. They were gone by the time the
+re-create finished, under two minutes later. So it is a garbage-collection lag rather than a leak —
+recorded because a `terraform destroy` of `sandbox/warehouse/` inside that window would fail on a
+security group still in use, and the symptom would be unexplainable.
+
+### 1.10 — the endpoint family, and the three tokens that are not in it
+
+`terraform-modules/vpc-egress` gains a fourth optional group, **`redshift = ["redshift-serverless"]`**,
+tagged **`vpc-egress-v0.15.0`** (confirmed on origin by `git ls-remote --tags`, whose hash matches
+`git rev-parse`). `sandbox/egress/` moved to it; the other three callers stay on `v0.11.1`, where they
+already were.
+
+**All six `redshift*` endpoint services exist in `us-west-2`**, measured from the Region's own catalog
+rather than assumed: `redshift`, `redshift-data`, `redshift-serverless` and a `-fips` sibling for each.
+Only `redshift-serverless` is in the group; `redshift-data` waits on
+[6h](../plan/stages/stage-06h-redshift-connection.md)'s credential answer and `redshift` on 6h 3.5's
+CloudTrail reading. **Not exercised**: no space has been started with `GROUPS=redshift`, so
+verification (xv) is open.
+
+### Pass 2 — the access model
+
+**2.3 applied** to `identity/sso`, `data_scientist` inline document 7,265 → 8,640 bytes, re-plan
+`No changes`. One allow of six `redshift-serverless:` reads, and two denies:
+
+- **`DenyMintingARedshiftDatabaseSession`** — `GetCredentials`, the three `redshift-data:` statement
+  actions, and `redshift:GetClusterCredentials`/`GetClusterCredentialsWithIAM`. **The Data API is in
+  it because of a measurement, not a guess**: it reaches the database from a laptop outside every VPC
+  with nothing but an IAM identity and the admin secret (below), so a persona holding
+  `ExecuteStatement` has a query path from anywhere and no security group sees it.
+- **`DenyRedshiftCostGuardAndCompute`** — the nine create/update/delete calls on namespaces,
+  workgroups and usage limits.
+
+**Written as denies rather than left to omission**, for the reason the Lake Formation deny beside them
+gives: these actions sit in services this set is granted real reads on, so an omission is one AWS
+managed policy away from being undone. **Not exercised**: the persona's session is not open in this
+sitting, so 6h 5.4 is owed.
+
+**2.4 read rather than asserted, and all three came out as designed:**
+
+- `awsds-sandbox-warehouse-exec` has **no attached policy, no inline policy and no permissions
+  boundary**.
+- **`awsdatacatalog` lists nothing** — zero rows from `svv_all_schemas` and `svv_all_tables` for that
+  database, which is the correct state for a role Lake Formation has granted nothing.
+- The documented read-only direction has a stronger form than the page says: **you cannot connect to
+  `awsdatacatalog` at all.** `FATAL: Cannot connect to shared database "awsdatacatalog" created from
+  Data Catalog ARN. Connect to a database in your cluster … and use cross-database query notation`.
+
+### Pass 3 — the ceiling refuses, and the workgroup does not say so
+
+**5.1, and the shape of the test had to change twice.**
+
+First, a throwaway limit beside the real one is **impossible**:
+`ValidationException: Only one DISABLE usage limit allowed per feature`. So the test lowered the real
+limit instead. Second, and this is `WH-3`'s whole premise: **a second limit with `breach_action = log`
+IS allowed** — created at 9,999 RPU-hours daily, `WH-3` failed on it naming *"2 limits - the loosest
+one wins"*, and it was deleted. So the service prevents a second *ceiling* and permits a second
+*looser* limit, which is exactly the hole the check exists for.
+
+Then the real limit went to **1 RPU-hour** and a triple cross join over `pg_attribute` (46,391 rows,
+so ~10¹⁴ output rows) was left to run. **The breach fired.** What it looks like, at each layer:
+
+| Where | What it says |
+|---|---|
+| the client | **`ERROR: Query reached usage limit`** — six words, no policy, no limit id, no amount |
+| `get-workgroup` | **`status: AVAILABLE`.** Nothing in the workgroup's own record shows it. An instrument that checked `status` would report a healthy warehouse that cannot run a query |
+| `UsageLimitConsumed` | **`1.0`** against an amount of 1 |
+| `UsageLimitAvailable` | **`38.0` and `40.0`** — stale, still reported against the amount before the change |
+| `ComputeSeconds` (the day's total) | **405 RPU-seconds = 0.1125 RPU-hours**. The two numbers do not reconcile: the consumed metric appears to round **up** to whole RPU-hours, which means a limit of N is breached somewhere between N−1 and N real RPU-hours. Recorded as an open reading rather than explained |
+
+**What the breach refuses is the compute, not the endpoint**, and the boundary is sharp:
+
+| Statement | Result |
+|---|---|
+| `select 1` | **FINISHED** |
+| `select count(*) from pg_attribute` | **FINISHED** |
+| `select count(*) from svv_all_schemas` | **FINISHED** |
+| `CREATE TABLE lab.probe_after_breach (x int)` | **FAILED — `Query reached usage limit`** |
+
+Every statement that finished is answerable on the leader node. So a client can still connect and
+query the catalogue on a deactivated warehouse, and **a health check of the shape "connect and
+`select 1`" passes while no real query can run** — Lesson 13's shape, on the control this stage
+called load-bearing.
+
+**5.2 — recovery is immediate, and the documentation does not say so.** Raising the amount back to
+**40** made `CREATE TABLE` succeed on the next attempt: **no wait for the period to roll over**, which
+is the question verification (vi) asked and no vendor page answers. AWS's own guidance for a breached
+quota is *"increase your workgroup usage quota"*, and that is what works. The independent fallback
+never had to be used: 1.9 had already proven that destroying and re-creating the compute restores the
+same endpoint host.
+
+`./aws/warehouse.py --sql` after the restore: **11 pass, 1 note**, and the compute slice re-plans
+`No changes`.
+
+**5.3 — the measured cost of everything in this sitting: 405 RPU-seconds = 0.0405 USD** at
+0.36/RPU-hour, against the 1.44 USD/query-hour prediction, which it is consistent with (405 s of
+4-RPU time is 101 s of wall clock). **The free trial's status is unknown** (0.3a), so this figure comes
+from `ComputeSeconds` and not from the bill either way.
+
+### A perpetual diff the plan did not have, found by re-planning
+
+**The service fills in six `config_parameter` defaults the code did not declare, and the provider
+plans to remove them on every plan** — `auto_mv`, `datestyle`, `enable_case_sensitive_identifier`,
+`query_group`, `search_path`, `use_fips_ssl`. `config_parameter` is a set the provider owns whole, so a
+workgroup created with three parameters reads back with nine and the plan is `1 to change` forever.
+All six are now declared at their read-back values and the slice plans clean.
+
+**Two of them are worth knowing about rather than merely declaring.** `auto_mv` is **on** by default:
+Redshift decides on its own to build and refresh materialized views, and a refresh is a query on a
+1.44 USD/hour meter — compute the estate did not ask for, left at the default and named in the code so
+turning it off is a decision somebody can find. `search_path` is `"$user, public"`, and `public` is the
+schema 1.6 revoked `CREATE` on, so an unqualified `CREATE TABLE` fails rather than landing somewhere
+nobody expects.
+
+### 6.1 — the audit groups carry content, and whose is unresolved
+
+All three groups exist; **`userlog` is empty and that is the correct state** (no user was created
+through a session, and the ones that were came from SQL run as the admin). The other two carry
+**1,176 events between 06:03:54Z and 06:15:50Z**, and every one of them is `user=rdsdb`, the service's
+internal user — connection open/close and internal `xpx` operations.
+
+**Not one `dbadmin` session appears, and neither does any of this sitting's SQL text**, including a
+query written specifically to be searched for (`AUDITMARKER20260920`). **This is not yet evidence that
+the Data API is unlogged**: the group's `lastIngestionTime` is **06:15:52Z** and nothing has been
+ingested in the 53 minutes since, while queries ran throughout — so the export is either batched on
+an interval nobody here has measured or has stalled. The instrument works (1,176 events prove it), but
+it has not been given the chance to show the presence, which is exactly the condition Lesson 62 puts
+on reading an absence. **Owed: a re-read of both groups in a later sitting**, and until then 6h 3.6 is
+unanswered and Stage 11 should not assume the Data API path is in the feed.
+
+### What pass 3 leaves owed
+
+- **verification (xv)**, the endpoint door from inside a space, needs a space started with
+  `GROUPS=redshift`.
+- **6h 5.4**, the persona's `GetCredentials` refusal, needs the `awsds-scientist` session.
+- **verification (xiii)**, the free trial, needs the Redshift console.
