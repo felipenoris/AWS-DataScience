@@ -238,11 +238,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the **warehouse of record**, an engine is a choice **per workload not per estate** (Athena the default),
   **one environment to a data scientist and where its databases live is an implementation matter** — which is
   what makes D40's two-account split admissible — and **the controls do not change: one more execution
-  environment**, no new class of reader, no second governance model. Consequences: `INT-24` has **one**
-  mechanism (LF cross-account share of the federated catalog, read by Athena), Redshift data sharing and a
-  cross-account connection are **excluded by the brief**, and **a `gov_*` database gets no project
-  connection** — 6h's three layers are sandbox-class only. The per database × project grant is the only new
-  rule. **0.36 USD/RPU-h measured** (offer
+  environment**, no new class of reader, no second governance model. Consequences: **a `gov_*` database gets no project
+  connection** (6h's three layers are sandbox-class only), and `INT-24` is narrowed to what **LF governs** —
+  **two** shapes: a federated catalog read by Athena, or a **LF-managed datashare** (LF enforces db/table/
+  column/row permissions on it and **tags may be used**; cross-Region not supported; a producer revoke leaves
+  LF permissions behind). Only the cross-account Data-page connection is excluded (the fork + `sqlworkbench:*`
+  on `*`). **The Iceberg-engine switch on a federated catalog makes Glue create a managed Redshift CLUSTER** —
+  unpriced, read+write, AWS-managed key by default — which **collides with 5b 3.1's
+  `DenyRedshiftProvisionedClusters`**; Stage 9 **9.5a** settles it and recommends the datashare. The per
+  database × project grant is the only new rule. **0.36 USD/RPU-h measured** (offer
   file 2026-09-11) → 4 RPU = **1.44/query-hour, 0.00 at rest**, the estate's dearest object per unit of time,
   so the usage limit (`breach_action = deactivate`, default `log`) lands in the **same apply** as the
   workgroup. Two classes on two accounts because **a namespace is not a boundary between its databases** (one

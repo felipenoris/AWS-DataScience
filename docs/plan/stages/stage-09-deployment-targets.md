@@ -572,7 +572,37 @@ namespace deliberately does not have.
     itself anything, which is the register's whole content. It runs as its own database user with `CREATE` on
     the named schema and nothing else.
 - **9.5 — [Claude⚡] Register the namespace as a federated catalog**, `aws_glue_catalog` with its
-  `federated_catalog` block, and read the result rather than the plan.
+  `federated_catalog` block, and read the result rather than the plan. **This is what puts the warehouse's
+  schemas under Lake Formation**, which `objectives.md` requires (*"the governance model does not fork"*), so
+  the registration is not optional here.
+  > **Enabling the Iceberg-engine path creates a resource this project did not choose, and it has to be decided
+  > rather than clicked** (read 2026-09-20). The catalog carries a switch — *"Access this catalog from Iceberg
+  > compatible engines"* — and it is what makes Athena and EMR able to read the namespace at all. AWS: *"To
+  > enable these query engines to read and write to Amazon Redshift namespaces, AWS Glue creates a **managed
+  > Amazon Redshift cluster** with the compute and storage resources required to perform read and write
+  > operations without impacting Amazon Redshift data warehouse workloads."* Four consequences, none of them
+  > in this stage's cost table before 2026-09-20:
+  > **a cluster, not a serverless workgroup** — the always-on shape D12 rules out and
+  > [Stage 5b](stage-05b-redshift-serverless.md) step 3.1 proposes to *deny*, so the two collide and 9.5a
+  > settles it; **unpriced**, and nothing says what size it is; **read *and* write**, so it is not a read-only
+  > door; and *"By default, the data in the Amazon Redshift cluster is encrypted using an AWS managed key"*
+  > unless a customer managed key with *"additional custom managed key policy"* is supplied — against
+  > `docs/GOVERNANCE.md` §Encryption's per-account CMK rule, and the same shape as the `S3Bucket` blueprint's
+  > *"encryption key and bucket policy nobody in this project chose"*. **Lesson 17 in full.**
+  > **And it is only needed for the Iceberg engines**: *"You don't need to enable data lake access to access
+  > the federated catalogs using Amazon Redshift."*
+- **9.5a — [Claude reads, user decides] Settle the collision between the Iceberg-engine switch and
+  `DenyRedshiftProvisionedClusters`.** [Stage 5b](stage-05b-redshift-serverless.md) 3.1 denies
+  `redshift:CreateCluster` at the organization root because a provisioned cluster is the always-on shape D12
+  rules out. If AWS Glue creates its managed cluster **in this account**, that deny is either the thing that
+  breaks the Athena path or the thing the path breaks — the same collision Stage 15 decision 1 has between
+  `DenyGuardDutyTampering` and Audit's own detector. **Read before choosing:** whether the cluster is created in
+  the customer account at all, under which principal, and whether CloudTrail shows `CreateCluster`. Then one of:
+  **(a)** carve the Glue service principal out of 3.1, which reopens the deny this estate wanted;
+  **(b)** take INT-24's shape (ii) — the Lake Formation-managed **datashare** — which needs no Iceberg-engine
+  switch and therefore no managed cluster; **(c)** leave the switch off, which makes the federated catalog
+  readable **from Redshift only** and leaves a Sandbox project nothing to read. **Recommended: (b)**, and
+  9.7 is where it is chosen with a reading behind it rather than here.
   > **Two hazards on this one resource, both of which this plan has already paid for once.** First,
   > `aws_glue_catalog` carries `create_database_default_permissions` — the same `IAMAllowedPrincipals` default
   > that cost Stage 5a pass 1 a two-step apply and that acts **at creation time** (1.3's callout, Recipe D).
@@ -587,21 +617,29 @@ namespace deliberately does not have.
 - **9.6 — [user] Prove the governed pair, the way 2.4 proved the lake's.** Under `awsds-prod-job-exec`: a
   write into the `gov_*` schema succeeds; the same role's direct `PutObject` to a lake bucket is still denied;
   and the namespace role reaches no lake prefix. Read every wording.
-- **9.7 — [user] Prove INT-24 — the cross-account read, by the one mechanism the requirement leaves.** A
-  Sandbox project reading a `gov_*` table, through the **federated catalog shared by Lake Formation
-  cross-account** from Production to Sandbox and read by **Athena** — INT-03's shape with one more grantor.
-  **There is no network path and there does not need to be**: Sandbox does not peer with `VPC-Workloads`, and
-  its absence is a control (`docs/NETWORK.md` §3); this read never opens a Redshift connection.
-  **The two alternatives this step used to rank are excluded by the brief, not by preference**
-  (`objectives.md`, 2026-09-20 — *"the controls do not change… the governance model does not fork"*): Redshift
-  data sharing and a cross-account Data-page connection each put a Redshift `GRANT` beside a Lake Formation
-  grant in the path of governed data. Taking either means revising `objectives.md` first, deliberately.
-  **If the one mechanism does not work**, the fallback is the row's: a governed table reaches Sandbox as it
-  does today — through the lake, not through the warehouse — and the warehouse stays a Production-internal
-  engine. What 9.7 additionally settles, and nobody has measured: whether a Lake Formation share of a
-  *federated* catalog preserves the **TBAC expressions** this estate grants by, since DataZone's own Glue path
-  already refuses LF-TBAC (Stage 6f 3.2). A share that only takes named resources is a finding, not a failure,
-  and it goes in the register as one.
+- **9.7 — [user] Prove INT-24 — a Sandbox project reading a `gov_*` table, by whichever of the two
+  Lake-Formation-governed shapes 9.5a chose.** **There is no network path and there does not need to be**:
+  Sandbox does not peer with `VPC-Workloads`, and its absence is a control (`docs/NETWORK.md` §3); neither
+  shape opens a Redshift connection from the project.
+  - **The federated catalog read by Athena** — INT-03's shape with one more grantor, and it drags in 9.5's
+    managed cluster.
+  - **The Lake Formation-managed datashare** — the producer grants `USAGE ON DATASHARE … VIA DATA CATALOG`,
+    the data lake administrator registers it (`lakeformation register-resource`) and maps it to a **federated
+    database**, and LF permissions decide the rest. No Iceberg-engine switch, so **no managed cluster**.
+  **What is excluded, and by the requirement rather than by preference** (`objectives.md`, 2026-09-20): the
+  project's **Data page against a cross-account connection**, which makes a Redshift `GRANT` the control over
+  governed data — the fork the brief forbids — and whose documented access role carries `sqlworkbench:*` on
+  `*`, a wildcard this repository's own check refuses. Taking it means revising `objectives.md` *and*
+  whitelisting a wildcard.
+  **If neither shape works**, the fallback is the row's: a governed table reaches Sandbox as it does today —
+  through the lake, not through the warehouse — and the warehouse stays a Production-internal engine.
+  What 9.7 additionally settles, and nobody has measured: whether a Lake Formation share of a **federated**
+  resource preserves the **TBAC expressions** this estate grants by. Both AWS pages say tags may be used on
+  these resources, which is more than DataZone's Glue path offers (it refuses LF-TBAC outright, Stage 6f 3.2),
+  so the premise looks better here and is still unread. A share that only takes named resources is a finding,
+  not a failure, and it goes in the register as one. **On the datashare path, read the revoke too**: when the
+  producer revokes, *"the associated permissions and objects in Lake Formation are not automatically
+  deleted"*, so a revoke on one side leaves rows on the other and the register has to be told.
 - **9.8 — [Claude] Close the paperwork in the same sitting**: `docs/AWS_STATE.md` (the Redshift grant
   register's second grantor, and Production's own residuals), `docs/GOVERNANCE.md` (§Accounts' Production row,
   and the federated catalog as the fourth thing Lake Formation governs), `terraform-live/README.md`,
@@ -664,6 +702,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 | **`production/warehouse/` compute** (step 9) | **0.00/h at rest · 1.44 USD/h while a query runs** at `base_capacity = 4` (0.36/RPU-h, 60-second minimum) — **the most expensive item in this stage by an order of magnitude**, and the reason the usage limit lands in the same apply | `[P]` |
 | Redshift Managed Storage for the `gov_*` database | 0.024 USD/GB-month | `[P]` |
 | Its admin secret + three log groups | ~0.40 USD/secret-month + cents | `[P]` |
+| **The managed Redshift cluster AWS Glue creates** if 9.5's Iceberg-engine switch is enabled | **unpriced and unsized** — a *cluster*, always-on in shape, which is the item that could break this stage's cost profile on its own. Priced before the switch is enabled, never after (Lesson 6); 9.5a's recommendation is the shape that avoids it | — |
 
 ## Decisions due while executing
 
@@ -683,11 +722,16 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 4. **The debug window mechanics** (6.1) — recommended: the **`DateLessThan` trust condition from a
    tfvars value defaulting to the past** — approval is a recorded apply, closure is a revert, and no
    standing machinery exists to rot.
-5. **~~How a Sandbox project reads a governed Redshift table~~ — no longer a decision** (9.7, INT-24). The
-   brief settled it on 2026-09-20: the controls do not change, so it is a **Lake Formation cross-account share
-   of the federated catalog, read by Athena**, and the two alternatives are excluded rather than ranked. What
-   remains for this stage to *answer* is narrower and is verification (xxi): whether such a share preserves the
-   TBAC expressions this estate grants by.
+5. **How a Sandbox project reads a governed Redshift table** (9.5a, 9.7, INT-24). The brief narrowed the field
+   on 2026-09-20 — the controls do not change, so the mechanism is one Lake Formation governs — and **two shapes
+   qualify rather than one**: a federated catalog read by Athena, or a Lake Formation-managed **datashare**.
+   The cross-account connection is excluded outright. **Recommended: the datashare.** The federated catalog's
+   Iceberg-engine switch makes AWS Glue create a **managed Amazon Redshift cluster** — unpriced, always-on in
+   shape, encrypted by an AWS managed key by default, and a direct collision with
+   [Stage 5b](stage-05b-redshift-serverless.md) 3.1's `DenyRedshiftProvisionedClusters` — while the datashare
+   path needs no such switch. **Take the reading first** (9.5a): the recommendation rests on a documentation
+   sentence, not on a measurement, and whether that cluster is created in this account at all is exactly what
+   decides it.
 6. **Which of D28's six artifact classes a governed database is** (9.4) — recommended: the **DDL and load job
    in the repository**, carried as ordinary application code, with the pipeline as the only runner. A database
    schema that is not in the repository is a schema whose Staging mirror (4.1) has no source, which is
@@ -718,7 +762,9 @@ Record every answer, including the ones that come out fine.
 | xviii | Does the governed namespace read back at `base_capacity = 4` with its usage limit, its capped `max_capacity` and **no project tag** — and do its three log groups carry a retention period, so `EXC-10` stays at one? | 9.1 |
 | xix | Does the federated catalog's database carry `IAMAllowedPrincipals` after registration — the Recipe D reading, third instance — and did the two-step apply prevent it? | 9.5 |
 | xx | Does the governed pair hold: a `gov_*` write under the job role succeeds, and its direct `PutObject` to a lake bucket is still denied? | 9.6 |
-| xxi | Which mechanism actually carries INT-24, and does the Lake Formation share of a federated catalog preserve the TBAC expressions this estate grants by? | 9.7 |
+| xxi | Which of the two Lake-Formation-governed mechanisms carries INT-24, and does a Lake Formation share of a **federated** resource preserve the TBAC expressions this estate grants by — given that both AWS pages say tags may be used, where DataZone's Glue path refuses them? | 9.5a, 9.7 |
+| xxiii | Does enabling the Iceberg-engine switch create a **managed Redshift cluster in this account** — under which principal, visible as which CloudTrail call, at what size and under which key — and does `DenyRedshiftProvisionedClusters` refuse it? | 9.5, 9.5a |
+| xxiv | On the datashare path, does a producer-side revoke leave Lake Formation permissions behind, as documented — and does the register notice? | 9.7 |
 | xxii | Does the promotion pipeline's second run survive an existing schema — the idempotence a `GRANT` outside every plan forces? | 9.4 |
 | xiv | In **each** of the two accounts this stage gives a `DataLakeSettings` (Production, then Staging): do `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` read `[]` **before** the slice's first catalog object exists, and does no database in that account carry an `IAMAllowedPrincipals` grant afterwards? — the reading the two-step exists to produce, and the only moment it can be taken | 1.3, 1.5, 4.1 |
 

@@ -589,6 +589,25 @@ changed, not just the plan.
   struck; what survives of it is verification (xxi), whether a Lake Formation share of a *federated* catalog
   preserves the TBAC expressions this estate grants by. **Provisioned things this touches: none.**
 
+  **Corrected hours later, on the user's question *why are those two excluded*.** One of the two exclusions was
+  wrong and checking it found a defect in the recommendation. **Lake Formation-managed datashares exist**: AWS
+  documents that *"you can centrally define and enforce database, table, column, and row-level access
+  permissions of Amazon Redshift datashares"* and that *"you can also use tags in Lake Formation to configure
+  permissions"*, same-account and cross-account, with the datashare mapped to a **federated database** and only
+  *"users with access to both Redshift and Lake Formation"* reaching it. So data sharing is **not** inherently a
+  second control path, and `INT-24` carries **two** Lake-Formation-governed shapes rather than one. Only the
+  cross-account Data-page connection stays excluded, and it now rests on two independent grounds — the fork, and
+  `sqlworkbench:*` on `*`, which `check-iam-wildcards.py` refuses. **The worse finding is about the shape that
+  had been recommended**: enabling a federated catalog's *"Access this catalog from Iceberg compatible engines"*
+  switch makes **AWS Glue create a managed Amazon Redshift cluster** *"with the compute and storage resources
+  required to perform read and write operations"* — a cluster rather than a serverless workgroup, unpriced, read
+  **and** write, encrypted by an AWS managed key unless a CMK with extra key policies is supplied, and a direct
+  collision with Stage 5b step 3.1's own `DenyRedshiftProvisionedClusters`. Lesson 17's shape. Stage 9 gains
+  **9.5a** to settle the collision with a reading, its decision due 5 is restored rather than struck, the
+  datashare becomes the recommendation, `docs/PRICING.md` names the cluster as unpriced on purpose, and Stage 5b
+  3.1 carries the collision beside the deny so it is not attached in ignorance of what it refuses (Lesson 34).
+  **`objectives.md` needed no change**: the requirement was right and the derivation from it was too narrow.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

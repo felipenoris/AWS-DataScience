@@ -804,6 +804,34 @@
   premise that TIP is a project-profile setting:
   <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/datazone_connection>.
 
+- **Lake Formation over Redshift: the federated catalog and the managed datashare (read 2026-09-20, for
+  `INT-24` and [Stage 9](plan/stages/stage-09-deployment-targets.md) steps 9.5 and 9.7).** Two mechanisms, both
+  governed by Lake Formation, and the reason `INT-24` lists two shapes rather than one.
+  *Lake Formation-managed datashares*: *"Using AWS Lake Formation, you can centrally define and enforce
+  database, table, column, and row-level access permissions of Amazon Redshift datashares and restrict user
+  access to objects within a datashare"*, and *"You can also use tags in Lake Formation to configure permissions
+  on Lake Formation resources"* — so **LF-TBAC is offered here**, where DataZone's Glue-asset path refuses it.
+  *"Amazon Redshift currently supports data sharing through Lake Formation when sharing within the same account
+  or across accounts. Cross-Region sharing is currently not supported."* The chain: the producer grants usage to
+  a Lake Formation account and authorizes it; the Lake Formation administrator registers the datashare
+  (`lakeformation register-resource`, *"This is a mandatory step"*) and creates a **federated database** in the
+  Glue Data Catalog; the Redshift consumer administrator creates an external database from the Glue database ARN
+  and grants usage to *"database users authenticated with IAM credentials"*. Two asymmetries to carry: when the
+  producer revokes, deauthorizes or deletes, *"the associated permissions and objects in Lake Formation are not
+  automatically deleted"*; and *"Users created from the `CREATE USER` command cannot access objects in datashare
+  that have been shared to Lake Formation"* — only *"users with access to both Redshift and Lake Formation"*
+  can: <https://docs.aws.amazon.com/redshift/latest/dg/lf_datashare_overview.html> and
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/data-sharing-redshift.html>.
+  *Federated catalogs over a namespace*, and **the resource nobody chose**: enabling *"Access this catalog from
+  Iceberg compatible engines"* is what lets Athena and EMR read the namespace, and *"To enable these query
+  engines to read and write to Amazon Redshift namespaces, AWS Glue creates a managed Amazon Redshift cluster
+  with the compute and storage resources required to perform read and write operations without impacting Amazon
+  Redshift data warehouse workloads"* — a **cluster**, unpriced, read **and** write, and *"By default, the data
+  in the Amazon Redshift cluster is encrypted using an AWS managed key"* unless a customer managed key with
+  *"additional custom managed key policy"* is supplied. *"You don't need to enable data lake access to access
+  the federated catalogs using Amazon Redshift."* The mapping is `catalogid.dbName.schema.table`:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-ns-catalog.html>.
+
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.
