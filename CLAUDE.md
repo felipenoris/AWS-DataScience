@@ -258,9 +258,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   security group sees it, the 5439 door is irrelevant. It is how `warehouse.py --sql` and the runbook read
   `SVV_*`, and why the persona is **denied** the family rather than merely not granted it. Asynchronous with
   **no waiter**: a poll without a sleep reports empty for a warehouse that is answering.
-- **Two residuals and one unresolved reading.** `EXC-12` an **orphan secret** (`…-whadmin`) from a failed
-  `CreateNamespace` that rolled the namespace back and kept the secret — the admin user moved to `dbadmin`
-  to get past it; removal is owed to the user (Claude's session refuses secret-store writes). `EXC-13` the
+- **Two residuals and one unresolved reading.** `EXC-12` **closed 2026-09-20** — the orphan secret (`…-whadmin`) from a failed
+  `CreateNamespace` that rolled the namespace back and kept the secret is scheduled for deletion 2026-09-27,
+  7-day window; `OwningService: redshift` did **not** refuse `DeleteSecret`. `EXC-13` the
   admin secret **will stop rotating**, because rotation fails permanently if it lands while the `[E]` workgroup
   is down. And the audit groups carry **1,176 `rdsdb` events and none of ours**, with the export **stalled 53
   min** — so whether the Data API path is logged is **not yet answered** and Stage 11 must not assume it is.

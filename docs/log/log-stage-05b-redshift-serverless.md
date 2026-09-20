@@ -641,3 +641,83 @@ waiting for 1 October to find out.
 
 **Decision 1 of the three owed by the previous amendment is therefore closed.** Two remain: whether
 `max_query_execution_time` binds anyone, and the 1,596 MB that `DROP SCHEMA … CASCADE` did not free.
+
+---
+
+## 2026-09-20 — the orphan secret removed, and the 1,596 MB was never there
+
+*Written by Claude in the sitting that ran it, at the user's instruction to remove the orphan secret
+and run the `VACUUM`. It amends the third amendment above rather than editing it. **The `VACUUM` was
+not run, because there was nothing to reclaim** — and the reason there appeared to be is another
+reading error of Claude's, the third of the same kind in this stage.*
+
+### `EXC-12` closed: a service-owned secret can be deleted
+
+```
+aws secretsmanager delete-secret --secret-id 'redshift!awsds-sandbox-warehouse-whadmin' \
+  --recovery-window-in-days 7 --profile awsds-infra-sandbox-1
+→ DeletionDate 2026-09-27T11:08:58-03:00
+```
+
+Checked first that it was still the orphan: its `aws:redshift-serverless:namespaceArn` tag names
+`namespace/bf04abe5-…` and the only live namespace is `8a6117fd-…`. `list-secrets
+--include-planned-deletion` after it shows the orphan with a `DeletedDate` and
+`redshift!awsds-sandbox-warehouse-dbadmin` — the live one — untouched.
+
+**`OwningService: redshift` did not refuse the delete**, which `EXC-12` had flagged as possible. So a
+Redshift-managed secret is deletable by an ordinary `DeleteSecret`, and the earlier caveat is answered.
+
+**A 7-day recovery window rather than `--force-delete-without-recovery`**, which is a change from what
+`EXC-12` recommended. The force form is irreversible and the reason `EXC-12` gave for it — freeing the
+name — does not apply: the live admin is `dbadmin`, so `whadmin`'s name being reserved blocks nothing.
+The window costs ~0.09 USD of secret-month and buys a week in which the decision is reversible.
+`restore-secret` undoes it until 2026-09-27.
+
+### The `VACUUM` is not owed, and the figure that said it was is wrong
+
+`DataStorage` for the namespace, the whole day at 30-minute resolution:
+
+| Time (local) | MB |
+|---|---|
+| 03:00 | 639 |
+| **03:30** | **1,596** ← the `quotatest` table, filled |
+| 04:00 | **129** ← immediately after `DROP SCHEMA quotatest CASCADE` |
+| 04:00 → 10:30 | 129-131, flat |
+
+So **the `DROP` freed the space at once**. The 1,596 MB the previous amendment asked to reclaim was
+**the day's peak**, because the reading was `max(Datapoints[].Maximum)` over a 24-hour window — an
+aggregate over the whole day, reported as a current state. The namespace holds **130 MB**, which is
+its baseline: system tables, the catalog and an empty `lab` schema. **0.003 USD/month.**
+
+**And the documentation's `VACUUM` caveat was never about this.** *"A DELETE statement deletes data
+from a table and disk space is freed up only when `VACUUM` runs"* is about **rows**, deleted from a
+table that still exists. `DROP` removes the object, and the space goes with it. The runbook's §S says
+the `DELETE` half correctly and will say this distinction too.
+
+Running the `VACUUM` anyway would have meant raising the `[E]` compute to reclaim **zero bytes**, at
+1.44 USD per hour of query time — so it was not run, and the user was told why rather than being given
+a no-op with a receipt.
+
+### Three readings of the same shape, in one stage
+
+This is the third time in Stage 5b that an **aggregate was read as a state**:
+
+| Read | What it said | What it was |
+|---|---|---|
+| `ComputeSeconds`, first attempt | 405 RPU-seconds | a partial sum, published per half-hour, while a query still ran |
+| `ComputeSeconds`, second attempt | 4,743 RPU-seconds | the same, one interval later. The settled figure was **94,767** |
+| `DataStorage` | 1,596 MB | the **day's maximum**, six hours after the storage had returned to 130 MB |
+
+The habit that would have caught all three is the same one: **plot the series before quoting a number
+from it**. A `Sum` or a `Maximum` over a window answers a question about the window, not about now, and
+CloudWatch's CLI makes the aggregate easier to ask for than the last datapoint. Added to
+[`lessons.md`](../plan/lessons.md).
+
+### The pendencies this closes
+
+| Was owed | Now |
+|---|---|
+| remove the orphan secret (`EXC-12`) | **done**, scheduled for 2026-09-27, reversible until then |
+| reclaim the 1,596 MB | **does not arise** — the `DROP` freed it, and 130 MB is the namespace's floor |
+| lower the usage limit | **done** in the previous entry, 10 RPU-hours |
+| whether `max_query_execution_time` binds anyone | **still open**, and it needs a non-superuser database session |

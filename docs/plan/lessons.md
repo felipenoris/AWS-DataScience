@@ -1820,6 +1820,26 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `log-stage-05b` the third amendment, and the comments on
   `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and `layers.py`'s `usd_per_hour`.
 
+- **A CloudWatch aggregate answers a question about its window, not about now — and the CLI makes the
+  aggregate easier to ask for than the current value** (three times in one stage, 2026-09-20). The same
+  session read `ComputeSeconds` as **405**, then **4,743**, then **94,767** RPU-seconds for one
+  workgroup, and `DataStorage` as **1,596 MB** when the namespace held **130** — the storage figure was
+  `max(Datapoints[].Maximum)` over a 24-hour window, six hours after a `DROP` had freed the space, and
+  it was written into a plan as an owed `VACUUM`. `--statistics Sum` and `--statistics Maximum` with a
+  wide `--start-time` are the shortest commands to type and the easiest to misread; the habit that
+  catches all three is **plot the series before quoting a number from it**. Two consequences that cost
+  real money and real work here: a cost figure taken while a query is still running is a partial sum,
+  and a storage figure taken over a day is a peak. Where: `log-stage-05b`, the three amendments to 5.3
+  and the fourth on the storage.
+
+- **`DROP` frees Redshift Managed Storage at once; the `VACUUM` caveat is about `DELETE`** (measured
+  2026-09-20). *"A DELETE statement deletes data from a table and disk space is freed up only when
+  `VACUUM` runs"* is about **rows** removed from a table that still exists. `DROP SCHEMA … CASCADE` over
+  a 1.5 GB table took `DataStorage` from **1,596 MB to 129 MB in the next 30-minute datapoint**, with no
+  `VACUUM` anywhere. Reading the caveat as covering both is how a session ends up planning to raise an
+  `[E]` compute at 1.44 USD/hour to reclaim zero bytes. Where: `log-stage-05b`, the fourth amendment,
+  and `runbooks/redshift-connection.md` §S.
+
 - **`ComputeSeconds` lands per half-hour interval, so a Redshift cost read right after an expensive
   query under-reads it** (measured 2026-09-20). The same metric answered **405**, then **4,743**, then
   **94,767** RPU-seconds for the same workgroup within a few hours — the first two while a query was

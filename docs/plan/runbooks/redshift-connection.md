@@ -67,8 +67,15 @@ Then add the row to `docs/AWS_STATE.md`'s Redshift grant register, and re-run
 
 **What `QUOTA` bounds is disk blocks, not logical bytes.** 1,024,000 incompressible 1 KB rows read
 as **2458 MB** (measured 2026-09-20), so a 1 TB quota holds rather less than a terabyte of source
-data. And `DELETE` frees nothing: *"disk space is freed up only when `VACUUM` runs"*, and at 4 base
-RPUs vacuum boost is unavailable, so it is the plain `VACUUM`.
+data.
+
+**`DELETE` frees nothing until `VACUUM`; `DROP` frees at once.** The caveat — *"disk space is freed up
+only when `VACUUM` runs"* — is about **rows** removed from a table that still exists, and at 4 base RPUs
+vacuum boost is unavailable so it is the plain `VACUUM`. Dropping the **object** is different:
+`DROP SCHEMA … CASCADE` over a 1.5 GB table took the namespace's `DataStorage` from 1,596 MB to 129 MB
+in the next datapoint, with no `VACUUM` (measured 2026-09-20). Do not raise the `[E]` compute to reclaim
+space after a `DROP` — check `DataStorage`'s **latest** datapoint first, and not a `Maximum` over a
+window, which reports the peak.
 
 ---
 
