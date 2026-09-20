@@ -187,6 +187,7 @@ is the state hardest to read later.
 | 5.3 | the project cannot administer the warehouse | the policy grants none of it, but that is an omission and not a measurement |
 | 5.4 | the persona cannot mint a database session | needs the `awsds-scientist` SSO session |
 | 6.4 | keep or drop `lab` | the user's, and it has no hourly meter |
+| 6.2 | `WH-9`, `WH-10`, `WH-11` in `./aws/warehouse.py` | **nothing to read until a connection exists.** `WH-7` already compares the tag pair against the authored map on both objects, which is `WH-10`'s substance; `WH-11`'s — the project role's policy and its D13 boundary — is enforced at plan time by the attachment's own precondition in `sandbox/warehouse/iam.tf`, and the runtime form is worth adding when there is a project to read it for. `WH-12` is written and green. Writing checks now that can only report *"no project admitted"* would add three rows that say what `WH-7` already says |
 
 ### Decisions
 

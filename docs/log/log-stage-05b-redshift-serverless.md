@@ -413,3 +413,48 @@ unanswered and Stage 11 should not assume the Data API path is in the feed.
   `GROUPS=redshift`.
 - **6h 5.4**, the persona's `GetCredentials` refusal, needs the `awsds-scientist` session.
 - **verification (xiii)**, the free trial, needs the Redshift console.
+
+---
+
+## 2026-09-20 — an amendment to 6.1, and the closing readings
+
+*Written by Claude in the same sitting. This entry amends 6.1 above rather than editing it: the earlier
+reading was taken 53 minutes after the last ingestion and this one at 73, which is the only thing that
+changed.*
+
+### 6.1 amended — the audit export stopped, and 73 minutes of queries did not restart it
+
+At **07:29:48Z**, `lastIngestionTime` on both `connectionlog` and `useractivitylog` reads
+**06:16:21Z**. Between those two times this sitting ran the quota breach, a 30-minute cross join, the
+usage-limit breach, the recovery and roughly sixty statements. `logExports` still lists all three
+types.
+
+So the sharper statement is: **the export ingested a twelve-minute burst around the namespace's
+creation — 1,176 events, every one the service's internal `rdsdb` user — and has ingested nothing
+since, through 73 minutes of continuous query activity.** What that rules out is the pleasant reading,
+that the groups are merely empty or that the feed has never worked. What it does not settle is whether
+the Data API path is **never** exported or exported on an interval longer than 73 minutes, and the
+06:03–06:16 burst cannot decide it either, because that window contains only `rdsdb` events too.
+
+**Either answer is a finding [Stage 11](../plan/stages/stage-11-dlp.md) has to act on**, and they need
+different repairs: if the path is not covered, the DLP feed has a hole exactly where this estate's own
+instruments query, and CloudTrail's `redshift-data` events are the only record; if it lags by hours,
+the feed is real but useless for anything time-bounded. **Owed: one re-read in a later sitting**, with
+the marker query `AUDITMARKER20260920` as the search term — it is already in the namespace's history
+and nothing removes it.
+
+### The closing readings of the sitting
+
+| Check | Result |
+|---|---|
+| `make check` | **OK** |
+| `./aws/warehouse.py --sql` | **11 pass, 1 note** (`WH-13`, unreadable on this platform) |
+| `./aws/datalake.py` | **zero failed checks**; `DL-5` and `DL-6` green in both accounts, so the key-policy statement this stage added to `sandbox/data/` disturbed nothing in the lake. Its exit code is 1 for the seven persona profiles whose SSO sessions are not open, which is the expected state of a session held as the infrastructure user alone |
+| `make status ENV=sandbox` | `warehouse-compute` **UP, 2 resources, 0.0000 USD/h** — the mechanical form of the claim the split exists to make. `egress` and `probes` are **down**, which is why verification (xv) is still open: no space has been started with `GROUPS=redshift` |
+| `terraform plan` on `sandbox/warehouse`, `sandbox/warehouse-compute`, `sandbox/data`, `identity/sso`, `identity/org-policies` | **`No changes`** on all five |
+
+**The compute was left UP deliberately.** [6h](../plan/stages/stage-06h-redshift-connection.md)'s
+remaining work is a portal session and a space, and both need the workgroup to exist. `make down
+ENV=sandbox` is what ends the session, and it costs nothing to defer: the warehouse bills **0.00 per
+hour** while no query runs, which is the whole reason the usage limit rather than the layer is the
+guard while it is up.
