@@ -889,3 +889,49 @@ from the moment the user read the credits page and now states that there is none
 precisely so the column cannot read 0.00 during a runaway — so the honest current rate is
 **~0.19 USD/h**, which is the two `[E]` network slices billing *per hour of existence* rather than per
 use. That is the real cost of leaving the environment up, and `make down ENV=sandbox` is what ends it.
+
+---
+
+## 2026-09-20 — `WH-15`: the idle verdict promoted from the report body to the checks table
+
+*Written by Claude after the user asked whether `./aws/warehouse.py` shows the idle state. It did, and
+in the wrong place.*
+
+**The verdict was in the report body and in none of the twelve check rows** — and the checks table is
+what gets scanned. That is the same defect in miniature that cost 9.44 USD: the burn was measurable all
+along, in this file's own output, while nobody looked at it. A verdict that is not in the table is a
+verdict nobody sees.
+
+`WH-15` — *the meter is not turning unexpectedly* — now reads the last published `ComputeSeconds`
+interval as a **rate** and puts it where the others are:
+
+| Reading | Result | Why that severity |
+|---|---|---|
+| ≥ **3.5 RPU sustained** through a whole interval | **`fail`** | this workgroup carries `max_query_execution_time = 120`, so no single query is supposed to span a 30-minute interval at all, and the estate's use is interactive rather than batch. A whole interval at base capacity therefore means a query nobody is watching **or** a ceiling that is not enforced — and both want somebody to look |
+| 0.1 – 3.5 RPU | `note` | something is running, below base capacity |
+| < 0.1 RPU | `pass` | idle, and **an idle workgroup bills nothing for compute** — the claim D40 rests on, measured here rather than quoted |
+| no interval published | `note` | the metric lands per 30 minutes, so a workgroup raised in the last half hour reads like this and it is not evidence of anything |
+| no workgroup | `note` | the `[E]` compute is down; nothing can be running |
+
+**The `fail` names the legitimate case out loud** — *"if the work is legitimate, this row is the receipt
+for it rather than a fault"* — because a check that cries wolf during real work teaches its reader to
+ignore it (Lesson 50). It also names the next call: `sys_query_history where status = 'running'`, then
+`pg_terminate_backend(<session_id>)` or `make down`.
+
+### All five branches exercised, against a fabricated `facts`
+
+The `fail` branch cannot be produced on demand without another runaway, and a branch that has never run
+is a claim (Lesson 54). So `judge()` was called directly with fabricated readings — the same discipline
+`catalog.py` uses for its classifiers:
+
+```
+runaway  (4.017 RPU, the real reading of 2026-09-20)  -> FAIL   4.02 RPU sustained … = 1.45 USD/h
+busy     (1.0 RPU sustained)                          -> NOTE   1.00 RPU sustained … = 0.36 USD/h
+idle     (3 RPU-seconds)                              -> PASS   idle: 3 RPU-seconds …
+no interval published yet                             -> NOTE   ComputeSeconds has published no interval
+compute destroyed (make down)                         -> NOTE   no workgroup - nothing can be running
+```
+
+The runaway case was fed **today's own number**, 7,230 RPU-seconds in a 1,800-second interval, and it
+reports 1.45 USD/h — which is the rate that actually ran for six and a half hours with every check in
+this file passing. Live now: `WH-15` **pass**, *idle: 3 RPU-seconds*.

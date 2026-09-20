@@ -525,6 +525,65 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 f"{compute[0]['amount']} RPU-hours {compute[0]['period']}, deactivate",
             )
 
+    # ---------------------------------------------- WH-15: is the meter turning, and should it be?
+    #
+    # THIS IS A CHECK AND NOT ONLY A REPORT LINE, because on 2026-09-20 the burn was in the body of
+    # this file's own report and nobody read it while a query ran for 6 h 33 min at base capacity. The
+    # checks table is what gets scanned; a verdict that is not in it is a verdict nobody sees.
+    #
+    # It FAILS at or above 3.5 RPU sustained over a whole published interval, and that threshold is a
+    # judgement worth stating. A legitimately busy warehouse is not a defect - but this one carries
+    # `max_query_execution_time = 120`, so no single query is supposed to span a 30-minute interval at
+    # all, and the estate's use is interactive rather than batch. A whole interval pinned at base
+    # capacity therefore means either a query nobody is watching or a ceiling that is not enforced, and
+    # both want somebody to look. The message says the legitimate case out loud so the failure does not
+    # train its reader to ignore it (Lesson 50).
+    last = facts.get("compute_last_interval")
+    if wg is None:
+        checks.note(
+            "WH-15",
+            f"{tag} the meter is not turning unexpectedly",
+            "no workgroup - nothing can be running, and no compute can be billed",
+        )
+    elif last is None:
+        checks.note(
+            "WH-15",
+            f"{tag} the meter is not turning unexpectedly",
+            "ComputeSeconds has published no interval yet. It lands per 30 minutes, so a workgroup "
+            "raised in the last half hour reads like this and it is not evidence of anything",
+        )
+    else:
+        stamp, value = last
+        rate = value / 1800.0
+        if rate >= 3.5:
+            checks.fail(
+                "WH-15",
+                f"{tag} the meter is not turning unexpectedly",
+                f"{rate:.2f} RPU sustained through the interval ending {stamp} = "
+                f"{rate * 0.36:.2f} USD/h while it lasts. At or above base capacity for a whole "
+                "interval: either a query nobody is watching, or max_query_execution_time is not "
+                "enforced. Read `select query_id, status, elapsed_time/1000000.0 from "
+                "sys_query_history where status = 'running'`; end one with "
+                "pg_terminate_backend(<session_id>), or destroy the compute with `make down "
+                "ENV=sandbox`, which is the only guard that is not a setting. If the work is "
+                "legitimate, this row is the receipt for it rather than a fault",
+            )
+        elif rate >= 0.1:
+            checks.note(
+                "WH-15",
+                f"{tag} the meter is not turning unexpectedly",
+                f"{rate:.2f} RPU sustained ending {stamp} = {rate * 0.36:.2f} USD/h - something is "
+                "running, below base capacity",
+            )
+        else:
+            checks.ok(
+                "WH-15",
+                f"{tag} the meter is not turning unexpectedly",
+                f"idle: {value:.0f} RPU-seconds in the interval ending {stamp}. An idle workgroup "
+                "bills NOTHING for compute, which is the claim D40 rests on and is measured here "
+                "rather than quoted",
+            )
+
     # ------------------------------------------------------------------- WH-4: the audit trail
     groups = facts.get("log_groups", {})
     want = {f"/aws/redshift/{name}/{t}" for t in LOG_TYPES}
