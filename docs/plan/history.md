@@ -707,7 +707,7 @@ cryptographic action on the data key — the plan had assumed one key served bot
 None of those were catchable by reading. Two things that were: the stage's own *"re-plan `No changes`"* step
 found a perpetual diff the first time it was actually run (six `config_parameter` defaults the service fills),
 and the negative control the battery runbook asks for is what made both new denies attributable rather than
-assumed. **The cost of learning all of it was 0.4743 USD** — and the first figure this project wrote down for it was ten times smaller, because `ComputeSeconds` publishes per half-hour and the expensive query had not landed yet. Four tracked files carried the under-reading for an hour.
+assumed. **The cost of learning all of it was 9.4767 USD** — 19% of the D12 ceiling, with no free trial to absorb it — and the project wrote the figure down wrong **twice** before it settled, at 0.0405 and then 0.4743. Both were readings of a meter that was still running: the query that caused the usage-limit breach kept running for **6 h 33 min** after its client stopped polling, because the Data API does not cancel a statement when the client goes away. What that cost was not the money but the discovery that **three guards this stage believed it had did not hold**: `max_query_execution_time` did not stop the query, `make status` reported `0.0000 USD/h` throughout, and the usage limit — which did work — was set loose enough that one forgotten statement reached two thirds of it in an afternoon.
 
 What the execution added to the plan rather than correcting: a runbook
 ([`redshift-connection.md`](runbooks/redshift-connection.md)), an instrument (`aws/warehouse.py`), two dated

@@ -238,7 +238,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenyRedshiftCostGuardTamperingExceptInfrastructure`, battery **92/0**. `identity/sso` denies the persona
   `GetCredentials`, the **`redshift-data:` family** and the nine cost-guard calls. `aws/warehouse.py`
   **11 pass / 1 note**. Layer 3 in SQL: database `sandbox`, schema `lab` QUOTA 1 TB, `sbx_lab_owner` (user),
-  `sbx_lab_rw` (role) — **`projects` map EMPTY**, so no project is admitted. Measured spend **0.4743 USD** (4,743 RPU-seconds; `ComputeSeconds` publishes per half-hour, so a figure read right after an expensive query under-reads — this one read 405 an hour earlier).
+  `sbx_lab_rw` (role) — **`projects` map EMPTY**, so no project is admitted. Measured spend **9.4767 USD** = 26.32 RPU-h, **19% of the D12 ceiling in one sitting and no free trial exists** (Management credits page empty, user 2026-09-20).
 - **What the execution measured that the plan had wrong.** **Two subnets accepted** (AWS's page right, the
   provider's wrong). **`price_performance_target` is ENABLED by default at Balanced** → decision 2's letter
   impossible, intent is `enabled = false`. **The endpoint HOST survives a destroy/re-create; the workgroup ID

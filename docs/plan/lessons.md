@@ -1804,6 +1804,32 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   includes `#`, `$` and `!` and excludes `'`. The failure arrives at apply, after every other
   resource in the plan has been created. Where: `log-stage-05b` 1.8.
 
+- **The Redshift Data API does not cancel a statement when its client stops polling, and
+  `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A
+  `count(*)` over a triple cross join was submitted through `redshift-data execute-statement`; the
+  client gave up polling after 242 s and exited; **the statement ran for 23,601 seconds — 6 h 33 min —
+  at base capacity**, and `ComputeSeconds` reported a flat 7,230 RPU-seconds per 30-minute interval
+  throughout, which is 4.017 RPU sustained. The workgroup's `max_query_execution_time` was **1800**,
+  set at creation and reading back as 1800. The leading explanation is that the statement ran as a
+  **superuser** — `pg_user` reports `usesuper = true` for the namespace admin — and Redshift exempts
+  the superuser queue from WLM and from query-monitoring rules, of which
+  `max_query_execution_time` is one; that is a hypothesis, and confirming it needs the same query run
+  as a non-superuser. Until then the parameter is **possibly inert** (Lesson 56). What stopped it:
+  `pg_terminate_backend(<session_id>)`, then destroying the workgroup. What would have stopped it
+  eventually: the `serverless-compute` usage limit, 3.4 hours later, at 14.40 USD. Where:
+  `log-stage-05b` the third amendment, and the comments on
+  `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and `layers.py`'s `usd_per_hour`.
+
+- **`ComputeSeconds` lands per half-hour interval, so a Redshift cost read right after an expensive
+  query under-reads it** (measured 2026-09-20). The same metric answered **405**, then **4,743**, then
+  **94,767** RPU-seconds for the same workgroup within a few hours — the first two while a query was
+  still running, and each was written into four tracked files as *the measured cost*. Cost Explorer
+  cannot be used as the cross-check on the same day: it returned 0 for every service with **zero
+  groups** for that date, while a negative control three days earlier returned real figures, so its
+  zero means *no data yet* and nothing else. Two rules, and neither is about Redshift: **a meter that
+  is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. Where:
+  `docs/PRICING.md` §5, `log-stage-05b`'s three amendments to 5.3.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

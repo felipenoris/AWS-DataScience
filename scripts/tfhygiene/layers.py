@@ -493,17 +493,38 @@ SLICES = [
         PERSISTENT,
         "the Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
     ),
-    # Stage 5b pass 1 - the compute half, and the whole point of the split. usd_per_hour is 0.0 and
-    # that is the MEASURED rate of an existing workgroup serving no query: Redshift Serverless
-    # bills 0.36 USD/RPU-hour of query time and nothing while idle, so 4 base RPUs are 1.44 USD for
-    # every hour a query runs and 0.00 for every hour none does. `make status` prices hours, and
-    # there is no hourly number to print here - which is why the guard that matters is the usage
-    # limit in this slice (breach_action = deactivate) and not this column.
+    # Stage 5b pass 1 - the compute half, and the whole point of the split.
+    #
+    # usd_per_hour IS THE WORST CASE, NOT THE RATE, and it was 0.0 until 2026-09-20 cost 9.48 USD to
+    # correct. The argument for the zero was true and useless: Redshift Serverless bills 0.36
+    # USD/RPU-hour of QUERY time and nothing while idle, so an existing workgroup serving no query
+    # really is 0.00/h. What that reasoning missed is what `make status` is FOR - an operator asking
+    # "what is this session costing me" - and on the day one forgotten query ran for 6 h 33 min at
+    # base capacity, `make status` answered 0.0000 USD/h for the whole of it. An authored zero on the
+    # estate's most expensive object made its only runaway invisible to the estate's own burn meter.
+    #
+    # So the number here is 4 RPU x 0.36 = 1.44, the rate while a query IS running, and the column's
+    # meaning for this one row is a CEILING rather than an average. That over-reads a quiet session,
+    # which is the safe direction: the failure this row exists to prevent is an operator who reads
+    # 0.00 and stops looking. The real rate for a session is ./aws/warehouse.py's burn line, which
+    # reads ComputeSeconds - and note that the metric lands per HALF-HOUR interval, so a figure taken
+    # right after an expensive query under-reads it.
+    #
+    # The other guards, and what each one turned out to be worth on 2026-09-20:
+    #   the usage limit    WORKED, and is not tight. breach_action = deactivate at 40 RPU-hours a
+    #                      month would have capped that runaway at 14.40 USD, 3.4 hours later.
+    #   max_query_execution_time  DID NOT STOP IT. Set to 1800 s, read back as 1800, and the query
+    #                      ran 23,601 s. The leading explanation is that it ran as a superuser and
+    #                      Redshift exempts the superuser queue from query-monitoring rules - a
+    #                      hypothesis, not a measurement (log-stage-05b, the third amendment).
+    #   `make down`        WORKED, and is the only guarantee that is not a setting: no pause exists,
+    #                      so destroying the workgroup is what stops the meter.
     Slice(
         "sandbox",
         "warehouse-compute",
         EPHEMERAL,
         "the 4-RPU workgroup + its serverless-compute usage limit - no pause exists, so [E]",
+        usd_per_hour=1.44,
     ),
 ]
 

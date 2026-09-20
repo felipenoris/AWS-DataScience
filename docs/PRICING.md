@@ -365,18 +365,28 @@ partition/format discipline on the Iceberg tables — worth roughly twice as muc
 **The price is unchanged and the warehouse has now billed.** Re-read on 2026-09-20 at
 [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 0.2: same offer file, published
 `2026-09-11T12:45:05Z`, SKU `KQ3J5VYQJZ5QMG9Z`, usage type `USW2-Redshift:ServerlessUsage`,
-**`0.3600000000 USD per RPU-Hr`**. And the first measured spend, for the whole of that stage's execution —
-every apply, the destroy-and-rebuild, the quota breach, the deliberate usage-limit breach and ~60 SQL
-statements: **4,743 RPU-seconds = 1.3175 RPU-hours = 0.4743 USD**, read from `ComputeSeconds` because the free
-trial's status is unknown and a trial hides usage from the bill either way. That is 20 minutes of wall-clock
-query time at 4 RPUs, and it is the number to quote when somebody asks what exercising this stage costs.
+**`0.3600000000 USD per RPU-Hr`**. And the measured spend for that stage's execution:
+**94,767 RPU-seconds = 26.3242 RPU-hours = 9.4767 USD** — **19% of the D12 monthly ceiling, in one sitting**.
+**There is no free trial on this account** (the Management credits page shows none, read by the user
+2026-09-20), so it is billed in full.
 
-**Read `ComputeSeconds` late, or read it wrong.** The same metric was **405** at the moment the usage-limit
-breach was investigated and **4,743** an hour later, because the 30-minute cross join that caused the breach
-had not been published yet: the metric is *"accumulated compute-unit seconds used in the last 30 minutes"* and
-it lands per half-hour interval. Nearly the whole bill — **3,842 of the 4,743** — arrived in one interval. So a
-cost figure taken immediately after an expensive query is an **under**-reading, by a factor of ten here, and
-the four figures this project first recorded for this stage were that.
+**Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
+`count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the
+Data API does not cancel a statement when the client goes away — and `ComputeSeconds` reported a flat **7,230
+RPU-seconds per 30-minute interval**, which is 4.017 RPU sustained, for thirteen intervals. The stage first
+recorded **0.0405**, then **0.4743**; both were readings of a meter that was still running. Two rules follow,
+and they are about meters rather than about Redshift:
+
+- **`ComputeSeconds` lands per half-hour interval**, so a figure taken right after an expensive query
+  under-reads — here by a factor of ten on the first attempt.
+- **A meter that is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. The
+  instrument to run is `./aws/warehouse.py`, whose burn line would have shown 7,230 per interval at any point
+  in those six hours.
+
+**Cost Explorer cannot cross-check the same day.** It returned 0 for 2026-09-20 **for every service, with zero
+groups**, while a negative control on 2026-09-17 returned real figures — the data simply is not there yet, and
+reading that zero as *free* is the pleasant answer Lesson 62 warns about. Three calls at 0.01 USD each
+established it.
 
 **One meter nobody chose is on by default.** `auto_mv` reads `true` on a new workgroup: Redshift decides on
 its own to build and refresh materialized views, and a refresh is a query on the 1.44 USD/hour meter. It is

@@ -110,9 +110,26 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = "true"
   }
 
-  # The per-query ceiling, the counterpart of the Athena scan limit. The service's own maximum is
-  # 86,399 seconds, which is also what a query with no limit gets - so leaving this unset is a
-  # 24-hour runaway at 1.44 USD/h.
+  # The per-query ceiling - AND IT DID NOT HOLD (2026-09-20). Set to 1800 s at creation, read back as
+  # 1800 by WH-2, and a `count(*)` over a triple cross join ran 23,601 seconds - thirteen times the
+  # limit - at base capacity, costing 9.44 USD. The client had stopped polling after 242 s; the Data
+  # API does not cancel a statement when its client goes away, and nothing else stopped it either.
+  #
+  # THE LEADING EXPLANATION IS THE SUPERUSER QUEUE, and it is a hypothesis rather than a measurement:
+  # `max_query_execution_time` is a query-monitoring-rule metric, Redshift exempts the superuser queue
+  # from WLM and from QMR, and the statement ran as `dbadmin`, which `pg_user` reports as a superuser.
+  # If that is right, this parameter does not bind the one identity most likely to run an expensive
+  # ad-hoc query, and the per-query ceiling has to come from a WLM configuration with a non-superuser
+  # queue plus database users that are not superusers. Confirming it needs the same query run as a
+  # non-superuser, which needs a credential this estate does not yet issue.
+  #
+  # IT IS LEFT SET, and the reason is not optimism. It costs nothing, it may well bind a project's
+  # database user (which is not a superuser), and removing it would leave nothing at all on this axis.
+  # What changed instead is what is relied on: the guards that DID hold are the usage limit
+  # (breach_action = deactivate, which would have capped the runaway at 14.40 USD) and `make down`,
+  # which is the only one that is not a setting. Read this comment before treating this line as a
+  # control - Lesson 56: a configuration line naming a capability the surrounding configuration does
+  # not have is inert and reads exactly like a working one.
   config_parameter {
     parameter_key   = "max_query_execution_time"
     parameter_value = tostring(local.capacity.max_query_execution_time)

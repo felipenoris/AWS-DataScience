@@ -493,3 +493,93 @@ It also strengthens one reading and leaves another alone. **The usage limit is e
 RPU-hours**: `UsageLimitConsumed` said `1.0` against an amount of 1 and fired, while the real usage
 settled at 1.3175 — consistent, where against 0.1125 it had looked like aggressive rounding. And the
 prediction held: 1.44 USD per query-hour × 0.3294 hours of 4-RPU time is 0.4743.
+
+---
+
+## 2026-09-20 — a second amendment to 5.3, and it is the serious one: 9.48 USD, not 0.47
+
+*Written by Claude after the user asked what free-trial credit was left and reported that the
+Management credits page shows **none**. It amends 5.3 and both amendments above rather than editing
+them. The error is Claude's.*
+
+### There is no free trial on this account, so every figure here is real money
+
+The user read the Management **Credits** page: **no credit of any kind**. So the USD 300 / 90-day
+Redshift Serverless trial is **not active**, verification (xiii) is answered in the negative, and none
+of this stage's spend was absorbed.
+
+### The number
+
+| | |
+|---|---|
+| `ComputeSeconds`, whole history of the workgroup | **94,767 RPU-seconds** |
+| RPU-hours | **26.3242** |
+| **Compute at 0.36 USD/RPU-hour** | **9.4767 USD** |
+| `DataStorage`, namespace maximum | **1,596 MB** → 0.037 USD/month, and it survives `make down` |
+
+**That is 19% of the D12 monthly ceiling, spent in one sitting, on a test.** Cost Explorer could not
+be used to cross-check it: it returns 0 for 2026-09-20 **for every service, with zero groups**, while
+a negative control on 2026-09-17 returns real figures (`AWS Config`, 0.009 USD) — so CE simply has no
+data for the day yet, and reading its zero as *free* would have been the pleasant answer Lesson 62
+warns about. Three CE calls at 0.01 USD each were spent establishing that.
+
+### What actually happened, and it was not the breach test
+
+5.1's burn submitted `select count(*) from pg_attribute a, pg_attribute b, pg_attribute c` — 46,391
+rows cubed, about 10¹⁴ output rows. The client-side poller gave up after **242 s** and the script
+exited. **The Data API does not cancel a statement when its client stops polling.** The query kept
+running server-side, alone, at 4 RPUs, for **23,601 seconds — 6 hours 33 minutes** — and was still
+`running` when the user asked the question. `ComputeSeconds` reported a flat **7,230 RPU-seconds per
+30-minute interval** for thirteen consecutive intervals: 4.017 RPU sustained, which is base capacity,
+continuously.
+
+It was ended with `select pg_terminate_backend(<session_id>)`, and then the compute slice was
+destroyed — `make down ENV=sandbox`, `list-workgroups` returns **0**, the namespace survives
+`AVAILABLE`, `make status` reads **0.0000 USD/h**. The hard guarantee did what it exists for, on the
+first occasion that needed it.
+
+### Three guards did not catch it, and each absence is worth its own line
+
+- **`max_query_execution_time = 1800` did not stop it.** The parameter was set at creation and reads
+  back as `1800` (`WH-2` passes on it), and the query ran **thirteen times** that. The leading
+  explanation is that the statement ran as `dbadmin`, which `pg_user` reports as a **superuser**, and
+  Redshift exempts the **superuser queue** from WLM and from query-monitoring rules — so the per-query
+  ceiling does not bind the one identity most likely to run an expensive ad-hoc query. **This is a
+  hypothesis, not a measurement**: confirming it needs the same query run as a non-superuser, which
+  needs a credential this estate does not yet issue. Until then the parameter must be treated as
+  **possibly inert**, which is Lesson 56's exact shape — a configuration line that reads exactly like
+  a working control.
+- **The usage limit had not breached, and that was correct.** At 26.32 RPU-hours it was still under
+  40. It would have fired at 40, about 3.4 hours later, capping the total at **14.40 USD**. So the
+  ceiling works and **is not tight**: 40 RPU-hours/month was chosen as 29% of the D12 ceiling on the
+  assumption that query time is scarce in a lab, and a single forgotten statement reaches two thirds
+  of it in an afternoon.
+- **`make status` read `0.0000 USD/h` throughout**, because `usd_per_hour` for
+  `sandbox/warehouse-compute` is authored as `0.0` on the argument that a workgroup serving no query
+  bills nothing. That authored zero is what made the runaway invisible to the estate's own burn meter,
+  and it was written in this stage, by Claude, in the commit that created the slice.
+
+### What this stage got wrong about its own cost, three times
+
+5.3 recorded **0.0405 USD**. The first amendment corrected it to **0.4743 USD** and explained the
+half-hour publication lag. Both were readings of a meter that was **still running**, taken by someone
+who believed the query had ended because the client had. The general form is worth more than either
+number: **a metric that is still accruing has not answered, and "I stopped watching" is not "it
+stopped"**. The instrument this stage wrote, `./aws/warehouse.py`, prints exactly that burn line and
+would have shown 7,230 per interval at any point in those six hours, had it been run.
+
+### Owed, and it is a change to the design rather than a note
+
+1. **Decide the usage limit's real value** with the user. 40 RPU-hours is 14.40 USD/month; the
+   measurement above is the argument for lowering it, and `deactivate` means a low limit costs an
+   interruption rather than money.
+2. **Give `sandbox/warehouse-compute` a non-zero `usd_per_hour`**, or `make status` keeps reporting
+   zero for the estate's most expensive object. The honest figure is the worst case while it exists —
+   **1.44 USD/h** at base capacity — with the comment saying it is a ceiling and not a rate.
+3. **Settle whether `max_query_execution_time` binds anyone.** If it does not bind a superuser, the
+   per-query ceiling has to come from a WLM configuration with a non-superuser queue, and every
+   session that matters has to run as a non-superuser — which is a real change to how
+   [6h](../plan/stages/stage-06h-redshift-connection.md)'s database users are issued.
+4. **Reclaim the 1,596 MB.** `DROP SCHEMA … CASCADE` did not free it; `VACUUM` is what does, and at 4
+   base RPUs it is the plain form. It is 0.037 USD/month, so it waits for the next sitting that has
+   the compute up for another reason.
