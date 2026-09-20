@@ -145,6 +145,19 @@ repository on 2026-09-09, by reading raw counts as MiB.
   one**; see §7's second rule.
 - **An `open` plane emits no deny at all**, so this log cannot distinguish *refuses everything* from
   *does not exist*. `./aws/proxy.py` is the instrument for the plane's shape; this log is for its traffic.
+- **A non-`000` code at the client does not say the origin allowed it**, only that the tunnel opened.
+  A probe of the nine GitHub names on 2026-09-20 read `403` at the client for
+  `github-cloud.githubusercontent.com` while this log read `200 TCP_TUNNEL` for the same request: Squid
+  admitted the `CONNECT` and the origin answered `403` inside it, which Squid cannot see. **The client
+  distinguishes refused from allowed; only this log says which side refused.**
+- **`hostname -I` inside a Studio app is not the address this log records.** The same probe printed
+  `169.255.255.2` from the container while every one of its requests appears here from `10.20.126.1`.
+  Correlate a space to a line **by the window**, never by the address the container reports; the
+  addresses in this log are ENI addresses and they change at every app restart.
+- **A `Range` request is a request, not a ceiling.** The same probe asked `codeload.github.com` for the
+  first kilobyte of a tarball and got `200` rather than `206`: the endpoint builds the archive on the
+  fly and ignores `Range`, so **15,367,270 bytes** crossed the proxy for what was written as a 1 KB
+  probe. Size a probe by what the endpoint will send, and read the byte column afterwards.
 
 ### The aggregation that answers most questions
 

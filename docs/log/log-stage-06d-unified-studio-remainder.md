@@ -2623,3 +2623,57 @@ pass and `PX-4` is the standing note. The association ran at **23:00:59Z**, twen
 the parameter write and at the tick the previous section's reading predicted — so the forecast held to
 the interval. Its report was `Success` with empty stdout again, which is why this line comes from
 `--on-host` and not from the association.
+
+### The nine exercised from a space
+
+**[user] Ran a probe in a space on 2026-09-20, 01:58:21 → 01:58:25Z**, and pasted its output. Every
+request was a `HEAD` or a range read; nothing was cloned and no credential was sent.
+
+**[Claude] Both sides agree, and the log is read against the window rather than the address.** The
+client saw a tunnel open for all nine and `000` for all three controls; `/awsds/prod/proxy` names
+each request from **`10.20.126.1`**:
+
+| name | client | proxy |
+|---|---|---|
+| `release-assets.githubusercontent.com` | 404 | **200 `TCP_TUNNEL`** |
+| `cli.github.com` | 200 | **200 `TCP_TUNNEL`** |
+| `gist.github.com` | 302 | **200 `TCP_TUNNEL`** |
+| `objects.githubusercontent.com` | 404 | **200 `TCP_TUNNEL`** |
+| `codeload.github.com` | 301 | **200 `TCP_TUNNEL`** |
+| `uploads.github.com` | 302 | **200 `TCP_TUNNEL`** |
+| `github-cloud.githubusercontent.com` | **403** | **200 `TCP_TUNNEL`** |
+| `pipelines.actions.githubusercontent.com` | 404 | **200 `TCP_TUNNEL`** |
+| `ghcr.io` | 405 | **200 `TCP_TUNNEL`** |
+| `github.com` (positive control) | 200 | **200 `TCP_TUNNEL`** |
+| `ssh.github.com` | 000 | **403 `TCP_DENIED`** |
+| `example.com` | 000 | **403 `TCP_DENIED`** |
+| `repo.anaconda.com` | 000 | **403 `TCP_DENIED`** |
+
+**[Claude] `ssh.github.com` is refused, measured rather than assumed.** The decision to leave it off
+holds at the proxy, so `git` over SSH from a space fails at the `CONNECT` and not at the key.
+
+**[Claude] The two redirect chains work, which is the half a hostname list makes fragile.** The
+release asset resolved through `api.github.com` to
+`github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_checksums.txt` and came back **206**, so
+`github.com` handed off to `release-assets.githubusercontent.com` and both names were on the plane.
+The `codeload.github.com` tarball came back **200**.
+
+**[Claude] Three things the client could not have told anyone**, all now in
+[`log-debugging.md`](../plan/runbooks/log-debugging.md) §P:
+
+- **`github-cloud.githubusercontent.com` read `403` at the client and `200 TCP_TUNNEL` here.** The
+  refusal was the origin's, inside a tunnel Squid had already admitted and cannot see into. A code
+  that is not `000` says the tunnel opened and nothing about what answered.
+- **`hostname -I` in the container printed `169.255.255.2`** while every request appears here from
+  `10.20.126.1`. A space is correlated to this log **by window**, never by the address it reports of
+  itself. The probe script carried that defect and it is worth knowing before the next one.
+- **A `Range` is a request, not a ceiling.** `codeload.github.com` answered `200` rather than `206`
+  and streamed **15,367,270 bytes** for what was written as a one-kilobyte probe: the endpoint builds
+  the archive on the fly and ignores `Range`.
+
+**[Claude] One reading in the window is unattributed.** A third `release-assets.githubusercontent.com`
+request at 01:58:23Z carried **63,494,630 bytes**, which nothing the probe did accounts for — its own
+two lines are 5,272 and 6,702 bytes, the `HEAD` and the ranged asset. The space was running its IDE
+throughout the window (toolkit and `schema.cloudformation` names appear in the same seconds), so the
+likely author is something in that session rather than the probe, and **the log cannot attribute it**:
+this group carries names and bytes and no principal. Recorded as a reading rather than explained.
