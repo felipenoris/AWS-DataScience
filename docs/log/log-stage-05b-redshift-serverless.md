@@ -583,3 +583,61 @@ would have shown 7,230 per interval at any point in those six hours, had it been
 4. **Reclaim the 1,596 MB.** `DROP SCHEMA … CASCADE` did not free it; `VACUUM` is what does, and at 4
    base RPUs it is the plain form. It is 0.037 USD/month, so it waits for the next sitting that has
    the compute up for another reason.
+
+---
+
+## 2026-09-20 — the usage limit lowered to 10 RPU-hours, at the user's instruction
+
+*Written by Claude in the sitting that applied it. The decision is the user's; the readings and the
+apply are Claude's.*
+
+**`usage_limit_rpu_hours` 40 → 10**, declared in `sandbox/warehouse/variables.tf` and applied to that
+slice — `0 added, 0 changed, 0 destroyed`, because the value is an **output** the `[E]` compute slice
+reads, and the compute is down. `terraform output -json capacity` now reports
+`"usage_limit_rpu_hours": 10`. **The limit object itself is created at the next `make up ENV=sandbox`**,
+with that amount, `monthly`, `deactivate`.
+
+| | Before | After |
+|---|---|---|
+| RPU-hours per month | 40 | **10** |
+| Query time at base capacity | 10 h | **2.5 h** |
+| Cost if fully consumed | 14.40 USD | **3.60 USD** |
+| Share of the D12 ceiling | 29% | **7%** |
+
+**Why it moved is a measurement rather than a preference.** 40 was argued as *"10 hours of query time
+a month, which is plenty in a lab"*. One forgotten statement then reached **26.3 RPU-hours in an
+afternoon** — two thirds of the way to a ceiling meant to be generous — while the limit was the only
+guard that would have stopped it at all. A guard that lets two thirds of the damage through before it
+acts is sized for the wrong failure.
+
+**Why a low value is cheap here, and this is what makes 10 a safe choice rather than a brave one.**
+`breach_action = deactivate` means breaching costs an **interruption**, not money, and 5.2 measured
+that **recovery is immediate on raising the amount** — no wait for the period to roll over. So setting
+this too low costs one `update-usage-limit` by somebody holding `InfrastructureAccess`; setting it too
+high costs the bill.
+
+### The reading that made it safe to do now: the counter is per usage limit
+
+The obvious worry was that a **monthly** limit of 10 would be born already breached, since September
+has seen 26.3 RPU-hours. It will not be, and the evidence is the metric's own dimensioning plus a
+before/after this stage already produced:
+
+| `UsageLimitId` | `UsageLimitConsumed` (max, 2026-09-20) |
+|---|---|
+| `cf7ced6a-…` — the limit destroyed at 1.9 | **0.0** |
+| `a5b0a714-…` — its successor, which saw the runaway | **28.0** |
+| no limit dimension — the workgroup aggregate | 28.0 |
+
+`UsageLimitConsumed` is dimensioned `{UsageLimitId, UsageType, Workgroup}`, and the first limit reads
+**zero** although 178 RPU-seconds ran while it existed. So **consumption is accounted against the
+limit object, and a new limit starts near zero** — which is also why 1.9's re-created limit read `1.0`
+rather than carrying the earlier figure forward.
+
+**It is evidence, not a guarantee.** If the service tracks a month per workgroup or per namespace
+behind the metric, the first `make up` will find the workgroup refusing compute at the first real
+query, with `ERROR: Query reached usage limit` — and the remedy is the one 5.2 already measured. The
+cost of being wrong is one command; that asymmetry is the whole argument for acting now rather than
+waiting for 1 October to find out.
+
+**Decision 1 of the three owed by the previous amendment is therefore closed.** Two remain: whether
+`max_query_execution_time` binds anyone, and the 1,596 MB that `DROP SCHEMA … CASCADE` did not free.

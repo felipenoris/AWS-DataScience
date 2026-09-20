@@ -126,7 +126,8 @@ resource "aws_redshiftserverless_workgroup" "this" {
   # IT IS LEFT SET, and the reason is not optimism. It costs nothing, it may well bind a project's
   # database user (which is not a superuser), and removing it would leave nothing at all on this axis.
   # What changed instead is what is relied on: the guards that DID hold are the usage limit
-  # (breach_action = deactivate, which would have capped the runaway at 14.40 USD) and `make down`,
+  # (breach_action = deactivate, which would have capped the runaway at 14.40 USD at the amount then in
+  # force, and at 3.60 now) and `make down`,
   # which is the only one that is not a setting. Read this comment before treating this line as a
   # control - Lesson 56: a configuration line naming a capability the surrounding configuration does
   # not have is inert and reads exactly like a working one.
@@ -222,9 +223,11 @@ resource "aws_redshiftserverless_workgroup" "this" {
 # exactly that). The other two actions are `emit-metric` and `log`.
 #
 # The amount is in RPU-HOURS for `serverless-compute`, so the arithmetic is: 4 RPUs x 1 hour of query
-# time = 4 RPU-hours = 1.44 USD. The default of 40 RPU-hours is 10 hours of query time a month,
-# 14.40 USD, 29% of the D12 ceiling - leaving room for the RMS storage this limit does not bound and
-# `make down` does not remove.
+# time = 4 RPU-hours = 1.44 USD. **10 RPU-hours since 2026-09-20** - 2.5 hours of query time a month,
+# 3.60 USD, 7% of the D12 ceiling. It was 40, and it moved because one forgotten statement reached
+# 26.3 RPU-hours in an afternoon: sandbox/warehouse/variables.tf carries the argument, and the reason
+# a low value is cheap is that `deactivate` costs an interruption rather than money and recovery is
+# immediate on raising the amount.
 #
 # WHAT IT DOES NOT BOUND, said here because the name suggests otherwise: storage. A schema filled to
 # its 1 TB quota is 24.58 USD/month whether this limit has fired or not, and whether a workgroup

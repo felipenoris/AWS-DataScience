@@ -109,10 +109,32 @@ variable "max_capacity" {
   default     = 8
 }
 
+# 10 SINCE 2026-09-20, LOWERED BY THE USER AFTER THE FIRST RUNAWAY, and the reason it moved is the
+# only kind worth moving a limit for: a measurement. It was 40 - ten hours of query time, 14.40
+# USD/month, argued as 29% of the D12 ceiling on the assumption that query time is scarce in a lab.
+# Then one forgotten statement ran 6 h 33 min at base capacity and reached **26.3 RPU-hours in an
+# afternoon**, two thirds of the way to a ceiling that was supposed to be generous. The limit was the
+# only guard that would have stopped it (max_query_execution_time did not, and make status read
+# 0.0000 USD/h throughout), and at 40 it would have let 14.40 USD through first.
+#
+# WHY A LOW LIMIT IS CHEAP HERE: `breach_action = deactivate`, so breaching costs an INTERRUPTION and
+# not money, and recovery is immediate on raising the amount - measured at Stage 5b 5.2, no wait for
+# the period to roll over. So the cost of setting this too low is one `update-usage-limit` by somebody
+# holding InfrastructureAccess, and the cost of setting it too high is the bill above.
+#
+# 10 RPU-hours is 2.5 hours of query time at base capacity = 3.60 USD/month, 7% of the D12 ceiling.
+# Raise it when a real workload has a number, not before.
+#
+# THE COUNTER IS PER USAGE LIMIT, not per month or per namespace (measured 2026-09-20): the limit
+# destroyed at 1.9 reports `UsageLimitConsumed` 0.0 while its successor reports 28.0 over the same
+# namespace. So a limit created by the next `make up` starts near zero even though this month has
+# already seen 26.3 RPU-hours - which is what makes lowering it now safe rather than a warehouse that
+# is born deactivated. If that reading is wrong, the symptom is a workgroup refusing compute at the
+# first query, and the remedy is the same one `update-usage-limit` gives.
 variable "usage_limit_rpu_hours" {
-  description = "The hard ceiling, in RPU-hours per period, with breach_action = deactivate. 40 RPU-hours = 10 hours of query time at 4 RPUs = 14.40 USD/month, 29% of the D12 ceiling, leaving room for the RMS storage this limit does not bound."
+  description = "The hard ceiling, in RPU-hours per period, with breach_action = deactivate. 10 RPU-hours = 2.5 hours of query time at 4 RPUs = 3.60 USD/month, 7% of the D12 ceiling. Lowered from 40 by the user on 2026-09-20, after a single forgotten query reached 26.3 RPU-hours in one sitting."
   type        = number
-  default     = 40
+  default     = 10
 }
 
 variable "usage_limit_period" {

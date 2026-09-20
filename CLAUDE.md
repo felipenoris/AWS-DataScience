@@ -233,7 +233,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20), 6h's portal half is not.** Two slices:
   `sandbox/warehouse/` rank **53** `[P]` (namespace + admin secret + 3 audit groups at 30 d + exec role with
   **no policy** + SG + 2 alarms) and `sandbox/warehouse-compute/` rank **54** `[E]` (workgroup `base 4 / max 8`
-  + usage limit **40 RPU-h monthly `deactivate`**). `vpc-egress-v0.15.0` adds the `redshift` group
+  + usage limit **10 RPU-h monthly `deactivate`**, lowered from 40 by the user 2026-09-20 after the runaway). `vpc-egress-v0.15.0` adds the `redshift` group
   (`redshift-serverless` only). SCP root: `DenyRedshiftProvisionedClusters` +
   `DenyRedshiftCostGuardTamperingExceptInfrastructure`, battery **92/0**. `identity/sso` denies the persona
   `GetCredentials`, the **`redshift-data:` family** and the nine cost-guard calls. `aws/warehouse.py`

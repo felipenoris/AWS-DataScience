@@ -511,8 +511,11 @@ SLICES = [
     # right after an expensive query under-reads it.
     #
     # The other guards, and what each one turned out to be worth on 2026-09-20:
-    #   the usage limit    WORKED, and is not tight. breach_action = deactivate at 40 RPU-hours a
-    #                      month would have capped that runaway at 14.40 USD, 3.4 hours later.
+    #   the usage limit    WORKED, and was not tight: breach_action = deactivate at the 40 RPU-hours
+    #                      then in force would have capped that runaway at 14.40 USD, 3.4 hours later.
+    #                      The user lowered it to 10 the same day - 3.60 USD/month - because a guard
+    #                      that lets two thirds of the damage through first is sized for the wrong
+    #                      failure.
     #   max_query_execution_time  DID NOT STOP IT. Set to 1800 s, read back as 1800, and the query
     #                      ran 23,601 s. The leading explanation is that it ran as a superuser and
     #                      Redshift exempts the superuser queue from query-monitoring rules - a

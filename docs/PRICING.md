@@ -396,7 +396,7 @@ somebody can find rather than a knob nobody knew about.
 **The usage limit's own granularity, measured**: `UsageLimitConsumed` reported **1.0** against an amount of 1
 and the breach fired, while the day's real usage settled at **1.3175 RPU-hours**. So the limit is evaluated in
 **whole RPU-hours** and a limit of N bites somewhere between N−1 and N of real usage. At the applied 40 that is
-**14.04-14.40 USD/month**, close enough that the arithmetic below stands.
+**14.04-14.40 USD/month** at the 40 then in force. **The user lowered it to 10 on 2026-09-20** — 2.5 hours of query time, **3.60 USD/month**, 7% of the D12 ceiling — because the guard had let 26.3 RPU-hours through before coming near the old amount. **The counter is per usage limit, not per month**: the limit destroyed at 1.9 reports `UsageLimitConsumed` 0.0 while its successor reports 28.0 over the same namespace, so a limit created by the next `make up` starts near zero.
 
 Read from `AmazonRedshift/current/{us-west-2,sa-east-1}/index.json`, both published **2026-09-11**; the SKU
 is the `Serverless` product family entry with no `term` attribute (the two `…-CR-1YR-…` SKUs beside it are
@@ -415,7 +415,7 @@ Serverless. Storage bills separately and always, at the RMS rate above: cents at
 
 **Against the USD 50 ceiling, this is the estate's most expensive object per unit of time** — 1.44 USD/h
 against the WireGuard host's 0.0052 and the whole `egress/` estate's 0.410 (§3). Ten hours of querying a month
-is 14.40 USD, roughly a third of the ceiling, which is why the guard is the service's own **usage limit** with
+was 14.40 USD at the original 40 RPU-hours, roughly a third of the ceiling, and is 3.60 USD at the 10 in force since 2026-09-20 — which is why the guard is the service's own **usage limit** with
 `breach_action = deactivate` rather than a budget notification.
 
 Three documented ways an *idle* warehouse bills anyway, each priced at 4 RPUs so the number is in front of
