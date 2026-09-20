@@ -629,6 +629,32 @@ changed, not just the plan.
   runs, which at 4 base RPUs is the plain command because vacuum boost needs 8, closing a loop with Stage 5b's
   own capacity reading; and a schema name *"can't be `PUBLIC`"*. **Provisioned things this touches: none.**
 
+- **2026-09-20 — a schema is a base, a base can be shared, and two decisions the plan had guessed were answered
+  against it.** The user's fourth clarification of the day re-mapped the model rather than adding to it. *"In
+  Redshift, a schema is a database"* in the sense the brief uses the word — so the Redshift `database` is only a
+  **class container** (`sandbox`, `governed`, one per account, **no name prefixes**), and every grain is **per
+  schema × project**. The plan now uses Redshift's own two words and states the mapping once, rather than
+  letting one word mean two things (Lesson 32). *"One sandbox schema can be shared with more than one SageMaker
+  project"*, which **breaks the ownership shape written hours earlier**: ownership is singular and the relation
+  is many-to-many, so layer 3 became a **Redshift database role per schema** (`sbx_<theme>_rw`) granted to each
+  admitted project — admitting or removing one is a single `GRANT`/`REVOKE ROLE` against a single object — with
+  the schema owned by a non-login role so no project is privileged over the others sharing it. **Sharing brings
+  back the cost ownership had removed:** a table belongs to the user that created it, so whether a second project
+  may alter or drop the first's tables is unread and `ALTER DEFAULT PRIVILEGES` may be owed **per contributing
+  project**; [6h](stages/stage-06h-redshift-connection.md) step 5.2b is the reading, and until it is taken
+  *"creates freely"* is specified only as *creates and reads its own*. **The schema's name is thematic** —
+  *"chosen when the schema is created, after the theme of the data it will hold"*, with *"no necessary relation
+  to any SageMaker project"* — which answered 6h decision 6 against **both** shapes it had offered, and has a
+  consequence worth keeping: a schema name carries **no authorization information**, so the schema × project
+  relation exists only in `sandbox/warehouse/`'s map and in the `GRANT ROLE` statements, `WH-6` can no longer
+  classify anything by name (it reads instead that each account holds one class database and that every schema
+  appears in the map), and a schema whose theme has outlived its projects looks exactly like one in use.
+  **The quota is 1 TB**, answering decision 7 — and the arithmetic went into `docs/PRICING.md` and this file's
+  §5 rather than being left flattering: a filled schema is **24.58 USD a month, 49% of the D12 ceiling**, nothing
+  bounds the number of schemas, and 32 at 1 TB reach the 32 TB a 4-RPU workgroup supports, at roughly 786 USD a
+  month. So the quota bounds a runaway and not the bill, and what bounds the bill is a new compensating control:
+  an alarm on the namespace's `DataStorage` metric. **Provisioned things this touches: none.**
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
