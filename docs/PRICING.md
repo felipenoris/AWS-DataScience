@@ -360,7 +360,28 @@ São Paulo as in Oregon.
 Athena at 9.00 USD/TB in São Paulo makes the two cost levers in `docs/plan/cost-model.md` — **S3 Bucket Keys** and
 partition/format discipline on the Iceberg tables — worth roughly twice as much there as in Oregon.
 
-### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md)
+### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md), **re-read and first measured 2026-09-20**
+
+**The price is unchanged and the warehouse has now billed.** Re-read on 2026-09-20 at
+[Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 0.2: same offer file, published
+`2026-09-11T12:45:05Z`, SKU `KQ3J5VYQJZ5QMG9Z`, usage type `USW2-Redshift:ServerlessUsage`,
+**`0.3600000000 USD per RPU-Hr`**. And the first measured spend, for the whole of that stage's execution —
+every apply, the destroy-and-rebuild, the quota breach, the deliberate usage-limit breach and ~60 SQL
+statements: **405 RPU-seconds = 0.0405 USD**, read from `ComputeSeconds` because the free trial's status is
+unknown and a trial hides usage from the bill either way. That is consistent with 1.44 USD per query-hour at
+4 RPUs (405 RPU-seconds is 101 seconds of wall-clock query time) and it is the number to quote when somebody
+asks what exercising this stage costs.
+
+**One meter nobody chose is on by default.** `auto_mv` reads `true` on a new workgroup: Redshift decides on
+its own to build and refresh materialized views, and a refresh is a query on the 1.44 USD/hour meter. It is
+left at the default and named in `sandbox/warehouse-compute/main.tf` so that turning it off is a decision
+somebody can find rather than a knob nobody knew about.
+
+**The usage limit's own granularity, measured**: `UsageLimitConsumed` reported **1.0** while `ComputeSeconds`
+totalled 405 RPU-seconds (0.1125 RPU-hours), and the breach fired. So the consumed metric appears to round
+**up** to whole RPU-hours, which makes a limit of N RPU-hours bite somewhere between N−1 and N of real usage.
+At the applied 40 that is **14.04-14.40 USD/month**, close enough that the arithmetic below stands; recorded
+because a limit set to 1 for a test is breached by the first fraction of an hour.
 
 Read from `AmazonRedshift/current/{us-west-2,sa-east-1}/index.json`, both published **2026-09-11**; the SKU
 is the `Serverless` product family entry with no `term` attribute (the two `…-CR-1YR-…` SKUs beside it are

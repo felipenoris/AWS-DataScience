@@ -689,6 +689,34 @@ changed, not just the plan.
   `CLAUDE.md`'s Redshift entry went over the 50 KB file budget in the same sitting and was re-trimmed to state
   only, as its own rule requires. **Provisioned things this touches: none.**
 
+**2026-09-20 — Stage 5b executed, and nine of its sentences turned out to be wrong.** The Sandbox warehouse
+exists: two slices, the two SCP statements, the persona's reach, the first schema and the ceiling proven to
+refuse. What is worth recording as *plan history* rather than as a log entry is how much of the stage the
+execution corrected, because the pattern is the one Lesson 54 names — `validate`, `render` and `run` are three
+verdicts, and this stage had only ever been *written*.
+
+Decision 2's letter was **impossible**: it asked for the price-performance target set to *Optimizes for cost*
+"because AWS does not recommend AI-driven scaling at 4 base RPUs", and *Optimizes for cost* **is** the feature.
+Step 2.2's *"one tag per admitted project"* is **not expressible**: `AmazonDataZoneProject` is a tag key, so
+layer 1 admits one project and the sharing requirement meets that wall at the second. Step 1.3's schema owner
+as *"a non-login role"* is **not a thing Redshift has** — `AUTHORIZATION` takes a user. `WH-13`'s instrument,
+`SVV_SCHEMA_QUOTA_STATE`, is **refused to a superuser**, so that check can only ever be a note. And 1.1's
+`admin_password_secret_kms_key_id` was **refused by this estate's own D31**, which gives the account root no
+cryptographic action on the data key — the plan had assumed one key served both the data and the credential.
+
+None of those were catchable by reading. Two things that were: the stage's own *"re-plan `No changes`"* step
+found a perpetual diff the first time it was actually run (six `config_parameter` defaults the service fills),
+and the negative control the battery runbook asks for is what made both new denies attributable rather than
+assumed. **The cost of learning all of it was 0.0405 USD.**
+
+What the execution added to the plan rather than correcting: a runbook
+([`redshift-connection.md`](runbooks/redshift-connection.md)), an instrument (`aws/warehouse.py`), two dated
+exceptions (`EXC-12` the orphan secret, `EXC-13` the rotation the `[P]`/`[E]` split stops), nine entries in
+`lessons.md`'s platform list, and one new decision — **6h decision 8**, how a second project is admitted,
+which did not exist before the tag turned out to be single-valued. **Provisioned things this touches:** the
+Sandbox namespace and workgroup, one key-policy statement, two SCP statements, one permission-set document,
+one module tag.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

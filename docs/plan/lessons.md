@@ -1704,6 +1704,106 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
   `log-stage-06d` the fifteenth sitting.
 
+- **A failed `CreateNamespace` rolls the namespace back and leaves its managed secret behind**
+  (measured 2026-09-20). Redshift Serverless creates the admin credential in Secrets Manager, then
+  the namespace; when the namespace creation failed on an inaccessible KMS key, the namespace was
+  rolled back and the secret was not. It survives as `redshift!<namespace>-<username>`,
+  `OwningService: redshift`, rotation enabled, tagged with a **namespace ARN that no longer
+  resolves** — and the next attempt fails with a *different* message, *"Unable to create secret for
+  the dbInstance because a secret with a matching name exists"*, which reads like a name collision
+  rather than the residue of the previous attempt. The name is derived from the namespace **and the
+  admin username**, so changing either gets past it and leaves the orphan. Where: `AWS_STATE.md`
+  `EXC-12`, `log-stage-05b` the first sitting.
+
+- **A Redshift Serverless workgroup's endpoint host survives a delete and re-create; its id does
+  not** (measured 2026-09-20). Destroy and re-create under the same name and
+  `endpoint.address` is byte-identical — it is derived from the name, the account and the Region —
+  while `workgroupId` changes (`75b926c8-…` → `4b0577a2-…`), the usage limit's id changes, and the
+  workgroup's VPC endpoint and both its ENIs are replaced with new private addresses. **The ARN
+  carries the id**, so any IAM or SCP statement scoped to a workgroup's exact ARN stops matching
+  after the first teardown, silently, presenting as a principal whose queries stopped
+  authenticating with no diff anywhere. Two ENIs also linger in `available` state for under two
+  minutes after the destroy, still referencing the security group, which would fail a teardown of
+  the slice that owns it inside that window. Where: `log-stage-05b` 1.9, and the comments on
+  `sandbox/warehouse/iam.tf` and `DenyRedshiftCostGuardTamperingExceptInfrastructure`.
+
+- **A breached `deactivate` usage limit does not show in the workgroup's status, and refuses only
+  the compute** (measured 2026-09-20). With the limit breached, `get-workgroup` still reads
+  `status: AVAILABLE` and nothing in the workgroup's record mentions it; `UsageLimitAvailable`
+  reports a stale figure against the previous amount; and the client sees six words with no policy,
+  no limit id and no amount: `ERROR: Query reached usage limit`. **Leader-node queries keep
+  answering** — `select 1`, `select count(*) from pg_attribute`, `svv_all_schemas` — while a
+  `CREATE TABLE` is refused, so *"connect and `select 1`"* passes on a warehouse that cannot run a
+  real query. **Recovery is immediate on raising the amount**, with no wait for the period to roll
+  over, which no vendor page states. Also: a second `deactivate` limit is refused outright (*"Only
+  one DISABLE usage limit allowed per feature"*) and a second, looser `log` limit is **permitted**,
+  which is the hole `WH-3` exists for. Where: `log-stage-05b` pass 3.
+
+- **A Redshift Serverless workgroup reads back with six `config_parameter` entries nobody set, and
+  the Terraform provider plans to remove them forever** (measured 2026-09-20). `config_parameter` is
+  a set the provider owns whole: a workgroup created with three parameters returns nine, because the
+  service fills `auto_mv`, `datestyle`, `enable_case_sensitive_identifier`, `query_group`,
+  `search_path` and `use_fips_ssl`, and every subsequent plan is `1 to change` that never converges.
+  The fix is to declare them at their read-back values, which also discloses what a query actually
+  runs under — including that **`auto_mv` is on by default**, so the service builds and refreshes
+  materialized views on a 1.44 USD/hour meter unasked. Where: `log-stage-05b` pass 3,
+  `sandbox/warehouse-compute/main.tf`.
+
+- **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser on Redshift Serverless** (measured
+  2026-09-20). Both it and `STV_SCHEMA_QUOTA_STATE` answer `permission denied for relation` for the
+  namespace admin, who reads `usesuper = true` in `pg_user`, and no other catalog view carries a
+  schema's quota — `svv_redshift_schemas.schema_option` is empty for a schema that has one. So a
+  quota is **authored and proven by breach, never read back**: the check named for it in Stage 5b's
+  deliverables can only ever be a note. The breach itself is legible and carries three facts: the
+  refusal is **at commit**, the usage **exceeds the quota inside the transaction** before the abort
+  (2458 MB against a 2048 MB quota), and 1,024,000 incompressible 1 KB rows read as 2458 MB — a
+  quota bounds **disk blocks, not logical bytes**. The floor and ceiling are also undocumented:
+  *"Schema quota must be between 2048 and 524288000 MB"*. Where: `log-stage-06h`,
+  `runbooks/redshift-connection.md` §S.
+
+- **`CREATE SCHEMA … AUTHORIZATION` takes a database user, not a role** (measured 2026-09-20).
+  Redshift has RBAC roles and they cannot own a schema: given a role the statement answers
+  `ERROR: user "<name>" does not exist`, which reads as a missing object rather than a wrong kind of
+  object. A shared schema therefore has a **non-login user** as owner and its grants on a **role**,
+  which is the shape that keeps a schema × project relation many-to-many. Where: `log-stage-06h`
+  1.3, `runbooks/redshift-connection.md` §S.
+
+- **`AmazonDataZoneProject` is a single-valued tag key, so a Redshift compute admits one SageMaker
+  project** (read 2026-09-20). AWS's instruction is to add *"1 of the following tags"* to the
+  workgroup **and its namespace**: either `AmazonDataZoneProject={{projectID}}`, which names one
+  project, or `for-use-with-all-datazone-projects=true`, which names every project in the account.
+  There is no per-project list, because a tag key holds one value — on both objects. A plan that
+  says *"one tag per admitted project"* is therefore not implementable, and a second map entry would
+  silently overwrite the first project's tag and break its connection with nothing in the plan
+  output to say which project lost access. Where: `log-stage-06h`,
+  `terraform-live/sandbox/warehouse/variables.tf`'s `projects` validation.
+
+- **`db_name` on a Redshift Serverless namespace adds a database, it does not replace `dev`**
+  (measured 2026-09-20). A namespace created with `db_name = "warehouse"` carries **both**
+  `warehouse` and `dev` as local databases, and both are born with `USAGE, CREATE` to the group
+  `PUBLIC` on their `public` schema. So the `REVOKE` that closes that hole is owed **per database**,
+  and a check that looks for "exactly one class container" has to know about two inert ones. Also in
+  the same namespace: `awsdatacatalog` exists but **cannot be connected to at all** —
+  *"FATAL: Cannot connect to shared database … use cross-database query notation"* — which is a
+  stronger form of the documented read-only direction. Where: `log-stage-05b` 1.6 and 2.4.
+
+- **The Redshift Data API reaches a private workgroup from outside every VPC** (measured
+  2026-09-20). `redshift-data execute-statement --workgroup-name … --secret-arn …` runs SQL on a
+  workgroup that is `publiclyAccessible: false`, in a private subnet with no default route, from a
+  laptop with no VPN — because the Data API is an AWS endpoint and not a database connection. No
+  security group sees it and the 5439 door is irrelevant to it. Convenient (it is how this
+  repository's instruments read `SVV_*`) and load-bearing: a principal holding
+  `redshift-data:ExecuteStatement` has a query path from anywhere, which is why `identity/sso`
+  denies the family rather than merely not granting it. It is also **asynchronous with no waiter**,
+  so a poll without a delay reports an empty result for a warehouse that is answering. Where:
+  `log-stage-06h`, `runbooks/redshift-connection.md` §V.
+
+- **An EC2 security group description refuses an apostrophe** (measured 2026-09-20).
+  `InvalidParameterValue: Invalid security group description. Valid descriptions are strings less
+  than 256 characters from the following set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` — a set that
+  includes `#`, `$` and `!` and excludes `'`. The failure arrives at apply, after every other
+  resource in the plan has been created. Where: `log-stage-05b` 1.8.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

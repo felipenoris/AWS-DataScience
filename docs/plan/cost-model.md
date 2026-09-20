@@ -147,7 +147,7 @@ form only — its **Redshift Serverless** variant would put a second, larger que
 and is excluded by decision.
 
 **The warehouse is a third billing shape, and neither of this file's two columns had one**
-([D40](decisions/D40-redshift-warehouse.md), 2026-09-19). The monthly floor bills *per hour of existence*; the
+([D40](decisions/D40-redshift-warehouse.md)). **It exists in Sandbox since 2026-09-20** and its first measured bill was **0.0405 USD** — 405 RPU-seconds for the whole of [Stage 5b](stages/stage-05b-redshift-serverless.md)'s execution, including a deliberate usage-limit breach. **At rest it bills 0.00 per hour and its storage bills anyway**: `make down ENV=sandbox` destroys the workgroup, because Redshift Serverless has no pause, and leaves the Redshift Managed Storage, which is the irreducible price of keeping the data between sessions — the same trade the GitLab EBS volume makes under `[D]`, and it belongs in this file's floor rather than only in the stage. The monthly floor bills *per hour of existence*; the
 per-hour-of-lab-time table bills *while a session is up*. A Redshift Serverless workgroup at
 `base_capacity = 4` bills **0.00 at rest and 1.44 USD per hour a query runs** — so it appears in **neither**
 table and is instead bounded by a control the service enforces: a `serverless-compute` **usage limit** whose

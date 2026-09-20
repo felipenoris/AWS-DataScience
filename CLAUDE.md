@@ -227,43 +227,54 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Stages 0-1d, 2, 3, 4, 5a, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5a register 13 rows / 24
+- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13) — the only one left.
-- **D40 (2026-09-19/20): a Redshift Serverless warehouse, built by hand, blueprints still disabled.** **Stage 5
-  is now 5a** (file, log, 94 files re-pointed). New: **5b** the warehouse, **6h** the first schema + the SMUS
-  connection, **Stage 9 step 9** the governed class, `INT-24`, `aws/warehouse.py` (`WH-1`..`WH-14`, unwritten),
-  ranks **53** `warehouse` `[P]` / **54** `warehouse-compute` `[E]` in two accounts. Nothing applied.
-  **`objectives.md` revised 2026-09-20, Claude drafting at the user's request** (a departure from Stage 16 0.1,
-  recorded in `history.md`): a **second possible engine**, the Glue/Iceberg lake stays the **warehouse of
-  record**, engine chosen **per workload** (Athena the default), **the controls do not change — one more
-  execution environment**, and *where the databases live is an implementation matter*, which legalises the
-  two-account split.
-- **The Redshift model, as the four clarifications of 2026-09-20 left it.** **A schema IS a base**: the Redshift
-  `database` is only a class container (`sandbox` / `governed`, no prefixes), the grain is **per schema ×
-  project**, **one schema may be shared by several projects**, and its name is **thematic** — so a schema name is
-  not an authorization fact and the relation lives only in `sandbox/warehouse/`'s map + the `GRANT ROLE`
-  statements. Layer 3 is a **role per schema** (`sbx_<theme>_rw`), not ownership (singular); owner is a non-login
-  role. **Sandbox bypasses the catalog**; **governed** is Lake Formation through a federated registration.
-  `INT-24` has **one** mechanism left (LF cross-account share, read by Athena); Redshift data sharing under LF
-  **exists** and was wrongly excluded at first; a cross-account connection stays out (the fork + `sqlworkbench:*`
-  on `*`). **A governed schema gets no project connection.** **Quota 1 TB** = 24.58 USD/mo if filled, 49% of the
-  D12 ceiling, **nothing bounds the schema count** → alarm on `DataStorage`. Quota default `UNLIMITED`; superuser
-  only; refuses **at commit**; `DELETE` frees nothing until `VACUUM` (plain at 4 RPUs). Unread: whether a second
-  project may drop the first's tables (6h 5.2b → `ALTER DEFAULT PRIVILEGES` per pair).
-- **Redshift cost and the off switch.** **0.36 USD/RPU-h** measured (offer file 2026-09-11) → 4 RPU =
-  **1.44/query-hour, 0.00 idle**; the **ratchet** past 4 never returns. **No pause exists** (create/delete only),
-  so the workgroup + its usage limit are `[E]` and `make down` is the hard guarantee; **RMS keeps billing**.
-  Usage limit `breach_action = deactivate` (default `log`) lands in the **same apply**. Unmeasured, and the split
-  rests on it: does the endpoint **host** survive a delete/recreate (5b 1.9)? **Endpoints were missing from the
-  plan**: `vpc-egress` admits only `bedrock|emr|mwaa`, so **`redshift`** is a module change — needed
-  **`redshift-serverless`** (it is `GetCredentials`), `redshift-data` only if the Data API is the path, `redshift`
-  probably not; **5439 needs no endpoint**, and the two DNS names are different subtrees. **Free trial USD 300 /
-  90 days per account** → two windows; *sign-up* undefined; **trial usage is invisible in the billing console**,
-  so a cost reading is 0.00 either way — use `SYS_SERVERLESS_USAGE` + the credit balance. Three AZ/AI traps:
-  provider docs say 3 AZs where the service says 2 (validated by neither); the Iceberg-engine switch on a
-  federated catalog makes **Glue create a managed Redshift CLUSTER** (unpriced, collides with 5b 3.1's deny,
-  Stage 9 **9.5a**); 3 audit log groups arrive **`Never Expire`** unless pre-created.
+  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13); 6h's portal session and one `GROUPS=redshift` space; the `EXC-12` secret removal.
+- **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20), 6h's portal half is not.** Two slices:
+  `sandbox/warehouse/` rank **53** `[P]` (namespace + admin secret + 3 audit groups at 30 d + exec role with
+  **no policy** + SG + 2 alarms) and `sandbox/warehouse-compute/` rank **54** `[E]` (workgroup `base 4 / max 8`
+  + usage limit **40 RPU-h monthly `deactivate`**). `vpc-egress-v0.15.0` adds the `redshift` group
+  (`redshift-serverless` only). SCP root: `DenyRedshiftProvisionedClusters` +
+  `DenyRedshiftCostGuardTamperingExceptInfrastructure`, battery **92/0**. `identity/sso` denies the persona
+  `GetCredentials`, the **`redshift-data:` family** and the nine cost-guard calls. `aws/warehouse.py`
+  **11 pass / 1 note**. Layer 3 in SQL: database `sandbox`, schema `lab` QUOTA 1 TB, `sbx_lab_owner` (user),
+  `sbx_lab_rw` (role) — **`projects` map EMPTY**, so no project is admitted. Measured spend **0.0405 USD**.
+- **What the execution measured that the plan had wrong.** **Two subnets accepted** (AWS's page right, the
+  provider's wrong). **`price_performance_target` is ENABLED by default at Balanced** → decision 2's letter
+  impossible, intent is `enabled = false`. **The endpoint HOST survives a destroy/re-create; the workgroup ID
+  does not**, and the ARN carries it → every policy wildcards the id. **`AmazonDataZoneProject` is a
+  single-valued tag KEY on both objects** → layer 1 admits **one** project; "one tag per admitted project" is
+  not expressible, and 6h **decision 8** (new) owns the second. **`AUTHORIZATION` takes a USER, not a role.**
+  **Quota range 2048–524288000 MB**; the quota **refuses at commit** (usage overshoots inside the transaction;
+  1 KB rows read as 2.4 KB of disk). **The ceiling refuses** — `ERROR: Query reached usage limit` — with
+  `get-workgroup` still `AVAILABLE`, **leader-node queries still answering**, and **recovery immediate on
+  raising the amount**. A second `deactivate` limit is refused; a second `log` one is not. **Six
+  `config_parameter` defaults** the service fills and the provider planned to delete forever (`auto_mv` is
+  **on** — unasked compute on the 1.44/h meter). **`db_name` adds a database, it does not replace `dev`** →
+  the `PUBLIC` revoke is owed twice. **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser** → `WH-13` can only
+  ever be a note.
+- **The Data API is the session, and that is a control question.** `redshift-data execute-statement` +
+  `--secret-arn` runs SQL on a `publiclyAccessible: false` workgroup **from a laptop outside every VPC** — no
+  security group sees it, the 5439 door is irrelevant. It is how `warehouse.py --sql` and the runbook read
+  `SVV_*`, and why the persona is **denied** the family rather than merely not granted it. Asynchronous with
+  **no waiter**: a poll without a sleep reports empty for a warehouse that is answering.
+- **Two residuals and one unresolved reading.** `EXC-12` an **orphan secret** (`…-whadmin`) from a failed
+  `CreateNamespace` that rolled the namespace back and kept the secret — the admin user moved to `dbadmin`
+  to get past it; removal is owed to the user (Claude's session refuses secret-store writes). `EXC-13` the
+  admin secret **will stop rotating**, because rotation fails permanently if it lands while the `[E]` workgroup
+  is down. And the audit groups carry **1,176 `rdsdb` events and none of ours**, with the export **stalled 53
+  min** — so whether the Data API path is logged is **not yet answered** and Stage 11 must not assume it is.
+- **Redshift cost.** **0.36 USD/RPU-h** (offer file 2026-09-11, re-read 2026-09-20) → 4 RPU = **1.44/query-h,
+  0.00 idle**; the **ratchet** past 4 never returns. **No pause exists**, so `make down` is the hard guarantee
+  and **RMS keeps billing** (0.024/GB-mo; a filled 1 TB schema = 24.58/mo, half the D12 ceiling, with no
+  workgroup at all). `UsageLimitConsumed` rounds **up** to whole RPU-hours, so a limit of N bites between N−1
+  and N. **Quotas**: 25 namespaces, 25 workgroups, 3200 RPU, 100 databases and 9,900 schemas per namespace;
+  idle-session 1 h, idle-transaction 6 h, max query 86,399 s. **Free trial USD 300 / 90 days per account** —
+  **not readable from any API**, console only, and trial usage is invisible in the billing console, so every
+  cost figure here comes from `ComputeSeconds`.
+- **`Data Governance` gets no warehouse** and the reason is architecture, not control: `redshift` appeared in
+  **no** policy before 5b 3 and that account has no VPC (decision 6 stands, reading recorded). Stage 9 step 9
+  owns `production/warehouse{,-compute}/` and the `governed` class; `INT-24` is unproven.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
   as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
   is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
