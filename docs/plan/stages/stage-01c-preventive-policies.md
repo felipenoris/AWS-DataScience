@@ -810,7 +810,7 @@ beyond the deny half working:
   the account that holds the domain.
 - **Untested, and recorded as such:** `s3:DeleteBucket` (S3 answers `NoSuchBucket` before authorizing; its
   `Sid` is proven through `lakeformation:DeregisterResource`) and the **positive** half of the D27 carve-out,
-  which needs the Stage 5 role.
+  which needs the Stage 5a role.
 
 ##### 7.5a — the root document, re-read against AWS's action list (2026-08-13)
 
@@ -897,17 +897,17 @@ are what close it** — until then the deployed content is the 2026-08-13 origin
   `ArnNotEquals`. An `ArnNotEquals` carve-out can only exempt principals it can spell, so a crawler run
   *initiated by Glue itself* would land on the deny side of a principal test it was never meant to take.
   **Nothing measured this and nothing can** — `aws:PrincipalIsAWSService` is set by AWS, not by the caller —
-  and the schedule that would provoke it is the one [Stage 5](stage-05-data-foundation.md) deliberately does
+  and the schedule that would provoke it is the one [Stage 5a](stage-05a-data-foundation.md) deliberately does
   not create. It is fixed because the asymmetry is what the next reader would have had to re-derive.
 - **Two absences in `DenyUserCompute` are deliberate and were not written anywhere.** `athena:StartQueryExecution`
-  is *allowed* in `Data`, because Stage 5's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so the lake
+  is *allowed* in `Data`, because Stage 5a's Iceberg `OPTIMIZE`/`VACUUM` runs through it — so the lake
   account keeps a full read path with results written to S3, which the perimeter document only stops when
   the destination is outside the organization. EMR, EMR Serverless and Batch are uncovered because nothing
   in this design uses them. Both are now stated in [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md),
   and the Athena path is written into [Stage 11](stage-11-dlp.md) as a detection target. **A hole that is
   documented is a decision; the same hole undocumented is the finding of a later audit.** *(The Athena
-  half was overtaken on 2026-08-18: Stage 5 decision 4 chose Glue automatic compaction over Athena
-  `OPTIMIZE`/`VACUUM`, so the allowance lost its reason — the amendment closing it is owed at Stage 5
+  half was overtaken on 2026-08-18: Stage 5a decision 4 chose Glue automatic compaction over Athena
+  `OPTIMIZE`/`VACUUM`, so the allowance lost its reason — the amendment closing it is owed at Stage 5a
   step 4.3, through phase 4b. This bullet stays as written because it records why the absence was
   deliberate at attachment; `POLICIES.md` carries the current reading.)*
 
@@ -931,7 +931,7 @@ zero in both accounts afterwards.
 
 **What the review did *not* change:** `s3:DeleteBucket` stays
 unconditional in `Data` even though it reaches every bucket in the account and will stop a
-`terraform destroy` — the amendment procedure went into [Stage 5](stage-05-data-foundation.md) instead,
+`terraform destroy` — the amendment procedure went into [Stage 5a](stage-05a-data-foundation.md) instead,
 because a statement scoped to a bucket-name pattern leaves anything outside the pattern unprotected in
 silence, and this one binding the builder is the property that makes it a control.
 
@@ -968,9 +968,9 @@ the intended direction (D26 says projects do not land there), and
   `InfrastructureAccess`, which is an administrator of that account — so a deny on the create action would
   have to exempt precisely the principal it was written to bind. **What D27 protects is the run**, because
   the run is what samples object contents. The exempt ARN names `awsds-data-catalog-maintenance` in the
-  Data Governance account: **a contract with [Stage 5](stage-05-data-foundation.md)**, whose failure
+  Data Governance account: **a contract with [Stage 5a](stage-05a-data-foundation.md)**, whose failure
   direction is closed (the crawler does not run) rather than open. **Its positive half cannot be exercised
-  in this stage** — the role does not exist yet — so the battery records it as *untested until Stage 5*,
+  in this stage** — the role does not exist yet — so the battery records it as *untested until Stage 5a*,
   which is a different sentence from "passed".
 - **`Data` and `Identity` spell "interactive sessions and notebooks" as actions.** D25 and D27 both use
   those words; the actions behind them are `glue:CreateSession` and `glue:RunStatement` (a notebook

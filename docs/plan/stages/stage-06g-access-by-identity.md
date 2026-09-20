@@ -49,7 +49,7 @@ apply, the documents that describe the deny are true (Lesson 37).
 
 ### 0. Read what the removal opens, before anything is removed
 
-**Why:** a deny over `*` hides what the allows beneath it say. Stage 5 pass 4d measured it on 2026-08-20:
+**Why:** a deny over `*` hides what the allows beneath it say. Stage 5a pass 4d measured it on 2026-08-20:
 `DenyControlPlaneOffVpn` had been masking the drop-box write and D13's refusal until an on-tunnel session
 exercised both (Lesson 20's mirror).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --quiet
-# datalake.py - Stage 5's evidence, per account, side by side: the lake buckets and their
+# datalake.py - Stage 5a's evidence, per account, side by side: the lake buckets and their
 # perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
 # crawlers), the catalog-maintenance role and its trust, the Lake Formation settings with the
 # parameters reading that defends INT-11, the registered locations on both sides of the share
@@ -7,7 +7,7 @@
 # consumer Athena workgroups and the derived zone (both removed 2026-08-26, D19 revised -
 # absence is the pass, DL-8/DL-9), the EFS reading (absence expected, save the home
 # filesystem a Studio domain creates for itself - the NFS requirement was withdrawn
-# 2026-08-17), and the Security Hub state. The preflight for Stage 5, and the standing
+# 2026-08-17), and the Security Hub state. The preflight for Stage 5a, and the standing
 # regression after it.
 #
 #   needs:    a live SSO session, the only prerequisite:
@@ -39,7 +39,7 @@
 #
 # DL-5 is the check to know by name. The account's DataLakeSettings carry
 # CROSS_ACCOUNT_VERSION=4 / SET_CONTEXT=TRUE - values nobody set and nobody else defends -
-# and the Stage 5 apply that declares admins resets them if it omits `parameters`
+# and the Stage 5a apply that declares admins resets them if it omits `parameters`
 # (1d step 11.2, INT-11). The failure is total and mute: every later grant appears to
 # succeed and no share ever arrives. This file turns that into a reading that fails.
 #
@@ -81,7 +81,7 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 CONSUMER_PROFILES = ("awsds-infra-sandbox-1",)
 
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
-MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5 step 3.2, the SCP contract
+MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5a step 3.2, the SCP contract
 LAKE_PREFIX = "awsds-data-"  # conventions: awsds-data-raw, -curated, -artifacts, -logs
 # The tag a SageMaker AI domain stamps on the home EFS it creates for itself and retains
 # past deletion (conventions 5.1 rule 2) - DL-10's one exemption from "none is the design".
@@ -326,7 +326,7 @@ def main(argv: list) -> int:
     # The consumer-side receipt, which is what lets DL-7 tell its two failure branches apart.
     # "Shares exist and no resource link" was one verdict whether step 8 had simply not run yet
     # or the share had silently never arrived - opposite causes, one message (Lesson 13). The
-    # discriminator is a share the consumer's own RAM actually holds. Measured at Stage 5 pass 3
+    # discriminator is a share the consumer's own RAM actually holds. Measured at Stage 5a pass 3
     # (2026-08-19): both consumers held their two shares ACTIVE while their catalogs were still
     # empty, so an empty catalog is not evidence of a failed share.
     received: list = []  # (profile, share name, status)
@@ -354,7 +354,7 @@ def main(argv: list) -> int:
             cs = doc.get("DataLakeSettings", {})
             lf_admin_counts[p] = len(cs.get("DataLakeAdmins", []))
             # Each consumer carries its own DataLakeSettings, and DL-5 / DL-6 read them too.
-            # Measured at Stage 5 pass 4 (2026-08-19): both consumers carried
+            # Measured at Stage 5a pass 4 (2026-08-19): both consumers carried
             # CROSS_ACCOUNT_VERSION=4 / SET_CONTEXT=TRUE - values nobody in this repository set
             # - and IAM_ALLOWED_PRINCIPALS on both create-defaults. The two hazards are
             # symmetric, and a check scoped to the producer alone reports `pass` while two
@@ -599,7 +599,7 @@ def main(argv: list) -> int:
         checks.note(
             "DL-1",
             "lake buckets in Data Governance",
-            f"none matching {LAKE_PREFIX}* - expected before Stage 5 pass 1.",
+            f"none matching {LAKE_PREFIX}* - expected before Stage 5a pass 1.",
         )
     for b, versioning, sse, bkey, policy, _lc in buckets:
         problems = []
@@ -670,7 +670,7 @@ def main(argv: list) -> int:
 
     # DL-3: crawler shape - never scheduled, never at an Iceberg/catalog target (step 3.6).
     if data_live and not crawlers and buckets:
-        checks.note("DL-3", "crawlers", "none yet - expected before Stage 5 step 3.")
+        checks.note("DL-3", "crawlers", "none yet - expected before Stage 5a step 3.")
     for name, role, sched, _s3t, catt in crawlers:
         if sched == "yes":
             checks.fail(
@@ -701,7 +701,7 @@ def main(argv: list) -> int:
                     "OU SCP denies StartCrawler to every other principal (step 3.2).",
                 )
             else:
-                checks.note("DL-4", MAINT_ROLE, "absent - expected before Stage 5 step 3.")
+                checks.note("DL-4", MAINT_ROLE, "absent - expected before Stage 5a step 3.")
         elif maint_role_state == "present":
             if maint_trust == "glue.amazonaws.com":
                 checks.ok("DL-4", MAINT_ROLE, "present, trusts glue.amazonaws.com only")
@@ -714,7 +714,7 @@ def main(argv: list) -> int:
                     "is a person holding the SCP exemption (D27, step 3.5).",
                 )
 
-    # DL-5: the INT-11 defence - the parameters nobody set and Stage 5 can silently reset.
+    # DL-5: the INT-11 defence - the parameters nobody set and Stage 5a can silently reset.
     if data_live and lf_read:
         ver = lf_params.get("CROSS_ACCOUNT_VERSION", "")
         setctx = lf_params.get("SET_CONTEXT", "")
@@ -949,7 +949,7 @@ def main(argv: list) -> int:
                 "owes that account a DataLakeSettings of its own.",
             )
     elif data_live and lf_registered:
-        checks.note("DL-7", "cross-account shares", "none yet - expected before Stage 5 step 7.")
+        checks.note("DL-7", "cross-account shares", "none yet - expected before Stage 5a step 7.")
 
     # DL-8: the estate's own consumer workgroup is removed (2026-08-26, D19 revised - the
     # derived zone re-homed onto the SMUS project path), so the check measures its absence, the
@@ -998,7 +998,7 @@ def main(argv: list) -> int:
         checks.note(
             "DL-12",
             "persona drop-box grants",
-            "no DataScientistAccess role provisioned - expected before Stage 5 pass 4c.",
+            "no DataScientistAccess role provisioned - expected before Stage 5a pass 4c.",
         )
     for p, role, has_put, has_key in persona_grants:
         missing = []
@@ -1052,7 +1052,7 @@ def main(argv: list) -> int:
         checks.note(
             "DL-11",
             "Security Hub CSPM",
-            "not enabled in any measured account - expected before Stage 5 step 13.",
+            "not enabled in any measured account - expected before Stage 5a step 13.",
         )
     else:
         for p, hub, fsbp, _v2 in sh_rows:
@@ -1089,14 +1089,14 @@ def main(argv: list) -> int:
                 "products on, Security Hub stops using Control Tower's "
                 "aws-controltower-BaselineConfigRecorder and manages its own service-linked "
                 "recorder instead - a Config decision that belongs to Stage 12, taken here "
-                "by a console click. Read docs/plan/stages/stage-05-data-foundation.md 13.0.",
+                "by a console click. Read docs/plan/stages/stage-05a-data-foundation.md 13.0.",
             )
 
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
-        rep.banner("Data foundation - the Stage 5 evidence, producer and consumers side by side")
+        rep.banner("Data foundation - the Stage 5a evidence, producer and consumers side by side")
         rep.text(f"""generated : {context.utc_stamp()}
 profiles  : {source}
 region    : {context.REGION}
@@ -1150,7 +1150,7 @@ POLICY BRANCHES greps the bucket policy for the step 1.3 conditions: vpce
 (aws:PrincipalAccount or aws:PrincipalArn), via (aws:ViaAWSService), sigage
 (s3:signatureAge). Presence only.""")
         elif data_live:
-            rep.line(f"No bucket matching {LAKE_PREFIX}*. Expected before Stage 5 pass 1.")
+            rep.line(f"No bucket matching {LAKE_PREFIX}*. Expected before Stage 5a pass 1.")
         else:
             rep.line(f"{DATA_PROFILE} was not measured - nothing to show.")
 

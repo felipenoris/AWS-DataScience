@@ -157,7 +157,7 @@ expires).
   design (`docs/GOVERNANCE.md`, "the grain rule"). Access Grants never consults SMUS project
   **membership**, so once a project holds a grant, every `DataScientistAccess` holder can reach
   that project's `shared/*` from a laptop, member or not — coarser than Studio's own membership
-  gate. That is part of the 2026-08-23 decision, not a consequence of the Stage 5 grain rule,
+  gate. That is part of the 2026-08-23 decision, not a consequence of the Stage 5a grain rule,
   which was argued over the lake surfaces.
 
 ## Development

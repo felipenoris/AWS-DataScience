@@ -263,7 +263,7 @@ PY
   Addresses and ports, `ACCEPT`/`REJECT`, **never names** — so they answer *did anything reach this ENI*
   and nothing about *what it was asking for*. **Gateway-endpoint traffic crosses no ENI at all**, so an
   S3 call through the gateway is invisible here; `vpcEndpointId` in CloudTrail is the instrument for
-  that one (Stage 5, verification xix).
+  that one (Stage 5a, verification xix).
 - **`/awsds/prod/vpn`** carries the WireGuard host's own output. For what the *running interface* holds —
   peers, handshakes — the log is not enough: `./aws/vpn.py --on-host` reads inside the host, and
   [`vpn.md`](vpn.md) owns that procedure.

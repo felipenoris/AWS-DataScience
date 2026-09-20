@@ -42,7 +42,7 @@ it bootstraps is a cycle nobody can unwind.
 
 ## A module consuming another module
 
-First done at Stage 5 pass 4 (2026-08-19) by `consumer-data`, which calls `s3-bucket` and `kms-key` the way
+First done at Stage 5a pass 4 (2026-08-19) by `consumer-data`, which calls `s3-bucket` and `kms-key` the way
 a slice does: by git tag, from origin. Nothing about the rule above changes; the **order** gains a link, and
 skipping one fails loudly.
 

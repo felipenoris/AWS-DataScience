@@ -10,7 +10,7 @@
 # Stage 2 step 6.3 requires every committed lock file to carry three platforms: the laptop is
 # darwin_arm64 and the Stage 7-8 runners are Linux on both architectures (D8 puts GitLab on
 # Graviton), while Stage 8 step 6.2's GitHub Actions job is linux_amd64. The requirement was
-# held by attention alone, which had already missed three slices: the Stage 5 `data/` ones each
+# held by attention alone, which had already missed three slices: the Stage 5a `data/` ones each
 # carried a single h1: hash until the 2026-08-21 review measured them.
 #
 # What goes wrong when a platform is missing, in two failure modes that read nothing alike and

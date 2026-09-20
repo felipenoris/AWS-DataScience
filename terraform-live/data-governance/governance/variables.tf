@@ -72,7 +72,7 @@ variable "max_ebs_volume_size_gb" {
 }
 
 variable "enable_trusted_identity_propagation" {
-  description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5 chose. Stage 5 decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5 decision 6, not a tuning knob."
+  description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5a chose. Stage 5a decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5a decision 6, not a tuning knob."
   type        = bool
   default     = false
 }

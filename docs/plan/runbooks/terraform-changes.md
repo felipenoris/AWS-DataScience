@@ -193,7 +193,7 @@ tags. The ref must already exist on GitHub when the callers' commit runs.
 7. **Plan and apply each affected account** — Recipe A steps 4-9, re-running init (step 4) so the new
    module version is fetched.
 
-**After the merge, check the tag against `main` — and expect it to fail (found 2026-08-19, Stage 5 pass 4).**
+**After the merge, check the tag against `main` — and expect it to fail (found 2026-08-19, Stage 5a pass 4).**
 A **rebase merge rewrites every commit hash**, so the tags you pushed keep pointing at the pre-rebase
 commits and those commits stop being ancestors of `main`:
 
@@ -340,8 +340,8 @@ halves, and Recipe D changes nothing about that order. What it buys is a **pause
 you**: left alone, one apply builds the dependent resources too, and by then the reading has nothing left
 to protect.
 
-**Worked example** — Stage 5 pass 1, 2026-08-18
-([log](../../log/log-stage-05-data-foundation.md)). `aws_lakeformation_data_lake_settings` had to clear
+**Worked example** — Stage 5a pass 1, 2026-08-18
+([log](../../log/log-stage-05a-data-foundation.md)). `aws_lakeformation_data_lake_settings` had to clear
 two `IAM_ALLOWED_PRINCIPALS` default blocks **before the first database existed**, because those
 defaults act at creation time and clearing them afterwards does not reach a database that already
 exists. Neither can be written empty — they are blocks, so `= []` is refused, and a `{}` block declares
@@ -353,7 +353,7 @@ omission clears is a fact about one provider version, obtained by looking, so th
 **Where this recipe has run, and where it runs next.** The same resource lands in every account beyond the
 lake, each creating its own catalog objects in the same slice.
 
-**Two of the four are done: Sandbox and Development, 2026-08-19** ([Stage 5](../stages/stage-05-data-foundation.md)
+**Two of the four are done: Sandbox and Development, 2026-08-19** ([Stage 5a](../stages/stage-05a-data-foundation.md)
 pass 4, its step 8). What that run is worth keeping for:
 
 - **the precondition was re-measured.** `after_unknown` came back `true` on both default blocks again, in
@@ -389,7 +389,7 @@ peers' facts through aliased providers instead of pasting ids.
 | Stale module or provider errors after a tag bump | Old `.terraform/` cache | `rm -rf terraform-live/<account>/<slice>/.terraform`, re-run init |
 | `Module source has changed` on a caller commit, with **no `source` edit staged** | `.terraform/modules` still records the **local path** used for an authoring plan (§3 step 1). Reverting `source` in the file does not re-install the module | Re-init the slice with its profile (the command in the next row). The pair to remember is *revert **and** re-init* — only the second half touches `.terraform/` |
 | `Module source has changed` on a caller commit, and `init -backend=false` then fails with **`No valid credential sources`** / an IMDS timeout | The flag skips *configuring* a backend, not *reading the one already recorded* in `.terraform/` - so on an initialised slice the credential lookup still happens, finds no profile in the environment, and falls through to the EC2 IMDS of a machine that is not an EC2 instance | Do the slice's real init, with its profile: `AWS_PROFILE=<the slice's> terraform -chdir=terraform-live/<account>/<slice> init -backend-config=backend.hcl -input=false`. **Read the error's own wording first** (§7's last row): an IMDS timeout here is the absence of a profile, never a broken backend |
-| `checkov` FAILED | A real finding, or a deliberate exception | Suppress with `# checkov:skip=CKV_xxx:reason` written **inside** the resource block, in its first lines — above the block it is **silently ignored**. **Judge before suppressing, and budget for the finding being real**: accepting one can pull in whole resources the stage text never had, each with its own requirements. Stage 5's `CKV_AWS_195` cost a Glue security configuration, a fourth statement on the lake key policy, and a `glue:GetSecurityConfiguration` on the role that runs under it — the last surfacing only at apply |
+| `checkov` FAILED | A real finding, or a deliberate exception | Suppress with `# checkov:skip=CKV_xxx:reason` written **inside** the resource block, in its first lines — above the block it is **silently ignored**. **Judge before suppressing, and budget for the finding being real**: accepting one can pull in whole resources the stage text never had, each with its own requirements. Stage 5a's `CKV_AWS_195` cost a Glue security configuration, a fourth statement on the lake key policy, and a `glue:GetSecurityConfiguration` on the role that runs under it — the last surfacing only at apply |
 | `terraform_fmt` modified files | Formatting | `git add` the reformatted files and commit again |
 | A hook seems to want AWS credentials | It must not — validate runs `-backend=false` | Read the error again: it is almost always the module fetch over SSH, never AWS |
 

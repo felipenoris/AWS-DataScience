@@ -146,7 +146,7 @@ claim.
 > **Is there anything a person must do next to *Development's* data that they cannot do next to
 > *Sandbox's* data?**
 
-- **Today the plan names nothing.** If it still names nothing once Stage 5 fixes the actual grants, the
+- **Today the plan names nothing.** If it still names nothing once Stage 5a fixes the actual grants, the
   interactive surface in Development is redundant.
 - **If something does appear, the decision was never about interactivity** but about **data grants**, a far
   better place to argue it.
@@ -209,11 +209,11 @@ If experimentation shows the two accounts are barely distinguishable in practice
   2026-08-22; **removing that grant is the expected first act if this closes as "nothing"**), and
   Development's 11 blueprint configurations with their `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants
   (`development/sagemaker/`, v0.3.3). Closure now also unwinds those.
-- **Revision trigger:** the test above asked with **real grants in place** — once Stage 5 settles what
+- **Revision trigger:** the test above asked with **real grants in place** — once Stage 5a settles what
   Sandbox and Development may each read — or a first stretch of real work in Development that reports
   nothing Sandbox could not have done.
 
-**The trigger's first condition fired 2026-08-19, recorded and not yet answered.** Stage 5 passes 3-4c
+**The trigger's first condition fired 2026-08-19, recorded and not yet answered.** Stage 5a passes 3-4c
 applied the real grants, and they are **identical** for the two consumers: the same two TBAC expressions
 account-to-account, the same re-grants to `DataScientistAccess`, the same five-column view of
 `sample_trades` (the grant register in [`docs/AWS_STATE.md`](../../AWS_STATE.md)). The test is now askable

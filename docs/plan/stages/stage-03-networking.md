@@ -159,7 +159,7 @@ flowchart TB
             PRIB["private subnet"]
             ISOB["isolated subnet"]
         end
-        GWEP["S3 + DynamoDB gateway endpoints · free · [P]<br/>org-scoped policy + the AWS-owned bucket allow-list<br/>IDs exported: Stage 5 bucket policies condition on them"]
+        GWEP["S3 + DynamoDB gateway endpoints · free · [P]<br/>org-scoped policy + the AWS-owned bucket allow-list<br/>IDs exported: Stage 5a bucket policies condition on them"]
         IFEP["interface endpoints · single AZ · D9 · [E]<br/>core: sts logs kms ecr.api ecr.dkr athena glue lakeformation<br/>+ the per-account list of step 8"]
         PHZ["Route 53 private hosted zone · [P]<br/>Sandbox and Production only — step 4"]
         FLOW["VPC Flow Logs → CloudWatch Logs · short retention · [P]"]
@@ -316,7 +316,7 @@ home were settled 2026-08-16 (decision 1); subnets anchor on `zone_ids` (settled
     over the user's own git credentials; a failure there is auth, not Terraform.
   - **[Claude] Have `foundation/` consume only what it instantiates** — the flow-log delivery role
     (`iam-role`'s first caller) and the `vpc` module itself. `kms-key` and `s3-bucket` are written and
-    tagged now with **Stage 5 as their first caller** (its buckets and CMKs consume both); **a CMK on the
+    tagged now with **Stage 5a as their first caller** (its buckets and CMKs consume both); **a CMK on the
     flow-log log group was declined at build time (2026-08-16)** — ~USD 1/key-month per account for a
     debugging log, a line the cost table does not carry.
 
@@ -393,7 +393,7 @@ entries, not ENIs — which is why they are here and not in `egress/`.
 - **3.1 — [Claude] Associate both endpoints with the route tables of all three tiers**: private and
   isolated need them to reach S3 at all, and the public tier uses them for the WireGuard host's package
   fetches rather than paying the IGW path.
-- **3.2 — [Claude] Export each account's gateway endpoint ID from the slice's outputs.** Stage 5 step 1
+- **3.2 — [Claude] Export each account's gateway endpoint ID from the slice's outputs.** Stage 5a step 1
   conditions the Data Governance bucket policies on them (INT-05), read through `terraform_remote_state`,
   never pasted.
 - **3.3 — [Claude] Anchor nothing on interface-endpoint IDs** (Lesson 3): the `[E]` IDs of step 8 may be

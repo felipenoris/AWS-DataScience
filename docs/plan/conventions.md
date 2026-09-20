@@ -189,6 +189,18 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
+│   ├── warehouse/        # [P] the Redshift Serverless warehouse (D40, Stage 5b, rank 53):
+│   │                     #     namespace + workgroup awsds-sandbox-warehouse at base_capacity 4,
+│   │                     #     under alias/awsds-sandbox-data (read from data/), in the PRIVATE
+│   │                     #     tier's two subnets in two AZs - not the isolated tier, which
+│   │                     #     carries no peering route and no client. [P] because a workgroup
+│   │                     #     serving no query bills nothing and the namespace holds data;
+│   │                     #     the usage limit (breach_action = deactivate) is applied in the
+│   │                     #     SAME apply as the workgroup, since a workgroup with no ceiling
+│   │                     #     for one plan cycle is exactly when a mistake costs 1.44 USD/h.
+│   │                     #     Holds the `sandbox` database, its themed schemas and the tags
+│   │                     #     Stage 6h's connections need. No Lake Formation object: the
+│   │                     #     sandbox class is outside it by design, like lake/ beside it
 │   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
 │   │                     #     Claude models and one attachment per SMUS project role. The
 │   │                     #     roles are the service's, minted per project, so `project_roles`
@@ -365,6 +377,16 @@ terraform-live/
     │                     #     per-application repositories (5.b) wait for Stage 7, the first
     │                     #     thing that pulls from either. The 5.a half is applied
     │                     #     (2026-08-21, 14 resources)
+    ├── warehouse/        # [P] the governed half of the warehouse (D40, Stage 9 step 9, rank 53):
+    │                     #     namespace + workgroup awsds-prod-warehouse in VPC-Workloads'
+    │                     #     private tier - the two-AZ pair 6c built as the estate's one D9
+    │                     #     exception, so this account needs no new network work. Holds the
+    │                     #     `governed` database, written by awsds-prod-job-exec alone, and the
+    │                     #     namespace is REGISTERED to the Glue Data Catalog as a federated
+    │                     #     catalog (aws_glue_catalog's federated_catalog), which is what puts
+    │                     #     a warehouse schema under the same Lake Formation permissions as the
+    │                     #     lake. No project tag, no connection: D26 keeps deployment targets
+    │                     #     out of the domain, so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (13 since 6c 5.5) -

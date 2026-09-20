@@ -40,7 +40,7 @@ The D21 boundary becomes a property of the project rather than of which URL the 
 ```mermaid
 flowchart LR
     subgraph DG["Data Governance · registry, never runtime · D26"]
-        DOM["DataZone V2 domain · IdC auth<br/>profiles: experimentation · engineering<br/>SageMaker Catalog on Stage 5's LF substrate"]
+        DOM["DataZone V2 domain · IdC auth<br/>profiles: experimentation · engineering<br/>SageMaker Catalog on Stage 5a's LF substrate"]
     end
     subgraph SBX["Sandbox (per unit · D35)"]
         SBXRT["Tooling-provisioned SageMaker AI domain<br/>VpcOnly · private subnets · idle shutdown<br/>project roles + D13 boundary (INT-15)"]
@@ -63,7 +63,7 @@ step that owns it below.
 ## Step numbers are identifiers, not an order
 
 Two numbers are stable addresses cited from other files — `step 1` (INT-16's portal half) from Stage 4
-and `docs/plan/integrations.md`; `step 2` (the project-role grants) from Stage 5 step 9.3. They do not
+and `docs/plan/integrations.md`; `step 2` (the project-role grants) from Stage 5a step 9.3. They do not
 change. The work is sequenced in passes:
 
 | Pass | # | What | Slice · layer | Applied as / by |
@@ -387,7 +387,7 @@ anywhere — which would mean INT-12's forbidden one-domain-per-account fallback
 > exists to forbid, with its own blueprints and project roles. On the canary the same accident is
 > disposable. Delete any domain that does appear, immediately.
 
-> **Read the wording, never the exit code, and read the pair rather than one half.** Stage 5 pass 4e measured
+> **Read the wording, never the exit code, and read the pair rather than one half.** Stage 5a pass 4e measured
 > Athena answering a blocked call with a bare *"not authorized"*, no policy named, which the battery's
 > classifier can only file as `DENY-NOT-SCP`. If DataZone does the same, **0.1 is the only thing that
 > separates *the deny fired* from *the role lacked a permission*** — which is what makes these two probes
@@ -474,7 +474,7 @@ console path skips the one attribute this design's whole INT-15 answer rests on,
 
 **Two readings to take in the same sitting** — the V1 guide says association requests **expire after 7
 days**, and Stage 1d's org-wide RAM sharing should make acceptance frictionless: (a) whether a **RAM invitation** appears at all in the member account
-(`aws ram get-resource-share-invitations`, the INT-11 shape — the Stage 5 LF shares auto-accepted and
+(`aws ram get-resource-share-invitations`, the INT-11 shape — the Stage 5a LF shares auto-accepted and
 raised none), and (b) what the DataZone **accept** step is, given (a). The baseline was read immediately
 before this step, 2026-08-21: **four `LakeFormation-V4-*` shares owned by Data Governance, zero pending
 invitations in either member account.**
@@ -483,7 +483,7 @@ invitations in either member account.**
 > `ram get-resource-share-invitations` returns **empty in both member accounts**; the producer side went
 > from four shares to five, the new one being `DataZone-EXTENDED_ACCESS-dzd-…-ORG-ONLY`, `ACTIVE`. An
 > organization-scoped share into an organization with RAM sharing enabled (Stage 1d) raises no invitation,
-> so (b) has nothing to accept and **the 7-day expiry never starts running** — the shape Stage 5's LF
+> so (b) has nothing to accept and **the 7-day expiry never starts running** — the shape Stage 5a's LF
 > shares showed, now measured for DataZone too. The member-side pages the fields table describes
 > (*View requests* → *Review request* → *Accept new permissions*) were therefore **never reached**, and
 > with them the Lesson 17 trap below: both accounts were already associated when opened.
@@ -543,13 +543,13 @@ blueprint exactly as on a forbidden one.
 > depends on it, it moves up with evidence (the before-any-real-project window closed 2026-08-22 — real
 > projects exist). It is also **not** Lake
 > Formation's *data lake administrator* — a different object with a similar name, already assigned at
-> Stage 5 pass 4 (`docs/SMUS.md` carries the distinction).
+> Stage 5a pass 4 (`docs/SMUS.md` carries the distinction).
 
 **The console recommends ≥ 3 subnets in 3 AZs; D9 built 2 — verification (iii)**, answered before
 anything is layered on it.
 
-> **`DataLake` lands on a Lake Formation surface Stage 5 already owns, and the two meet in one
-> resource** (written 2026-08-19 from what Stage 5 passes 1 and 3 measured). Decision 4 makes this
+> **`DataLake` lands on a Lake Formation surface Stage 5a already owns, and the two meet in one
+> resource** (written 2026-08-19 from what Stage 5a passes 1 and 3 measured). Decision 4 makes this
 > precise: the enabled blueprint is the **Glue/Athena** form, whose whole output is per-project Glue
 > databases and Lake Formation permissions in the member account — so it does not merely *touch* Stage
 > 5's surface, it writes on it. (`LakehouseCatalog` is disabled and provisions
@@ -559,13 +559,13 @@ anything is layered on it.
 > - **ordering.** The blueprint provisions catalog objects (databases, and the environment's own Glue
 >   resources) in the account it targets. Lake Formation's `Create*DefaultPermissions` act at
 >   **creation time**, so an object created while an account still carries the `ALL`-to-
->   `IAM_ALLOWED_PRINCIPALS` default is born deferring to plain IAM, permanently and invisibly. Stage 5
+>   `IAM_ALLOWED_PRINCIPALS` default is born deferring to plain IAM, permanently and invisibly. Stage 5a
 >   **pass 4** is what clears those defaults in Sandbox and Development — so pass 4 is a hard predecessor
 >   of this step, not merely of the lake read. Confirm by reading, not by ordering alone (`DL-6` applied
 >   to each member account);
 > - **`DataLakeAdmins` is a shared surface, and the resource that writes it replaces the whole
 >   structure.** `aws_lakeformation_data_lake_settings` overwrites `admins`, `parameters` and both
->   default blocks together (INT-11's failure mode — the reason `DL-5` exists). Stage 5 pass 4 writes
+>   default blocks together (INT-11's failure mode — the reason `DL-5` exists). Stage 5a pass 4 writes
 >   that resource in `sandbox/data/` and `development/data/`. **If this stage's manage-access role has to
 >   be a data lake administrator for subscription fulfilment to work, it must be added to the *one*
 >   settings resource those slices already have** — which since pass 4a lives in
@@ -591,7 +591,7 @@ names are a contract with `./aws/studio.py` (`US-4`). In each profile's Tooling 
 **non-Editable** (the *Editable* flag is what makes a value a control instead of a default, Lesson 5):
 `sagemakerDomainNetworkType = VpcOnly` (**the default — the parameter exists so nobody can flip it to
 `PublicInternetOnly`**), the step 8 idle-shutdown set, and `maxEbsVolumeSize`. Decide
-`enableTrustedIdentityPropagationPermissions` here — decision 2, the mechanism behind Stage 5's grain
+`enableTrustedIdentityPropagationPermissions` here — decision 2, the mechanism behind Stage 5a's grain
 decision, with a documented cost: **remote access does not work with TIP enabled**.
 
 **1.6 — Disable Athena Spark without disabling Athena SQL** — decision 3. The documented "disable" is
@@ -601,7 +601,7 @@ on **`athena:StartSession` + `athena:UpdateSession`** (the Spark-session surface
 `DenyAthenaSparkStartSession`, `Resource` `arn:aws:athena:*:*:workgroup/*`, scopable by Region, account or
 workgroup.
 
-> **Measured elsewhere and inherited here** (2026-08-20, Stage 5 pass 4e, which denied
+> **Measured elsewhere and inherited here** (2026-08-20, Stage 5a pass 4e, which denied
 > `athena:StartQueryExecution` in two other OUs and probed it):
 >
 > 1. **Athena's refusal names no policy.** A denied `StartQueryExecution` answers with a bare
@@ -649,7 +649,7 @@ direct edit; no carve-out needed — nobody legitimately runs Athena Spark), and
 the same sitting. **The negative probe is the one that matters**: `athena:StartQueryExecution` must still
 succeed in the same account, or the amendment took D13 with it.
 
-**Not pulled forward — decided 2026-08-19, by the user.** Landing this in Stage 5's phase-4b sitting beside
+**Not pulled forward — decided 2026-08-19, by the user.** Landing this in Stage 5a's phase-4b sitting beside
 4.3's `athena:StartQueryExecution` amendment was considered and declined: it buys one sitting instead of
 two, at the price of inheriting 4.3's scheduling constraint, and there is no surface to protect until this
 stage builds one. **The amendment and its probes run here**, at 1.6, when the next stage opens.
@@ -719,7 +719,7 @@ name contract `awsds-<env>-project-boundary` (`./aws/studio.py` `US-8`): no `s3:
 Formation-registered prefixes (D13), the step 3 conditions mirrored, and the drop-box `PutObject` on the
 dated prefix **plus `kms:GenerateDataKey`/`kms:Decrypt` on the lake's data key under `kms:ViaService=s3`**
 allowed (D18) — the identity half's full shape, mirroring `WriteIngestionDropBox` + `UseLakeDataKeyViaS3`
-(Stage 5 pass 4c; the two-sided rule is `docs/GOVERNANCE.md` §Drop-box and INT-10). **And the resource side
+(Stage 5a pass 4c; the two-sided rule is `docs/GOVERNANCE.md` §Drop-box and INT-10). **And the resource side
 does not admit these roles yet**: `writer_role_patterns` in `data-governance/data/locals.tf` matches only
 `AWSReservedSSO_DataScientistAccess_*`, and its comment defers the project execution roles to this stage —
 so if a notebook is to write to the drop-box, this stage amends that list and re-applies
@@ -803,13 +803,13 @@ and 2.5 is where its readings are recorded. **If the call is denied, that is the
 next reading is what the vended principal reads *with* the D13 boundary in place — the same diff this step
 already runs, pointed at a different role.
 
-**2.6 — ~~Extend Stage 5's extension point to the real role names~~ Re-cut 2026-08-26: the derived
+**2.6 — ~~Extend Stage 5a's extension point to the real role names~~ Re-cut 2026-08-26: the derived
 zone is removed, and this step is the removal's choreography** ([D19 revised](../decisions/D19-derived-zone.md)
 — the zone re-homed onto the SMUS project path, the user's decision on the same day's 2.4 reading).
 Everything the old step was going to add died unconsumed: the data-key second-`Decrypt` (a project role
 never needed the data key — its results never land under it), the scoped `PutObject` into derived
 prefixes (the managed provisioning policy and S3 Access Grants already scope the project path), and
-Stage 5 step 9.3's extension point with them. What replaces it, **written and executed 2026-08-26/27**
+Stage 5a step 9.3's extension point with them. What replaces it, **written and executed 2026-08-26/27**
 (the log's entry for that evening is the record; the closing note below is what the choreography got
 wrong), **in this order**:
 
@@ -1021,7 +1021,7 @@ portal works on the tunnel, and read it as the strongest input yet to **open que
 `sagemaker.studio` and the lake's three endpoints cannot leave the way `datazone` did (Lesson 43).
 
 **One entry of that list is a measurement, not a provisioning decision — `s3`.** What the measurement is,
-and why Stage 5 pass 4d made it one, is the `s3` bullet of the same section this step already reads (added
+and why Stage 5a pass 4d made it one, is the `s3` bullet of the same section this step already reads (added
 2026-08-20, after this step was last revised; the measured half is `docs/AWS_STATE.md`'s
 `DenyControlPlaneOffVpn` row, Lesson 33). Do not restate it here — run it, per project subnet, and read the
 answer where it is actually decidable: **flow logs cannot settle it**, because gateway traffic crosses no
@@ -1181,7 +1181,7 @@ VpcOnly + idle shutdown per runtime domain, the boundary on every project role, 
 persona sets, images, apps. The behavioural proofs are the stage's own (Lesson 20):
 
 - **The working session:** sign in through the VPN, open the portal, work in `experimentation` (compute in
-  Sandbox) and `engineering` (compute in Development), install a package, and read the Stage 5 lake table
+  Sandbox) and `engineering` (compute in Development), install a package, and read the Stage 5a lake table
   through Athena over the LF share — surfaced as a subscribed asset in SageMaker Catalog.
 - **The egress pair, under each design:** a non-allowlisted site is unreachable under A (and the block is
   logged); no site at all is reachable under B — while the package path and the lake read still work.
@@ -1244,7 +1244,7 @@ Recommendations stated so the keyboard is not the decision-maker.
    *and* TIP as unsupported on **all three engines** (Glue, EMR-S, EMR on EC2 — full-table access), while
    EMR-S as a project **compute connection** is the only engine whose SMUS page documents a
    **`project.spark.fineGrained`** permission mode (LF fine-grained, EMR ≥ 7.2.0; Glue's `fineGrained` is
-   documented for Visual ETL flows, not the notebook). If Stage 5's `restricted`-column scoping is to hold
+   documented for Visual ETL flows, not the notebook). If Stage 5a's `restricted`-column scoping is to hold
    on the notebook Spark path at all, EMR-S is the only documented route — and choosing Glue means writing
    down that column scoping lives on the Athena SQL path alone. **Settle in-stage, with two readings in
    hand rather than one number:** (i) which of the four endpoints a working session actually exercises
@@ -1274,10 +1274,10 @@ Recommendations stated so the keyboard is not the decision-maker.
    > `DeleteEnvironmentBlueprintConfiguration` the slice performs by dropping the entry.
    > **The FGAC axis is what makes "keep" the right default rather than a coin toss**: EMR-S is the only
    > engine whose SMUS page documents `project.spark.fineGrained`, so starting from Glue would mean
-   > writing off Stage 5's column scoping on the notebook Spark path *before* measuring whether it works.
+   > writing off Stage 5a's column scoping on the notebook Spark path *before* measuring whether it works.
    > Starting from EMR-S keeps both outcomes reachable; starting from Glue forecloses one.
-2. **`enableTrustedIdentityPropagationPermissions`** (1.5, the grain — Stage 5 decision 6's mechanism) —
-   recommended: **follow the grain Stage 5 chose**. If per-user on the SQL path, enable it and accept the
+2. **`enableTrustedIdentityPropagationPermissions`** (1.5, the grain — Stage 5a decision 6's mechanism) —
+   recommended: **follow the grain Stage 5a chose**. If per-user on the SQL path, enable it and accept the
    documented cost — **remote access does not work with TIP enabled** — recording which objective yielded;
    if project-grain, leave it off and keep remote access.
 3. **The Athena Spark disable set** (1.6) — recommended: the `athena:StartSession`/`UpdateSession` SCP via
@@ -1292,7 +1292,7 @@ Recommendations stated so the keyboard is not the decision-maker.
    `Resource` stays at AWS's `arn:aws:athena:*:*:workgroup/*` wildcard, since narrowing to `us-west-2`
    would *permit* Spark elsewhere):
    - **Timing — not pulled forward.** The amendment and its probes run at 1.6, when this stage opens, not
-     in Stage 5's phase-4b sitting (1.6 carries the trade).
+     in Stage 5a's phase-4b sitting (1.6 carries the trade).
    - **The boundary gets no Athena Spark clause** — Lesson 20 over defence in depth; the revision trigger
      is the first principal an OU SCP does not reach (1.6).
    - **The revision trigger for the deny itself** is executors in our subnets, never a PrivateLink
@@ -1311,7 +1311,7 @@ Recommendations stated so the keyboard is not the decision-maker.
    alone — **had the two inverted, which the 2026-08-19 re-read of the *Supported blueprints* page
    caught**: `LakehouseCatalog` *"provisions a new catalog in the SageMaker Lakehouse backed by Amazon
    Redshift Managed Storage"*, while the Glue/Athena form — per-project Glue databases, Lake Formation
-   permissions, an Athena workgroup, the shape that lands on Stage 5's substrate — is
+   permissions, an Athena workgroup, the shape that lands on Stage 5a's substrate — is
    **`LakeHouseDatabase`/`DataLake`** (Lesson 16: the name said one thing, the field list another; D26's
    "Lakehouse Catalog in its Glue/Athena form" carried the same misreading).
    **Decided 2026-08-19, by the user: `DataLake` alone; `LakehouseCatalog` is disabled** (decision 5
@@ -1341,7 +1341,7 @@ Recommendations stated so the keyboard is not the decision-maker.
    `PutObject` written into the project role's own policy; discussed with the user 2026-08-19 and
    recorded here so the trade is on the table when the blueprint's real behaviour is). **What is
    already committed and is not this decision:** the projects land in the same `awsds-<env>-derived`
-   bucket (Stage 5 step 9.3's extension point — the key policy `Decrypt` widened to a list under
+   bucket (Stage 5a step 9.3's extension point — the key policy `Decrypt` widened to a list under
    Recipe B, 2.6's first half), and the CMK stays one data key per account — a key can express neither
    per-user nor per-project, so separation between projects, where wanted, is the prefix plus the role
    policy, never the key. The two shapes:
@@ -1353,7 +1353,7 @@ Recommendations stated so the keyboard is not the decision-maker.
      Macie/data-event scope — all rewritten in the same sitting, or the copies drift.
    - **Family-first** (`results/<project>/`, `derived/<project>/…`, `scratch/<project>/`) — extends
      *inside* each family: every existing statement stays true — the persona keeps reading `derived/*`,
-     which is Stage 5's grain decision applied one level up (the human persona reads across projects;
+     which is Stage 5a's grain decision applied one level up (the human persona reads across projects;
      the project roles are the ones scoped) — Stage 11's scope is unchanged, and each project arrives
      as a narrowing written into its own role policy. **Recommended.**
 
@@ -1371,7 +1371,7 @@ Recommendations stated so the keyboard is not the decision-maker.
 
    Family-first is cheaper at the project grain than at the person grain: the persona is one document
    serving N humans, while each project role is its own policy, so scoping it to `derived/<project>/…` is
-   writing one ARN — the role-and-project grain Stage 5's decision 6 chose.
+   writing one ARN — the role-and-project grain Stage 5a's decision 6 chose.
    **What a project brings does not reach `results/`:**
    the workgroup the `DataLake` blueprint provisions is a *third* workgroup, and where its output lands is
    [`docs/SMUS.md`](../../SMUS.md) §S3's to state — **not** the derived zone that this repository's own
@@ -1382,7 +1382,7 @@ Recommendations stated so the keyboard is not the decision-maker.
    **fourth** designed destination, owed the three things the derived zone already has: a row under
    `docs/GOVERNANCE.md` §Encryption, an expiry, and a place in Stage 11's Macie/data-event scope
    (`consumer-data/buckets.tf` declares that scope precisely because Stage 11 cannot discover it). That is
-   the second, undesigned copy zone Stage 5 step 8's enforced location exists to prevent, arriving by a
+   the second, undesigned copy zone Stage 5a step 8's enforced location exists to prevent, arriving by a
    different hand. **Measured 2026-08-26 (step 2.4, finding B): the conditional resolved to its second
    branch, and the fourth destination exists.** The project's workgroup is enforced and writes into
    `awsds-<env>-smus-projects`, not the derived zone. Of the three owed things the **§Encryption row
@@ -1403,7 +1403,7 @@ Recommendations stated so the keyboard is not the decision-maker.
 
 ## Verifications — the answers this stage produced
 
-*Answered here: i, ii, iv, v, x (the 5.0 half), xii-xiii (Stage 5's pair, read in the same session),
+*Answered here: i, ii, iv, v, x (the 5.0 half), xii-xiii (Stage 5a's pair, read in the same session),
 xviii, xx. **Still open when the stage was split**, and carried forward with their subjects re-cut:
 iii, vi, viii, ix, xi, xiv, xv, xvi, xvii, xix → [6d](stage-06d-unified-studio-remainder.md); vii's
 closing choice (INT-16 fallback (i) versus recorded acceptance) → [6c](stage-06c-networking-hub.md),
@@ -1422,15 +1422,15 @@ which owns the address it is keyed on.*
 | ix | Under design B: does anything miss the AL2023 mirror path, and does `lakeformation` leave Stage 3's core list (its verification (ii))? | 5.3 |
 | x | Does idle shutdown actually fire on the hand-built image (the activity monitor working)? **The 5.0 half is answered, 2026-08-22, and it is only that half.** The build-time assertion passed with a name and a version — `jupyter-activity-monitor-extension 0.3.2 pyhd8ed1ab_1 conda-forge`, found in the distribution and not installed over it — so the failure mode where the base silently stops shipping it, and the discovery arrives as an app billing overnight, is closed. **Whether the shutdown fires is 8.1's**, and no reading here substitutes for it: the extension being present and the lifecycle actually acting are two measurements (Lesson 5) | 5.0 ✔, 8.1 |
 | xi | Does `down-studio-apps.py` delete every running app, and does the lifecycle diff hold? | 8.2, 8.4 |
-| xii | Does the governance manager's `lakeformation:CreateLFTag` make it an **"LF-Tag creator"** — and therefore able to **grant data** it is itself denied from reading (`DenyReadingTheRows`)? **Open question 18**, raised at Stage 5 pass 3: AWS gives `Grant with LF-Tag expressions` implicitly to "the data lake administrator and the LF-Tag creator", and never says whether a creator is *a principal able to create tags* or *the creator of the tag in question* — these tags were created by the infrastructure user, through Terraform. **Settled by attempting the grant in a real governance-manager session, never by more reading** — the pages that would answer it are the ones already read | 1, 2 |
-| xiii | **Can the persona in fact tag a dataset?** — Stage 5 pass 2's owed behavioural proof, listed here because it needs the same session as (xii): a governance-manager sign-in **with the tunnel up** (the set carries `DenyControlPlaneOffVpn`). It is a claim about the **pair** — the IAM statement and the Lake Formation `ASSOCIATE` grant — and neither slice answers it alone (Lesson 28) | 1, 2 |
+| xii | Does the governance manager's `lakeformation:CreateLFTag` make it an **"LF-Tag creator"** — and therefore able to **grant data** it is itself denied from reading (`DenyReadingTheRows`)? **Open question 18**, raised at Stage 5a pass 3: AWS gives `Grant with LF-Tag expressions` implicitly to "the data lake administrator and the LF-Tag creator", and never says whether a creator is *a principal able to create tags* or *the creator of the tag in question* — these tags were created by the infrastructure user, through Terraform. **Settled by attempting the grant in a real governance-manager session, never by more reading** — the pages that would answer it are the ones already read | 1, 2 |
+| xiii | **Can the persona in fact tag a dataset?** — Stage 5a pass 2's owed behavioural proof, listed here because it needs the same session as (xii): a governance-manager sign-in **with the tunnel up** (the set carries `DenyControlPlaneOffVpn`). It is a claim about the **pair** — the IAM statement and the Lake Formation `ASSOCIATE` grant — and neither slice answers it alone (Lesson 28) | 1, 2 |
 | xiv | **Does the blueprint's manage-access role have to be a Lake Formation data lake administrator in each member account** — and if it does, is it added to the **one** settings resource those slices already have — which since pass 4a lives in `terraform-modules/consumer-data/` (`admins = [var.data_lake_admin_role_arn]`), so the change is a module edit widening that input to a list, a new module tag (Recipe B) and a re-apply of every consumer slice, never a second `aws_lakeformation_data_lake_settings` and never by hand? That resource replaces `admins`, `parameters` and both default blocks wholesale (INT-11), so two writers of it in one account is a principal that disappears on the next apply of the other — **and the same question at the producer end**: whether that principal also needs a seat in `terraform-live/data-governance/data/`'s single settings resource, whose `admins` row names this stage as its revision trigger | 1.4 |
-| xv | **Does a database or table the blueprint creates in a member account come out with no `IAMAllowedPrincipals` grant** — i.e. did Stage 5 pass 4's default-clearing land *before* this stage created anything? The reading is per catalog object, at creation, and there is no second chance: the defaults act at creation time and clearing them later does not reach what already exists (Lesson 27). **The precondition is measured, not assumed, since 2026-08-19**: `DL-6` reads clear in both member accounts and the check now reports per account, so a regression here is the blueprint's doing rather than an open question about the settings | 1.4, 3 |
-| xvi | **When the portal fulfils an approved subscription, what shape is the Lake Formation grant it writes** — named-resource or an LF-Tag expression? If DataZone ever writes expressions, Lesson 29 applies to a grantor this repository does not author: an expression on `classification` alone reaches `layer=dropbox`, and the near-miss Stage 5 caught by reading its own plan would arrive from a service instead | 1, 7.4 (Stage 5) |
+| xv | **Does a database or table the blueprint creates in a member account come out with no `IAMAllowedPrincipals` grant** — i.e. did Stage 5a pass 4's default-clearing land *before* this stage created anything? The reading is per catalog object, at creation, and there is no second chance: the defaults act at creation time and clearing them later does not reach what already exists (Lesson 27). **The precondition is measured, not assumed, since 2026-08-19**: `DL-6` reads clear in both member accounts and the check now reports per account, so a regression here is the blueprint's doing rather than an open question about the settings | 1.4, 3 |
+| xvi | **When the portal fulfils an approved subscription, what shape is the Lake Formation grant it writes** — named-resource or an LF-Tag expression? If DataZone ever writes expressions, Lesson 29 applies to a grantor this repository does not author: an expression on `classification` alone reaches `layer=dropbox`, and the near-miss Stage 5a caught by reading its own plan would arrive from a service instead | 1, 7.4 (Stage 5a) |
 | xvii | **Does `datazone:Get*` in `GovernanceManagerAccess` reach `GetEnvironmentCredentials`** — and does vending hand back a principal `DenyReadingTheRows` never touches? **Open question 20.** The statement below it denies the sibling vending API, `lakeformation:GetDataAccess`, **by name**, on the argument that the set administers the mechanism and must not use it; `Get*` admits the other one by wildcard, beside `datazone:CreateProjectMembership` in the same statement. `./aws/studio.py` cannot answer it — the read-back sees roles and boundaries, not what a session can **obtain**. **Attempted in the governance-manager session (xii) and (xiii) already need**, tunnel up, against 2.4's throwaway project. If it vends, the second reading is what the vended principal reads *with* the D13 boundary in place | 2.4, 2.5 |
 | xviii | **Where does the project S3 path land, which hand creates it, and under which key?** The fields [`docs/SMUS.md`](../../SMUS.md) §S3 item 1 books on this step by name, **plus the bucket's default encryption key**, which that list does not carry: a service-created bucket outside the account's data CMK is a scope Stage 11 inherits, not a finding to close here (`docs/GOVERNANCE.md` §Encryption owns the rule). Decision 6's prefix shape is written against this answer. **Answered 2026-08-26, all three parts, read-only** — the path is `s3://awsds-sandbox-smus-projects/<domain-id>/<project-id>/<scope>/` with two live scopes (`shared/`, `dev/`) and **no per-person grain**; the hand is **ours** for the bucket (Terraform, v0.3.2) and the **service's** for the tree inside it; the key is `alias/awsds-sandbox-project`, the project CMK, with `BucketKeyEnabled` and `SSE-C` blocked — so the exception `docs/GOVERNANCE.md` §Encryption already names is confirmed by measurement rather than by the code that declared it. The three findings the same reading produced are at step 2.4 | 2.4 |
 | xx | **Does any blueprint regional parameter, or any Tooling parameter, accept the project CMK?** `alias/awsds-<env>-project` is created by `terraform-modules/sagemaker-prereqs/` for the resources a blueprint provisions, and pass 1's premise died at v0.3.2 — **answered 2026-08-22: Tooling's `KmsKeyArn` regional parameter accepts it** (the wizard-field ladder's third rung), the resources under it are the `awsds-<env>-smus-projects` bucket's contents and the blueprint-provisioned volumes, and the first provisioned role's `KmsKeyId` tag read it back. The no-consumer branch is closed — that overlaps (xviii), which reads the project S3 path's own default encryption key at 2.4. **If none does, the two keys have no consumer and the branch is explicit rather than drifting**: delete them, or keep them with a named future consumer and a date. One key-month per account either way | 1.4, 1.5, 2.4 |
-| xix | **Which `aws:SourceVpce` does an S3 call from a project subnet actually present** — the account's `[P]` gateway endpoint, or the interface endpoint 4.2 creates — and do `trusted_vpce_ids` and (since 2026-08-26, the derived buckets removed) the **projects bucket's** condition carry it? The measurement [`docs/SMUS.md`](../../SMUS.md) §VpcOnly assigns to 4.2 by name after Stage 5 pass 4d (Lesson 33). Distinct from (viii), which asks only which entries are exercised, and **unanswerable from flow logs** — the field is CloudTrail's `vpcEndpointId`. **Sharpened 2026-08-27 by an attempt to answer it from what is already recorded, which failed and named its own remedy**: the trail's S3 events in Sandbox are all `AWSReservedSSO_InfrastructureAccess_*` from the laptop, carrying **no** `vpcEndpointId`, and `s3-control` (the Access Grants vend the notebook actually makes) returns **nothing at all** from `lookup-events`. So the app plane's S3 traffic — object reads, writes and vends — leaves **no management event to read**, and Stage 11's data events do not exist yet. **The remedy is to choose the call rather than the moment**: from inside a project notebook, run a **management**-classified S3 call — `GetBucketLocation` on the projects bucket, the same instrument Stage 5 step 4e chose for exactly this reason — and read its `vpcEndpointId`. One call, one row, no new infrastructure; it needs a JupyterLab session, so it is the **user's** hand | 4.2 |
+| xix | **Which `aws:SourceVpce` does an S3 call from a project subnet actually present** — the account's `[P]` gateway endpoint, or the interface endpoint 4.2 creates — and do `trusted_vpce_ids` and (since 2026-08-26, the derived buckets removed) the **projects bucket's** condition carry it? The measurement [`docs/SMUS.md`](../../SMUS.md) §VpcOnly assigns to 4.2 by name after Stage 5a pass 4d (Lesson 33). Distinct from (viii), which asks only which entries are exercised, and **unanswerable from flow logs** — the field is CloudTrail's `vpcEndpointId`. **Sharpened 2026-08-27 by an attempt to answer it from what is already recorded, which failed and named its own remedy**: the trail's S3 events in Sandbox are all `AWSReservedSSO_InfrastructureAccess_*` from the laptop, carrying **no** `vpcEndpointId`, and `s3-control` (the Access Grants vend the notebook actually makes) returns **nothing at all** from `lookup-events`. So the app plane's S3 traffic — object reads, writes and vends — leaves **no management event to read**, and Stage 11's data events do not exist yet. **The remedy is to choose the call rather than the moment**: from inside a project notebook, run a **management**-classified S3 call — `GetBucketLocation` on the projects bucket, the same instrument Stage 5a step 4e chose for exactly this reason — and read its `vpcEndpointId`. One call, one row, no new infrastructure; it needs a JupyterLab session, so it is the **user's** hand | 4.2 |
 
 ## Risks
 

@@ -1,5 +1,5 @@
 # Inputs. Everything that differs between the two callers is here and nothing else is:
-# `sandbox/data/` and `development/data/` are the same design applied twice (Stage 5 step 8,
+# `sandbox/data/` and `development/data/` are the same design applied twice (Stage 5a step 8,
 # "one module for both"), and D35 makes that three times at the second business unit. A setting
 # that lives in the slice instead of here is a setting that will differ between accounts by
 # accident (Lesson 14).
@@ -23,7 +23,7 @@ variable "lake_databases" {
 }
 
 variable "data_lake_admin_role_arn" {
-  description = "This account's data lake administrator - InfrastructureAccess, per Stage 5 decision 5. Resolved by pattern in the caller (the AWSReservedSSO_* suffix is minted per account and cannot be written down). Without one, AWS shows the account an empty catalog while its RAM holds the share - measured on both consumers 2026-08-19, and the reason this resource exists at all."
+  description = "This account's data lake administrator - InfrastructureAccess, per Stage 5a decision 5. Resolved by pattern in the caller (the AWSReservedSSO_* suffix is minted per account and cannot be written down). Without one, AWS shows the account an empty catalog while its RAM holds the share - measured on both consumers 2026-08-19, and the reason this resource exists at all."
   type        = string
   nullable    = false
 }

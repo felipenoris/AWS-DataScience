@@ -26,7 +26,7 @@
 #
 # Stages that add to the list: `access-analyzer` in Stage 1b step 8.2, `ram` in Stage 1d
 # step 11 (without which a Lake Formation grant silently becomes a pending RAM invitation),
-# GuardDuty at Stage 15, Security Hub at Stage 5 and Macie at Stage 11. Each of those
+# GuardDuty at Stage 15, Security Hub at Stage 5a and Macie at Stage 11. Each of those
 # delegations *enables* its service, so none of them is here yet (Stage 1b step 8.1).
 #
 # Both calls are AWS Organizations reads, and Organizations is administered from the
@@ -245,7 +245,7 @@ result means the registration is absent, not that it is pending.""")
             rep.line()
             rep.text("""Section 2 is one row of this table, kept separate because it is the one Stage 1b
 step 8.2 creates and verifies. Everything else here is the landing zone, until a
-later stage delegates GuardDuty (Stage 15), Security Hub (Stage 5), RAM (Stage 1d
+later stage delegates GuardDuty (Stage 15), Security Hub (Stage 5a), RAM (Stage 1d
 step 11) or Macie (Stage 11).""")
 
         # ------------------------------------------------------------------------------

@@ -57,7 +57,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 }
 
 # TLS-only always; the caller's own statements (a perimeter branch, a drop-box asymmetry -
-# Stage 5) are appended through var.additional_policy_statements, because S3 holds exactly one
+# Stage 5a) are appended through var.additional_policy_statements, because S3 holds exactly one
 # policy per bucket and a second aws_s3_bucket_policy would silently replace this one.
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id

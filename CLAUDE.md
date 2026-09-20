@@ -191,6 +191,7 @@ This table is the only routing map; every other file points here rather than rep
 | A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md): also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
 | The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
 | Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
+| Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
 | How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
 | What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
 | What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
@@ -226,9 +227,52 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Stages 0-1d, 2, 3, 4, 5, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5 register 13 rows / 24
+- **Stages 0-1d, 2, 3, 4, 5a, 16, 6a, 6b, 6c are done.** Battery 100. Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 39 decisions are closed. Still needed from the user: the domain name (blocks Stage 13).
+  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13) — the only one left.
+- **D40 (2026-09-19): a Redshift Serverless warehouse, built by hand, blueprints still disabled.** **Stage 5
+  is now 5a** (file, log, 94 files re-pointed). Three new files: **5b** the warehouse + the access model,
+  **6h** the first sandbox schema + the SMUS connection, **Stage 9 step 9** the the governed class. Nothing
+  applied. **`objectives.md` revised 2026-09-20, Claude drafting at the user's request** (5b 0.0, a departure
+  from Stage 16 0.1's shape, recorded): Redshift is a **second possible engine**, the Glue/Iceberg lake stays
+  the **warehouse of record**, an engine is a choice **per workload not per estate** (Athena the default),
+  **one environment to a data scientist and where its databases live is an implementation matter** — which is
+  what makes D40's two-account split admissible — and **the controls do not change: one more execution
+  environment**, no new class of reader, no second governance model. Consequences: **a governed schema gets no project
+  connection** (6h's three layers are sandbox-class only), and `INT-24` is narrowed to what **LF governs** —
+  **two** shapes: a federated catalog read by Athena, or a **LF-managed datashare** (LF enforces db/table/
+  column/row permissions on it and **tags may be used**; cross-Region not supported; a producer revoke leaves
+  LF permissions behind). Only the cross-account Data-page connection is excluded (the fork + `sqlworkbench:*`
+  on `*`). **The Iceberg-engine switch on a federated catalog makes Glue create a managed Redshift CLUSTER** —
+  unpriced, read+write, AWS-managed key by default — which **collides with 5b 3.1's
+  `DenyRedshiftProvisionedClusters`**; Stage 9 **9.5a** settles it and recommends the datashare. The per
+  database × project grant is the only new rule. **The sandbox class bypasses the catalog** (user,
+  2026-09-20): access direct to the project role, and a member creates tables freely in the schema. **A schema
+  IS a base** (user): the Redshift `database` is only a class container (`sandbox` / `governed`, no prefixes),
+  the grain is **per schema × project**, **one schema may be shared by several projects**, and its name is
+  **thematic — chosen at creation, no relation to a project**, so a schema name is not an authorization fact and
+  the relation lives only in `sandbox/warehouse/`'s map + the `GRANT ROLE` statements. Layer 3 is therefore a
+  **role per schema** (`sbx_<theme>_rw`) granted per project — not ownership, which is singular; the owner is a
+  non-login role. **Quota 1 TB** (user) = **24.58 USD/mo if filled, 49% of the D12 ceiling, and nothing bounds
+  the schema count** (32 at 1 TB = the 4-RPU 32 TB limit) → an alarm on `DataStorage` is the compensating
+  control. **Quota default is `UNLIMITED`** (`WH-13`); a superuser alone may change it; it refuses **at
+  commit**; `DELETE` frees nothing until `VACUUM` (plain at 4 RPUs, boost needs ≥ 8);
+  `SVV_SCHEMA_QUOTA_STATE`/`STL_SCHEMA_QUOTA_VIOLATIONS` are the instruments. **Sharing has one cost ownership
+  would have avoided**: a table belongs to its creator, so `ALTER DEFAULT PRIVILEGES` per contributing project
+  may be owed — 6h 5.2b reads it. A **datashare is not the mechanism** (same account, same namespace).
+  **0.36 USD/RPU-h measured** (offer
+  file 2026-09-11) → 4 RPU = **1.44/query-hour, 0.00 at rest**, the estate's dearest object per unit of time,
+  so the usage limit (`breach_action = deactivate`, default `log`) lands in the **same apply** as the
+  workgroup. Two classes on two accounts because **a namespace is not a boundary between its databases** (one
+  page says read-only *and* writable-with-permissions) and **JupyterLab needs the warehouse in the project's
+  VPC** — Sandbox does not peer with `VPC-Workloads`. *Per database × project* = **three layers**: the tag
+  `AmazonDataZoneProject` on workgroup **and** namespace (the `for-use-with-all-datazone-projects` wide form
+  refused), the project role's IAM, and a Redshift `GRANT` — only the third is per database, none is
+  sufficient, all three fail with one symptom. Unsettled until an apply: the **provider page demands 3 AZs**,
+  the service documents **2 without EVR**, and the provider validates neither. The **ratchet** past 4 RPUs
+  never returns. Redshift creates its 3 audit log groups at **`Never Expire`** unless they exist first. New:
+  `INT-24`, `aws/warehouse.py` (`WH-1`..`WH-12`, unwritten), rank **53** for `warehouse` in two accounts.
+  `enable_trusted_identity_propagation` exists **per connection** — corrects OQ 13's premise.
 - **D39 (2026-09-17): AWS is reached by identity, the VPN reaches the private network** (`objectives.md`).
   An identity is granted only on an institution-monitored laptop (M365 DLP): modelled, not enforced
   (Stage 11 3.4). **Stage 6g applied 2026-09-17**: `DenyControlPlaneOffVpn` deleted from the six persona
@@ -345,7 +389,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Archive and Audit hold no CLI profile; auto-enrollment is on; `INV-09` is ten principals. Before
   reporting a gap, read the file that owns it:
   unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
-  21. From Stage 5: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
+  21. From Stage 5a: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
   Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
   left alone. **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock billing per use with no
   ceiling.

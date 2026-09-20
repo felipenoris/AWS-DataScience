@@ -65,7 +65,7 @@ resource "aws_lakeformation_data_lake_settings" "this" {
 # access.
 #
 # The write half is here rather than in Stage 9: the first governed write attempted (2026-08-19)
-# was denied, the vended AWSLF session naming kms:GenerateDataKey (Lesson 32; stage 5 log).
+# was denied, the vended AWSLF session naming kms:GenerateDataKey (Lesson 32; stage 5a log).
 # Leaving it to Stage 9 would fail inside its 2.4 cross-account job with four more pieces on the
 # path.
 #

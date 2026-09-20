@@ -103,7 +103,7 @@ RANKS = {
     # slice that is not on disk: a row with nothing behind it makes the table stop being
     # evidence.
     "vpn": 40,
-    # The governed lake (Stage 5). After foundation because its perimeter policy reads the
+    # The governed lake (Stage 5a). After foundation because its perimeter policy reads the
     # consumers' foundation/ states (the [P] gateway-endpoint ids, INT-05) - a cross-account
     # read, so the rank is documentation of dependency, not an ordering up/down ever acts on:
     # every slice at this rank is [P].
@@ -388,16 +388,16 @@ SLICES = [
         "amd64 build host for the dev-env image (St.6 5.0)",
         0.2117,
     ),
-    # Stage 5 pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
+    # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer
     # (config free; runs metered per DPU-hour, docs/PRICING.md 5).
     Slice(
         "data-governance",
         "data",
         PERSISTENT,
-        "the lake: account data CMK, 5 buckets, catalog, LF (Stage 5)",
+        "the lake: account data CMK, 5 buckets, catalog, LF (Stage 5a)",
     ),
-    # Stage 5 pass 4 - the consumer side, one module applied twice. [P] and free or floor-priced
+    # Stage 5a pass 4 - the consumer side, one module applied twice. [P] and free or floor-priced
     # at rest: one CMK per account (key-month, docs/PRICING.md 2), one bucket, an Athena
     # workgroup, the LF settings, two resource links and three grants. Athena bills per TB
     # scanned, which is a query and not an hour, so usd_per_hour stays 0.0 and the guard is the

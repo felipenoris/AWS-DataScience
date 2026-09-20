@@ -238,7 +238,7 @@ def main(argv: list) -> int:
                 "encryption key",
                 f"{DATA_KEY_ALIAS} was not found among this account's aliases - the key binding "
                 "is unverifiable this run, and a pass here would be a claim, not a reading "
-                "(the alias exists since Stage 5, so its absence is itself a finding).",
+                "(the alias exists since Stage 5a, so its absence is itself a finding).",
             )
         elif data_key_id not in keyref:
             checks.fail(

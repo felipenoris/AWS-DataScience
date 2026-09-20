@@ -7,7 +7,7 @@
 #
 # raw and curated are step 3.1's; dropbox is pass 1's answer to the question
 # docs/GOVERNANCE.md left open ("which catalog database holds the drop-box crawler's
-# inferred tables is fixed at Stage 5 pass 1"): its own database, so crawler-created tables
+# inferred tables is fixed at Stage 5a pass 1"): its own database, so crawler-created tables
 # inherit layer=dropbox rather than wearing raw's value wrongly.
 
 resource "aws_glue_catalog_database" "raw" {

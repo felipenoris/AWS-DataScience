@@ -4,8 +4,8 @@ The governance of data in this estate: what each account holds, the systems that
 the lake (the Glue Data Catalog, Lake Formation, the SageMaker Catalog), the LF-Tag ontology, the
 classification rules, the grant model, the two designed copy destinations (drop-box in, derived zone
 out), and the cycle a data product follows from a Sandbox project to a governed table. The ontology and
-the grant model were decided by the user on 2026-08-18 (Stage 5 decisions 1-3, recorded in
-[`docs/log/log-stage-05-data-foundation.md`](log/log-stage-05-data-foundation.md)). The dimension the
+the grant model were decided by the user on 2026-08-18 (Stage 5a decisions 1-3, recorded in
+[`docs/log/log-stage-05a-data-foundation.md`](log/log-stage-05a-data-foundation.md)). The dimension the
 plan called `zone` is `layer`, and `domain` is `businessunit`; stage text predating 2026-08-18 reads
 accordingly.
 
@@ -14,7 +14,7 @@ dimension: encryption is per account (one data CMK per account, §Encryption), a
 Terraform, and no catalog attribute carries it. Text predating the revision reads `security-zone=zn-lab`
 where §Encryption now answers.
 
-*Read with [`docs/plan/stages/stage-05-data-foundation.md`](plan/stages/stage-05-data-foundation.md)
+*Read with [`docs/plan/stages/stage-05a-data-foundation.md`](plan/stages/stage-05a-data-foundation.md)
 (the lake's build steps), [`docs/plan/stages/stage-06f-data-governance.md`](plan/stages/stage-06f-data-governance.md)
 (the catalog's measurements and open decisions) and [`docs/plan/conventions.md`](plan/conventions.md)
 (naming). The applied grants are registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation
@@ -69,6 +69,16 @@ flowchart LR
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
 
+**The warehouse adds a store to two of those rows** (D40, 2026-09-19, neither built). **What the brief calls
+a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
+container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
+database of themed schemas, outside Lake Formation like the sandbox lake beside it;
+`Production` gains `awsds-prod-warehouse` with its the `governed` database, inside Lake Formation as a federated
+catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
+no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
+two accounts that have VPCs. `Staging` gains nothing either: D20 keeps a deployment target off the lake, and
+a warehouse it has no writer for would be a second mirror to maintain.
+
 ## Persistence — the buckets
 
 Two bucket families, split by the account line. "Who may read" is expressed by a different mechanism on
@@ -90,7 +100,7 @@ at two points, both in the table; one of them is still Stage 9's.
 | `awsds-data-dropbox` | `raw`-layer files published by users for pipeline consumption | Interactive-OU personas, `PutObject` only (§Drop-box) | the crawler (schema); the Production job, Stage 9 | the Production job, Stage 9 — the pickup that empties the letterbox. The writer holds no delete, no read-back, no list |
 | `awsds-data-raw` | untreated bases — copies of legacy-system data | the governed producer path only (Stage 9's write share; nothing writes today) | consumers via LF (both layers are readable — data engineers develop the raw→curated ETL) | nobody — no principal holds `s3:DeleteObject`; whether Stage 9's producer path needs one is that stage's to write |
 | `awsds-data-curated` | transformed bases, built by ETL routines from `dropbox`+`raw` | the governed producer path only (Stage 9) | consumers via LF — the primary read surface | the maintenance role, on `warehouse/*` only (`CompactCuratedWarehouse`): Iceberg compaction rewrites data files and removes the superseded ones (D27) |
-| `awsds-data-artifacts` | non-tabular artifacts that must live under the lake's governance. No designed writer is wired yet: the bucket exists from Stage 5's four-bucket set, and its first writer is named by the pipeline stage that needs it (8/9 — Stage 9's *model* artifacts live in Production, not here). Since 2026-08-20 it holds a handful of Athena result/metadata objects under `athena-results/`, written by `InfrastructureAccess` in-account queries during the sample-row load — an incidental writer that disappears when 4e closes in-account Athena | — (none today) | — | — |
+| `awsds-data-artifacts` | non-tabular artifacts that must live under the lake's governance. No designed writer is wired yet: the bucket exists from Stage 5a's four-bucket set, and its first writer is named by the pipeline stage that needs it (8/9 — Stage 9's *model* artifacts live in Production, not here). Since 2026-08-20 it holds a handful of Athena result/metadata objects under `athena-results/`, written by `InfrastructureAccess` in-account queries during the sample-row load — an incidental writer that disappears when 4e closes in-account Athena | — (none today) | — | — |
 | `awsds-data-logs` | the Stage 11 CloudTrail data-event trails, delivered cross-account under `AWSLogs/<account>/` | CloudTrail (from Stage 11 on) | Stage 11's detection tooling | nobody today — a retention rule, if one ever arrives, is Stage 11's to write |
 
 `raw` and `curated` are LF-registered locations — access only through Lake Formation (D13). `dropbox`,
@@ -100,7 +110,7 @@ at two points, both in the table; one of them is still Stage 9's.
 
 The lake's exit side, seen as persistence. Until 2026-08-26 it was `awsds-<env>-derived`, one designed
 bucket per consumer account with three prefix families (`results/`, `derived/${aws:userid}/`,
-`scratch/`), applied at Stage 5 pass 4 through the `consumer-data` module.
+`scratch/`), applied at Stage 5a pass 4 through the `consumer-data` module.
 [D19's revision of that date](plan/decisions/D19-derived-zone.md) removed it: Stage 6 step 2.4's reading
 found the Tooling blueprint already builds, per project, an enforced results location and a mounted
 working folder, and the user kept the service's. The old zone's who-does-what table is D19's and the
@@ -124,7 +134,7 @@ Where it stands against the removed zone's design differences:
   the removed zone shed at 30 days so a copy was never permanent; this bucket holds the same class of
   data indefinitely, orphaned project prefixes included. The bucket is Terraform's, so a rule is addable
   without touching what SMUS manages;
-- the write/containment grain is the project, not the person — Stage 5 decision 6's grain one level up;
+- the write/containment grain is the project, not the person — Stage 5a decision 6's grain one level up;
   per-write attribution is Stage 11's data events;
 - `<project>/dev/` is LF-registered and `shared/` is not (measured 2026-09-12). SMUS registers the
   `dev/` scope when it creates a project, with the project role as registration role and hybrid access
@@ -159,7 +169,7 @@ The binding is mechanical and per bucket: each bucket's default-encryption confi
 account key (the `s3-bucket` module's `kms_key_arn`), so a bucket belongs to exactly one key and the key
 boundary is a bucket boundary. No catalog attribute is involved anywhere in the chain.
 
-What the single key costs (Stage 5 decision 3's deviation): INT-10's key grants — the Production job
+What the single key costs (Stage 5a decision 3's deviation): INT-10's key grants — the Production job
 role and the maintenance role need the drop-box's key — land on the account key, so at the KMS layer
 those principals reach every lake bucket. The drop-box's isolation therefore rests on the S3 statements
 and Lake Formation alone; the KMS layer separates accounts, not buckets. Revision trigger: the first
@@ -207,9 +217,47 @@ A data product, the lake and a warehouse are different things. A data product is
 set of assets under one listing, and stores nothing. The lake is where the governed tables live,
 Iceberg on S3 in the lake's Glue Data Catalog. A Redshift warehouse is a store and an engine: it reads
 the Glue Data Catalog through its auto-mounted `awsdatacatalog` database, read-only, and a namespace
-registered to the catalog becomes a federated catalog governed by Lake Formation. No warehouse is built
-here: the `RedshiftServerless` blueprint is excluded by D26 and D12, and Stage 6f step 8 writes the
-institutional pattern.
+registered to the catalog becomes a federated catalog governed by Lake Formation.
+
+**A warehouse is built, since [D40](plan/decisions/D40-redshift-warehouse.md) (2026-09-19) — and the
+`RedshiftServerless` blueprint is still excluded.** [`objectives.md`](plan/objectives.md) carries the
+requirement since 2026-09-20 and its wording is what this section implements: Redshift is a **second possible
+engine**, the lake stays the **warehouse of record**, *"the governance model does not fork"*, and *"the
+controls do not change — Redshift is one more execution environment"*, not a new class of reader. Two rules
+follow and they are requirements rather than readings: a **governed** Redshift database is read by whoever the
+grant register already admits, **through Lake Formation**, and it is therefore never reached by a SageMaker
+connection; the **per database × project** grant is the sandbox class's rule and *"the only new rule here"*. The distinction is the whole of that decision: what D26
+and D12 refused was a warehouse **any project member could provision in one click**, sized by the service at
+128 RPUs and capped by nothing. What exists instead is **one warehouse per account that has one**, written by
+Terraform at the documented floor of 4 base RPUs with a usage limit in the same apply, reached by a SageMaker
+project through a **connection** to an existing compute resource — the same shape Stage 16 used for the
+sandbox lake. Two classes of database, on the two axes this file already separates:
+
+| Class | Account | Written by | Under Lake Formation | Stage |
+|---|---|---|---|---|
+| **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a role, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
+| **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
+
+Three consequences this file has to carry rather than leave to a stage:
+
+- **The two classes are governed by different systems, by requirement.** A governed schema is a Lake Formation
+  resource; a sandbox schema is **outside the catalog altogether**, and what stands between two schemas there
+  is a **role per schema**, granted to each admitted project, with the schema's **1 TB `QUOTA`** bounding how
+  much may be written into it. Two projects sharing one schema is the normal case, not the exception. Reading a sandbox schema
+  as if the register described it is the mistake to avoid: it does not, and `WH-13` is what says so.
+- **A Redshift `GRANT` is a fourth permission system**, beside IAM, Lake Formation and S3 Access Grants. It
+  carries no LF-Tag, it is not readable by `list-permissions` — only from `SVV_*` inside a database session —
+  and nothing in a Terraform plan shows it. It gets its own register table in
+  [`docs/AWS_STATE.md`](AWS_STATE.md) rather than a row beside the LF grants.
+- **The governed class is the first governed store outside Data Governance**, which is D22's line. The
+  federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
+- **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
+  a governed copy included. The copy is not prevented; the destination is inside the perimeter, under the
+  account's own data CMK, and Lesson 1 applies — a copy somewhere less governed is not a hole to be closed.
+
+Stage 6f step 8 wrote the institutional pattern this half-implements, and
+[`plan/institutional-delta.md`](plan/institutional-delta.md)'s warehouse row carries what is still missing:
+one permission system over both storage engines, which is exactly what the the sandbox class does not have.
 
 ### Glue Data Catalog
 
@@ -329,7 +377,7 @@ absence, the designed asymmetry between the two registered layers.
 gated on `layer ∈ {raw, curated}`, and `dropbox` is outside it. The consumers read `raw` and `curated`
 — the raw-zone deviation argued in [`docs/plan/institutional-delta.md`](plan/institutional-delta.md) —
 and never `dropbox`, a letterbox rather than a layer people read from (§Drop-box). Which catalog
-database holds the drop-box crawler's inferred tables is fixed at Stage 5 pass 1.
+database holds the drop-box crawler's inferred tables is fixed at Stage 5a pass 1.
 
 ### `businessunit`
 
@@ -349,7 +397,7 @@ database, table or column:
 3. **Lake Formation matches them** at query time: expression satisfied → access; otherwise denied.
 
 TBAC is the default method here. Named-resource grants (per table/column) stay available for the
-exceptions hybrid access mode covers (Stage 5 step 6.3) — used, they are recorded like every grant.
+exceptions hybrid access mode covers (Stage 5a step 6.3) — used, they are recorded like every grant.
 
 Lake Formation's other attribute-based form, ABAC, puts the attribute on the caller's session instead of
 on the data: a named-resource grant under a Cedar condition. SMUS writes it for every project
@@ -413,9 +461,9 @@ Stage 9, `awsds-prod-job-exec` (read + the governed write). LF-Tags never gate t
 
 **The grain.** Entitlement follows the toolset's own practice: grants go to roles and projects, assumed
 by people and services — the unit the whole chain (IAM, Lake Formation, SMUS projects) is built around.
-Per-user attribution is not a target of this design (Stage 5 decision 6, 2026-08-18): where a per-user
+Per-user attribution is not a target of this design (Stage 5a decision 6, 2026-08-18): where a per-user
 option exists — TIP on the SQL engines, `${aws:userid}` prefix scoping in the derived zone — it is
-mapped and priced at Stage 5 pass 2 as exploration, adopted only if it earns its place (TIP's documented
+mapped and priced at Stage 5a pass 2 as exploration, adopted only if it earns its place (TIP's documented
 cost: remote access stops working). The objective's "who may read what" is met at the grain of the
 assumable role/project.
 
@@ -459,7 +507,7 @@ subset, and a new `layer` or `classification` value must not join a consumer sha
 
 Every applied triple is registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation grant
 register" — one row per grant, written in the same sitting as the grant, the discipline `POLICIES.md`
-keeps for policy statements. It carries the catalog's own operational grants from Stage 5 pass 1; the
+keeps for policy statements. It carries the catalog's own operational grants from Stage 5a pass 1; the
 governance manager's grants landed at pass 2, the first cross-account grants — the TBAC expressions
 above — at pass 3, and each consumer account's own re-grants at pass 4.
 
@@ -476,7 +524,7 @@ under the account's data CMK (decision 3 — the KMS trade is §Encryption's). R
 file is an ordinary overwrite (`PutObject` covers it; versioning keeps the prior copy internally); the
 writer's confirmation is the API response, since read-back does not exist.
 
-The writer's permission is two-sided, because the write crosses the account line (Stage 5 pass 4c,
+The writer's permission is two-sided, because the write crosses the account line (Stage 5a pass 4c,
 2026-08-19). The three statements above are the resource half; cross-account evaluation also requires
 an allow in the writer's own identity policy, so `DataScientistAccess` carries the mirror — `PutObject`
 on the dated prefix, plus `GenerateDataKey`/`Decrypt` on the lake's data key via S3 — in
@@ -484,7 +532,7 @@ on the dated prefix, plus `GenerateDataKey`/`Decrypt` on the lake's data key via
 permission set names the one prefix and the one key. The identity half grants no read-back, no list, no
 delete.
 
-Measured 2026-08-20 (Stage 5 pass 4d), from a persona session with the tunnel up: `PutObject` into the
+Measured 2026-08-20 (Stage 5a pass 4d), from a persona session with the tunnel up: `PutObject` into the
 dated prefix succeeds, and `GetObject` on that same object, `ListObjectsV2` on the prefix and
 `DeleteObject` on it are each denied — all three implicitly, because nothing grants them rather than
 because a rule intervenes. The delete is the verb that carries the D18 argument: a writer that can
@@ -674,7 +722,7 @@ per-workflow role holds the producer grants and nothing else (D28).
 | Any later time | reclassification, a tag change in the register under the same approval. A table moved to `restricted` leaves the default share at the apply, with no grant edited | the Governance Manager approves; the infrastructure user applies | the producer README |
 
 Who may open a merge request on the schema source is not decided; Stage 9 decision 3 recommends keeping
-the source in the repository. The Governance Manager also holds `ASSOCIATE` on both tag keys (Stage 5
+the source in the repository. The Governance Manager also holds `ASSOCIATE` on both tag keys (Stage 5a
 pass 2) and can tag by hand, the path for the crawler's `raw` tables. On a table the register declares,
 a hand change is outside the code: the slice's next plan is expected to show it as drift and an apply to
 restore the declared value (unmeasured).
@@ -698,6 +746,6 @@ of every tag and data grant in the register, and the approvals in the catalog (`
 
 ---
 
-*Stages: [stage-05-data-foundation.md](plan/stages/stage-05-data-foundation.md) ·
+*Stages: [stage-05a-data-foundation.md](plan/stages/stage-05a-data-foundation.md) ·
 [stage-06f-data-governance.md](plan/stages/stage-06f-data-governance.md) · Grant register:
 [AWS_STATE.md](AWS_STATE.md) · Plan core: [GENERAL_PLAN.md](GENERAL_PLAN.md)*

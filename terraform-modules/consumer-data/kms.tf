@@ -1,4 +1,4 @@
-# The account data CMK (Stage 5 pass 4, 2026-08-19). Encryption is per account: this account's
+# The account data CMK (Stage 5a pass 4, 2026-08-19). Encryption is per account: this account's
 # data buckets encrypt under this account's key (docs/GOVERNANCE.md, "Encryption"). The alias is
 # alias/awsds-<env>-data, the same pattern as the lake's alias/awsds-data-data - uniform because
 # the rule is uniform, not because a catalog attribute carries it: no AWS mechanism ties a tag

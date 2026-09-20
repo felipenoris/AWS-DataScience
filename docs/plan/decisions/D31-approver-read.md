@@ -6,7 +6,7 @@
 
 **Related decisions:** [D18](D18-data-scientist-access.md), [D19](D19-derived-zone.md)
 
-**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 5](../stages/stage-05-data-foundation.md)
+**Referenced by stages:** [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 5a](../stages/stage-05a-data-foundation.md)
 
 ---
 

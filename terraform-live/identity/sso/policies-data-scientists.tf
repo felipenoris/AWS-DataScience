@@ -16,7 +16,7 @@
 #   not granted - every action scoped to an object that does not exist yet: the Studio domains
 #                 (Stage 6), the ECR repositories (Stage 7), Production's own workgroup and
 #                 output prefixes (Stage 9). Each is named below against the stage that owes
-#                 it. Two entries left this list at Stage 5 pass 4c and the per-set ledgers
+#                 it. Two entries left this list at Stage 5a pass 4c and the per-set ledgers
 #                 below say how - the derived zone and the two enforced workgroups as
 #                 deliveries, the lake prefixes as a correction (never owed).
 #
@@ -69,7 +69,7 @@
 # that looks safe and is not - it grants s3:* on any bucket with "sagemaker" in the name, plus
 # a broad iam:PassRole, which is the privilege-escalation pair the IAM rules exist to prevent.
 #
-# Delivered at Stage 5 pass 4c (2026-08-19), with one line of the old ledger corrected rather
+# Delivered at Stage 5a pass 4c (2026-08-19), with one line of the old ledger corrected rather
 # than delivered: the set runs queries in the two enforced workgroups, reads and writes the
 # derived zone's three prefix families, and holds the identity half of the drop-box write -
 # every ARN read from the consumer and lake slices' state (data.tf), which is what the "not
@@ -77,7 +77,7 @@
 # lake through the Lake Formation share"; no such grant will ever arrive. D13 is only real
 # because tabular access goes through LF-aware engines vending credentials
 # (lakeformation:GetDataAccess, granted below), and a direct s3:GetObject on a registered
-# prefix is the bypass D13 exists to exclude. That line was Stage 2 guessing at Stage 5's
+# prefix is the bypass D13 exists to exclude. That line was Stage 2 guessing at Stage 5a's
 # interface - this file's own warning, caught by delivery.
 #
 # Still owed, and by whom:
@@ -158,7 +158,7 @@ data "aws_iam_policy_document" "data_scientist" {
   # it is what a SMUS subscription rides and what catalog visibility needs.
 
   # ------------------------------------------------------------------------------------------
-  # The drop-box write - the identity half of a cross-account permission (D18, D25; Stage 5
+  # The drop-box write - the identity half of a cross-account permission (D18, D25; Stage 5a
   # pass 4c). The resource half has existed since pass 1: the drop-box bucket policy's
   # AllowInteractiveWriterPutOnly and the lake data-key policy's AllowDropBoxWritersViaS3, both
   # reaching this role through the Interactive account roots. Cross-account evaluation requires
@@ -168,7 +168,7 @@ data "aws_iam_policy_document" "data_scientist" {
   # only - no read-back, no list, no delete, and no multipart-abort because the resource side
   # grants none.
   #
-  # Exercised 2026-08-20 (Stage 5 pass 4d), and the write is asymmetric in three verbs, not
+  # Exercised 2026-08-20 (Stage 5a pass 4d), and the write is asymmetric in three verbs, not
   # one: the persona's PutObject into the dated prefix succeeds, while GetObject on the object
   # it just wrote, ListObjectsV2 on the prefix and DeleteObject on its own object are each
   # denied implicitly - absence of grant, no deny statement involved. The delete probe completes
@@ -258,7 +258,7 @@ data "aws_iam_policy_document" "data_scientist" {
 
   # The grantor is somebody else, and that separation is the point (1b step 3.7). A principal
   # that can grant itself a Lake Formation permission has an entitlement mechanism that
-  # entitles nothing. Written as a Deny rather than left to omission because Stage 5 grants
+  # entitles nothing. Written as a Deny rather than left to omission because Stage 5a grants
   # this set real lake access, and the grant and the granting sit in the same service.
   statement {
     sid    = "DenyLakeFormationAdministration"
@@ -298,7 +298,7 @@ data "aws_iam_policy_document" "data_scientist" {
 # Nothing is owed to this set. Stage 9 step 5.2 verifies it by reading - no Athena,
 # DenyEveryWrite intact, nothing added. The only thing still coming to this document is the
 # Stage 3 permissions boundary, owed to all six sets rather than to this one; README.md carries
-# the owed table. "Stage 5 s3:GetObject on Staging's own prefixes" is not owed: Sandbox is Stage
+# the owed table. "Stage 5a s3:GetObject on Staging's own prefixes" is not owed: Sandbox is Stage
 # 5's only consumer since 6b step 2.4 (backend.py), and a staging environment a human can
 # read through IAM rather than through the pipeline's path is the first step back to one a human
 # can write.
@@ -406,7 +406,7 @@ data "aws_iam_policy_document" "data_scientist_staging" {
 #
 # Still owed: Stage 9 s3:GetObject on the named application-output prefixes and
 # athena:StartQueryExecution on the dedicated Production workgroup (its step 5.1) - Production
-# only joins DATA_CONSUMERS at Stage 9 (backend.py), so Stage 5 could not have written these
+# only joins DATA_CONSUMERS at Stage 9 (backend.py), so Stage 5a could not have written these
 # ARNs; Stage 7 ecr pull.
 
 data "aws_iam_policy_document" "data_scientist_prod" {

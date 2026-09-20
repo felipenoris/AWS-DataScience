@@ -306,7 +306,7 @@ changed, not just the plan.
   against a summary of it.
 
 - **2026-08-17 — the NFS requirement is withdrawn from `objectives.md`, and D24 with it.** A user edit to
-  the requirements brief, followed through the plan in the same sitting: Stage 5 pass 5 (steps 10-12) and
+  the requirements brief, followed through the plan in the same sitting: Stage 5a pass 5 (steps 10-12) and
   Stage 6 step 7 tombstoned with their numbers retired, `DL-10` inverted into an absence reading, and the
   no-RCP EFS residual — the accepted risk D19 named and Stage 11's threat model was to carry — retired with
   the filesystem itself. This entry exists because one provisioned thing changed shape: the Sandbox
@@ -330,7 +330,7 @@ changed, not just the plan.
   for one; decisions 3 and 5 and verifications (v) and (ix) travelled with their numbers retired into
   tombstones; `VP-8` left `./aws/vpn.py` for a new `./aws/guardduty.py` (`GD-1`–`GD-3`) with the id
   retired rather than renumbered, and `vpn.py`'s default narrowed to the two profiles its remaining
-  subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5 step 13.2's
+  subject needs; Stage 11 step 4 now gates on Stage 15 plus a month of billing, and Stage 5a step 13.2's
   Security Hub ingestion is recorded as empty until Stage 15 runs.
 
 - **2026-08-19 — the `security-zone` LF-Tag dimension is withdrawn, one day after it was created: one
@@ -351,7 +351,7 @@ changed, not just the plan.
   Production key is `alias/awsds-prod-data`.
 
 - **2026-08-19 — D21's revision trigger fired and is recorded, not answered.** The trigger was "the
-  discriminating data test asked with real grants in place"; Stage 5 passes 3-4c put those grants in
+  discriminating data test asked with real grants in place"; Stage 5a passes 3-4c put those grants in
   place, identical for both consumers. The file now records that the test is askable, that today it
   still names nothing, and that the answer waits for pass 4d's first behavioural persona
   queries — nothing was changed about the account or the chain.
@@ -530,6 +530,130 @@ changed, not just the plan.
   and the documents that describe the running estate; Stage 11 writes the identity premise as a modelled
   residual in place of the INT-16 re-take; 6d decision due 4 loses its VPN half; open question 17 is
   closed. **Provisioned things this touches:** six inline policies in Identity and five bucket policies in Data Governance, applied the same day (Stage 6g steps 1.3 and 2.3), each re-planning `No changes` and read back from the deployed documents.
+- **2026-09-19 — A Redshift Serverless warehouse enters the plan, and Stage 5 becomes Stage 5a.** The user
+  asked for a warehouse with two classes of database — governed, written by a Production workload; sandbox,
+  written by SageMaker project roles with access granted per database × project. Nothing in the repository
+  admitted one: `docs/GOVERNANCE.md` said *"No warehouse is built here"*, `docs/SMUS.md` carried
+  `RedshiftServerless` as a **Never** on the strength of D26 and D12, and `docs/PRICING.md` §5 rejected the
+  cost family without a measured rate. **Reading the exclusion's own words is what decided how much of it had
+  to go**: D12's argument was the RPU bill and D26's was that a *blueprint* puts the object one click from a
+  project member, sized by the service. The second argument survives a hand-built warehouse untouched, so
+  **[D40](decisions/D40-redshift-warehouse.md) admits one warehouse per account and keeps both Redshift
+  blueprints disabled** — reached by a SageMaker **connection to an existing compute resource**, the shape
+  Stage 16 used for the sandbox lake. The rate was measured the same day from the Price List bulk API
+  (**0.36 USD/RPU-hour**, offer file published 2026-09-11), which makes 4 base RPUs **1.44 USD per query-hour
+  and 0.00 at rest** — the estate's most expensive object per unit of time, and the reason the usage limit
+  with `breach_action = deactivate` is applied in the same act as the workgroup rather than deferred to
+  Stage 12. Three new stage files: **5b** the warehouse and the access model, **6h** the first `sbx_*`
+  database and the first connection, and **Stage 9 step 9** the governed class with its federated-catalog
+  registration. `INT-24` is new. Four documentation findings shaped the design rather than decorating it: the
+  **ratchet** past 4 RPUs never comes back down; the **provider page demands three AZs where the service
+  documents two** and the provider validates neither, so the estate's two-AZ plumbing is settled only by an
+  apply; **a namespace is not a boundary between its databases** (the cross-database page carries both
+  "read-only" and "writable with permissions"), which is why the two classes are in two accounts; and Redshift
+  creates its audit log groups at **`Never Expire`** unless they exist first. **Stage 5 was renamed to
+  Stage 5a** in the same sitting, file and log file both, with 94 files re-pointed — a bare "Stage 5" would
+  have become ambiguous the moment 5b existed. The log's entries were not rewritten (one link target was
+  repointed so the reference gate stays green); one entry still names `stage-05-data-foundation.md` in prose,
+  and this row is the explanation for it. **Provisioned things this touches: none.** Nothing was applied, and
+  `objectives.md` does not yet carry the requirement — that is Stage 5b step 0.0, the user's hand, and the
+  stage's one unconditional blocking input. **Corrected the same day, before the branch was merged:** the
+  first draft of 5b 0.0 said that file *"says nothing about a warehouse today"*, and it does — *"Use AWS Glue
+  Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse."* So 0.0 is a
+  **revision** of an existing sentence rather than a new bullet, and the fork it hides is whether Redshift is
+  a second engine beside the Iceberg lake (what D40 assumes) or a replacement for it (which would re-open
+  D13, D22 and the producer path). 0.0 now carries that fork as a table.
+
+- **2026-09-20 — the requirement reaches `objectives.md`, and Claude wrote it.** At the user's request, and
+  that is the departure worth recording: [Stage 16](stages/stage-16-sandbox-lake.md) step 0.1 had the *user*
+  write the sandbox-lake requirement, and the rule behind it is that a paraphrase written by the implementer
+  becomes the specification (Lesson 57). Here the user asked Claude to draft the revision and then answered the
+  questions the draft left open, in the same sitting. The user's own sentences from the chat — the two classes
+  of database, their writers, the per database × project grain, the minimum capacity — are transcribed; the
+  framing sentences around them are Claude's, and those are the ones to re-read if the plan ever drifts from
+  the intent. **What the revision settled**, each of which
+  [D40](decisions/D40-redshift-warehouse.md) had previously assumed on its own: Redshift is a **second
+  possible engine** and the Glue/Iceberg lake stays the warehouse of record, so D13, D22 and the producer path
+  extend rather than re-open; a query engine is a choice **per workload, not per estate**, with Athena the
+  default, which restates D40's own revision trigger as a requirement; **the governance model does not fork**,
+  which makes Stage 9 9.5's federated-catalog registration a requirement rather than a compensation Claude
+  chose; and it is **one Redshift environment from a data scientist's point of view, with where its databases
+  physically live an implementation matter** — the clause that makes D40's two-account split admissible rather
+  than a deviation to be argued. **Then the read side, answered the same day:** *the controls stay the same, it
+  is just one more execution environment.* That closed `INT-24` down from three candidate mechanisms to **one**
+  — a Lake Formation cross-account share of the federated catalog, read by Athena — and **excluded** Redshift
+  data sharing and a cross-account connection by requirement rather than by preference, each being a second
+  control path over governed data. It also fixed that a **`gov_*` database gets no project connection**:
+  Stage 6h's three layers are a sandbox-class mechanism, and `WH-7` reading *no project tag* on the Production
+  namespace is the mechanical half of a rule that now has a sentence behind it. Stage 9's decision due 5 is
+  struck; what survives of it is verification (xxi), whether a Lake Formation share of a *federated* catalog
+  preserves the TBAC expressions this estate grants by. **Provisioned things this touches: none.**
+
+  **Corrected hours later, on the user's question *why are those two excluded*.** One of the two exclusions was
+  wrong and checking it found a defect in the recommendation. **Lake Formation-managed datashares exist**: AWS
+  documents that *"you can centrally define and enforce database, table, column, and row-level access
+  permissions of Amazon Redshift datashares"* and that *"you can also use tags in Lake Formation to configure
+  permissions"*, same-account and cross-account, with the datashare mapped to a **federated database** and only
+  *"users with access to both Redshift and Lake Formation"* reaching it. So data sharing is **not** inherently a
+  second control path, and `INT-24` carries **two** Lake-Formation-governed shapes rather than one. Only the
+  cross-account Data-page connection stays excluded, and it now rests on two independent grounds — the fork, and
+  `sqlworkbench:*` on `*`, which `check-iam-wildcards.py` refuses. **The worse finding is about the shape that
+  had been recommended**: enabling a federated catalog's *"Access this catalog from Iceberg compatible engines"*
+  switch makes **AWS Glue create a managed Amazon Redshift cluster** *"with the compute and storage resources
+  required to perform read and write operations"* — a cluster rather than a serverless workgroup, unpriced, read
+  **and** write, encrypted by an AWS managed key unless a CMK with extra key policies is supplied, and a direct
+  collision with Stage 5b step 3.1's own `DenyRedshiftProvisionedClusters`. Lesson 17's shape. Stage 9 gains
+  **9.5a** to settle the collision with a reading, its decision due 5 is restored rather than struck, the
+  datashare becomes the recommendation, `docs/PRICING.md` names the cluster as unpriced on purpose, and Stage 5b
+  3.1 carries the collision beside the deny so it is not attached in ignorance of what it refuses (Lesson 34).
+  **`objectives.md` needed no change**: the requirement was right and the derivation from it was too narrow.
+
+- **2026-09-20 — the sandbox class bypasses the catalog, and `CREATE SCHEMA` turns "freely" into something
+  bounded.** The user's third clarification of the day: for a sandbox database the catalog and Lake Formation
+  are not in the path, access is granted **directly to the project role** by whatever is simplest, and a project
+  member *"creates tables freely inside that project's own schema"*. That confirmed the asymmetry D40 had
+  already chosen — `sbx_*` outside Lake Formation, like `awsds-sandbox-lake` — and **changed the shape of
+  layer 3** in [Stage 6h](stages/stage-06h-redshift-connection.md). It had been a grant list with
+  `ALTER DEFAULT PRIVILEGES` to keep later tables in step; it is now
+  `CREATE SCHEMA <name> AUTHORIZATION "<the project's database user>" QUOTA <n> GB` — **ownership rather than a
+  list of verbs**, one schema per project, which is the *"simplest to configure"* the requirement asks for and
+  needs no bookkeeping as the project works. **A datashare is not the mechanism** and it was named as such: the
+  project, the workgroup and the database are in one account and one namespace, so a datashare would add a
+  producer/consumer chain to reach something already local; it enters only if a sandbox database ever has to be
+  read from another namespace, which nothing asks for. **What the reading added that nobody had:** the schema
+  `QUOTA` is what bounds a free hand — a superuser alone may set or change it, Redshift *"checks each
+  transaction for quota violations before committing"*, and **the default is `UNLIMITED`**, so a schema created
+  without one is unbounded on a store nothing expires. `WH-13` fails on exactly that, `WH-14` reports the
+  violations, and 5.2a exercises the refusal — the one control here that bounds a free hand and has never been
+  exercised anywhere in this estate. Two smaller facts landed with it: `DELETE` frees no disk until `VACUUM`
+  runs, which at 4 base RPUs is the plain command because vacuum boost needs 8, closing a loop with Stage 5b's
+  own capacity reading; and a schema name *"can't be `PUBLIC`"*. **Provisioned things this touches: none.**
+
+- **2026-09-20 — a schema is a base, a base can be shared, and two decisions the plan had guessed were answered
+  against it.** The user's fourth clarification of the day re-mapped the model rather than adding to it. *"In
+  Redshift, a schema is a database"* in the sense the brief uses the word — so the Redshift `database` is only a
+  **class container** (`sandbox`, `governed`, one per account, **no name prefixes**), and every grain is **per
+  schema × project**. The plan now uses Redshift's own two words and states the mapping once, rather than
+  letting one word mean two things (Lesson 32). *"One sandbox schema can be shared with more than one SageMaker
+  project"*, which **breaks the ownership shape written hours earlier**: ownership is singular and the relation
+  is many-to-many, so layer 3 became a **Redshift database role per schema** (`sbx_<theme>_rw`) granted to each
+  admitted project — admitting or removing one is a single `GRANT`/`REVOKE ROLE` against a single object — with
+  the schema owned by a non-login role so no project is privileged over the others sharing it. **Sharing brings
+  back the cost ownership had removed:** a table belongs to the user that created it, so whether a second project
+  may alter or drop the first's tables is unread and `ALTER DEFAULT PRIVILEGES` may be owed **per contributing
+  project**; [6h](stages/stage-06h-redshift-connection.md) step 5.2b is the reading, and until it is taken
+  *"creates freely"* is specified only as *creates and reads its own*. **The schema's name is thematic** —
+  *"chosen when the schema is created, after the theme of the data it will hold"*, with *"no necessary relation
+  to any SageMaker project"* — which answered 6h decision 6 against **both** shapes it had offered, and has a
+  consequence worth keeping: a schema name carries **no authorization information**, so the schema × project
+  relation exists only in `sandbox/warehouse/`'s map and in the `GRANT ROLE` statements, `WH-6` can no longer
+  classify anything by name (it reads instead that each account holds one class database and that every schema
+  appears in the map), and a schema whose theme has outlived its projects looks exactly like one in use.
+  **The quota is 1 TB**, answering decision 7 — and the arithmetic went into `docs/PRICING.md` and this file's
+  §5 rather than being left flattering: a filled schema is **24.58 USD a month, 49% of the D12 ceiling**, nothing
+  bounds the number of schemas, and 32 at 1 TB reach the 32 TB a 4-RPU workgroup supports, at roughly 786 USD a
+  month. So the quota bounds a runaway and not the bill, and what bounds the bill is a new compensating control:
+  an alarm on the namespace's `DataStorage` metric. **Provisioned things this touches: none.**
 
 ---
 

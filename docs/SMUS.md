@@ -69,7 +69,7 @@ RAM is AWS **Resource Access Manager** — the cross-account sharing service, ne
   permission as a ceiling on the share, never as access** (Lesson 28); what any principal can do is
   that ∩ its IAM ∩ the SCPs, and the Interactive OU carries no `datazone:` deny — open question 21.
 - **Cross-account catalog access rides Lake Formation cross-account sharing, which rides RAM.** The
-  substrate is already exercised: Stage 5's TBAC shares are RAM shares, measured at INT-11's close
+  substrate is already exercised: Stage 5a's TBAC shares are RAM shares, measured at INT-11's close
   as 4 `ACTIVE` with **0 invitations** in both consumers — the zero comes from Stage 1d step 11's
   `ram enable-sharing-with-aws-organization`. Without the org-wide enablement, every recreated share
   is a hand-accepted invitation (INT-11's fallback column prices that tax). A catalog subscription
@@ -423,17 +423,17 @@ can be diffed against this table directly.
 | `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | **1** |
 | `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps | **Per use** — token-billed **plus** whatever vector store it stands up; the storage half is **not measured** and is the one shape here that can bill while idle | a project concretely needs retrieval over its own data — and **the vector store priced first** (Lesson 6). It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
 | `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | **1** |
-| `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5 built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
+| `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5a built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
 | `EmrOnEks` | Amazon EMR on EKS resources, same workload family as `EmrOnEc2` | **Standing in practice** — an EKS cluster underneath, plus EMR uplift. Not measured | — | **3** |
 | `EmrServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). Under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) | default — **Stage 6 decision 1, taken 2026-08-21 as KEEP-or-REMOVE**: enabled at 1.4, and removed if either of the two in-stage readings comes out against it | **1** |
 | `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* An automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
-| `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path — the same cost family D12 excluded. Not measured | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake` | **3** |
+| `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path; the RPU-hour rate is now measured (`PRICING.md` §5) and the base capacity this blueprint would pick is not | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake`. **D40 does not reach this row**: it admits a warehouse Terraform sizes, not a catalog a blueprint provisions on Redshift-managed storage | **3** |
 | `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) | **2** |
 | `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | **2** |
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
-| `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **per-query RPU minimum** + storage — a second, larger query bill on top of Athena's (`PRICING.md` §5) | **Never** — excluded by **D26/D12**; enabling means reopening those decisions, not amending this one. `US-3` fails if it appears, with its own message | **3** |
+| `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message | **3** |
 | `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
@@ -477,7 +477,7 @@ profile, never as an extra on these two.
 > **The counter-argument is not settled**: if *"a unified data source across all Lakehouse catalogs"*
 > turns out to be how a project sees the shared catalog at all, this belongs in category 1 and its
 > absence would break the point of the stage. That looks unlikely — `DataLake` provisions the
-> per-project catalog surface and Stage 5 already established the lake path through resource links and
+> per-project catalog surface and Stage 5a already established the lake path through resource links and
 > Athena — but it is unread. If step 2.4 finds a dependency, it moves up **with evidence**, before any
 > real project exists. The failure mode of being wrong this way is a loud apply error; the other way it
 > is an unmeasured account-wide ingest sitting one click from a project member.
@@ -485,7 +485,7 @@ profile, never as an extra on these two.
 > **It is not Lake Formation's *data lake administrator*.** The AWS portal text consulted on
 > 2026-08-21 describes that other object — a privileged IAM principal designated under
 > *Administration → Data lake administrators*, which this project already owns and already assigned
-> (Stage 5 pass 4, `DL-6`, and `docs/ORGANIZATION.md` names who). **This blueprint's own description,
+> (Stage 5a pass 4, `DL-6`, and `docs/ORGANIZATION.md` names who). **This blueprint's own description,
 > from `get-environment-blueprint`, is a provisioning template**: *"Creates a unified data source
 > across all Lakehouse catalogs in the account and **automatically ingests and catalogs all available
 > data**."* The two share a word and nothing else; reading one as the other is Lesson 38's shape in
@@ -564,6 +564,58 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   `sts:SetContext` and `q:PassRequest`. It is AWS's document and moves without this repository being
   asked (Lesson 11), which is why a preventive control over publishing or sharing belongs on this role
   rather than in an OU document.
+
+## Connections — how a project reaches something Terraform owns
+
+A **connection** is a domain object that attaches a project to an external resource. This estate has used two
+kinds, and both exist because the alternative was a blueprint provisioning something nobody sized:
+
+| Kind | Reaches | Written by | Stage |
+|---|---|---|---|
+| **S3** | `awsds-sandbox-lake`, per SSO-group prefix | by hand, per project ([`runbooks/sandbox-lake.md`](plan/runbooks/sandbox-lake.md)) | [16](plan/stages/stage-16-sandbox-lake.md) |
+| **Redshift** | `awsds-sandbox-warehouse`, one themed **schema** in its `sandbox` database — shareable with several projects | decision 1 of [6h](plan/stages/stage-06h-redshift-connection.md): the portal for the first, `awscc_datazone_connection` after | [6h](plan/stages/stage-06h-redshift-connection.md) |
+
+**A Redshift connection is three layers, and none of them is the connection.** Read 2026-09-19, for
+[6h](plan/stages/stage-06h-redshift-connection.md); the requirement it implements is *access per database ×
+project*, and no single mechanism expresses that:
+
+1. **A tag on the workgroup *and* its namespace** — `AmazonDataZoneProject=<projectId>` — decides which
+   project may use the compute at all. AWS also documents a wide form,
+   `for-use-with-all-datazone-projects=true`, *"to allow all Amazon SageMaker Unified Studio projects in this
+   account to access it"*; this estate refuses it, and `WH-7` fails if it appears. The tag is on **two**
+   objects, which is Lesson 14's shape, so both come from one authored map in `sandbox/warehouse/`.
+2. **The project role's IAM reach** — `redshift-serverless:GetCredentials`, `GetWorkgroup`,
+   `ListTagsForResource`, and the `redshift-data:` family if the Data API is the path — mints the database
+   session. It must also fit inside the **D13 project boundary** (INT-15), which is a ceiling, so a grant the
+   boundary does not admit reaches nothing.
+3. **A Redshift `GRANT`** decides the database, schema and tables. This is the requirement's own grain, it is
+   SQL rather than Terraform, and **nothing in a plan shows it** — including its absence after a project is
+   unwired.
+
+Layers 1 and 2 are per *workgroup*; only layer 3 is per *database*. So admitting a project to the warehouse
+grants it nothing in any database, which is the asymmetry 6h step 5.2 measures rather than asserts.
+
+**The credential is one of three, and the choice is a control.** AWS: *"The credential type must be one of the
+following options: Username and password, IAM credentials, AWS Secrets Manager."* This estate takes **IAM
+credentials** — the only one carrying no standing credential — and pays for it in display: *"Using a username
+and password enables Amazon SageMaker Unified Studio to display more information for a resource."*
+
+**Two doors, and they have different prerequisites.** *"If you want to query the Amazon Redshift resources
+using JupyterLab within Amazon SageMaker Unified Studio, the Amazon Redshift resource must use the same VPC as
+the Amazon SageMaker Unified Studio project"*, while *"You can still query using the Data page of your project
+if you are using different VPCs."* That is why the sandbox warehouse is in Sandbox's own VPC and why the
+the governed one in `VPC-Workloads` is unreachable from a notebook by construction — Sandbox does not peer with it,
+and the absence is a control (`docs/NETWORK.md` §3).
+
+**`lineageSync` is a scheduled query on an hourly meter.** `awscc_datazone_connection`'s
+`redshift_properties.lineage_sync` takes an `enabled` flag and a `schedule`, and every run is a query on a
+workgroup billing **1.44 USD/hour** at 4 RPUs. It stays off until something asks for the lineage nodes
+(6h decision 3).
+
+**`enable_trusted_identity_propagation` exists per connection**, not only per project profile — which
+corrects the premise of open question 13, where TIP is recorded as a profile-level switch whose cost is that
+remote access stops working. Unadopted either way; the correction is that the *grain* of the choice is finer
+than the question assumed.
 
 ## S3 — the project's own storage, and where the lake is not
 
@@ -687,7 +739,7 @@ enabling it *syncs* the folder or *replaces* it is unmeasured. The connection is
 (INT-09/INT-13), and **open question 26** carries the promotion question all of this opens.
 
 **3. The lake — reached through the catalog, never mounted.** Governed data enters a project by
-publish/subscribe on the SageMaker Catalog, fulfilled on the Lake Formation substrate Stage 5 built
+publish/subscribe on the SageMaker Catalog, fulfilled on the Lake Formation substrate Stage 5a built
 (the TBAC shares; applied grants in `docs/AWS_STATE.md`'s register). The `DataLake` blueprint
 provisions the *consumer-side* Glue database and workgroup, whose **output** lands in the project
 path — the `awsds-data-*` buckets themselves stay behind Lake Formation. The enforcement that keeps
@@ -707,8 +759,8 @@ kept struck as the record of what the account used to hold.
 | Object | Created by | Holds |
 |---|---|---|
 | `awsds-<env>-smus-projects`, a **bucket** (the project path lives inside it) | **Terraform** — the member's `sagemaker-prereqs` slice (v0.3.2), consumed by Tooling's `S3Location`; settled 2026-08-22 | `shared/` files, the blueprint workgroup's Athena output, workflow temp, the consumer Glue database location, the portal's file uploads behind the tables they created (item 1b) |
-| ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Destroyed 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
-| ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5 pass 4a)~~ | **Deleted 2026-08-26/27**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
+| ~~`awsds-<env>-derived`, a **bucket**~~ | ~~`consumer-data` (Stage 5a pass 4a)~~ | **Destroyed 2026-08-26/27.** Held the persona's derived zone — per-user write, persona-grain read, the `scratch/` prefix |
+| ~~`awsds-<env>-athena`, **a workgroup, not a bucket**~~ | ~~`consumer-data` (Stage 5a pass 4a)~~ | **Deleted 2026-08-26/27**: `DeleteWorkGroup` counts query *history* as contents, so it took `RecursiveDeleteOption` after refusing the plain destroy. It was the *enforced* workgroup, forcing results into `s3://awsds-<env>-derived/results/` under a 10 GiB cap |
 
 Step 2.4 measured the destination on **2026-08-26**: the project's own workgroup is enforced into
 `…/<project-id>/dev/sys/athena/`. The user's answer was not to repoint anything but to **keep the
@@ -801,11 +853,11 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
   failures when attempting to resolve the URL."* This collides with D9's single-AZ rule for metered
   resources whenever an app lands in the other AZ, and it fails as a **resolution error**, not as the
   cross-AZ data charge D9 weighed. Stage 6c step 5 carries the three ways out and the recommendation.
-- **The `s3` entry in that list is verified, not provisioned on faith** (Stage 5 pass 4d). Each account
+- **The `s3` entry in that list is verified, not provisioned on faith** (Stage 5a pass 4d). Each account
   already carries a `[P]` **gateway** endpoint for S3, whose prefix-list route is more specific than
   any default — so where that route is on an app subnet's route table, S3 traffic takes the
   **gateway**, and the request arrives carrying the **gateway's** `aws:SourceVpce`, not the interface
-  endpoint's. Stage 5 measured this on the VPN home and it cost a working control: a network condition
+  endpoint's. Stage 5a measured this on the VPN home and it cost a working control: a network condition
   written for one endpoint id silently failed to match traffic that took the other (Lesson 33). **Stage
   6 step 4.2 owes a measurement** — for each project subnet, which S3 route wins, and which endpoint id
   the resulting call presents in CloudTrail. Every `aws:SourceVpce` list the SMUS projects must satisfy

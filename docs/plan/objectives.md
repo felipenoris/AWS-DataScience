@@ -47,6 +47,8 @@ The goal is to achieve the following:
   - the use of data catalog and explorer, issuing SQL statements, built in SageMaker Unified Studio.
   - use of S3 buckets for storage, built in SageMaker Unified Studio user interface.
   - connect to user's `sso-group` S3 bucket using SageMaker to read-write data to group's `sandbox-lake`.
+  - connect a SageMaker project to a Redshift database through a connection, and read and write it from
+    the project's notebooks and from its Data page.
   - use of sagemaker's workflows and Visual ETL feature built in SageMaker Unified Studio.
   - use of IA models built in SageMaker Unified Studio
 
@@ -99,6 +101,45 @@ The goal is to achieve the following:
 - Use AWS Lake Formation to share data cross-account.
 
 - Use AWS Glue Data Catalog with data stored on S3 buckets, using ICEBERG format, as Data Warehouse.
+
+  *Revised 2026-09-20 — a second engine, not a replacement:* the Glue Data Catalog over Iceberg on S3 stays
+  the data warehouse of record, and **Amazon Redshift Serverless is a second possible engine beside it**. A
+  query engine is a choice per workload, not per estate: Athena over the governed lake remains the default,
+  and Redshift is there for what it serves better. Nothing moves out of the lake to make room for it, and
+  the governance model does not fork — a governed Redshift database is governed by Lake Formation like a
+  lake table is.
+
+- Use Amazon Redshift Serverless as a second query engine, at the smallest capacity the service offers,
+  with two types of database:
+
+  - **governed databases**: written by workloads of the production environment, and by nothing else.
+  - **sandbox databases**: written by the SageMaker project profiles, with this access granted per database
+    x project.
+
+  It is one Redshift environment from a data scientist's point of view. Where its databases physically live
+  is an implementation matter, provided a governed database is never written from the sandbox.
+
+  *Clarified 2026-09-20 — the controls do not change:* Redshift is **one more execution environment**, not a
+  new class of reader and not a second governance model. A governed Redshift database is read by whoever the
+  governed data's grant register already admits, through Lake Formation, exactly as a governed lake table is;
+  it is written only by the production workloads. The per database x project grant is the sandbox databases'
+  rule, and it is the only new rule here.
+
+  *Clarified 2026-09-20 — the sandbox databases bypass the catalog:* for a sandbox database the catalog and
+  Lake Formation are **not** in the path. Access is granted **directly to the project role**, by whichever
+  mechanism is simplest to configure, and **a data scientist who is a member of the project creates tables
+  freely inside that schema** in Redshift. The asymmetry is deliberate and it is the same one the
+  `sandbox-lake` already has: governed data is governed, and a project's working data is the project's.
+
+  *Clarified 2026-09-20 — what a "database" means here, and who shares one:* in Redshift, **a schema is a
+  database** in the sense this brief uses the word. So the unit that is granted per base x project is a
+  **schema**, and:
+
+  - **one sandbox schema can be shared with more than one SageMaker project** — access is given to a project
+    profile, and several may hold it on the same schema.
+  - **a schema's name is chosen when the schema is created, after the theme of the data it will hold**, and it
+    bears no necessary relation to any SageMaker project.
+  - **the disk quota on a sandbox schema is 1 TB.**
 
 - Use Amazon ECR as container registry.
 

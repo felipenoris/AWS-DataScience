@@ -1,9 +1,9 @@
-# Log — Stage 5 — Data foundation
+# Log — Stage 5a — Data foundation
 
 *Manual actions performed in AWS, by hand. Written cooperatively by the user and Claude
 ([`INDEX.md`](INDEX.md) carries the writing and provenance rules). **An entry carrying no provenance
 note of its own is the user's.**
-Stage: [`docs/plan/stages/stage-05-data-foundation.md`](../plan/stages/stage-05-data-foundation.md).*
+Stage: [`docs/plan/stages/stage-05a-data-foundation.md`](../plan/stages/stage-05a-data-foundation.md).*
 
 *Provenance is named by SUBJECT rather than by ordinal — the convention
 [Stage 3's log](log-stage-03-networking.md) adopted and Stage 4 kept. Identifiers are redacted as
@@ -813,7 +813,7 @@ of this reaches it.
 
 No code. No `.tf` file, no script, no AWS resource.
 
-Records: [Stage 5](../plan/stages/stage-05-data-foundation.md) (the pass-4 debt list, 4.1's
+Records: [Stage 5](../plan/stages/stage-05a-data-foundation.md) (the pass-4 debt list, 4.1's
 empty-table callout, step 8's instrument note, verifications iii / x, the classification-pair
 deliverable), [Stage 6](../plan/stages/stage-06a-unified-studio.md) (1.4's callout, prerequisites,
 verifications xiv-xvi), [Stage 9](../plan/stages/stage-09-deployment-targets.md) (status, pass ordering,

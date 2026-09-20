@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started, **blocked on the account quota** (2026-09-05) and scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
-| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5 for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
+| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
@@ -111,7 +111,7 @@ pool stays open across units, and that is the first reading the second vend take
    fails as `NXDOMAIN`, the second as a TLS handshake error inside a notebook — neither says "a business
    unit was vended without it". Both belong in this module, or they are Lesson 14 in a new place.
    **Composition, not new resources** — if this module needs a resource type that
-   Stage 3 or Stage 5 did not already build, that is a signal the earlier stage was written for a singleton
+   Stage 3 or Stage 5a did not already build, that is a signal the earlier stage was written for a singleton
    and should be fixed there instead.
 2. **The account request itself, and the rung to use (D34).** The account is still created by **Account
    Factory**, because an account created any other way is not enrolled in Control Tower and is ungoverned
@@ -220,7 +220,7 @@ pool stays open across units, and that is the first reading the second vend take
    grants data access by default.
 
    **But the *plumbing* is the module's**, and the distinction matters because the failure looks identical
-   from the outside (Stage 5 pass 3, 2026-08-19). The mechanical facts the
+   from the outside (Stage 5a pass 3, 2026-08-19). The mechanical facts the
    `sandbox-unit` module carries, none of which is an entitlement:
    - **the unit's account needs a `DataLakeSettings` of its own** — a data lake administrator, or a share
      granted to it stays invisible in its catalog no matter how correct the grant is. An account with no
@@ -233,9 +233,9 @@ pool stays open across units, and that is the first reading the second vend take
    - **the share to the new unit is an `N+2` edit in `data-governance/data/`** (INT-03), carrying the
      grant option like every cross-account grant and the `layer` gate like every TBAC expression here
      (Lesson 29). It is a `for_each` over the consumer map, not a copied resource — which is the whole
-     reason Stage 5 was told to write every list as a map from day one;
+     reason Stage 5a was told to write every list as a map from day one;
    - **and the unit's own consumer slice is already a module — `terraform-modules/consumer-data/`,
-     applied 2026-08-19** (Stage 5 pass 4; v0.2.0 since the same-day revision). `sandbox-unit` composes a
+     applied 2026-08-19** (Stage 5a pass 4; v0.2.0 since the same-day revision). `sandbox-unit` composes a
      *call* to it with one changed input,
      not a copy of it: the settings, the `alias/awsds-<env>-data` CMK (**no derived zone or workgroup since `consumer-data-v0.6.0`, 2026-08-26** — D19 revised),
      the resource links and the local re-grants all come with it. **The re-grant is a pair**: `DESCRIBE`
