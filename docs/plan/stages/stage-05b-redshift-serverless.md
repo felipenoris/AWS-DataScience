@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. Written 2026-09-19 from the vendor documentation and one priced reading. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
+| **Status** | not started. Written 2026-09-19 from the vendor documentation and one priced reading. **The slice is a pair since 2026-09-20**: `sandbox/warehouse/` `[P]` holds the **namespace** — the data, the users, the roles and the `GRANT`s — and `sandbox/warehouse-compute/` `[E]` holds the **workgroup and its usage limit** and nothing else, so `make down ENV=sandbox` removes the compute object entirely. **Redshift Serverless has no pause**, only create and delete, so *powered off* means *does not exist*, which is also the strongest guarantee available: none of D40's three ways an idle warehouse bills anyway has anything to arrive at. RMS storage still bills while down, and that is the price of keeping the data. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. **Nothing is measured**: every number below is either a Price List reading (dated) or a documentation claim, and the stage's own passes are what turn the second kind into the first. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages |
 | **Prerequisites** | **Stage 5a** — the lake exists, `sandbox/data/` holds this account's `DataLakeSettings` and the account data CMK `alias/awsds-sandbox-data`, which is the namespace's encryption key (`docs/GOVERNANCE.md` §Encryption). **Stage 3** — `sandbox/foundation/`'s VPC, whose **private** tier is where the workgroup lands: two subnets in two AZs, which is what pass 0's first reading is about. **6c** — no default route in that tier, and no NAT anywhere (D38), so nothing here reaches the internet. Nothing waits on a vend or a quota increase this stage knows of; 0.4 is where that is checked rather than assumed |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D22](../decisions/D22-data-governance-account.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: every object this stage builds lives in one account). The cross-account row the warehouse eventually needs is **INT-24**, and it belongs to [Stage 9](stage-09-deployment-targets.md) |
@@ -19,6 +19,43 @@ what is being built and what is not. The documentation rows are the 2026-09-19 e
 **Objective:** one Redshift Serverless warehouse in `Sandbox`, at the documented capacity floor, with its
 cost ceiling and its audit trail applied in the same act that creates it — and the **access model for both
 classes of database written down before either class has a member.**
+
+## The compute is `[E]` because there is no pause, and the data is `[P]` because nothing else holds it
+
+Every other store in this estate is `[P]` in one piece. This one splits, and the split is what makes *"turn
+the compute off and be sure nothing bills"* answerable rather than a matter of trust:
+
+| | `sandbox/warehouse/` `[P]` | `sandbox/warehouse-compute/` `[E]` |
+|---|---|---|
+| Holds | the **namespace** — every database, schema, table, database user, role and `GRANT`, the RMS data, the admin secret, the audit log groups, the namespace IAM role, the security group, the alarms | the **workgroup** and its usage limit, nothing else |
+| Bills at rest | **RMS storage only** (0.024 USD/GB-month) — plus the secret and the log groups, cents | **nothing, because it does not exist** |
+| `make down ENV=sandbox` | never touches it | destroys it |
+
+**The workgroup is `[E]` rather than `[D]` because Redshift Serverless has no pause.** A provisioned cluster
+can be paused and resumed; a serverless workgroup has **`create-workgroup` and `delete-workgroup` and nothing
+in between** — no stop, no suspend, no zero-capacity setting. So *"powered off"* here means *"does not exist"*,
+which is the definition of `[E]` (§5.1), and it is also the strongest possible guarantee: an object that does
+not exist cannot receive a query, so none of D40's three ways an idle warehouse bills anyway — an open
+transaction, a connection pool's keep-alive, a cancelled query — has anything to arrive at.
+
+**The namespace is `[P]` because it holds state no plan re-creates.** Layer 3 of
+[6h](stage-06h-redshift-connection.md) is SQL: the schemas, the database users, the roles and the `GRANT`s live
+in the namespace and Terraform never wrote them. Destroying the namespace would destroy them along with the
+data, which is §5.1 rule 2 — no state lives only inside an `[E]` resource — and the reason `delete-namespace`
+offers a final snapshot while `delete-workgroup` takes nothing but a name.
+
+**Two guards, one hard and one soft.** The usage limit bounds the compute *while it exists*; `make down`
+removes the compute. The first is why the limit lands in the same apply as the workgroup — they are in the
+same slice for that reason, and a plan that adds one without the other is not applied.
+
+> **One reading decides whether this split is free, and it is step 1.9.** The workgroup's endpoint host is
+> derived from its name, the account and the Region, so re-creating it under the same name **should** restore
+> the same address — and [6h](stage-06h-redshift-connection.md)'s SMUS connection stores that address as a
+> field. If the host does **not** survive a delete and re-create, then every `make down` silently breaks every
+> connection and the layer has to change: the workgroup becomes something kept up and the cost guard becomes
+> the usage limit alone. **This estate has been bitten by exactly this shape before** — the Elastic IP whose
+> *allocation id* did not survive a transfer while its address did (`lessons.md`, the platform list) — so the
+> host is read back rather than assumed, before 6h depends on it.
 
 ## Why the cost guards are part of the build
 
@@ -38,7 +75,9 @@ apply.
 
 | Where | What | Layer |
 |---|---|---|
-| `sandbox/warehouse/` (new, rank 53) | the namespace `awsds-sandbox-warehouse` under `alias/awsds-sandbox-data`, its Secrets-Manager-managed admin credential, its three audit log groups **pre-created with a retention period**, the namespace IAM role `awsds-sandbox-warehouse-exec`, the workgroup at `base_capacity = 4` in the private tier, its security group, the `serverless-compute` usage limit, and the `ComputeCapacity` alarm | `[P]` |
+| `sandbox/warehouse/` (new, rank 53) | **the data half**: the namespace `awsds-sandbox-warehouse` under `alias/awsds-sandbox-data`, its Secrets-Manager-managed admin credential, its three audit log groups **pre-created with a retention period**, the namespace IAM role `awsds-sandbox-warehouse-exec`, the workgroup's security group, and the `ComputeCapacity`/`DataStorage` alarms | `[P]` |
+| `sandbox/warehouse-compute/` (new, rank 54) | **the compute half, and nothing else**: the workgroup at `base_capacity = 4` in the private tier, and its `serverless-compute` usage limit. Destroyed by `make down ENV=sandbox`, created by `make up` | `[E]` |
+| `terraform-modules/vpc-egress` (amended) + `sandbox/egress/` | a fourth optional endpoint group, **`redshift`** — the module admits only `bedrock`, `emr` and `mwaa` today, so this is a module change under Recipe B and a tag bump (1.10) | `[E]` |
 | `identity/sso/` (amended) | what a persona may and may not do to the warehouse: the `redshift-serverless:Get*`/`List*` read side, and **no** `UpdateWorkgroup`, **no** `DeleteUsageLimit` | `[P]` |
 | `identity/org-policies/` (amended) | `DenyRedshiftProvisionedClusters` on the organization root, and `DenyRedshiftCostGuardTampering` — the two statements decision 3 settles | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for `warehouse` at rank **53** (`[P]`, outside every `make up`/`down` path) | — |
@@ -57,9 +96,9 @@ information at all.
 ```mermaid
 flowchart LR
     subgraph SBX["Sandbox · 10.20.0.0/16 · the only interactive account (D17)"]
-        WG["workgroup awsds-sandbox-warehouse [P]<br/>base 4 RPU · max_capacity capped<br/>private tier · 2 AZs · no default route"]
+        WG["workgroup awsds-sandbox-warehouse [E]<br/>base 4 RPU · max_capacity capped<br/>private tier · 2 AZs · no default route<br/>destroyed by make down: no pause exists"]
         NS["namespace awsds-sandbox-warehouse [P]<br/>alias/awsds-sandbox-data · RMS<br/>database sandbox · themed schemas"]
-        UL["usage limit · serverless-compute<br/>breach_action = deactivate"]
+        UL["usage limit · serverless-compute [E]<br/>breach_action = deactivate<br/>same slice, same apply"]
         LG["/aws/redshift/awsds-sandbox-warehouse/{user,connection,useractivity}log<br/>retention set, never Never-Expire"]
         ROLE["awsds-sandbox-warehouse-exec<br/>NO S3 on any lake prefix (D13)"]
         PRJ["SMUS project roles<br/>write per schema x project, many-to-many · Stage 6h"]
@@ -85,7 +124,7 @@ in is the passes below:
 | Pass | # | What | Slice · layer | Applied as |
 |---|---|---|---|---|
 | **0** | 0 | the requirement written into `objectives.md` by the user (0.0), then the readings: the AZ count, the price re-read, the SCP reach, the quotas — **and the one that can stop the stage** (0.1) | readings, no build | the user; `awsds-infra-sandbox-1` |
-| **1** | 1, 3 | the warehouse and its guards in one apply; then the policy statements | `sandbox/warehouse/` `[P]`, then `identity/org-policies/` | `awsds-infra-sandbox-1`, then `awsds-infra-identity` |
+| **1** | 1, 3 | the namespace, then the compute with its ceiling in one apply, then 1.9's destroy-and-rebuild reading; then the policy statements | `sandbox/warehouse/` `[P]` + `sandbox/warehouse-compute/` `[E]`, then `identity/org-policies/` | `awsds-infra-sandbox-1`, then `awsds-infra-identity` |
 | **2** | 2, 4 | the access model written and its negatives read back — no database exists yet, so this pass is code and readings | `identity/sso/` `[P]` + readings | `awsds-infra-identity` |
 | **3** | 5, 6 | the cost guards exercised and the audit trail confirmed to carry something | sessions and readings | `awsds-infra-sandbox-1` |
 
@@ -175,6 +214,27 @@ documentation is a stage whose first apply is its first measurement (Lesson 54 �
   (D22, D26's INT-13 note). Record that as the reason the Data Governance shape was closed by
   *architecture* rather than by *control*, which is what decision 3 then fixes.
   `terraform-live/identity/org-policies/POLICIES.md` is where the reading goes.
+- **0.3a — [Claude] Read whether the free trial is available in this account, and understand what it does to
+  every cost reading in this stage.** AWS offers *"$300 credit, which can be used within 90 days of sign-up
+  toward your compute and usage"*, and *"You are eligible for the free trial if your account has not used
+  Redshift Serverless yet"* — **per account, not per organization**.
+  **Three consequences, and the third is the one that can invalidate this stage's own evidence:**
+  - **Two accounts mean two windows and two credits**, opened four stages apart: Sandbox's at pass 1 here,
+    Production's at [Stage 9](stage-09-deployment-targets.md) pass 6. **That is an accidental win of building
+    the governed namespace late** — the plan already does not create it early, so its window is not spent while
+    nothing writes to it. Do not create either namespace to "see it work".
+  - **When the clock starts is not settled by the page.** It says *"within 90 days of sign-up"*, and its
+    eligibility sentence points at first use of the service rather than at account creation — but *sign-up* is
+    not defined there, so **read the credit balance in the Redshift console before and after pass 1's apply**
+    and record which event moved it. Paraphrasing "sign-up" as "the first workgroup" without that reading is a
+    claim, not a fact (Lesson 38), and the window is not recoverable once spent.
+  - **Free-trial usage does not appear in the billing console.** AWS: *"billing details for free trial usage
+    does not appear in the billing console. You can only view usage in the billing console after the free trial
+    ends."* So **verification (vii) and (x) read 0.00 whether the design is right or wrong** while the trial is
+    active — Lesson 13's exact shape. During the trial the instruments are the **`SYS_SERVERLESS_USAGE` system
+    view** and the console's **credit balance**, which the same page names, and `./aws/warehouse.py`'s burn line
+    says which of the two it read. Write the trial's status beside every cost number this stage records, or the
+    numbers are unattributable later.
 - **0.4 — [Claude] Read the account's Redshift Serverless quotas** —
   `aws service-quotas list-service-quotas --service-code redshift-serverless` — and record the three that
   matter: namespaces per account, workgroups per account, and **base capacity**. A quota this stage cannot
@@ -246,10 +306,19 @@ only inside an `[E]` resource).
   for a `REVOKE`; it is SQL, and it runs once, from the admin credential, at 1.8. Write the statement into
   the slice's README beside the resources rather than leaving it to memory (Lesson 5 — an intention is not a
   control; and 61 — a procedure that depends on a file it did not create runs only for its author).
-- **1.7 — [Claude] Write the machinery rows**: `backend.py` and `layers.py` gain `warehouse` at rank **53**
-  — free (52 `bedrock`, 55 `buildbox`), `[P]`, and outside every `make up`/`make down` path. The rank
-  records the dependency it has: above `data` (45), because the CMK is read from there, and above
-  `foundation` (20) for the subnets. `production/warehouse/` shares the rank when Stage 9 writes it.
+- **1.7 — [Claude] Write the machinery rows for both slices**: `backend.py` and `layers.py` gain
+  **`warehouse` at rank 53, `[P]`** and **`warehouse-compute` at rank 54, `[E]`** — both free (52 `bedrock`,
+  55 `buildbox`). The ranks record real dependencies: `warehouse` above `data` (45), because the CMK is read
+  from there, and above `foundation` (20) for the subnets; `warehouse-compute` above `warehouse`, because a
+  workgroup needs its namespace. **`up` ascends rank and `down` descends it**, so the compute is raised after
+  the namespace exists and torn down before anything under it — the same reasoning that put `vpn` below
+  `egress`. `production/warehouse/` and `production/warehouse-compute/` share the two ranks when
+  [Stage 9](stage-09-deployment-targets.md) writes them.
+- **1.7a — [Claude] Wire it into `make up` / `make down ENV=sandbox`**, and say what a spoke session now costs.
+  `make status` gains the workgroup's existence and its **0.00/h while no query runs**; `make up` creates it;
+  `make down` destroys it. **What `make down` does not remove is the RMS storage**, which is the irreducible
+  price of keeping the data between sessions — the same trade the GitLab EBS volume makes under `[D]`, and it
+  should be stated in the same place: `docs/plan/cost-model.md`'s floor, not only here.
 - **1.8 — [Claude⚡] Apply as `awsds-infra-sandbox-1`**, then, in the same sitting:
   - re-plan → **`No changes`**;
   - read the workgroup back — `base_capacity`, `max_capacity`, `publicly_accessible`, the two subnets and
@@ -261,6 +330,52 @@ only inside an `[E]` resource).
   - run the 1.6 `REVOKE` from the admin credential and record it;
   - and **measure the first bill this stage can produce**: nothing. `./aws/warehouse.py` prints the hourly
     burn as **0.00 while no query runs**, which is the claim D40 rests on and the one thing pass 3 exercises.
+
+- **1.9 — [Claude⚡] Destroy the compute slice and re-create it, once, before anything depends on it.** This is
+  the reading the layer split rests on, and it is cheap now and expensive later.
+  **Read, in order:** the endpoint **host** before and after (`get-workgroup`'s `endpoint.address`); the
+  workgroup's **id** before and after, because an id that changes is a fact anything pinning it must not; the
+  **time** each direction took, which §5.1 rule 6 requires and which decides whether `[E]` is comfortable or
+  merely correct; and then, from a session, that **every object in the namespace survived** — the databases,
+  the schemas, the users, the roles and the `GRANT`s.
+  | What must survive | Why it matters |
+  |---|---|
+  | the endpoint **host** | [6h](stage-06h-redshift-connection.md)'s SMUS connection stores it as a field; if it moves, every `make down` breaks every connection |
+  | every database, schema, table, user, role and `GRANT` | they are the namespace's, and Terraform never wrote them — if any is lost, the namespace is not `[P]` and this design is wrong |
+  | the admin secret and the three log groups | they are `[P]` in the other slice, so their survival is a check on the split rather than on Redshift |
+  **If the host does not survive**, stop and take decision 8 before 6h is planned: the workgroup stops being
+  `[E]` and the cost guard falls back to the usage limit alone.
+
+- **1.10 — [Claude] Add the endpoint family, because the plan did not have one** (the user, 2026-09-20, before
+  anything was built). `terraform-modules/vpc-egress` admits exactly three optional groups —
+  `["bedrock", "emr", "mwaa"]`, enforced by a variable precondition so an unknown name is a plan error — and
+  **`redshift` is not one of them**. Without it, every Redshift *API* call from a space leaves through the proxy
+  as a public request: the same *wrong door* [6e](stage-06e-claude-code-bedrock.md) found for `bedrock-runtime`,
+  which the compute plane's `.amazonaws.com` entry admits and the image's `NO_PROXY` did not cover.
+  **Which endpoints, and which of the three that look needed actually are:**
+
+  | Service token | Needed? | Why |
+  |---|---|---|
+  | **`redshift-serverless`** | **yes, and it is the one a first list misses** | `GetCredentials` is layer 2 of [6h](stage-06h-redshift-connection.md) and the whole IAM-credentials auth path; `GetWorkgroup` and `ListTagsForResource` ride with it. This design's API is `redshift-serverless`, never `redshift` |
+  | **`redshift-data`** | **only if the Data API is the path** | 6h 0.3 and 2.2 leave that conditional. A plain JDBC/psycopg connection over 5439 does not touch `redshift-data` at all, so this entry is decided by 6h's credential answer rather than added on spec |
+  | `redshift` | **probably not — a reading** | the *provisioned-cluster* control plane. Nothing here calls it, but AWS's own SMUS access-role sample lists `redshift:GetClusterCredentials`/`DescribeClusters` beside the serverless pair, so whether the portal's machinery calls it anyway is read from CloudTrail at 6h 3.5 rather than guessed. **Absent by default**: an endpoint bought on suspicion is 0.010/h for the whole session |
+  | *the 5439 data path* | **no endpoint at all** | the workgroup's own address resolves to **its ENIs in this VPC** (1.3's subnets), so what admits a space is the **security group** (1.4), not PrivateLink. An interface endpoint here would be a second, unused door |
+
+  > **It looks like a DNS collision and it is not.** The API's private name is
+  > `redshift-serverless.<region>.amazonaws.com`, while the workgroup's own host is
+  > `<workgroup>.<account>.<region>.redshift-serverless.amazonaws.com` — the region sits **before** the service
+  > token in one and after it in the other, so they are different subtrees and private DNS on the endpoint does
+  > not shadow the workgroup's address. Written down because this estate has been bitten by a private zone
+  > answering for a whole subtree (Lessons 40-43, and 6c's client-plane repair), and the shape here is close
+  > enough to deserve the sentence rather than the assumption.
+  **Two rules the add has to respect.** The module takes **short service tokens** and builds the region prefix
+  itself, so no `.tf` file carries `com.amazonaws.<region>.…` — `check-tf-conventions.py` refuses a region
+  literal (D1). And admitting a fourth group is a **module change**: the precondition's list is edited, the
+  module is tagged, and the callers move by tag (Recipe B), never by branch.
+  **Cost:** ~USD 0.010/h per endpoint for the length of the session (`docs/PRICING.md` §8), single-AZ under D9
+  — so `GROUPS=redshift` is 0.010/h with one endpoint and 0.020/h with two, against the estate's 0.410/h fixed
+  rate. `make up ENV=sandbox GROUPS=redshift` is what turns it on, and **no optional endpoint exists unless a
+  group is named** — the default that makes this safe to add.
 
 ### 2. The access model — the classes of database, and the grain of a grant
 
@@ -443,7 +558,7 @@ and the deploy credential, so the governed class costs it one slice rather than 
 
 | | Sandbox (this stage) | Production (Stage 9) |
 |---|---|---|
-| Slice | `sandbox/warehouse/` | `production/warehouse/`, same rank 53 |
+| Slices | `sandbox/warehouse/` `[P]` + `sandbox/warehouse-compute/` `[E]` | `production/warehouse/` `[P]` + `production/warehouse-compute/` `[E]`, same ranks 53 and 54 |
 | VPC | Sandbox's private tier, 2 AZs | **`VPC-Workloads`**' private tier — the two subnets in two AZs 6c built, the estate's one D9 exception, already there for MWAA Serverless |
 | The class container | the database `sandbox`, holding themed schemas | the database `governed` |
 | Written by | SMUS project roles, per database × project | **`awsds-prod-job-exec` alone** — no project, no connection, no tag |
@@ -496,8 +611,11 @@ The behavioural proofs are the stage's own (Lesson 20):
 2. `./aws/datalake.py` — `DL-5` green after the sitting, `DL-6` unchanged: this stage touches no
    `DataLakeSettings`, and the reading proves it rather than assuming it.
 3. `./scripts/check-network-doc.py` after 1.4, and `./scripts/check-index.py` after 3.4.
-4. `make check` clean, the `warehouse` rank included.
-5. Read every denial by its wording, never its exit code (standing rule since 1c).
+4. `make check` clean, both the `warehouse` and `warehouse-compute` ranks included.
+5. `make down ENV=sandbox` then `make status`: **no workgroup exists**, and the reported burn for this stage is
+   0.00 — the mechanical form of the guarantee the split exists to give. Then `make up` and re-read the endpoint
+   host (1.9).
+6. Read every denial by its wording, never its exit code (standing rule since 1c).
 
 ## Cost
 
@@ -505,8 +623,10 @@ Measured (`docs/PRICING.md` §5, Price List offer file published 2026-09-11, rea
 
 | Item | Cost | Layer |
 |---|---|---|
-| Redshift Serverless compute, `base_capacity = 4` | **0.00/h at rest · 1.44 USD/h while a query runs** (0.36/RPU-h; 60-second minimum charge, per-second thereafter) | `[P]` |
-| Redshift Managed Storage | 0.024 USD/GB-month — cents at this scale | `[P]` |
+| Redshift Serverless compute, `base_capacity = 4` | **0.00/h while no query runs · 1.44 USD/h while one does** (0.36/RPU-h; 60-second minimum charge, per-second thereafter) — and **0.00 with the slice destroyed, because the object does not exist** | `[E]` |
+| Redshift Managed Storage, **which `make down` does not remove** | 0.024 USD/GB-month; a schema filled to its 1 TB quota is **24.58 USD/month whether the compute exists or not** — the irreducible price of keeping the data | `[P]` |
+| Manual snapshots, if any are ever taken | 0.023 USD/GB-month (`Redshift:PaidUniqueSnapshots:Serverless`, read 2026-09-20). **None are taken here**; recovery points under 24 hours are free, and `delete-namespace`'s final snapshot is the only place this meter could start | — |
+| The free trial, while it lasts | **USD 300 of credit over 90 days per account** (0.3a) — which makes every cost figure in this stage unattributable unless the trial's status is recorded beside it |  — |
 | The namespace, workgroup, usage limit, security group, log groups, alarm | free at rest | `[P]` |
 | The admin credential in Secrets Manager | ~0.40 USD/secret-month + requests | `[P]` |
 | The three CloudWatch log groups | ingestion + storage, cents at 30-day retention | `[P]` |
@@ -543,6 +663,17 @@ here is built; and decision 1, but only if 0.1's apply refuses two subnets. Each
    `COPY` from `awsds-sandbox-lake` is the plausible first ask and it has no demander yet; a role with no
    policy makes the first grant a deliberate act with a named requester, which is how the drop-box's
    statements were eventually got right.
+8. **What to do if the endpoint host does not survive a re-create** (1.9). Recommended, and only if the
+   reading comes out badly: **keep the workgroup up and fall back to the usage limit as the only guard**, with
+   the layer demoted from `[E]` to `[P]` and §5.1 rule 7 cited — a layer assignment is a cost judgement and may
+   change. The alternative, having `make up` rewrite the SMUS connection's `host` on every session, puts a
+   generated value into an object the portal owns and would make a data scientist's saved connection wrong
+   without telling them.
+9. **When to spend the free trial** (0.3a). Recommended: **do not manage it, but do not waste it** — build
+   Sandbox's namespace when this stage runs, leave Production's until
+   [Stage 9](stage-09-deployment-targets.md) actually writes to it, and record the credit balance at both. A
+   90-day window is short next to this plan's pace, so treating it as a budget to optimise would distort the
+   build order; treating it as free measurement while it lasts is what it is good for.
 6. **Whether `Data Governance` is reconsidered.** D40 closed it on architecture. Recommended: **no, and
    record why in 0.3's reading** — the account has no VPC by decision, and the reason INT-13 already falls
    to its manual fallback is the same reason a workgroup cannot live there.
@@ -559,10 +690,13 @@ Record every answer, including the ones that come out fine.
 | iv | Do all three log groups carry a retention period, so this estate still has exactly **one** never-expiring group (`EXC-10`)? | 1.8 |
 | v | Is the admin credential only in Secrets Manager — absent from the state file, the plan output and every `terraform output`? | 1.8 |
 | vi | Does the usage limit actually refuse queries at `deactivate`, what does the client see, and **is the workgroup usable again after the period rolls over**? | 5.1 |
-| vii | What did pass 3 cost, against the 1.44 USD/query-hour prediction? | 5.3 |
+| vii | What did pass 3 cost, against the 1.44 USD/query-hour prediction — **and was the free trial active**, in which case the figure comes from `SYS_SERVERLESS_USAGE` and the credit balance rather than from the bill? | 0.3a, 5.3 |
+| xiii | Is the free trial available in this account, **which event starts its 90 days**, and did pass 1's apply move the credit balance? | 0.3a |
+| xiv | Does the endpoint **host** survive a destroy and re-create of the compute slice under the same name — and does every database, schema, user, role and `GRANT` survive with it? How long did each direction take? | 1.9 |
+| xv | With `GROUPS=redshift` up, does a `redshift-serverless` call from a space leave through the **endpoint** and not through the proxy — read from the proxy's access log being silent on it, the way 6e read `bedrock-runtime`? And does the workgroup's own 5439 address still resolve to its VPC ENIs with the endpoint's private DNS enabled? | 1.10 |
 | viii | Does the namespace role reach any lake prefix, and does `awsdatacatalog` list anything for it? | 2.4 |
 | ix | Which of the three log groups was empty after pass 3, and is its emptiness the correct state? | 6.1 |
-| x | Does a workgroup with no query running bill **0.00**, read from Cost Explorer a day later rather than from this file? | 1.8, 5.3 |
+| x | Does a workgroup with no query running bill **0.00** — read from Cost Explorer a day later, or from `SYS_SERVERLESS_USAGE` if the trial is active (0.3a)? And with the compute slice **destroyed**, is the remaining charge RMS storage alone? | 1.8, 1.9, 5.3 |
 | xi | What do the account's Redshift Serverless quotas allow — namespaces, workgroups, base capacity — and is any of them a blocking input for Stage 9's second namespace? | 0.4 |
 | xii | Do both SCP statements deny in the canary and permit the infrastructure principal, with the wording recorded? | 3.3 |
 
@@ -596,6 +730,13 @@ Record every answer, including the ones that come out fine.
   attribute to a patch.
 - **`useractivitylog` is both the DLP feed and a DLP exposure**, holding SQL text and therefore literal data
   values in a log group whose export is undecided until Stage 11.
+- **The `[E]` compute rests on one unmeasured property**: that the endpoint host survives a delete and
+  re-create under the same name. 1.9 reads it before anything depends on it, and decision 8 is the fallback —
+  but if the reading is taken late, the symptom is a data scientist's saved connection failing after a routine
+  `make down`, with nothing in the connection to show why.
+- **`make down` does not stop the storage bill.** The guarantee is about *compute*: RMS keeps billing while the
+  data exists, and a schema filled to its 1 TB quota is 24.58 USD/month with no workgroup in the account at all.
+  Anyone reading *"pay nothing while idle"* as covering this store will be wrong by half the D12 ceiling.
 - **No IAM condition key limits base capacity**, so the guard against an expensive warehouse is the
   workgroup's own two fields plus a policy that stops them being edited — and the identity that writes that
   policy is outside it (Lesson 18).

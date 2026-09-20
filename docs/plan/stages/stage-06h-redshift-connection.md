@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started. Written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
-| **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all |
+| **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all. **And [5b](stage-05b-redshift-serverless.md) 1.10's endpoint group**, raised with `make up ENV=sandbox GROUPS=redshift`: without it a `redshift-serverless:GetCredentials` call — layer 2, and the whole IAM-credentials path — leaves through the proxy as a public request, which is 6e's *wrong door* repeated. The 5439 data path needs no endpoint, only the security group. **The compute slice must be up**: a `make down` leaves the namespace and removes the workgroup, so a connection to a destroyed workgroup fails the way a space started while `sandbox/egress` is down hangs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
 
@@ -152,7 +152,10 @@ retyped. **Explanation:** all read-only.
   | Username and password | a password typed into a form | refused: principle 2's spirit, and nothing rotates it |
 
   **Recommended: IAM credentials** (decision 2). It is the only one of the three that carries no standing
-  credential, and the price is a portal display rather than a control.
+  credential, and the price is a portal display rather than a control. **This answer also decides an endpoint**:
+  IAM credentials means `redshift-serverless:GetCredentials`, so [5b](stage-05b-redshift-serverless.md) 1.10's
+  `redshift-serverless` endpoint is on the critical path — and whether `redshift-data` joins it depends on
+  whether the query path is the Data API or a plain JDBC connection over 5439, which is the same question.
 
   > **One thing the documentation does not say, and it is the thing this step turns on.** The portal's
   > *Authentication* list offers all three types. But AWS's **same-account** procedure names only one:
@@ -314,6 +317,11 @@ picks one.
   applies to the three internet paths.
 - **3.5 — [Claude] Attribute the write in CloudTrail**, from the account's own trail: which principal called
   `GetCredentials`, and whether the session that wrote the table is the **project role** or something else.
+  **Read two more things off the same trail while it is open**: whether anything called the *provisioned-cluster*
+  API `redshift:DescribeClusters`/`GetClusterCredentials` — which is what decides 5b 1.10's third endpoint, and
+  which AWS's own SMUS sample policy suggests without the portal necessarily calling it — and whether the
+  `redshift-serverless` calls arrived through the **endpoint** rather than the proxy, which the proxy's access
+  log answers by being silent on them (6e's method).
   The remote-IDE finding at [6d](stage-06d-unified-studio-remainder.md) step 7 is the reason this is a step
   and not an assumption: `StartSession` turned out to be called **as the project role**, so 6a's tag pair
   never evaluated. The same question here is *whose identity reaches the database*, and the answer decides
@@ -431,6 +439,7 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 | Every query in pass 2 and pass 3 | **1.44 USD/hour of query time**, 60-second minimum per query — so a dozen interactive queries are well under a dollar, and a **left-open transaction is 8.64 USD** before `SESSION TIMEOUT` ends it |
 | `lineageSync`, if enabled | a **recurring** query on a 1.44 USD/hour meter — the one line item that turns this stage into a standing cost (decision 3) |
 | JupyterLab app hours | `ml.t3.medium` at 0.050 USD/h, unchanged by this stage |
+| The `redshift` endpoint group, while the session is up | ~0.010 USD/h per endpoint, single-AZ (D9) — 5b 1.10, raised by `GROUPS=redshift` and absent unless named |
 
 ## Decisions due while executing
 

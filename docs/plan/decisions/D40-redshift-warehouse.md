@@ -92,8 +92,18 @@ Two properties of the floor shape the rest of the design:
 ## Nothing at rest, and what makes that stop being true
 
 Compute is metered per second with a **60-second minimum charge**, and a workgroup serving no query bills
-no compute. That makes a workgroup `[P]` in shape — like MWAA Serverless under D7 amended — with only
-Redshift Managed Storage billing at rest, **USD 0.024/GB-month**: cents.
+no compute — with only Redshift Managed Storage billing at rest, **USD 0.024/GB-month**.
+
+**But "bills nothing" is conditional, so the warehouse is two slices rather than one** (2026-09-20, on the
+user's question of whether the compute can be switched off): the **namespace** is `[P]` because it holds the
+data, the schemas, the database users, the roles and the `GRANT`s — state no plan re-creates — and the
+**workgroup plus its usage limit** is `[E]`, destroyed by `make down` and created by `make up`.
+**Redshift Serverless has no pause**: `create-workgroup` and `delete-workgroup` and nothing in between, no
+stop, no suspend, no zero-capacity setting. So *powered off* means *does not exist* — which is `[E]` by
+definition and also the strongest guarantee available, because an object that does not exist cannot receive a
+query and none of the three ways below has anything to arrive at. What `make down` does **not** stop is the
+storage: RMS bills while the data exists, and a schema filled to its 1 TB quota is 24.58 USD a month with no
+workgroup in the account at all.
 
 The three documented ways an idle warehouse bills anyway are all named so an instrument can look for them:
 

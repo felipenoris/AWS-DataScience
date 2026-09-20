@@ -27,7 +27,9 @@ the data platform, the SageMaker runtime and the sharing model.
 | `production/data/` (new) | the `consumer-data` call — LF resource links + local regrants, the account's LF settings, the account data CMK — plus the outputs bucket written beside it. **`consumer-data-v0.6.0` provides no derived zone and no workgroup** (D19 revised re-homed the Interactive zone onto the SMUS project path; Production has no SMUS, D28), so where this account's query results land — a stage-authored results bucket and workgroup beside the call, or nothing — is **this stage's to decide**; `aws/deploytargets.py` carries the same note | `[P]` |
 | `staging/data/`, `staging/sagemaker/` (new) | the catalog mirror with sampled/synthetic content; job execution roles and nothing else. Staging has no SMUS either (D17/D28 — the runtime without the domain), so the re-homed zone does not exist here and step 4.2's enforced workgroup has **no supplier and no named result location**. One re-decision covers both deployment targets | `[P]` |
 | `production/workloads-egress/` (amended), `staging/egress/` (amended) | the endpoints a job needs where there is no default route: `sagemaker.api`, `sagemaker.runtime`, `sts`, `logs`, `glue`, `athena`, `ecr.api`, `ecr.dkr`, `kms`, `secretsmanager` — **with the job subnets pinned to the endpoints' AZ** (6c step 5.4's `sagemaker.runtime` affinity) | `[E]` |
-| `production/warehouse/` (new, rank 53 — step 9) | the governed half of [D40](../decisions/D40-redshift-warehouse.md)'s warehouse: the namespace `awsds-prod-warehouse` at `base_capacity = 4` in `VPC-Workloads`' private tier, its usage limit, its three audit log groups, the namespace role, **the first governed schema written by `awsds-prod-job-exec`**, and the namespace **registered to the Glue Data Catalog as a federated catalog** so Lake Formation governs its schemas as it governs the lake's. Copies [Stage 5b](stage-05b-redshift-serverless.md) §7's specification — nothing here re-decides it | `[P]` |
+| `production/warehouse/` (new, rank 53 — step 9) | **the data half** of [D40](../decisions/D40-redshift-warehouse.md)'s governed warehouse: the namespace `awsds-prod-warehouse` under `alias/awsds-prod-data`, its three audit log groups, the namespace role, the security group, the alarms, **the first governed schema written by `awsds-prod-job-exec`**, and the namespace **registered to the Glue Data Catalog as a federated catalog** so Lake Formation governs its schemas as it governs the lake's. Copies [Stage 5b](stage-05b-redshift-serverless.md) §7's specification — nothing here re-decides it | `[P]` |
+| `production/warehouse-compute/` (new, rank 54 — step 9) | **the compute half**: the workgroup at `base_capacity = 4` in `VPC-Workloads`' private tier and its `serverless-compute` usage limit, in one apply. `[E]` for the same reason as Sandbox's — **Redshift Serverless has no pause**, so *powered off* means *does not exist*, and `make down ENV=production` is the guarantee that no RPU can be billed. RMS storage still bills while down | `[E]` |
+| `production/workloads-egress/` (amended again) | the **`redshift` endpoint group** where a job calls the Redshift API — 5b 1.10 adds it to the module; this slice is where `VPC-Workloads` gets it | `[E]` |
 | `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows: the workgroup, the named prefixes, the debug-role assumption — **and, for the warehouse, the read side only**: no `redshift-serverless:GetCredentials` anywhere (5b 2.3's absence, repeated in the account where it matters more) | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows for the five new slices (all `[P]` — `make up`/`down` never touch them) | — |
 
@@ -529,7 +531,10 @@ namespace deliberately does not have.
 > grantor account** — Production grants on the `governed` database, Data Governance grants on `raw`/`curated` — and 9.5 is
 > where the register is told, in the same sitting, or the estate has two registers and one of them is nobody's.
 
-- **9.1 — [Claude] Write the namespace and workgroup**, copying 5b §7's table: `awsds-prod-warehouse` under
+- **9.1 — [Claude] Write the namespace in `production/warehouse/` and the workgroup in
+  `production/warehouse-compute/`** — the same `[P]`/`[E]` split 5b settled: the namespace holds the data, the
+  users and the `GRANT`s and is never destroyed; the workgroup is `[E]` because Redshift Serverless has no pause,
+  so `make down ENV=production` removes the compute object entirely. Copying 5b §7's table: `awsds-prod-warehouse` under
   **`alias/awsds-prod-data`** (1.1's CMK, read from this slice's own state), `manage_admin_password = true`,
   `log_exports` all three with their **log groups pre-created and given a retention period** (5b 1.2 — the
   documented way not to acquire a second never-expiring group, `EXC-10`), `base_capacity = 4`, `max_capacity`
@@ -554,6 +559,9 @@ namespace deliberately does not have.
   `AmazonDataZoneProject` tag**: D26 keeps deployment targets out of the domain (`DenyDataZoneEntirely` on the
   `Workloads` OU), so 6h's three-layer model collapses here to layer 3 alone, and the absence of layers 1 and
   2 **is** the control. `WH-7` must therefore read **no project tag at all** on this namespace and workgroup.
+  **Nor is there a shared-schema question here**: one writer means the schema's role has one member, so the
+  `ALTER DEFAULT PRIVILEGES` uncertainty [6h](stage-06h-redshift-connection.md) 5.2b carries does not reach this
+  account.
   **That absence is now a requirement rather than a consequence** (`objectives.md`, 2026-09-20): the SMUS
   connection is a *sandbox-class* mechanism, and reusing 6h's wiring here "because it already works" would put
   a Redshift `GRANT` in the path of governed data beside a Lake Formation grant. A governed database is read

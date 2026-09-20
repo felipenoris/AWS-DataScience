@@ -849,6 +849,25 @@
   `STL_SCHEMA_QUOTA_VIOLATIONS` (the records where they were exceeded). The schema name *"can't be `PUBLIC`"*:
   <https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_SCHEMA.html>.
 
+- **The Redshift Serverless free trial, and the workgroup/namespace lifecycle (read 2026-09-20, for
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) steps 0.3a and 1.9).** The trial is *"$300 credit,
+  which can be used within 90 days of sign-up toward your compute and usage"*, and *"You are eligible for the
+  free trial if your account has not used Redshift Serverless yet"* — **per account, not per organization**.
+  *"Sign-up"* is not defined on the page, which is why the credit balance is read before and after the first
+  apply rather than paraphrased: <https://aws.amazon.com/redshift/free-trial/>. The billing page adds the trap:
+  *"If you participate in the free trial, you can view the free trial credit balance in the Redshift console, and
+  check free trial usage in the `SYS_SERVERLESS_USAGE` system view. Note that billing details for free trial
+  usage does not appear in the billing console. You can only view usage in the billing console after the free
+  trial ends."*
+  **On the lifecycle:** `delete-workgroup` takes a workgroup name and nothing else, while `delete-namespace`
+  offers `--final-snapshot-name`/`--final-snapshot-retention-period` — two separate operations on two separate
+  objects, which is what lets the compute be `[E]` while the data stays `[P]`. **There is no pause or stop
+  operation for a serverless workgroup** in `aws redshift-serverless help` (read the same day): the verbs are
+  create, update, delete and get. The `AmazonRedshift` offer file carries exactly three serverless meters —
+  `ServerlessUsage` (RPU-Hr), `RMS:Serverless` (GB-Mo) and `PaidUniqueSnapshots:Serverless` (GB-Mo) — and **no
+  endpoint-hour SKU**, so an idle workgroup's VPC attachment is not separately metered in any price list this
+  project can read.
+
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.

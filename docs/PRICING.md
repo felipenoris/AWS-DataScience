@@ -343,6 +343,8 @@ São Paulo as in Oregon.
 | — at `base_capacity = 4`, the documented floor (USD per hour **a query runs**) | 2.3904 | **1.44** | 1.66 |
 | — a workgroup serving no query | 0.00 | **0.00** | — |
 | Redshift Managed Storage, serverless (USD/GB-mo) | 0.043 | 0.024 | 1.79 |
+| — a schema filled to its 1 TB quota (USD/month) | 41.47 | **24.58** | 1.79 |
+| Redshift serverless paid snapshots (USD/GB-mo) | 0.0405 | 0.023 | 1.76 |
 | **Lake Formation** filtering (USD per TB scanned) | 2.75 | 2.25 | 1.22 |
 | Lake Formation storage optimizer (USD per TB) | 2.75 | 2.25 | 1.22 |
 | Lake Formation metadata objects (USD per 100k-mo) | 1.00 | 1.00 | **1.00** |
@@ -395,6 +397,22 @@ shape, of unstated size, and therefore the one thing in this family that bills b
 than the hour of query. It is priced **before** the switch is enabled, never after
 ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.5a, whose recommendation is the mechanism that needs
 no cluster), and it is why `DenyRedshiftProvisionedClusters` and that switch collide.
+
+**The free trial makes this stage's own cost readings unattributable while it runs.** AWS offers *"$300
+credit, which can be used within 90 days of sign-up toward your compute and usage"*, *"if your account has not
+used Redshift Serverless yet"* — **per account**, so the two namespaces this plan builds carry two independent
+windows, opened four stages apart. The trap is in the billing page: *"billing details for free trial usage does
+not appear in the billing console. You can only view usage in the billing console after the free trial ends."*
+So during the trial a cost reading from Cost Explorer is **0.00 whether the design is right or wrong**
+(Lesson 13), and the instruments are the **`SYS_SERVERLESS_USAGE`** system view and the console's **credit
+balance**. Every Redshift cost figure recorded anywhere in this project carries the trial's status beside it, or
+it cannot be read later. When the 90 days start is **not defined on that page** and is
+[Stage 5b](plan/stages/stage-05b-redshift-serverless.md) step 0.3a's reading.
+
+**The storage does not stop when the compute does.** The workgroup is `[E]` (D40, 2026-09-20 — Redshift
+Serverless has no pause, so *off* means *deleted*), and `make down` therefore takes the RPU meter to zero. RMS
+keeps billing while the data exists: **24.58 USD a month per filled 1 TB schema in `us-west-2`**, with no
+workgroup in the account at all. That is the same trade the GitLab EBS volume makes, at six times the price.
 
 **Not priced here:** a provisioned Redshift cluster created deliberately, which is the always-on shape D12
 rules out and [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) step 3.1 denies outright; concurrency scaling and

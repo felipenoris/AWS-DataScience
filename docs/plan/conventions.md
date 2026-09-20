@@ -189,15 +189,27 @@ terraform-live/
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
+│   ├── warehouse-compute/# [E] the workgroup and its usage limit, and nothing else (D40, Stage 5b
+│   │                     #     step 1.7, rank 54). [E] because Redshift Serverless has NO PAUSE -
+│   │                     #     create-workgroup and delete-workgroup and nothing in between - so
+│   │                     #     "powered off" means "does not exist", which is the only hard
+│   │                     #     guarantee that no RPU can be billed. The usage limit is in this
+│   │                     #     slice and this apply because a workgroup that exists without its
+│   │                     #     ceiling, for even one plan cycle, is the window a mistake costs
+│   │                     #     1.44 USD/h in. make down destroys it; RMS storage keeps billing,
+│   │                     #     which is the price of keeping the data and is warehouse/'s row
 │   ├── warehouse/        # [P] the Redshift Serverless warehouse (D40, Stage 5b, rank 53):
 │   │                     #     namespace + workgroup awsds-sandbox-warehouse at base_capacity 4,
 │   │                     #     under alias/awsds-sandbox-data (read from data/), in the PRIVATE
 │   │                     #     tier's two subnets in two AZs - not the isolated tier, which
 │   │                     #     carries no peering route and no client. [P] because a workgroup
-│   │                     #     serving no query bills nothing and the namespace holds data;
-│   │                     #     the usage limit (breach_action = deactivate) is applied in the
-│   │                     #     SAME apply as the workgroup, since a workgroup with no ceiling
-│   │                     #     for one plan cycle is exactly when a mistake costs 1.44 USD/h.
+│   │                     #     THE DATA HALF ONLY: the namespace, its Secrets-Manager admin
+│   │                     #     credential, its three audit log groups (pre-created with a
+│   │                     #     retention period, or Redshift makes them Never Expire), the
+│   │                     #     namespace IAM role, the workgroup's security group and the
+│   │                     #     alarms. [P] because the namespace holds every database, schema,
+│   │                     #     table, database user, role and GRANT - state no plan re-creates,
+│   │                     #     which is 5.1 rule 2. The compute is warehouse-compute/ above.
 │   │                     #     Holds the `sandbox` database, its themed schemas and the tags
 │   │                     #     Stage 6h's connections need. No Lake Formation object: the
 │   │                     #     sandbox class is outside it by design, like lake/ beside it
@@ -377,6 +389,8 @@ terraform-live/
     │                     #     per-application repositories (5.b) wait for Stage 7, the first
     │                     #     thing that pulls from either. The 5.a half is applied
     │                     #     (2026-08-21, 14 resources)
+    ├── warehouse-compute/# [E] the governed workgroup and its usage limit (D40, Stage 9 step 9,
+    │                     #     rank 54). Same split and same reason as sandbox/'s: no pause exists
     ├── warehouse/        # [P] the governed half of the warehouse (D40, Stage 9 step 9, rank 53):
     │                     #     namespace + workgroup awsds-prod-warehouse in VPC-Workloads'
     │                     #     private tier - the two-AZ pair 6c built as the estate's one D9
@@ -641,7 +655,13 @@ live in `[P]` (`production/networking/`), so they survive even if the instance i
 makes the Stage 7 backup/restore cycle a disaster-recovery procedure rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
-minutes: interface VPC endpoints (the `egress/` slices — **no NAT gateway exists anywhere since D38**, 6c
+minutes — **and, since 2026-09-20, one thing that is metered per query and has no off switch of its own**: a
+**Redshift Serverless workgroup** (D40, Stage 5b). Its compute bills nothing while no query runs, but *nothing*
+is conditional — an unclosed transaction, a connection pool's keep-alive and a cancelled query all bill — and
+the service offers **no pause**: `create-workgroup` and `delete-workgroup` and nothing between them. So the
+only hard guarantee is that the object does not exist, which is what `[E]` means. Its namespace stays `[P]`
+because it holds the schemas, the database users and the `GRANT`s, so the pair is two slices (`warehouse/` and
+`warehouse-compute/`) for rule 1's reason. Also `[E]`: interface VPC endpoints (the `egress/` slices — **no NAT gateway exists anywhere since D38**, 6c
 step 5.1, 2026-09-06), the probes, the `amd64` build host, SageMaker Studio *apps* (the domain and the
 spaces stay), GitLab Runners, and the Stage 13 web tier's ALB (an ALB cannot be stopped, only destroyed —
 it bills ~USD 0.023/h for as long as it exists; nothing fronts GitLab itself, which terminates TLS on its
