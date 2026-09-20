@@ -199,7 +199,7 @@ Measured 2026-09-19 from the Price List bulk API, offer file published 2026-09-1
 
 At the USD 50 ceiling this is **the most expensive thing in the estate per unit of time** — 1.44 USD/h
 against the WireGuard host's 0.0052 and the whole `egress/` estate's 0.410. Ten hours of querying in a
-month is 14.40 USD, roughly a third of the ceiling. The guard is therefore a **hard** one: a usage limit
+month was 14.40 USD at the 40 RPU-hours first applied, roughly a third of the ceiling; it is **3.60 USD** at the 10 in force since 2026-09-20, lowered by the user after one forgotten query reached 26.3 RPU-hours in a single sitting (`log-stage-05b`, the third amendment). The guard is therefore a **hard** one: a usage limit
 whose breach action is `deactivate`, not a budget notification (D12's own open defect, which
 [Stage 6e](../stages/stage-06e-claude-code-bedrock.md) 8.3 re-opened).
 

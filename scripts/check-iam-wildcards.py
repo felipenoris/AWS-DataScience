@@ -52,6 +52,14 @@ WHITELIST = {
         "DenyAccountBpaChangeExceptInfrastructure",
     ): "1c decision 7 - the InfrastructureAccess carve-out must reach accounts that do not "
     "exist yet; the SSO role's ARN suffix is minted per account",
+    (
+        "awsds-org-scp-baseline.json",
+        "DenyRedshiftCostGuardTamperingExceptInfrastructure",
+    ): "Stage 5b decision 3 - the same carve-out as the row above and for the same reason: the "
+    "reserved-SSO role's ARN suffix is minted per account, so no account can be named. The "
+    "exempt side was measured on 2026-09-20 (UpdateUsageLimit succeeded as InfrastructureAccess, "
+    "was denied as the canary's AWSAdministratorAccess), which is what turns the pattern from a "
+    "hope into a reading",
 }
 
 PATTERN = re.compile(r"arn:aws:iam::\*:")

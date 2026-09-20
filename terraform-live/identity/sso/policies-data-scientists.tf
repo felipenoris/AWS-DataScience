@@ -256,6 +256,90 @@ data "aws_iam_policy_document" "data_scientist" {
   # in permission-sets.tf, where the argument for that choice is written once instead of four
   # times.
 
+  # The warehouse, read side only (Stage 5b step 2.3). The persona may SEE that a warehouse
+  # exists, what capacity it runs at and which projects its tags admit; it may not open a
+  # database session on it, and it may not change what bounds its cost.
+  #
+  # `*` on the resource and not the workgroup ARN, because this one document serves N accounts
+  # and no ARN here can name an account (the CKV_AWS_356 note above). What bounds the grant is
+  # the action list: every entry is a read, and the two that would not be are in the Deny
+  # below.
+  statement {
+    sid    = "ReadRedshiftServerlessStatus"
+    effect = "Allow"
+
+    actions = [
+      "redshift-serverless:GetNamespace",
+      "redshift-serverless:GetWorkgroup",
+      "redshift-serverless:ListNamespaces",
+      "redshift-serverless:ListTagsForResource",
+      "redshift-serverless:ListUsageLimits",
+      "redshift-serverless:ListWorkgroups",
+    ]
+
+    resources = ["*"]
+  }
+
+  # THE LOAD-BEARING ABSENCE, WRITTEN AS A DENY (Stage 5b step 2.3). `GetCredentials` mints a
+  # database session, so a persona holding it reaches the warehouse with no connection, no
+  # project tag and no project - around both gate layers of the Stage 6h design at once, and
+  # onto a shared RPU meter where an ad-hoc query and a project's job are the same money.
+  #
+  # `redshift-data:` is here for the same reason by a different route: the Data API needs no
+  # network path at all, so a grant of ExecuteStatement is a query path from anywhere the
+  # persona can reach the AWS endpoint. Measured on 2026-09-20, from a laptop outside the VPC:
+  # the Data API runs SQL on this warehouse with nothing but an IAM identity and the admin
+  # secret. That is how this repository's own instruments read the database, and it is exactly
+  # why the persona must not have it.
+  #
+  # `redshift:` is the PROVISIONED-cluster family. Nothing here has a cluster and Stage 5b 3.1
+  # denies creating one organization-wide, but `GetClusterCredentials` is a credential call of
+  # the same shape and is refused here so the persona's ceiling does not depend on that SCP
+  # staying attached.
+  #
+  # Written as a Deny rather than left to omission for the reason the Lake Formation deny below
+  # gives: these actions sit in services this set is granted real reads on, so an omission
+  # would be one AWS managed policy away from being undone.
+  statement {
+    sid    = "DenyMintingARedshiftDatabaseSession"
+    effect = "Deny"
+
+    actions = [
+      "redshift-data:BatchExecuteStatement",
+      "redshift-data:ExecuteStatement",
+      "redshift-data:GetStatementResult",
+      "redshift:GetClusterCredentials",
+      "redshift:GetClusterCredentialsWithIAM",
+      "redshift-serverless:GetCredentials",
+    ]
+
+    resources = ["*"]
+  }
+
+  # The cost guard is not the persona's to edit (Stage 5b step 2.3 and decision 3). There is NO
+  # IAM condition key for base capacity, so no policy anywhere can say "never above 4": the
+  # ceiling is the workgroup's own two fields plus the usage limit, and what a policy can do is
+  # stop those being edited away. This is the persona's half; the organization's half is 5b
+  # 3.2's SCP, which covers every principal this document does not reach.
+  statement {
+    sid    = "DenyRedshiftCostGuardAndCompute"
+    effect = "Deny"
+
+    actions = [
+      "redshift-serverless:CreateNamespace",
+      "redshift-serverless:CreateUsageLimit",
+      "redshift-serverless:CreateWorkgroup",
+      "redshift-serverless:DeleteNamespace",
+      "redshift-serverless:DeleteUsageLimit",
+      "redshift-serverless:DeleteWorkgroup",
+      "redshift-serverless:UpdateNamespace",
+      "redshift-serverless:UpdateUsageLimit",
+      "redshift-serverless:UpdateWorkgroup",
+    ]
+
+    resources = ["*"]
+  }
+
   # The grantor is somebody else, and that separation is the point (1b step 3.7). A principal
   # that can grant itself a Lake Formation permission has an entitlement mechanism that
   # entitles nothing. Written as a Deny rather than left to omission because Stage 5a grants

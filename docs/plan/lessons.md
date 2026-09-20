@@ -1704,6 +1704,160 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
   `log-stage-06d` the fifteenth sitting.
 
+- **A failed `CreateNamespace` rolls the namespace back and leaves its managed secret behind**
+  (measured 2026-09-20). Redshift Serverless creates the admin credential in Secrets Manager, then
+  the namespace; when the namespace creation failed on an inaccessible KMS key, the namespace was
+  rolled back and the secret was not. It survives as `redshift!<namespace>-<username>`,
+  `OwningService: redshift`, rotation enabled, tagged with a **namespace ARN that no longer
+  resolves** — and the next attempt fails with a *different* message, *"Unable to create secret for
+  the dbInstance because a secret with a matching name exists"*, which reads like a name collision
+  rather than the residue of the previous attempt. The name is derived from the namespace **and the
+  admin username**, so changing either gets past it and leaves the orphan. Where: `AWS_STATE.md`
+  `EXC-12`, `log-stage-05b` the first sitting.
+
+- **A Redshift Serverless workgroup's endpoint host survives a delete and re-create; its id does
+  not** (measured 2026-09-20). Destroy and re-create under the same name and
+  `endpoint.address` is byte-identical — it is derived from the name, the account and the Region —
+  while `workgroupId` changes (`75b926c8-…` → `4b0577a2-…`), the usage limit's id changes, and the
+  workgroup's VPC endpoint and both its ENIs are replaced with new private addresses. **The ARN
+  carries the id**, so any IAM or SCP statement scoped to a workgroup's exact ARN stops matching
+  after the first teardown, silently, presenting as a principal whose queries stopped
+  authenticating with no diff anywhere. Two ENIs also linger in `available` state for under two
+  minutes after the destroy, still referencing the security group, which would fail a teardown of
+  the slice that owns it inside that window. Where: `log-stage-05b` 1.9, and the comments on
+  `sandbox/warehouse/iam.tf` and `DenyRedshiftCostGuardTamperingExceptInfrastructure`.
+
+- **A breached `deactivate` usage limit does not show in the workgroup's status, and refuses only
+  the compute** (measured 2026-09-20). With the limit breached, `get-workgroup` still reads
+  `status: AVAILABLE` and nothing in the workgroup's record mentions it; `UsageLimitAvailable`
+  reports a stale figure against the previous amount; and the client sees six words with no policy,
+  no limit id and no amount: `ERROR: Query reached usage limit`. **Leader-node queries keep
+  answering** — `select 1`, `select count(*) from pg_attribute`, `svv_all_schemas` — while a
+  `CREATE TABLE` is refused, so *"connect and `select 1`"* passes on a warehouse that cannot run a
+  real query. **Recovery is immediate on raising the amount**, with no wait for the period to roll
+  over, which no vendor page states. Also: a second `deactivate` limit is refused outright (*"Only
+  one DISABLE usage limit allowed per feature"*) and a second, looser `log` limit is **permitted**,
+  which is the hole `WH-3` exists for. Where: `log-stage-05b` pass 3.
+
+- **A Redshift Serverless workgroup reads back with six `config_parameter` entries nobody set, and
+  the Terraform provider plans to remove them forever** (measured 2026-09-20). `config_parameter` is
+  a set the provider owns whole: a workgroup created with three parameters returns nine, because the
+  service fills `auto_mv`, `datestyle`, `enable_case_sensitive_identifier`, `query_group`,
+  `search_path` and `use_fips_ssl`, and every subsequent plan is `1 to change` that never converges.
+  The fix is to declare them at their read-back values, which also discloses what a query actually
+  runs under — including that **`auto_mv` is on by default**, so the service builds and refreshes
+  materialized views on a 1.44 USD/hour meter unasked. Where: `log-stage-05b` pass 3,
+  `sandbox/warehouse-compute/main.tf`.
+
+- **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser on Redshift Serverless** (measured
+  2026-09-20). Both it and `STV_SCHEMA_QUOTA_STATE` answer `permission denied for relation` for the
+  namespace admin, who reads `usesuper = true` in `pg_user`, and no other catalog view carries a
+  schema's quota — `svv_redshift_schemas.schema_option` is empty for a schema that has one. So a
+  quota is **authored and proven by breach, never read back**: the check named for it in Stage 5b's
+  deliverables can only ever be a note. The breach itself is legible and carries three facts: the
+  refusal is **at commit**, the usage **exceeds the quota inside the transaction** before the abort
+  (2458 MB against a 2048 MB quota), and 1,024,000 incompressible 1 KB rows read as 2458 MB — a
+  quota bounds **disk blocks, not logical bytes**. The floor and ceiling are also undocumented:
+  *"Schema quota must be between 2048 and 524288000 MB"*. Where: `log-stage-06h`,
+  `runbooks/redshift-connection.md` §S.
+
+- **`CREATE SCHEMA … AUTHORIZATION` takes a database user, not a role** (measured 2026-09-20).
+  Redshift has RBAC roles and they cannot own a schema: given a role the statement answers
+  `ERROR: user "<name>" does not exist`, which reads as a missing object rather than a wrong kind of
+  object. A shared schema therefore has a **non-login user** as owner and its grants on a **role**,
+  which is the shape that keeps a schema × project relation many-to-many. Where: `log-stage-06h`
+  1.3, `runbooks/redshift-connection.md` §S.
+
+- **`AmazonDataZoneProject` is a single-valued tag key, so a Redshift compute admits one SageMaker
+  project** (read 2026-09-20). AWS's instruction is to add *"1 of the following tags"* to the
+  workgroup **and its namespace**: either `AmazonDataZoneProject={{projectID}}`, which names one
+  project, or `for-use-with-all-datazone-projects=true`, which names every project in the account.
+  There is no per-project list, because a tag key holds one value — on both objects. A plan that
+  says *"one tag per admitted project"* is therefore not implementable, and a second map entry would
+  silently overwrite the first project's tag and break its connection with nothing in the plan
+  output to say which project lost access. Where: `log-stage-06h`,
+  `terraform-live/sandbox/warehouse/variables.tf`'s `projects` validation.
+
+- **`db_name` on a Redshift Serverless namespace adds a database, it does not replace `dev`**
+  (measured 2026-09-20). A namespace created with `db_name = "warehouse"` carries **both**
+  `warehouse` and `dev` as local databases, and both are born with `USAGE, CREATE` to the group
+  `PUBLIC` on their `public` schema. So the `REVOKE` that closes that hole is owed **per database**,
+  and a check that looks for "exactly one class container" has to know about two inert ones. Also in
+  the same namespace: `awsdatacatalog` exists but **cannot be connected to at all** —
+  *"FATAL: Cannot connect to shared database … use cross-database query notation"* — which is a
+  stronger form of the documented read-only direction. Where: `log-stage-05b` 1.6 and 2.4.
+
+- **The Redshift Data API reaches a private workgroup from outside every VPC** (measured
+  2026-09-20). `redshift-data execute-statement --workgroup-name … --secret-arn …` runs SQL on a
+  workgroup that is `publiclyAccessible: false`, in a private subnet with no default route, from a
+  laptop with no VPN — because the Data API is an AWS endpoint and not a database connection. No
+  security group sees it and the 5439 door is irrelevant to it. Convenient (it is how this
+  repository's instruments read `SVV_*`) and load-bearing: a principal holding
+  `redshift-data:ExecuteStatement` has a query path from anywhere, which is why `identity/sso`
+  denies the family rather than merely not granting it. It is also **asynchronous with no waiter**,
+  so a poll without a delay reports an empty result for a warehouse that is answering. Where:
+  `log-stage-06h`, `runbooks/redshift-connection.md` §V.
+
+- **An EC2 security group description refuses an apostrophe** (measured 2026-09-20).
+  `InvalidParameterValue: Invalid security group description. Valid descriptions are strings less
+  than 256 characters from the following set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` — a set that
+  includes `#`, `$` and `!` and excludes `'`. The failure arrives at apply, after every other
+  resource in the plan has been created. Where: `log-stage-05b` 1.8.
+
+- **The Redshift Data API does not cancel a statement when its client stops polling, and
+  `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A
+  `count(*)` over a triple cross join was submitted through `redshift-data execute-statement`; the
+  client gave up polling after 242 s and exited; **the statement ran for 23,601 seconds — 6 h 33 min —
+  at base capacity**, and `ComputeSeconds` reported a flat 7,230 RPU-seconds per 30-minute interval
+  throughout, which is 4.017 RPU sustained. The workgroup's `max_query_execution_time` was **1800**,
+  **Why it did not bite is unresolved, and the obvious
+  explanation lost its support within the hour.** The first hypothesis was the superuser queue —
+  `pg_user` reports `usesuper = true` for the namespace admin, and Redshift exempts that queue from WLM
+  and QMR. But AWS's serverless query-queues page says *"Query monitoring rules (QMR) apply only at the
+  Redshift Serverless workgroup level, **affecting all queries run in this workgroup uniformly**"*, and
+  its example exempts an admin by giving them a **queue with no rules** — implying that without queues
+  (none here; enabling them is permanent) the rule reaches everyone. So the live candidates are the
+  exemption *after all*, or that **`max_query_execution_time` as a standalone `config_parameter` is not
+  enforced at all** and a per-query ceiling exists only through `wlm_json_configuration` — Lesson 56 in
+  its purest form. **One test separates them**: the same query as a non-superuser. Until then the
+  parameter is **possibly inert**. The unit is not in doubt: **seconds**, from the 86,399-second service
+  maximum and the QMR examples' own wording; `statement_timeout` is the millisecond parameter and is
+  not in the Serverless list. What stopped it:
+  `pg_terminate_backend(<session_id>)`, then destroying the workgroup. What would have stopped it
+  eventually: the `serverless-compute` usage limit, 3.4 hours later, at 14.40 USD. Where:
+  `log-stage-05b` the third amendment, and the comments on
+  `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and `layers.py`'s `usd_per_hour`.
+
+- **A CloudWatch aggregate answers a question about its window, not about now — and the CLI makes the
+  aggregate easier to ask for than the current value** (three times in one stage, 2026-09-20). The same
+  session read `ComputeSeconds` as **405**, then **4,743**, then **94,767** RPU-seconds for one
+  workgroup, and `DataStorage` as **1,596 MB** when the namespace held **130** — the storage figure was
+  `max(Datapoints[].Maximum)` over a 24-hour window, six hours after a `DROP` had freed the space, and
+  it was written into a plan as an owed `VACUUM`. `--statistics Sum` and `--statistics Maximum` with a
+  wide `--start-time` are the shortest commands to type and the easiest to misread; the habit that
+  catches all three is **plot the series before quoting a number from it**. Two consequences that cost
+  real money and real work here: a cost figure taken while a query is still running is a partial sum,
+  and a storage figure taken over a day is a peak. Where: `log-stage-05b`, the three amendments to 5.3
+  and the fourth on the storage.
+
+- **`DROP` frees Redshift Managed Storage at once; the `VACUUM` caveat is about `DELETE`** (measured
+  2026-09-20). *"A DELETE statement deletes data from a table and disk space is freed up only when
+  `VACUUM` runs"* is about **rows** removed from a table that still exists. `DROP SCHEMA … CASCADE` over
+  a 1.5 GB table took `DataStorage` from **1,596 MB to 129 MB in the next 30-minute datapoint**, with no
+  `VACUUM` anywhere. Reading the caveat as covering both is how a session ends up planning to raise an
+  `[E]` compute at 1.44 USD/hour to reclaim zero bytes. Where: `log-stage-05b`, the fourth amendment,
+  and `runbooks/redshift-connection.md` §S.
+
+- **`ComputeSeconds` lands per half-hour interval, so a Redshift cost read right after an expensive
+  query under-reads it** (measured 2026-09-20). The same metric answered **405**, then **4,743**, then
+  **94,767** RPU-seconds for the same workgroup within a few hours — the first two while a query was
+  still running, and each was written into four tracked files as *the measured cost*. Cost Explorer
+  cannot be used as the cross-check on the same day: it returned 0 for every service with **zero
+  groups** for that date, while a negative control three days earlier returned real figures, so its
+  zero means *no data yet* and nothing else. Two rules, and neither is about Redshift: **a meter that
+  is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. Where:
+  `docs/PRICING.md` §5, `log-stage-05b`'s three amendments to 5.3.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

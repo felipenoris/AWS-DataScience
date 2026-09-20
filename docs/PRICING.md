@@ -360,7 +360,43 @@ São Paulo as in Oregon.
 Athena at 9.00 USD/TB in São Paulo makes the two cost levers in `docs/plan/cost-model.md` — **S3 Bucket Keys** and
 partition/format discipline on the Iceberg tables — worth roughly twice as much there as in Oregon.
 
-### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md)
+### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md), **re-read and first measured 2026-09-20**
+
+**The price is unchanged and the warehouse has now billed.** Re-read on 2026-09-20 at
+[Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 0.2: same offer file, published
+`2026-09-11T12:45:05Z`, SKU `KQ3J5VYQJZ5QMG9Z`, usage type `USW2-Redshift:ServerlessUsage`,
+**`0.3600000000 USD per RPU-Hr`**. And the measured spend for that stage's execution:
+**94,767 RPU-seconds = 26.3242 RPU-hours = 9.4767 USD** — **19% of the D12 monthly ceiling, in one sitting**.
+**There is no free trial on this account** (the Management credits page shows none, read by the user
+2026-09-20), so it is billed in full.
+
+**Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
+`count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the
+Data API does not cancel a statement when the client goes away — and `ComputeSeconds` reported a flat **7,230
+RPU-seconds per 30-minute interval**, which is 4.017 RPU sustained, for thirteen intervals. The stage first
+recorded **0.0405**, then **0.4743**; both were readings of a meter that was still running. Two rules follow,
+and they are about meters rather than about Redshift:
+
+- **`ComputeSeconds` lands per half-hour interval**, so a figure taken right after an expensive query
+  under-reads — here by a factor of ten on the first attempt.
+- **A meter that is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. The
+  instrument to run is `./aws/warehouse.py`, whose burn line would have shown 7,230 per interval at any point
+  in those six hours.
+
+**Cost Explorer cannot cross-check the same day.** It returned 0 for 2026-09-20 **for every service, with zero
+groups**, while a negative control on 2026-09-17 returned real figures — the data simply is not there yet, and
+reading that zero as *free* is the pleasant answer Lesson 62 warns about. Three calls at 0.01 USD each
+established it.
+
+**One meter nobody chose is on by default.** `auto_mv` reads `true` on a new workgroup: Redshift decides on
+its own to build and refresh materialized views, and a refresh is a query on the 1.44 USD/hour meter. It is
+left at the default and named in `sandbox/warehouse-compute/main.tf` so that turning it off is a decision
+somebody can find rather than a knob nobody knew about.
+
+**The usage limit's own granularity, measured**: `UsageLimitConsumed` reported **1.0** against an amount of 1
+and the breach fired, while the day's real usage settled at **1.3175 RPU-hours**. So the limit is evaluated in
+**whole RPU-hours** and a limit of N bites somewhere between N−1 and N of real usage. At the applied 40 that is
+**14.04-14.40 USD/month** at the 40 then in force. **The user lowered it to 10 on 2026-09-20** — 2.5 hours of query time, **3.60 USD/month**, 7% of the D12 ceiling — because the guard had let 26.3 RPU-hours through before coming near the old amount. **The counter is per usage limit, not per month**: the limit destroyed at 1.9 reports `UsageLimitConsumed` 0.0 while its successor reports 28.0 over the same namespace, so a limit created by the next `make up` starts near zero.
 
 Read from `AmazonRedshift/current/{us-west-2,sa-east-1}/index.json`, both published **2026-09-11**; the SKU
 is the `Serverless` product family entry with no `term` attribute (the two `…-CR-1YR-…` SKUs beside it are
@@ -379,7 +415,7 @@ Serverless. Storage bills separately and always, at the RMS rate above: cents at
 
 **Against the USD 50 ceiling, this is the estate's most expensive object per unit of time** — 1.44 USD/h
 against the WireGuard host's 0.0052 and the whole `egress/` estate's 0.410 (§3). Ten hours of querying a month
-is 14.40 USD, roughly a third of the ceiling, which is why the guard is the service's own **usage limit** with
+was 14.40 USD at the original 40 RPU-hours, roughly a third of the ceiling, and is 3.60 USD at the 10 in force since 2026-09-20 — which is why the guard is the service's own **usage limit** with
 `breach_action = deactivate` rather than a budget notification.
 
 Three documented ways an *idle* warehouse bills anyway, each priced at 4 RPUs so the number is in front of

@@ -69,11 +69,11 @@ flowchart LR
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
 
-**The warehouse adds a store to two of those rows** (D40, 2026-09-19, neither built). **What the brief calls
+**The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); Production's is specified and waits for [Stage 9](plan/stages/stage-09-deployment-targets.md) step 9. **What the brief calls
 a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
 container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
 database of themed schemas, outside Lake Formation like the sandbox lake beside it;
-`Production` gains `awsds-prod-warehouse` with its the `governed` database, inside Lake Formation as a federated
+`Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation as a federated
 catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
 no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
 two accounts that have VPCs. `Staging` gains nothing either: D20 keeps a deployment target off the lake, and
@@ -219,8 +219,8 @@ Iceberg on S3 in the lake's Glue Data Catalog. A Redshift warehouse is a store a
 the Glue Data Catalog through its auto-mounted `awsdatacatalog` database, read-only, and a namespace
 registered to the catalog becomes a federated catalog governed by Lake Formation.
 
-**A warehouse is built, since [D40](plan/decisions/D40-redshift-warehouse.md) (2026-09-19) — and the
-`RedshiftServerless` blueprint is still excluded.** [`objectives.md`](plan/objectives.md) carries the
+**A warehouse is built — the Sandbox one since 2026-09-20 — and the `RedshiftServerless` blueprint is still
+excluded** ([D40](plan/decisions/D40-redshift-warehouse.md)). [`objectives.md`](plan/objectives.md) carries the
 requirement since 2026-09-20 and its wording is what this section implements: Redshift is a **second possible
 engine**, the lake stays the **warehouse of record**, *"the governance model does not fork"*, and *"the
 controls do not change — Redshift is one more execution environment"*, not a new class of reader. Two rules
@@ -235,8 +235,17 @@ sandbox lake. Two classes of database, on the two axes this file already separat
 
 | Class | Account | Written by | Under Lake Formation | Stage |
 |---|---|---|---|---|
-| **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a role, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
+| **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a **non-login database user**, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
 | **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
+
+**Two things the first build corrected, both measured 2026-09-20.** *Ownership is a user, not a role*:
+`CREATE SCHEMA … AUTHORIZATION` takes a database **user** and answers `user "<name>" does not exist` when
+given a role, so a shared schema is owned by a non-login user created for the purpose and the grants live on
+a role — which is what keeps the relation many-to-many. And *layer 1 admits one project*: AWS's admission tag
+`AmazonDataZoneProject` is a **single-valued tag key**, on the workgroup and on the namespace alike, and its
+only alternative is `for-use-with-all-datazone-projects=true`, which admits every project in the account. So
+the per schema × project grain is real at layer 3 and the compute-admission gate in front of it is not; that
+tension arrives with the **second** project and is a decision, not a map entry.
 
 Three consequences this file has to carry rather than leave to a stage:
 

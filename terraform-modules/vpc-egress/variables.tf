@@ -82,8 +82,8 @@ variable "optional_service_groups" {
     # A closed list, because the failure of an unknown name is silent: a group nobody defined
     # contributes no endpoints, the apply succeeds, and the blueprint fails on first use exactly
     # as it would have with no flag at all. `make up GROUPS=bedrok` must be a plan error.
-    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "emr", "mwaa"], g)])
-    error_message = "optional_service_groups admits only: bedrock, emr, mwaa. An unknown name would contribute nothing and fail silently at first use."
+    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "emr", "mwaa", "redshift"], g)])
+    error_message = "optional_service_groups admits only: bedrock, emr, mwaa, redshift. An unknown name would contribute nothing and fail silently at first use."
   }
 
 }

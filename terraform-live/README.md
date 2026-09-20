@@ -278,15 +278,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
   section P is the procedure, in both the Terraform and the `aws` CLI form.
 
-**One slice is planned and not written: `warehouse/`, rank 53, in two accounts** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md),
-[Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) in Sandbox and
-[Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9 in Production). It is the first slice
-here whose objects bill **by the hour of use rather than by the hour of existence** — a Redshift Serverless
-workgroup at `base_capacity = 4` costs nothing at rest and **1.44 USD/h while a query runs** — so it is `[P]`
-like every other store, and the thing that bounds it is not `make down` but a **usage limit applied in the
-same act as the workgroup**. Two rules follow from that and belong here rather than only in the stage:
-a plan that adds the workgroup without its `aws_redshiftserverless_usage_limit` is not applied, and
-the slice holds **no `[E]` resource at all**, so no `make up` path ever touches it.
+**`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
 SMUS account association is **console-only — there is no public API** — so the blueprint configurations
