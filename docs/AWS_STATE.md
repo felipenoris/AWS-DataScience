@@ -145,10 +145,23 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 |---|---|---|---|---|---|
 | `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | `USAGE, CREATE ON SCHEMA lab` | 2026-09-20 |
 | `Sandbox Account 1` | `sandbox` | `lab` | user `sbx_lab_owner` | owner (`AUTHORIZATION`), non-login | 2026-09-20 |
+| `Sandbox Account 1` | `sandbox` | — | user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | created `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`; non-superuser | 2026-09-21 |
+| `Sandbox Account 1` | `sandbox` | `lab` | the same user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-09-21 |
 
-**No project holds `sbx_lab_rw` yet**, so the schema is reachable by the namespace admin alone. The
-`GRANT ROLE … TO "<project's database user>"` that admits one is [6h](plan/stages/stage-06h-redshift-connection.md)
-§P step 2, and it is the row this register exists for.
+**Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
+reachable by that project and the namespace admin. The two statements, verbatim, because nothing
+re-derives them:
+
+```sql
+CREATE USER "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISABLE NOCREATEDB NOCREATEUSER;
+GRANT ROLE sbx_lab_rw TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c";
+```
+
+**The identifier is a prediction until a connection resolves it.** `IAMR:<role>` is the spelling the
+documented family uses and the one the reserved-SSO role already wears here, but whether a same-account
+serverless `GetCredentials` resolves to it is answered by [6h](plan/stages/stage-06h-redshift-connection.md)
+3.2. If it is wrong, a second auto-created user appears beside this one at the first connection and the
+correction is one `DROP USER` — which is the whole reason the user was created before the connection.
 
 **Two database users nobody created**, read from `pg_user` on 2026-09-20 and recorded because a grantee
 this estate did not author is exactly what this register is for:
@@ -157,6 +170,13 @@ this estate did not author is exactly what this register is for:
 |---|---|---|
 | `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>` | **yes** | the IAM-derived user for the reserved-SSO role, present without anybody creating it. It also answers the spelling question [6h](plan/stages/stage-06h-redshift-connection.md) 1.4 asks: a role-derived user is `IAMR:<role name>`. **That it is a superuser is the fact to carry**: an `InfrastructureAccess` session that reaches the database by IAM is a superuser session, so the ceiling on it is the SSO policy and not anything inside Redshift |
 | `rdsdb` | yes | the service's own internal user. Every event in the two audit log groups so far is `rdsdb`'s |
+
+**`PUBLIC` holds `USAGE` and not `CREATE`** on the `public` schema of `sandbox`, `warehouse` and `dev`
+alike — read from `pg_namespace.nspacl` on 2026-09-21 (`rdsdb=UCDA/rdsdb | =U/rdsdb`). So the `REVOKE`
+[5b](plan/stages/stage-05b-redshift-serverless.md) 1.6 owed twice is not owed at all, and a project's
+database user cannot create objects outside the schema its role names. `lab` carries no `nspacl` entry
+whatever: its grants are RBAC only, which is why `svv_schema_privileges` and `nspacl` must both be read
+before claiming what a grantee can do on this surface.
 
 **Two rules for this table**, both there because the plan half is missing on this surface:
 

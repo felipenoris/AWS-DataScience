@@ -171,9 +171,20 @@ workgroup, and that is a decision with a written argument, not a map entry.
 ## §V The instruments
 
 ```bash
-./aws/warehouse.py --sql                 # WH-1..WH-12, both accounts; --sql adds the database half
+./aws/warehouse.py --sql                 # every WH check, both accounts; --sql adds the database half
 ./aws/warehouse.py awsds-infra-sandbox-1 # one account
 ```
+
+**The checks that read an admitted project**, and what each answers when a connection misbehaves:
+
+| Check | What it reads | What its failure means |
+|---|---|---|
+| `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown |
+| `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
+| `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
+
+`WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
+green for the wrong reason (Lesson 50).
 
 **A session for the SQL above**, from a laptop, with no network path into the VPC — the Data API
 reaches the database with an IAM identity and the admin secret alone:

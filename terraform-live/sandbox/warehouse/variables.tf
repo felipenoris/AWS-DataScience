@@ -218,7 +218,22 @@ variable "projects" {
     role_name           = string
     security_group_name = string
   }))
-  default = {}
+  # The experimentation project `eighth-experimentation`, admitted 2026-09-21. Both ids in the role
+  # name are the service's - `avhvbqn37ty7m8` the project, `5hkjdsy3umpi1c` the environment - and
+  # every value here is read from the API rather than the portal's page (Lesson 38):
+  # `datazone list-projects` for the key, `iam list-roles` for the role, `describe-security-groups`
+  # for the group. The same project holds `sandbox/bedrock/`'s grant, so the role name is one string
+  # two slices carry.
+  #
+  # The group and the workgroup share `vpc-00dca74a35159b11c`, which is what makes the `5439` rule
+  # below reachable at all: AWS serves JupyterLab's query path only when the Redshift resource and
+  # the project sit in one VPC. The project's Data page needs no such thing.
+  default = {
+    avhvbqn37ty7m8 = {
+      role_name           = "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"
+      security_group_name = "datazone-avhvbqn37ty7m8-dev"
+    }
+  }
 
   validation {
     condition     = alltrue([for id in keys(var.projects) : can(regex("^[a-z0-9]+$", id))])

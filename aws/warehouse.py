@@ -84,21 +84,45 @@ WIDE_TAG = "for-use-with-all-datazone-projects"
 
 DEFAULT_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-prod")
 
-# `default = { "<id>" = { role_name = "...", security_group_name = "..." } }` inside the
-# `projects` block. Anchored on the variable name so another map in the file cannot be picked up.
-PROJECTS_RE = re.compile(r'variable\s+"projects"\s*\{.*?default\s*=\s*\{(?P<body>.*?)\n\}', re.S)
-ENTRY_RE = re.compile(r'"(?P<id>[a-z0-9]+)"\s*=\s*\{(?P<body>[^}]*)\}', re.S)
+# One entry of the `projects` map. The key's quotes are OPTIONAL: an identifier-shaped map key is
+# written bare in HCL and `terraform fmt` leaves either spelling alone, so requiring them read an
+# authored map of one project as `none` (2026-09-21).
+PROJECTS_VAR_RE = re.compile(r'variable\s+"projects"\s*\{')
+PROJECTS_DEFAULT_RE = re.compile(r"\n\s*default\s*=\s*\{")
+ENTRY_RE = re.compile(r'"?(?P<id>[a-z0-9]+)"?\s*=\s*\{(?P<body>[^}]*)\}', re.S)
 
 
 def authored_projects(path: Path) -> dict | None:
-    """The projects map as the slice declares it, or None when the file cannot be read."""
+    """The projects map as the slice declares it, or None when the file cannot be read.
+
+    The map's extent is found by matching its braces rather than by a regex ending on an
+    indented `}`: the variable's validation blocks sit below the default and contain text that a
+    loose terminator lets ENTRY_RE read entries out of - it invented a project called `roject`,
+    from the middle of `AmazonDataZoneProject`, on the first real map this parser ever saw.
+    """
     if not path.is_file():
         return None
-    match = PROJECTS_RE.search(path.read_text(encoding="utf-8"))
-    if not match:
+    text = path.read_text(encoding="utf-8")
+    var = PROJECTS_VAR_RE.search(text)
+    if not var:
         return None
+    default = PROJECTS_DEFAULT_RE.search(text, var.end())
+    if not default:
+        return None
+    depth, close = 0, None
+    for i in range(text.index("{", default.start()), len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                close = i
+                break
+    if close is None:
+        return None
+    body = text[text.index("{", default.start()) + 1 : close]
     out = {}
-    for m in ENTRY_RE.finditer(match.group("body")):
+    for m in ENTRY_RE.finditer(body):
         fields = dict(re.findall(r'(\w+)\s*=\s*"([^"]+)"', m.group("body")))
         out[m.group("id")] = fields
     return out
@@ -196,7 +220,7 @@ class Sql:
         ]
 
 
-def read_account(cli: AwsCli, env: str, want_sql: bool) -> dict:
+def read_account(cli: AwsCli, env: str, want_sql: bool, authored: dict | None) -> dict:
     """Every reading for one account, as data. No checks are decided here."""
     name = NAME_TMPL.format(env=env)
     facts: dict = {"env": env, "name": name}
@@ -309,6 +333,47 @@ def read_account(cli: AwsCli, env: str, want_sql: bool) -> dict:
         tolerate="",
     )
     facts["exec_inline"] = res.text.split() if res.ok and res.text.strip() else []
+
+    # LAYER 2, ONE ROLE PER ADMITTED PROJECT. The role is SMUS's, not this repository's, so all
+    # three readings can fail independently: the project can be deleted, the boundary can be
+    # detached by whoever recreates the role, and the attachment can be lost without the tag
+    # moving. `NoSuchEntity` is tolerated so a deleted project reads as `found: False` rather
+    # than as a broken run.
+    facts["project_roles"] = {}
+    for pid, entry in (authored if env == "sandbox" else {}).items():
+        role = entry.get("role_name")
+        if not role:
+            continue
+        res = cli.run(
+            "iam",
+            "get-role",
+            "--role-name",
+            role,
+            "--query",
+            "Role.PermissionsBoundary.PermissionsBoundaryArn",
+            "--output",
+            "text",
+            tolerate="NoSuchEntity",
+        )
+        found = res.ok and not res.tolerated
+        boundary = res.text.strip() if found and res.text.strip() != "None" else None
+        res = cli.run(
+            "iam",
+            "list-attached-role-policies",
+            "--role-name",
+            role,
+            "--query",
+            "AttachedPolicies[].PolicyName",
+            "--output",
+            "text",
+            tolerate="NoSuchEntity",
+        )
+        facts["project_roles"][pid] = {
+            "role": role,
+            "found": found,
+            "boundary": boundary,
+            "attached": res.text.split() if res.ok and res.text.strip() else [],
+        }
 
     res = cli.run(
         "cloudwatch",
@@ -690,6 +755,79 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 f"{sorted(live) or 'no project admitted'}, on both objects",
             )
 
+    # ----------------------------------------- WH-11: layer 2 is attached, and still under D13
+    #
+    # Three things this cannot be folded into WH-7. The tag admits the project to the COMPUTE; this
+    # policy is what lets the project role mint a database SESSION, and either can be present
+    # without the other. And the boundary is the reason the policy is safe to attach at all: it is
+    # the ceiling every interactive call in this account already sits under, so a role that has left
+    # it is not a project role this estate governs - the policy would still read as attached.
+    boundary_name = f"awsds-{env}-project-boundary"
+    roles = facts.get("project_roles", {})
+    if authored is None:
+        checks.note(
+            "WH-11",
+            f"{tag} layer 2 is attached, inside the D13 boundary",
+            f"{PROJECTS_VARS} could not be parsed, so there is no list of roles to read",
+        )
+    elif env != "sandbox":
+        checks.note(
+            "WH-11",
+            f"{tag} layer 2 is attached, inside the D13 boundary",
+            f"{PROJECTS_VARS} is Sandbox's map and this is {env}. D26 keeps a deployment target "
+            "out of the domain, so no project is admitted to a warehouse outside Sandbox and "
+            "layer 2 has nothing to attach here",
+        )
+    elif not roles:
+        checks.note(
+            "WH-11",
+            f"{tag} layer 2 is attached, inside the D13 boundary",
+            "no project admitted, so no policy is attached to any project role. Nothing is "
+            "verified here: this reads the same whether layer 2 is correct or absent (Lesson 50)",
+        )
+    else:
+        problems = []
+        good = []
+        for pid, r in sorted(roles.items()):
+            want_policy = f"{name}-project-{pid}"
+            if not r["found"]:
+                problems.append(
+                    f"{r['role']} does not exist - the project was deleted, and the "
+                    f"tag `AmazonDataZoneProject={pid}` now admits nobody (runbook U)"
+                )
+                continue
+            if want_policy not in r["attached"]:
+                problems.append(
+                    f"{r['role']} is missing {want_policy} - the tag admits the "
+                    "project to the compute and nothing mints it a session"
+                )
+            if r["boundary"] is None:
+                problems.append(f"{r['role']} carries NO permissions boundary")
+            elif not r["boundary"].endswith(f"/{boundary_name}"):
+                problems.append(
+                    f"{r['role']} carries {r['boundary'].rsplit('/', 1)[-1]} rather "
+                    f"than {boundary_name}"
+                )
+            if (
+                want_policy in r["attached"]
+                and r["boundary"]
+                and r["boundary"].endswith(f"/{boundary_name}")
+            ):
+                good.append(pid)
+        if problems:
+            checks.fail(
+                "WH-11",
+                f"{tag} layer 2 is attached, inside the D13 boundary",
+                "; ".join(problems),
+            )
+        else:
+            checks.ok(
+                "WH-11",
+                f"{tag} layer 2 is attached, inside the D13 boundary",
+                f"{good}: the warehouse policy is attached and the role is still under "
+                f"{boundary_name}",
+            )
+
     # ------------------------------------------- the namespace role reaches nothing (5b 2.4/D13)
     if ns is None:
         checks.note("WH-1b", f"{tag} the namespace role holds no policy", "no namespace")
@@ -834,7 +972,7 @@ def main(argv: list) -> int:
         if not caller.live:
             continue
         cli = profiles.cli_for(caller.profile, errors)
-        facts = read_account(cli, env_of(caller.profile), want_sql)
+        facts = read_account(cli, env_of(caller.profile), want_sql, authored)
         per_account.append((caller, facts))
         judge(checks, facts, authored, want_sql)
 

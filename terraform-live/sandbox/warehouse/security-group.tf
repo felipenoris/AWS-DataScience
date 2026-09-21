@@ -37,7 +37,9 @@ resource "aws_vpc_security_group_ingress_rule" "project_5439" {
   from_port                    = 5439
   to_port                      = 5439
   ip_protocol                  = "tcp"
-  description                  = "SMUS project ${each.key} app ENIs -> Redshift 5439 (Stage 6h step 3.3)"
+  # `to` rather than an arrow: EC2 refuses a rule description containing `>`. The permitted set is
+  # `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator (measured 2026-09-21).
+  description = "SMUS project ${each.key} app ENIs to Redshift 5439 (Stage 6h step 3.3)"
 }
 
 # NO EGRESS RULE, and the absence is deliberate rather than forgotten. A Redshift Serverless
