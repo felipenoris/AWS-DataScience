@@ -57,10 +57,14 @@ data "aws_iam_policy_document" "namespace_trust" {
 # AWS's own same-shape list from the SMUS Redshift access-role sample, minus everything that sample
 # asks for and this design refuses:
 #
-#   sqlworkbench:* on *      refused - check-iam-wildcards.py rejects it, and the project role
-#                            already carries SageMakerStudioProjectUserRolePolicy, whose sqlworkbench
-#                            grants are the portal's own. Whether that is enough for a same-account
-#                            connection is 6h 3.5's CloudTrail reading, not a guess made here.
+#   sqlworkbench:* on *      refused as an unmeasured wildcard, NOT by any gate in this repository:
+#                            check-iam-wildcards.py matches `arn:aws:iam::*:` and scans the identity
+#                            plane, so it neither sees this slice nor judges an action (read
+#                            2026-09-21, correcting the reason this line first gave). The project
+#                            role already carries SageMakerStudioProjectUserRolePolicy, whose
+#                            sqlworkbench grants are the portal's own; whether that is enough for a
+#                            same-account connection is 6h 3.5's CloudTrail reading. If the portal
+#                            turns out to need it, it goes on the ACCESS ROLE below rather than here.
 #   redshift:*               refused - those are the PROVISIONED cluster APIs. This design has no
 #                            cluster, and 5b 3.1 denies creating one organization-wide. Whether the
 #                            portal calls them anyway is read from CloudTrail at 6h 3.5, which is
@@ -118,6 +122,19 @@ data "aws_iam_policy_document" "project_warehouse" {
     actions   = ["redshift-serverless:ListWorkgroups", "redshift-serverless:ListNamespaces"]
     resources = ["*"]
   }
+
+  # The project role must be able to ASSUME THE ACCESS ROLE below, and this is stated here rather
+  # than relied on. AWS's cross-account procedure publishes the access role's trust policy and never
+  # mentions granting the project role anything - which implies one of the managed policies the
+  # service attaches already carries it. That is a claim about an AWS managed policy's contents, and
+  # AWS edits those (Lesson 49): a grant that works today because somebody else's document happens
+  # to include it is a grant with no owner. One resource, this project's access role only.
+  statement {
+    sid       = "AssumeThisProjectsAccessRole"
+    effect    = "Allow"
+    actions   = ["sts:AssumeRole"]
+    resources = [aws_iam_role.project_access[each.key].arn]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "project_warehouse" {
@@ -136,4 +153,168 @@ resource "aws_iam_role_policy_attachment" "project_warehouse" {
       error_message = "${each.value.role_name} does not carry the D13 permissions boundary ${local.boundary_name}. A role outside the boundary is not a SMUS project role this estate governs, and layer 2 is not attached to one."
     }
   }
+}
+
+# ------------------------------------- the access role, one per admitted project (6h 3.1, 3.2)
+#
+# THE PORTAL REQUIRES THIS ROLE AND AWS'S DOCUMENTATION SAYS IT DOES NOT (measured 2026-09-21, by
+# the user, in the portal, on a same-account connection). AWS's "Gaining access to Amazon Redshift
+# resources" splits into two procedures: the SAME-ACCOUNT one is three steps and names no access
+# role at all - the admin tags the objects and "must send you a username and password" - while the
+# access role, its trust policy and the `RedshiftDbUser` tag all live under "resources in a
+# different account". The form's own help repeats it: "Access role ARN is optional. Required when
+# connecting to resources in a different AWS account."
+#
+# The form then refuses to submit without it, in this account, for this workgroup. "AWS Secret" is
+# marked optional beside it and the access role is not. So the implemented form and the documented
+# procedure disagree, and the form is what has to be satisfied.
+#
+# WHY THAT IS THE BETTER OUTCOME ANYWAY. The API's own credential model (`create-connection`'s
+# `redshiftProperties.credentials`) is a tagged union with exactly two variants, `secretArn` and
+# `usernamePassword` - there is NO IAM variant. The portal's "IAM credentials" is this role plus the
+# `RedshiftDbUser` tag, which is how it reaches a database with no standing credential anywhere.
+# That is what 6h decision 2 asked for and could not find a mechanism for; the mechanism is here,
+# and the purpose-made secret that decision 2 held in reserve is not needed.
+resource "aws_iam_role" "project_access" {
+  for_each = var.projects
+
+  name        = "${local.name}-access-${each.key}"
+  description = "Stage 6h 3.1: the access role the SMUS project's Redshift connection assumes to mint a database session. Required by the portal form even same-account, where AWS's own procedure names no such role."
+
+  assume_role_policy = data.aws_iam_policy_document.project_access_trust[each.key].json
+
+  # `RedshiftDbUser` DECIDES THE DATABASE USER, which is why the value is the project role's name
+  # rather than something new. AWS: the tag "determines the federated database user within the
+  # databases". Whether the platform uses it VERBATIM or prefixes it the way an IAM-derived user is
+  # spelled (`IAMR:<role>`) is not stated on any page read on 2026-09-21 - so the value is chosen to
+  # make the two candidate spellings collapse onto the pair of database users layer 3 would have
+  # needed anyway:
+  #
+  #   verbatim  -> `datazone_usr_role_<project>_<env>`
+  #   prefixed  -> `IAMR:datazone_usr_role_<project>_<env>`, which is also what a direct IAM session
+  #                from JupyterLab would resolve to
+  #
+  # Both exist in the database and both hold `sbx_lab_rw`, so the first connection cannot land on a
+  # user with no grants. Which one it picked is then a readable fact in `pg_user`, and the other is
+  # one `DROP USER` - the same discipline the runbook's section P takes for the identifier itself.
+  #
+  # `RedshiftDbRoles` IS DELIBERATELY ABSENT. It would map a database role at first sign-in and save
+  # the GRANT, but AWS: "In a case where you pass a role name that doesn't exist in the database,
+  # it's ignored" - a typo would produce a session with no privileges and nothing anywhere saying
+  # why. Layer 3 stays in SQL, where WH-12 reads it back.
+  tags = { RedshiftDbUser = each.value.role_name }
+}
+
+data "aws_iam_policy_document" "project_access_trust" {
+  for_each = var.projects
+
+  # AWS's documented trust policy for this role, kept whole. All three statements name the project
+  # role, so only that project can assume it - the tag on the workgroup admits the project to the
+  # compute and this admits it to the role, and both are keyed off the same map entry.
+  statement {
+    sid     = "TheProjectRoleAssumesThisRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_iam_role.project[each.key].arn]
+    }
+
+    # The external id is the project id. Same-account it is not a confused-deputy guard - both roles
+    # are here - but it is what AWS's sample sends and what the portal fills, so a connection built
+    # by the portal would fail an assume without it.
+    condition {
+      test     = "StringEquals"
+      variable = "sts:ExternalId"
+      values   = [each.key]
+    }
+  }
+
+  # The session carries WHO is querying, not just which project. `datazone:userId` is a principal tag
+  # the portal sets on the project role's session, and propagating it as the source identity is what
+  # makes 6h 3.5's CloudTrail reading able to name a person rather than a role - the question 6d
+  # step 7 left open when `StartSession` turned out to be called as the project role.
+  statement {
+    sid     = "TheSessionCarriesTheUsersIdentity"
+    effect  = "Allow"
+    actions = ["sts:SetSourceIdentity"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_iam_role.project[each.key].arn]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "sts:SourceIdentity"
+      values   = ["$${aws:PrincipalTag/datazone:userId}"]
+    }
+  }
+
+  # Session tags, and the pair is required rather than decorative: the portal tags the assumed
+  # session with the project and the domain, and this is the statement that permits it. Both values
+  # are pinned, so a session tagged with another project's id cannot be minted through this role.
+  statement {
+    sid     = "TheSessionIsTaggedWithThisProjectAndDomain"
+    effect  = "Allow"
+    actions = ["sts:TagSession"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_iam_role.project[each.key].arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = [each.key]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneDomain"
+      values   = [var.datazone_domain_id]
+    }
+  }
+}
+
+# The access role carries the SAME layer 2 policy as the project role. One authored document, two
+# holders: the project role for a direct IAM session from JupyterLab, the access role for the
+# portal's connection. Giving the access role its own copy is how the two would drift (Lesson 33).
+resource "aws_iam_role_policy_attachment" "project_access_warehouse" {
+  for_each = var.projects
+
+  role       = aws_iam_role.project_access[each.key].name
+  policy_arn = aws_iam_policy.project_warehouse[each.key].arn
+}
+
+# The two tag reads, and they are the access role's alone. AWS names them for exactly this case -
+# "signing in using IAM credentials", where the roles and user come from a tag key and value - so
+# the identity that signs in has to be able to read its own tags. Neither takes a resource. They are
+# not on the project role because nothing on that path reads a tag to decide a database user.
+resource "aws_iam_policy" "project_access_tags" {
+  for_each = var.projects
+
+  name        = "${local.name}-access-tags-${each.key}"
+  description = "Stage 6h 3.1: the tag reads the IAM-credentials sign-in needs, so the access role can resolve its own RedshiftDbUser tag."
+  policy      = data.aws_iam_policy_document.project_access_tags[each.key].json
+}
+
+data "aws_iam_policy_document" "project_access_tags" {
+  for_each = var.projects
+
+  statement {
+    sid       = "ResolveOwnPrincipalTags"
+    effect    = "Allow"
+    actions   = ["tag:GetResources", "tag:GetTagKeys"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "project_access_tags" {
+  for_each = var.projects
+
+  role       = aws_iam_role.project_access[each.key].name
+  policy_arn = aws_iam_policy.project_access_tags[each.key].arn
 }

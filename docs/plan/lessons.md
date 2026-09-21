@@ -1704,6 +1704,39 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
   `log-stage-06d` the fifteenth sitting.
 
+- **The SageMaker Unified Studio portal requires an access role on a SAME-ACCOUNT Redshift
+  connection, and both AWS's procedure and the field's own help say it does not** (measured
+  2026-09-21, by the user, in the form). *"Gaining access to Amazon Redshift resources"* splits in
+  two: the same-account procedure is three steps and names no role — the admin tags the workgroup and
+  its namespace and *"then must send you a username and password for a database user"* — while the
+  access role, its trust policy and the `RedshiftDbUser` tag live entirely under *"resources in a
+  different account"*. The form's help says *"Access role ARN is optional. Required when connecting to
+  resources in a different AWS account."* The form then refuses to submit without it, same account,
+  same VPC, while marking **`AWS Secret` optional** beside it. Lesson 41 with the polarity reversed: a
+  vendor **optional** the implementation makes mandatory, so the premise that travelled was the wrong
+  one in both directions. Where: `log-stage-06h` (2026-09-21), `sandbox/warehouse/iam.tf`.
+
+- **"IAM credentials" is not a credential type in the DataZone API at all** (read 2026-09-21 from
+  `aws datazone create-connection`'s own model). `redshiftProperties.credentials` is a tagged union
+  with exactly two variants, `secretArn` and `usernamePassword`. The portal's third option is
+  `awsLocation.accessRole` plus the role's `RedshiftDbUser` tag, which *"determines the federated
+  database user"* — a shape that carries **no standing credential**, which is why the requirement above
+  turned out to be the better outcome and why the purpose-made secret held in reserve was never built.
+  Two things the pages do not say: whether `RedshiftDbUser` is used verbatim or prefixed the way an
+  IAM-derived user is spelled (`IAMR:<role>`), and — from the serverless side — that
+  **a database user is created on first sign-in**, so the grant can be pre-made or not at all.
+  `RedshiftDbRoles` maps roles at that first sign-in, and *"in a case where you pass a role name that
+  doesn't exist in the database, it's ignored"*: a silent nothing, which is why it was refused.
+  Where: `log-stage-06h` (2026-09-21).
+
+- **DataZone refuses connection operations to an identity that is not a project member, in its own
+  authorization layer rather than in IAM** (measured 2026-09-21). `datazone list-connections` as the
+  account's `InfrastructureAccess` role: *"User is not permitted to perform operation:
+  ListConnections"* — no IAM policy is involved and none can fix it. So the account's administrator
+  cannot read, let alone create, a project's connections; the act belongs to a project member in the
+  portal. Lesson 28's intersection, with the second permission system being the product's own.
+  Where: `log-stage-06h` (2026-09-21).
+
 - **A failed `CreateNamespace` rolls the namespace back and leaves its managed secret behind**
   (measured 2026-09-20). Redshift Serverless creates the admin credential in Secrets Manager, then
   the namespace; when the namespace creation failed on an inaccessible KMS key, the namespace was
