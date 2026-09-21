@@ -107,11 +107,30 @@ connect but sees nothing"* as the expected state for a while — which is the am
    a clean diff in `pg_user`, and the correction is one `DROP USER`.
 3. **Layers 1 and 2, in Terraform.** Add the entry to `sandbox/warehouse/`'s `projects`, then
    `terraform apply` that slice and re-plan `No changes`. One map produces the tag on both objects,
-   the IAM policy and its attachment, and the `5439` ingress rule, so they cannot drift apart.
-4. **The connection, in the portal**, by the project member: *Compute → Data warehouse → Add compute
-   → Connect to existing compute resources*. Leave **`lineageSync` off** — it is a scheduled query on
-   a 1.44 USD/hour meter.
-5. **Re-run `./aws/warehouse.py --sql`** and add the register row.
+   the IAM policy and its attachment, the **access role** the portal's form demands, and the `5439`
+   ingress rule, so they cannot drift apart. `[P]` is never touched by `make up`, so this apply is by
+   hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
+   permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
+4. **The connection, in the portal**, by the project member — it cannot be done any other way:
+   `datazone list-connections` is refused to the account's administrator by **DataZone's own**
+   authorization layer, because that identity is not a project member. *Compute → Data warehouse →
+   Add compute → Connect to existing compute resources*, credential type **IAM credentials**. Three
+   things the form does that no AWS page describes (measured 2026-09-21):
+
+   - **`Access role ARN` is mandatory**, same account, while `AWS Secret` is optional beside it. Hand
+     over `terraform output project_access_role_arns`. AWS's same-account procedure names no access
+     role and the field's help calls it *"optional. Required when connecting to resources in a
+     different AWS account"* — both wrong against the running form.
+   - **The compute dropdown offers the namespace's `dev` database.** The themed schema is in the class
+     container (`sandbox`), and a cross-database **write** does not work in Redshift, so the
+     connection must name that database — by a database field if the form has one, otherwise through
+     the JDBC URL with the `/dev` suffix replaced.
+   - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
+     meter cannot be turned on from the portal. It is reachable only through the API.
+5. **Re-run `./aws/warehouse.py --sql`** and add the register row. Then read `pg_user`: the access
+   role's `RedshiftDbUser` tag decides the database user, and whether the platform uses it verbatim or
+   prefixes it `IAMR:` is unmeasured — which is why step 2 creates **both** spellings. The one that did
+   not appear is one `DROP USER`.
 
 **What must stay absent, whatever else is granted:** no `GRANT ALL ON DATABASE`, nothing on a schema
 the project's row does not name, no `CREATE` on `public` (revoked at 5b 1.6), and no

@@ -212,6 +212,25 @@ variable "storage_alarm_usd" {
 # EMPTY IS LEGAL AND IT IS THE STATE PASS 1 APPLIES IN. A warehouse with no admitted project has
 # no ingress rule, no project tag and no attached policy - which is what makes 6h verification (vi)
 # readable at all: the before is a measurement, not an assumption.
+# ------------------------------------------------- the domain the admitted project belongs to
+#
+# Needed by ONE statement: the access role's trust policy pins the session tag
+# `aws:RequestTag/AmazonDataZoneDomain`, so a session tagged with another domain's id cannot be
+# minted through it. There is no Terraform data source for a DataZone domain, so the value is
+# written by hand after the domain exists - the same shape as `sandbox/bedrock/`'s project role list.
+variable "datazone_domain_id" {
+  description = "The SMUS domain the admitted projects belong to. Read from `datazone list-domains`; only the access role's trust policy uses it."
+  type        = string
+
+  # `awsds-studio`, AVAILABLE, read from `datazone list-domains` on 2026-09-21.
+  default = "dzd-d8yrvx1ko7im6o"
+
+  validation {
+    condition     = can(regex("^dzd-[a-z0-9]+$", var.datazone_domain_id))
+    error_message = "a SMUS domain id is `dzd-` followed by lowercase alphanumerics, as `datazone list-domains` prints it."
+  }
+}
+
 variable "projects" {
   description = "The SMUS projects admitted to this warehouse, keyed by project id. Empty admits nobody. Each value names the two service-minted objects the project is reached by."
   type = map(object({

@@ -45,3 +45,11 @@ output "projects" {
   description = "The admitted projects, keyed by project id - layer 1's authored map. The compute slice reads it for the workgroup's half of the tag pair; the namespace's half is written here."
   value       = var.projects
 }
+
+# The value a project member types into the portal's "Access role ARN" field, per project. It is an
+# output rather than a thing somebody reads off the console because the field is mandatory in the
+# form and the run that fills it is the user's, not this repository's (6h 3.2).
+output "project_access_role_arns" {
+  description = "The access role ARN per admitted project - the portal's mandatory `Access role ARN` field when the credential type is IAM credentials."
+  value       = { for id, r in aws_iam_role.project_access : id => r.arn }
+}

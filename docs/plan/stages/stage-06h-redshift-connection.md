@@ -317,11 +317,17 @@ picks one.
   open question 13's premise that TIP is a project-profile setting only. The portal path is
   *Compute → Data warehouse → Add compute → Connect to existing compute resources*, and in the same account
   it offers the compute **from a dropdown** rather than asking for a JDBC URL.
-  **Recommended: the portal for this first one, Terraform for the second** — the portal is what a data
-  scientist will use, so measuring it once is the point; and what it writes is then readable by
-  `WH-9`, which is how the Terraform shape gets written against a known-good object rather than against the
-  API reference.
-- **3.2 — [user] Create the connection** in the project, with the credential type 0.3 chose, and record
+  **Answered 2026-09-21: the portal, because the API is closed to the administrator.**
+  `ListConnections` is refused to `awsds-infra-sandbox-1` by DataZone's own authorization layer, so the
+  portal is not a preference. **The form requires an `Access role ARN` same-account**, which no AWS page
+  says it does, and marks the secret optional — so the IAM path carries no standing credential, and
+  `sandbox/warehouse/` now authors one access role per admitted project from the same map.
+- **3.2 — [user] Create the connection** — **owed, and the access role it needs is authored but NOT
+  applied.** Two things measured at the form on 2026-09-21: the compute **did appear** in the dropdown, so
+  layer 1 works; and it is offered as database **`dev`**, while `lab` is in `sandbox` — a cross-database read
+  works in Redshift and a cross-database **write** does not, so the connection must name `sandbox`, by a
+  database field if the form has one and otherwise through the JDBC URL. In the project, with the credential
+  type 0.3 chose, and record
   every field the portal asked for and every default it filled — the `lineageSync` toggle above all, since a
   lineage sync on a schedule is a **recurring query**, and a recurring query on this warehouse is a recurring
   **USD 1.44/hour** meter. Leave it **off** unless somebody asks for it (decision 3).
@@ -465,18 +471,21 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 judgement** (1 and 2, below). Each is decided during the stage and written into
 `docs/log/log-stage-06h-redshift-connection.md` with a recommendation stated (Lesson 16).
 
-1. **Portal or Terraform for the connection** (3.1). Recommended: **the portal for the first one**, then the
-   Terraform shape written against the object it produced. `awscc_datazone_connection` exists, so this is a
-   sequencing choice and not a capability one — and the portal is the path a data scientist will take, which
-   makes measuring it the point rather than a shortcut.
-2. **The credential type** (0.3). Recommended: **IAM credentials**. No standing credential, and the cost is
-   that the portal's Compute page shows less (*"Using a username and password enables … more information"*).
-   **It may not be available same-account** — the form offers it, AWS's same-account procedure names only a
-   username and password, and the two pages do not meet (0.3's callout). Fallback: Secrets Manager **with a
-   purpose-made secret**, never the namespace admin's. A typed password is refused either way.
-3. **`lineageSync`** (3.2). Recommended: **off**. It is a scheduled query on the estate's most expensive
-   meter, bought for lineage nodes that [6f](stage-06f-data-governance.md) has not yet decided it wants.
-   Revisit when 6f's lineage step has an owner.
+1. **Portal or Terraform for the connection** (3.1). **Answered 2026-09-21: the portal, and not by
+   preference.** `datazone list-connections` as `awsds-infra-sandbox-1` is refused — *"User is not permitted
+   to perform operation"* — by **DataZone's own authorization layer**, because the infrastructure identity is
+   not a project member. No IAM policy reaches that, so a project member in the portal is the only path that
+   exists today. The Terraform shape for a second connection is now writable against a measured object.
+2. **The credential type** (0.3). **Answered 2026-09-21: IAM credentials, and the fallback is withdrawn.**
+   `create-connection`'s `redshiftProperties.credentials` is a tagged union with exactly two variants,
+   `secretArn` and `usernamePassword` — **there is no IAM variant**. So "IAM credentials" is
+   `awsLocation.accessRole` plus the role's `RedshiftDbUser` tag, which reaches a database with **no standing
+   credential**: what this decision asked for and had no mechanism for. The form makes the access role
+   **mandatory same-account** — which AWS's same-account procedure and the field's own help both deny — and
+   marks the secret **optional**, so the purpose-made secret stays unbuilt. A typed password is refused.
+3. **`lineageSync`** (3.2). **Answered 2026-09-21: off, and free.** The form offers no toggle on this path,
+   so the scheduled query on the estate's most expensive meter cannot be turned on from the portal. Revisit
+   only if [6f](stage-06f-data-governance.md)'s lineage step asks for it through the API.
 4. **Whether a persona ever queries the warehouse directly** (step 4). Recommended: **no** — every query
    arrives through a project, which keeps the `GRANT` register complete and the shared RPU meter attributable.
 5. **~~One database per project, or shared databases with a schema per project~~ — answered by the brief**

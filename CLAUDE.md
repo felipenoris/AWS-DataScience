@@ -229,7 +229,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h 3.2's portal act** - every layer Claude owns is applied, so the connection is the only thing left - and a `GROUPS=redshift` space for 3.3.
+  Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h 3.2's portal act** - the form needs an `Access role ARN`, authored 2026-09-21 and NOT yet applied - and a `GROUPS=redshift` space for 3.3.
 - **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20), 6h's portal half is not.** Two slices:
   `sandbox/warehouse/` rank **53** `[P]` (namespace + admin secret + 3 audit groups at 30 d + exec role with
   **no policy** + SG + 2 alarms) and `sandbox/warehouse-compute/` rank **54** `[E]` (workgroup `base 4 / max 8`
@@ -244,7 +244,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` holding `sbx_lab_rw` with no `admin_option` — the
   `IAMR:` spelling is a **prediction until 3.2 resolves one**. The D13 boundary and the SCP narrow neither
   `redshift-serverless:` nor `redshift-data:`, so layer 2 is not inert. `PUBLIC` already holds `USAGE` and
-  not `CREATE` in all three databases. Measured spend **9.4767 USD** = 26.32 RPU-h, **19% of the D12 ceiling in one sitting and no free trial exists** (Management credits page empty, user 2026-09-20).
+  not `CREATE` in all three databases. **The portal then demanded an `Access role ARN` on a SAME-ACCOUNT connection** (user, 2026-09-21) which AWS's same-account procedure and the field's help both call unnecessary - and `AWS Secret` is optional beside it. `create-connection`'s `credentials` union has **only `secretArn` and `usernamePassword`**, so "IAM credentials" IS the access role plus the `RedshiftDbUser` tag: **no standing credential**, decision 2 answered and its secret fallback withdrawn unbuilt. `ListConnections` is refused to InfrastructureAccess by **DataZone's own** authorization layer, so the portal is the only path (decision 1 answered). The access role is **authored, validate passes, NOT applied**; `RedshiftDbUser` carries the project role's NAME so both candidate spellings land on granted users. The dropdown offers database `dev` and `lab` is in `sandbox`. Measured spend **9.4767 USD** = 26.32 RPU-h, **19% of the D12 ceiling in one sitting and no free trial exists** (Management credits page empty, user 2026-09-20).
 - **What the execution measured that the plan had wrong.** **Two subnets accepted** (AWS's page right, the
   provider's wrong). **`price_performance_target` is ENABLED by default at Balanced** → decision 2's letter
   impossible, intent is `enabled = false`. **The endpoint HOST survives a destroy/re-create; the workgroup ID
