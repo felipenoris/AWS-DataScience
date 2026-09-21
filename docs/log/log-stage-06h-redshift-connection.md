@@ -199,3 +199,186 @@ is the state hardest to read later.
 | 4 | **taken: it stands.** The persona gets the read side and no credential path, and 5b 2.3 applied exactly that — plus the Data API family, which the stage had not thought to deny |
 | 5, 6, 7 | answered by the brief, as the stage file records. 7's compensating control is applied: the `DataStorage` alarm, threshold argued in USD |
 | **8 — new** | **How a second project is admitted.** Layer 1's tag is single-valued (above), so the options are: **(a)** the wide `for-use-with-all-datazone-projects=true`, accepting that the compute gate becomes per-account and leaning on layers 2 and 3, which are per project and resource-scoped; **(b)** a second workgroup per project on the same namespace — but the **namespace** tag is single-valued too, so this probably does not work and would need measuring first; **(c)** one project per warehouse, which multiplies the `[E]` object rather than the data. **Recommended: (a), with the argument written down** — a project whose role lacks `GetCredentials` still cannot connect, so the wide tag widens a gate that has two narrower gates behind it. It is not taken now because no second project exists, and taking it early would be deciding the shape before the requirement has a shape |
+
+---
+
+## 2026-09-21 — the project is admitted: layers 1, 2, 3 and the door are all applied, and the portal is the only half left
+
+*Written by Claude in the sitting that ran it. The user was in the portal, had raised the sandbox, and
+asked whether the absent Redshift connection was expected — it was, and the answer names which layer's
+absence produces that exact symptom. Every reading and every apply is Claude's own, from
+`awsds-infra-sandbox-1` (account `Sandbox Account 1`, permission set `InfrastructureAccess`).*
+
+### The question that started the sitting, and the layer it points at
+
+The user opened project `eighth-experimentation` and saw no Redshift connection. The runbook's own table
+([§O](../plan/runbooks/redshift-connection.md)) predicts that symptom for one layer and not the others:
+**layer 1 absent = "the compute does not appear in the project's dropdown at all"**. Layer 2 absent would
+have let the connection be created and failed every query at authentication; layer 3 absent would have
+shown the cluster with an invisible schema. So the reading was not ambiguous, and the pending half was
+Claude's rather than the user's.
+
+### 0.1 re-read — the identifiers have not moved
+
+| What | Value |
+|---|---|
+| domain | `dzd-d8yrvx1ko7im6o` (`awsds-studio`, `AVAILABLE`) |
+| project | `avhvbqn37ty7m8`, `eighth-experimentation`, `ACTIVE` |
+| project role | `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` |
+| the project's security group | `datazone-avhvbqn37ty7m8-dev` (`sg-0fee1c059b82e3562`) |
+| its VPC | `vpc-00dca74a35159b11c` |
+
+**The workgroup's two subnets are in that same VPC** (`subnet-016b5a3a62c739894` in `us-west-2b`,
+`subnet-09d3399d6b0fec93a` in `us-west-2a`), which is the precondition AWS names for JupyterLab's query
+path. The Data page needs no such thing, and step 3.3/3.4 read the two doors apart for that reason.
+
+### Two ceilings read before granting anything, because a grant above a ceiling is inert
+
+Lesson 28's intersection, and Lesson 56's inert line. Layer 2 grants `GetCredentials` to a role that
+carries the D13 permissions boundary, so the grant means nothing unless the boundary permits it:
+
+- **the boundary** `awsds-sandbox-project-boundary` (v2) — nine statements, `Allow *` at
+  `CeilingIsEverythingTheIdentityPolicyGrants`, and the eight Denies are SageMaker job shapes, direct S3
+  on Lake-Formation-registered prefixes, and the lake data key off `kms:ViaService`. **Nothing names
+  `redshift-serverless:` or `redshift-data:`**, so the boundary does not narrow layer 2.
+- **the SCP** — `awsds-org-scp-baseline` carries exactly two Redshift statements,
+  `DenyRedshiftProvisionedClusters` and `DenyRedshiftCostGuardTamperingExceptInfrastructure`. Neither
+  touches `GetCredentials` or the Data API family.
+
+### 1.4, 1.5 — the project's database user exists, and holds one role
+
+Order (a) of the stage's chicken-and-egg: create the user, then grant, then let the connection use it.
+Through the Data API, on database `sandbox`:
+
+```sql
+CREATE USER "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISABLE NOCREATEDB NOCREATEUSER;
+GRANT ROLE sbx_lab_rw TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c";
+```
+
+Both `FINISHED`, 340 ms and 195 ms. Read back:
+
+| `pg_user` | super | createdb |
+|---|---|---|
+| `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>` | true | true |
+| `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | **false** | **false** |
+| `dbadmin` | true | true |
+| `rdsdb` | true | true |
+| `sbx_lab_owner` | false | false |
+
+`svv_user_grants` holds one row: that user, `sbx_lab_rw`, **`admin_option = false`** — so the project
+cannot re-grant the role to anyone.
+
+**`IAMR:<role>` is still a prediction, not a measurement.** It is the spelling the documented family uses
+and the one this warehouse already carries for the SSO role, but whether a same-account serverless
+`GetCredentials` resolves to it is what 3.2 answers. If it is wrong, the symptom is a second,
+auto-created user appearing beside this one at the first connection, and the correction is one
+`DROP USER` — which is why order (a) was taken.
+
+### What `PUBLIC` already holds, read rather than assumed
+
+The stage carried an owed `REVOKE` on `public` in each database (`db_name` adds a database, it does not
+replace `dev`). Read on all three: `nspacl` is `rdsdb=UCDA/rdsdb | =U/rdsdb`, so **`PUBLIC` has `USAGE`
+and not `CREATE`** in `sandbox`, `warehouse` and `dev` alike. Nothing owed. `lab` carries no legacy ACL
+entry at all — its grants are RBAC, on `sbx_lab_rw`, which is `CREATE` + `USAGE` and nothing else.
+
+### 2.1, 2.2, 2.3 — the map, applied, and a description EC2 refuses
+
+One entry in `sandbox/warehouse/`'s `projects`, and the plan was exactly the four objects the design
+promises from one map: `3 to add, 1 to change, 0 to destroy`.
+
+| Object | Layer |
+|---|---|
+| `aws_redshiftserverless_namespace.this` (update) | 1, the namespace half |
+| `aws_iam_policy.project_warehouse["avhvbqn37ty7m8"]` + its attachment | 2 |
+| `aws_vpc_security_group_ingress_rule.project_5439["avhvbqn37ty7m8"]` | the door |
+
+**The apply half-failed on the rule's description, and the wording is the finding:**
+
+```
+Error: creating VPC Security Group Rule
+operation error EC2: AuthorizeSecurityGroupIngress, StatusCode: 400,
+InvalidParameterValue: Invalid rule description. Valid descriptions are
+strings less than 256 characters from the following set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*
+```
+
+The description read `... app ENIs -> Redshift 5439 ...`. **`>` is not in that set** — `=` is, `+` is,
+`$` is, the arrow is not. This is the same trap as [5b](log-stage-05b-redshift-serverless.md)'s security
+group *description*, which was refused for an apostrophe, and both times the apply was the only
+validator: `terraform validate`, `fmt` and `tflint` all pass. Reworded to `app ENIs to Redshift 5439`,
+re-applied, and the slice re-plans **`No changes`**.
+
+The workgroup's half of layer 1 is written by `sandbox/warehouse-compute/` from this slice's state:
+`0 to add, 1 to change, 0 to destroy`, the tag only, and it too re-plans `No changes`. Both objects read
+back `AmazonDataZoneProject=avhvbqn37ty7m8`, and `for-use-with-all-datazone-projects` is **absent on
+both**.
+
+**The layer 2 policy, as applied** — two statements, and the workgroup id is a wildcard because the id
+does not survive a destroy/re-create while the ARN carries it:
+
+| Sid | Actions | Resource |
+|---|---|---|
+| `MintADatabaseSessionOnThisAccountsWarehouse` | `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` | `…:workgroup/*` |
+| `ListingWorkgroupsHasNoResource` | `ListWorkgroups`, `ListNamespaces` | `*` |
+
+**The `redshift-data:` family is deliberately absent**, per 2.2's "only if 0.3's answer needs it". So the
+JDBC path over 5439 is open and the Data API path is not granted to the project. Whether the portal's
+Data page needs it is unmeasured, and 3.4's refusal — if it comes — is the measurement that decides it.
+Starting narrow is what makes that refusal informative.
+
+### 6.2 — `WH-11` is written, because there is now a project to read it for
+
+The previous entry deferred `WH-11` on the grounds that a check reporting *"no project admitted"* says
+nothing `WH-7` does not. That changed with the apply, so `./aws/warehouse.py` gained it: per admitted
+project, the role exists, the slice's policy is attached to it, **and the role still carries
+`awsds-sandbox-project-boundary`**. The plan-time precondition in `iam.tf` covers the boundary at author
+time; this covers it afterwards, when somebody recreates the role. With no project admitted it is a
+`note` that says nothing is verified, and outside Sandbox a `note` that D26 admits no project at all.
+
+**`WH-7` failed first, and the defect was the instrument's.** It read `authored none, live
+['avhvbqn37ty7m8']` against a map that was plainly there. Two faults in the parser, both Lesson 30 — a
+tool's failure reported as a property of the world:
+
+1. it required the map key to be **quoted**, and an identifier-shaped HCL key is written bare;
+2. its regex ended the `default` block on a `}` at column zero, so the body ran on through the
+   variable's `validation` blocks — and it read an entry called **`roject`**, out of the middle of
+   `AmazonDataZoneProject` in an error message.
+
+Both replaced by matching the map's braces. Tested against four inputs — the real file, an empty
+`default = {}` (which must still parse, as `{}`, so the check keeps comparing instead of going quiet),
+a quoted key, and a missing file.
+
+### The instrument after the sitting
+
+`./aws/warehouse.py awsds-infra-sandbox-1 --sql`, exit 0, **13 pass and 1 note**:
+
+| Check | Reading |
+|---|---|
+| `WH-7` | `['avhvbqn37ty7m8']`, on both objects |
+| `WH-11` | the warehouse policy is attached and the role is still under `awsds-sandbox-project-boundary` |
+| `WH-12` | 1 themed schema, 1 role grant, **1 user-role grant** — the first time this is not zero |
+| `WH-15` | idle: 9 RPU-seconds in the interval ending 2026-09-21T00:00:00-03:00 |
+| `WH-13` | the permanent note: `svv_schema_quota_state` is refused to a superuser |
+
+### What this stage still owes, and to whom
+
+| Step | What | Why it is not done |
+|---|---|---|
+| 3.1, 3.2 | the connection, and every field the portal asks for | **the portal**, by a project member. Decision 1 wants the portal path measured once, and decision 2's `IAMR:` spelling is confirmed or refuted here |
+| 3.3, 3.4 | the first write from JupyterLab, then the same query from the Data page | **a space.** 3.4 is also the measurement that decides whether the `redshift-data:` family joins layer 2 |
+| 3.5, 3.6 | CloudTrail attribution, and the audit groups for that session | after 3.3; the audit half still waits on the export question 5b 6.1 left open |
+| 5.1 | a project outside the map cannot use the compute | needs a second project |
+| 5.2, 5.2a, 5.2b | the schema negatives, the quota from inside the project, two projects on one schema | need the project's own session |
+| 5.3 | the project cannot administer the warehouse | the policy grants none of it, and an omission is not a measurement |
+| 5.4 | the persona cannot mint a database session | needs the `awsds-scientist` SSO session |
+| 6.2 | `WH-9`, `WH-10` | `WH-9` reads a connection that does not exist yet; `WH-10`'s substance is `WH-7` |
+| 6.4 | keep or drop `lab` | the user's, and it has no hourly meter |
+| — | `max_query_execution_time` binding a non-superuser | the project's database user now exists, so this is testable for the first time — from the project's session, not this one |
+
+### Decisions
+
+| # | State |
+|---|---|
+| 1, 2 | **open**, unchanged: both are answered by the portal act in 3.2 |
+| 3, 4 | taken, as the previous entry records |
+| 5, 6, 7 | answered by the brief |
+| 8 | **open, and not yet forced.** One project is admitted and the single-valued tag has cost nothing yet. It bites at the second project |

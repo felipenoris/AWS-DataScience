@@ -237,7 +237,7 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   > is freed up only when `VACUUM` runs"* — and at 4 base RPUs vacuum boost is unavailable, so it is the plain
   > `VACUUM` command ([Stage 5b](stage-05b-redshift-serverless.md)'s capacity reading, which is where that fact
   > was recorded before anything needed it).
-- **1.4 — Owed to the portal session** (the project's database user is created when a project is admitted; see §P of the runbook). **Create the project's database user, and read its identifier rather than assuming it.**
+- **1.4 — Done 2026-09-21: `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, non-superuser, created before the connection.** The spelling is still a prediction until 3.2 resolves one. **Create the project's database user, and read its identifier rather than assuming it.**
   With IAM credentials (0.3), Redshift derives the database user from the calling IAM identity, and the
   documented spellings in this family are **`IAM:<user>`** and **`IAMR:<role>`** — plus, on the cross-account
   path, a `RedshiftDbUser=<Username>` **tag on the access role** that *"determines the federated database
@@ -256,7 +256,7 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   > **Take (a).** If the identifier turns out to be wrong, the symptom is a second, auto-created user
   > appearing beside the hand-made one at the first connection — a clean, readable diff in
   > `SVV_USER_GRANTS`/`pg_user`, and the correction is one `DROP USER`.
-- **1.5 — Half done 2026-09-20: the role exists and holds nobody.** **Put the grants on a role, and admit each project by granting it that role.** One database
+- **1.5 — Done 2026-09-21: the role holds one project, `admin_option = false`.** **Put the grants on a role, and admit each project by granting it that role.** One database
   role per schema — `sbx_<theme>_rw` — holding `USAGE, CREATE ON SCHEMA <theme>`; then
   `GRANT ROLE sbx_<theme>_rw TO "<each admitted project's database user>"`. **Admitting or removing a project is
   then one statement against one object**, which is what makes the many-to-many maintainable and what a
@@ -287,18 +287,18 @@ connection needs. **Why:** both are per-project values that must appear in more 
 where Lesson 14 bites. **Explanation:** both go in `sandbox/warehouse/`, from one map keyed by project id, so
 the two cannot drift by an edit that still plans clean.
 
-- **2.1 — [Claude] Amend `sandbox/warehouse/` with the project map**: one entry, `<projectId>`, expanding to
+- **2.1 — Done 2026-09-21: one entry, `avhvbqn37ty7m8`.** **[Claude] Amend `sandbox/warehouse/` with the project map**: one entry, `<projectId>`, expanding to
   the tag `AmazonDataZoneProject=<projectId>` on **both** the workgroup and the namespace (the documented
   requirement names both objects) and to one IAM policy attached to that project's role.
   **The wide form stays refused**: `for-use-with-all-datazone-projects=true` appears nowhere, and `WH-7`
   fails if it does.
-- **2.2 — [Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
+- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and the Data API path is not granted; 3.4's refusal, if it comes, is what decides whether the family joins. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
   `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListWorkgroups`, `ListTagsForResource`, and — only
   if 0.3's answer needs it — the `redshift-data:ExecuteStatement`/`GetStatementResult`/`DescribeStatement`
   family. **Nothing on the namespace's own management APIs**, no `UpdateWorkgroup`, and **no
   `secretsmanager:GetSecretValue`** on the admin secret: a project role that can read the admin credential
   has the admin's rights and layer 3 stops meaning anything.
-- **2.3 — [Claude⚡] Apply as `awsds-infra-sandbox-1`**, re-plan `No changes`, then read back: both tags
+- **2.3 — Done 2026-09-21: both slices re-plan `No changes`.** The apply half-failed once, on the `5439` rule's *description*: **EC2 refuses a `>`**, the permitted set being `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`, and the apply is the only validator — the second description refusal in this pair of stages. `WH-11` is written (the previous pass deferred it for want of a project); `WH-7` had to be repaired first, its parser having required a quoted HCL map key. **[Claude⚡] Apply as `awsds-infra-sandbox-1`**, re-plan `No changes`, then read back: both tags
   present on both objects (`WH-10`), the policy attached to the project role and **still inside the D13
   boundary** (`get-role`, per role — `WH-11`). If 0.2 required a boundary amendment, it landed first, as its
   own module version.

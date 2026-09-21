@@ -1798,11 +1798,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   so a poll without a delay reports an empty result for a warehouse that is answering. Where:
   `log-stage-06h`, `runbooks/redshift-connection.md` §V.
 
-- **An EC2 security group description refuses an apostrophe** (measured 2026-09-20).
-  `InvalidParameterValue: Invalid security group description. Valid descriptions are strings less
-  than 256 characters from the following set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` — a set that
-  includes `#`, `$` and `!` and excludes `'`. The failure arrives at apply, after every other
-  resource in the plan has been created. Where: `log-stage-05b` 1.8.
+- **An EC2 security group description refuses an apostrophe, and a RULE description refuses `>`**
+  (measured 2026-09-20 and 2026-09-21). One character set governs both:
+  `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` — it includes `#`, `$`, `!`, `=` and `+`, and excludes `'` and
+  `>`, so the ASCII arrow `->` that reads naturally in a rule description is refused while `to`
+  passes. The wording differs by object (`Invalid security group description` against `Invalid rule
+  description`) and both arrive **at apply**, after every other resource in the plan has been
+  created and with `validate`, `fmt` and `tflint` all green — the apply is the only validator.
+  Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3.
 
 - **The Redshift Data API does not cancel a statement when its client stops polling, and
   `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A
