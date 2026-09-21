@@ -382,3 +382,135 @@ a quoted key, and a missing file.
 | 3, 4 | taken, as the previous entry records |
 | 5, 6, 7 | answered by the brief |
 | 8 | **open, and not yet forced.** One project is admitted and the single-valued tag has cost nothing yet. It bites at the second project |
+
+---
+
+## 2026-09-21 — the portal demands an access role on a same-account connection, which AWS's own procedure says it does not
+
+*Written by Claude at the end of the sitting. The three portal readings are the **user's**, from the
+data-scientist persona in the project, and are quoted as they were reported. Every documentation reading
+and the Terraform are Claude's. **Nothing in this entry is applied**: the access role is authored and
+`terraform validate` passes, and no plan has run against it — the SSO session expired twice during the
+sitting and the apply is owed.*
+
+### What the user found at the form
+
+Three readings, in the order they arrived:
+
+| Reading | Consequence |
+|---|---|
+| the **Redshift compute** dropdown offered `awsds-sandbox-warehouse…/dev` | **layer 1 works** — the tag put the compute in the project's dropdown. But the database offered is `dev`, and `lab` is in `sandbox` |
+| no `lineageSync` option anywhere in the form | decision 3 costs nothing on this path: the portal cannot turn it on |
+| **`Access role ARN` is required; `AWS Secret` is marked optional** | the form refuses to submit without a role AWS's same-account procedure never mentions |
+
+### The contradiction, stated from both sides
+
+AWS's *"Gaining access to Amazon Redshift resources"* splits into two procedures. **Same account** is
+three steps: the member sends the project id, the admin adds `AmazonDataZoneProject={{projectID}}` to the
+workgroup and its namespace, and *"The admin then must send you a username and password for a database
+user that has access to the compute resources."* The access role, its trust policy and the
+`RedshiftDbUser` tag appear only under **a different account**. The form's own help repeats it: *"Access
+role ARN is optional. Required when connecting to resources in a different AWS account."*
+
+The form then refuses to submit without it, same account, same VPC. So the implemented form and the
+documented procedure disagree and the form is what has to be satisfied — Lesson 41's shape, with the
+polarity reversed: a vendor **"optional"** that the implementation makes mandatory.
+
+### Why this is the better outcome, and it removes decision 2's fallback
+
+`aws datazone create-connection`'s model settles what "IAM credentials" is.
+**`redshiftProperties.credentials` is a tagged union with exactly two variants — `secretArn` and
+`usernamePassword`.** There is no IAM variant. So the portal's third option is not a credential type at
+all: it is `awsLocation.accessRole` plus the `RedshiftDbUser` tag, which is how a connection reaches a
+database with **no standing credential anywhere**.
+
+That is what decision 2 wanted and had no mechanism for. Since the secret is optional and the role is
+not, the purpose-made Secrets Manager secret decision 2 held in reserve is **not needed**, and no
+password enters the estate.
+
+### Three ceilings read, none of which blocks it
+
+- **the D13 boundary** on the project role — nine statements, `Allow *` at the ceiling, eight Denies over
+  SageMaker job shapes, direct S3 on LF-registered prefixes and the lake key. Nothing names `sts:`,
+  `redshift-serverless:` or `redshift-data:`.
+- **the RCP** — `EnforceOrgIdentitiesOnRoleAssumption` denies `sts:AssumeRole` only where
+  `aws:PrincipalOrgID` is not this organization's. The project role is inside it.
+- **the tag policy** — constrains `environment`, `project`, `managedby`, `owner`, `costcenter`.
+  `RedshiftDbUser` is unconstrained.
+
+### The API is closed to the infrastructure identity
+
+`datazone list-connections` as `awsds-infra-sandbox-1`:
+
+```
+An error occurred (AccessDeniedException) when calling the ListConnections operation:
+User is not permitted to perform operation: ListConnections
+```
+
+That is **DataZone's own authorization layer, not IAM** — the infrastructure identity is not a project
+member. `create-connection` was not attempted: the call was **refused by this session's own tooling
+guard**, so whether `CreateConnection` lands in the same place is **inferred and not measured**, and the
+inference is recorded as one. The consequence stands either way: the connection is created by a project
+member in the portal, which is where decision 1 put it.
+
+### The access role, as authored
+
+One per admitted project, from the same `projects` map, so layer 1, layer 2, the door and this cannot
+drift apart.
+
+| Piece | Content |
+|---|---|
+| trust policy | AWS's three statements whole: `sts:AssumeRole` with `sts:ExternalId` = the project id, `sts:SetSourceIdentity` matching `${aws:PrincipalTag/datazone:userId}`, `sts:TagSession` with **both** `AmazonDataZoneProject` and `AmazonDataZoneDomain` pinned |
+| permissions | the **same** layer 2 policy document, two holders: the project role for a direct IAM session from JupyterLab, the access role for the portal's connection |
+| plus | `tag:GetResources`, `tag:GetTagKeys` — AWS names them for "signing in using IAM credentials", where the user comes from a tag, so the signing identity must read its own tags |
+| tag | `RedshiftDbUser = datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` |
+
+`sts:AssumeRole` on that one role was added to layer 2's policy. AWS publishes the access role's trust
+policy and never mentions granting the project role anything, which implies a managed policy already
+carries it — a claim about an AWS document's contents, and AWS edits those (Lesson 49). A grant that
+works because somebody else's document happens to include it is a grant with no owner.
+
+**The tag's value is chosen to delete a guess.** No page read on 2026-09-21 says whether
+`RedshiftDbUser` is used verbatim or prefixed the way an IAM-derived user is spelled. With the project
+role's name as the value, the two candidate spellings collapse onto the pair layer 3 needed anyway —
+`datazone_usr_role_<project>_<env>` and `IAMR:datazone_usr_role_<project>_<env>`, the second of which
+already exists and already holds `sbx_lab_rw`. Creating the first as well means the first connection
+cannot land on a user with no privileges; which one the service picked is then a readable fact in
+`pg_user` and the other is one `DROP USER`.
+
+**`RedshiftDbRoles` is deliberately absent.** It would map a database role at first sign-in and save the
+`GRANT`, but AWS: *"In a case where you pass a role name that doesn't exist in the database, it's
+ignored"* — a typo would produce a session with no privileges and nothing anywhere saying why. Layer 3
+stays in SQL, where `WH-12` reads it back.
+
+### A comment whose reason was wrong
+
+`iam.tf` recorded `sqlworkbench:*` as refused because *"check-iam-wildcards.py rejects it"*. The script's
+matcher is `arn:aws:iam::\*:` and its default target is `terraform-live/identity` — it neither scans this
+slice nor judges an action. The refusal stands as an unmeasured wildcard; the reason is corrected, and
+the corrected comment says that if 3.5's CloudTrail reading shows the portal needs it, it goes on the
+**access role** rather than on the project role.
+
+### Owed at the next sitting, in order
+
+1. **Apply** `sandbox/warehouse/` — the access role, its two policies, the two attachments, and layer 2's
+   new `sts:AssumeRole` statement. No plan has run.
+2. **Create the second database user**, `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` (unprefixed),
+   and grant it `sbx_lab_rw`.
+3. **Hand the user `terraform output project_access_role_arns`** for the form's mandatory field.
+4. **The connection, by the user**, with the **database set to `sandbox` and not `dev`** — by a separate
+   database field if the form has one, otherwise through the JDBC URL with the `/dev` suffix replaced.
+   Cross-database reads work in Redshift; a cross-database **write** does not, and 3.3 writes a table.
+5. Then `pg_user`, `WH-12`, and 3.5's CloudTrail reading — which also decides `sqlworkbench:` and whether
+   anything called the provisioned-cluster APIs.
+
+### Decisions
+
+| # | State |
+|---|---|
+| 1 | **answered in substance: the portal.** Not by preference — the API refuses the infrastructure identity, so a project member in the portal is the only path that exists today. The Terraform shape for the second connection is now writable against a measured object rather than against the API reference |
+| 2 | **answered: IAM credentials, and the fallback is withdrawn.** The union has no IAM variant, so "IAM credentials" *is* the access role plus `RedshiftDbUser`; and because the secret is optional, no standing credential is needed. The purpose-made secret stays unbuilt |
+| 3 | **taken, and now free**: the portal offers no `lineageSync` toggle on this path |
+| 4 | taken, as the previous entries record |
+| 5, 6, 7 | answered by the brief |
+| 8 | open, and not yet forced |
