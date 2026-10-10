@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started. **MWAA Serverless only** (D7 amended): the provisioned rung leaves the plan, **step 4 becomes the fallback ladder**, `OR-6` flips to an **absence** check (`airflow list-environments` empty everywhere), the `Workflows` blueprint moves to category 3, and a `DenyProvisionedMwaa` (`airflow:CreateEnvironment`) statement joins the root SCP with a battery probe, because the SMUS provisioning role's AWS-managed policy grants that action today. Design **B** (EventBridge Scheduler + Step Functions) is **not built** and becomes INT-14's terminal fallback. **`NetworkConfiguration` is always set, on AWS's documented private routing** (1.2): workers are ECS ENIs in `VPC-Workloads`' two private subnets, and the service exposes **no proxy setting**, which makes it the first named exception to D38's single egress — an exception with *no* internet path, so a task's dependencies arrive vendored in its code package or in a container image, never from PyPI at run time. **Authoring happens in Sandbox**, and the definition's portability is measured at [6d](stage-06d-unified-studio-remainder.md) step 4, which is this stage's verification (i). **Staging gets its own orchestration slice**: a serverless workflow bills nothing at rest |
-| **Prerequisites** | Stage 8 (the deploy runner and `awsds-deploy-prod` — the orchestration slice is applied by the pipeline, which is INT-14's proof; the shared gates file the lint joins). Stage 9 (`awsds-prod-job-exec` and the LF regrants the workflow's jobs run under; the registry with its resource policies; `awsds-prod-outputs` — the definitions home). **[6d](stage-06d-unified-studio-remainder.md)** (a live Sandbox project — pass 1 authors there; 6a's decision 5 deferred the Workflows surface to this stage, and 6d step 4 measures the definition's portability). **6b** — Staging exists, so nothing here waits on a vend. **6c** — `VPC-Workloads` is where the workers land, and `production/workloads-egress/` is the `[E]` slice that gives them their endpoints. **6d step 4** — the definition's portability is measured there and consumed here as verification (i) |
+| **Status** | not started. **MWAA Serverless only** (D7 amended): the provisioned rung leaves the plan, **step 4 becomes the fallback ladder**, `OR-6` flips to an **absence** check (`airflow list-environments` empty everywhere), the `Workflows` blueprint moves to category 3, and a `DenyProvisionedMwaa` (`airflow:CreateEnvironment`) statement joins the root SCP with a battery probe, because the SMUS provisioning role's AWS-managed policy grants that action today. Design **B** (EventBridge Scheduler + Step Functions) is **not built** and becomes INT-14's terminal fallback. **`NetworkConfiguration` is always set, on AWS's documented private routing** (1.2): workers are ECS ENIs in `VPC-Workloads`' two private subnets, and the service exposes **no proxy setting**, which makes it the first named exception to D38's single egress — an exception with *no* internet path, so a task's dependencies arrive vendored in its code package or in a container image, never from PyPI at run time. **Authoring happens in Sandbox**, and the definition's portability is measured at [6d](stage-06d-unified-studio-remainder.md) step 4. The operators a Sandbox task runs code with, and the authoring surface itself, are measured at [6i](stage-06i-sandbox-orchestration.md), which took this stage's verifications (i) and (xv). **Staging gets its own orchestration slice**: a serverless workflow bills nothing at rest |
+| **Prerequisites** | Stage 8 (the deploy runner and `awsds-deploy-prod` — the orchestration slice is applied by the pipeline, which is INT-14's proof; the shared gates file the lint joins). Stage 9 (`awsds-prod-job-exec` and the LF regrants the workflow's jobs run under; the registry with its resource policies; `awsds-prod-outputs` — the definitions home). **[6d](stage-06d-unified-studio-remainder.md)** (a live Sandbox project — pass 1 authors there; 6a's decision 5 deferred the Workflows surface to this stage, and 6d step 4 measures the definition's portability). **6b** — Staging exists, so nothing here waits on a vend. **6c** — `VPC-Workloads` is where the workers land, and `production/workloads-egress/` is the `[E]` slice that gives them their endpoints. **6d step 4** — the definition's portability is measured there. **[6i](stage-06i-sandbox-orchestration.md)** — the authoring surface, `PythonOperator`, `BashOperator` and a SageMaker processing job measured on Sandbox's private shape, and the CLI that reads a workflow's `Code` |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), **[D38](../decisions/D38-single-egress-hub.md)** (the workers are its first named exception — see 1.2) |
 | **Proves** | [INT-14](../integrations.md). **Exercises, without re-proving:** INT-03 (the workflow's jobs write through Stage 9's share) and INT-07's registry half, which absorbed INT-04 at 6b (the model chain consumes Stage 9 step 3's policies as built) |
 
@@ -83,7 +83,7 @@ change. The sequence is **five passes**:
 
 | Pass | # | What | Slice · layer | Applied as / by |
 |---|---|---|---|---|
-| **0** | 0 | preflights: instruments green, INT-14's surface, the SLR baseline, the Studio surface | readings + console | Claude; console: user |
+| **0** | 0 | preflights: instruments green, INT-14's surface, the SLR baseline (the Studio surface is [6i](stage-06i-sandbox-orchestration.md)'s) | readings | Claude |
 | **1** | 2 | the artifact set: author in a Sandbox project, graduate into the repo, the lint, the definitions home | repo + gates | user (author, tag); Claude (lint) |
 | **2** | 1, 3 | the workflow, its network shape, its failure rule — applied by the pipeline in **Staging first, then Production**; **INT-14 proven or its fallback recorded** | `staging/orchestration/`, then `production/orchestration/` `[E]` | **pipeline** |
 | **3** | 5 | the model chain: retrain → register → approve → serve | `production/sagemaker/` `[P]` amendment + pipeline | `awsds-infra-prod`; pipeline |
@@ -101,12 +101,11 @@ ladder, read only if pass 2's apply is refused.
 
 ### 0. Preflight — read what this stage consumes before building on it
 
-**Action:** confirm the substrate (Stage 8's credential layer, Stage 9's runtime), enumerate what the new
-service will create, and record what the Studio's Workflows surface actually is today. **Why:** INT-14
-was verified to *exist* on 2026-08-08, never to *apply*; the first `CreateWorkflow` creates a
-service-linked role nobody chose (Lesson 17); and open question 15 says the Studio surface and this
-stage's alternative A are one product — check what exists before building either. **Explanation:** all
-readings; the only console half is the user's.
+**Action:** confirm the substrate (Stage 8's credential layer, Stage 9's runtime) and enumerate what the new
+service will create. **Why:** INT-14 was verified to *exist* on 2026-08-08, never to *apply*, and the first
+`CreateWorkflow` creates a service-linked role nobody chose (Lesson 17). Open question 15's reading, that the
+Studio surface and this stage's alternative A are one product, is [6i](stage-06i-sandbox-orchestration.md)'s.
+**Explanation:** all readings.
 
 - **0.1 — [Claude] Run the instruments**: `./aws/cicd.py` (CI-2/CI-3 — `awsds-deploy-prod` exists, with
   boundary and single-principal trust) and `./aws/deploytargets.py` (DT-3/DT-4/DT-5 — the registry
@@ -115,11 +114,12 @@ readings; the only console half is the user's.
 - **0.2 — [Claude] Verify INT-14's surface, still read-only**: `awscc_mwaaserverless_workflow` present in
   the pinned `awscc` provider (re-verified 2026-08-16 — the classic provider merged only scaffolding,
   PR #45256, issue #45254 still open); `aws mwaa-serverless` present in the installed CLI. The *apply*
-  under the boundary is pass 2's. **A workflow with Python or Bash tasks needs two newer versions** (read
-  2026-10-10): the `code` attribute first appears in `awscc` **v1.99.0** (2026-08-28), and the estate
-  locks **v1.98.0** (2026-08-19) in its two `awscc` slices; the installed CLI (2.36.18) knows neither
-  `--code` nor the `Code` field `GetWorkflow` returns, so `./aws/orchestration.py` cannot read the code
-  location until it is upgraded.
+  under the boundary is pass 2's. **A workflow with Python or Bash tasks needs `awscc` v1.99.0** (read
+  2026-10-10): the `code` attribute first appears there (2026-08-28), and the estate locks **v1.98.0**
+  (2026-08-19) in its two `awscc` slices. The CLI half is [6i](stage-06i-sandbox-orchestration.md)
+  step 0.2's: 2.36.18 knows neither `--code` nor the `Code` field `GetWorkflow` returns, and
+  6i upgrades it before its first workflow with code, so `./aws/orchestration.py`'s reader of the code
+  location can rely on it here.
 - **0.3 — [Claude] Record the service-linked-role baseline**: `AWSServiceRoleForAmazonMWAAServerless`
   absent today (`aws iam get-role`, as `awsds-infra-prod`). It auto-creates at the first
   `CreateWorkflow`, manages the service's networking, and carries
@@ -132,13 +132,11 @@ readings; the only console half is the user's.
   its own Lake Formation credentials from inside a VPC, which this stage is the first to name. When the
   first such engine runs, read its Lake Formation events for `vpcEndpointId`, and remove or keep the
   Sandbox endpoint on that reading.
-- **0.4 — [user] Read the Workflows surface in the `engineering` project** (open question 15; Lesson 16 —
-  record every field): what the portal offers today for **serverless** workflows, and which toggle
-  (blueprint, profile parameter, or nothing) enables it. Two facts fix the boundaries: the **OnDemand
-  Workflows blueprint provisions a fee-bearing MWAA environment** (the D7 shape this stage rejects —
-  refuse it), and workflows **sync both ways** between the Studio and `airflow-serverless`, so whatever
-  is authored in 2.1 is a real workflow the CLI can read. If enabling the surface asks for anything
-  fee-bearing, stop and price it first (Lesson 6).
+- **0.4 — Moved to [6i](stage-06i-sandbox-orchestration.md) steps 2.1 and 3.1.** The toggle
+  half was answered at [6d](stage-06d-unified-studio-remainder.md) step 4.1 (2026-09-09): nothing enables
+  the serverless surface, and the eleven blueprint configurations already provide it. The field-by-field
+  reading of the editor (Lesson 16) is 6i's, made while it authors its workflows. The **OnDemand Workflows
+  blueprint** stays off: it provisions a fee-bearing MWAA environment, the D7 shape this stage rejects.
 
 ### 1. The workflow slice — one design, two accounts (D7, D28, INT-14)
 
@@ -214,15 +212,16 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
 lint in front of it. **Why:** D28's whole point is that what crosses the gate is repository content — a
 workflow that references portal-scoped anything only runs where the portal exists, and **only Sandbox has
 a portal** (D17 sharpened at 6b). **Explanation:** [6d](stage-06d-unified-studio-remainder.md) step 4
-measures that portability and hands the answer here as verification (i) — pulled forward deliberately,
-because this stage's design rests on it.
+measures that portability and hands the answer here — pulled forward deliberately, because this stage's
+design rests on it.
 
-- **2.1 — [user] Author the workflow in a Sandbox project** (the surface 0.4 recorded): the app-etl DAG —
+- **2.1 — [user] Author the workflow in a Sandbox project** (the surface [6i](stage-06i-sandbox-orchestration.md) recorded): the app-etl DAG —
   the Stage 9 producer/pickup Glue jobs plus the container step — test-run there (Sandbox task-hours,
   metered per run). **This is where D21's "authored and test-run" clause now points**, and Sandbox is the
-  only account it can point at. No task is a portal *Notebook task*: 6d decision due 14 took (b), and the
-  implementation explores `PythonOperator` and `BashOperator` for the code a task runs itself (user,
-  2026-10-10), measured here first, under Sandbox's private subnets (verification (xv)).
+  only account it can point at. No task is a portal *Notebook task*: 6d decision due 14 took (b). The code a
+  task runs itself uses `PythonOperator`, `BashOperator` or a SageMaker processing job in the house image,
+  the three shapes [6i](stage-06i-sandbox-orchestration.md) measures first on Sandbox's private shape; this
+  step consumes its readings.
 - **2.2 — [user] Graduate the definition into the repository** (D21 — the rewrite is the gate): the
   YAML lands in `app-etl/workflow/` beside a converted copy if authoring produced Python
   (`python-to-yaml-dag-converter-mwaa-serverless`, the AWS tool — AWS-provider operators only, no
@@ -474,7 +473,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | What is the Studio's serverless-Workflows surface today, which toggle enables it, and does the OnDemand (provisioned) blueprint stay off (open question 15)? | 0.4 |
+| i | Moved to [6i](stage-06i-sandbox-orchestration.md) (its verification i). The toggle half is answered: nothing enables the surface (6d step 4.1); the editor's fields are 6i's reading, and the OnDemand blueprint stays off | 0.4 |
 | ii | Does `awscc_mwaaserverless_workflow` apply under a deploy role's boundary (INT-14) — in **Staging first** — and if not, which rung of step 4, on which wording? | 1.5 |
 | iii | Does `AWSServiceRoleForAmazonMWAAServerless` appear at the first `CreateWorkflow` — absent in 0.3, present and enumerated afterwards (Lesson 17)? | 0.3, 1.6 |
 | iv | Does the service's definition read pass the outputs bucket's perimeter branches (the `ViaAWSService` carve-out doing its job) — from Production, and from Staging if decision 6's cross-account copy is taken? | 1.5, 2.4 |
@@ -488,7 +487,7 @@ Record every answer, including the ones that come out fine.
 | x | Does the model chain hold end to end — registration only under `awsds-deploy-prod`, training `OutputDataConfig` carrying the CMK, the approved version served in **Staging before Production**? | 5.1-5.4 |
 | xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition, and a code package whose `python_callable` does not import offline (deliberate bad artifacts)? | 2.3 |
 | xii | After the stage's redeploys, how many workflow versions exist against the 50-version quota — and is the run-history disposition written before the first `make down` (Lesson 4)? | 1.6, 6.3 |
-| xv | How do `PythonOperator` and `BashOperator` tasks behave on the private shape: does a code package with vendored dependencies run with no internet path, does a task that reaches for PyPI fail visibly, and do the task's AWS calls carry the execution role (6d decision due 14 (b))? | 2.1, 2.3 |
+| xv | Moved to [6i](stage-06i-sandbox-orchestration.md) (its verifications viii-x): Sandbox's workers sit on a private shape with no internet path, so the vendored package, the reach for PyPI and the task's identity are measured there and consumed here | 2.1, 2.3 |
 
 ## Risks
 

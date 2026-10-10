@@ -432,8 +432,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   with no proxy (a priced D9 exception). A "Notebook task" is a `CreateTrainingJob` and dies on
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
   changes nothing, an S3 operator task ran `SUCCESS`, and **6d decision due 14 took (b)** (user,
-  2026-10-10): no portal notebook task; Stage 10 explores `PythonOperator`/`BashOperator` instead, and
-  the lint refuses `SageMakerNotebookOperator` by name. `update-workflow` is a full replace (Lesson 60)
+  2026-10-10): no portal notebook task; `PythonOperator`/`BashOperator` are explored instead, and
+  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i** (written 2026-10-10, not started) is
+  the Sandbox exercise: a portal workflow whose `SageMakerProcessingOperator` runs a Python project in the
+  house image under the boundary's four job settings (no network in the container, so the workflow deletes
+  the source), then both worker operators; it took Stage 10's verifications (i), (xv) and 0.2's CLI half. `update-workflow` is a full replace (Lesson 60)
   and severs the domain/project the portal injects. The `Workflows` blueprint is category 3;
   `DenyProvisionedMwaa` and Stage 10's slices are unwritten. **`PythonOperator`/`BashOperator` are
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
