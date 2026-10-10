@@ -1745,6 +1745,19 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   cheap resolution is to look for the platform's own view before believing either.
   Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
 
+- **Two doors into one database resolve to two DIFFERENT database users, one per project and one per
+  person** (measured 2026-10-11). The same warehouse, the same schema, the same project: through the
+  portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
+  `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
+  **auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing**. So a `GRANT`
+  written for one door leaves the other with a session that authenticates and can read nothing — and
+  this grantee **cannot be pre-made**, because it does not exist until that person first connects.
+  Asking "is the database user per project or per person" has no answer: it is a property of the path,
+  not of the design. **The per-person `GRANT` is the trap** — it is the identity seam, one statement per
+  person per schema; the mechanism that fits is `RedshiftDbRoles` on the role the user signs in with,
+  which maps roles at first sign-in. Where: `log-stage-06h` (2026-10-11),
+  `runbooks/redshift-connection.md` §T, `docs/AWS_STATE.md`'s Redshift register.
+
 - **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session
   ran as `IAMR:<that name>` — 142 queries attributed to it. The discriminator is that an ignored tag

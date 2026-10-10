@@ -367,9 +367,10 @@ except socket.gaierror as exc:
 # ------------------------------------------------------------------- 2. does the 5439 door open
 try:
     with socket.create_connection((host, PORT), timeout=10) as s:
+        peer = s.getpeername()[0]
         say("2 port 5439 opens", "ok",
-            f"{s.getsockname()[0]} -> {s.getpeername()[0]}:{PORT}, so the SG rule and the route "
-            "both exist")
+            f"{s.getsockname()[0]} -> {peer}:{PORT}, so the SG rule and the route both exist. The "
+            "local address is the space's container NAT, not an ENI")
 except OSError as exc:
     say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
         "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
@@ -435,11 +436,23 @@ except Exception as exc:
     )
 
 with conn.cursor() as cur:
-    cur.execute("select current_user, current_database(), inet_server_addr(), version()")
-    user, db, server_ip, ver = cur.fetchone()
-    say("3b session", "ok", f"as {user} on {db}, server {server_ip}")
-    say("3b server is private", "ok" if ipaddress.ip_address(str(server_ip)).is_private else "FAIL",
-        f"{server_ip} - this is the reading that separates this door from the Data page's")
+    # inet_server_addr() returns NULL on Redshift Serverless (measured 2026-10-11), so the address
+    # that identifies this door is the SOCKET's peer from step 2, not anything the server reports.
+    cur.execute("select current_user, current_database()")
+    user, db = cur.fetchone()
+    say("3b session", "ok", f"as {user} on {db}")
+    say("3b door is the VPC one", "ok" if ipaddress.ip_address(peer).is_private else "FAIL",
+        f"peer {peer} - a private address here is what separates this door from the Data page's, "
+        "which reaches the warehouse as an AWS service and has no VPC path at all")
+
+    # THE DATABASE USER IS PER PERSON ON THIS DOOR, and that is the finding this script exists for.
+    # `IAMR:user-<Identity Center user id>@<project id>` is auto-created at first connect and holds
+    # NOTHING. The Data page's door resolves to `IAMR:<the project role's name>` instead, through
+    # the access role's RedshiftDbUser tag - so a GRANT made for one door does not serve the other.
+    if user.startswith("IAMR:user-"):
+        say("3b grantee is per PERSON", "warn",
+            "this door mints a user per person, not per project. If 3c fails on permission, that "
+            "user holds no role yet - see the runbook on RedshiftDbRoles")
 
     # The write, into its OWN table, so the two doors' objects stay distinguishable.
     cur.execute(f"drop table if exists {SCHEMA}.{TABLE}")

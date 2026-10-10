@@ -151,6 +151,7 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | ~~`Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`~~ | ~~the same, **unprefixed**~~ — **`DROP USER` 2026-10-10**, owning no relation and having run no query: the prefixed spelling is the one the platform resolved to | 2026-10-10, removed the same day |
 | `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | `SELECT ON TABLE lab.hello` — the table the project wrote at 6h 3.3, whose `relacl` was null | 2026-10-10 |
 | `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | **default privilege**: `SELECT ON TABLES` for every future relation created by `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | 2026-10-10 |
+| `Sandbox Account 1` | `sandbox` | `lab` | user `IAMR:user-<Identity Center user id>@avhvbqn37ty7m8` | `GRANT ROLE sbx_lab_rw` — **a stopgap, per PERSON**, for the JupyterLab door's auto-created user | 2026-10-11 |
 
 **Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
 reachable by that project and the namespace admin. The two statements, verbatim, because nothing
@@ -198,6 +199,24 @@ future one through the default privilege. `SELECT` and not more, because letting
 drop another's table is a semantic nobody asked for. **`WH-14` is the check**, and
 `svv_default_privileges` is the only place the second row is readable — `pg_default_acl` is empty on
 this platform.
+
+**THE GRANTEE DEPENDS ON THE DOOR, and this is the row that surprised the plan** (measured
+2026-10-11). The Data page resolves to `IAMR:<the project role's name>`, through the access role's
+`RedshiftDbUser` tag. **JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>`** —
+one database user **per person**, auto-created at their first connection, holding nothing. So a grant
+made for one door does not serve the other, and this one's grantee cannot be pre-made because it does
+not exist until somebody connects.
+
+The per-person `GRANT` above is a **stopgap and must not become the procedure**: one statement per
+person per schema is the identity seam `conventions.md` forbids. The mechanism that fits is
+**`RedshiftDbRoles` on the project role**, which maps database roles to the user Redshift creates at
+first sign-in — the same mechanism [6h](plan/stages/stage-06h-redshift-connection.md) refused for the
+access role on 2026-09-21, and the only one here that does not grow with headcount. It belongs with
+decision 8 and is **not applied**.
+
+**And the default privilege above names ONE owner.** A table created through the JupyterLab door is
+owned by the per-person user, which that row does not cover, so `WH-14` will report it unreadable by
+the role until a second default privilege exists — per creating user again.
 
 **Two rules for this table**, both there because the plan half is missing on this surface:
 

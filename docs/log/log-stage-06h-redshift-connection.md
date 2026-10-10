@@ -1238,3 +1238,92 @@ Candidates, in the order the next sitting should take them:
 2. **[Claude]** the audit re-read, and `WH-9`.
 3. **[Claude]** declare `redshift_connector` in the image's `pyproject.toml`, or decide deliberately
    that a transitive driver is acceptable.
+
+---
+
+## 2026-10-11 — 3.3's session works, and the two doors resolve to two different database users
+
+*Written by Claude in the sitting that ran it. The script run, the Data Explorer navigation and the two
+portal warnings are the **user's**, quoted verbatim; the database readings, the `GRANT` and the script
+correction are Claude's.*
+
+### The session that would not open yesterday opens today
+
+```
+[ok  ] 1 dns resolves       10.20.53.13, 10.20.65.84 - private
+[ok  ] 2 port 5439 opens    169.255.254.3 -> 10.20.53.13:5439
+[ok  ] 3a driver present    redshift_connector already importable
+[ok  ] 3b session           as IAMR:user-28f1b390-...@avhvbqn37ty7m8 on sandbox
+```
+
+**The addresses are different from yesterday's** (`10.20.53.13`/`10.20.65.84` against
+`10.20.116.172`/`10.20.49.135`), because the `[E]` workgroup was destroyed and rebuilt in between — new
+ENIs for its managed endpoint. So yesterday's `BrokenPipe` was **not reproduced**, and nothing was
+changed to fix it: it stays an unexplained single occurrence against a workgroup that no longer exists,
+and step 2b is in §V for the next time. Recording it as transient rather than as solved.
+
+The user also navigated `Connections → Redshift → sandbox → lab → tables → hello → [n, note]` in the
+Data Explorer, so the metadata path works from a space too.
+
+### The finding: the grantee depends on the door
+
+| Door | Database user |
+|---|---|
+| the Data page / Query editor, via the access role's `RedshiftDbUser` tag | `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` — **per project** |
+| JupyterLab, the project role straight to `5439` | `IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@avhvbqn37ty7m8` — **per person** |
+
+That `28f1b390-…` is the **Identity Center user id**, the same one that appeared in the portal's
+session name at 6h 3.2, and `@avhvbqn37ty7m8` is the project. `pg_user` now holds **three** `IAMR:`
+users, and the new one was **auto-created at first connect holding nothing**:
+
+```
+IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c           sbx_lab_rw
+IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@avhvbqn37ty7m8  (no role)
+```
+
+So **a `GRANT` made for one door does not serve the other**, and this door's grantee could not have been
+pre-made: it does not exist until the person first connects. 6h 1.4 asked whether layer 3's user is per
+project or per person and the answer is **both, decided by the door** — which is the one shape neither
+the plan nor the runbook allowed for. Step 3.5's question, asked again from the other side, has a
+different answer.
+
+**Unblocked for now with the per-person `GRANT`**, so 3.3 can finish:
+
+```sql
+GRANT ROLE sbx_lab_rw TO "IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@avhvbqn37ty7m8";
+```
+
+**That is a stopgap and must not become the procedure.** It is one statement per *person* per schema,
+for a user that cannot exist before their first connection — the identity seam `conventions.md` forbids,
+and Lesson 14 at its worst. The mechanism that fits is **`RedshiftDbRoles` on the project role**: the
+tag maps database roles to the user Redshift creates at first sign-in, so nobody is granted anything by
+hand. It is the mechanism this stage **deliberately refused** for the access role on 2026-09-21, because
+a role name that does not exist is silently ignored; on this door it is the only option that does not
+grow with headcount, and the silent-ignore is answered by reading the grants back rather than by
+avoiding the tag. **Not applied**: it is a tag on a role SMUS owns, it changes who holds what in the
+database, and whether it binds a user that already exists is unmeasured. It belongs with decision 8.
+
+### The two portal warnings, attributed
+
+| Warning | Reading |
+|---|---|
+| `autocompleteMsg.getMetadataErrorAccessDenied` | `glue:GetDatabase` denied ×6 to the project role in the same window — the **Lake Formation** `Required Describe on raw` refusal already recorded. The autocomplete enumerates databases and meets the lake's raw layer. The perimeter, surfacing as a UI string |
+| `Redshift Clusters is unreachable. Please contact your admin.` | **`redshift.amazonaws.com` carries no events at all** in the window. The UI complains about provisioned clusters without calling the API, so there is nothing to grant and nothing denied here. Cosmetic, and `DenyRedshiftProvisionedClusters` was not approached. The `lookup-events` caveat applies: a source sweep found nothing, which is the better instrument, but an absence is still an absence |
+
+### Two bugs of mine in the script, both fixed in §V
+
+**`inet_server_addr()` returns NULL on Redshift Serverless**, and the script passed `'None'` to
+`ipaddress.ip_address`, so it raised `ValueError` and never reached the write. The address that
+identifies this door was always the **socket's peer** from step 2, which the script already had; it now
+judges that instead and names the local address as the container's NAT rather than an ENI.
+
+And the script now **names the per-person grantee when it sees one**, as a `warn`, with the pointer to
+`RedshiftDbRoles` — so the next person to run it meets the finding rather than a permission error.
+
+### Owed
+
+1. **[user]** re-run §V's script. With the grant above and the crash fixed it should reach the write;
+   `3e` then reads whether the default privilege fires for a table this *per-person* user creates, which
+   is a different owner from the one the default privilege names.
+2. **[Claude, with decision 8]** `RedshiftDbRoles` on the project role, or an argued alternative.
+3. **[Claude]** the audit re-read, and `WH-9`.
