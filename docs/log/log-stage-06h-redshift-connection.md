@@ -1099,3 +1099,56 @@ unchanged either way: 155 connection records, every one `rdsdb`, and no user con
    `make up ENV=sandbox GROUPS=redshift`.
 3. **[Claude]** `WH-9`, now that a connection object exists to read.
 4. **[user, when it matters]** decision 8, and with it whether a shared base means read-across only.
+
+---
+
+## 2026-10-10 — amendment: the write through the Query editor was 3.4's door, not 3.3's
+
+*Written by Claude, same day. No new act; this corrects a label in the entry above, which matters
+because the two steps exist precisely to be read apart.*
+
+The entry above headed the `create table lab.hello` reading **"3.3 — the first write"**. It was
+**3.4**. The stage separates two doors with different prerequisites, and the trail says which one
+answered:
+
+| Step | The door | What the trail showed |
+|---|---|---|
+| 3.3 | JupyterLab, the space's ENI to the workgroup's ENI on **`5439` inside one VPC** | **not exercised** |
+| 3.4 | the project's Data page, which *"does not need the VPC path"* | `sqlworkbench` calling Redshift as an AWS service, the access role's `GetCredentials`, no VPC path |
+
+Conflating them is the exact failure the two steps were written to prevent: a green reading on the
+service door says nothing about the network door, and *"it worked"* would have closed both. **3.4 is
+done; 3.3 is not.**
+
+### What 3.3 needs, and the prerequisite is measured rather than quoted
+
+`make up ENV=sandbox GROUPS=redshift`. Three readings make that mandatory rather than tidy:
+
+- the `redshift` endpoint group in `vpc-egress` carries **`redshift-serverless` only**, and its own
+  comment says why: *"`GetCredentials` is layer 2 of Stage 6h and the whole"* reason the group exists;
+- **`redshift-serverless` is absent from the proxy's allow-list**, so there is no second path to the
+  API from a compute VPC;
+- `describe-vpc-endpoints` on the Sandbox VPC today returns **no redshift endpoint** — the environment
+  was raised without the group.
+
+So from a space right now, `GetCredentials` would **time out** rather than be refused — a missing
+endpoint wearing a network fault's symptom (Lesson 42: a permission failure is a response, a network
+failure is the absence of one).
+
+### The script, and why it is shaped as three questions
+
+`runbooks/redshift-connection.md` §V now carries it. It is deliberately **not** one "connect and
+select": it resolves the name and reports whether the address is private, opens a raw socket on
+`5439` and prints both ends, and only then authenticates — so a failure names a layer instead of
+naming the attempt. The host is derived from `sts:GetCallerIdentity` rather than from `GetWorkgroup`,
+so step 1 cannot fail for a permission reason and stays a clean DNS reading.
+
+It writes `lab.hello_jupyter` rather than reusing `lab.hello`, so the two doors leave
+**distinguishable objects**, and it finishes by reading `svv_relation_privileges` on the new table —
+which is `WH-14`'s question asked from inside, and the first test of whether the default privilege
+set earlier actually fires for a table this user creates.
+
+`redshift_connector` is not in the image's environment, so the script installs it with `uv` into the
+space's kernel. The user proposed that path and it is the right one for a measurement; the driver's
+permanent home is a line in `images/dev-env/python/pyproject.toml` plus `uv lock`, since that image
+refuses ad-hoc installs as a standing habit.

@@ -263,6 +263,192 @@ security group and no connection, which is why `identity/sso` denies the whole f
 `redshift-serverless:GetCredentials` with it — to `DataScientistAccess`: a persona holding it has a
 query path from anywhere.
 
+### The JupyterLab door, from inside a space
+
+**Two doors reach this warehouse and they have different prerequisites**, so one of them answering
+says nothing about the other. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
+Redshift, no network path at all — and the **JupyterLab** door is the space's own ENI opening `5439`
+to the workgroup's ENI inside one VPC. The script below is for the second, and it separates three
+questions a single *"it worked"* cannot:
+
+1. does the name resolve **privately** — the endpoint, or are we leaving the VPC;
+2. does `5439` open — the security group rule and the route;
+3. does a session authenticate and write — `GetCredentials` (layer 2) and the `GRANT` (layer 3).
+
+**Its prerequisite is the optional endpoint group** (measured 2026-10-10): `make up ENV=sandbox
+GROUPS=redshift`. `redshift-serverless` is deliberately absent from the proxy's allow-list, so
+without that endpoint there is no door to the API and no fallback — step 3 fails as a **timeout**,
+which reads like a network fault and is a missing endpoint.
+
+`redshift_connector` is **not in the image**, so the script installs it with `uv` into the space's
+kernel. That is for the measurement; the driver's permanent home is a line in
+`images/dev-env/python/pyproject.toml` plus `uv lock`, because the image refuses ad-hoc installs as a
+standing habit.
+
+```python
+# Stage 6h step 3.3 - the JupyterLab door to the Sandbox warehouse.
+#
+# Run this in a SageMaker space, in the project that holds the Redshift connection, on the
+# "Python (awsds dev-env)" kernel. Paste it into one cell; it prints a verdict per step.
+#
+# IT ANSWERS THREE QUESTIONS SEPARATELY, and that is the whole point. The Data page (step 3.4,
+# done 2026-10-10) reaches the warehouse as an AWS SERVICE - sqlworkbench calling Redshift - and
+# needs no network path at all. This door is different: the space's own ENI opening 5439 to the
+# workgroup's ENI inside one VPC. A single "it worked" cannot tell the two apart, and a failure
+# that says only "it did not work" names no layer. So:
+#
+#   1. does the name resolve PRIVATELY            - the endpoint, or we are leaving the VPC
+#   2. does 5439 open                             - the security group rule and the route
+#   3. does a session authenticate and write      - GetCredentials (layer 2) and the GRANT (layer 3)
+#
+# PREREQUISITE, measured 2026-10-10: the VPC needs the `redshift-serverless` interface endpoint,
+# which is the OPTIONAL endpoint group `redshift`. Raise the environment with it:
+#
+#     make up ENV=sandbox GROUPS=redshift
+#
+# Without it there is no door to the API and no fallback: `redshift-serverless` is deliberately
+# absent from the proxy's allow-list, so step 3 fails at GetCredentials with a timeout rather than
+# with a refusal - which looks like a network fault and is a missing endpoint (Lesson 42).
+
+import ipaddress
+import socket
+import subprocess
+import sys
+
+WORKGROUP, DATABASE, SCHEMA = "awsds-sandbox-warehouse", "sandbox", "lab"
+TABLE, REGION, PORT = "hello_jupyter", "us-west-2", 5439
+
+results = []
+
+
+def say(step, verdict, detail):
+    results.append(verdict)
+    print(f"[{verdict:4}] {step:34} {detail}")
+
+
+# ---------------------------------------------------------------- 0. who this notebook is
+try:
+    import boto3
+
+    who = boto3.client("sts", region_name=REGION).get_caller_identity()
+    arn = who["Arn"]
+    account = who["Account"]
+    say("identity", "ok", arn.split("/")[0].split(":")[-1] + " ... " + arn.split("/")[-1][:24])
+    if "datazone_usr_role" not in arn:
+        say("identity", "warn", "not the project role - a space normally runs as it")
+except Exception as exc:
+    say("identity", "FAIL", f"{type(exc).__name__}: {exc}")
+    raise SystemExit("no identity, so nothing below can be attributed")
+
+# The host is derivable, so this step needs no API call and cannot fail for a permission reason.
+host = f"{WORKGROUP}.{account}.{REGION}.redshift-serverless.amazonaws.com"
+
+# ------------------------------------------------- 1. does the name resolve, and to a private IP
+try:
+    addrs = sorted({ai[4][0] for ai in socket.getaddrinfo(host, PORT, socket.AF_INET)})
+    private = [a for a in addrs if ipaddress.ip_address(a).is_private]
+    if not addrs:
+        say("1 dns resolves", "FAIL", "no A record")
+    elif private:
+        say("1 dns resolves", "ok", f"{', '.join(private)} - private, so the endpoint is in play")
+    else:
+        say("1 dns resolves", "FAIL", f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
+            "redshift-serverless endpoint is not answering: either the endpoint is absent "
+            "(GROUPS=redshift) or its private DNS is off")
+except socket.gaierror as exc:
+    say("1 dns resolves", "FAIL", f"ENOTFOUND - {exc}. A name that does not resolve inside a "
+        "compute VPC is the DNS Firewall or a missing endpoint, never a security group")
+
+# ------------------------------------------------------------------- 2. does the 5439 door open
+try:
+    with socket.create_connection((host, PORT), timeout=10) as s:
+        say("2 port 5439 opens", "ok",
+            f"{s.getsockname()[0]} -> {s.getpeername()[0]}:{PORT}, so the SG rule and the route "
+            "both exist")
+except OSError as exc:
+    say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
+        "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
+        "listener that is not there - check the workgroup is up")
+
+# ------------------------------------------ 3. a session over that door, written and read back
+#
+# redshift_connector is NOT in the image (images/dev-env/python/pyproject.toml), so this installs
+# it into the kernel for this space only. If the driver is wanted for good it is a line in that
+# pyproject plus `uv lock` - the image's own comment refuses ad-hoc installs as a standing habit.
+try:
+    import redshift_connector  # noqa: F401
+    say("3a driver present", "ok", "redshift_connector already importable")
+except ImportError:
+    proc = subprocess.run(
+        ["uv", "pip", "install", "--quiet", "--python", sys.executable, "redshift_connector"],
+        capture_output=True, text=True,
+    )
+    if proc.returncode:
+        say("3a driver present", "FAIL",
+            f"install failed: {(proc.stderr or proc.stdout).strip()[-300:]} - PyPI is on the "
+            "proxy allow-list, so a failure here is the proxy variables rather than the index")
+        raise SystemExit("no driver, so the 5439 SQL path cannot be measured")
+    import redshift_connector  # noqa: F811
+    say("3a driver present", "ok", "installed into this space's kernel, not into the image")
+
+try:
+    conn = redshift_connector.connect(
+        iam=True,
+        is_serverless=True,
+        serverless_work_group=WORKGROUP,
+        database=DATABASE,
+        region=REGION,
+    )
+except Exception as exc:
+    say("3b session", "FAIL", f"{type(exc).__name__}: {str(exc)[:400]}")
+    raise SystemExit(
+        "GetCredentials or the connect failed. Read the wording: an AccessDenied naming "
+        "redshift-serverless:GetCredentials is layer 2 on the PROJECT role; a timeout with step 1 "
+        "and 2 green is the API endpoint, not the database"
+    )
+
+with conn.cursor() as cur:
+    cur.execute("select current_user, current_database(), inet_server_addr(), version()")
+    user, db, server_ip, ver = cur.fetchone()
+    say("3b session", "ok", f"as {user} on {db}, server {server_ip}")
+    say("3b server is private", "ok" if ipaddress.ip_address(str(server_ip)).is_private else "FAIL",
+        f"{server_ip} - this is the reading that separates this door from the Data page's")
+
+    # The write, into its OWN table, so the two doors' objects stay distinguishable.
+    cur.execute(f"drop table if exists {SCHEMA}.{TABLE}")
+    cur.execute(
+        f"create table {SCHEMA}.{TABLE} as "
+        f"select 1 as n, 'written over 5439 from jupyterlab' as note, current_user as by_whom"
+    )
+    conn.commit()
+    cur.execute(f"select n, note, by_whom from {SCHEMA}.{TABLE}")
+    say("3c write and read", "ok", str(cur.fetchone()))
+
+    # Layer 3's shape, read rather than assumed: the role grant that made the write possible, and
+    # whether the new table is readable by the theme role (WH-14's question, from inside).
+    cur.execute("select role_name from svv_user_grants where user_name = current_user")
+    say("3d the role behind it", "ok", f"{[r[0] for r in cur.fetchall()]}")
+    cur.execute(
+        "select identity_name, privilege_type from svv_relation_privileges "
+        f"where namespace_name = '{SCHEMA}' and relation_name = '{TABLE}'"
+    )
+    rows = cur.fetchall()
+    say("3e readable by the role", "ok" if rows else "FAIL",
+        f"{rows} - empty means the default privilege did not fire and a second project would "
+        "see nothing (runbook section T)")
+
+conn.close()
+print()
+print(f"{results.count('ok')} ok, {results.count('warn')} warn, {results.count('FAIL')} FAIL")
+```
+
+**What each failure means**, which is why the script prints a verdict per step rather than one at the
+end: step 1 red is DNS — the DNS Firewall or a missing endpoint, never a security group. Step 2
+timing out is the security group; refusing is a listener that is not there, so check the workgroup is
+up. Step 3 red with 1 and 2 green separates again: an `AccessDenied` naming
+`redshift-serverless:GetCredentials` is layer 2 on the **project role**, and a timeout is the API
+endpoint rather than the database.
+
 **`SVV_SCHEMA_QUOTA_STATE` cannot be read**, nor its `STV_` sibling: both are refused to the
 namespace admin, who is a superuser (measured 2026-09-20). A schema's quota is authored in §S and
 proven by breach, not by a describe.
