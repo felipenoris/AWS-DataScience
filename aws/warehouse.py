@@ -862,7 +862,7 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
     # this account's InfrastructureAccess role - "User is not permitted to perform operation:
     # ListConnections" - by DATAZONE'S OWN authorization layer, because that identity is not a
     # project member, so no IAM policy reaches it (measured three times: 2026-09-21 with no
-    # connection, and twice on 2026-10-10/11 with one). There is no `aws sqlworkbench` CLI either.
+    # connection, and twice on 2026-10-10 with one). There is no `aws sqlworkbench` CLI either.
     #
     # So the connection's fields are readable only by a project member in the portal, and this check
     # exists to say that rather than to leave 6.2 looking unfinished. What CAN be checked without

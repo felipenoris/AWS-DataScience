@@ -1903,3 +1903,34 @@ and it is recorded as one. The discriminator is the next workgroup rebuild: if t
 with it, the export dies when an `[E]` workgroup appears; if it does not, something else stopped.
 
 Stage 11 must not rest its DLP feed on these groups, and `AUDITMARKER20260920` never landed either.
+
+---
+
+## 2026-10-10 — amendment: the entries headed 2026-10-11 were written on 2026-10-10
+
+*Written by Claude, from this repository's history and one reading inside the entries themselves; no
+AWS call.*
+
+The ten entries from *"3.3's session works"* to *"§J for a notebook"* are headed **2026-10-11**, and so
+are the dates inside them. **Every one was written on 2026-10-10.** The commits that first carry them:
+
+| Entry | Commit time (UTC) |
+|---|---|
+| 3.3's session works, and the two doors resolve to two different database users | 2026-10-10 16:21:59 |
+| 3.3 is done over `5439` | 2026-10-10 16:58:19 |
+| decision 8a's option A is dead | 2026-10-10 17:16:53 |
+| the `RedshiftDbRoles` mapping does not apply to a user that already exists | 2026-10-10 17:57:39 |
+| `RedshiftDbRoles` is not on the space's session at all | 2026-10-10 18:18:29 |
+| the per-project grantee is reachable from a space | 2026-10-10 18:25:11 |
+| amendment: step 4 reintroduced the defect | 2026-10-10 18:53:05 |
+| step 3's exit killed step 4; decision 8a answered; §J for a notebook | the squash merge, 2026-10-10 21:06:05, an upper bound |
+
+The last entry corroborates it from inside: `connectionlog`'s last event, 2026-10-10T03:09:06Z, was
+**1047 minutes** before that reading, which puts the reading at 2026-10-10T20:36Z, before the merge and
+still the 10th in UTC and on the laptop's clock (UTC−3).
+
+So every **2026-10-11** in this file reads **2026-10-10**, and *"yesterday"* in *"3.3's session works"*
+is the same day: the `BrokenPipe` attempt it compares against was committed at 06:45:33Z, about ten
+hours earlier. The entries stay as written. The documents that had copied the date — the stage file,
+`docs/AWS_STATE.md`, `docs/plan/lessons.md`, `runbooks/redshift-connection.md`, `aws/warehouse.py`,
+`CLAUDE.md` and this log's index row — are corrected in the change that adds this entry.
