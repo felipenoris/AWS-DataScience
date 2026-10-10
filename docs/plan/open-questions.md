@@ -289,8 +289,8 @@ load-bearing against principle 4.
     against the USD 50 ceiling. **The list stopped reaching spaces on 2026-09-07**
     (`sagemaker-denies-v0.2.0`, the user's decision for the remote-IDE floor): idle shutdown is what
     remains on that path, and jobs keep the list. Also confirms rather than changes D7/D28: **SMUS
-    workflows are MWAA**, serverless or provisioned, so Stage 10's orchestration comparison and this
-    feature are one surface, not two.
+    workflows are MWAA**, serverless or provisioned, so Stage 10's orchestrator and this feature are one
+    surface, not two.
 
 ### Raised by Stage 1c step 7.7, 2026-08-13
 

@@ -364,12 +364,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
   2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
-  one workflow, `READY`, `manual_only`; every run is two attempts, so read the task's
-  `DurationInSeconds`, never the run's. It runs as the project role inside the D13 boundary, workers
+  two portal workflows in Sandbox, `READY`, `manual_only`; a failed task is retried once, so read the
+  task's `DurationInSeconds`, never the run's; `list-workflow-runs` returns `RunType` null, so the type
+  is read per run. It runs as the project role inside the D13 boundary, workers
   with no proxy (a priced D9 exception). A "Notebook task" is a `CreateTrainingJob` and dies on
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
-  changes nothing. `update-workflow` is a full replace (Lesson 60) and severs the domain/project the
-  portal injects.
+  changes nothing, an S3 operator task ran `SUCCESS`, and the notebook operator's fate is **6d decision
+  due 14** (open, (b) recommended). `update-workflow` is a full replace (Lesson 60) and severs the
+  domain/project the portal injects. The `Workflows` blueprint is category 3; `DenyProvisionedMwaa` and
+  Stage 10's slices are unwritten.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6

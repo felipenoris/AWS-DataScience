@@ -49,8 +49,9 @@ for others.
 
 ## 1. MWAA and the D7 alternatives
 
-D7 builds **two** orchestrators in Stage 10 and compares them: **(A)** MWAA, **(B)** EventBridge + Step
-Functions + Lambda/Fargate.
+D7 builds **MWAA Serverless** only (§1.3), since its amendment of 2026-09-05. The provisioned environment
+(§1.1-1.2) and alternative **(B)**, EventBridge + Step Functions + Lambda/Fargate (§1.4), stay priced as
+the record of why; B is INT-14's documented, unbuilt fallback.
 
 ### 1.1 MWAA environment fee
 

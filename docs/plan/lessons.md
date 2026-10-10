@@ -1597,6 +1597,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   names a `sha256:` digest, so a registered version is pinned to bytes rather than to a tag, and
   re-tagging upstream would not move it. Where: `runbooks/dev-env.md` §C5.
 
+### MWAA Serverless
+
+- **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
+  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares
+  `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and
+  each read `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run
+  whether one fired or not, and that is Stage 10 verification (v)'s evidence. Where:
+  `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+
 ### Athena
 
 - **`DeleteWorkGroup` counts query history as contents, and no API deletes a query execution.** A

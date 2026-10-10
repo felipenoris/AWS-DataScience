@@ -442,8 +442,7 @@ so any name it must see either lives in a zone this project owns and associates,
 - **4.6 — None of this extends to an interface endpoint's private DNS.** That is served by an AWS-*managed*
   zone, invisible in the account, which cannot be associated with another VPC, so an endpoint created in
   Production answers inside Production only. **Any AWS-service name the laptop must resolve privately needs
-  its endpoint in the Sandbox VPC**, or an ALIAS record in a zone of ours. It is why the provisioned-MWAA
-  fallback carries a DNS step (Stage 10 step 4).
+  its endpoint in the Sandbox VPC**, or an ALIAS record in a zone of ours.
 
 #### 5. VPC Flow Logs
 

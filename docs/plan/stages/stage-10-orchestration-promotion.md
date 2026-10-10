@@ -28,7 +28,7 @@ Studio's *Workflows* tool **is** MWAA (open question 15), so the workflow a data
 | `staging/orchestration/` (new) | the same slice, same module, Staging's account — **a serverless workflow bills nothing at rest**, so the promotion chain gains a rehearsal that is not Production | `[E]` |
 | `production/workloads-egress/` (amended) + `staging/egress/` (amended) | the worker endpoints MWAA Serverless's **private routing** shape documents: `logs`, `monitoring`, `kms`, plus `sts`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `ecr.api`, `ecr.dkr` and an S3 gateway policy admitting `prod-<region>-starport-layer-bucket` | `[E]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
-| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML), its ASL port, the terraform that instantiates them; **the D28 promotion lint** in Stage 8's shared gates file | — |
+| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML, `workflow/workflow.yaml`) and the terraform that instantiates it; **the D28 promotion lint** in Stage 8's shared gates file. An ASL port exists only if step 4's ladder reaches design B | — |
 | Domain portal (console, recorded) | the serverless-Workflows surface for the `engineering` project — Stage 6 decision 5's deferred half; the **OnDemand Workflows blueprint stays off** (it provisions a fee-bearing MWAA environment) | — |
 | `scripts/` | `layers.py`: `RANKS["orchestration"]` + the `[E]` row; `backend.py`: the slice row | — |
 
@@ -45,7 +45,7 @@ flowchart LR
         STU["a Studio project · Workflows tool<br/>= MWAA Serverless, synced both ways"]
     end
     subgraph GL["GitLab (Production, D14)"]
-        REPO["app-etl repo · YAML + ASL + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
+        REPO["app-etl repo · YAML + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
     end
     subgraph PRD["Production"]
         ORC["orchestration/ [E] · pipeline-applied (INT-14)<br/>workflow + role + log group, workers in VPC-Workloads"]
@@ -344,9 +344,10 @@ session; read every denial by its wording (standing rule since 1c).
 
 - **6.1 — [user + pipeline] The scheduled end-to-end**: tag → Stage 8's chain (Staging leg, gate) → the
   orchestration slice applies in both accounts → the schedule fires **unattended** — at least one
-  `SCHEDULED`-type run with nobody at the keyboard — the run writes a curated table through the LF share
-  (INT-03 exercised under the job role), and the failure rule stays quiet. Then the pause lever works:
-  `TriggerMode` → paused, no further runs.
+  `SCHEDULED`-type run with nobody at the keyboard, the type read per run with `get-workflow-run`, since
+  `list-workflow-runs` returns it null (measured 2026-10-10) — the run writes a curated table through
+  the LF share (INT-03 exercised under the job role), and the failure rule stays quiet. Then the pause
+  lever works: `TriggerMode` → paused, no further runs.
 - **6.2 — [user] The negatives, from a data-science Production session**: `airflow-serverless:ListWorkflows`
   and `airflow-serverless:StartWorkflowRun` denied — the persona sets grant none of it (implicit deny; the
   wording names no allow, not an SCP) — and `airflow:CreateEnvironment` denied by **`DenyProvisionedMwaa`**

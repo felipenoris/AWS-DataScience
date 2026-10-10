@@ -2677,3 +2677,28 @@ two lines are 5,272 and 6,702 bytes, the `HEAD` and the ranged asset. The space 
 throughout the window (toolkit and `schema.cloudformation` names appear in the same seconds), so the
 likely author is something in that session rather than the probe, and **the log cannot attribute it**:
 this group carries names and bytes and no principal. Recorded as a reading rather than explained.
+
+## 2026-10-10 — the sixteenth sitting: step 4's workflows re-read for the Stage 10 instrument
+
+**[Claude] Why this was read.** `./aws/orchestration.py` was rewritten for D7's amendment (Staging and
+Production, design B gone), and the readers it gained had never met a real workflow, since Staging and
+Production hold none. They were exercised against the two Sandbox workflows instead, read-only, as
+`awsds-infra-sandbox-1` (`InfrastructureAccess`). Four readings change what step 4 recorded.
+
+- **`list-workflow-runs` returns `RunType` null for every run; `get-workflow-run` carries it.** The
+  service model declares the field in the summary. Read per run, all six runs are `ON_DEMAND`,
+  including `QdphFF89leYx6M6`, the run whose Airflow id reads `scheduled__2026-08-27T00:00:00+00:00`:
+  that id is Airflow's own label and says nothing about who started the run. Step 4's observation is
+  half-settled; which switch the portal's *Run* button uses is still 4.2's.
+- **A second portal workflow exists, and it ran.** `simple-s3-copy` was created 2026-09-10 03:55:15Z
+  (CloudTrail `CreateWorkflow`: the project role, a browser session), with one
+  `S3CopyObjectOperator` task copying a file inside the project's `shared/` prefix. Run
+  `xCVytqfV5DACXUL`: `ON_DEMAND`, `SUCCESS`, 49 s, one task instance. This log never recorded it. It is
+  the estate's first successful MWAA Serverless run, and it places the boundary refusal on the
+  notebook operator rather than on the surface (decision due 14).
+- **"Every run is two attempts" is a retry on failure.** The failed runs list two task instances
+  (`_1`, `_2`); the successful one lists one (`S3-task_1`). Neither definition carries a `retries` key.
+- **Both workflows sit on the private shape `OR-3` now reads**: subnets
+  `awsds-sandbox-private-usw2-az1` and `-usw2-az2`, AZ ids `usw2-az1` and `usw2-az2`, no default route
+  in either route table. `MyWorkflow`'s definition carries an S3 `VersionId` and `simple-s3-copy`'s
+  does not, so a portal-authored definition is not pinned by itself.

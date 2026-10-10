@@ -54,12 +54,13 @@ locals {
     ]
 
     # Reserved and empty, which is a state and not a stub (the user's decision, 2026-09-06).
-    # `Workflows` is a category-2 blueprint and Stage 10 builds orchestration, but the estate's
-    # decision is MWAA Serverless only, and the catalog splits the two shapes:
-    # `airflow-serverless` against the provisioned trio `airflow.api` / `airflow.env` /
-    # `airflow.ops`, plus `monitoring`, which is not in core_services. Filling this in now would
-    # choose that question by accident. The name is reserved so the day it is answered is one
-    # edit, and the empty list means a `GROUPS=mwaa` today creates nothing rather than erroring.
+    # The `Workflows` blueprint is category 3 and Stage 10 builds orchestration on MWAA
+    # Serverless only, and the catalog splits the two shapes: `airflow-serverless` against the
+    # provisioned trio `airflow.api` / `airflow.env` / `airflow.ops`, plus `monitoring`, which is
+    # not in core_services. Which names the workers need is Stage 10's reading (step 1.2), and
+    # filling this in now would choose it by accident. The name is reserved so the day it is
+    # answered is one edit, and the empty list means a `GROUPS=mwaa` today creates nothing
+    # rather than erroring.
     mwaa = []
 
     # Stage 5b step 1.10 - the Redshift Serverless warehouse's API door, added 2026-09-20 because

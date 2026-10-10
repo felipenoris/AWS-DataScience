@@ -1491,3 +1491,57 @@ recurring `GRANT`.
 no wildcard and no tag, and nesting roles does not change who owns a table. `EXC-15` stands, and
 `lab.hello_jupyter` is still readable by no role. The role half is now declarative and the ownership
 half is not — which is a sharper statement of the problem than the one decision 8a opened with.
+
+---
+
+## 2026-10-11 — the `RedshiftDbRoles` mapping does not apply to a user that already exists
+
+*Written by Claude in the sitting that ran it. The script run is the **user's**, quoted verbatim.*
+
+### The result
+
+```
+[ok  ] 3b session              as IAMR:user-28f1b390-...@avhvbqn37ty7m8 on sandbox
+[warn] 3b grantee is per PERSON
+ProgrammingError: {'S': 'ERROR', 'C': '42501', 'M': 'permission denied for schema lab', ...}
+```
+
+With `datazone_env_5hkjdsy3umpi1c` created and nested over `sbx_lab_rw`, and the per-person stopgap
+revoked, the reconnect **granted nothing**: `svv_user_grants` still held one row, the Data page's
+per-project user. So the session tag `RedshiftDbRoles` did not map on this connection.
+
+**AWS's own wording predicts it**: *"when a user signs in **for the first time** to an Amazon Redshift
+Serverless database, an associated database user is created **and mapped** to the matching database
+roles"*. The mapping is part of **creating** the user. This user was created on 2026-10-11, before the
+role existed, so there was nothing to map then and nothing re-maps now.
+
+**The test is set up rather than argued**: `lab.hello_jupyter` dropped — it was owned by that user, so
+the user could not be dropped while it stood — then `DROP USER` on the per-person user. `pg_user` now
+holds five, none of them the person's. One reconnect recreates it, and whether it arrives holding
+`datazone_env_5hkjdsy3umpi1c` is the whole question.
+
+Incidentally this also clears `EXC-15`'s subject: the unreadable table is gone. The exception stays
+open, because the structural gap it records is not the table.
+
+### A design error of mine the run exposed
+
+`3d` read the session's roles and ran **after** `3c`, the write that depends on them. So the permission
+failure arrived as a driver traceback instead of a verdict naming the layer — which is the one thing
+this script exists to avoid, violated in the single place it mattered. Reordered in §V: the roles are
+read first, an empty result says in words what will fail next and why, and the write is wrapped so a
+refusal prints a verdict. The in-code comment still claiming `redshift_connector` is absent from the
+image is corrected too.
+
+### What this means if the reconnect works
+
+The mechanism becomes: **a database role named `datazone_env_<environmentId>` must exist before anybody
+in the project connects for the first time.** That is a real ordering constraint and it belongs in §P —
+a person who connects before the role exists gets a user that is permanently unmapped, and the
+correction is a `DROP USER` that cannot run while they own anything.
+
+### What this means if it does not
+
+`RedshiftDbRoles` is not usable here at all, and what is left for the per-person door is the per-person
+`GRANT` (`conventions.md`'s seam, with `WH-14` as the guard) or a recurring one. Decision 8a would then
+have no declarative option for either half, which is worth stating plainly rather than leaving as a
+hope.

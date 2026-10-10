@@ -346,10 +346,10 @@ Python dependencies, and the two compose rather than substitute.
   reference** — a connection, a path or an id that exists only in the authoring Sandbox project and would
   resolve to nothing in Staging or Production; (b) hard-codes a `start_date`, which is **rewritten at deploy
   time** rather than promoted; (c) uses an operator outside **MWAA Serverless's Amazon-provider allow-list**
-  or a task that could exceed its **3600 s** cap; (d) references a definition object without a pinned
-  `DefinitionS3Location.VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in
-  the same commit — a workflow that ships its own operator code is a fifth promotable artifact, and D28
-  named four.
+  or exceeds a service cap — **3600 s** per task, **50 KB** per definition; (d) references a definition
+  object without a pinned `DefinitionS3Location.VersionId`. **Artifact class (2b), the operator code
+  package, joins D28's list** in the same commit — a workflow that ships its own operator code carries an
+  artifact none of D28's six classes names.
 - **5.7 — [Claude] Record what the SMUS CI/CD CLI is**: `aws-smus-cicd-cli`
   deploys **only into existing SMUS projects**, and a Workload account has none. It is therefore an
   **exporter on the Sandbox side** — `bundle` may produce the artifact this pipeline promotes — and **this

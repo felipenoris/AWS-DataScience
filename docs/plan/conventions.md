@@ -619,13 +619,17 @@ app-etl/
 │   ├── main.tf
 │   ├── variables.tf
 │   └── envs/
+├── workflow/
+│   └── workflow.yaml # the MWAA Serverless definition (dag-factory YAML), checked by the D28 lint
 ├── pyproject.toml
 └── README.md
 ```
 
 The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>. The
 application's own `terraform/` directory is the *source* of a slice; what is applied is the
-`terraform-live/<env>/app/app-etl/` slice above, which is `[E]` in every environment.
+`terraform-live/<env>/app/app-etl/` slice above, which is `[E]` in every environment. `workflow/` is
+where a definition authored in a Sandbox project lands when it graduates (Stage 10 step 2.2); the release
+job copies it to the definitions home, and the `orchestration/` slices pin that object (step 2.4).
 
 ---
 

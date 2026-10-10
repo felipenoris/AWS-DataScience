@@ -400,9 +400,10 @@ except OSError as exc:
 
 # ------------------------------------------ 3. a session over that door, written and read back
 #
-# redshift_connector is NOT in the image (images/dev-env/python/pyproject.toml), so this installs
-# it into the kernel for this space only. If the driver is wanted for good it is a line in that
-# pyproject plus `uv lock` - the image's own comment refuses ad-hoc installs as a standing habit.
+# redshift_connector IS importable in the image, transitively - it is absent from
+# images/dev-env/python/pyproject.toml and arrives through one of the SageMaker packages (measured
+# 2026-10-10). The install below is the fallback and is normally a no-op. A transitive driver is a
+# dependency nobody declared: if it is wanted, it belongs in that pyproject by name plus `uv lock`.
 try:
     import redshift_connector  # noqa: F401
     say("3a driver present", "ok", "redshift_connector already importable")
@@ -454,28 +455,47 @@ with conn.cursor() as cur:
             "this door mints a user per person, not per project. If 3c fails on permission, that "
             "user holds no role yet - see the runbook on RedshiftDbRoles")
 
-    # The write, into its OWN table, so the two doors' objects stay distinguishable.
-    cur.execute(f"drop table if exists {SCHEMA}.{TABLE}")
-    cur.execute(
-        f"create table {SCHEMA}.{TABLE} as "
-        f"select 1 as n, 'written over 5439 from jupyterlab' as note, current_user as by_whom"
-    )
-    conn.commit()
-    cur.execute(f"select n, note, by_whom from {SCHEMA}.{TABLE}")
-    say("3c write and read", "ok", str(cur.fetchone()))
-
-    # Layer 3's shape, read rather than assumed: the role grant that made the write possible, and
-    # whether the new table is readable by the theme role (WH-14's question, from inside).
+    # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once and the write's permission
+    # error arrived as a driver traceback instead of a verdict naming the layer - which is the one
+    # thing this script exists to avoid (2026-10-11).
     cur.execute("select role_name from svv_user_grants where user_name = current_user")
-    say("3d the role behind it", "ok", f"{[r[0] for r in cur.fetchall()]}")
+    roles = [r[0] for r in cur.fetchall()]
+    if roles:
+        say("3c the roles this session holds", "ok", str(roles))
+    else:
+        say("3c the roles this session holds", "FAIL",
+            "none. This user holds no database role, so the write below will fail as `permission "
+            "denied for schema`. On this door the user is per person and SMUS passes "
+            "`RedshiftDbRoles=datazone_env_<environmentId>` as a SESSION tag - if that role does "
+            "not exist in the database it is ignored SILENTLY, and if the user already existed "
+            "before it did, the mapping does not apply retroactively (runbook section T)")
+
+    # The write, into its OWN table, so the two doors' objects stay distinguishable.
+    try:
+        cur.execute(f"drop table if exists {SCHEMA}.{TABLE}")
+        cur.execute(
+            f"create table {SCHEMA}.{TABLE} as "
+            f"select 1 as n, 'written over 5439 from jupyterlab' as note, current_user as by_whom"
+        )
+        conn.commit()
+        cur.execute(f"select n, note, by_whom from {SCHEMA}.{TABLE}")
+        say("3d write and read", "ok", str(cur.fetchone()))
+    except Exception as exc:
+        conn.rollback()
+        msg = str(getattr(exc, "args", [exc])[0])
+        say("3d write and read", "FAIL", f"{msg[:200]} - with 3c empty this is layer 3 and not "
+            "the network; with 3c holding a role it is the GRANT's contents")
+        raise SystemExit("no write, so 3e has nothing to judge")
+
+    # WH-14's question, asked from inside: is what this session just wrote readable by the role?
     cur.execute(
         "select identity_name, privilege_type from svv_relation_privileges "
         f"where namespace_name = '{SCHEMA}' and relation_name = '{TABLE}'"
     )
     rows = cur.fetchall()
     say("3e readable by the role", "ok" if rows else "FAIL",
-        f"{rows} - empty means the default privilege did not fire and a second project would "
-        "see nothing (runbook section T)")
+        f"{rows} - empty means no default privilege names THIS owner, so a second project holding "
+        "the theme role would see none of this table (runbook section T, EXC-15)")
 
 conn.close()
 print()

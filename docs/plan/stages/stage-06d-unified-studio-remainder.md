@@ -402,7 +402,9 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   - **One observation, not yet a finding**: `TriggerMode` is `manual_only`, the definition carries
     `is_paused_upon_creation: false`, and the run id is `scheduled__2026-08-27T00:00:00+00:00`. The
     workflow-level trigger mode and the DAG's own pause state are two different switches; which one the
-    portal's *Run* button uses is unmeasured, and 4.2 is where to settle it.
+    portal's *Run* button uses is unmeasured, and 4.2 is where to settle it. **Read 2026-10-10**:
+    `get-workflow-run` reports that run as `ON_DEMAND`, so the `scheduled__…` id is Airflow's own label
+    and not the service's run type (`list-workflow-runs` returns the type null).
   - **Step 4 still owes**: 4.2's **two-task** workflow (this one has a single task, so nothing here
     exercises a dependency), 4.3's run of the definition through D28's lint, and 4.5's rules, including
     *reject an empty `compute`*.
@@ -424,11 +426,12 @@ verification (i), pulled forward because Stage 10's design now depends on it.
     `…WithoutInterContainerEncryption`, `…WithoutVolumeEncryption` — and AWS names the **policy**, never
     the statement. Separating them would need four contrast probes against a boundary nobody wants to
     amend four times.
-  - **This is a decision, not a defect**, and it is the user's: (a) amend the boundary for this path —
-    scope the four denies so the `AmazonMWAAServerless` session is out of them, a real widening of D13's
-    compute perimeter; (b) **do not use the portal's notebook operator** — orchestrate from Stage 10's
-    own DAGs with an operator this repository controls, which can pass a full `VpcConfig`, and treat
-    *Workflows → notebook task* as a portal feature this estate does not offer; or (c) record the loss.
+  - **This is a decision, not a defect**, and it is the user's (decision due 14): (a) amend the
+    boundary for this path — scope the four denies so the `AmazonMWAAServerless` session is out of them,
+    a real widening of D13's compute perimeter; (b) **do not use the portal's notebook operator** —
+    orchestrate from Stage 10's own DAGs with an operator this repository controls, which can pass a
+    full `VpcConfig`, and treat *Workflows → notebook task* as a portal feature this estate does not
+    offer; or (c) record the loss.
     **Recommended: (b)** — it keeps the boundary intact, and Stage 10 was already going to author its own
     DAGs.
   - **The service warns on every update**: `Warnings: ["ignored attributes: is_paused_upon_creation"]`.
@@ -437,14 +440,18 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   - **The scope is the whole estate, not this object.** The refusal is on the **project role** under the
     **project boundary**, and every Sandbox project gets both from the same blueprint: this is **every
     SMUS workflow whose task is a notebook execution, in every project here**, reproducible by
-    re-authoring in the portal. **Other task types are unmeasured** — a query book or a visual ETL task
-    may never reach `CreateTrainingJob`. Everything else on the surface works: authoring, versioning,
+    re-authoring in the portal. **Other task types**: a query book or a visual ETL task is unmeasured
+    and may never reach `CreateTrainingJob`; a portal-authored `S3CopyObjectOperator` task finished
+    `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10, read 2026-10-10 in the log's sixteenth
+    sitting). Everything else on the surface works: authoring, versioning,
     triggering, logging, the workers' network and the identity (4.1, 4.4, 4.6). One act fails, the
     notebook becoming a training job. The worker is VPC-attached by the service; the job it submits is
     not, and no operator parameter could attach it.
   - **Provenance**: four runs, four definition versions, the pre-change S3 `VersionId` and the reading
     that every run is two attempts are in the
     [log](../../log/log-stage-06d-unified-studio-remainder.md)'s eighth sitting, read back from the API.
+    The sixteenth sitting narrows the last: a failed task is retried once, and the successful run has
+    one attempt.
 - **4.1 — [user reads, Claude records] Find what enables the surface** — the vendor pages narrow it
   (read 2026-09-07): the **`Workflows` blueprint creates a provisioned MWAA environment**, the shape D7
   amended away, so enabling it is the *wrong* act; the user guide says SMUS *"supports serverless
@@ -1563,6 +1570,18 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     runs `sagemaker-distribution-cpu` and would stop starting unless AWS's image is exempted by ARN.
     Recommended: probe it in `Policy Canary` first, then choose between house-image-only and
     house-image-plus-AWS's-distribution.
+14. **Whether the portal's notebook operator runs in this estate** (step 4, the 2026-09-10 re-runs). A
+    *Notebook task* is a `CreateTrainingJob` the D13 boundary refuses, and four of the five conditions
+    the call meets are not expressible in a workflow definition, so no edit to the YAML repairs it.
+    **(a)** Scope the boundary's four job denies (`DenySageMakerJobsOffVpc` and its network-isolation,
+    inter-container-encryption and volume-encryption siblings) so the `AmazonMWAAServerless` session is
+    out of them, a real widening of D13's compute perimeter. **(b)** Do not use the portal's notebook
+    operator: orchestrate from Stage 10's own DAGs with an operator this repository controls, which can
+    pass a full `VpcConfig`, and treat *Workflows → notebook task* as a portal feature this estate does
+    not offer. **(c)** Record the loss. **Recommended: (b)**: the boundary stays intact, and Stage 10
+    authors its own DAGs anyway. The refusal belongs to this operator, not to the surface: a
+    portal-authored `S3CopyObjectOperator` task finished `SUCCESS` as the same role (`simple-s3-copy`,
+    2026-09-10). Query-book and Visual ETL tasks are unmeasured and may never reach `CreateTrainingJob`.
 
 ## Verifications to answer while executing
 
@@ -1579,7 +1598,9 @@ and does it for an app that names an image by alias.
 ## Risks
 
 - **The workflow surface is not enabled by anything we control**, which moves 4.1's answer into a blueprint
-  change and re-opens 6a's decision 5. Recorded as that step's own alternative.
+  change and re-opens 6a's decision 5. Recorded as that step's own alternative. **It did not materialize**
+  (4.1, read 2026-09-09): the eleven category-1 configurations already provide the surface, so decision 5
+  does not re-open.
 - **A component with no proxy support inside the image** (3.4). The fallback is an endpoint, then D38's
   per-VPC NAT contingency — in that order, and never a default route. **Measured once, 2026-09-08**: the
   Code Editor's extension gallery, whose cause was **no proxy in the process** rather than no proxy
