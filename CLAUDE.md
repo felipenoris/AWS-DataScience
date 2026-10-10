@@ -241,9 +241,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **13 pass / 1 note**. Layer 3 in SQL: database `sandbox`, schema `lab` QUOTA 1 TB, `sbx_lab_owner` (user),
   `sbx_lab_rw` (role). **Project `avhvbqn37ty7m8` admitted 2026-09-21**: the tag on both objects, layer 2's
   two-statement policy on the project role (**no `redshift-data:`**, so 3.4's refusal is the measurement
-  that decides it), the `5439` rule, and the database user
-  `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` holding `sbx_lab_rw` with no `admin_option` — the
-  `IAMR:` spelling is a **prediction until 3.2 resolves one**. The D13 boundary and the SCP narrow neither
+  that decides it), the `5439` rule, and and **BOTH candidate database users**
+  (`IAMR:datazone_usr_role_<project>_<env>` and the same unprefixed, 2026-10-10), each holding `sbx_lab_rw`
+  with no `admin_option`, so the first connection cannot land on a user with no privileges — the tag's
+  resolution is **read from `pg_user` after 3.2** and the loser is one `DROP USER`. `WH-12` reads 2 grants
+  until then. The D13 boundary and the SCP narrow neither
   `redshift-serverless:` nor `redshift-data:`, so layer 2 is not inert. `PUBLIC` already holds `USAGE` and
   not `CREATE` in all three databases. **The portal then demanded an `Access role ARN` on a SAME-ACCOUNT connection** (user, 2026-09-21) which AWS's same-account procedure and the field's help both call unnecessary - and `AWS Secret` is optional beside it. `create-connection`'s `credentials` union has **only `secretArn` and `usernamePassword`**, so "IAM credentials" IS the access role plus the `RedshiftDbUser` tag: **no standing credential**, decision 2 answered and its secret fallback withdrawn unbuilt. `ListConnections` is refused to InfrastructureAccess by **DataZone's own** authorization layer, so the portal is the only path (decision 1 answered). The access role is **applied 2026-10-09** (`awsds-sandbox-warehouse-access-<project>`, both policies attached, `No changes` on re-plan) and its ARN is the output `project_access_role_arns`; `RedshiftDbUser` carries the project role's NAME so both candidate spellings land on granted users. The dropdown offers database `dev` and `lab` is in `sandbox`. Measured spend **9.4767 USD** = 26.32 RPU-h, **19% of the D12 ceiling in one sitting and no free trial exists** (Management credits page empty, user 2026-09-20).
 - **What the execution measured that the plan had wrong.** **Two subnets accepted** (AWS's page right, the

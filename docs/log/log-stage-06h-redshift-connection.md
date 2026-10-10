@@ -584,3 +584,54 @@ belongs in the same sitting rather than ahead of it:
    database set to **`sandbox`** rather than the dropdown's `dev`.
 4. **[Claude]** `pg_user` for which spelling appeared, a `DROP USER` for the other, `WH-12`, and 3.5's
    CloudTrail reading.
+
+---
+
+## 2026-10-10 — both candidate database users exist and both hold the role; the form is unblocked
+
+*Written by Claude in the sitting that ran it. The user raised the sandbox; the two statements and every
+reading are Claude's, from `awsds-infra-sandbox-1` (account `Sandbox Account 1`, permission set
+`InfrastructureAccess`).*
+
+### State found
+
+`make status ENV=sandbox`: `egress` **27 resources**, `warehouse-compute` **2**, `probes` **4**. The
+workgroup reads `AVAILABLE` at base 4 / max 8. The namespace is `[P]`, so `lab`, `sbx_lab_owner`,
+`sbx_lab_rw` and the prefixed database user all survived the eighteen-day down period unchanged.
+
+### The second spelling
+
+```sql
+CREATE USER "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISABLE NOCREATEDB NOCREATEUSER;
+GRANT ROLE sbx_lab_rw TO "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c";
+```
+
+`FINISHED` at 12,503 ms and 4,575 ms — the first statement is the session's cold start, not the work.
+
+| `pg_user` | super | createdb | `sbx_lab_rw` |
+|---|---|---|---|
+| `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>` | true | true | — |
+| `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | false | false | yes, `admin_option = false` |
+| `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | false | false | yes, `admin_option = false` |
+| `dbadmin` | true | true | — |
+| `rdsdb` | true | true | — |
+| `sbx_lab_owner` | false | false | — |
+
+**Both candidate spellings now hold the role**, which is the whole point: the access role's
+`RedshiftDbUser` tag carries the project role's name, no page says whether the platform uses that value
+verbatim or prefixes it `IAMR:`, and the project's first connection therefore cannot land on a user with
+no privileges. One of the two is scaffolding and is removed once `pg_user` says which.
+
+### The instrument
+
+`./aws/warehouse.py awsds-infra-sandbox-1 --sql`, exit 0, **13 pass and 1 note**:
+
+| Check | Reading |
+|---|---|
+| `WH-11` | the warehouse policy is attached and the role is still under `awsds-sandbox-project-boundary` |
+| `WH-12` | 1 themed schema, 1 role grant, **2 user-role grants** |
+| `WH-15` | idle: 0 RPU-seconds in the interval ending 2026-10-10T00:00:00-03:00 |
+| `WH-7` | `['avhvbqn37ty7m8']`, on both objects |
+| `WH-13` | the permanent note |
+
+Every layer Claude owns is applied and read back. What remains is the portal act and what it measures.
