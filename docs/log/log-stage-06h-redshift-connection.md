@@ -1327,3 +1327,83 @@ And the script now **names the per-person grantee when it sees one**, as a `warn
    is a different owner from the one the default privilege names.
 2. **[Claude, with decision 8]** `RedshiftDbRoles` on the project role, or an argued alternative.
 3. **[Claude]** the audit re-read, and `WH-9`.
+
+---
+
+## 2026-10-11 — 3.3 is done over `5439`, and read-across cannot be made declarative while the grantee is per person
+
+*Written by Claude in the sitting that ran it. The script run is the **user's**, quoted verbatim; the
+`WH-14` reading, `EXC-15` and the analysis are Claude's.*
+
+### 3.3, closed
+
+```
+[ok  ] 2b speaks redshift      SSLRequest accepted - TLS required, as the workgroup is set
+[ok  ] 3b door is the VPC one  peer 10.20.65.84
+[warn] 3b grantee is per PERSON
+[ok  ] 3c write and read       [1, 'written over 5439 from jupyterlab', 'IAMR:user-28f1b390-...']
+[ok  ] 3d the role behind it   ['sbx_lab_rw']
+[FAIL] 3e readable by the role ()
+```
+
+**Both doors are now exercised and read apart**, which is what 3.3 and 3.4 were written for: the Data
+page reaches the warehouse as an AWS service with no VPC path, and this door is the space's own socket
+to a private address on `5439`, with `2b` confirming the thing listening speaks the Redshift wire
+protocol and requires TLS. The write is `lab.hello_jupyter`, owned by the per-person user.
+
+### 3e failed, and it failed as predicted
+
+The default privilege set on 2026-10-10 names **one owner**, `IAMR:datazone_usr_role_…`. This table was
+created by `IAMR:user-28f1b390-…@avhvbqn37ty7m8`, so it does not fire. The gap was predicted before the
+run and left open on purpose: granting it would have made `3e` green and hidden the structure.
+
+`WH-14` now **fails for real**, exit 2, naming the relation and its owner — the first time that check
+has reported anything but a pass, and the reason a check that has only ever passed is a claim.
+
+### The structural finding: two per-principal halves, one declarative answer
+
+A shared schema needs both, and they do not have the same shape:
+
+| Half | Mechanism | Per what | Declarative? |
+|---|---|---|---|
+| the role in the session | `GRANT ROLE`, or **`RedshiftDbRoles`** on the sign-in role | per person on this door | **yes**, through the tag at first sign-in |
+| read-across on what somebody wrote | `ALTER DEFAULT PRIVILEGES FOR USER` | **per creating user** | **no** — there is no `FOR ROLE`, no wildcard, and no tag |
+
+So while the grantee is per person, **read-across cannot be made declarative at all**: every mechanism
+names a principal, and the set of principals is the headcount. The remaining options are a recurring
+`GRANT SELECT ON ALL TABLES IN SCHEMA` (one statement, but tables written between runs are unreadable)
+or per-person statements forever.
+
+### The fork, and it belongs to decision 8
+
+**`RedshiftDbUser` on the project role collapses both doors onto one database user.** The Data page
+already resolves to `IAMR:<the project role's name>` because the **access role** carries that tag; the
+JupyterLab door resolves per person only because the project role carries **no** tag. Putting
+`RedshiftDbUser=datazone_usr_role_<project>_<env>` on the project role would make `GetCredentials`
+resolve the same way from either door — and then:
+
+- one owner for every table in the schema, so **one** default privilege covers it;
+- one `GRANT ROLE`, already applied;
+- one row in the register, and `WH-14` green for a structural reason rather than a per-person patch.
+
+**The price is attribution inside the database.** Every person's queries would run as one database
+user, so `sys_query_history` could no longer tell people apart; only CloudTrail would, through the
+session name and the source identity the access role's trust policy already propagates. That is a real
+trade — per-person accountability in the database against a shared schema that works — and it is the
+user's to make, not least because it touches a role SMUS owns.
+
+**Unmeasured, and cheap to measure:** whether the tag on the project role does change what
+`GetCredentials` resolves to on this door. One tag, one reconnect, one `pg_user` read.
+
+### Left red on purpose
+
+`EXC-15` records `WH-14`'s failure with its reason and its revision trigger, so the red is expected and
+owned rather than noise. Closing it as it stands is two statements, both per person, and that is the
+thing the exception exists to avoid doing by reflex.
+
+### Owed
+
+1. **[user]** decision 8, now with a concrete fork and a measured price.
+2. **[Claude]** the audit re-read, and `WH-9`.
+3. **[Claude]** declare `redshift_connector` in the image's `pyproject.toml`, or accept a transitive
+   driver deliberately.
