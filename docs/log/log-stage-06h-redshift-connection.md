@@ -1152,3 +1152,89 @@ set earlier actually fires for a table this user creates.
 space's kernel. The user proposed that path and it is the right one for a measurement; the driver's
 permanent home is a line in `images/dev-env/python/pyproject.toml` plus `uv lock`, since that image
 refuses ad-hoc installs as a standing habit.
+
+---
+
+## 2026-10-10 — 3.3 attempted: the door opens, the session does not, and two of my claims were wrong
+
+*Written by Claude at the end of the sitting. The script run and its traceback are the **user's**,
+quoted verbatim; the readings that follow are Claude's, taken before the environment came down. The
+user then took it down, so the open question below is tomorrow's.*
+
+### The run
+
+```
+[ok  ] identity                           assumed-role ... SageMaker
+[ok  ] 1 dns resolves                     10.20.116.172, 10.20.49.135 - private
+[ok  ] 2 port 5439 opens                  169.255.254.1 -> 10.20.116.172:5439
+[ok  ] 3a driver present                  redshift_connector already importable
+...
+InterfaceError: BrokenPipe: server socket closed. Please check that client side networking
+configurations such as Proxies, firewalls, VPN, etc. are not affecting your network connection.
+```
+
+It broke inside `cur.execute(...)`, on the driver's own `begin transaction` — so **`connect()`
+returned**, and the first statement killed the pipe.
+
+### Two claims of mine the run disproved
+
+**`redshift_connector` is already in the image.** It is not in
+`images/dev-env/python/pyproject.toml`, so it arrives **transitively** — `sagemaker-studio-
+dataengineering-sessions` or `aws-glue-sessions` is the likely path. My write-up said it was absent
+and the install step was needed; the install step is a no-op. A transitive driver is a dependency
+nobody declared, and if it is wanted it belongs in that file by name.
+
+**Step 1's wording inferred the wrong object.** It read *"private, so the endpoint is in play"*. The
+private addresses are **not** the `redshift-serverless` interface endpoint: that one has a single ENI
+at `10.20.7.52`. `10.20.49.135` and `10.20.116.172` are the ENIs of `vpce-0f9698ecbcece5437`, the
+**workgroup's own managed VPC endpoint**, and they carry `sg-0feeaf8a17c82c5ad` — the warehouse's
+security group. Both corrected in §V, which is the one maintained copy.
+
+### A hypothesis killed by measurement rather than written down
+
+Lesson 40 says a private zone answers for its whole subtree, so the obvious reading was that the API
+endpoint's private DNS had hijacked the workgroup's data hostname and the driver was talking to an
+HTTPS endpoint on 5439 — which would produce exactly this symptom. **It is wrong**: the endpoint's
+one ENI is `10.20.7.52` and neither resolved address is it. The prerequisite was also satisfied, not
+missing: the endpoint is `available` with `PrivateDnsEnabled`, 22 endpoints up, so the environment
+was raised with the group.
+
+### What is firm
+
+| Reading | Value |
+|---|---|
+| the name resolves to | the **workgroup's** managed endpoint ENIs, both carrying the warehouse SG |
+| TCP | `169.255.254.1 -> 10.20.116.172:5439` — and the space's source is **not a VPC address**, so the container source-NATs |
+| the API endpoint | `10.20.7.52`, one ENI, `available`, private DNS on — and **not** what the data host resolves to |
+| `connect()` | returned, so `GetCredentials` and the startup both worked |
+| workgroup | `AVAILABLE`, and `UsageLimitConsumed` has no datapoint — **no limit breach** |
+| `sys_connection_log` | **no row** for this session; every row is `[local]` / `rdsdb` |
+| `stl_connection_log` | **refused to a superuser** — and it answered a *missing column* first and *permission denied* second, on the same relation: validates before authorizing (Lesson 21), the same trap as `svv_schema_quota_state` |
+
+The missing `sys_connection_log` row is **not** evidence that no session existed: every row that view
+has ever held is `[local]`/`rdsdb`, so it has never been shown to record an external session. That is
+the same instrument gap as the audit-export question, and Lesson 62 applies — again.
+
+### What is open, and the discriminator is already written
+
+Why the pipe broke, with `connect()` returning and nothing in between obviously wrong. §V now carries
+a **step 2b** for it: eight bytes of PostgreSQL `SSLRequest` and one byte back. `S` means the thing on
+5439 speaks the protocol and wants TLS; `N` means it speaks it without; **anything else means whatever
+accepted the TCP is not Redshift**, which is the one question a driver's `BrokenPipe` cannot answer
+and which no reading taken today settles.
+
+Candidates, in the order the next sitting should take them:
+
+1. **TLS.** The workgroup requires SSL (`WH-2`). If 2b answers `S` and the driver still breaks,
+   compare `ssl=True` against an explicit `sslmode`, and read what the driver negotiated.
+2. **The source address.** `169.255.254.1` is the space's container NAT, not an ENI. The handshake
+   crosses it; a larger frame may not.
+3. **Something between the ENI and the leader**, which 2b answering `S` and the session still dying
+   would point at — and which would be the first thing in this stage no client-side change can fix.
+
+### Owed
+
+1. **[user]** `make up ENV=sandbox GROUPS=redshift`, then re-run §V's script — it now has 2b.
+2. **[Claude]** the audit re-read, and `WH-9`.
+3. **[Claude]** declare `redshift_connector` in the image's `pyproject.toml`, or decide deliberately
+   that a transitive driver is acceptable.

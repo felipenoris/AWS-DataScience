@@ -280,10 +280,12 @@ GROUPS=redshift`. `redshift-serverless` is deliberately absent from the proxy's 
 without that endpoint there is no door to the API and no fallback — step 3 fails as a **timeout**,
 which reads like a network fault and is a missing endpoint.
 
-`redshift_connector` is **not in the image**, so the script installs it with `uv` into the space's
-kernel. That is for the measurement; the driver's permanent home is a line in
-`images/dev-env/python/pyproject.toml` plus `uv lock`, because the image refuses ad-hoc installs as a
-standing habit.
+**`redshift_connector` is already importable in the image** (measured 2026-10-10). It is not in
+`images/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
+`sagemaker-studio-dataengineering-sessions` or `aws-glue-sessions`. The script's install step is
+therefore a no-op in practice and stays only as the fallback. A transitive driver is a dependency
+nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by name, plus
+`uv lock`, so that a resolution change cannot remove it silently (Lesson 63's shape).
 
 ```python
 # Stage 6h step 3.3 - the JupyterLab door to the Sandbox warehouse.
@@ -350,7 +352,10 @@ try:
     if not addrs:
         say("1 dns resolves", "FAIL", "no A record")
     elif private:
-        say("1 dns resolves", "ok", f"{', '.join(private)} - private, so the endpoint is in play")
+        say("1 dns resolves", "ok", f"{', '.join(private)} - private. These are the WORKGROUP's "
+            "own managed VPC endpoint ENIs, which carry the warehouse security group; the "
+            "redshift-serverless API endpoint is a different address and is not what this name "
+            "resolves to (measured 2026-10-10)")
     else:
         say("1 dns resolves", "FAIL", f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
             "redshift-serverless endpoint is not answering: either the endpoint is absent "
@@ -369,6 +374,28 @@ except OSError as exc:
     say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
         "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
         "listener that is not there - check the workgroup is up")
+
+# ------------------------------- 2b. does the thing on 5439 speak the Redshift wire protocol
+#
+# Eight bytes of PostgreSQL SSLRequest - length 8, code 80877103 - and one byte back: `S` accepts
+# TLS, `N` refuses it, and anything else is not this protocol. It separates "the server dropped my
+# session" from "whatever accepted the TCP never spoke Redshift", which a driver's BrokenPipe
+# cannot (measured open 2026-10-10: the driver connected and broke on the first statement).
+try:
+    import struct
+
+    with socket.create_connection((host, PORT), timeout=10) as s:
+        s.sendall(struct.pack("!ii", 8, 80877103))
+        reply = s.recv(1)
+    if reply == b"S":
+        say("2b speaks redshift", "ok", "SSLRequest accepted - TLS required, as the workgroup is set")
+    elif reply == b"N":
+        say("2b speaks redshift", "warn", "SSLRequest refused - the protocol is there and TLS is off")
+    else:
+        say("2b speaks redshift", "FAIL", f"answered {reply!r} - whatever is on 5439 is NOT "
+            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session")
+except OSError as exc:
+    say("2b speaks redshift", "FAIL", f"{type(exc).__name__}: {exc}")
 
 # ------------------------------------------ 3. a session over that door, written and read back
 #
