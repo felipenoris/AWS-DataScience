@@ -64,7 +64,7 @@ variable "extra_services" {
 #
 # Empty is the default and it is the decision: `make up` with no groups creates no optional
 # endpoint, so the cost of a family nobody is using that day is zero. `make up ENV=<x>
-# GROUPS=bedrock` turns one on for that apply.
+# GROUPS=bedrock-base` turns one on for that apply.
 #
 # It is per apply of one account's egress/ slice, not per project and not per person - while a
 # group is on, it is on for everyone in that account. Nothing turns it off: the guard is that this
@@ -82,8 +82,8 @@ variable "optional_service_groups" {
     # A closed list, because the failure of an unknown name is silent: a group nobody defined
     # contributes no endpoints, the apply succeeds, and the blueprint fails on first use exactly
     # as it would have with no flag at all. `make up GROUPS=bedrok` must be a plan error.
-    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock", "emr", "mwaa", "redshift"], g)])
-    error_message = "optional_service_groups admits only: bedrock, emr, mwaa, redshift. An unknown name would contribute nothing and fail silently at first use."
+    condition     = alltrue([for g in var.optional_service_groups : contains(["bedrock-base", "bedrock-agent", "emr", "mwaa", "redshift"], g)])
+    error_message = "optional_service_groups admits only: bedrock-base, bedrock-agent, emr, mwaa, redshift. An unknown name would contribute nothing and fail silently at first use."
   }
 
 }
