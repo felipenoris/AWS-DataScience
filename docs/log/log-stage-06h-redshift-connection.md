@@ -1407,3 +1407,87 @@ thing the exception exists to avoid doing by reflex.
 2. **[Claude]** the audit re-read, and `WH-9`.
 3. **[Claude]** declare `redshift_connector` in the image's `pyproject.toml`, or accept a transitive
    driver deliberately.
+
+---
+
+## 2026-10-11 — decision 8a's option A is dead, and the platform was already asking for the answer
+
+*Written by Claude in the sitting that ran it. The user approved option A; the measurements below
+**killed it** and found the mechanism SMUS already expects, which is applied and awaiting one reconnect
+to be proven.*
+
+### Option A cannot work, and the reason is a session tag
+
+Option A was *"put `RedshiftDbUser` on the project role so both doors resolve to one per-project
+database user"*. Two readings, in this order:
+
+**The project role already carries the tag, and SMUS set it:**
+
+```
+RedshiftDbUser    user-project@avhvbqn37ty7m8
+```
+
+Eighteen tags in all, every one the service's — `AmazonDataZoneProject`, `AmazonDataZoneEnvironment`,
+`EnableGlueWorkloadsPermissions`, `RedshiftDbUser`. So the premise that the project role carried no tag
+was wrong.
+
+**And the tag that decides the user is a SESSION tag, not the role's.** The `AssumeRole` that creates a
+space's session:
+
+```
+roleSessionName: 28f1b390-0041-7068-8cc7-9ccef94277d1@5hkjdsy3umpi1c
+tags: dz=true
+      RedshiftDbUser  = user-28f1b390-0041-7068-8cc7-9ccef94277d1@avhvbqn37ty7m8
+      RedshiftDbRoles = datazone_env_5hkjdsy3umpi1c
+      datazone:userId = 28f1b390-0041-7068-8cc7-9ccef94277d1
+```
+
+A session tag overrides the role's, so **editing the role's tag changes nothing**. The per-person user
+is SMUS passing the person's identity at assume time, deliberately, every session. Option A is not a
+trade-off to weigh; it is unavailable. And there is no home for it in Terraform either:
+**`aws_iam_role_tag` does not exist in the AWS provider** (`Invalid resource type`, measured), so a tag
+on a role this repository does not create has no declarative place to live.
+
+Neither `GetCredentials` call names a database user — `{"dbName": "sandbox", "workgroupName": …}` from
+the project role, `{"durationSeconds": 3600, "workgroupName": …}` from the access role — so the tag is
+the only input, which is why this mattered.
+
+### What the same reading handed over: `RedshiftDbRoles` is already being passed
+
+`RedshiftDbRoles = datazone_env_5hkjdsy3umpi1c` — the project's **environment id**, prefixed. SMUS is
+already asking Redshift to map a database role of that name to the per-person user at sign-in. It did
+nothing because **the role did not exist**: `svv_roles` held `sbx_lab_rw` and the six `sys:` roles and
+no `datazone_env_*`. AWS's own sentence covers it exactly — *"in a case where you pass a role name that
+doesn't exist in the database, it's ignored"*. Silently, which is why nobody could have seen it.
+
+So the mechanism this stage **refused on 2026-09-21** — `RedshiftDbRoles`, refused because a wrong name
+is ignored without a sound — turns out to be the one the platform drives itself, and the silent ignore
+was not hypothetical: it had already happened and produced the per-person user holding nothing.
+
+### Applied, and it is two statements
+
+```sql
+CREATE ROLE datazone_env_5hkjdsy3umpi1c;
+GRANT ROLE sbx_lab_rw TO ROLE datazone_env_5hkjdsy3umpi1c;
+```
+
+Role-to-role nesting is supported here and was read before relying on it (`sys:dba -> sys:operator`).
+The name is **one per project environment**, which is the brief's own grain — *"access is given to a
+project profile"* — and it does not grow with headcount: every person's auto-created user receives
+`datazone_env_<env>` from the session tag, and `sbx_lab_rw` through it.
+
+**The per-person stopgap was revoked on purpose** —
+`REVOKE ROLE sbx_lab_rw FROM "IAMR:user-28f1b390-…"` — because leaving it would mask the very thing
+being tested. State before the reconnect: the nested role exists, the per-person user holds **nothing**,
+the Data page's per-project user still holds `sbx_lab_rw`.
+
+**Pending**: one reconnect from JupyterLab. If the mechanism fires, `svv_user_grants` gains a row nobody
+wrote. If it does not, the role name or the sign-in-time mapping is wrong and the next candidate is the
+recurring `GRANT`.
+
+### What this does not solve
+
+**Read-across is untouched.** `ALTER DEFAULT PRIVILEGES` is still per creating user, with no `FOR ROLE`,
+no wildcard and no tag, and nesting roles does not change who owns a table. `EXC-15` stands, and
+`lab.hello_jupyter` is still readable by no role. The role half is now declarative and the ownership
+half is not — which is a sharper statement of the problem than the one decision 8a opened with.

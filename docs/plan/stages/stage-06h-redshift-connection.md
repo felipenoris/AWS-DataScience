@@ -507,7 +507,22 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `locals` (426,667 MB — the metric is in megabytes, on the `Namespace` dimension, so it keeps reading while
    the `[E]` compute is down). The threshold is a variable in USD so that the arithmetic moves with the price
    and the argument stays in dollars.
-8a. **Whether both doors should resolve to ONE database user** — **new 2026-10-11, and measured.**
+8a. **How the per-person user on the JupyterLab door gets its grants** — **new 2026-10-11, and the
+   option approved that day was measured dead the same day.** `RedshiftDbUser` is a **session tag**,
+   set per person by SMUS on every `AssumeRole` of the project role, so it overrides the role's own tag
+   and collapsing both doors onto one database user is **not available** — the role already carries
+   `RedshiftDbUser = user-project@<project>` and the session's value wins. `aws_iam_role_tag` does not
+   exist in the AWS provider either, so such a tag would have no declarative home.
+   **The same session carries `RedshiftDbRoles = datazone_env_<environmentId>`**, which SMUS passes and
+   Redshift silently ignored because no role of that name existed. **Taken: create it and nest the
+   theme role inside it** — one role per project environment, the brief's own grain, not growing with
+   headcount, and the platform's own mechanism rather than one this repository invented. The
+   `RedshiftDbRoles` tag refused on 2026-09-21 for its silent ignore is the same tag, and the silent
+   ignore had already happened.
+   **It does not solve read-across**: `ALTER DEFAULT PRIVILEGES` is per creating user and nesting roles
+   does not change ownership, so `EXC-15` stands and that half is still open.
+
+8b. **~~Whether both doors should resolve to ONE database user~~ — closed 2026-10-11, unavailable.**
    The Data page resolves to `IAMR:<the project role's name>`, because the **access role** carries
    `RedshiftDbUser`. JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>` — **per
    person, auto-created at first connect, holding nothing** — because the project role carries no such
