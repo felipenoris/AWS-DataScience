@@ -1,0 +1,23 @@
+# awsds-demo-job - the Python project of Stage 6i's exercise
+# (docs/plan/stages/stage-06i-sandbox-orchestration.md).
+#
+# Standard library only. The same code runs in three interpreters: the house image's
+# /opt/awsds/venv (3.13) inside the processing job, and the MWAA worker's 3.12 in the
+# PythonOperator and BashOperator variants, where boto3 is pre-installed.
+
+[project]
+name = "awsds-demo-job"
+version = "0.1.0"
+description = "One CSV in, one JSON summary out: the command Stage 6i's workflows run"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+awsds-demo-job = "awsds_demo_job.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/awsds_demo_job"]

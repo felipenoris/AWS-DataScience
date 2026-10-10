@@ -440,9 +440,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   and severs the domain/project the portal injects. The `Workflows` blueprint is category 3;
   `DenyProvisionedMwaa` and Stage 10's slices are unwritten. **`PythonOperator`/`BashOperator` are
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
-  object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0) and a CLI newer than
-  2.36.18. Stage 10 decision 6 (new): one YAML cannot name both accounts, so it is rendered per
-  environment.
+  object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
+  2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
+  cannot name both accounts, so it is rendered per environment. **6i pass 0 done 2026-10-10**:
+  `./aws/sandbox-orchestration.py` (`SO-1`..`SO-8`) and `examples/sandbox-orchestration/` (the
+  project, 6 tests green; `render.py` fills the placeholders on screen); pass 1 is the user's upload.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6

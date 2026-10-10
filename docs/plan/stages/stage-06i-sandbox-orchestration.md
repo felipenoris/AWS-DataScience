@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started, written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. No Terraform changes |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 is the user's upload.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. No Terraform changes |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -196,17 +196,21 @@ run: a job whose container cannot write its output fails the same way as a proje
 **Action:** read what the definitions interpolate, bring the CLI up to the service, and write the instrument
 and the files before anything runs.
 
-- **0.1 — [Claude] Read the identifiers**, with the API rather than this file (Lesson 38): the project id and
+- **0.1 — Done 2026-10-10. [Claude] Read the identifiers**, with the API rather than this file (Lesson 38): the project id and
   domain id, the project role's ARN and its `KmsKeyId` tag, the key's ARN, the two private subnet ids and the
   security group id from the existing workflows' `NetworkConfiguration`, the `shared/` prefix, and the house
   image's digest from `./aws/devenv.py`. Read on 2026-10-10: project `avhvbqn37ty7m8`, domain
   `dzd-d8yrvx1ko7im6o`, security group `datazone-avhvbqn37ty7m8-dev`, subnets
   `awsds-sandbox-private-usw2-az1` and `-usw2-az2`, both existing workflows `manual_only` on the project key.
-- **0.2 — [user] Upgrade the AWS CLI** (moved from Stage 10 0.2). 2.36.18 knows neither `create-workflow
+- **0.2 — Done 2026-10-10 by the user: 2.37.12**, whose `create-workflow` takes `--code`. **[user] Upgrade the
+  AWS CLI** (moved from Stage 10 0.2). 2.36.18 knows neither `create-workflow
   --code` nor the `Code` and `CodeSnapshottedAt` fields `get-workflow` returns, so no instrument can read where
   the portal stored the operator files. The check after the upgrade:
   `aws mwaa-serverless create-workflow help | grep -- '--code'`.
-- **0.3 — [Claude] Write `./aws/sandbox-orchestration.py`**, read-only, one profile (`awsds-infra-sandbox-1`),
+- **0.3 — Done 2026-10-10, and run.** A self-test that pointed the contract at the two earlier workflows
+  exercised `SO-2`..`SO-4` before any contract workflow exists, and it found one defect, fixed: a retried
+  task's state was read from whichever attempt the listing returned last, not from the highest attempt.
+  **[Claude] Write `./aws/sandbox-orchestration.py`**, read-only, one profile (`awsds-infra-sandbox-1`),
   and run it once before pass 1 so every later run has a before:
   - `SO-1` the three workflows exist, `READY`, created by the project role (CloudTrail `CreateWorkflow`);
   - `SO-2` each one's role, `NetworkConfiguration` (two private subnets, no default route) and project key;
@@ -219,7 +223,10 @@ and the files before anything runs.
   - `SO-7` the `shared/orchestration-demo/` prefixes: what each `inbox/` and `outbox/` holds;
   - `SO-8` the CloudTrail record of `CreateProcessingJob`: caller, session name, `vpcEndpointId`.
   Its row joins [`aws/INDEX.md`](../../../aws/INDEX.md) in the same commit.
-- **0.4 — [Claude] Write the files** under `examples/sandbox-orchestration/` (decision 1), with the
+- **0.4 — Done 2026-10-10**, with `render.py` beside the files: it reads the live values as the
+  infrastructure user and prints a file with its placeholders filled, so the real values never reach a
+  tracked file. The project's 6 tests pass. **[Claude] Write the files** under
+  `examples/sandbox-orchestration/` (decision 1), with the
   repository layout line in `README.md` in the same commit:
   - the Python project `awsds-demo-job`: a `pyproject.toml`, the package `src/awsds_demo_job/` with
     `transform.py` (stdlib only: for each input CSV, a JSON result with the row count, the column names and
