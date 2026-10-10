@@ -247,7 +247,7 @@ only alternative is `for-use-with-all-datazone-projects=true`, which admits ever
 the per schema × project grain is real at layer 3 and the compute-admission gate in front of it is not; that
 tension arrives with the **second** project and is a decision, not a map entry.
 
-Three consequences this file has to carry rather than leave to a stage:
+Consequences this file has to carry rather than leave to a stage:
 
 - **The two classes are governed by different systems, by requirement.** A governed schema is a Lake Formation
   resource; a sandbox schema is **outside the catalog altogether**, and what stands between two schemas there
@@ -258,6 +258,19 @@ Three consequences this file has to carry rather than leave to a stage:
   carries no LF-Tag, it is not readable by `list-permissions` — only from `SVV_*` inside a database session —
   and nothing in a Terraform plan shows it. It gets its own register table in
   [`docs/AWS_STATE.md`](AWS_STATE.md) rather than a row beside the LF grants.
+- **Sharing a sandbox schema grants read-across, and nothing more.** The schema's role carries `USAGE,
+  CREATE` and nothing at table level, so a table belongs to the database user that created it, and another
+  project reads it only through a default privilege written for that creator: `SELECT`, never `INSERT` or
+  `DROP`, and widening it is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8's. Measured
+  2026-10-10 on the first tables a project wrote; the second project that would exercise it does not exist
+  yet (6h 5.2b).
+- **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
+  assumes the project's access role, reach the database as one per-project user; a notebook that connects
+  directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
+  2026-10-10). So the database attributes work to a project, never to a person, and whether CloudTrail
+  still names the person on the chained session is unread (6h verification xv). The SQL itself would be in
+  the warehouse's audit export, which has been stopped since 2026-10-10T03:09:06Z (`EXC-16`), so
+  [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
   federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,

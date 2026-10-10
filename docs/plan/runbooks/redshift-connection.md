@@ -120,13 +120,15 @@ connect but sees nothing"* as the expected state for a while — which is the am
    hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
    permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
 3a. **Tell the project's notebooks to chain through the access role**, which is what makes the
-   schema work from a space (measured 2026-10-11, §V step 4). Redshift grants to database users and
+   schema work from a space (measured 2026-10-10, §V step 4). Redshift grants to database users and
    never to an IAM role, and the space's session carries a **per-person** `RedshiftDbUser` that SMUS
    sets and nobody can change. Assuming the access role first lands the session on the **per-project**
    database user instead — the one the `GRANT ROLE` and the schema's default privilege already name —
    because **no session tag is transitive**, so the per-person value does not follow into the chain.
    A notebook that connects directly still gets a user holding nothing and still fails at the schema,
-   so this is a convention with a loud failure rather than a control.
+   so this is a convention with a loud failure rather than a control. In-database attribution becomes
+   per project; whether CloudTrail still names the person on the chained session is unread (6h
+   verification xv): the trust policy admits `sts:SetSourceIdentity`, and §J's call passes none.
 4. **The connection, in the portal**, by the project member — it cannot be done any other way:
    `datazone list-connections` is refused to the account's administrator by **DataZone's own**
    authorization layer, because that identity is not a project member. *Compute → Data warehouse →
@@ -140,7 +142,9 @@ connect but sees nothing"* as the expected state for a while — which is the am
    - **The compute dropdown offers the namespace's `dev` database.** The themed schema is in the class
      container (`sandbox`), and a cross-database **write** does not work in Redshift, so the
      connection must name that database — by a database field if the form has one, otherwise through
-     the JDBC URL with the `/dev` suffix replaced.
+     the JDBC URL with the `/dev` suffix replaced. Measured 2026-10-10: the Query editor lists every
+     database in the namespace (`dev`, `sandbox`, `warehouse`) and the project wrote `lab.hello` from
+     it; which database the connection object names was not recorded.
    - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
      meter cannot be turned on from the portal. It is reachable only through the API.
 5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
@@ -179,6 +183,10 @@ DROP USER "<identifier>";
 
 `WH-12` is what finds a role membership nothing declares; this section is what prevents it.
 
+**The connection object stays.** It is DataZone's, no apply touches it, and this identity cannot read
+it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access role
+the apply destroyed.
+
 ---
 
 ## §T Two projects on one schema
@@ -208,7 +216,7 @@ a sharing semantic nobody has asked for; read-across is what a shared base means
 > **Neither `pg_default_acl` nor `relacl` is the instrument on this platform.**
 > `pg_default_acl` returns zero rows after a successful `ALTER DEFAULT PRIVILEGES` — the privilege is
 > in **`svv_default_privileges`** alone. And **`pg_class.relacl` is blind to a grant made to a ROLE**:
-> measured 2026-10-11, two tables each carrying `sbx_lab_rw / SELECT` in
+> measured 2026-10-10, two tables each carrying `sbx_lab_rw / SELECT` in
 > `svv_relation_privileges` read `relacl = (none)`. The legacy PostgreSQL ACL columns hold the legacy
 > ACL; Redshift's RBAC lives in the `SVV_` views and nowhere else, so reading both is not two
 > independent readings — only one of them can ever see a role.
@@ -372,6 +380,8 @@ refuses queries until somebody raises it. Both are deliberate (5b decision 2).
 | `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown |
 | `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
 | `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
+| `WH-14` | every relation in a themed schema, against the roles that can read it through a grant or a default privilege | layer 3's sharing half: a table no role can read, which on a shared schema is one project's data the others cannot see (§T) |
+| `WH-9` | nothing: a note, always. The connection object is unreadable by this identity (`EXC-17`) | — the connection is read through the three layers above |
 
 `WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
 green for the wrong reason (Lesson 50).
@@ -543,10 +553,9 @@ except OSError as exc:
 # exiting, so it is the wrong mechanism twice over. Each step that cannot run says so and the
 # summary at the end is the verdict.
 #
-# redshift_connector IS importable in the image, transitively - it is absent from
-# images/dev-env/python/pyproject.toml and arrives through one of the SageMaker packages (measured
-# 2026-10-10). The install below is the fallback and is normally a no-op. A transitive driver is a
-# dependency nobody declared: if it is wanted, it belongs in that pyproject by name plus `uv lock`.
+# redshift_connector is importable in the image: the lock installs it through
+# amazon-sagemaker-sql-execution (measured 2026-10-10), and images/dev-env/python/pyproject.toml
+# names it since. The install below is the fallback for a kernel without it, normally a no-op.
 driver = None
 try:
     import redshift_connector as driver
@@ -660,7 +669,7 @@ else:
 # id as the external id, and layer 2 grants `sts:AssumeRole` on that ARN.
 #
 # WHAT MAKES THIS WORK IS THAT NO TAG IS TRANSITIVE. `transitiveTagKeys` is `None` on the space's
-# assume (measured 2026-10-11), so the per-person `RedshiftDbUser` does NOT follow into a chained
+# assume (measured 2026-10-10), so the per-person `RedshiftDbUser` does NOT follow into a chained
 # session and the access role's own tag governs there. Nothing in AWS changes for this; it is a
 # convention in how a notebook connects.
 #

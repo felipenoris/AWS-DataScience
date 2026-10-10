@@ -581,7 +581,7 @@ kinds, and both exist because the alternative was a blueprint provisioning somet
 | Kind | Reaches | Written by | Stage |
 |---|---|---|---|
 | **S3** | `awsds-sandbox-lake`, per SSO-group prefix | by hand, per project ([`runbooks/sandbox-lake.md`](plan/runbooks/sandbox-lake.md)) | [16](plan/stages/stage-16-sandbox-lake.md) |
-| **Redshift** | `awsds-sandbox-warehouse`, one themed **schema** in its `sandbox` database — shareable with several projects | decision 1 of [6h](plan/stages/stage-06h-redshift-connection.md): the portal for the first, `awscc_datazone_connection` after | [6h](plan/stages/stage-06h-redshift-connection.md) |
+| **Redshift** | `awsds-sandbox-warehouse`, one themed **schema** in its `sandbox` database — shareable with several projects | a project member, in the portal ([6h](plan/stages/stage-06h-redshift-connection.md) decision 1): DataZone refuses `ListConnections` to the infrastructure identity, which is not a project member, so no instrument here reads the object (`EXC-17`) | [6h](plan/stages/stage-06h-redshift-connection.md) |
 
 **A Redshift connection is three layers, and none of them is the connection.** Read 2026-09-19, for
 [6h](plan/stages/stage-06h-redshift-connection.md); the requirement it implements is *access per database ×
@@ -598,10 +598,15 @@ project*, and no single mechanism expresses that:
    and admitting a second project is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8 rather
    than a second map entry. `sandbox/warehouse/`'s `projects` variable refuses one at plan time, because the
    alternative is a silent overwrite that breaks the first project's connection with nothing to say which.
-2. **The project role's IAM reach** — `redshift-serverless:GetCredentials`, `GetWorkgroup`,
-   `ListTagsForResource`, and the `redshift-data:` family if the Data API is the path — mints the database
-   session. It must also fit inside the **D13 project boundary** (INT-15), which is a ceiling, so a grant the
-   boundary does not admit reaches nothing.
+2. **The IAM reach** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource` —
+   mints the database session, and it sits on **two** roles: the project role, and the per-project
+   **access role** the form demands (below). On the Data page `GetCredentials` is called by the access
+   role; on a direct notebook session, by the project role (measured 2026-10-10). The project role must
+   also fit inside the **D13 project boundary** (INT-15), which is a ceiling, so a grant the boundary does
+   not admit reaches nothing; it admits `GetCredentials`. `redshift-data:` is granted to neither role and
+   neither door needed it. The Query editor adds `sqlworkbench:CreateConnection` and `DriverExecute` on
+   the access role, which CloudTrail records as the events `GetResources` and `ExecuteQuery`: a refusal's
+   `errorMessage` names the action, its `eventName` does not.
 3. **A Redshift `GRANT`** decides the database, schema and tables. This is the requirement's own grain, it is
    SQL rather than Terraform, and **nothing in a plan shows it** — including its absence after a project is
    unwired.
@@ -614,17 +619,38 @@ following options: Username and password, IAM credentials, AWS Secrets Manager."
 credentials** — the only one carrying no standing credential — and pays for it in display: *"Using a username
 and password enables Amazon SageMaker Unified Studio to display more information for a resource."*
 
+**On the form, IAM credentials is an access role** (measured 2026-09-21). `Access role ARN` is mandatory
+on a same-account connection, which AWS's same-account procedure and the field's own help both deny, and
+`AWS Secret` is optional beside it. `create-connection`'s `credentials` union has only `secretArn` and
+`usernamePassword`, so the IAM path is `awsLocation.accessRole` plus that role's `RedshiftDbUser` tag.
+**Redshift prefixes the tag's value with `IAMR:`** (measured 2026-10-10), so a tag carrying the project
+role's name yields `IAMR:datazone_usr_role_<project>_<env>`. A connection reading `Available` has minted
+no database session; the user appears at the first query. The Data page's path called no
+provisioned-cluster API (`DescribeClusters`, `GetClusterCredentials`), so `DenyRedshiftProvisionedClusters`
+costs it nothing.
+
 **Two doors, and they have different prerequisites.** *"If you want to query the Amazon Redshift resources
 using JupyterLab within Amazon SageMaker Unified Studio, the Amazon Redshift resource must use the same VPC as
 the Amazon SageMaker Unified Studio project"*, while *"You can still query using the Data page of your project
 if you are using different VPCs."* That is why the sandbox warehouse is in Sandbox's own VPC and why the
-the governed one in `VPC-Workloads` is unreachable from a notebook by construction — Sandbox does not peer with it,
+governed one in `VPC-Workloads` is unreachable from a notebook by construction — Sandbox does not peer with it,
 and the absence is a control (`docs/NETWORK.md` §3).
+
+**The doors resolve to different database users** (measured 2026-10-10). The Data page reaches the
+database through the access role, as the per-project user its tag names. A notebook connecting directly
+reaches it as the project role, whose session carries a `RedshiftDbUser` SMUS sets per person on every
+assume, so Redshift auto-creates `IAMR:user-<Identity Center user id>@<project id>`, holding nothing. A
+session tag overrides the role's own tag, and none is transitive, so a notebook that assumes the access
+role first lands on the per-project user ([6h](plan/stages/stage-06h-redshift-connection.md) decision 8a;
+the recipe is [`runbooks/redshift-connection.md`](plan/runbooks/redshift-connection.md) §J).
+`RedshiftDbRoles = datazone_env_<environment id>` rides the portal's session and not the space's, so it
+maps nothing on the notebook door.
 
 **`lineageSync` is a scheduled query on an hourly meter.** `awscc_datazone_connection`'s
 `redshift_properties.lineage_sync` takes an `enabled` flag and a `schedule`, and every run is a query on a
 workgroup billing **1.44 USD/hour** at 4 RPUs. It stays off until something asks for the lineage nodes
-(6h decision 3).
+(6h decision 3), and the portal's form offers no toggle for it on this path (measured 2026-09-21), so
+only the API reaches it.
 
 **`enable_trusted_identity_propagation` exists per connection**, not only per project profile — which
 corrects the premise of open question 13, where TIP is recorded as a profile-level switch whose cost is that

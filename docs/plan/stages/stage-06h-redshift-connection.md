@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 and pass 1 done 2026-09-20** ([log](../../log/log-stage-06h-redshift-connection.md)): the class container `sandbox`, `PUBLIC` revoked, the schema `lab` with a 1 TB quota, its owner and the `sbx_lab_rw` role — **layer 3 exists and holds nobody**. Layers 1 and 2 are code with an **empty** project map, deliberately, so the *before* of verification (vi) is a measurement. **Passes 2 and 3 need a portal session and a space and are owed to the user.** Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
+| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 waits for a second project. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b with a second project), 0.4's portal reading, 6.4 (the user's keep-or-drop of `lab`), and verifications x, xii and xv. The audit export a DLP feed would read has stopped (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
 | **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all. **And [5b](stage-05b-redshift-serverless.md) 1.10's endpoint group**, raised with `make up ENV=sandbox GROUPS=redshift`: without it a `redshift-serverless:GetCredentials` call — layer 2, and the whole IAM-credentials path — leaves through the proxy as a public request, which is 6e's *wrong door* repeated. The 5439 data path needs no endpoint, only the security group. **The compute slice must be up**: a `make down` leaves the namespace and removes the workgroup, so a connection to a destroyed workgroup fails the way a space started while `sandbox/egress` is down hangs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
@@ -37,7 +37,7 @@ the database*, which is the same symptom three times over (Lesson 28's intersect
 | # | Layer | Written where | Grain | What its absence looks like |
 |---|---|---|---|---|
 | 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup**, and ***one project only*** *[corrected 2026-09-20]* — it is a tag key, so AWS's alternative for more than one is the wide form. Decision 8 | the compute does not appear in the project's dropdown at all |
-| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, plus `redshift-data:` if the Data API is the path | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
+| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, and no `redshift-data:`, which neither door needed (2.2) | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted and to the per-project access role the form demands (3.1) | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
 | 3 | **A database role per schema**, holding `USAGE, CREATE` on it, granted to each admitted project's database user — the schema itself carrying a `QUOTA` | SQL, run once per schema from the admin credential; one `GRANT ROLE` per admitted project | per **schema × project**, many-to-many | the project connects, sees the cluster, and the schema is invisible or read-only |
 
 **Layer 3 is the requirement's grain.** Layers 1 and 2 are gates in front of it, and they are per-warehouse:
@@ -237,7 +237,7 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
   > is freed up only when `VACUUM` runs"* — and at 4 base RPUs vacuum boost is unavailable, so it is the plain
   > `VACUUM` command ([Stage 5b](stage-05b-redshift-serverless.md)'s capacity reading, which is where that fact
   > was recorded before anything needed it).
-- **1.4 — Done 2026-09-21: `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, non-superuser, created before the connection.** The spelling is still a prediction until 3.2 resolves one. **Create the project's database user, and read its identifier rather than assuming it.**
+- **1.4 — Done 2026-09-21: `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, non-superuser, created before the connection.** The spelling was confirmed on 2026-10-10: Redshift prefixes the access role's `RedshiftDbUser` value with `IAMR:`, and the unprefixed user made as insurance was dropped. **Create the project's database user, and read its identifier rather than assuming it.**
   With IAM credentials (0.3), Redshift derives the database user from the calling IAM identity, and the
   documented spellings in this family are **`IAM:<user>`** and **`IAMR:<role>`** — plus, on the cross-account
   path, a `RedshiftDbUser=<Username>` **tag on the access role** that *"determines the federated database
@@ -292,7 +292,7 @@ the two cannot drift by an edit that still plans clean.
   requirement names both objects) and to one IAM policy attached to that project's role.
   **The wide form stays refused**: `for-use-with-all-datazone-projects=true` appears nowhere, and `WH-7`
   fails if it does.
-- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and the Data API path is not granted; 3.4's refusal, if it comes, is what decides whether the family joins. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
+- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and the Data API path is not granted; 3.4's refusal, if it comes, is what decides whether the family joins. **3.4 needed none** (2026-10-10): the Data page reaches the database through `sqlworkbench`, so the family stays out. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
   `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListWorkgroups`, `ListTagsForResource`, and — only
   if 0.3's answer needs it — the `redshift-data:ExecuteStatement`/`GetStatementResult`/`DescribeStatement`
   family. **Nothing on the namespace's own management APIs**, no `UpdateWorkgroup`, and **no
@@ -322,24 +322,44 @@ picks one.
   portal is not a preference. **The form requires an `Access role ARN` same-account**, which no AWS page
   says it does, and marks the secret optional — so the IAM path carries no standing credential, and
   `sandbox/warehouse/` now authors one access role per admitted project from the same map.
-- **3.2 — [user] Create the connection** — **owed, and the access role it needs is authored but NOT
-  applied.** Two things measured at the form on 2026-09-21: the compute **did appear** in the dropdown, so
-  layer 1 works; and it is offered as database **`dev`**, while `lab` is in `sandbox` — a cross-database read
-  works in Redshift and a cross-database **write** does not, so the connection must name `sandbox`, by a
-  database field if the form has one and otherwise through the JDBC URL. In the project, with the credential
-  type 0.3 chose, and record
+- **3.2 — Done 2026-10-10 by the user: `redshift-serverless.redshift`, `Available`.** The first two
+  attempts were refused because `Access role ARN` held the project role's own ARN; with
+  `awsds-sandbox-warehouse-access-<project>`, applied 2026-10-09, the form accepted. **`Available` mints
+  no database session**: `pg_user` was unchanged until the first query. Which database the object names
+  was not recorded, and this identity cannot read it (`EXC-17`). The `dev` the dropdown offers confined
+  nothing: the Query editor lists `dev`, `sandbox` and `warehouse` alike, and 3.4's write landed in `lab`.
+  **[user] Create the connection.** Measured at the form on 2026-09-21: the compute **did appear** in the
+  dropdown, so layer 1 works; `Access role ARN` is mandatory and `AWS Secret` optional; there is **no
+  `lineageSync` toggle**; and it is offered as database **`dev`**, while `lab` is in `sandbox` — a
+  cross-database read works in Redshift and a cross-database **write** does not, so the connection must
+  name `sandbox`, by a database field if the form has one and otherwise through the JDBC URL. In the
+  project, with the credential type 0.3 chose, and record
   every field the portal asked for and every default it filled — the `lineageSync` toggle above all, since a
   lineage sync on a schedule is a **recurring query**, and a recurring query on this warehouse is a recurring
   **USD 1.44/hour** meter. Leave it **off** unless somebody asks for it (decision 3).
-- **3.3 — [user] From JupyterLab in a space, write a table into `lab`** and read it back. The path is
+- **3.3 — Done 2026-10-10: a table written and read back over `5439` from a space.** The session
+  resolved to a **per-person** database user holding nothing, which decision 8a answers by chaining
+  through the access role. An earlier attempt the same day connected and broke on its first statement
+  (`BrokenPipe`); it did not reproduce after the workgroup was rebuilt, so it is unexplained rather than
+  solved. **[user] From JupyterLab in a space, write a table into `lab`** and read it back. The path is
   `5439/tcp` inside one VPC, through [5b](stage-05b-redshift-serverless.md) 1.4's security group, and it
   exists only because the workgroup and the project share a VPC — AWS: *"If you want to query the Amazon
   Redshift resources using JupyterLab … the Amazon Redshift resource must use the same VPC as the … project."*
-- **3.4 — [user] Then the same query from the project's Data page**, which does **not** need the VPC path:
+- **3.4 — Done 2026-10-10: the project wrote `lab.hello` from the Query editor**, owned by
+  `IAMR:datazone_usr_role_<project>_<env>`. Beside it the editor lists `awsdatacatalog` as failing, by
+  design: that mount runs as the namespace role, which holds no policy (5b decision 5).
+  **[user] Then the same query from the project's Data page**, which does **not** need the VPC path:
   *"You can still query using the Data page of your project if you are using different VPCs."* Two doors, and
   reading them apart is what makes a later failure diagnosable — the same discipline `docs/NETWORK.md` §5
   applies to the three internet paths.
-- **3.5 — [Claude] Attribute the write in CloudTrail**, from the account's own trail: which principal called
+- **3.5 — Done 2026-10-10.** `GetCredentials` is called by the **access role** on the Data page's path
+  and by the **project role** on a direct notebook session, so *whose identity reaches the database*
+  depends on the door (verification v). **No provisioned-cluster API was called**, so 5b 1.10's third
+  endpoint is not needed. The door half is in [6d's log](../../log/log-stage-06d-unified-studio-remainder.md)
+  for the same day: a space's `GetCredentials` took the `redshift-serverless` endpoint once it existed,
+  and the one call before it left through the proxy as a public request, because the house image's
+  `NO_PROXY` lacked the name — `default-v0.5.0` carries it.
+  **[Claude] Attribute the write in CloudTrail**, from the account's own trail: which principal called
   `GetCredentials`, and whether the session that wrote the table is the **project role** or something else.
   **Read two more things off the same trail while it is open**: whether anything called the *provisioned-cluster*
   API `redshift:DescribeClusters`/`GetClusterCredentials` — which is what decides 5b 1.10's third endpoint, and
@@ -350,7 +370,11 @@ picks one.
   and not an assumption: `StartSession` turned out to be called **as the project role**, so 6a's tag pair
   never evaluated. The same question here is *whose identity reaches the database*, and the answer decides
   whether layer 3's user is per project or per person.
-- **3.6 — [Claude] Read the three audit log groups** for this session: `connectionlog` has the connection,
+- **3.6 — Settled 2026-10-10 as `EXC-16`: the export has stopped.** `connectionlog`'s last event is
+  2026-10-10T03:09:06Z and no group has carried an event of any kind since, across 142+ queries and DDL
+  through both doors; every record before it is `rdsdb`'s. So the groups have never held a user
+  connection or a line of user SQL, and the DLP feed is still a claim (verification ix).
+  **[Claude] Read the three audit log groups** for this session: `connectionlog` has the connection,
   `useractivitylog` has the SQL. This is the first content those groups have ever had
   ([5b](stage-05b-redshift-serverless.md) 6.1 created them empty), and it is where the DLP feed stops being a
   claim.
@@ -410,7 +434,10 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 
 ### 6. Close
 
-- **6.1 — [Claude] Write `runbooks/redshift-connection.md`**: the
+- **6.1 — Done 2026-10-10**: §S adding a schema, §P wiring a project, §U unwiring one, §T two projects
+  on one schema, §F where a failure comes from, §J SQL from a notebook, §V the instruments. §U is
+  written and unexercised (verification x).
+  **[Claude] Write `runbooks/redshift-connection.md`**: the
   recurring procedure, in the shape [`sandbox-lake.md`](../runbooks/sandbox-lake.md) takes for the S3
   connection — add a database, wire a project (the three layers, in order), unwire one, and what a failure at
   each layer looks like. **Unwiring is the half that gets forgotten**: a project removed from the map loses
@@ -420,9 +447,16 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   prevents it. The runbook also carries **adding a schema**, which is now a distinct procedure from adding a
   project: a schema is created once with its theme, its owner role, its `_rw` role and its 1 TB quota, and
   projects come and go against it.
-- **6.2 — [Claude] Extend `./aws/warehouse.py`** with `WH-9`..`WH-12` (the connection, the tag pair, the
+- **6.2 — Done 2026-10-10**: `WH-11` and `WH-12`, plus `WH-14`, which the plan did not have; `WH-9` is a
+  permanent note, because `datazone list-connections` is refused to `InfrastructureAccess` by DataZone's
+  own authorization layer; `WH-10` was not written, because `WH-7` already compares the tag pair on both
+  objects with the authored map. `./aws/warehouse.py --sql`: 14 pass, 2 notes.
+  **[Claude] Extend `./aws/warehouse.py`** with `WH-9`..`WH-12` (the connection, the tag pair, the
   project role's reach and boundary, the database/grant inventory).
-- **6.3 — [Claude] Bring the documents up**: `docs/SMUS.md` (the connection surface, beside §S3's S3
+- **6.3 — Done 2026-10-10**: `docs/SMUS.md` §Connections, `docs/GOVERNANCE.md`'s consequences,
+  `docs/AWS_STATE.md` (the register, `EXC-15` to `EXC-17`), the warehouse rows of `docs/NETWORK.md`, and
+  `CLAUDE.md`.
+  **[Claude] Bring the documents up**: `docs/SMUS.md` (the connection surface, beside §S3's S3
   connection), `docs/GOVERNANCE.md` (the warehouse's row in §Accounts, and the fact that a Redshift grant is a
   fourth permission system with no LF-Tag), `docs/AWS_STATE.md` (the grant register's new table, and the
   residuals), `docs/NETWORK.md` §6 if the security group changed, and `CLAUDE.md`.
@@ -486,8 +520,10 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 3. **`lineageSync`** (3.2). **Answered 2026-09-21: off, and free.** The form offers no toggle on this path,
    so the scheduled query on the estate's most expensive meter cannot be turned on from the portal. Revisit
    only if [6f](stage-06f-data-governance.md)'s lineage step asks for it through the API.
-4. **Whether a persona ever queries the warehouse directly** (step 4). Recommended: **no** — every query
-   arrives through a project, which keeps the `GRANT` register complete and the shared RPU meter attributable.
+4. **Whether a persona ever queries the warehouse directly** (step 4). **Taken 2026-09-20: no**, as 5b 2.3
+   applied it: the persona keeps the read side and is denied `GetCredentials` and the `redshift-data:`
+   family. Every query arrives through a project, which keeps the `GRANT` register complete and the shared
+   RPU meter attributable. 5.4 is the measurement still owed.
 5. **~~One database per project, or shared databases with a schema per project~~ — answered by the brief**
    (2026-09-20): *a schema is a base*, one database holds them all, and **a schema may be shared with more than
    one project**. What remains is the mechanism, and it is 1.5's: **a database role per schema**, granted to each
@@ -507,7 +543,7 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `locals` (426,667 MB — the metric is in megabytes, on the `Namespace` dimension, so it keeps reading while
    the `[E]` compute is down). The threshold is a variable in USD so that the arithmetic moves with the price
    and the argument stays in dollars.
-8a. **How the per-person user on the JupyterLab door gets its grants** — **TAKEN 2026-10-11: it does
+8a. **How the per-person user on the JupyterLab door gets its grants** — **taken 2026-10-10: it does
    not, and a notebook chains through the access role instead.** Measured in one run: assuming
    `awsds-sandbox-warehouse-access-<project>` from a space lands the session on
    `IAMR:<the project role's name>`, which holds `sbx_lab_rw` already and is already the owner the
@@ -516,50 +552,43 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `EXC-15` is closed. The direct session in the same run is the control: still per person, still no
    role, still `permission denied for schema`. **Nothing in AWS changed**: the tag, the trust policy
    and layer 2's `sts:AssumeRole` were all in place, so this is a convention in how a notebook connects
-   (§P step 3a). The costs, stated before it was taken: in-database attribution becomes per project
-   with CloudTrail keeping the person through `sts:SetSourceIdentity`; the chain is a convention with a
-   loud failure rather than a control; and a helper belongs in the image if it becomes the house path.
-   **The path not taken**, and why: `RedshiftDbUser` is a **session tag**,
-   set per person by SMUS on every `AssumeRole` of the project role, so it overrides the role's own tag
-   and collapsing both doors onto one database user is **not available** — the role already carries
-   `RedshiftDbUser = user-project@<project>` and the session's value wins. `aws_iam_role_tag` does not
-   exist in the AWS provider either, so such a tag would have no declarative home.
-   **The same session carries `RedshiftDbRoles = datazone_env_<environmentId>`**, which SMUS passes and
-   Redshift silently ignored because no role of that name existed. **Taken: create it and nest the
-   theme role inside it** — one role per project environment, the brief's own grain, not growing with
-   headcount, and the platform's own mechanism rather than one this repository invented. The
-   `RedshiftDbRoles` tag refused on 2026-09-21 for its silent ignore is the same tag, and the silent
-   ignore had already happened.
-   **[corrected 2026-10-11] The mapping never fires on the JupyterLab door, and the role is
-   unexercised.** `RedshiftDbRoles` is carried by the **portal's** session (named
-   `<user id>@<environment id>`) and **not** by the **space's** (named `SageMaker`) — read off the wrong
-   record first, with both in one output. The role is kept because a project-role connection initiated
-   from the portal would use it, and that is unproven.
-   **So both halves are non-declarative on that door**, each for a measured reason: the `RedshiftDbUser`
-   session tag overrides the role's; `RedshiftDbRoles` is not passed; a role tag has no provider
-   resource (`aws_iam_role_tag` does not exist) and AWS's procedure for it also wants `tag:GetResources`
-   on the signing identity; and `ALTER DEFAULT PRIVILEGES` is per creating user with no `FOR ROLE`, no
-   wildcard and no tag. **What is left** is a per-person `GRANT` written after each first connect, with
-   `WH-14` and an empty `3c` as the guards, or a **reconciler** covering both halves at the cost of a
-   recurring act against the warehouse — the shape decision 3 refused for `lineageSync`, and needing a
-   runner this estate has not chosen. `EXC-15` stands.
+   (§P step 3a). The costs, stated before it was taken: in-database attribution becomes per project;
+   the chain is a convention with a loud failure rather than a control; and a helper belongs in the
+   image if it becomes the house path. **Whether CloudTrail still names the person is unread**
+   (verification xv): the trust policy admits `sts:SetSourceIdentity` from the `datazone:userId` tag,
+   and §J's `assume_role` passes no `SourceIdentity`.
+   **The paths not taken, each for a measured reason:**
+   - **`RedshiftDbUser` on the project role**, collapsing both doors onto one user (8b). SMUS sets
+     `RedshiftDbUser` as a **session** tag, per person, on every `AssumeRole` of the project role, and a
+     session tag overrides the role's: the role already carries `RedshiftDbUser = user-project@<project>`
+     and the session's value wins. `aws_iam_role_tag` does not exist in the AWS provider either, so such
+     a tag would have no declarative home.
+   - **`RedshiftDbRoles`**, the tag that maps database roles at sign-in. SMUS passes
+     `RedshiftDbRoles = datazone_env_<environmentId>`, and Redshift had silently ignored it because no
+     such role existed — the same tag this stage refused for the access role on 2026-09-21 for its
+     silent ignore, which had already happened. `CREATE ROLE datazone_env_<env>` with `sbx_lab_rw`
+     nested in it was applied, and **it never fires on this door**: the tag rides the **portal's**
+     session (named `<user id>@<environment id>`) and not the **space's** (named `SageMaker`). The role
+     is kept, unexercised, because a project-role connection initiated from the portal would use it. As
+     a tag on the role instead, it would need a tag on a role SMUS owns, which has no provider resource,
+     and AWS's procedure for that path also wants `tag:GetResources` on the signing identity.
+   - **A per-person `GRANT` after each first connect**, guarded by `WH-14` and an empty `3c`, or a
+     **reconciler** granting both halves on a schedule — the recurring act decision 3 refused for
+     `lineageSync`, and needing a runner this estate has not chosen. Both were the only answers while
+     the per-person user was the only path, because `ALTER DEFAULT PRIVILEGES` is per creating user with
+     no `FOR ROLE`, no wildcard and no tag. The per-person `GRANT` was applied once at 3.3 as a stopgap
+     and revoked the same day.
 
-8b. **~~Whether both doors should resolve to ONE database user~~ — closed 2026-10-11, unavailable.**
-   The Data page resolves to `IAMR:<the project role's name>`, because the **access role** carries
-   `RedshiftDbUser`. JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>` — **per
-   person, auto-created at first connect, holding nothing** — because the project role carries no such
-   tag. A shared schema then needs two per-principal things and **only one is declarative**:
-   `RedshiftDbRoles` can carry the role grant at first sign-in, and `ALTER DEFAULT PRIVILEGES` is **per
-   creating user**, with no `FOR ROLE`, no wildcard and no tag. So **read-across cannot be made
-   declarative while the grantee is per person**, and what is left is a recurring
-   `GRANT SELECT ON ALL TABLES IN SCHEMA` or per-person statements forever.
-   **Recommended: put `RedshiftDbUser` on the project role as well**, which collapses both doors onto
-   one per-project user — one owner, one default privilege, one register row, and `WH-14` green for a
-   structural reason rather than a per-person patch. **The price is attribution inside the database**:
-   every person's queries would run as one database user and only CloudTrail would tell them apart,
-   through the session name and the source identity the access role's trust policy already propagates.
-   **Unmeasured and cheap to measure**: one tag, one reconnect, one `pg_user` read. `EXC-15` holds
-   `WH-14`'s red until this is taken, and it touches a role SMUS owns.
+8b. **~~Whether both doors should resolve to ONE database user~~ — closed 2026-10-10, unavailable**
+   (8a's first path not taken). The Data page resolves to `IAMR:<the project role's name>`, because the
+   **access role** carries `RedshiftDbUser`. JupyterLab resolves to
+   `IAMR:user-<Identity Center user id>@<project id>` — **per person, auto-created at first connect,
+   holding nothing** — because the space's session carries a per-person `RedshiftDbUser` that overrides
+   the role's. A shared schema then needs two per-principal things and **only one is declarative**:
+   `RedshiftDbRoles` can carry the role grant at sign-in where the session passes it, and
+   `ALTER DEFAULT PRIVILEGES` is **per creating user**, with no `FOR ROLE`, no wildcard and no tag. So
+   **read-across cannot be made declarative while the grantee is per person**, which is why 8a moves the
+   notebook to the per-project grantee instead of granting the per-person one.
 
 8. **How a second project is admitted to the warehouse** — **new 2026-09-20**, and it exists because
    `AmazonDataZoneProject` turned out to be a **single-valued tag key** on both the workgroup and the
@@ -582,20 +611,21 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 
 | # | Question | Step |
 |---|---|---|
-| i | **Half answered**: the boundary is **attached** to the project role (INT-15 holds), which the slice's own precondition also checks. Whether it **admits** the actions is a different question and only a query from the project answers it | 0.2 |
-| ii | Does the portal offer the compute from a dropdown in the same account, and which fields does it ask for? | 3.1, 3.2 |
-| iii | **Half answered from an unexpected place**: `pg_user` already carries `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>`, created by nobody and **`usesuper = true`** — so a role-derived user is `IAMR:<role name>`, and an `InfrastructureAccess` session that reaches the database by IAM is a **superuser** session. Whether a project role resolves the same way still needs the first connection | 1.4, 3.3 |
-| iv | Does the JupyterLab path work over `5439` inside the VPC, and does the Data page work as well? | 3.3, 3.4 |
-| v | **Whose** identity reaches the database — the project role, or a per-person identity? | 3.5 |
+| i | **Answered 2026-10-10**: the boundary is **attached** to the project role (INT-15 holds, and the slice's own precondition checks it) and it **admits** `redshift-serverless:GetCredentials`: the project role called it from a space at 3.3 and was answered. `redshift-data:` is granted to no role, so the boundary's answer for that family is unread | 0.2 |
+| ii | **Answered 2026-09-21**: the compute is offered from a dropdown, as database `dev`; the form demands `Access role ARN`, leaves `AWS Secret` optional and offers no `lineageSync` toggle | 3.1, 3.2 |
+| iii | **Answered 2026-10-10**: the user is `IAMR:` plus the `RedshiftDbUser` value the calling session carries — `IAMR:datazone_usr_role_<project>_<env>` through the access role, `IAMR:user-<Identity Center user id>@<project id>` on a direct notebook session, auto-created holding nothing. Read first on 2026-09-20: `pg_user` already carries `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>`, created by nobody and **`usesuper = true`**, so an `InfrastructureAccess` session that reaches the database by IAM is a **superuser** session | 1.4, 3.3 |
+| iv | **Answered 2026-10-10: both doors work**, JupyterLab over `5439` inside the VPC and the Data page through `sqlworkbench` | 3.3, 3.4 |
+| v | **Answered 2026-10-10: it depends on the door.** The access role calls `GetCredentials` on the Data page and on a notebook's chained session, the project role on a direct notebook session, and each lands on the database user its session's `RedshiftDbUser` names | 3.5 |
 | vi | Does a project outside the map fail, and at which layer does it fail? | 5.1 |
 | vii | Does the admitted project reach `warehouse` — and if it reads it, which default grant did 1.2's `REVOKE` miss? | 5.2 |
-| xiii | Does `AUTHORIZATION` alone let the project create, alter and drop tables in its schema — with no `GRANT` and no `ALTER DEFAULT PRIVILEGES` — and what, if anything, it still needs to reach the enclosing database? | 1.5, 3.3 |
-| xiv | **Mostly answered without the project.** It refuses **at commit**, with the wording in the log, and the usage **overshoots the quota inside the transaction**. `SVV_SCHEMA_QUOTA_STATE` **cannot be read at all** — refused to a superuser — so neither it nor the violations view is an instrument here. Owed: that `ALTER SCHEMA … QUOTA` fails for a non-superuser, which needs a credential for one | 5.2a |
+| xiii | **Answered 2026-10-10**: the role's `USAGE, CREATE` lets the project create tables in `lab` with no further grant, each owned by the database user that created it, and its sessions on `sandbox` needed nothing beyond the role. Reading another creator's tables needs the default privilege written for that creator (runbook §T) | 1.5, 3.3 |
+| xiv | **Mostly answered without the project.** It refuses **at commit**, with the wording in the log, and the usage **overshoots the quota inside the transaction**. `SVV_SCHEMA_QUOTA_STATE` **cannot be read at all** — refused to a superuser — so neither it nor the violations view is an instrument here. Owed: that `ALTER SCHEMA … QUOTA` fails for a non-superuser, which the project's own session can now attempt | 5.2a |
 | viii | Is `GetCredentials` an **implicit** deny for the persona, or does something name a policy? | 5.4 |
-| ix | Do `connectionlog` and `useractivitylog` carry this session, and does the SQL text appear? | 3.6 |
+| ix | **Answered 2026-10-10: no.** The export stopped at 03:09:06Z that day (`EXC-16`), and no user connection or SQL text has ever reached the groups | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |
 | xi | Does anything at the domain level stop a project member creating a connection of their own? | 0.4 |
-| xii | What did the stage's queries cost, read from the bill rather than predicted? | 6.4 |
+| xii | What did the stage's queries cost, read from the bill rather than predicted? The 2026-10-10 reading, 100 RPU-seconds = 0.0100 USD, came from `ComputeSeconds` | 6.4 |
+| xv | Does CloudTrail name the person on a notebook's chained session? The access role's trust policy admits `sts:SetSourceIdentity` from the `datazone:userId` tag, and §J's `assume_role` passes no `SourceIdentity` | 8a |
 
 ## Risks
 

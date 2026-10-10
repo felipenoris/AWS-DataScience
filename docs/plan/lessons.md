@@ -1755,7 +1755,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
 
 - **Two sessions on the same role carry different session tags, and the session NAME is the only
-  thing that tells them apart** (measured 2026-10-11, after reading one for the other). SMUS assumes
+  thing that tells them apart** (measured 2026-10-10, after reading one for the other). SMUS assumes
   one project role from two places: the portal's session, named `<Identity Center user id>@<environment
   id>`, carries `RedshiftDbUser` **and `RedshiftDbRoles`**; the space's session, named `SageMaker`,
   carries `RedshiftDbUser` and **not** `RedshiftDbRoles`. Both appear in one `lookup-events` output,
@@ -1764,10 +1764,10 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   on both**, so no tag survives a further chain. Read `roleSessionName` before attributing a session
   tag, and treat "the role carries X" and "this session carries X" as different claims — a role tag is
   overridden by a session tag of the same key, so the role's value can be live and irrelevant at once.
-  Where: `log-stage-06h` (2026-10-11), 6h decision 8a.
+  Where: `log-stage-06h` (2026-10-10), 6h decision 8a.
 
 - **Two doors into one database resolve to two DIFFERENT database users, one per project and one per
-  person** (measured 2026-10-11). The same warehouse, the same schema, the same project: through the
+  person** (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
   portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
   `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
   **auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing**. So a `GRANT`
@@ -1776,7 +1776,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Asking "is the database user per project or per person" has no answer: it is a property of the path,
   not of the design. **The per-person `GRANT` is the trap** — it is the identity seam, one statement per
   person per schema; the mechanism that fits is `RedshiftDbRoles` on the role the user signs in with,
-  which maps roles at first sign-in. Where: `log-stage-06h` (2026-10-11),
+  which maps roles at first sign-in. Where: `log-stage-06h` (2026-10-10),
   `runbooks/redshift-connection.md` §T, `docs/AWS_STATE.md`'s Redshift register.
 
 - **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
