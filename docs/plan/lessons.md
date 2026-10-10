@@ -1714,14 +1714,21 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unchanged, because a database user is created when credentials are used rather than when they are
   minted. Where: `log-stage-06h` (2026-10-10).
 
-- **`enable_user_activity_logging` delivers `rdsdb` health checks and not user queries** (measured
-  2026-09-20 and again 2026-10-10, two different query paths). The namespace exports all three groups,
-  the live workgroup reads `enable_user_activity_logging true`, and `useractivitylog` receives events —
-  its latest are `user=rdsdb`, `SET QUERY_GROUP TO 'health'` and `SELECT 1`. What it has never received
-  is a query of ours: a marker left on 2026-09-20 is absent although the group holds events from after
-  it, and 142 queries from the portal's Query editor are absent 40 minutes on. **The instrument reports
-  presences, so the absence is evidence** (Lesson 62's bar, met deliberately). A DLP feed must not rest
-  on this group until a re-read settles whether the lag is hours, days, or total.
+- **The Redshift audit groups carry an internal heartbeat and no user activity, and the two halves of
+  that claim have different strengths** (measured 2026-09-20 and 2026-10-10). Configuration is not the
+  explanation: the namespace exports all three groups and the live workgroup reads
+  `enable_user_activity_logging true`.
+  **Firm:** a marker query left on 2026-09-20 is **absent** from `useractivitylog`, which holds events
+  *after* it — no lag explains that. And `connectionlog`'s 155 records are **every one `rdsdb`**: not one
+  user connection, by any path, ever.
+  **Not firm, and the correction matters:** today's 142 portal queries were also absent, but
+  `connectionlog`'s internal heartbeat fires only every ~2h25m and its last entry preceded that
+  activity — so a lag of tens of minutes fits the reading, and the first write-up overstated it.
+  `useractivitylog`'s 19-day silence is likewise explainable: the parameter lives on the **workgroup**,
+  and the `[E]` workgroup did not exist for most of that window.
+  **The reading to carry** is that an absence here needs a presence of the *same kind* to be evidence —
+  an internal event does not vouch for a user event (Lesson 62, applied to the half that fails it).
+  Stage 11 must not rest a DLP feed on these groups until a re-read settles it.
   Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
 
 - **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**

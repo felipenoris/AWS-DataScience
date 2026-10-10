@@ -949,3 +949,53 @@ excluded is "the queries are there and nobody looked".
    `make up ENV=sandbox GROUPS=redshift`.
 3. **[Claude]** a later re-read of the three audit groups, for the lag question above.
 4. **[Claude]** `WH-9`, now that a connection object exists to read.
+
+---
+
+## 2026-10-10 — amendment: the audit-log finding was half as strong as the previous entry claimed
+
+*Written by Claude, same day, after a background `filter-log-events` over the whole
+`connectionlog` group returned. The previous entry was written from the group's **latest event
+timestamp**; this one is written from its **contents**, and one of its two claims does not survive.*
+
+### What the full group says
+
+155 connection records, and the two facts that matter:
+
+- **Every one is `user=rdsdb`.** Not one user connection, by any path, in the group's whole retention
+  window — not the portal's, not the Data API's.
+- **The internal heartbeat fires about every 2h25m**, every day, through today: `9 Oct` at 00:59,
+  03:24, 05:49, 08:14; `10 Oct` at 00:14, 02:39, and a `disconnecting session` at 03:09:06.
+
+### The claim that does not survive
+
+The previous entry argued that today's 142 queries being absent was evidence, because *"the group does
+receive events"*. **The group's last write was 03:09:06Z and our activity was 04:17 and 04:47** — the
+next heartbeat was not due until about 05:04. So the group had written nothing since before our queries,
+and **a lag of tens of minutes fits every observation**. The reasoning was "it received today, so it
+would have received ours", and the cadence makes that false.
+
+`useractivitylog`'s 19-day silence has a similar reading available:
+`enable_user_activity_logging` is a **workgroup** config parameter, and the `[E]` workgroup did not
+exist for most of that window.
+
+### What remains firm, and it is enough to act on
+
+**The marker is the evidence.** `AUDITMARKER20260920`, run through the Data API on 2026-09-20, is
+**absent** from `useractivitylog` — and that group holds events from **2026-09-21**, after it. No lag
+explains a missing event when later events arrived. Together with 155 connection records that are
+entirely `rdsdb`, the standing conclusion is unchanged: **Stage 11 must not rest its DLP feed on these
+groups**, and the re-read is owed.
+
+### The reading to carry
+
+An absence needs a presence **of the same kind** before it is evidence. "The group received events" is
+not the same statement as "the group received a user event", and the first was allowed to stand for the
+second for one entry. Lesson 62 applied to its own write-up.
+
+### One reading for free
+
+`connectionlog` carries an `rdsdb` heartbeat on days the `[E]` workgroup did not exist — 3 through 9
+October, with the estate found entirely down on the 9th. The **namespace** generates internal activity
+with no workgroup at all, which is the same shape as RMS storage billing with no workgroup: `[P]` keeps
+living, and a log group is not evidence that anybody's compute is up.
