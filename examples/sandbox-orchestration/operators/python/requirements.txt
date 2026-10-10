@@ -1,0 +1,5 @@
+# Vendored into python-operator.zip by ../build.sh, for CPython 3.12 on manylinux2014 x86_64.
+# petl is absent from the worker's pre-installed set; PyYAML is in it, unpinned, and pinned
+# here below the current release so that a version reading tells the two copies apart.
+petl==1.7.28
+PyYAML==6.0.1

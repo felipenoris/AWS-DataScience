@@ -78,6 +78,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   2026-08-24). Its README carries the mechanism, the two prerequisites administered outside the library
   (the vending policy, the per-project grant) and the accepted grain; the applied state is
   `docs/AWS_STATE.md`'s vending row.
+- `examples/` — workloads that exercise the platform and are not part of it. `sandbox-orchestration/` is
+  [Stage 6i](docs/plan/stages/stage-06i-sandbox-orchestration.md)'s: a Python project that MWAA Serverless
+  workflows run in a Sandbox project, the operator files of the worker variants, the processing job's
+  configuration, and each workflow's definition after each pass. Every account-scoped value is a
+  placeholder, which its `render.py` fills on screen from read-only calls.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.
