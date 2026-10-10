@@ -45,7 +45,7 @@ flowchart LR
         STU["a Studio project · Workflows tool<br/>= MWAA Serverless, synced both ways"]
     end
     subgraph GL["GitLab (Production, D14)"]
-        REPO["app-etl repo · YAML + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
+        REPO["app-etl repo · YAML + code + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
     end
     subgraph PRD["Production"]
         ORC["orchestration/ [E] · pipeline-applied (INT-14)<br/>workflow + role + log group, workers in VPC-Workloads"]
@@ -116,9 +116,10 @@ readings; the only console half is the user's.
   the pinned `awscc` provider (re-verified 2026-08-16 — the classic provider merged only scaffolding,
   PR #45256, issue #45254 still open); `aws mwaa-serverless` present in the installed CLI. The *apply*
   under the boundary is pass 2's. **A workflow with Python or Bash tasks needs two newer versions** (read
-  2026-10-10): the `code` attribute first appears in `awscc` **v1.99.0**, and the estate locks **v1.98.0**
-  in its two `awscc` slices; the installed CLI (2.36.18) knows neither `--code` nor the `Code` field
-  `GetWorkflow` returns, so `./aws/orchestration.py` cannot read the code location until it is upgraded.
+  2026-10-10): the `code` attribute first appears in `awscc` **v1.99.0** (2026-08-28), and the estate
+  locks **v1.98.0** (2026-08-19) in its two `awscc` slices; the installed CLI (2.36.18) knows neither
+  `--code` nor the `Code` field `GetWorkflow` returns, so `./aws/orchestration.py` cannot read the code
+  location until it is upgraded.
 - **0.3 — [Claude] Record the service-linked-role baseline**: `AWSServiceRoleForAmazonMWAAServerless`
   absent today (`aws iam get-role`, as `awsds-infra-prod`). It auto-creates at the first
   `CreateWorkflow`, manages the service's networking, and carries
@@ -235,14 +236,14 @@ because this stage's design rests on it.
   is one copy. It rejects a definition that references a domain resource (project connections,
   portal-scoped ids), names a container by anything other than **ECR URI and tag**, exceeds **50 KB**,
   hard-codes a `start_date` (rewritten at deploy time), uses an operator outside MWAA Serverless's
-  supported list (the Amazon-provider operators, plus `PythonOperator` and `BashOperator`, which the
-  vendor page lists since a reading on 2026-10-10 — the 2026-08-16 reading had neither), exceeds the
-  **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`. **The code package is what
-  carries the no-internet constraint now**: with no internet path in the worker subnets (1.2), a Python
-  task's dependencies must be vendored into its package for Linux x86_64 and Python 3.12, so CI builds
-  the package and imports every `python_callable` from it with networking off, which turns a runtime
-  import failure into a CI failure. **[user]** Prove it once with a deliberately portal-scoped definition
-  (verification (xi)).
+  supported list (the Amazon-provider operators, plus `PythonOperator` and `BashOperator`, which AWS
+  added on 2026-08-17 by the guide's document history, the day after this stage's 2026-08-16 reading),
+  exceeds the **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`. **The code package
+  is what carries the no-internet constraint now**: with no internet path in the worker subnets (1.2), a
+  Python task's dependencies must be vendored into its package for Linux x86_64 and Python 3.12, so CI
+  builds the package and imports every `python_callable` from it with networking off, which turns a
+  runtime import failure into a CI failure. **[user]** Prove it once with a deliberately portal-scoped
+  definition (verification (xi)).
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: the release job copies
   `workflow/workflow.yaml` to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`**
   (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1) and
@@ -474,7 +475,7 @@ Record every answer, including the ones that come out fine.
 | i | What is the Studio's serverless-Workflows surface today, which toggle enables it, and does the OnDemand (provisioned) blueprint stay off (open question 15)? | 0.4 |
 | ii | Does `awscc_mwaaserverless_workflow` apply under a deploy role's boundary (INT-14) — in **Staging first** — and if not, which rung of step 4, on which wording? | 1.5 |
 | iii | Does `AWSServiceRoleForAmazonMWAAServerless` appear at the first `CreateWorkflow` — absent in 0.3, present and enumerated afterwards (Lesson 17)? | 0.3, 1.6 |
-| iv | Does the service's definition read pass the outputs bucket's perimeter branches (the `ViaAWSService` carve-out doing its job)? | 1.5, 2.4 |
+| iv | Does the service's definition read pass the outputs bucket's perimeter branches (the `ViaAWSService` carve-out doing its job) — from Production, and from Staging if decision 6's cross-account copy is taken? | 1.5, 2.4 |
 | v | Does a `SCHEDULED` run fire unattended — and does `TriggerMode` stop the next one? | 6.1 |
 | vi | Does a broken step fire the failure rule, and is the failure diagnosable from the service APIs alone? | 3.2 |
 | vii | Which app-etl steps fit inside the **60-minute task cap** — and what is the plan for a Glue step that does not (it becomes a fire-and-poll pattern, or the step is split)? | 2.2 |

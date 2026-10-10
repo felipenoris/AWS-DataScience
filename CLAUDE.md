@@ -380,8 +380,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   changes nothing, an S3 operator task ran `SUCCESS`, and the notebook operator's fate is **6d decision
   due 14** (open, (b) recommended). `update-workflow` is a full replace (Lesson 60) and severs the
   domain/project the portal injects. The `Workflows` blueprint is category 3; `DenyProvisionedMwaa` and
-  Stage 10's slices are unwritten. **`PythonOperator`/`BashOperator` are supported** (vendor page re-read
-  2026-10-10; the 08-16 reading had neither): code in a separate `Code` S3 object, D28 class (2b),
+  Stage 10's slices are unwritten. **`PythonOperator`/`BashOperator` are supported** (added by AWS
+  2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3 object, D28 class (2b),
   needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0) and a CLI newer than 2.36.18. Stage 10 decision 6
   (new): one YAML cannot name both accounts, so it is rendered per environment.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =

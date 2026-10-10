@@ -131,7 +131,7 @@ What the price gives up, and what it gains:
 
 | | MWAA Serverless | MWAA provisioned |
 |---|---|---|
-| Workflow definition | **YAML** (DAG-factory format), with a converter for Python definitions; `PythonOperator` and `BashOperator` tasks run code from a separate package, billed as managed tasks (read 2026-10-10) | Python DAGs, custom operators, plugins |
+| Workflow definition | **YAML** (DAG-factory format), with a converter for Python definitions; `PythonOperator` and `BashOperator` tasks run code from a separate package, billed as managed tasks (added 2026-08-17) | Python DAGs, custom operators, plugins |
 | Airflow version | v3, Python 3.12, fixed | Selectable |
 | Airflow web UI | **None** — monitoring through logs | Full web interface |
 | Execution identity | **One IAM role per workflow**, task-isolated compute | One environment role shared by every task |
