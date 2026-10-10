@@ -41,7 +41,8 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
    make up ENV=sandbox
    ```
 
-   Add `GROUPS=bedrock,emr` for the optional families; the default is none. It refuses while a hub
+   Add `GROUPS=bedrock-base,emr` for the optional families (`make help` lists them; Claude Code in a
+   space needs `bedrock-base`); the default is none. It refuses while a hub
    host is stopped, naming it, and it is never the way to start the hub: it raises endpoint sets a
    tunnel does not use.
    Without it a space does not fail, it hangs (measured 2026-09-07): JupyterLab loads, the terminal

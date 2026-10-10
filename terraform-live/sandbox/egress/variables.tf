@@ -64,7 +64,7 @@ variable "cost_center" {
 
 # Stage 6c step 5.3, the user's decision of 2026-09-06. Neither generated nor authored in a tfvars:
 # it arrives from the environment as `TF_VAR_optional_service_groups`, threaded by
-# `make up ENV=sandbox GROUPS=bedrock,emr`. Empty is the default and the decision - an apply that
+# `make up ENV=sandbox GROUPS=bedrock-base,emr`. Empty is the default and the decision - an apply that
 # does not name a group creates no optional endpoint, so a family nobody is using that day costs
 # nothing.
 #
@@ -73,7 +73,7 @@ variable "cost_center" {
 # edited back, and a flag left on in a file is the failure mode the empty default exists to avoid.
 # The closed list of names lives in the module, where the group map is.
 variable "optional_service_groups" {
-  description = "Optional endpoint families for this apply: bedrock, emr (mwaa is reserved and empty). Empty by default. Set with `make up ENV=sandbox GROUPS=bedrock,emr`; each endpoint is ~USD 0.010/h while the slice is up."
+  description = "Optional endpoint families for this apply: bedrock-base, bedrock-agent, emr, redshift (mwaa is reserved and empty). Empty by default. Set with `make up ENV=sandbox GROUPS=bedrock-base,emr`; each endpoint is ~USD 0.010/h while the slice is up."
   type        = list(string)
   default     = []
 }

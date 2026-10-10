@@ -301,9 +301,10 @@ SLICES = [
     # pull passes in minutes. Estate-wide the fixed rate falls as well, 0.470 -> 0.390/h. This
     # column is hourly only, so it cannot show the axis that decides the comparison.
     #
-    # None of the three includes 5.3's optional groups: `bedrock` adds 0.040 and `emr` 0.070 only
-    # for an apply that names them, and a static rate that assumed them would over-report every
-    # session that does not. `make status` quotes this column; the flag's cost is in `make help`.
+    # None of the three includes 5.3's optional groups: `bedrock-base` and `bedrock-agent` add
+    # 0.020 each, `emr` 0.070 and `redshift` 0.010, only for an apply that names them, and a static
+    # rate that assumed them would over-report every session that does not. `make status` quotes
+    # this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
     Slice(
         "staging",

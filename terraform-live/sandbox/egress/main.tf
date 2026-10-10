@@ -21,7 +21,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.15.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.16.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -43,10 +43,11 @@ module "egress" {
   # is a statement about the service rather than about one caller: any future runtime API - an
   # async invoke, a bidirectional stream - does not silently acquire this door. `bedrock` is a
   # growing control plane that the six SMUS AmazonBedrock* blueprints call for things a coding
-  # assistant never does (CreateGuardrail, CreateEvaluationJob), and since 2026-09-12 both
-  # endpoints are always-on infrastructure shared by both consumers. A list written for one of
+  # assistant never does (CreateGuardrail, CreateEvaluationJob), and the two endpoints arrive
+  # together as the `bedrock-base` group, shared by both consumers. A list written for one of
   # them would silently refuse the other, with no denial that names this policy, so the control
-  # plane keeps `Action = "*"` under the organization condition like the other eighteen.
+  # plane keeps `Action = "*"` under the organization condition like every other endpoint. The
+  # scope is keyed by service and binds only in an apply whose groups create the endpoint.
   #
   # WHAT THIS GIVES UP, stated rather than discovered later: `PutAccountDataRetention` and
   # `PutModelInvocationLoggingConfiguration` are control-plane calls and still traverse their
@@ -97,22 +98,6 @@ module "egress" {
     "sagemaker.runtime",
     "sagemaker.studio",
 
-    # The Bedrock pair, always on since 2026-09-12 (Stage 6e step 4, the user's restructure). They
-    # were an optional group first, and the flag was the wrong shape for them: a group is per apply
-    # and a `make up` without it destroys what it created, while the assistant needs this path in
-    # every session a space runs. ~USD 0.020/h, which moves this account's endpoint set from 18 to
-    # 20 and the estate's fixed rate from 0.390 to 0.410 USD/h while the slice is up.
-    #
-    # `bedrock` is here as well as `bedrock-runtime` because the client resolves an alias to a
-    # profile that exists in this account before it invokes anything - ListInferenceProfiles and
-    # GetInferenceProfile are control-plane calls, and without the endpoint they leave through the
-    # proxy while the invocation does not.
-    #
-    # `GROUPS=bedrock` now adds only the agent pair (vpc-egress-v0.14.0) and a blueprint that needs
-    # them finds this control plane already up.
-    "bedrock",
-    "bedrock-runtime",
-
     # `S3TableCatalog` is one of category 1's eleven blueprints and the S3 gateway endpoint does not
     # cover it: a gateway carries `s3` and `dynamodb`, nothing else, while `s3tables` is its own
     # service name in the Region's catalog (measured 2026-09-06). Always-on rather than behind 5.3's
@@ -143,6 +128,12 @@ module "egress" {
   # lives in this account alone - 6b removed it from Staging, and Production is a deployment target.
   # When a Production workload asks for Bedrock, that slice gets the same two lines and the module
   # already knows the answer.
+  #
+  # `bedrock` and `bedrock-runtime` are the `bedrock-base` group, not extras (6e decision 12,
+  # 2026-10-09): a session in which a space runs Claude Code is `make up ENV=sandbox
+  # GROUPS=bedrock-base`. Without the group the image's NO_PROXY literal still names both, so the
+  # SDK bypasses the proxy for a name this VPC has no route to, and the call fails inside the VPC
+  # rather than leaving through the proxy.
   optional_service_groups = var.optional_service_groups
 
   # The firewall's job is the resolver, not the route (6c step 5.7). Step 5.1 removed the last
