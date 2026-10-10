@@ -288,7 +288,7 @@ answers them.
 - **3.1 — [user] Edit the processing task in the portal** (Stage 10's 0.4, verification i, closes here with
   the editor's fields recorded in 2.1 and this edit's behaviour):
   - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job", "--input",
-    "/opt/ml/processing/inbox", "--output", "/opt/ml/processing/outbox"]`, the interpreter per decision 2;
+    "/opt/ml/processing/inbox", "--output", "/opt/ml/processing/outbox"]`, the interpreter decision 2 took;
   - `Environment`: `{"PYTHONPATH": "/opt/ml/processing/code/src"}`.
   The absolute interpreter path is deliberate: a `ContainerEntrypoint` replaces the image's entry point, so
   the distribution's `_entrypoint.sh` does not run and its `PATH` is not to be assumed.
@@ -410,7 +410,8 @@ with the recommendation stated (Lesson 16).
 2. **Which interpreter the job runs** (3.1). Recommended: **the house environment, `/opt/awsds/venv/bin/python`**
    (Python 3.13, the *Python (awsds dev-env)* kernel), the one this repository curates. The alternative is the
    distribution's `/opt/conda/bin/python` (3.12, its default `python3` kernel). Either is named by absolute
-   path.
+   path. **Taken 2026-10-10 (the user): the house environment.** The worker variants of steps 4 and 5 run on
+   the worker's own Python 3.12 regardless, so their packages are still built for `cp312`.
 3. **The log groups the exercise creates as a side effect**: `/aws/sagemaker/ProcessingJobs` and one
    `/aws/mwaa-serverless/<domain>-<project>/<workflow>` per workflow, all without retention. Recommended:
    **record them under `EXC-10`**, whose open decision is the same one: a group the service chooses, with no
