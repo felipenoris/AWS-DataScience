@@ -433,7 +433,8 @@ verification (i), pulled forward because Stage 10's design now depends on it.
     full `VpcConfig`, and treat *Workflows → notebook task* as a portal feature this estate does not
     offer; or (c) record the loss.
     **Recommended: (b)** — it keeps the boundary intact, and Stage 10 was already going to author its own
-    DAGs.
+    DAGs. **Taken as (b) by the user, 2026-10-10**, with `PythonOperator` and `BashOperator` to be
+    explored in the implementation (decision due 14).
   - **The service warns on every update**: `Warnings: ["ignored attributes: is_paused_upon_creation"]`.
     That half-settles the observation above: the definition's pause key is **ignored**, so it is not what
     produced the `scheduled__…` run id.
@@ -1583,6 +1584,12 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     authors its own DAGs anyway. The refusal belongs to this operator, not to the surface: a
     portal-authored `S3CopyObjectOperator` task finished `SUCCESS` as the same role (`simple-s3-copy`,
     2026-09-10). Query-book and Visual ETL tasks are unmeasured and may never reach `CreateTrainingJob`.
+    **Taken 2026-10-10 (the user): (b).** The boundary stays as it is, and *Workflows → notebook task* is
+    a portal feature this estate does not offer. Workflows orchestrate with operators this repository
+    controls, and the implementation explores `PythonOperator` and `BashOperator`, whose code travels as
+    the workflow's `Code` object (D28 class (2b), Stage 10 step 2). Stage 8 5.6's lint refuses
+    `SageMakerNotebookOperator` by name, so the refusal reads as this decision rather than as a generic
+    project-scoped reference.
 
 ## Verifications to answer while executing
 

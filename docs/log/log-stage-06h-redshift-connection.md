@@ -1764,3 +1764,73 @@ Steps 1, 2, 2b, 3a and 3b are green again, `3c` names the per-person grantee, `3
 thing: **on the JupyterLab door, as the project role, there is no grant and no mechanism that supplies
 one.** Nothing in this entry changes that; it changes only whether the script gets far enough to measure
 the alternative.
+
+---
+
+## 2026-10-11 — decision 8a answered: the chained session lands on the per-project grantee and the default privilege fires
+
+*Written by Claude in the sitting that ran it. The run is the **user's**, quoted verbatim; the
+confirmations, the `EXC-15` closure and the runbook change are Claude's.*
+
+### The measurement
+
+```
+[ok  ] 4a assumed the access role    the per-project grantee's credentials
+[ok  ] 4c the grantee                IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c - per PROJECT
+[ok  ] 4d the roles it holds         ['sbx_lab_rw']
+[ok  ] 4e write and read             [1, 'IAMR:datazone_usr_role_...', '4']
+[ok  ] 4f readable by a role         (['sbx_lab_rw', 'SELECT'],)
+```
+
+Four things in one run, each of which had been a claim:
+
+1. **a space can reach the per-project grantee** — the chain is permitted and resolves;
+2. **the per-person `RedshiftDbUser` session tag does not follow the chain**, which `transitiveTagKeys:
+   None` predicted and nothing had shown;
+3. **that user already holds `sbx_lab_rw`** — nobody granted it anything for this;
+4. **the schema's default privilege FIRES** on a table the chained session writes, so read-across needs
+   no per-person statement.
+
+`3c`–`3e` in the same run are the control: the direct session is still per person, still holds no role,
+still fails `permission denied for schema lab`. Two chains, one run, side by side.
+
+Estate level: `./aws/warehouse.py --sql` **14 pass / 1 note**, exit 0, and `WH-14` reads
+*"2 relation(s), each reachable by a role through a grant or a default privilege"*.
+
+### Decision 8a, taken
+
+**Both doors use the per-project database user; the JupyterLab door reaches it by assuming the access
+role.** Nothing in AWS changed for it — the tag, the trust policy and layer 2's `sts:AssumeRole` were
+all already in place, which is why this is a convention in how a notebook connects rather than a
+configuration. §P gains step 3a and `EXC-15` is **closed**.
+
+What it costs, as stated before it was taken rather than discovered after:
+
+- **in-database attribution** is per project, not per person. CloudTrail keeps the person: the chained
+  `AssumeRole` is an attributable event and the trust policy's `sts:SetSourceIdentity` on
+  `${aws:PrincipalTag/datazone:userId}` exists for exactly this.
+- **the chain is a convention with a loud failure, not a control.** A notebook that connects directly
+  gets a user holding nothing and fails at the schema. The guards are that failure and `WH-14`.
+- **a helper belongs in the image** if this becomes the house path — a line in
+  `images/dev-env/python/` and a rebuild, outside this stage.
+
+### The per-person user stays, holding nothing
+
+`IAMR:user-28f1b390-…@avhvbqn37ty7m8` is in `pg_user` with no role, and that is the **correct** state:
+it is recreated by any direct connection and grants nothing to anybody. Dropping it buys nothing and it
+returns on the next notebook that skips the chain.
+
+### A correction to 2026-10-10's reasoning
+
+That entry called `relacl = null` and an empty `svv_relation_privileges` **two independent reads**
+proving the table had no grants. They are not independent: measured today, two tables each carrying
+`sbx_lab_rw / SELECT` in `svv_relation_privileges` read **`relacl = (none)`**. The legacy ACL column
+cannot see a grant made to a role at all. The conclusion that day was still right, because the `SVV_`
+view was also empty — but half the support for it was a column incapable of showing the thing, and a
+corroboration that cannot disagree is not one.
+
+### One more verdict message of mine that only read correctly when it failed
+
+`4f` printed *"empty means no default privilege names THIS owner"* **while reporting a non-empty
+result** — the fifth message of the day whose wording assumed its own failure branch. Fixed to say what
+each outcome means.

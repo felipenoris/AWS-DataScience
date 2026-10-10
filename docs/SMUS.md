@@ -522,10 +522,11 @@ workflow a person authored in the portal on 2026-08-27.
   a training job, which is why it meets `DenySageMakerJobsOffVpc` in the **D13 boundary's** copy of
   the statement and not in the persona sets' (Lesson 33). Filling the portal's empty `compute` block
   satisfies one of the boundary's five conditions and changes nothing else, so the portal's notebook
-  operator does not run in this estate as built. Whether that stays is 6d decision due 14 (amend the
-  boundary, orchestrate from Stage 10's own DAGs, or record the loss). Other operators do run: a
-  portal-authored `S3CopyObjectOperator` task finished `SUCCESS` as the project role (`simple-s3-copy`,
-  2026-09-10). Query-book and Visual ETL tasks are unmeasured.
+  operator does not run in this estate, by decision: 6d decision due 14 took (b) on 2026-10-10, so the
+  portal's notebook task is not offered and workflows orchestrate with operators the repository
+  controls, `PythonOperator` and `BashOperator` among them. Other operators do run: a portal-authored
+  `S3CopyObjectOperator` task finished `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10).
+  Query-book and Visual ETL tasks are unmeasured.
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 

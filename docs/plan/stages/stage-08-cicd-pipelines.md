@@ -346,7 +346,8 @@ Python dependencies, and the two compose rather than substitute.
   reference** — a connection, a path or an id that exists only in the authoring Sandbox project and would
   resolve to nothing in Staging or Production; (b) hard-codes a `start_date`, which is **rewritten at deploy
   time** rather than promoted; (c) uses an operator outside **MWAA Serverless's supported list** (the
-  Amazon-provider operators plus `PythonOperator` and `BashOperator`, added by AWS 2026-08-17) or exceeds a service
+  Amazon-provider operators plus `PythonOperator` and `BashOperator`, added by AWS 2026-08-17), names
+  `SageMakerNotebookOperator` (refused by name since 6d decision due 14 took (b)), or exceeds a service
   cap — **3600 s** per task, **50 KB** per definition; (d) references a definition or code object without
   a pinned S3 `VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in the
   same commit — a workflow that ships its own operator code carries an artifact none of D28's six classes

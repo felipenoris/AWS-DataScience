@@ -220,7 +220,9 @@ because this stage's design rests on it.
 - **2.1 — [user] Author the workflow in a Sandbox project** (the surface 0.4 recorded): the app-etl DAG —
   the Stage 9 producer/pickup Glue jobs plus the container step — test-run there (Sandbox task-hours,
   metered per run). **This is where D21's "authored and test-run" clause now points**, and Sandbox is the
-  only account it can point at.
+  only account it can point at. No task is a portal *Notebook task*: 6d decision due 14 took (b), and the
+  implementation explores `PythonOperator` and `BashOperator` for the code a task runs itself (user,
+  2026-10-10), measured here first, under Sandbox's private subnets (verification (xv)).
 - **2.2 — [user] Graduate the definition into the repository** (D21 — the rewrite is the gate): the
   YAML lands in `app-etl/workflow/` beside a converted copy if authoring produced Python
   (`python-to-yaml-dag-converter-mwaa-serverless`, the AWS tool — AWS-provider operators only, no
@@ -486,6 +488,7 @@ Record every answer, including the ones that come out fine.
 | x | Does the model chain hold end to end — registration only under `awsds-deploy-prod`, training `OutputDataConfig` carrying the CMK, the approved version served in **Staging before Production**? | 5.1-5.4 |
 | xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition, and a code package whose `python_callable` does not import offline (deliberate bad artifacts)? | 2.3 |
 | xii | After the stage's redeploys, how many workflow versions exist against the 50-version quota — and is the run-history disposition written before the first `make down` (Lesson 4)? | 1.6, 6.3 |
+| xv | How do `PythonOperator` and `BashOperator` tasks behave on the private shape: does a code package with vendored dependencies run with no internet path, does a task that reaches for PyPI fail visibly, and do the task's AWS calls carry the execution role (6d decision due 14 (b))? | 2.1, 2.3 |
 
 ## Risks
 

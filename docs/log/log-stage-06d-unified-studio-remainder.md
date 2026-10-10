@@ -2806,3 +2806,16 @@ tagged (`vpc-egress-v0.17.0`), not applied.*
   `aafa08da98a61f5c`; `DE-6` passes, all 51 inside and 19 more, the names of `bedrock-base`,
   `bedrock-agent` and `emr`; `DE-5` fails as before, version 4 lacking 18 names.
 - Re-plan of `sandbox/egress` with `GROUPS=redshift`, the module fetched from the tag: `No changes`.
+
+## 2026-10-10 — the nineteenth sitting: decision due 14 taken
+
+**[user] "Sobre a Decisão 14, registre que vamos pela opção (b). Iremos explorar o PythonOperator e
+BashOperator na implementação."**
+
+**[Claude] What the decision fixes, recorded in the stage file the same sitting.** The D13 boundary stays
+as it is, and *Workflows → notebook task* is a portal feature this estate does not offer: the four job
+denies that refuse `SageMakerNotebookOperator`'s `CreateTrainingJob` remain unscoped. Workflows
+orchestrate with operators this repository controls. `PythonOperator` and `BashOperator`, which AWS added
+to MWAA Serverless on 2026-08-17, are what the implementation explores, measured first in Sandbox (Stage
+10 step 2.1, verification (xv)), with their code in the workflow's `Code` object (D28 class (2b)). Stage
+8 5.6's lint gains one rule from it: `SageMakerNotebookOperator` is refused by name.

@@ -507,8 +507,19 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `locals` (426,667 MB — the metric is in megabytes, on the `Namespace` dimension, so it keeps reading while
    the `[E]` compute is down). The threshold is a variable in USD so that the arithmetic moves with the price
    and the argument stays in dollars.
-8a. **How the per-person user on the JupyterLab door gets its grants** — **new 2026-10-11, and the
-   option approved that day was measured dead the same day.** `RedshiftDbUser` is a **session tag**,
+8a. **How the per-person user on the JupyterLab door gets its grants** — **TAKEN 2026-10-11: it does
+   not, and a notebook chains through the access role instead.** Measured in one run: assuming
+   `awsds-sandbox-warehouse-access-<project>` from a space lands the session on
+   `IAMR:<the project role's name>`, which holds `sbx_lab_rw` already and is already the owner the
+   schema's default privilege names — so the privilege **fires** on what the chained session writes and
+   read-across needs no per-person statement. `WH-14` reads two relations, each reachable, and
+   `EXC-15` is closed. The direct session in the same run is the control: still per person, still no
+   role, still `permission denied for schema`. **Nothing in AWS changed**: the tag, the trust policy
+   and layer 2's `sts:AssumeRole` were all in place, so this is a convention in how a notebook connects
+   (§P step 3a). The costs, stated before it was taken: in-database attribution becomes per project
+   with CloudTrail keeping the person through `sts:SetSourceIdentity`; the chain is a convention with a
+   loud failure rather than a control; and a helper belongs in the image if it becomes the house path.
+   **The path not taken**, and why: `RedshiftDbUser` is a **session tag**,
    set per person by SMUS on every `AssumeRole` of the project role, so it overrides the role's own tag
    and collapsing both doors onto one database user is **not available** — the role already carries
    `RedshiftDbUser = user-project@<project>` and the session's value wins. `aws_iam_role_tag` does not

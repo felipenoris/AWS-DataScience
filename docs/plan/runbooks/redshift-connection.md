@@ -119,6 +119,14 @@ connect but sees nothing"* as the expected state for a while — which is the am
    ingress rule, so they cannot drift apart. `[P]` is never touched by `make up`, so this apply is by
    hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
    permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
+3a. **Tell the project's notebooks to chain through the access role**, which is what makes the
+   schema work from a space (measured 2026-10-11, §V step 4). Redshift grants to database users and
+   never to an IAM role, and the space's session carries a **per-person** `RedshiftDbUser` that SMUS
+   sets and nobody can change. Assuming the access role first lands the session on the **per-project**
+   database user instead — the one the `GRANT ROLE` and the schema's default privilege already name —
+   because **no session tag is transitive**, so the per-person value does not follow into the chain.
+   A notebook that connects directly still gets a user holding nothing and still fails at the schema,
+   so this is a convention with a loud failure rather than a control.
 4. **The connection, in the portal**, by the project member — it cannot be done any other way:
    `datazone list-connections` is refused to the account's administrator by **DataZone's own**
    authorization layer, because that identity is not a project member. *Compute → Data warehouse →
@@ -197,10 +205,13 @@ GRANT SELECT ON TABLE <theme>.<table> TO ROLE sbx_<theme>_rw;
 a sharing semantic nobody has asked for; read-across is what a shared base means. Widening it is
 [6h](../stages/stage-06h-redshift-connection.md) decision 8's territory, with the argument written.
 
-> **`pg_default_acl` is EMPTY on this platform and is not the instrument.** It returns zero rows
-> after a successful `ALTER DEFAULT PRIVILEGES`; the privilege is in **`svv_default_privileges`**,
-> which carries schema, owner, grantee and privilege. The mirror of the schema-ACL trap in §S, where
-> `nspacl` is the authority and the `SVV_` view shows only the RBAC half.
+> **Neither `pg_default_acl` nor `relacl` is the instrument on this platform.**
+> `pg_default_acl` returns zero rows after a successful `ALTER DEFAULT PRIVILEGES` — the privilege is
+> in **`svv_default_privileges`** alone. And **`pg_class.relacl` is blind to a grant made to a ROLE**:
+> measured 2026-10-11, two tables each carrying `sbx_lab_rw / SELECT` in
+> `svv_relation_privileges` read `relacl = (none)`. The legacy PostgreSQL ACL columns hold the legacy
+> ACL; Redshift's RBAC lives in the `SVV_` views and nowhere else, so reading both is not two
+> independent readings — only one of them can ever see a role.
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
 *creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
@@ -496,8 +507,11 @@ def measure(label, conn, table):
         )
         rows = cur.fetchall()
         say(f"{label}f readable by a role", "ok" if rows else "FAIL",
-            f"{rows} - empty means no default privilege names THIS owner, so a second project "
-            "holding the theme role would see none of this table (section T, EXC-15)")
+            f"{rows}" + (" - a role reaches it, so a second project holding the theme role reads "
+                         "this table: the schema's default privilege named this owner"
+                         if rows else
+                         " - EMPTY. No default privilege names this owner, so a second project "
+                         "holding the theme role would see none of this table (section T)"))
 
 
 # ---------------------------------------- 3b-3e. as the project role itself: the PER-PERSON user
