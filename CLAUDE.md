@@ -209,7 +209,7 @@ This table is the only routing map; every other file points here rather than rep
 | Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
 | Anything VPN: the pieces, starting and stopping the hub, a tunnel that will not come up, a key event, a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md): §S the system, §C the client, §K the keys, §K0a the SSM session. The hub is started and stopped with `make hub-up` / `make hub-down`, never `make up ENV=…` |
 | Connecting a laptop: the session's up/down order, the `.conf` and its checks, the proxy on macOS and Linux, the two client profiles | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) |
-| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, R and CRAN, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`); the house image carries a dated copy of it plus every optional endpoint group's names (6d decision 8) and every other consumer reads the output |
+| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, R and CRAN, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`); the house image carries a dated copy of `no_proxy_all_groups`, the same list with every optional endpoint group on (6d decision 8), and every other consumer reads `no_proxy` |
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
@@ -293,8 +293,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   reads the drift. **`default-v0.5.0` is being built (2026-10-10)** on SMD **`4.5.2-cpu`** (pinned by
   digest): uv stays the distribution's **0.12.17** (the old `0.12.5` ARG would have downgraded it past
   every guard; a downgrade is now refused), and the literal carries **every optional group's names**
-  (70 entries, `aafa08da98a61f5c`), since the slice's output names only the last apply's groups;
-  `devenv.py` fails the account-only half and notes the image-only one. Pushed, registered and
+  (70 entries, `aafa08da98a61f5c`), since `no_proxy` names only the last apply's groups;
+  `devenv.py` compares it with `no_proxy_all_groups` exactly, and `DE-6` reads the last apply's `no_proxy` inside that; until v0.17.0 is applied `DE-2` fails on the missing output. Pushed, registered and
   attached: not yet. The house image's own Python sent `GetCredentials` out through the proxy as a
   public call (06:21Z), because v0.4.0's list lacks `redshift-serverless`. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
   private door (the agent its endpoint, the Access Grants plugin the **S3 gateway endpoint** — the
@@ -314,7 +314,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
   dec 15's compensating deny. **Retention mode is per
   account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
-  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); **the endpoint pair is the optional group `bedrock-base` since 2026-10-09** (user; `vpc-egress-v0.16.0` authored, not yet tagged or applied), so a session with the assistant is `GROUPS=bedrock-base`;
+  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); **the endpoint pair is the optional group `bedrock-base` since 2026-10-09** (user; `vpc-egress-v0.16.0`, applied), so a session with the assistant is `GROUPS=bedrock-base`;
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
   to three US regions (D1's exception).
 - **Stage 6f: step 1 is done, no access act has run.** `./aws/catalog.py` (`CT-1`..`CT-9`) is the
@@ -363,9 +363,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `ENOTFOUND` comes from a compute VPC.
 - **`NO_PROXY` is generated** (`vpc-egress` output), never written: it reads each endpoint's `dns_entry`
   rather than the service's one canonical name, and a gateway endpoint has no private DNS at all, so
-  S3/DynamoDB are hand-named in both spellings. The output names only the optional groups of the last
-  apply (51 entries under `GROUPS=redshift`, 2026-10-10); the image's literal adds every other group's
-  names, read from `PrivateDnsNames`, which matches `dns_entry` without an apply. **The first question about a `403`
+  S3/DynamoDB are hand-named in both spellings. `no_proxy` names only the optional groups of the last
+  apply (51 entries under `GROUPS=redshift`, 2026-10-10); the image's literal is `no_proxy_all_groups`
+  (`vpc-egress-v0.17.0`, tagged, not yet applied), every group's names from the catalog's `private_dns_names` at plan
+  time, which matches `dns_entry` without an apply - the authoring plan printed the literal byte for byte
+  (70, `aafa08da98a61f5c`). **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.
 - **Inside a space**: since `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the
   four kernels work as they are. A space started while
@@ -391,7 +393,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
   every cached session's token, not only the one named, so switching persona costs the other
   identity's session; a browser sign-out invalidates none.
-- **Module tags**: `vpc-egress-v0.15.0` (v0.16.0 authored: `bedrock-base`/`bedrock-agent` groups), `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
+- **Module tags**: `vpc-egress-v0.16.0` (v0.17.0 tagged 2026-10-10, not yet applied: `no_proxy_all_groups`), `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
   a module change is exercised by planning a caller, never by `validate`.

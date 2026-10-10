@@ -2774,3 +2774,25 @@ it went to the proxy because the image's `NO_PROXY` does not name the service. `
   with the agent `Online` and docker active.
 - `./scripts/buildbox.py sync`: 184,628 bytes of tar.gz, 10 files, sha256 `e68f4cae9ba23063`, over
   ssh with the key delivered to `us-west-2b`.
+
+## 2026-10-10 — the eighteenth sitting: the image's list becomes a generated output
+
+*The user asked for the seventeenth sitting's hand composition to be generated: a `vpc-egress` output
+over every optional group, and `./aws/devenv.py` comparing the literal with it exactly. Planned and
+tagged (`vpc-egress-v0.17.0`), not applied.*
+
+### [Claude] The authoring plan of `vpc-egress-v0.17.0`, read-only
+
+- `sandbox/egress` planned against the module's working tree (`terraform-changes.md` §3 step 1) as the
+  infrastructure user, `InfrastructureAccess` on `awsds-infra-sandbox-1`, with `GROUPS=redshift` as the
+  last apply and `-lock=false`, the plan saved outside the repository: 28 resources `no-op`;
+  `no_proxy`, `no_proxy_entries` and `interface_endpoint_ids` `no-op`; `no_proxy_all_groups` `create`.
+- `no_proxy_all_groups`: **70 entries, sha256 `aafa08da98a61f5c`**, byte for byte the Dockerfile's
+  literal composed by hand in the seventeenth sitting. `no_proxy` stays 51 entries, `b071ccadc2dbd7c6`,
+  equal to the state's.
+- The catalog read at plan time: 30 instances of `aws_vpc_endpoint_service`, 11 of them for services
+  the apply built no endpoint for. `private_dns_names` returned 50 names, 1 to 4 per service; ten are
+  `*.` names on seven services, which the fork turns into 20 entries, and the 10 fixed entries make 70.
+- `./aws/devenv.py`, edited, against the live state: `DE-2` fails, naming the missing
+  `no_proxy_all_groups` (state last applied on `vpc-egress-v0.16.0`); `DE-5` fails, version 4 baking
+  52 names against the Dockerfile's 70, 18 lacking.

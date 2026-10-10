@@ -131,13 +131,13 @@ cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docke
 `dev-env` bakes the six proxy variables as `ENV`, with the bypass list as a dated literal in §7 of the
 file. A list older than the account's endpoint set produces an image that works and sends the newer
 names out as public calls. Read it **on the laptop**, before the session, with `./aws/devenv.py`:
-`DE-3` fails when the account carries a name the Dockerfile lacks, and that is the edit to make —
-`sync` then carries it to the host. A name only the Dockerfile carries is an optional endpoint group
-the account's last apply left off, and it stays: the image carries every group's names (2026-10-10),
-so the slice's output below is half of the literal and the Dockerfile's comment carries the other half.
+`DE-3` fails when the literal and the account's `no_proxy_all_groups` differ in either direction, and
+the edit is to replace the literal with that output — `sync` then carries it to the host. The output
+carries every optional endpoint group's names whatever `GROUPS=` the last apply named (2026-10-10);
+`no_proxy` beside it does not, and is not the image's list.
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
+AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
 ```
 
 The build log's last lines print what was baked — the entry count and the list's sha256 prefix — and

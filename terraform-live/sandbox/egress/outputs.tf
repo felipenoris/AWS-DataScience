@@ -29,12 +29,14 @@ output "interface_endpoint_ids" {
 # into a VPC whose list is different, and a wrong entry sends S3 and STS out through the proxy as
 # public calls, past every `aws:SourceVpc` condition.
 #
-# `images/dev-env` does consume it, since 6d decision 8 (2026-09-10): that image runs in exactly one
-# account, and both API-side mechanisms were measured unable to carry the value -
-# ContainerEnvironmentVariables caps each value at 256 characters, and a lifecycle configuration
-# cannot be updated in place. That image carries a DATED COPY of this output as a literal, with the
-# command that refreshes it in the comment beside it, and it is therefore stale the moment this list
-# changes: docs/plan/runbooks/dev-env.md E owns that chain. Every other consumer reads the output.
+# `images/dev-env` consumes the third output, `no_proxy_all_groups`, since 6d decision 8
+# (2026-09-10): that image runs in exactly one account, and both API-side mechanisms were measured
+# unable to carry the value - ContainerEnvironmentVariables caps each value at 256 characters, and a
+# lifecycle configuration cannot be updated in place. The image serves every session whatever
+# `GROUPS=` it names, so its list is the one with every optional group's names, which no apply's
+# endpoint set changes. It carries a DATED COPY of that output as a literal, with the command that
+# refreshes it in the comment beside it, and it is therefore stale the moment the list changes:
+# docs/plan/runbooks/dev-env.md E owns that chain. Every other consumer reads `no_proxy`.
 
 output "no_proxy" {
   description = "The literal NO_PROXY value for a client inside this VPC - comma-joined, no wildcard, no CIDR, no port."
@@ -44,4 +46,9 @@ output "no_proxy" {
 output "no_proxy_entries" {
   description = "The same list, one entry per element - for a consumer that renders its own separator."
   value       = module.egress.no_proxy_entries
+}
+
+output "no_proxy_all_groups" {
+  description = "NO_PROXY with every optional endpoint group's names, whatever GROUPS= this apply named - the list images/dev-env/Dockerfile section 7 carries, and the one ./aws/devenv.py compares it with."
+  value       = module.egress.no_proxy_all_groups
 }

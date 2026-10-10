@@ -355,22 +355,20 @@ RUN set -eu; \
 # hub as a public one, with no aws:SourceVpc and no aws:SourceVpce, so the perimeter is lost silently.
 #
 # The list below is Sandbox's, read on 2026-10-10: 70 entries, sha256 aafa08da98a61f5c. It is the
-# union of two readings, because the slice's output names only the optional endpoint groups its last
-# apply enabled, while the image serves every session whatever `GROUPS=` that session names:
+# output `no_proxy_all_groups` of sandbox/egress, verbatim:
 #
-#   51  `no_proxy` from sandbox/egress's state, last applied with GROUPS=redshift:
-#         AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
-#   19  the optional groups that apply left out (bedrock-base, bedrock-agent, emr): each service's
-#       PrivateDnsNames from `aws ec2 describe-vpc-endpoint-services`, with the module's fork of a
-#       `*.` name into its bare and dot-prefixed spellings. That field returns exactly the names the
-#       module reads from `dns_entry` on an endpoint that exists (compared on seven services the same
-#       day), so a group that is down is read without an apply.
+#   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
+#
+# That output carries every optional endpoint group's names whatever `GROUPS=` the slice's last apply
+# named, because the image serves every session whatever `GROUPS=` that session names. `no_proxy`,
+# beside it, names only the last apply's endpoints and is not this list.
 #
 # A name the image carries while its group is down bypasses the proxy toward an endpoint that is not
 # there, and times out. A name a group adds that the image lacks leaves through the proxy, whose
 # compute plane admits `.amazonaws.com`, and succeeds as a public call carrying neither
 # aws:SourceVpc nor aws:SourceVpce. The list exists to never have the second kind. It goes stale
-# when the account's endpoint set changes, and `./aws/devenv.py` names that half entry by entry.
+# when the account's endpoint set changes, and `./aws/devenv.py` names the difference entry by entry,
+# both ways.
 #
 # Many names are not derivable from a service token (`logs` answers on `streaming-logs`,
 # `emr-dashboard` on `emrappui-prod`), which is why the list is read rather than composed. Another

@@ -12,12 +12,13 @@
 
 ## Producing the `NO_PROXY` value
 
-Read it as the output of the endpoints Terraform declares. That output names only the optional
-endpoint groups the slice's last apply enabled, so for a session that uses another group, paste the
-latest reading below instead, which carries every group's names:
+Read it as the output `no_proxy_all_groups` of `sandbox/egress`: every name the VPC's endpoints answer
+for with every optional group on, generated at plan time from the endpoint-service catalog. `no_proxy`
+beside it names only the groups the slice's last apply enabled, so a copy of it sends a group's calls
+out through the proxy the day a session turns that group on:
 
 ```
-cd terraform-live/sandbox/egress && terraform output -raw no_proxy
+cd terraform-live/sandbox/egress && terraform output -raw no_proxy_all_groups
 ```
 
 On a JupyterLab terminal:
@@ -28,13 +29,14 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 ## Latest reading of `NO_PROXY`
 
-**70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10): the 51
-names `sandbox/egress` generated under `GROUPS=redshift`, plus every other optional group's names
-(`bedrock-base`, `bedrock-agent`, `emr`). The slice's output names only the groups its last apply
-enabled, so a copy of it alone drops a group's names, and the day that group is on its calls leave
-through the proxy as public calls. It was 28 until 2026-09-09: the generator read the service's one
-canonical name and now reads every name the endpoint answers for. A copy with 28 entries lacks
-`datazone.us-west-2.api.aws` among twenty-three others, and DataZone is refused in the space.
+**70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10), and the
+value of `no_proxy_all_groups` in the authoring plan of `vpc-egress-v0.17.0` the same day: every
+optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`). `no_proxy` names only the
+groups its last apply enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
+names, and the day that group is on its calls leave through the proxy as public calls. It was 28 until
+2026-09-09: the generator read the service's one canonical name and now reads every name the endpoint
+answers for. A copy with 28 entries lacks `datazone.us-west-2.api.aws` among twenty-three others, and
+DataZone is refused in the space.
 
 ```
 export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
@@ -175,9 +177,10 @@ The decisions in it:
   VPC endpoint: bytes paid for that the gateway endpoint carries free, and arrival without
   `aws:SourceVpce`, which is a deny wherever a policy conditions on it. The buildbox carries the same
   hazard one layer down.
-- **The list is generated, and the syntax is not the environment's.** It is `terraform output -raw
-  no_proxy` on `sandbox/egress` — the value at the top of this file — never transcribed. The array
-  above is a snapshot of that output; regenerate it rather than copying it whenever an endpoint moves.
+- **The list is generated, and the syntax is not the environment's.** Its source is `terraform output
+  -raw no_proxy_all_groups` on `sandbox/egress` — the value at the top of this file — never a
+  transcription. The array above is a snapshot of the 50-entry `no_proxy` of 2026-09-09, from an apply
+  that named no optional group; regenerate it rather than copying it whenever an endpoint moves.
   The generator emits every wildcard service name in two forms, bare and dot-prefixed, because the
   matchers disagree about which one covers a subtree. It cannot know that VS Code's `http.noProxy` is
   documented with a glob (`*.awsds.internal`) where the environment variable suffix-matches on a

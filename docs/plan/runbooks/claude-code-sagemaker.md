@@ -751,9 +751,10 @@ internet, and the call still works — with no `aws:SourceVpce` on the far side,
 perimeter is lost silently. The generated list is `terraform output -raw no_proxy` on
 `sandbox/egress`, and it names the Bedrock pair only in an apply with `GROUPS=bedrock-base` (51
 entries under `GROUPS=redshift`, 2026-10-10); what a process inside a space reads is the dated
-literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), which
-carries every optional group's names, the pair included (70 entries, 2026-10-10), and
-[`./aws/devenv.py`](../../../aws/devenv.py) reports the difference between the two.
+literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), a copy
+of the slice's `no_proxy_all_groups`, which names the pair whatever `GROUPS=` names (70 entries,
+2026-10-10). [`./aws/devenv.py`](../../../aws/devenv.py) compares the literal with that output,
+exactly.
 
 ### The endpoint policy
 
