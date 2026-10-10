@@ -219,6 +219,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
+| Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
 | Explaining the design to someone | [`README.md`](README.md): the argument for the account split and the three distinctions |
 | How the plan got here | [`docs/plan/history.md`](docs/plan/history.md), almost never |
 
@@ -317,6 +318,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   defines no ontology at all. The `Tooling` blueprint creates a data source on a **daily cron**
   nobody wrote — and it has **failed every day since 2026-08-24** (`EXC-11`), invisible in its own
   `status` field because each run stops when its successor starts. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
+- **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps `ServiceEnabled: true` with no standard, so the hub answers everywhere and no check runs. The window closed 2026-09-20 and FSBP billed ~0.45 USD/day for the organization (13.5/month against a floor row of 1-2). `DL-11` reads the pause as a note; revert is `runbooks/security-hub.md` §R, from Audit.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
   proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 20, Staging 11, SharedServices 13,
   Workloads 0; estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and

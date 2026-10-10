@@ -1048,11 +1048,22 @@ def main(argv: list) -> int:
 
     # DL-11: Security Hub CSPM coverage (step 13).
     enabled = [r for r in sh_rows if r[1] == "enabled"]
+    # The pause (EXC-14, 2026-10-09): the hub on in every measured account and the standard off in
+    # every one is the root policy with no standard, by decision. The standard off in SOME accounts
+    # is drift, and falls through to the per-account rows.
+    paused = bool(enabled) and all(r[1] == "enabled" and r[2] == "no" for r in sh_rows)
     if not enabled:
         checks.note(
             "DL-11",
             "Security Hub CSPM",
             "not enabled in any measured account - expected before Stage 5a step 13.",
+        )
+    elif paused:
+        checks.note(
+            "DL-11",
+            "Security Hub CSPM",
+            "enabled in every measured account with no standard - the FSBP pause of "
+            "2026-10-09 (docs/AWS_STATE.md EXC-14), not drift. The checks and their bill are off.",
         )
     else:
         for p, hub, fsbp, _v2 in sh_rows:

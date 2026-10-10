@@ -37,7 +37,7 @@ changed, not just the plan.
     now lives in `docs/plan/`, or either core file growing past its size budget (20 KB then; raised to
     40 KB on 2026-08-19, when meeting the original ceiling would have cost `CLAUDE.md` either its routing
     table or its lesson keys; `CLAUDE.md`'s raised again to 50 KB on 2026-09-18, the ceilings becoming
-    one per core file).
+    one per core file, and to 75 KB on 2026-10-09, by the user).
 
 - **2026-08-08 — final pre-Stage-1 review, corrections applied.** The last pass before provisioning
   anything. What it changed is in the plan; the classes it found recur:
