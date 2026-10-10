@@ -999,3 +999,103 @@ second for one entry. Lesson 62 applied to its own write-up.
 October, with the estate found entirely down on the 9th. The **namespace** generates internal activity
 with no workgroup at all, which is the same shape as RMS storage billing with no workgroup: `[P]` keeps
 living, and a log group is not evidence that anybody's compute is up.
+
+---
+
+## 2026-10-10 — 3.3 done: the project wrote a table, and the shared schema turned out to share nothing
+
+*Written by Claude in the sitting that ran it. The `CREATE TABLE` is the **user's**, from the Query
+editor; every reading, the two SQL statements that follow and `WH-14` are Claude's.*
+
+### 3.3 — the first write
+
+The user, in the Query editor:
+
+```sql
+create table lab.hello as select 1 as n, 'it works' as note;
+select * from lab.hello;
+```
+
+Read back from the admin session: `lab.hello`, one row `n=1, note=it works`, and the owner is
+**`IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`** — the project's own database user. So the
+write landed as the project's identity, not as the admin's and not as `sbx_lab_owner`'s. The three
+layers have now produced an object, which is the first thing in this stage that no reading of code
+could have told us.
+
+Day's burn for the whole session: **100 RPU-seconds = 0.0100 USD**, and `WH-15` reads the last interval
+`idle`.
+
+### The shared schema shared nothing, and the baseline is worse than the plan read
+
+Two independent reads of the new table, before anything was changed:
+
+| Read | Result |
+|---|---|
+| `svv_relation_privileges` on `lab.hello` | **empty** |
+| `pg_class.relacl` on `lab.hello` | **null** — owner only, no grants |
+| table-level grants to `sbx_lab_rw` | **0** |
+| `pg_default_acl`, whole database | **0 rows** |
+
+`sbx_lab_rw` carries `USAGE, CREATE ON SCHEMA lab` and **nothing at table level**. So a second project
+granted the same role would have had `CREATE`, written its own tables, and read **none** of this one —
+not reduced access, none. The runbook's §T said project B *"can `SELECT` and `INSERT` in the schema"*;
+that was wrong, and it is corrected with the measurement.
+
+**Closed, the read half only:**
+
+```sql
+GRANT SELECT ON TABLE lab.hello TO ROLE sbx_lab_rw;
+ALTER DEFAULT PRIVILEGES FOR USER "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"
+  IN SCHEMA lab GRANT SELECT ON TABLES TO ROLE sbx_lab_rw;
+```
+
+`SELECT` and not more: letting one project `INSERT` into or `DROP` another's table is a sharing
+semantic nobody has asked for, and widening it is decision 8's territory with the argument written.
+**The default privilege is per creating USER**, so a shared schema owes one statement per admitted
+project — Lesson 14, and §P now carries it as step 2a.
+
+> **`pg_default_acl` is empty on this platform, and the statement still worked.**
+> `ALTER DEFAULT PRIVILEGES` reported `FINISHED` and `pg_default_acl` returned **zero rows** — twice,
+> including against `pg_catalog.pg_default_acl` by column. **`svv_default_privileges` holds it**, with
+> schema `lab`, object type `RELATION`, owner the project's user, privilege `SELECT`, grantee role
+> `sbx_lab_rw`, `admin_option false`. A statement that reports success against a catalog that reports
+> nothing is Lesson 54's shape; the resolution was to look for the platform's own view rather than
+> believe either reading. It is the mirror of §S's trap, where `nspacl` is the authority and the `SVV_`
+> view shows only the RBAC half.
+
+### `WH-14`, because this failure arrives at the second project as "I cannot see their data"
+
+`./aws/warehouse.py` gained a check that fails when a relation in a themed schema is reachable by no
+role — neither through a table grant nor through a default privilege for its owner. With no table it is
+a note saying the sharing shape is **untested**, which is the honest state of every sitting before this
+one. **14 pass / 1 note**, and `WH-14` reads `1 relation(s), each reachable by a role through a grant
+or a default privilege; 1 default-privilege pair(s) cover future tables`.
+
+Had it existed an hour earlier it would have **failed** on `lab.hello`, which is the point: the gap was
+invisible to `WH-12`, which counts schema-level grants and cannot see a table's ACL.
+
+### 3.6 again, and the third hypothesis is the cleanest
+
+After the write, re-read:
+
+| Group | Last event | Age |
+|---|---|---|
+| `useractivitylog` | 2026-09-21T05:43:33Z | 19 days |
+| `connectionlog` | 2026-10-10T03:09:06Z | **148 min** |
+
+**The heartbeat is itself overdue.** Its cadence is about 2h25m and nothing has arrived in 2h28m, so
+the reading is no longer "the export skips user activity" — it is **the export stopped at 03:09:06Z**,
+for every kind of event. That explains the marker, the 142 queries and the DDL with one mechanism
+instead of two, and it is the most economical reading of everything seen so far.
+
+It is also **testable without another act**: when the next heartbeat lands, either our events land with
+it — a lag, and the groups are usable — or it lands alone, and the hole is real. The firm negative is
+unchanged either way: 155 connection records, every one `rdsdb`, and no user connection ever.
+
+### Owed
+
+1. **[Claude]** the audit re-read above, which is now a single clean question.
+2. **[user]** 3.4 from a space's JupyterLab — the `5439` door rather than the Data page's, needing
+   `make up ENV=sandbox GROUPS=redshift`.
+3. **[Claude]** `WH-9`, now that a connection object exists to read.
+4. **[user, when it matters]** decision 8, and with it whether a shared base means read-across only.

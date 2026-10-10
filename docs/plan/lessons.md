@@ -1731,6 +1731,20 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Stage 11 must not rest a DLP feed on these groups until a re-read settles it.
   Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
 
+- **A Redshift schema shared by a role shares nothing IN it, and `pg_default_acl` cannot tell you**
+  (measured 2026-10-10, on the first table a project ever wrote). A role holding
+  `USAGE, CREATE ON SCHEMA` lets every admitted project create its own tables and carries **nothing at
+  table level**: the new table's `relacl` was **null**, so a second project granted the same role would
+  have had `CREATE` and read **none** of the first's data — not reduced access, none. The fix is
+  `ALTER DEFAULT PRIVILEGES`, set **per creating user**, so a shared schema owes one statement per
+  admitted project (Lesson 14) plus one `GRANT` per table that already exists.
+  **And the verification is not where PostgreSQL keeps it**: `pg_default_acl` returns zero rows after a
+  successful `ALTER DEFAULT PRIVILEGES`, and the privilege lives in **`svv_default_privileges`** alone —
+  the mirror of the schema trap, where `nspacl` is the authority and the `SVV_` view shows only RBAC.
+  A statement that reports `FINISHED` and a catalog that reports nothing is Lesson 54's shape, and the
+  cheap resolution is to look for the platform's own view before believing either.
+  Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
+
 - **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session
   ran as `IAMR:<that name>` — 142 queries attributed to it. The discriminator is that an ignored tag

@@ -105,6 +105,14 @@ connect but sees nothing"* as the expected state for a while — which is the am
    Take this order rather than letting the first connection auto-create the user. If the identifier
    turns out wrong the symptom is a second, auto-created user appearing beside the hand-made one —
    a clean diff in `pg_user`, and the correction is one `DROP USER`.
+2a. **The sharing half, in SQL, and only if the schema is shared.** A table belongs to its creator
+   and the theme role carries nothing at table level, so this is what makes a *shared* base readable
+   (§T, measured). One statement per admitted project, which is why it sits beside the `GRANT ROLE`
+   rather than in a slice:
+   ```sql
+   ALTER DEFAULT PRIVILEGES FOR USER "<identifier>" IN SCHEMA <theme>
+     GRANT SELECT ON TABLES TO ROLE sbx_<theme>_rw;
+   ```
 3. **Layers 1 and 2, in Terraform.** Add the entry to `sandbox/warehouse/`'s `projects`, then
    `terraform apply` that slice and re-plan `No changes`. One map produces the tag on both objects,
    the IAM policy and its attachment, the **access role** the portal's form demands, and the `5439`
@@ -167,14 +175,35 @@ DROP USER "<identifier>";
 
 ## §T Two projects on one schema
 
-One schema may be shared, and admitting the second is one `GRANT ROLE`. **What sharing does not
-give away is ownership**: a table belongs to the user that created it, so project B holding the
-schema's role can `SELECT` and `INSERT` in the schema but is not automatically able to `ALTER` or
-`DROP` project A's tables. Redshift's answer is `ALTER DEFAULT PRIVILEGES`, which is set **per
-granting user**, so a shared schema needs one statement per contributing project — per pair.
+One schema may be shared, and admitting the second is one `GRANT ROLE`. **Sharing the schema shares
+nothing in it, and the baseline is worse than it reads** (measured 2026-10-10 on the first table a
+project ever wrote): `sbx_<theme>_rw` carries `USAGE, CREATE ON SCHEMA` and **nothing at table
+level**, and a table created by project A has a **null `relacl`** — so project B holds `CREATE`, can
+write its own tables, and **cannot `SELECT` project A's at all**. Not a reduced privilege: none.
+
+Redshift's answer is `ALTER DEFAULT PRIVILEGES`, and it is set **per creating user**, so a shared
+schema owes one statement per admitted project — which is Lesson 14's shape, and `WH-14` is what
+notices the one nobody wrote:
+
+```sql
+-- every FUTURE table that user creates in the schema
+ALTER DEFAULT PRIVILEGES FOR USER "IAMR:<project role name>" IN SCHEMA <theme>
+  GRANT SELECT ON TABLES TO ROLE sbx_<theme>_rw;
+-- and each table that already exists, one by one
+GRANT SELECT ON TABLE <theme>.<table> TO ROLE sbx_<theme>_rw;
+```
+
+**`SELECT` and not more, by default.** Letting project B `INSERT` into or `DROP` project A's table is
+a sharing semantic nobody has asked for; read-across is what a shared base means. Widening it is
+[6h](../stages/stage-06h-redshift-connection.md) decision 8's territory, with the argument written.
+
+> **`pg_default_acl` is EMPTY on this platform and is not the instrument.** It returns zero rows
+> after a successful `ALTER DEFAULT PRIVILEGES`; the privilege is in **`svv_default_privileges`**,
+> which carries schema, owner, grantee and privilege. The mirror of the schema-ACL trap in §S, where
+> `nspacl` is the authority and the `SVV_` view shows only the RBAC half.
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
-*creates and reads its own*, nothing more is needed. It is also where layer 1's one-project limit
+*creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
 bites: admitting a second project to the **warehouse** needs either the wide tag or a second
 workgroup, and that is a decision with a written argument, not a map entry.
 

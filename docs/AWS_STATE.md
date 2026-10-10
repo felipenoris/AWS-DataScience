@@ -149,6 +149,8 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | `Sandbox Account 1` | `sandbox` | — | user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | created `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`; non-superuser | 2026-09-21 |
 | `Sandbox Account 1` | `sandbox` | `lab` | the same user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-09-21 |
 | ~~`Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`~~ | ~~the same, **unprefixed**~~ — **`DROP USER` 2026-10-10**, owning no relation and having run no query: the prefixed spelling is the one the platform resolved to | 2026-10-10, removed the same day |
+| `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | `SELECT ON TABLE lab.hello` — the table the project wrote at 6h 3.3, whose `relacl` was null | 2026-10-10 |
+| `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | **default privilege**: `SELECT ON TABLES` for every future relation created by `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | 2026-10-10 |
 
 **Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
 reachable by that project and the namespace admin. The two statements, verbatim, because nothing
@@ -186,6 +188,16 @@ alike — read from `pg_namespace.nspacl` on 2026-09-21 (`rdsdb=UCDA/rdsdb | =U/
 database user cannot create objects outside the schema its role names. `lab` carries no `nspacl` entry
 whatever: its grants are RBAC only, which is why `svv_schema_privileges` and `nspacl` must both be read
 before claiming what a grantee can do on this surface.
+
+**A shared schema shares nothing in it until somebody writes these two rows** (measured 2026-10-10
+on the first table a project ever wrote). `sbx_lab_rw` carries `USAGE, CREATE ON SCHEMA` and nothing
+at table level; `lab.hello`'s `relacl` was **null**, and `pg_default_acl` held **no row anywhere**. So
+a second project granted the role would have had `CREATE` and read **none** of the first's data — not
+reduced access, none. The two rows above close the read half: the existing table explicitly, and every
+future one through the default privilege. `SELECT` and not more, because letting one project write or
+drop another's table is a semantic nobody asked for. **`WH-14` is the check**, and
+`svv_default_privileges` is the only place the second row is readable — `pg_default_acl` is empty on
+this platform.
 
 **Two rules for this table**, both there because the plan half is missing on this surface:
 
