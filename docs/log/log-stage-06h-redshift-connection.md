@@ -514,3 +514,73 @@ the corrected comment says that if 3.5's CloudTrail reading shows the portal nee
 | 4 | taken, as the previous entries record |
 | 5, 6, 7 | answered by the brief |
 | 8 | open, and not yet forced |
+
+---
+
+## 2026-10-09 — the access role is applied, and the database half waits on the hub
+
+*Written by Claude in the sitting that ran it. The apply is Claude's, from `awsds-infra-sandbox-1`
+(account `Sandbox Account 1`, permission set `InfrastructureAccess`). Eighteen days passed since the
+previous entry and the estate was found entirely down.*
+
+### State found
+
+`make status`: **burn 0.0000 USD/h**, every `[E]` slice at zero resources, both hub hosts `stopped`, and
+**no workgroup**. `iam list-roles` carried only `awsds-sandbox-warehouse-exec`, so the access role
+authored on 2026-09-21 had never been applied — which is what that entry said and what this one
+confirms rather than assumes.
+
+### The apply
+
+`sandbox/warehouse/` is `[P]`, so it needs no compute and no hub. Plan: **4 to add, 1 to change, 0 to
+destroy**, and the change is layer 2's policy gaining its `sts:AssumeRole` statement.
+
+| Object | Action |
+|---|---|
+| `aws_iam_role.project_access["avhvbqn37ty7m8"]` | create |
+| `aws_iam_policy.project_access_tags["avhvbqn37ty7m8"]` | create |
+| `aws_iam_role_policy_attachment.project_access_warehouse[…]` | create |
+| `aws_iam_role_policy_attachment.project_access_tags[…]` | create |
+| `aws_iam_policy.project_warehouse["avhvbqn37ty7m8"]` | update |
+
+Re-plan: **`No changes`**, exit 0. Read back: the role carries `RedshiftDbUser =
+datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` and both policies are attached. The value a project
+member needs is now an output:
+
+```
+project_access_role_arns = {
+  "avhvbqn37ty7m8" = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8"
+}
+```
+
+### Why the database half did not run, and it is a rule rather than a problem
+
+Step 2 of the previous entry's list — the unprefixed database user — needs a **workgroup**: the Data API
+serves SQL through the workgroup, and the namespace alone serves none. Raising
+`sandbox/warehouse-compute` was refused:
+
+```
+awsds-prod-vpn         stopped i-…
+awsds-prod-proxy       stopped i-…  <-- this one
+```
+
+**A spoke `up` refuses while a hub host is stopped** (D38, 6c step 7.2), and the refusal named the proxy.
+The Data API itself needs neither the hub nor the proxy nor `sandbox/egress` — it reaches a private
+workgroup from outside every VPC — so the guard is the estate's rule and not a technical dependency
+here. It was **not worked around**: `slices.py` is the sanctioned path and a by-hand
+`terraform apply` on that slice would have bypassed a guard somebody put there on purpose.
+
+### Owed, and the order has collapsed into one sitting
+
+Everything left needs the environment up, and the user's portal act needs it too, so the database user
+belongs in the same sitting rather than ahead of it:
+
+1. `make hub-up`, then `make up ENV=sandbox` — or `--only warehouse-compute` once the hub is up, which is
+   enough for the database half alone.
+2. **[Claude]** `CREATE USER "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISABLE
+   NOCREATEDB NOCREATEUSER` and `GRANT ROLE sbx_lab_rw` to it — the unprefixed spelling, so that
+   whichever form `RedshiftDbUser` resolves to lands on a granted user.
+3. **[user]** the connection, credential type **IAM credentials**, the access role ARN above, and the
+   database set to **`sandbox`** rather than the dropdown's `dev`.
+4. **[Claude]** `pg_user` for which spelling appeared, a `DROP USER` for the other, `WH-12`, and 3.5's
+   CloudTrail reading.
