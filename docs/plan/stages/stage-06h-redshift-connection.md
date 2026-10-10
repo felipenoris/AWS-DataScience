@@ -507,6 +507,23 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `locals` (426,667 MB — the metric is in megabytes, on the `Namespace` dimension, so it keeps reading while
    the `[E]` compute is down). The threshold is a variable in USD so that the arithmetic moves with the price
    and the argument stays in dollars.
+8a. **Whether both doors should resolve to ONE database user** — **new 2026-10-11, and measured.**
+   The Data page resolves to `IAMR:<the project role's name>`, because the **access role** carries
+   `RedshiftDbUser`. JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>` — **per
+   person, auto-created at first connect, holding nothing** — because the project role carries no such
+   tag. A shared schema then needs two per-principal things and **only one is declarative**:
+   `RedshiftDbRoles` can carry the role grant at first sign-in, and `ALTER DEFAULT PRIVILEGES` is **per
+   creating user**, with no `FOR ROLE`, no wildcard and no tag. So **read-across cannot be made
+   declarative while the grantee is per person**, and what is left is a recurring
+   `GRANT SELECT ON ALL TABLES IN SCHEMA` or per-person statements forever.
+   **Recommended: put `RedshiftDbUser` on the project role as well**, which collapses both doors onto
+   one per-project user — one owner, one default privilege, one register row, and `WH-14` green for a
+   structural reason rather than a per-person patch. **The price is attribution inside the database**:
+   every person's queries would run as one database user and only CloudTrail would tell them apart,
+   through the session name and the source identity the access role's trust policy already propagates.
+   **Unmeasured and cheap to measure**: one tag, one reconnect, one `pg_user` read. `EXC-15` holds
+   `WH-14`'s red until this is taken, and it touches a role SMUS owns.
+
 8. **How a second project is admitted to the warehouse** — **new 2026-09-20**, and it exists because
    `AmazonDataZoneProject` turned out to be a **single-valued tag key** on both the workgroup and the
    namespace. **At one project nothing is blocked**; the question arrives with the second. The options:
