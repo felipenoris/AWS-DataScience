@@ -2702,3 +2702,75 @@ Production hold none. They were exercised against the two Sandbox workflows inst
   `awsds-sandbox-private-usw2-az1` and `-usw2-az2`, AZ ids `usw2-az1` and `usw2-az2`, no default route
   in either route table. `MyWorkflow`'s definition carries an S3 `VersionId` and `simple-s3-copy`'s
   does not, so a portal-authored definition is not pinned by itself.
+
+## 2026-10-10 — the seventeenth sitting: the house image moves to SageMaker Distribution 4.5
+
+*The user asked for a new build of the house image on the distribution's 4.5 line. The tag it takes
+is `default-v0.5.0`, a minor: the recipe changes.*
+
+### [Claude] The 4.5 line, read before anything was built
+
+- **The pin.** The public registry publishes `4.5.0-cpu`, `4.5.1-cpu` and `4.5.2-cpu`, and no 4.6 or
+  5.x tag. `4.5-cpu` and `4.5.2-cpu` are one manifest,
+  `sha256:e4ca47c41a41a4eec2bfe4b21a35c16078f0f7ae767b42c4a25c6757f392476b`: `linux/amd64`, built
+  2026-09-23, 24 layers, 3,744,397,840 bytes compressed. The registry sends no
+  `Docker-Content-Digest` header, so the pin is the sha256 of the manifest as served; the same
+  computation on `4.3.0-cpu` returns the 2026-08-21 pin exactly.
+- **What `base` asserts still holds.** The config blob keeps `sagemaker-user`, ids 57439 and
+  `_entrypoint.sh`. `cpu.env.out` carries `jupyter-activity-monitor-extension` 0.3.2, Python
+  3.12.14, libgcc/libstdcxx **16.2.0** (from 15.2.0) and **uv 0.12.17**.
+- **What the distribution changed that this image inherits**, from its own Dockerfile: `PATH` gains
+  `/home/sagemaker-user/.local/bin` at the end; two GitHub repositories of agent skills are cloned
+  into `/etc/sagemaker-ui/skills` at its build; the `jupyter-collaboration` extensions are no longer
+  disabled, so real-time collaboration is on by default.
+
+### [Claude] The pin bump alone would have moved uv backwards
+
+`base` §3 asked for `uv==0.12.5`. Against a distribution shipping 0.12.17 that is a downgrade, and
+the change-set guard admits it, because a downgrade is a uv-only change set like any upgrade; every
+assertion in the layer would have passed. **The user's decision: keep the distribution's 0.12.17**, so
+the install is a no-op the guards confirm. The layer now refuses a `UV_VERSION` older than the base's
+before installing anything, exercised against a stub `uv` reporting 0.12.17: 0.12.17, 0.12.24 and
+0.13.0 allowed, 0.12.5 and 0.11.28 refused. Read the same day: conda-forge published uv 0.13.0 at
+04:22Z and 0.12.24 the day before, and uv's changelog has no breaking change from 0.12.6 to 0.12.24.
+
+### [Claude] The slice's `no_proxy` is no longer the image's list
+
+`./aws/devenv.py` on the 52-entry literal: `DE-3` and `DE-5` fail, with
+`redshift-serverless.us-west-2.amazonaws.com` in the account and not in the image, and the Bedrock
+pair the other way. The account's list is the state's output, 51 entries, sha256
+`b071ccadc2dbd7c6`, and it names only the endpoints of the **last apply**, made with
+`GROUPS=redshift`. Since 6e decision 12 (2026-10-09) the Bedrock pair is an optional group, so the
+output now depends on `GROUPS=`, and copying it, as the runbooks said, would have taken Bedrock out of
+the image.
+
+Each service's `PrivateDnsNames` in `describe-vpc-endpoint-services` returns the names the module reads
+from `dns_entry`, compared on seven services (`datazone` 2, `logs` 4, `ecr.dkr` 2, `sagemaker.studio`
+2, `redshift-serverless`, `bedrock` and `bedrock-runtime` 1 each), so a group that is down can be read
+without an apply. **The user's decision: the image carries every optional group.** The literal is the
+51 plus 19 names of `bedrock-base`, `bedrock-agent` and `emr`: **70 entries, sha256
+`aafa08da98a61f5c`**, 2,295 characters.
+
+`devenv.py` now fails on the account-only half and notes the image-only half. Re-run against the new
+literal: `DE-3` a note (all 51 baked, 19 more), `DE-5` still a failure, because the registered version
+4 lacks `redshift-serverless`.
+
+### [Claude] Which door the day's Redshift API calls took
+
+CloudTrail `GetCredentials` in Sandbox, as the project role:
+
+| time (Z) | source | `vpcEndpointId` | user agent | reading |
+|---|---|---|---|---|
+| 06:21:30 | `34.222.44.82` | none | `Boto3/1.43.92` | the image's own `awsds` environment (its `uv.lock` pins boto3 1.43.92), out through the proxy as a public call |
+| 16:15:23, 16:55:03 | `10.20.22.89` | `vpce-01b97415541ae0c2d` | `Boto3/1.43.75` | the boto3 of the distribution's 4.5.1/4.5.2 base environment, not v0.4.0's (1.43.0): a space on AWS's image, which bakes no proxy |
+
+The `redshift-serverless` endpoint was created at 15:52:48Z, so the first call had no endpoint to take;
+it went to the proxy because the image's `NO_PROXY` does not name the service. `default-v0.5.0` names it.
+
+### [Claude⚡, authorized in chat] The build session raised
+
+- `production/egress`: the saved plan read `13 to add, 0 to change, 0 to destroy` and was applied.
+- `production/buildbox`: the plan read `5 to add`; `./scripts/buildbox.py up --auto-approve` returned
+  with the agent `Online` and docker active.
+- `./scripts/buildbox.py sync`: 184,628 bytes of tar.gz, 10 files, sha256 `e68f4cae9ba23063`, over
+  ssh with the key delivered to `us-west-2b`.

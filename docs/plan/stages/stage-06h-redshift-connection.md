@@ -519,8 +519,19 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    headcount, and the platform's own mechanism rather than one this repository invented. The
    `RedshiftDbRoles` tag refused on 2026-09-21 for its silent ignore is the same tag, and the silent
    ignore had already happened.
-   **It does not solve read-across**: `ALTER DEFAULT PRIVILEGES` is per creating user and nesting roles
-   does not change ownership, so `EXC-15` stands and that half is still open.
+   **[corrected 2026-10-11] The mapping never fires on the JupyterLab door, and the role is
+   unexercised.** `RedshiftDbRoles` is carried by the **portal's** session (named
+   `<user id>@<environment id>`) and **not** by the **space's** (named `SageMaker`) — read off the wrong
+   record first, with both in one output. The role is kept because a project-role connection initiated
+   from the portal would use it, and that is unproven.
+   **So both halves are non-declarative on that door**, each for a measured reason: the `RedshiftDbUser`
+   session tag overrides the role's; `RedshiftDbRoles` is not passed; a role tag has no provider
+   resource (`aws_iam_role_tag` does not exist) and AWS's procedure for it also wants `tag:GetResources`
+   on the signing identity; and `ALTER DEFAULT PRIVILEGES` is per creating user with no `FOR ROLE`, no
+   wildcard and no tag. **What is left** is a per-person `GRANT` written after each first connect, with
+   `WH-14` and an empty `3c` as the guards, or a **reconciler** covering both halves at the cost of a
+   recurring act against the warehouse — the shape decision 3 refused for `lineageSync`, and needing a
+   runner this estate has not chosen. `EXC-15` stands.
 
 8b. **~~Whether both doors should resolve to ONE database user~~ — closed 2026-10-11, unavailable.**
    The Data page resolves to `IAMR:<the project role's name>`, because the **access role** carries

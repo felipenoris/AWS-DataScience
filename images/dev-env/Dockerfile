@@ -354,25 +354,36 @@ RUN set -eu; \
 # on the VPC endpoints. A proxy without its bypass list does not fail: the call goes out through the
 # hub as a public one, with no aws:SourceVpc and no aws:SourceVpce, so the perimeter is lost silently.
 #
-# The list below is Sandbox's, read on 2026-09-12 (52 entries). It goes stale when that account's
-# endpoint set changes - a stale image is a working image with a hole, and `./aws/devenv.py` is what
-# reports the difference.
+# The list below is Sandbox's, read on 2026-10-10: 70 entries, sha256 aafa08da98a61f5c. It is the
+# union of two readings, because the slice's output names only the optional endpoint groups its last
+# apply enabled, while the image serves every session whatever `GROUPS=` that session names:
 #
-# Refresh it with:
+#   51  `no_proxy` from sandbox/egress's state, last applied with GROUPS=redshift:
+#         AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
+#   19  the optional groups that apply left out (bedrock-base, bedrock-agent, emr): each service's
+#       PrivateDnsNames from `aws ec2 describe-vpc-endpoint-services`, with the module's fork of a
+#       `*.` name into its bare and dot-prefixed spellings. That field returns exactly the names the
+#       module reads from `dns_entry` on an endpoint that exists (compared on seven services the same
+#       day), so a group that is down is read without an apply.
 #
-#   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
+# A name the image carries while its group is down bypasses the proxy toward an endpoint that is not
+# there, and times out. A name a group adds that the image lacks leaves through the proxy, whose
+# compute plane admits `.amazonaws.com`, and succeeds as a public call carrying neither
+# aws:SourceVpc nor aws:SourceVpce. The list exists to never have the second kind. It goes stale
+# when the account's endpoint set changes, and `./aws/devenv.py` names that half entry by entry.
 #
-# and rebuild. Eight of the names are not derivable from a service token, which is why the list is
-# read from the slice that builds the endpoints rather than composed. Another account overrides it
-# with --build-arg NO_PROXY_LIST=... ; it is one long line because a continuation would put leading
-# whitespace inside an entry, and an entry with a space matches nothing.
+# Many names are not derivable from a service token (`logs` answers on `streaming-logs`,
+# `emr-dashboard` on `emrappui-prod`), which is why the list is read rather than composed. Another
+# account overrides it with --build-arg NO_PROXY_LIST=... ; it is one long line because a
+# continuation would put leading whitespace inside an entry, and an entry with a space matches
+# nothing.
 #
 # The section is last in the file: an ENV set earlier would apply to every RUN above it, and those
 # build in VPC-SharedServices, whose endpoint set is not this one. Section 6 sits above it for the
 # same reason in reverse - it writes a file and sets nothing, so its position does not matter, and
 # it is placed before rather than after so that this one keeps the last word.
 ARG PROXY_URL=http://proxy.awsds.internal:3128
-ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
+ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
 
 # The variables alone are not enough, measured 2026-09-08 (6d step 3.1): `sudo` resets the
 # environment, so `apt` ran with no proxy and failed to resolve a name that is on the plane. apt gets

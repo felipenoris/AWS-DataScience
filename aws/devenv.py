@@ -34,6 +34,12 @@
 #                                            (Lesson 42: a permission failure is a response, a
 #                                            network failure is the absence of one)
 #
+# DE-3 and DE-5 fail on the first kind and note the second. The image carries every optional
+# endpoint group's names (decided 2026-10-10), while the slice's output carries only the groups its
+# last apply enabled, so the second kind is the design whenever a group is off. The report names each
+# entry either way; a name no optional group explains is a retired endpoint, and only the reader can
+# tell the two apart.
+#
 # Where the list is read from. The generating slice's terraform output is the authority, and this
 # script reads it out of the slice's state object rather than by running terraform: `aws/` scripts
 # are the aws CLI plus the standard library (aws/INDEX.md), and a state read needs no initialised
@@ -228,23 +234,31 @@ def main(argv: list) -> int:
         baked_set, live_set = set(entries(baked)), set(entries(live))
         missing_from_image = sorted(live_set - baked_set)
         stale_in_image = sorted(baked_set - live_set)
-        if not missing_from_image and not stale_in_image:
-            checks.ok(
-                "DE-3",
-                "the baked list is the account's list",
-                f"{len(live_set)} names, both sides sha256 {digest(live)}",
-            )
-        else:
+        if missing_from_image:
             checks.fail(
                 "DE-3",
-                "the baked list is the account's list",
+                "the baked list covers the account's list",
                 f"{len(missing_from_image)} name(s) in the account and not in the image, "
                 f"{len(stale_in_image)} the other way - section 4 names them",
+            )
+        elif stale_in_image:
+            checks.note(
+                "DE-3",
+                "the baked list covers the account's list",
+                f"all {len(live_set)} account names baked; {len(stale_in_image)} more in the "
+                "image name endpoints this apply did not create - an optional group left off, "
+                "or a retired endpoint (section 4)",
+            )
+        else:
+            checks.ok(
+                "DE-3",
+                "the baked list covers the account's list",
+                f"{len(live_set)} names, both sides sha256 {digest(live)}",
             )
     else:
         checks.note(
             "DE-3",
-            "the baked list is the account's list",
+            "the baked list covers the account's list",
             "not compared - one of the two sides was not read",
         )
 
@@ -389,13 +403,23 @@ def main(argv: list) -> int:
             elif set(entries(served_list)) != set(entries(reference)):
                 missing = len(set(entries(reference)) - set(entries(served_list)))
                 stale = len(set(entries(served_list)) - set(entries(reference)))
-                checks.fail(
-                    "DE-5",
-                    "the registered image carries the account's list",
-                    f"version {served_version} (sha256 {digest(served_list)}) against {against} "
-                    f"(sha256 {digest(reference)}): {missing} name(s) the image lacks, {stale} it "
-                    "has and should not - DE-3 may pass while the domain serves this",
-                )
+                if missing == 0 and live is not None:
+                    checks.note(
+                        "DE-5",
+                        "the registered image carries the account's list",
+                        f"version {served_version} (sha256 {digest(served_list)}) carries all "
+                        f"{len(entries(reference))} account names and {stale} more - endpoints "
+                        "this apply did not create, as in DE-3",
+                    )
+                else:
+                    checks.fail(
+                        "DE-5",
+                        "the registered image carries the account's list",
+                        f"version {served_version} (sha256 {digest(served_list)}) against "
+                        f"{against} (sha256 {digest(reference)}): {missing} name(s) the image "
+                        f"lacks, {stale} it has and should not - DE-3 may pass while the domain "
+                        "serves this",
+                    )
             else:
                 checks.ok(
                     "DE-5",
@@ -436,7 +460,9 @@ HOW TO READ THIS FILE
     aws:SourceVpce. Nothing fails, and the perimeter is gone for that name.
   - A NAME IN THE IMAGE AND NOT IN THE ACCOUNT times out instead: the space bypasses
     the proxy toward an endpoint that is not there, and gets silence rather than a
-    refusal (Lesson 42).
+    refusal (Lesson 42). The image carries every optional endpoint group's names and
+    the account only the groups its last apply enabled, so this half is a note: expected
+    for a group left off, a defect for a retired endpoint - read the names.
   - AN EMPTY `no_proxy` OUTPUT IS THE SESSION BEING DOWN, not a divergence. egress/ is
     [E]; a destroy leaves the state object and removes its outputs.
   - DE-3 COMPARES THE RECIPE; DE-5 READS THE BYTES. An image built from an older

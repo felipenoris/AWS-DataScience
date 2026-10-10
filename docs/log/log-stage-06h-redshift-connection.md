@@ -1545,3 +1545,77 @@ correction is a `DROP USER` that cannot run while they own anything.
 `GRANT` (`conventions.md`'s seam, with `WH-14` as the guard) or a recurring one. Decision 8a would then
 have no declarative option for either half, which is worth stating plainly rather than leaving as a
 hope.
+
+---
+
+## 2026-10-11 — `RedshiftDbRoles` is not on the space's session at all, and I read it off the wrong one
+
+*Written by Claude in the sitting that ran it. The script run is the **user's**, quoted verbatim. This
+entry corrects a misreading of mine from earlier the same day.*
+
+### The result, and it is clean now that the script diagnoses before it acts
+
+```
+[FAIL] 3c the roles this session holds    none.
+[FAIL] 3d write and read                  permission denied for schema lab
+```
+
+The per-person user **was** recreated by the reconnect — `pg_user` holds it again — and it came back
+holding **nothing**, with `datazone_env_5hkjdsy3umpi1c` existing beforehand and nested over
+`sbx_lab_rw`. So the mapping did not fire at creation either, and the "mapped at first sign-in"
+hypothesis is dead too.
+
+The script's reordering earned itself immediately: the failure arrived as two verdicts naming the layer
+instead of a driver traceback.
+
+### Why, and the answer was in the session names
+
+Two `AssumeRole` records on the project role, with **different tag sets**:
+
+| Session name | Tags |
+|---|---|
+| `28f1b390-…@5hkjdsy3umpi1c` — the **portal's** | `dz`, `RedshiftDbUser`, **`RedshiftDbRoles`**, `datazone:userId` |
+| `SageMaker` — the **space's** | `datazone-domainId`, `datazone-userId`, `RedshiftDbUser`, `datazone:userId` |
+
+**`RedshiftDbRoles` is passed by the portal's session and not by the space's.** So the JupyterLab door
+never carried the tag, the role I created was never asked for, and nothing was broken — the mechanism
+was never offered on that door.
+
+**This was my misreading.** On 2026-10-11 I read the tag set off an `AssumeRole` record and attributed
+it to the space's session. Both records were in the same output, with their session names visible, and I
+took the one that suited the hypothesis. `transitiveTagKeys` is `None` on both, so nothing survives a
+further chain either.
+
+### What that settles about decision 8a
+
+**There is no declarative mechanism for the JupyterLab door.** Exhausted, each for a measured reason:
+
+| Candidate | Why not |
+|---|---|
+| `RedshiftDbUser` on the project role | the **session** tag overrides it, and SMUS sets it per person on every assume |
+| `RedshiftDbRoles` on the session | **not passed** on the space's session |
+| `RedshiftDbRoles` as a role tag | would need a tag on a SMUS-owned role, and `aws_iam_role_tag` does not exist in the provider; AWS's own procedure for that path also wants `tag:GetResources` on the signing identity, which the project role does not hold |
+| `ALTER DEFAULT PRIVILEGES` for read-across | per creating user, no `FOR ROLE`, no wildcard, no tag |
+
+So both halves are non-declarative on that door, which is the plain statement decision 8a needs rather
+than another candidate.
+
+### `datazone_env_5hkjdsy3umpi1c` is kept, and it is unexercised
+
+It stays because the **portal's** session does pass the tag, so a project-role connection initiated
+from the portal would use it — the Data Explorer's path is the candidate. Nothing has exercised it, and
+that is recorded rather than implied: an object kept for an unproven reason is exactly what this
+estate dislikes, and the alternative is one `DROP ROLE`.
+
+### What is left for the per-person door
+
+Two shapes, and the choice is the user's:
+
+1. **One `GRANT ROLE sbx_lab_rw TO "IAMR:user-<id>@<project>"` per person**, written the first time that
+   person connects. Small per act, forgettable (Lesson 14), and `WH-14` plus an empty `3c` are the
+   guards that find the one nobody wrote. The user cannot be pre-made, so this is always after the fact.
+2. **A reconciler** that grants the theme role to every `IAMR:user-%@<projectId>` it finds and
+   `GRANT SELECT ON ALL TABLES IN SCHEMA` beside it — one piece of logic covering **both** halves,
+   idempotent, catching new people without anybody remembering. The cost is a recurring act against the
+   warehouse, which is the shape decision 3 refused for `lineageSync`, and it needs a runner this
+   estate has not chosen yet.

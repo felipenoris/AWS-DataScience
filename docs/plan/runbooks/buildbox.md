@@ -128,10 +128,13 @@ cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docke
 ```
 
 **Before this build, check the `NO_PROXY` the Dockerfile carries** (6d decision 8): since 2026-09-10
-`dev-env` bakes the six proxy variables as `ENV`, with the bypass list as a dated literal in §6 of the
+`dev-env` bakes the six proxy variables as `ENV`, with the bypass list as a dated literal in §7 of the
 file. A list older than the account's endpoint set produces an image that works and sends the newer
-names out as public calls. Read the current value **on the laptop**, before the session, and edit the
-Dockerfile if it differs — `sync` then carries the edit to the host:
+names out as public calls. Read it **on the laptop**, before the session, with `./aws/devenv.py`:
+`DE-3` fails when the account carries a name the Dockerfile lacks, and that is the edit to make —
+`sync` then carries it to the host. A name only the Dockerfile carries is an optional endpoint group
+the account's last apply left off, and it stays: the image carries every group's names (2026-10-10),
+so the slice's output below is half of the literal and the Dockerfile's comment carries the other half.
 
 ```bash
 AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
@@ -291,7 +294,7 @@ spurious change on every run.
 setting — which is what makes a **minor** out of a four-string edit. **`dev-env` came out 5,453 bytes
 smaller than `v0.3.0`** (7,182,170,437 against 7,182,175,890), and that is the sanity reading: a delta
 of kilobytes is a string change, a delta of megabytes would be a layer nobody asked for.
-**Stage 7 step 2.6's CA layer is the build still owed, and it takes `default-v0.5.0`.**
+**Stage 7 step 2.6's CA layer is the build still owed, and it takes the next free minor.**
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>

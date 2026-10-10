@@ -258,10 +258,16 @@ So [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) §6 sets th
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-09-12 (52 entries,
-sha256 `fc11caaa3145fdef`). The comment beside it carries the command that produces the current value —
-`terraform output -raw no_proxy` on `<account>/egress` — because the list is generated there and eight
-of its names are not derivable from a service token. A second account overrides it at build time with
+**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-10-10 (70 entries,
+sha256 `aafa08da98a61f5c`), and it is two readings joined. `terraform output -raw no_proxy` on
+`<account>/egress` names the endpoints the slice's **last apply** created, so it carries only the
+optional endpoint groups that apply named — 51 entries under `GROUPS=redshift`. The image serves every
+session, so it also carries the names of every group left off, read from each service's
+`PrivateDnsNames` in `describe-vpc-endpoint-services`, which returns exactly the names the module reads
+from `dns_entry` (compared on seven services, 2026-10-10). Without them, a session that turns a group
+on sends that group's calls out through the proxy as public calls; with them, a session that leaves it
+off times out on those names. The comment beside the list carries both commands, because the names are
+generated rather than derivable from a service token. A second account overrides it at build time with
 `--build-arg NO_PROXY_LIST=…` rather than editing the file. The section sits last in the file so its
 `ENV` does not reach the build's own `RUN` steps, which run in `VPC-SharedServices` against a different
 endpoint set.
@@ -273,8 +279,9 @@ shaped by one VPC's endpoint list**. A change to that list — including one nob
 `sandbox/egress` went 28 → 50 entries on a module bump — makes every existing image stale, and the
 repair is the whole chain:
 
-1. `make up ENV=<env>`, read the new value (`terraform output -raw no_proxy`) and put it in
-   `images/dev-env/Dockerfile` §6, with its date.
+1. `make up ENV=<env>`, read the new value (`terraform output -raw no_proxy`, plus the names of the
+   optional groups that apply left off — the Dockerfile's comment) and put it in
+   `images/dev-env/Dockerfile` §7, with its date.
 2. A buildbox session ([`buildbox.md`](buildbox.md) §U): `base` if it moved, then `dev-env`, and a push
    under a **new tag** — the repositories are tag-immutable.
 3. `image_tag` in [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf), then apply — a version replace (§B).
@@ -473,7 +480,7 @@ Step 1 ran on 2026-09-11, as the detach half of §B's bump; steps 2 and 3 are un
 | Does the domain offer the image? | `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | the attachment, which no Terraform state records |
 | Did the registration read the repository across the boundary? | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=BatchGetImage --profile awsds-infra-prod` | the image role as `AWSAccount`/`…:SageMaker` on `awsds-prod-ecr-dev-env` (§C5) |
 | Did a **space** pull it? | the same lookup, in the window a space started | the project role rather than the image role, and **by digest** rather than by tag — measured 2026-09-10, both app types |
-| Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py`, `DE-1`..`DE-3` | the **recipe** against the account, name by name. An image built from an older checkout passes these |
+| Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py`, `DE-1`..`DE-3` | the **recipe** against the account, name by name: `DE-3` fails on an account name the recipe lacks and notes the names of optional groups the last apply left off. An image built from an older checkout passes these |
 | Does the image the registry holds carry it? | `./aws/devenv.py`, `DE-5` | the **bytes**: the latest version's digest, its manifest, its config blob hash-checked, and the six variables in its `Env`. Verified both ways 2026-09-12 — `v0.4.0` bakes all six, `v0.1.0` none |
 | Which image is a space **running**? | `describe-app … --query ResourceSpec`, or `cat /opt/awsds-proxy.txt` inside it | the only reading that separates this image from AWS's distribution in the same picker, and `describe-app` still answers after the app is deleted (§C7) |
 | Does every space still name a version that exists? | the `describe-space` loop in §B step 6 | a space's own copy of the version number, which overrides the domain default and is stranded by a bump (`EXC-09`); a stranded one does not start |

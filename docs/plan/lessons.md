@@ -1754,6 +1754,18 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   cheap resolution is to look for the platform's own view before believing either.
   Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
 
+- **Two sessions on the same role carry different session tags, and the session NAME is the only
+  thing that tells them apart** (measured 2026-10-11, after reading one for the other). SMUS assumes
+  one project role from two places: the portal's session, named `<Identity Center user id>@<environment
+  id>`, carries `RedshiftDbUser` **and `RedshiftDbRoles`**; the space's session, named `SageMaker`,
+  carries `RedshiftDbUser` and **not** `RedshiftDbRoles`. Both appear in one `lookup-events` output,
+  identical but for `roleSessionName` and the tag list — and a capability read off the wrong one becomes
+  a mechanism you then cannot make work, with nothing broken to find. **`transitiveTagKeys` was `None`
+  on both**, so no tag survives a further chain. Read `roleSessionName` before attributing a session
+  tag, and treat "the role carries X" and "this session carries X" as different claims — a role tag is
+  overridden by a session tag of the same key, so the role's value can be live and irrelevant at once.
+  Where: `log-stage-06h` (2026-10-11), 6h decision 8a.
+
 - **Two doors into one database resolve to two DIFFERENT database users, one per project and one per
   person** (measured 2026-10-11). The same warehouse, the same schema, the same project: through the
   portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's

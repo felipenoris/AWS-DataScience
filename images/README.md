@@ -56,8 +56,13 @@ sudo docker build -t awsds/dev-env:local dev-env
 proxy variables as `ENV`, and `NO_PROXY` — what keeps AWS traffic on the VPC endpoints — is a **literal
 in the Dockerfile**, dated in its own comment. An image whose list predates the account's current
 endpoint set still works, and sends the names added since out through the proxy as public calls. So
-read the current value on the laptop, and if it differs from the one in `dev-env/Dockerfile` §6, update
-the file first:
+read it on the laptop before the session with `./aws/devenv.py`: `DE-3` fails when the account carries
+a name that `dev-env/Dockerfile` §7 lacks, and that is the edit to make first.
+
+The slice's output is half of the literal. It names the endpoints the last apply created, so it carries
+only the optional endpoint groups that apply named, while the image carries **every** group's names
+(2026-10-10): a session that turns a group on must not send that group's calls out through the proxy.
+The Dockerfile's comment above the list carries the composition and both commands; the first is:
 
 ```bash
 AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy

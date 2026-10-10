@@ -1792,6 +1792,29 @@
   binary was measured and not used: `uv-x86_64-unknown-linux-gnu.tar.gz` at
   `sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2`.
 
+- The `base` image on SageMaker Distribution `4.5.2-cpu` — the sources behind the pin and the `uv`
+  layer (read 2026-10-10, for `default-v0.5.0`). The public registry, anonymously: a pull token, then
+  the tag list (`4.5.0`/`4.5.1`/`4.5.2-cpu` published, no 4.6 or 5.x) and the manifests, whose sha256
+  is the pin because the registry sends no `Docker-Content-Digest` header; `4.5-cpu` and `4.5.2-cpu`
+  are the same manifest, `sha256:e4ca47c4…476b`, built 2026-09-23, 24 layers, ~3.74 GB compressed:
+  <https://public.ecr.aws/token/?scope=repository:sagemaker/sagemaker-distribution:pull> and
+  <https://public.ecr.aws/v2/sagemaker/sagemaker-distribution/tags/list>. The distribution's own build
+  artifacts: `cpu.env.out` pins `uv-0.12.17` at line 923, libgcc/libstdcxx 16.2.0 (from 15.2.0),
+  Python 3.12.14 and `jupyter-activity-monitor-extension` 0.3.2; `cpu.env.in` asks for
+  `uv >=0.12.15,<0.13.0`; the Dockerfile now clones two GitHub repositories of agent skills into
+  `/etc/sagemaker-ui/skills`, appends `/home/sagemaker-user/.local/bin` to `PATH`, and no longer
+  disables the `jupyter-collaboration` extensions; `RELEASE.md` of 4.5.0/4.5.1/4.5.2 gives boto3
+  1.43.56/1.43.75/1.43.75 and uv 0.12.9/0.12.15/0.12.17:
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/cpu.env.out>,
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/cpu.env.in>,
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/Dockerfile> and
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/RELEASE.md>.
+  conda-forge's `uv` packages for `linux-64`, with each build's dependencies — `0.13.0` published
+  2026-10-10, `0.12.24` the day before: <https://api.anaconda.org/package/conda-forge/uv>. uv's
+  changelogs: `0.13.0` carries breaking changes, and `0.12.6`..`0.12.24` none, while still naming
+  `UV_SYSTEM_CERTS` at `0.12.24`: <https://github.com/astral-sh/uv/blob/main/CHANGELOG.md> and
+  <https://github.com/astral-sh/uv/blob/main/changelogs/0.12.x.md>.
+
 ## Books
 
 A reading list added at the user's request, not authorities. None of these has been read against this
