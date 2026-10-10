@@ -1714,13 +1714,25 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unchanged, because a database user is created when credentials are used rather than when they are
   minted. Where: `log-stage-06h` (2026-10-10).
 
-- **`AmazonRedshiftQueryEditorV2NoSharing` does not cover the `sqlworkbench` actions a SMUS connection
-  calls** (read 2026-10-10, v9). 72 actions, 66 of them `sqlworkbench:`, and **`sqlworkbench:GetResources`
-  and `sqlworkbench:ExecuteQuery` are both absent** — the two the portal's connection was refused on.
-  Attaching AWS's own managed policy for that surface would not have lifted the refusal, which is why
-  AWS's SMUS sample asks for `sqlworkbench:*`: the sibling product calls actions outside the published
-  policy for the product they belong to. Where: `log-stage-06h` (2026-10-10),
-  `sandbox/warehouse/iam.tf`.
+- **A CloudTrail `eventName` is not the IAM action that event authorizes, and a policy written from
+  the event name grants nothing** (measured 2026-10-10, and it cost an apply cycle). The portal's
+  refusals logged events `GetResources` and `ExecuteQuery`; the denial **message** on those same events
+  named the action being checked, and it was `sqlworkbench:CreateConnection` — with
+  `sqlworkbench:DriverExecute` behind a second `GetResources`. One event authorizes a differently-named
+  action, and several events authorize the same one. A policy granting `sqlworkbench:GetResources`
+  changed nothing and the next refusal was identical to the first, which is the dangerous part: the
+  symptom does not say the grant missed.
+  **Read `errorMessage`, not `eventName`** — `is not authorized to perform: <action>` is the only
+  authoritative statement of what to grant, and it also distinguishes the policy type
+  (*"no identity-based policy allows"* against an explicit deny). Two services in this same window gave
+  neither: Glue answered `An unknown error occurred` for `GetCatalogs`, and Lake Formation answered
+  *"Insufficient Lake Formation permission(s): Required Describe on raw"* — **not an IAM failure at
+  all**, so the action was inferred from the event name there, by necessity rather than by choice.
+  The corollary for managed policies: `AmazonRedshiftQueryEditorV2NoSharing` v9 **does** carry both
+  real actions (`DriverExecute` unconditionally, `CreateConnection` under
+  `aws:RequestTag/sqlworkbench-resource-owner`), and the earlier reading that it did not was this same
+  confusion written down as a fact about AWS. Where: `log-stage-06h` (2026-10-10),
+  `sandbox/warehouse/iam.tf`, `runbooks/log-debugging.md`.
 
 - **A refused `sts:AssumeRole` records no `roleArn` in CloudTrail** (measured 2026-10-10). Both denials
   carry `requestParameters.roleArn` absent and no `externalId`, while the successes in the same window

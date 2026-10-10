@@ -91,7 +91,26 @@ aws cloudtrail lookup-events \
   [Stage 11](../stages/stage-11-dlp.md)'s to enable.
 - The payload is `CloudTrailEvent`, **a JSON string inside the JSON** — parse it. The fields that earn
   their keep: `sourceIPAddress`, `vpcEndpointId`, `userIdentity.arn`, `userAgent`, `errorCode`,
-  `requestParameters`.
+  **`errorMessage`** and `requestParameters`.
+
+> **`eventName` is not the IAM action, so a policy written from it grants nothing** (measured
+> 2026-10-10, 6h 3.5). The event `GetResources` authorized `sqlworkbench:CreateConnection` on one call
+> and `sqlworkbench:DriverExecute` on another: one event can authorize a differently-named action, and
+> several events can authorize the same one. **`errorMessage` is the authority** — `is not authorized to
+> perform: <action>` names what to grant, and its tail distinguishes *"no identity-based policy allows"*
+> from an explicit deny. Writing the grant from `eventName` costs a full apply cycle and the second
+> refusal is **identical to the first**, so the symptom never says the grant missed.
+>
+> Two services give no action at all, and then the event name is all there is: **Glue** answered
+> `An unknown error occurred` for a refused `GetCatalogs`, and **Lake Formation** answered
+> *"Insufficient Lake Formation permission(s): Required Describe on raw"* — which is not an IAM failure,
+> and no IAM grant fixes it.
+
+> **An absence from `lookup-events` is not evidence until the instrument has shown a presence.** A
+> lookup by `EventName=GetResources` returned no events while a lookup by
+> `EventSource=sqlworkbench.amazonaws.com` two minutes later returned six, same window (2026-10-10).
+> **Sweep by source** before concluding a call was never made — Lesson 62, on the instrument that most
+> invites the mistake.
 
 ### 2.4 The idiom: build the window in the shell, and never pipe a command whose exit code matters
 

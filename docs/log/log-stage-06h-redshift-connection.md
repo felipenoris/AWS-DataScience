@@ -756,3 +756,85 @@ skipped**.
 3. **[user]** 3.3 proper: write a table into `lab` and read it back — and the connection's database must
    be `sandbox`, since a cross-database write does not work.
 4. **[Claude]** 3.6, the two audit log groups for this session, searching `AUDITMARKER20260920`.
+
+---
+
+## 2026-10-10 — amendment: the previous entry read event names as actions, and the policy it authored granted nothing
+
+*Written by Claude, same day, correcting the entry above rather than editing it. The Query editor
+reading is the **user's** (*"Failed to fetch catalog", "Failed to fetch database"*); the trail readings,
+the correction and its apply are Claude's.*
+
+### What the previous entry got wrong
+
+It recorded the refused actions as `sqlworkbench:GetResources` and `sqlworkbench:ExecuteQuery`, read from
+CloudTrail's `eventName`, and granted exactly those. **Those are event names, not IAM actions.** The
+denial **message** on the same events names the action being authorized:
+
+```
+User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/<session>
+is not authorized to perform: sqlworkbench:CreateConnection
+because no identity-based policy allows the sqlworkbench:CreateConnection action
+```
+
+One event authorizes a differently-named action, and two different events authorized the same one. So
+the policy applied at 03:49:40Z granted two actions nobody checks, and the next refusal was **identical
+to the first** — which is the part worth carrying: the symptom does not say the grant missed.
+
+**It also followed that the claim about the managed policy was wrong.** The previous entry said
+`AmazonRedshiftQueryEditorV2NoSharing` v9 does not cover what SMUS calls, because `GetResources` and
+`ExecuteQuery` are absent from it. They are absent because they are not actions. That policy **does**
+carry both real ones — `DriverExecute` unconditionally and `CreateConnection` under
+`aws:RequestTag/sqlworkbench-resource-owner` — so attaching it was a live option all along. It is still
+not attached, for different and smaller reasons: it also brings `redshift:DescribeClusters` for a cluster
+this design does not have, plus a secret-creation grant, and AWS edits a managed policy under its
+holders (Lesson 49).
+
+### Split by the apply, which is what separated signal from echo
+
+The policy was created at **03:49:40Z**. Grouping the refusals around it:
+
+| Window | Action refused |
+|---|---|
+| before 03:49:40Z | `sqlworkbench:DriverExecute` ×7 |
+| after 03:49:40Z | `sqlworkbench:CreateConnection` ×12 |
+
+So the first apply **did** work — for `DriverExecute`, which it happened to grant from the managed
+policy's unconditional list. `CreateConnection` was the only one outstanding. Without the split, twelve
+fresh refusals of a just-granted-looking action read as "the grant does not take".
+
+### What the Query editor needs, from the messages rather than the event names
+
+| Event | The action, or the layer | Principal |
+|---|---|---|
+| `GetResources` | `sqlworkbench:CreateConnection` ×12 | access role |
+| `GetResources` | `sqlworkbench:DriverExecute` ×7, lifted | access role |
+| `GetCatalogs` | `glue:GetCatalogs` ×7 — message is `An unknown error occurred`, so the action comes from the event name by necessity | access role |
+| `GetNamespace` | `redshift-serverless:GetNamespace` ×1, lifted | access role |
+| `GetDatabase` | **Lake Formation, not IAM**: *"Insufficient Lake Formation permission(s): Required Describe on raw"* ×8 | **project role** |
+
+**The `raw` refusal is the perimeter working and stays refused.** The Query editor enumerates every Glue
+database it can see and meets the lake's raw layer, where this project holds no `DESCRIBE`. Granting it
+is a governance act under `GOVERNANCE.md`'s grant rules, with a named requester, not a fix for a
+connection — and *"Failed to fetch database"* is the correct outcome for a project that may not describe
+that database.
+
+### Applied
+
+`awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8` → **v2**, `0 added, 1 changed, 0 destroyed`,
+re-plan `No changes`. It now carries `sqlworkbench:CreateConnection`, `sqlworkbench:DriverExecute`,
+`glue:GetCatalogs` scoped to this account's catalog and its children, and the fifteen other
+unconditional query-editor actions.
+
+`CreateConnection` is **unconditional for now**, and the narrowing is one trail read rather than another
+cycle: the managed policy guards it with `aws:RequestTag/sqlworkbench-resource-owner = ${aws:userid}`,
+and whether the portal sends that tag is readable from the first **successful** call's
+`requestParameters`.
+
+### Owed
+
+1. **[user]** open the Query editor again. `glue:GetCatalogs` and `sqlworkbench:CreateConnection` are
+   live; the `raw` line will stay refused and should be read as correct.
+2. **[Claude]** the trail for the next refusal, **from `errorMessage` this time**; whether the owner tag
+   is sent on the successful `CreateConnection`; and `pg_user`, which is still unchanged and still owes
+   the `RedshiftDbUser` answer and one `DROP USER`.

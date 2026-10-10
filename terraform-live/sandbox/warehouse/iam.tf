@@ -294,26 +294,37 @@ resource "aws_iam_role_policy_attachment" "project_access_warehouse" {
 # document above and never makes these calls. Read from the account's trail on 2026-10-10, after the
 # connection was created and read `Available`:
 #
-#   sqlworkbench:GetResources          AccessDenied x6   by the access role
-#   sqlworkbench:ExecuteQuery          AccessDenied x1   by the access role
-#   redshift-serverless:GetNamespace   AccessDenied x1   by the access role
-#   redshift-serverless:GetWorkgroup   ok x3             by the access role
-#   redshift-serverless:GetCredentials ok x2             by the access role
-#   redshift-serverless:ListWorkgroups ok x1             by the PROJECT role
+# THE EVENT NAME IS NOT THE ACTION, and reading one for the other wasted a cycle here. CloudTrail
+# logged events `GetResources` and `ExecuteQuery`; the denial MESSAGE on those same events names the
+# action being authorized, and it is neither:
 #
-# NEITHER MEASURED sqlworkbench ACTION IS IN AmazonRedshiftQueryEditorV2NoSharing (read 2026-10-10,
-# v9: 72 actions, 66 of them `sqlworkbench:`, and `GetResources` and `ExecuteQuery` are both absent).
-# So attaching AWS's own managed policy for this surface would not have lifted the refusal, and that
-# is why AWS's SMUS sample asks for `sqlworkbench:*` instead: the SMUS connection calls actions
-# outside the published query-editor policy.
+#   event GetResources  -> sqlworkbench:CreateConnection   AccessDenied x12  access role
+#   event GetResources  -> sqlworkbench:DriverExecute      AccessDenied x7   access role (lifted)
+#   event GetCatalogs   -> glue:GetCatalogs                AccessDenied x7   access role
+#   event GetNamespace  -> redshift-serverless:GetNamespace AccessDenied x1  access role (lifted)
+#   event GetDatabase   -> LAKE FORMATION, not IAM: "Insufficient Lake Formation permission(s):
+#                          Required Describe on raw"       x8                PROJECT role
+#   redshift-serverless:GetWorkgroup   ok x3   access role
+#   redshift-serverless:GetCredentials ok x4   access role
+#   redshift-serverless:ListWorkgroups ok x1   PROJECT role
 #
-# WHAT IS GRANTED AND WHAT IS WITHHELD. The two measured actions, plus the unconditional
-# non-resource set that managed policy grants - the "operate the editor" surface a session needs to
-# function at all. The OWNER-SCOPED half is deliberately NOT granted: saved queries, notebooks and
-# charts carry a `sqlworkbench-resource-owner` tag, and `sqlworkbench:*` would let one project's
-# session read and delete another principal's, account-wide, with a second project's access role
-# (6h decision 8) widening it again. Narrowing the two measured actions further is owed once 3.3 and
-# 3.4 have exercised the whole path, which is when the real set becomes readable from the trail.
+# The `raw` refusal is NOT a gap. The query editor enumerates every Glue database it can see and
+# meets the lake's raw layer, where this project holds no `DESCRIBE`. Granting it would be a
+# governance change (GOVERNANCE.md's grant rules), not a connection fix, so it stays refused.
+#
+# WHAT IS GRANTED AND WHAT IS WITHHELD. The two real sqlworkbench actions plus the rest of the
+# unconditional set of AmazonRedshiftQueryEditorV2NoSharing v9 - the "operate the editor" surface.
+# That managed policy DOES carry both real actions (`DriverExecute` unconditionally,
+# `CreateConnection` under `aws:RequestTag/sqlworkbench-resource-owner = $${aws:userid}`), so
+# attaching it was a live option; it is not attached because it also brings
+# `redshift:DescribeClusters` for a cluster this design does not have and a secret-creation grant,
+# and because AWS edits a managed policy under its holders (Lesson 49).
+#
+# The OWNER-SCOPED half is deliberately NOT granted: saved queries, notebooks and charts carry a
+# `sqlworkbench-resource-owner` tag, and `sqlworkbench:*` would let one project's session read and
+# delete another principal's, account-wide, with a second project's access role (6h decision 8)
+# widening it again. `CreateConnection` is unconditional here only until the first SUCCESS shows
+# whether the portal sends that owner tag - which the trail answers, with no further apply cycle.
 resource "aws_iam_policy" "project_access_portal" {
   for_each = var.projects
 
@@ -342,11 +353,14 @@ data "aws_iam_policy_document" "project_access_portal" {
     sid    = "OperateTheQueryEditorSession"
     effect = "Allow"
     actions = [
-      # measured refused, 2026-10-10
-      "sqlworkbench:GetResources",
-      "sqlworkbench:ExecuteQuery",
-      # the unconditional set of AmazonRedshiftQueryEditorV2NoSharing v9, which is what a session
-      # needs to exist: no saved query, notebook or chart is reachable through any of them.
+      # THE ACTIONS REFUSED, AND THEY ARE NOT THE CLOUDTRAIL EVENT NAMES. The events read
+      # `GetResources` and `ExecuteQuery`; the actions those events authorize, named in the denial
+      # message, are `CreateConnection` and `DriverExecute`. A policy written from the event name
+      # grants nothing, and the refusal that follows is identical to the first one.
+      "sqlworkbench:CreateConnection",
+      "sqlworkbench:DriverExecute",
+      # the rest of the unconditional set of AmazonRedshiftQueryEditorV2NoSharing v9, which is what
+      # a session needs to exist: no saved query, notebook or chart is reachable through any of them.
       "sqlworkbench:GenerateSession",
       "sqlworkbench:GetAccountInfo",
       "sqlworkbench:GetAccountSettings",
@@ -362,9 +376,21 @@ data "aws_iam_policy_document" "project_access_portal" {
       "sqlworkbench:ListTabs",
       "sqlworkbench:PutTab",
       "sqlworkbench:DeleteTab",
-      "sqlworkbench:DriverExecute",
     ]
     resources = ["*"]
+  }
+
+  # The catalog list the query editor fetches, refused to the access role with `An unknown error
+  # occurred` - Glue's denial message carries neither the action nor the resource, so the action
+  # comes from the event name here and the grant is the narrowest ARN pair that covers it.
+  statement {
+    sid     = "ListTheCatalogsTheQueryEditorOffers"
+    effect  = "Allow"
+    actions = ["glue:GetCatalogs"]
+    resources = [
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog/*",
+    ]
   }
 
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes
