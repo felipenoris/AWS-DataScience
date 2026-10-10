@@ -131,7 +131,7 @@ prerequisite of this exercise and stays where 6f handed it.
 
 | Where | What | Layer |
 |---|---|---|
-| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the three definitions as templates, the operator files; placeholders for every account-scoped value | — |
+| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's paste-ready `config`, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
 | the project's `shared/orchestration-demo/` | the uploaded copies, and an `inbox/` and `outbox/` per variant | data, not a resource |
 | the project's Workflows, in the portal | `demo-devenv-job`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
@@ -210,7 +210,8 @@ and the files before anything runs.
   and run it once before pass 1 so every later run has a before:
   - `SO-1` the three workflows exist, `READY`, created by the project role (CloudTrail `CreateWorkflow`);
   - `SO-2` each one's role, `NetworkConfiguration` (two private subnets, no default route) and project key;
-  - `SO-3` where the definition and the `Code` object live, with `CodeSnapshottedAt` and the version count;
+  - `SO-3` where the definition and the `Code` object live, with `CodeSnapshottedAt` and the version count,
+    and each version's `WorkflowDefinition` saved under `aws/output/`;
   - `SO-4` the recent runs: state, type read per run, each task instance's duration;
   - `SO-5` each `demo-devenv-` processing job: isolation, inter-container encryption, subnets, volume key,
     role, tag, image digest, status and billed seconds;
@@ -218,15 +219,20 @@ and the files before anything runs.
   - `SO-7` the `shared/orchestration-demo/` prefixes: what each `inbox/` and `outbox/` holds;
   - `SO-8` the CloudTrail record of `CreateProcessingJob`: caller, session name, `vpcEndpointId`.
   Its row joins [`aws/INDEX.md`](../../../aws/INDEX.md) in the same commit.
-- **0.4 — [Claude] Write the files** under the path decision 1 picks:
+- **0.4 — [Claude] Write the files** under `examples/sandbox-orchestration/` (decision 1), with the
+  repository layout line in `README.md` in the same commit:
   - the Python project `awsds-demo-job`: a `pyproject.toml`, the package `src/awsds_demo_job/` with
     `transform.py` (stdlib only: for each input CSV, a JSON result with the row count, the column names and
     the input's sha256), `__main__.py` (local mode, `--input DIR --output DIR`) and `s3.py` (worker mode,
     boto3), and a test for `transform.py`;
-  - the three definitions as templates, every account-scoped value a placeholder, so the pre-commit check on
-    account ids holds;
+  - the processing task's `config` for passes 2 and 3, paste-ready, every account-scoped value a placeholder,
+    so the pre-commit check on account ids holds;
   - the operator files for steps 4 and 5;
   - one sample CSV.
+
+  The code flows from the repository to the project. The definition flows the other way: the portal
+  generates and versions it, so each read step below ends with the definition the portal now holds committed
+  beside the code, placeholders substituted, as the record of what ran.
 
 ### 1. The files in the project
 
@@ -274,7 +280,8 @@ answers them.
     mounts' owners and `WRITE-OK` (verification ii);
   - `SO-5` for the job's settings and outcome, which is the boundary's verdict (v);
   - `SO-8` for the create call's caller and door (vi);
-  - Production's CloudTrail for the `BatchGetImage` that served the job: principal and session name (iv).
+  - Production's CloudTrail for the `BatchGetImage` that served the job: principal and session name (iv);
+  - the definition, read back and committed (decision 1).
   A tag refusal names `CreateProcessingJob` or `AddTags` in its wording (iii).
 - **2.5 — If `WRITE-OK` is missing**, the container's user cannot write the output mount, and the fallback is
   the image's own `sudo`, which works in spaces (measured 2026-09-08): the command opens with
@@ -296,7 +303,7 @@ answers them.
   `inbox/` empty, three task instances `SUCCESS`, one processing job `Completed`.
 - **3.3 — [Claude] Read the run**: `SO-4` for the durations, `SO-5` for the job's billed seconds, `SO-7` for
   the prefixes, the result file's content against the sample's sha256, and the version count, which is now 2
-  (`SO-3`).
+  (`SO-3`). The second version's definition is committed (decision 1).
 - **3.4 — [user] Run once with an empty `inbox/`.** The sensor times out after 600 s, and `soft_fail` should
   end the run `SUCCESS` with the downstream tasks skipped. **[Claude]** reads the run's state and what the wait
   billed (xi).
@@ -324,7 +331,8 @@ identity a worker task's calls carry.
   - the task log for the ARN, expected `assumed-role/<project role>/AmazonMWAAServerless` (x);
   - the vendored package's `__file__`: under `/usr/local/airflow/dags` it ran from the package, and under
     site-packages the pre-installed copy won (viii);
-  - `SO-7` for the prefixes.
+  - `SO-7` for the prefixes;
+  - the definition, read back and committed (decision 1).
 
 ### 5. `demo-bash-operator`, and the PyPI negative
 
@@ -342,7 +350,8 @@ identity a worker task's calls carry.
   - `reach_pypi`, a *Bash Operator* whose command is the script's name, `reach_pypi.sh`, the form the portal
     documents for an uploaded script; it runs after `run_command`, so its failure cannot hide the exercise.
   Drop the sample and run.
-- **5.3 — [Claude] Read it**: `run_command` `SUCCESS` and the prefixes in `SO-7`; `reach_pypi` `FAILED`
+- **5.3 — [Claude] Read it**, and commit the definition (decision 1): `run_command` `SUCCESS` and the
+  prefixes in `SO-7`; `reach_pypi` `FAILED`
   within seconds, with the error wording and how long each call took to fail (ix). A refusal that arrives as a
   timeout and one that arrives as a resolver error are different readings: the second instrument is the
   Sandbox DNS Firewall's log group, `/awsds/sandbox/dns-firewall`.
@@ -406,7 +415,12 @@ with the recommendation stated (Lesson 16).
    this repository**, as templates with a placeholder for every account-scoped value. The files are code a
    person reviews, and a procedure that depends on a file only its author holds runs for its author alone
    (Lesson 61). The alternative, the project's `shared/` only, is the exercise's premise for execution and
-   leaves nothing reviewable. Taking it adds a line to the repository layout in `README.md`.
+   leaves nothing reviewable. Taking it adds a line to the repository layout in `README.md`. **Taken
+   2026-10-10 (the user): this repository, with the two directions split.** The code is written here and
+   uploaded to the project. The definition's source is the portal, which generates and versions it: before a
+   pass the repository holds the paste-ready `config`, and after it the definition the portal holds, read back
+   (`get-workflow`'s `WorkflowDefinition`, the YAML *View code* shows) and committed with the same
+   placeholders.
 2. **Which interpreter the job runs** (3.1). Recommended: **the house environment, `/opt/awsds/venv/bin/python`**
    (Python 3.13, the *Python (awsds dev-env)* kernel), the one this repository curates. The alternative is the
    distribution's `/opt/conda/bin/python` (3.12, its default `python3` kernel). Either is named by absolute
