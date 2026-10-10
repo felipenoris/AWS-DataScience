@@ -1704,6 +1704,37 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
   `log-stage-06d` the fifteenth sitting.
 
+- **The database identity of a SMUS Redshift connection is the ACCESS ROLE, not the project role and
+  not the person** (measured 2026-10-10, from the account's own trail). `redshift-serverless:GetCredentials`
+  is called by the assumed access role; the project role's own calls are `ListWorkgroups`, which fills
+  the compute dropdown, and the `sts:AssumeRole` that gets there. So the `RedshiftDbUser` tag belongs on
+  the access role, layer 2's reach has to be attached to **both** roles for different reasons, and
+  *whose identity reaches the database* is a third answer again after Stage 6d step 7's `StartSession`.
+  **Creating the connection mints no database session**: the compute reads `Available` with `pg_user`
+  unchanged, because a database user is created when credentials are used rather than when they are
+  minted. Where: `log-stage-06h` (2026-10-10).
+
+- **`AmazonRedshiftQueryEditorV2NoSharing` does not cover the `sqlworkbench` actions a SMUS connection
+  calls** (read 2026-10-10, v9). 72 actions, 66 of them `sqlworkbench:`, and **`sqlworkbench:GetResources`
+  and `sqlworkbench:ExecuteQuery` are both absent** — the two the portal's connection was refused on.
+  Attaching AWS's own managed policy for that surface would not have lifted the refusal, which is why
+  AWS's SMUS sample asks for `sqlworkbench:*`: the sibling product calls actions outside the published
+  policy for the product they belong to. Where: `log-stage-06h` (2026-10-10),
+  `sandbox/warehouse/iam.tf`.
+
+- **A refused `sts:AssumeRole` records no `roleArn` in CloudTrail** (measured 2026-10-10). Both denials
+  carry `requestParameters.roleArn` absent and no `externalId`, while the successes in the same window
+  carry the target in full. The trail says *denied*, not *denied for what*, so the role that was actually
+  requested comes from the caller's own error text — read it before attributing a refusal from the trail
+  alone. Where: `log-stage-06h` (2026-10-10), `runbooks/log-debugging.md`.
+
+- **`cloudtrail lookup-events` can answer "no events" for events it holds** (measured 2026-10-10). A
+  lookup by `EventName=GetResources` returned nothing; a lookup by
+  `EventSource=sqlworkbench.amazonaws.com` two minutes later returned six `GetResources` events in the
+  same window. Indexing lag or an index that does not carry them — either way, **an absence from a
+  lookup run shortly after the fact is not evidence of absence** (Lesson 62). Sweep by source before
+  concluding that a call was never made. Where: `log-stage-06h` (2026-10-10).
+
 - **The SageMaker Unified Studio portal requires an access role on a SAME-ACCOUNT Redshift
   connection, and both AWS's procedure and the field's own help say it does not** (measured
   2026-09-21, by the user, in the form). *"Gaining access to Amazon Redshift resources"* splits in

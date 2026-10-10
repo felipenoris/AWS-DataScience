@@ -289,32 +289,106 @@ resource "aws_iam_role_policy_attachment" "project_access_warehouse" {
   policy_arn = aws_iam_policy.project_warehouse[each.key].arn
 }
 
-# The two tag reads, and they are the access role's alone. AWS names them for exactly this case -
-# "signing in using IAM credentials", where the roles and user come from a tag key and value - so
-# the identity that signs in has to be able to read its own tags. Neither takes a resource. They are
-# not on the project role because nothing on that path reads a tag to decide a database user.
-resource "aws_iam_policy" "project_access_tags" {
+# What the portal's own flow calls, and every action here is in CloudTrail rather than in a sample.
+# This policy is the ACCESS ROLE'S ALONE: the project role reaches the dropdown with the shared
+# document above and never makes these calls. Read from the account's trail on 2026-10-10, after the
+# connection was created and read `Available`:
+#
+#   sqlworkbench:GetResources          AccessDenied x6   by the access role
+#   sqlworkbench:ExecuteQuery          AccessDenied x1   by the access role
+#   redshift-serverless:GetNamespace   AccessDenied x1   by the access role
+#   redshift-serverless:GetWorkgroup   ok x3             by the access role
+#   redshift-serverless:GetCredentials ok x2             by the access role
+#   redshift-serverless:ListWorkgroups ok x1             by the PROJECT role
+#
+# NEITHER MEASURED sqlworkbench ACTION IS IN AmazonRedshiftQueryEditorV2NoSharing (read 2026-10-10,
+# v9: 72 actions, 66 of them `sqlworkbench:`, and `GetResources` and `ExecuteQuery` are both absent).
+# So attaching AWS's own managed policy for this surface would not have lifted the refusal, and that
+# is why AWS's SMUS sample asks for `sqlworkbench:*` instead: the SMUS connection calls actions
+# outside the published query-editor policy.
+#
+# WHAT IS GRANTED AND WHAT IS WITHHELD. The two measured actions, plus the unconditional
+# non-resource set that managed policy grants - the "operate the editor" surface a session needs to
+# function at all. The OWNER-SCOPED half is deliberately NOT granted: saved queries, notebooks and
+# charts carry a `sqlworkbench-resource-owner` tag, and `sqlworkbench:*` would let one project's
+# session read and delete another principal's, account-wide, with a second project's access role
+# (6h decision 8) widening it again. Narrowing the two measured actions further is owed once 3.3 and
+# 3.4 have exercised the whole path, which is when the real set becomes readable from the trail.
+resource "aws_iam_policy" "project_access_portal" {
   for_each = var.projects
 
-  name        = "${local.name}-access-tags-${each.key}"
-  description = "Stage 6h 3.1: the tag reads the IAM-credentials sign-in needs, so the access role can resolve its own RedshiftDbUser tag."
-  policy      = data.aws_iam_policy_document.project_access_tags[each.key].json
+  name        = "${local.name}-access-portal-${each.key}"
+  description = "Stage 6h 3.5: the calls the SMUS portal's connection makes as the access role, measured from CloudTrail - the query-editor surface, the namespace read, and the tag reads that resolve RedshiftDbUser."
+  policy      = data.aws_iam_policy_document.project_access_portal[each.key].json
 }
 
-data "aws_iam_policy_document" "project_access_tags" {
+data "aws_iam_policy_document" "project_access_portal" {
+  # checkov:skip=CKV_AWS_356:the sqlworkbench and tag actions below are NOT resource-scopable - AWS's own AmazonRedshiftQueryEditorV2NoSharing puts them in a statement it names `NonResourceLevelPermissions` with Resource `*`, and tag:GetResources is an account-wide API. The constraint is the role's trust policy: only this project's role can assume it, with the project id as the external id
+  # checkov:skip=CKV_AWS_111:the writes here are query-editor session state (tabs, workspace settings) and query execution, none of which takes a resource ARN. The owner-scopable half - saved queries, notebooks, charts - is deliberately NOT granted, which is what would have carried a resource constraint
   for_each = var.projects
 
+  # The namespace read the portal makes alongside GetWorkgroup. The id is a wildcard for the same
+  # reason the workgroup's is: the ARN carries a service-minted UUID, not the name.
   statement {
-    sid       = "ResolveOwnPrincipalTags"
+    sid       = "ReadThisAccountsNamespace"
+    effect    = "Allow"
+    actions   = ["redshift-serverless:GetNamespace"]
+    resources = ["arn:aws:redshift-serverless:${var.region}:${data.aws_caller_identity.current.account_id}:namespace/*"]
+  }
+
+  # The query-editor surface. `sqlworkbench` publishes no resource ARN for these, so the resource is
+  # `*` and the containment is the role's trust policy: only this project's role can assume it.
+  statement {
+    sid    = "OperateTheQueryEditorSession"
+    effect = "Allow"
+    actions = [
+      # measured refused, 2026-10-10
+      "sqlworkbench:GetResources",
+      "sqlworkbench:ExecuteQuery",
+      # the unconditional set of AmazonRedshiftQueryEditorV2NoSharing v9, which is what a session
+      # needs to exist: no saved query, notebook or chart is reachable through any of them.
+      "sqlworkbench:GenerateSession",
+      "sqlworkbench:GetAccountInfo",
+      "sqlworkbench:GetAccountSettings",
+      "sqlworkbench:GetUserInfo",
+      "sqlworkbench:GetUserWorkspaceSettings",
+      "sqlworkbench:PutUserWorkspaceSettings",
+      "sqlworkbench:GetAutocompletionMetadata",
+      "sqlworkbench:GetAutocompletionResource",
+      "sqlworkbench:GetSchemaInference",
+      "sqlworkbench:GetQueryExecutionHistory",
+      "sqlworkbench:ListQueryExecutionHistory",
+      "sqlworkbench:ListConnections",
+      "sqlworkbench:ListTabs",
+      "sqlworkbench:PutTab",
+      "sqlworkbench:DeleteTab",
+      "sqlworkbench:DriverExecute",
+    ]
+    resources = ["*"]
+  }
+
+  # The tag reads AWS names for "signing in using IAM credentials", where the database user comes
+  # from a tag key and value. UNEXERCISED as of 2026-10-10 - the trail shows no `tag:GetResources`,
+  # and the sqlworkbench refusals may have stopped the flow before it got here. The condition is
+  # AmazonRedshiftQueryEditorV2NoSharing's: the read is only permitted when the query editor is the
+  # caller, so this cannot become a general tag-enumeration grant on the account.
+  statement {
+    sid       = "ResolveOwnPrincipalTagsThroughTheQueryEditor"
     effect    = "Allow"
     actions   = ["tag:GetResources", "tag:GetTagKeys"]
     resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:CalledViaLast"
+      values   = ["sqlworkbench.amazonaws.com"]
+    }
   }
 }
 
-resource "aws_iam_role_policy_attachment" "project_access_tags" {
+resource "aws_iam_role_policy_attachment" "project_access_portal" {
   for_each = var.projects
 
   role       = aws_iam_role.project_access[each.key].name
-  policy_arn = aws_iam_policy.project_access_tags[each.key].arn
+  policy_arn = aws_iam_policy.project_access_portal[each.key].arn
 }

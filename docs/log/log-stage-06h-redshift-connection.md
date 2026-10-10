@@ -635,3 +635,124 @@ no privileges. One of the two is scaffolding and is removed once `pg_user` says 
 | `WH-13` | the permanent note |
 
 Every layer Claude owns is applied and read back. What remains is the portal act and what it measures.
+
+---
+
+## 2026-10-10 — the connection exists, and CloudTrail names every caller: three refusals, and the access role is the database identity
+
+*Written by Claude in the sitting that ran it. The connection was created by the **user**, in the portal,
+as the data-scientist persona; the quoted portal error is theirs. Every CloudTrail reading, the policy
+change and its apply are Claude's, from `awsds-infra-sandbox-1` (account `Sandbox Account 1`, permission
+set `InfrastructureAccess`).*
+
+### 3.2 — the connection, and the first attempt's error was an ARN
+
+The user's first two attempts failed with:
+
+```
+Unable to assume AccessRole. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/<session>
+is not authorized to perform: sts:AssumeRole on resource:
+arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+```
+
+The resource is the **project role itself** — the role trying to assume itself, because the field held the
+wrong ARN. With `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` the form accepted, and the compute
+registered as **`redshift-serverless.redshift`**, reading **`Available`**.
+
+> **A refused `sts:AssumeRole` records no `roleArn`.** Both denials are in the trail at 03:41:43Z and
+> 03:43:15Z with `requestParameters.roleArn` **absent** and no `externalId`, while the two successes
+> carry the target in full. So the trail says *denied* and not *denied for what*: the only evidence of
+> which role was requested is the portal's own error text. Worth knowing before attributing a refusal
+> from the trail alone.
+
+### `Available` is the object's health, not a database session
+
+`pg_user` after the connection was created and read `Available`: **the same six users, unchanged**. No
+third spelling appeared, so **creating the connection mints no database session** — which means the
+`RedshiftDbUser` question is still open and the `DROP USER` still owed. A database user is created when
+credentials are *used*, not when they are minted.
+
+### 3.5 — the attribution, from the account's own trail
+
+Three hours, by event source, after the connection existed:
+
+| Call | Result | Caller |
+|---|---|---|
+| `sts:AssumeRole` → the access role | ok ×2 | the **project role** |
+| `sts:AssumeRole` → (target not logged) | **AccessDenied** ×2 | the project role — the wrong-ARN attempts |
+| `redshift-serverless:ListWorkgroups` | ok ×1 | the **project role** |
+| `redshift-serverless:GetWorkgroup` | ok ×3 | the **access role** |
+| `redshift-serverless:GetCredentials` | ok ×2 | the **access role** |
+| `redshift-serverless:GetNamespace` | **AccessDenied** ×1 | the access role |
+| `sqlworkbench:GetResources` | **AccessDenied** ×6 | the access role |
+| `sqlworkbench:ExecuteQuery` | **AccessDenied** ×1 | the access role |
+
+**The database identity is the ACCESS ROLE, not the project role.** `GetCredentials` is called by
+`awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, so the session that reaches the database is the assumed
+role's — which is why the `RedshiftDbUser` tag sits on that role and why layer 2 had to be attached to
+both. The project role's own calls are the dropdown (`ListWorkgroups`) and the assume. This is the
+answer 6h 1.4 and 6d step 7 both pointed at: *whose identity reaches the database* is neither the person
+nor the project role.
+
+**No provisioned-cluster API was called.** `redshift.amazonaws.com` in the whole window carries one
+event, `DescribeIntegrations` by a Config session — no `DescribeClusters`, no `GetClusterCredentials`,
+no `GetClusterCredentialsWithIAM`. So [5b](log-stage-05b-redshift-serverless.md) 1.10's third endpoint is
+**not needed** for this path, and `DenyRedshiftProvisionedClusters` was never approached.
+
+**Three statements of layer 2 are attached and unexercised**: `ListTagsForResource` (the portal checks
+the admission tag somewhere this account's trail does not show), `ListNamespaces`, and the whole of the
+old tag-reads policy. Lesson 20's shape, recorded rather than removed.
+
+### The managed policy for the query editor does not cover what SMUS calls
+
+`AmazonRedshiftQueryEditorV2NoSharing` **v9**, read 2026-10-10: 72 actions, 66 of them `sqlworkbench:`,
+and **both `GetResources` and `ExecuteQuery` are absent**. So attaching AWS's own managed policy for this
+surface would not have lifted the refusal — and that is why AWS's SMUS sample asks for `sqlworkbench:*`
+instead. The sibling product calls actions outside the published policy for the product they belong to.
+
+### The fix, authored from the trail rather than from the sample
+
+`awsds-sandbox-warehouse-access-tags-<project>` is replaced by
+`awsds-sandbox-warehouse-access-portal-<project>` — 2 added, 2 destroyed, nothing else touched, re-plan
+`No changes`, `./aws/warehouse.py --sql` **13 pass / 1 note**. It carries:
+
+- `redshift-serverless:GetNamespace`, scoped to `namespace/*` for the same reason the workgroup's id is a
+  wildcard;
+- the two measured `sqlworkbench` actions **plus the unconditional non-resource set** of that managed
+  policy — the surface a session needs to exist;
+- the tag reads, now with the managed policy's own condition `aws:CalledViaLast =
+  sqlworkbench.amazonaws.com`, so they cannot become a general tag-enumeration grant.
+
+**The owner-scoped half is withheld deliberately.** Saved queries, notebooks and charts carry a
+`sqlworkbench-resource-owner` tag, and `sqlworkbench:*` would let one project's session read and delete
+another principal's account-wide — worse again at the second project's access role (decision 8).
+Narrowing the measured two further is owed once 3.3 and 3.4 have exercised the whole path.
+
+**`checkov` refused the commit, and the finding was judged rather than waved through.**
+`CKV_AWS_356` (`*` as a resource for restrictable actions) and `CKV_AWS_111` (write access without
+constraints) both fired on the new document. The judgement: these `sqlworkbench` actions are **not
+resource-scopable** — AWS's own managed policy puts them in a statement it names
+`NonResourceLevelPermissions` with `Resource: *` — and `tag:GetResources` is an account-wide API that the
+same policy also grants on `*`. The constraint that does exist is the **trust policy**: only this
+project's role can assume the role, with the project id as the external id. The resource-scopable half,
+the owner-tagged saved queries and notebooks, is the half deliberately withheld. Suppressed with both
+reasons inside the block, per `runbooks/terraform-changes.md`; the slice scans **77 passed, 0 failed, 9
+skipped**.
+
+> **An absence from `lookup-events` shortly after the fact is not evidence.** A lookup by
+> `EventName=GetResources` returned **no events**; a lookup by
+> `EventSource=sqlworkbench.amazonaws.com` two minutes later returned **six of them**, same window.
+> Whether that is indexing lag or an index that does not carry them, the reading is the same, and it is
+> Lesson 62: the instrument has to be shown to report a presence before its silence means anything. The
+> provisioned-cluster conclusion above rests on the **source** sweep for that reason, not on the name
+> sweep that ran first.
+
+### Owed
+
+1. **[user]** a query through the connection — the Data page, or JupyterLab. The policy refusals are
+   lifted; what this produces is the database user.
+2. **[Claude]** `pg_user` for which spelling the platform resolved `RedshiftDbUser` to, `DROP USER` for
+   the other, and the trail again for any further refusal.
+3. **[user]** 3.3 proper: write a table into `lab` and read it back — and the connection's database must
+   be `sandbox`, since a cross-database write does not work.
+4. **[Claude]** 3.6, the two audit log groups for this session, searching `AUDITMARKER20260920`.
