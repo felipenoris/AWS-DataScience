@@ -319,6 +319,7 @@ import sys
 
 WORKGROUP, DATABASE, SCHEMA = "awsds-sandbox-warehouse", "sandbox", "lab"
 TABLE, REGION, PORT = "hello_jupyter", "us-west-2", 5439
+PROJECT = "avhvbqn37ty7m8"
 
 results = []
 
@@ -498,6 +499,70 @@ with conn.cursor() as cur:
         "the theme role would see none of this table (runbook section T, EXC-15)")
 
 conn.close()
+
+# ------------------- 4. THE SAME DOOR, THROUGH THE ACCESS ROLE, which is the per-project grantee
+#
+# Redshift grants to DATABASE USERS, never to an IAM role, and which database user a session becomes
+# is decided by the caller's `RedshiftDbUser` tag. The space's session carries a per-person one, set
+# by SMUS and unchangeable. The ACCESS ROLE carries the per-project one this repository set - and the
+# project role may assume it (its trust policy names the project role with the project id as the
+# external id; layer 2 grants `sts:AssumeRole` on it).
+#
+# WHAT MAKES THIS WORK IS THAT NO TAG IS TRANSITIVE. `transitiveTagKeys` is `None` on the space's
+# assume (measured 2026-10-11), so the per-person `RedshiftDbUser` does NOT follow into the chained
+# session, and the access role's own tag governs there. The database user becomes
+# `IAMR:<the project role's name>` - the one that already holds the theme role and is already named by
+# the schema's default privilege.
+#
+# Nothing in AWS changes for this. It is a convention in how a notebook connects.
+try:
+    sts = boto3.client("sts", region_name=REGION)
+    chained = sts.assume_role(
+        RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
+        RoleSessionName="redshift-per-project",
+        ExternalId=PROJECT,
+    )["Credentials"]
+    say("4a assumed the access role", "ok", "the per-project grantee's credentials")
+except Exception as exc:
+    say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
+        "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the trust "
+        "policy is the external id, which must equal the project id")
+    raise SystemExit("no chained session, so step 4 cannot be measured")
+
+conn2 = redshift_connector.connect(
+    iam=True,
+    is_serverless=True,
+    serverless_work_group=WORKGROUP,
+    database=DATABASE,
+    region=REGION,
+    access_key_id=chained["AccessKeyId"],
+    secret_access_key=chained["SecretAccessKey"],
+    session_token=chained["SessionToken"],
+)
+with conn2.cursor() as cur:
+    cur.execute("select current_user")
+    user2 = cur.fetchone()[0]
+    per_project = not user2.startswith("IAMR:user-")
+    say("4b the grantee", "ok" if per_project else "FAIL",
+        f"{user2} - per PROJECT" if per_project else
+        f"{user2} - still per person, so the chained session inherited the tag after all")
+
+    cur.execute("select role_name from svv_user_grants where user_name = current_user")
+    say("4c roles", "ok", str([r[0] for r in cur.fetchall()]))
+
+    cur.execute(f"drop table if exists {SCHEMA}.{TABLE}_viaccess")
+    cur.execute(f"create table {SCHEMA}.{TABLE}_viaccess as select 1 as n, current_user as by_whom")
+    conn2.commit()
+    cur.execute(
+        "select identity_name, privilege_type from svv_relation_privileges "
+        f"where namespace_name = '{SCHEMA}' and relation_name = '{TABLE}_viaccess'"
+    )
+    rows = cur.fetchall()
+    say("4d the default privilege fires", "ok" if rows else "FAIL",
+        f"{rows} - non-empty means the schema's default privilege named THIS owner, so read-across "
+        "works without one statement per person")
+conn2.close()
+
 print()
 print(f"{results.count('ok')} ok, {results.count('warn')} warn, {results.count('FAIL')} FAIL")
 ```

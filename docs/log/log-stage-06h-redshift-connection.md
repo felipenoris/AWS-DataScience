@@ -1619,3 +1619,74 @@ Two shapes, and the choice is the user's:
    idempotent, catching new people without anybody remembering. The cost is a recurring act against the
    warehouse, which is the shape decision 3 refused for `lineageSync`, and it needs a runner this
    estate has not chosen yet.
+
+---
+
+## 2026-10-11 — the per-project grantee is reachable from a space after all, by assuming the access role
+
+*Written by Claude in the sitting that ran it, after the user asked whether access can be configured
+for the project role at all. The question was right and my framing had been wrong.*
+
+### The distinction I had been collapsing
+
+**On the IAM side, access IS configured on the project role and is exercised.** Layer 2 —
+`GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, `sts:AssumeRole` — is attached to
+`datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, and it is how a session is minted at all.
+
+**Redshift, though, grants to database users and never to an IAM role.** Which database user a session
+becomes is decided by the caller's `RedshiftDbUser` tag. So *"configure access for the project role"* is
+already true in IAM and is not expressible inside Redshift — and the three sittings above read that as
+"not possible", which was the wrong conclusion from a right observation.
+
+### What the Data page was proving the whole time
+
+The Data page resolves to `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` — the per-project
+database user — because the **access role** carries that tag. So a per-project grantee is not
+hypothetical: it has been in use since 2026-10-10.
+
+The three pieces that make it reachable from a space were all already in place, read rather than
+assumed:
+
+| Piece | Value |
+|---|---|
+| the access role's tag | `RedshiftDbUser = datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` |
+| its trust policy | the project role may `sts:AssumeRole` with `sts:ExternalId = avhvbqn37ty7m8` |
+| layer 2 on the project role | `AssumeThisProjectsAccessRole` → `sts:AssumeRole` on that ARN |
+
+**And the piece that makes it work is the one I had filed as a secondary detail:
+`transitiveTagKeys` is `None`.** The space's per-person `RedshiftDbUser` session tag therefore does
+**not** follow into a chained session, so inside the access role's session its own tag governs — and
+the database user becomes the per-project one, which already holds `sbx_lab_rw` and is already the owner
+the schema's default privilege names.
+
+So **nothing in AWS has to change**. What changes is how a notebook connects: assume the access role
+first, then hand those credentials to the driver. It is a convention, not a configuration.
+
+### Written as step 4 of §V, so one run compares the two chains
+
+The script now connects twice in the same session: directly as the project role (the per-person
+grantee), and through the access role (the per-project one), printing `current_user`, the roles held and
+whether the schema's default privilege fires on a table the second session writes. Two grantees, one
+run, no inference between them.
+
+**Unproven until that run.** Every input is measured and the conclusion follows from them, but the
+resolution itself has not been observed, and this stage has already spent three sittings on mechanisms
+that were sound on paper. `4b` is the line that settles it.
+
+### What it would mean
+
+Decision 8a's answer would become: **both doors use the per-project grantee**, with the JupyterLab door
+reaching it by a documented two-line chain. Then one role grant, one default privilege, one register
+row, `WH-14` green structurally, and **no per-person statement anywhere** — the shape option A wanted
+and could not have, arrived at from the other end. `EXC-15` would close.
+
+The costs, stated rather than discovered later:
+
+- **in-database attribution goes**, exactly as option A would have cost it: every notebook that takes
+  the chain runs as one database user. CloudTrail keeps the person — the trust policy's
+  `sts:SetSourceIdentity` on `${aws:PrincipalTag/datazone:userId}` is there for that, and the chained
+  `AssumeRole` is itself an attributable event.
+- **it is a convention, so it can be ignored.** A notebook that connects directly still gets the
+  per-person user and still fails on the schema. The guard is an empty `3c` and `WH-14`, not a control.
+- **a helper belongs in the image** if this becomes the house path, which is a line in
+  `images/dev-env/python/` and a rebuild rather than something this stage can close.
