@@ -548,17 +548,30 @@ with conn2.cursor() as cur:
         f"{user2} - still per person, so the chained session inherited the tag after all")
 
     cur.execute("select role_name from svv_user_grants where user_name = current_user")
-    say("4c roles", "ok", str([r[0] for r in cur.fetchall()]))
+    roles2 = [r[0] for r in cur.fetchall()]
+    say("4c roles", "ok" if roles2 else "FAIL",
+        str(roles2) if roles2 else "none - the per-project user holds no role either, so the "
+        "chain reached a different user than the Data page's")
 
-    cur.execute(f"drop table if exists {SCHEMA}.{TABLE}_viaccess")
-    cur.execute(f"create table {SCHEMA}.{TABLE}_viaccess as select 1 as n, current_user as by_whom")
-    conn2.commit()
+    chained_table = f"{TABLE}_via_access"
+    try:
+        cur.execute(f"drop table if exists {SCHEMA}.{chained_table}")
+        cur.execute(
+            f"create table {SCHEMA}.{chained_table} as select 1 as n, current_user as by_whom"
+        )
+        conn2.commit()
+    except Exception as exc:
+        conn2.rollback()
+        say("4d write", "FAIL", f"{str(getattr(exc, 'args', [exc])[0])[:200]}")
+        raise SystemExit("no write through the chain, so 4e has nothing to judge")
+    say("4d write", "ok", f"{SCHEMA}.{chained_table} created by this session")
+
     cur.execute(
         "select identity_name, privilege_type from svv_relation_privileges "
-        f"where namespace_name = '{SCHEMA}' and relation_name = '{TABLE}_viaccess'"
+        f"where namespace_name = '{SCHEMA}' and relation_name = '{chained_table}'"
     )
     rows = cur.fetchall()
-    say("4d the default privilege fires", "ok" if rows else "FAIL",
+    say("4e the default privilege fires", "ok" if rows else "FAIL",
         f"{rows} - non-empty means the schema's default privilege named THIS owner, so read-across "
         "works without one statement per person")
 conn2.close()

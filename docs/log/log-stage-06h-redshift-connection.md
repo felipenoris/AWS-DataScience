@@ -1690,3 +1690,29 @@ The costs, stated rather than discovered later:
   per-person user and still fails on the schema. The guard is an empty `3c` and `WH-14`, not a control.
 - **a helper belongs in the image** if this becomes the house path, which is a line in
   `images/dev-env/python/` and a rebuild rather than something this stage can close.
+
+---
+
+## 2026-10-11 — amendment: step 4 reintroduced the defect step 3 had just been fixed for
+
+*Written by Claude, same day, on re-reading its own code before explaining it.*
+
+Step 3 was reordered earlier today because a diagnostic ran after the act that depended on it, so a
+permission failure arrived as a driver traceback instead of a verdict naming a layer. The step 4 written
+immediately afterwards carried the same fault **twice**:
+
+- **`4c` said `ok` unconditionally.** `say("4c roles", "ok", str(roles))` prints `ok []` for a session
+  holding nothing — a verdict that cannot fail is not a verdict, which is the sentence `WH-14` exists
+  under and which Lesson 13 states.
+- **its write was not wrapped**, so a refusal there would be a traceback, exactly as `3d`'s was before
+  the reorder.
+
+Both fixed: `4c` fails on an empty role list and says what an empty list would mean, the write is
+wrapped and reports a verdict, and the privilege reading moved to `4e` so the write has a line of its
+own. The chained table is `hello_jupyter_via_access` rather than `…_viaccess`, which read as a word.
+
+**The pattern is worth the entry.** Three instances in one sitting, each written minutes after the one
+before was corrected: a check whose verdict is a constant, and an act whose failure escapes as an
+exception. The script's whole purpose is that a failure names a layer, and the author of that purpose
+broke it three times. What catches it is reading the code back before handing it over, which is the only
+reason this entry exists rather than another run reporting a traceback.

@@ -471,7 +471,8 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   notebook ids, `datazone_usr_role_*`), rewrite `start_date` at deploy time, enforce the operator
   allow-list, cap `execution_timeout` at 3600 s, and pin `DefinitionS3Location.VersionId`. Add artifact
   class **(2b) operator code package** to D28 — Python and Bash operators carry a code archive the six
-  classes do not name.
+  classes do not name. The vendor page confirms both operators and the archive, read 2026-10-10: the
+  workflow's `Code` object, versioned with the definition.
 - **4.6 — [Claude] Carry the network shape forward to Stage 10**: the workers' documented private-routing
   shape (two private subnets in **two AZs**, no NAT and no IGW route, interface endpoints for `logs`,
   `monitoring` and `kms`, a self-referencing security group) is what Stage 10 builds in `VPC-Workloads`.
