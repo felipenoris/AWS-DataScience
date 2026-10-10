@@ -176,10 +176,14 @@ entries to 50** the day it was repaired — `datazone.<region>.api.aws` beside
 `datazone.<region>.amazonaws.com`, **four** names for `sagemaker.studio`, and
 `streaming-logs.<region>.amazonaws.com`, which is a different *label* that no suffix rule covers.
 That reading is 2026-09-09's and stays as measured. `bedrock` and `bedrock-runtime` were always-on
-from 2026-09-12 to 2026-10-09 and are the `bedrock-base` optional group since, so the list the slice
-generates carries their names only in an apply that names the group. What a process inside a space
-reads is still the dated literal in the image (6d decision 8), which lists both, which is why the two
-deliveries are separate acts.
+from 2026-09-12 to 2026-10-09 and are the `bedrock-base` optional group since, so `no_proxy` carries
+their names only in an apply that names the group. What a process inside a space reads is the dated
+literal in the image (6d decision 8), and since 2026-10-10 it carries **every** optional group's names
+(70 entries, `default-v0.5.0` onward), so no `GROUPS=` value sends a group's calls out through the
+proxy, and a group left off times out on its names instead. That literal is generated too: the second
+output, `no_proxy_all_groups` (`vpc-egress-v0.17.0`), reads every declarable service's names from the
+endpoint-service catalog at plan time, which returns the names `dns_entry` carries (compared on seven
+services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named.
 
 **A missing entry fails two different ways and only one of them is visible:**
 

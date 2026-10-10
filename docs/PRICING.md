@@ -49,8 +49,9 @@ for others.
 
 ## 1. MWAA and the D7 alternatives
 
-D7 builds **two** orchestrators in Stage 10 and compares them: **(A)** MWAA, **(B)** EventBridge + Step
-Functions + Lambda/Fargate.
+D7 builds **MWAA Serverless** only (§1.3), since its amendment of 2026-09-05. The provisioned environment
+(§1.1-1.2) and alternative **(B)**, EventBridge + Step Functions + Lambda/Fargate (§1.4), stay priced as
+the record of why; B is INT-14's documented, unbuilt fallback.
 
 ### 1.1 MWAA environment fee
 
@@ -130,7 +131,7 @@ What the price gives up, and what it gains:
 
 | | MWAA Serverless | MWAA provisioned |
 |---|---|---|
-| Workflow definition | **YAML** (DAG-factory format), with a converter for Python definitions | Python DAGs, custom operators, plugins |
+| Workflow definition | **YAML** (DAG-factory format), with a converter for Python definitions; `PythonOperator` and `BashOperator` tasks run code from a separate package, billed as managed tasks (added 2026-08-17) | Python DAGs, custom operators, plugins |
 | Airflow version | v3, Python 3.12, fixed | Selectable |
 | Airflow web UI | **None** — monitoring through logs | Full web interface |
 | Execution identity | **One IAM role per workflow**, task-isolated compute | One environment role shared by every task |

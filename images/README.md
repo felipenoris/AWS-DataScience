@@ -56,11 +56,17 @@ sudo docker build -t awsds/dev-env:local dev-env
 proxy variables as `ENV`, and `NO_PROXY` — what keeps AWS traffic on the VPC endpoints — is a **literal
 in the Dockerfile**, dated in its own comment. An image whose list predates the account's current
 endpoint set still works, and sends the names added since out through the proxy as public calls. So
-read the current value on the laptop, and if it differs from the one in `dev-env/Dockerfile` §6, update
-the file first:
+read it on the laptop before the session with `./aws/devenv.py`: `DE-3` fails when `dev-env/Dockerfile`
+§7 and the account's list differ in either direction, and that is the edit to make first.
+
+The account's list is the output `no_proxy_all_groups`, and the literal is that output verbatim. The
+image serves every session whatever `GROUPS=` it names, so it carries **every** optional endpoint
+group's names (2026-10-10), and the output generates them from the endpoint-service catalog at plan
+time, whatever the last apply named. `no_proxy`, beside it, names only the endpoints the last apply
+created and is not the image's list:
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
+AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
 ```
 
 Another account's image overrides it without editing the file:
@@ -72,10 +78,11 @@ on a module bump — makes every existing image stale, and the repair is a rebui
 SageMaker image version and a re-attach. A second Sandbox (D35) needs its own build for the same reason.
 The trade was taken with its eyes open, against two API-side mechanisms that cannot carry the value at
 all: [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md) §E. **What reports a stale
-Dockerfile** is `./aws/devenv.py`, which compares the literal against the account's current output and
-names the entries each side is missing; **what reports a stale image** is `/opt/awsds-proxy.txt` inside
-it, the entry count and the first 16 hex of the list's sha256. Neither is enforced by a gate: both are
-readings, and [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §E says when to take them.
+Dockerfile** is `./aws/devenv.py`, which compares the literal against the account's current
+`no_proxy_all_groups` and names the entries each side is missing; **what reports a stale image** is
+`/opt/awsds-proxy.txt` inside it, the entry count and the first 16 hex of the list's sha256. Neither is
+enforced by a gate: both are readings, and [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §E says when
+to take them.
 
 ```bash
 ./scripts/buildbox.py down

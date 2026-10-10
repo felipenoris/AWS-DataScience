@@ -77,7 +77,7 @@ HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
 
 # The contracts (see header).
 # Decision 5's category 1 (2026-08-19; docs/SMUS.md carries the reference table): the only
-# blueprints that may be enabled. A category-2 blueprint (Workflows OnDemand, MLExperiments)
+# blueprints that may be enabled. A category-2 blueprint (MLExperiments, for example)
 # joins this tuple in the same commit that enables it (Lesson 14). Names are spelled as
 # `datazone list-environment-blueprints` returns them - `EmrServerless`, not `EMRServerless` -
 # and the AmazonBedrock family is enumerated rather than matched by prefix, so a blueprint AWS

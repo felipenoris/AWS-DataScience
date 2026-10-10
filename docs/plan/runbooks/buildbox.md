@@ -128,13 +128,16 @@ cd /opt/awsds/images && sudo docker build -t awsds/base:local base && sudo docke
 ```
 
 **Before this build, check the `NO_PROXY` the Dockerfile carries** (6d decision 8): since 2026-09-10
-`dev-env` bakes the six proxy variables as `ENV`, with the bypass list as a dated literal in §6 of the
+`dev-env` bakes the six proxy variables as `ENV`, with the bypass list as a dated literal in §7 of the
 file. A list older than the account's endpoint set produces an image that works and sends the newer
-names out as public calls. Read the current value **on the laptop**, before the session, and edit the
-Dockerfile if it differs — `sync` then carries the edit to the host:
+names out as public calls. Read it **on the laptop**, before the session, with `./aws/devenv.py`:
+`DE-3` fails when the literal and the account's `no_proxy_all_groups` differ in either direction, and
+the edit is to replace the literal with that output — `sync` then carries it to the host. The output
+carries every optional endpoint group's names whatever `GROUPS=` the last apply named (2026-10-10);
+`no_proxy` beside it does not, and is not the image's list.
 
 ```bash
-AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy
+AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
 ```
 
 The build log's last lines print what was baked — the entry count and the list's sha256 prefix — and
@@ -275,7 +278,8 @@ echo "$ECR_TOKEN" | sudo docker login --username AWS --password-stdin "$REGISTRY
 **The tag is decided before the push, by [`docs/SMUS.md`](../../SMUS.md)**: `<flavour>-v<major>.<minor>.<patch>`,
 the same number in both repositories. Both are `IMMUTABLE`, so a tag is spent the first time it lands —
 `default-v0.1.0` on 2026-08-22, **`default-v0.1.1` on 2026-09-08**, **`default-v0.2.0` on 2026-09-11**,
-**`default-v0.3.0` on 2026-09-12** and **`default-v0.4.0` the same day**. The rule they show: `v0.1.1` was the *same recipe rebuilt* — no
+**`default-v0.3.0` on 2026-09-12**, **`default-v0.4.0` the same day** and **`default-v0.5.0` on
+2026-10-10**. The rule they show: `v0.1.1` was the *same recipe rebuilt* — no
 commit under `images/` between them, the whole delta upstream drift (`base` +942 bytes, `dev-env`
 −11.8 MB) — which is what makes a **patch**; `v0.2.0` changed the recipe (the proxy environment as
 `ENV`, the apt and sudoers files, a second Python environment with its own kernel) and `v0.3.0` changed
@@ -291,7 +295,14 @@ spurious change on every run.
 setting — which is what makes a **minor** out of a four-string edit. **`dev-env` came out 5,453 bytes
 smaller than `v0.3.0`** (7,182,170,437 against 7,182,175,890), and that is the sanity reading: a delta
 of kilobytes is a string change, a delta of megabytes would be a layer nobody asked for.
-**Stage 7 step 2.6's CA layer is the build still owed, and it takes `default-v0.5.0`.**
+
+**`default-v0.5.0` is the ancestor's move to SageMaker Distribution `4.5.2-cpu`**, built 2026-10-10,
+with uv kept at the distribution's 0.12.17 and a `NO_PROXY` literal of 70 entries carrying every
+optional endpoint group. **Both images came out about 213 MB smaller than `v0.4.0`**, the two deltas
+within 0.9 MB of each other (`base` 3,745,881,983 bytes, `dev-env` 6,969,138,672): the same sanity
+reading, now at the other end — a change of ancestor moves both repositories by the ancestor's delta and
+leaves `dev-env`'s own layers where they were.
+**Stage 7 step 2.6's CA layer is the build still owed, and it takes the next free minor.**
 
 ```bash
 TAG=default-v<major>.<minor>.<patch>
@@ -353,10 +364,10 @@ sudo docker run --rm awsds/dev-env:local cat /opt/awsds-proxy.txt
 ### Which path the bytes take
 
 - **Push**: to the registry's `dkr.ecr` name, which resolves to this VPC's `ecr.dkr` interface endpoint and
-  is in `no_proxy` — inside the VPC, never through the proxy. That is the vendor's documented shape;
-  **no push has been measured since the move** (the last one, 2026-08-22, left Sandbox across the WireGuard
-  host). The first push from here is the measurement: read `vpcEndpointId` on its `InitiateLayerUpload`
-  event.
+  is in `no_proxy` — inside the VPC, never through the proxy. **Measured on the `default-v0.5.0` push
+  (2026-10-10)**: every `InitiateLayerUpload` and the `PutImage` in Production's CloudTrail carry the
+  `vpcEndpointId` of `awsds-prod-shared-vpc`'s `ecr.dkr` endpoint, source `ecr.amazonaws.com`, and the
+  person's `InfrastructureAccess` session — the token's identity, not the host role's.
 - **Pull from the private registry**: manifest via `ecr.dkr`, layers from S3 through the `[P]` gateway,
   whose policy names `prod-us-west-2-starport-layer-bucket` — free, and not through the proxy.
 - **Pull of the public base image**: through the proxy — `public.ecr.aws`, then the CloudFront distribution

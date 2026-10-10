@@ -2,7 +2,7 @@ locals {
   # Decision 5's category 1, by API name - the blueprints a project profile may bundle. The same
   # list terraform-modules/sagemaker-prereqs/ enables per member account and ./aws/studio.py US-3
   # holds; docs/SMUS.md is the reference table with the three categories and the billing shapes.
-  # A category-2 blueprint (Workflows OnDemand, MLExperiments) joins all three in one commit
+  # A category-2 blueprint (MLExperiments, for example) joins all three in one commit
   # (Lesson 14).
   #
   # EmrServerless follows decision 1, taken 2026-08-21 as keep-or-remove: it is enabled here and

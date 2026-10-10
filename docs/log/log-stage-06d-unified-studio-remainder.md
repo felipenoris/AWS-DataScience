@@ -2677,3 +2677,244 @@ two lines are 5,272 and 6,702 bytes, the `HEAD` and the ranged asset. The space 
 throughout the window (toolkit and `schema.cloudformation` names appear in the same seconds), so the
 likely author is something in that session rather than the probe, and **the log cannot attribute it**:
 this group carries names and bytes and no principal. Recorded as a reading rather than explained.
+
+## 2026-10-10 — the sixteenth sitting: step 4's workflows re-read for the Stage 10 instrument
+
+**[Claude] Why this was read.** `./aws/orchestration.py` was rewritten for D7's amendment (Staging and
+Production, design B gone), and the readers it gained had never met a real workflow, since Staging and
+Production hold none. They were exercised against the two Sandbox workflows instead, read-only, as
+`awsds-infra-sandbox-1` (`InfrastructureAccess`). Four readings change what step 4 recorded.
+
+- **`list-workflow-runs` returns `RunType` null for every run; `get-workflow-run` carries it.** The
+  service model declares the field in the summary. Read per run, all six runs are `ON_DEMAND`,
+  including `QdphFF89leYx6M6`, the run whose Airflow id reads `scheduled__2026-08-27T00:00:00+00:00`:
+  that id is Airflow's own label and says nothing about who started the run. Step 4's observation is
+  half-settled; which switch the portal's *Run* button uses is still 4.2's.
+- **A second portal workflow exists, and it ran.** `simple-s3-copy` was created 2026-09-10 03:55:15Z
+  (CloudTrail `CreateWorkflow`: the project role, a browser session), with one
+  `S3CopyObjectOperator` task copying a file inside the project's `shared/` prefix. Run
+  `xCVytqfV5DACXUL`: `ON_DEMAND`, `SUCCESS`, 49 s, one task instance. This log never recorded it. It is
+  the estate's first successful MWAA Serverless run, and it places the boundary refusal on the
+  notebook operator rather than on the surface (decision due 14).
+- **"Every run is two attempts" is a retry on failure.** The failed runs list two task instances
+  (`_1`, `_2`); the successful one lists one (`S3-task_1`). Neither definition carries a `retries` key.
+- **Both workflows sit on the private shape `OR-3` now reads**: subnets
+  `awsds-sandbox-private-usw2-az1` and `-usw2-az2`, AZ ids `usw2-az1` and `usw2-az2`, no default route
+  in either route table. `MyWorkflow`'s definition carries an S3 `VersionId` and `simple-s3-copy`'s
+  does not, so a portal-authored definition is not pinned by itself.
+
+## 2026-10-10 — the seventeenth sitting: the house image moves to SageMaker Distribution 4.5
+
+*The user asked for a new build of the house image on the distribution's 4.5 line. The tag it takes
+is `default-v0.5.0`, a minor: the recipe changes.*
+
+### [Claude] The 4.5 line, read before anything was built
+
+- **The pin.** The public registry publishes `4.5.0-cpu`, `4.5.1-cpu` and `4.5.2-cpu`, and no 4.6 or
+  5.x tag. `4.5-cpu` and `4.5.2-cpu` are one manifest,
+  `sha256:e4ca47c41a41a4eec2bfe4b21a35c16078f0f7ae767b42c4a25c6757f392476b`: `linux/amd64`, built
+  2026-09-23, 24 layers, 3,744,397,840 bytes compressed. The registry sends no
+  `Docker-Content-Digest` header, so the pin is the sha256 of the manifest as served; the same
+  computation on `4.3.0-cpu` returns the 2026-08-21 pin exactly.
+- **What `base` asserts still holds.** The config blob keeps `sagemaker-user`, ids 57439 and
+  `_entrypoint.sh`. `cpu.env.out` carries `jupyter-activity-monitor-extension` 0.3.2, Python
+  3.12.14, libgcc/libstdcxx **16.2.0** (from 15.2.0) and **uv 0.12.17**.
+- **What the distribution changed that this image inherits**, from its own Dockerfile: `PATH` gains
+  `/home/sagemaker-user/.local/bin` at the end; two GitHub repositories of agent skills are cloned
+  into `/etc/sagemaker-ui/skills` at its build; the `jupyter-collaboration` extensions are no longer
+  disabled, so real-time collaboration is on by default.
+
+### [Claude] The pin bump alone would have moved uv backwards
+
+`base` §3 asked for `uv==0.12.5`. Against a distribution shipping 0.12.17 that is a downgrade, and
+the change-set guard admits it, because a downgrade is a uv-only change set like any upgrade; every
+assertion in the layer would have passed. **The user's decision: keep the distribution's 0.12.17**, so
+the install is a no-op the guards confirm. The layer now refuses a `UV_VERSION` older than the base's
+before installing anything, exercised against a stub `uv` reporting 0.12.17: 0.12.17, 0.12.24 and
+0.13.0 allowed, 0.12.5 and 0.11.28 refused. Read the same day: conda-forge published uv 0.13.0 at
+04:22Z and 0.12.24 the day before, and uv's changelog has no breaking change from 0.12.6 to 0.12.24.
+
+### [Claude] The slice's `no_proxy` is no longer the image's list
+
+`./aws/devenv.py` on the 52-entry literal: `DE-3` and `DE-5` fail, with
+`redshift-serverless.us-west-2.amazonaws.com` in the account and not in the image, and the Bedrock
+pair the other way. The account's list is the state's output, 51 entries, sha256
+`b071ccadc2dbd7c6`, and it names only the endpoints of the **last apply**, made with
+`GROUPS=redshift`. Since 6e decision 12 (2026-10-09) the Bedrock pair is an optional group, so the
+output now depends on `GROUPS=`, and copying it, as the runbooks said, would have taken Bedrock out of
+the image.
+
+Each service's `PrivateDnsNames` in `describe-vpc-endpoint-services` returns the names the module reads
+from `dns_entry`, compared on seven services (`datazone` 2, `logs` 4, `ecr.dkr` 2, `sagemaker.studio`
+2, `redshift-serverless`, `bedrock` and `bedrock-runtime` 1 each), so a group that is down can be read
+without an apply. **The user's decision: the image carries every optional group.** The literal is the
+51 plus 19 names of `bedrock-base`, `bedrock-agent` and `emr`: **70 entries, sha256
+`aafa08da98a61f5c`**, 2,295 characters.
+
+`devenv.py` now fails on the account-only half and notes the image-only half. Re-run against the new
+literal: `DE-3` a note (all 51 baked, 19 more), `DE-5` still a failure, because the registered version
+4 lacks `redshift-serverless`.
+
+### [Claude] Which door the day's Redshift API calls took
+
+CloudTrail `GetCredentials` in Sandbox, as the project role:
+
+| time (Z) | source | `vpcEndpointId` | user agent | reading |
+|---|---|---|---|---|
+| 06:21:30 | `34.222.44.82` | none | `Boto3/1.43.92` | the image's own `awsds` environment (its `uv.lock` pins boto3 1.43.92), out through the proxy as a public call |
+| 16:15:23, 16:55:03 | `10.20.22.89` | `vpce-01b97415541ae0c2d` | `Boto3/1.43.75` | the boto3 of the distribution's 4.5.1/4.5.2 base environment, not v0.4.0's (1.43.0): a space on AWS's image, which bakes no proxy |
+
+The `redshift-serverless` endpoint was created at 15:52:48Z, so the first call had no endpoint to take;
+it went to the proxy because the image's `NO_PROXY` does not name the service. `default-v0.5.0` names it.
+
+### [Claude⚡, authorized in chat] The build session raised
+
+- `production/egress`: the saved plan read `13 to add, 0 to change, 0 to destroy` and was applied.
+- `production/buildbox`: the plan read `5 to add`; `./scripts/buildbox.py up --auto-approve` returned
+  with the agent `Online` and docker active.
+- `./scripts/buildbox.py sync`: 184,628 bytes of tar.gz, 10 files, sha256 `e68f4cae9ba23063`, over
+  ssh with the key delivered to `us-west-2b`.
+
+## 2026-10-10 — the eighteenth sitting: the image's list becomes a generated output
+
+*The user asked for the seventeenth sitting's hand composition to be generated: a `vpc-egress` output
+over every optional group, and `./aws/devenv.py` comparing the literal with it exactly. Planned and
+tagged (`vpc-egress-v0.17.0`), not applied.*
+
+### [Claude] The authoring plan of `vpc-egress-v0.17.0`, read-only
+
+- `sandbox/egress` planned against the module's working tree (`terraform-changes.md` §3 step 1) as the
+  infrastructure user, `InfrastructureAccess` on `awsds-infra-sandbox-1`, with `GROUPS=redshift` as the
+  last apply and `-lock=false`, the plan saved outside the repository: 28 resources `no-op`;
+  `no_proxy`, `no_proxy_entries` and `interface_endpoint_ids` `no-op`; `no_proxy_all_groups` `create`.
+- `no_proxy_all_groups`: **70 entries, sha256 `aafa08da98a61f5c`**, byte for byte the Dockerfile's
+  literal composed by hand in the seventeenth sitting. `no_proxy` stays 51 entries, `b071ccadc2dbd7c6`,
+  equal to the state's.
+- The catalog read at plan time: 30 instances of `aws_vpc_endpoint_service`, 11 of them for services
+  the apply built no endpoint for. `private_dns_names` returned 50 names, 1 to 4 per service; ten are
+  `*.` names on seven services, which the fork turns into 20 entries, and the 10 fixed entries make 70.
+- `./aws/devenv.py`, edited, against the live state: `DE-2` fails, naming the missing
+  `no_proxy_all_groups` (state last applied on `vpc-egress-v0.16.0`); `DE-5` fails, version 4 baking
+  52 names against the Dockerfile's 70, 18 lacking.
+
+### [user ran it, Claude read] `vpc-egress-v0.17.0` applied
+
+- The user ran `git pull --ff-only` in the main checkout and `make up ENV=sandbox GROUPS=redshift`. Its
+  output did not reach this session, so the readings below are the record.
+- `./aws/devenv.py` at 20:08:40Z: `DE-2` reads `no_proxy_all_groups` 70 entries, sha256
+  `aafa08da98a61f5c`, and `no_proxy` 51, `b071ccadc2dbd7c6`; `DE-3` passes, both sides
+  `aafa08da98a61f5c`; `DE-6` passes, all 51 inside and 19 more, the names of `bedrock-base`,
+  `bedrock-agent` and `emr`; `DE-5` fails as before, version 4 lacking 18 names.
+- Re-plan of `sandbox/egress` with `GROUPS=redshift`, the module fetched from the tag: `No changes`.
+
+## 2026-10-10 — the nineteenth sitting: decision due 14 taken
+
+**[user] "Sobre a Decisão 14, registre que vamos pela opção (b). Iremos explorar o PythonOperator e
+BashOperator na implementação."**
+
+**[Claude] What the decision fixes, recorded in the stage file the same sitting.** The D13 boundary stays
+as it is, and *Workflows → notebook task* is a portal feature this estate does not offer: the four job
+denies that refuse `SageMakerNotebookOperator`'s `CreateTrainingJob` remain unscoped. Workflows
+orchestrate with operators this repository controls. `PythonOperator` and `BashOperator`, which AWS added
+to MWAA Serverless on 2026-08-17, are what the implementation explores, measured first in Sandbox (Stage
+10 step 2.1, verification (xv)), with their code in the workflow's `Code` object (D28 class (2b)). Stage
+8 5.6's lint gains one rule from it: `SageMakerNotebookOperator` is refused by name.
+
+## 2026-10-10 — the twentieth sitting: `default-v0.5.0` built and pushed
+
+*The build of the seventeenth sitting's recipe, on the buildbox that sitting raised.*
+
+### [user at the buildbox, Claude read] The build
+
+**[user]** Both builds completed in the session; the image's own receipts, pasted:
+
+```
+base image      : awsds/base:local
+python (base)   : Python 3.12.14
+python (awsds)  : Python 3.13.15 at /opt/awsds/venv
+uv              : uv 0.12.17 (x86_64-unknown-linux-gnu)
+julia           : julia version 1.12.7
+R               : R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+rust            : rustc 1.98.0 (88d9e12ae 2026-08-18)
+proxy           : http://proxy.awsds.internal:3128
+no_proxy entries: 70
+no_proxy sha256 : aafa08da98a61f5c
+```
+
+**[Claude]** The distribution's Python is 4.5.2's 3.12.14, uv is the distribution's 0.12.17 with the
+downgrade guard passed, and the list is the 70-entry literal. Julia, R and Rust are the versions the
+recipe pins.
+
+### [user] The push
+
+**[user]** The two push results, the registry host left out:
+
+```
+default-v0.5.0: digest: sha256:c7ad2c964335dcc7220faf7929b3d8be5e3bd8db2f13ef4e1d97ff2a8e562181 size: 6578
+
+default-v0.5.0: digest: sha256:8ec04e357792e4cb1beaace2c1dcfde0f60ba6074195cc31091452e11db89dd6 size: 9303
+```
+
+The first is `awsds-prod-ecr-base`, the second `awsds-prod-ecr-dev-env`.
+
+**[Claude] Read back from the laptop**, `describe-images`: both digests as pushed. `base` is
+3,745,881,983 bytes against `v0.4.0`'s 3,959,751,921, and `dev-env` 6,969,138,672 against
+7,182,170,437. Both are about 213 MB smaller, the two deltas within 0.9 MB of each other, so the change
+is the ancestor's: `4.5.2-cpu` is 190 MB smaller compressed than `4.3.0-cpu`, and the layers `dev-env`
+adds came out the size they were.
+
+**[Claude] The door the push took**, Production's CloudTrail: `base`'s `PutImage` (20:29:05Z) and every
+`InitiateLayerUpload` of both pushes (20:22:15Z to 20:31:34Z) carry the person's `InfrastructureAccess`
+session, source `ecr.amazonaws.com`, and `vpce-0def0c29199cbefd4`, the `ecr.dkr` interface endpoint of
+`awsds-prod-shared-vpc` that `production/egress` created at 18:04:43Z. This is the first push measured
+since 6c moved the host: the bytes stayed inside the VPC and never reached the proxy, and the
+identity is the token's, not the host role's. `dev-env`'s `PutImage` had not reached CloudTrail when
+this was read.
+
+**[Claude] The recipe moved after the build, and the image did not.** `37ae9e0` (16:11) changed only
+comments in `images/dev-env/Dockerfile`, and `11a790e` (17:40) declared `redshift-connector` in the
+Python project: two lines in `uv.lock`, the same 453 packages, `redshift-connector` 2.1.16 on both
+sides. So the pushed image is HEAD's recipe in effect. `./aws/devenv.py`, now comparing against
+`no_proxy_all_groups`: `DE-3` passes, 70 names on both sides at `aafa08da98a61f5c`, so the generated
+output and the hand composition agree byte for byte; `DE-5` fails until the registered version 4 is
+replaced, 18 names short.
+
+### [Claude] A rebuild for the driver's declaration, weighed and not made
+
+The user asked whether `11a790e`'s change to the Python project needed a new build, as `v0.5.1`. Read
+from the lock the build used, unchanged since 2026-09-10: `redshift-connector` 2.1.16 is a regular
+dependency, reached as `redshift-connector <- amazon-sagemaker-sql-execution <-
+sagemaker-studio-dataengineering-sessions <- awsds-dev-env`, so every image since `v0.2.0` installs it,
+and the project is virtual (`source = { virtual = "." }`), so a rebuild would change only the reference
+copies under `/opt/awsds/python-project/`. A rebuild would also have been `default-v0.6.0`, not
+`v0.5.1`: a commit under `images/` is a recipe change, which the tag rule makes a minor. **The user's
+decision: keep `v0.5.0`**; the declaration reaches the image with the next recipe change.
+
+### [Claude⚡, authorized in chat] `default-v0.5.0` registered and attached
+
+`dev-env.md` §B, every step read back:
+
+1. **No app running** in the project's domain, so there was nothing to delete; the live
+   `DefaultUserSettings` saved as the diff's other half.
+2. **Detach**: the live block with both `CustomImages` set to `[]`. The domain returned to `InService`
+   with no `FailureReason`, and the block read back equals the one sent.
+3. **Apply** of the saved plan: `1 added, 0 changed, 1 destroyed`, version 4 destroyed and **version 5**
+   created; re-plan `No changes`.
+4. **Version 5** reads `CREATED`, `ContainerImage` at
+   `@sha256:8ec04e357792e4cb1beaace2c1dcfde0f60ba6074195cc31091452e11db89dd6`, the pushed digest.
+5. **Re-attach** from the slice's `custom_images` output. The block read back equals the one sent, and
+   against the block before the bump the only fields that moved are the two `ImageVersionNumber`
+   values, 4 to 5: the third measurement in which the whole-block diff carried nothing else.
+6. **No space to repair**: the one space in the domain names AWS's distribution by the alias `4.5`, not
+   a version of this image.
+
+`./aws/devenv.py` afterwards: every check passes, `DE-5` included — version 5 bakes 70 names at
+`aafa08da98a61f5c`, the account's list.
+
+### [Claude⚡, authorized in chat] The build session ended
+
+The destroy plans read `5 to destroy` on `production/buildbox` and `13 to destroy` on
+`production/egress`; `./scripts/buildbox.py down` and `./scripts/slices.py down --env production --only
+egress` destroyed exactly those (`no SageMaker domain in production - nothing to delete` from its app
+sweep). Production holds no interface endpoint, the buildbox reads `absent`, and the hub's proxy is left
+running, as `[D]`.

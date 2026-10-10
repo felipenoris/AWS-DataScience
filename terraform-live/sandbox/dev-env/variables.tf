@@ -65,9 +65,9 @@ variable "registry" {
 # - runbooks/dev-env.md, "Attaching the image to the domain".
 
 variable "image_tag" {
-  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.4.0 carries, against default-v0.3.0: the Claude Code model pins moved to the 4.5 generation, which is the one AWS lets this account invoke (Stage 6e decision 14). Nothing else changed - the NO_PROXY_LIST is the same 52 entries, sha256 fc11caaa3145fdef (2026-09-12)."
+  description = "The dev-env image tag to register, `<flavour>-v<semver>` (docs/SMUS.md). default-v0.5.0 carries, against default-v0.4.0: the ancestor moved to SageMaker Distribution 4.5.2-cpu, uv kept at the distribution's 0.12.17, and the NO_PROXY_LIST is sandbox/egress's no_proxy_all_groups - 70 entries, sha256 aafa08da98a61f5c, every optional endpoint group included (2026-10-10)."
   type        = string
-  default     = "default-v0.4.0"
+  default     = "default-v0.5.0"
 
   validation {
     condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+$", var.image_tag))

@@ -1162,7 +1162,9 @@
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 
 - Stage 10's documentation pass (read 2026-08-16):
-  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>.
+  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
+  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>.
+  - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>.
   - *MWAA Serverless quotas* — 50 KB YAML, 60-minute task timeout, 100 workflows, 50 versions per workflow, 20 concurrent runs per workflow: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>.
   - *MWAA Serverless networking* — `NetworkConfiguration` optional; absent, tasks run in the service's VPC; set, ECS workers land in the customer's private subnets (≥ 2 AZs, self-referencing SG), with VPC endpoints for each service the tasks call under private routing: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/networking.html>.
@@ -1791,6 +1793,29 @@
   <https://github.com/astral-sh/uv/blob/0.12.5/crates/uv-static/src/env_vars.rs>. Astral's static
   binary was measured and not used: `uv-x86_64-unknown-linux-gnu.tar.gz` at
   `sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2`.
+
+- The `base` image on SageMaker Distribution `4.5.2-cpu` — the sources behind the pin and the `uv`
+  layer (read 2026-10-10, for `default-v0.5.0`). The public registry, anonymously: a pull token, then
+  the tag list (`4.5.0`/`4.5.1`/`4.5.2-cpu` published, no 4.6 or 5.x) and the manifests, whose sha256
+  is the pin because the registry sends no `Docker-Content-Digest` header; `4.5-cpu` and `4.5.2-cpu`
+  are the same manifest, `sha256:e4ca47c4…476b`, built 2026-09-23, 24 layers, ~3.74 GB compressed:
+  <https://public.ecr.aws/token/?scope=repository:sagemaker/sagemaker-distribution:pull> and
+  <https://public.ecr.aws/v2/sagemaker/sagemaker-distribution/tags/list>. The distribution's own build
+  artifacts: `cpu.env.out` pins `uv-0.12.17` at line 923, libgcc/libstdcxx 16.2.0 (from 15.2.0),
+  Python 3.12.14 and `jupyter-activity-monitor-extension` 0.3.2; `cpu.env.in` asks for
+  `uv >=0.12.15,<0.13.0`; the Dockerfile now clones two GitHub repositories of agent skills into
+  `/etc/sagemaker-ui/skills`, appends `/home/sagemaker-user/.local/bin` to `PATH`, and no longer
+  disables the `jupyter-collaboration` extensions; `RELEASE.md` of 4.5.0/4.5.1/4.5.2 gives boto3
+  1.43.56/1.43.75/1.43.75 and uv 0.12.9/0.12.15/0.12.17:
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/cpu.env.out>,
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/cpu.env.in>,
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/Dockerfile> and
+  <https://github.com/aws/sagemaker-distribution/blob/main/build_artifacts/v4/v4.5/v4.5.2/RELEASE.md>.
+  conda-forge's `uv` packages for `linux-64`, with each build's dependencies — `0.13.0` published
+  2026-10-10, `0.12.24` the day before: <https://api.anaconda.org/package/conda-forge/uv>. uv's
+  changelogs: `0.13.0` carries breaking changes, and `0.12.6`..`0.12.24` none, while still naming
+  `UV_SYSTEM_CERTS` at `0.12.24`: <https://github.com/astral-sh/uv/blob/main/CHANGELOG.md> and
+  <https://github.com/astral-sh/uv/blob/main/changelogs/0.12.x.md>.
 
 ## Books
 

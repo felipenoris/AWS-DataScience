@@ -92,6 +92,8 @@ inherits it. What is left of open question 11 is a decision, not a measurement.
 | **EXC-12** | ~~**An orphan Secrets Manager secret from a failed `CreateNamespace`.**~~ **Closed 2026-09-20**: `redshift!awsds-sandbox-warehouse-whadmin` is scheduled for deletion on **2026-09-27**, with a 7-day recovery window, and the live `…-dbadmin` secret is untouched. Its `aws:redshift-serverless:namespaceArn` tag named a namespace that no longer existed, which is what confirmed the orphan before the delete | **`OwningService: redshift` did not refuse `DeleteSecret`**, which this row had flagged as possible — a Redshift-managed secret is deletable by an ordinary call. A recovery window rather than `--force-delete-without-recovery`, which is a change from what this row first recommended: the force form is irreversible and the reason given for it (freeing the name) does not apply, since the live admin is `dbadmin`. `restore-secret` undoes it until 2026-09-27. **The behaviour that produced it stands as a platform finding** (`lessons.md`): a failed `CreateNamespace` rolls the namespace back and keeps the secret |
 | **EXC-13** | **The namespace admin secret will stop rotating, and the `[P]`/`[E]` split is why.** AWS: *"If your serverless namespace doesn't have a workgroup associated when Amazon Redshift attempts to rotate its attached secret, the rotation will fail and won't try to rotate it again, even after you attach a workgroup. You must restart the auto-rotation schedule using the `secretsmanager:RotateSecret` API call"* — and the default schedule is every **30 days**. The compute is `[E]`, so *no workgroup* is the normal state between sessions and a scheduled rotation will almost always land in a window with no workgroup | **Accepted rather than repaired.** Nothing else in this estate rotates a credential, and the alternative is keeping a 4-RPU workgroup up so that a secret can rotate, which costs the guarantee the split exists to give (`make down` and the bill goes to zero). The restart, if it is ever wanted: `aws secretsmanager rotate-secret --secret-id <the admin secret>` with the workgroup up. Revision trigger: a second reader of this secret, or a compliance requirement that names rotation |
 | **EXC-14** | **Security Hub CSPM is on in every governed account with no standard enabled, since 2026-10-09.** `awsds-fsbp-only` (central configuration, root) was updated in Audit to `ServiceEnabled: true` and `EnabledStandardIdentifiers: []`; `describe-hub` answers everywhere, `get-enabled-standards` is empty everywhere, the `securityhub-*` Config rules are being deleted (in flight 02:29 UTC, Sandbox 191 → 24 in minutes), and `DL-11` reports a note | **A cost pause, by the user.** The 30-day window closed 2026-09-20 and the FSBP checks billed about 0.45 USD/day for the organization (13.5/month against a floor row of 1-2), with nobody reading the findings (13.3's triage never ran). The hub stays on so that nothing enters the service's 90-day deletion of settings, and so that Audit is reached: a `ServiceEnabled: false` policy does not apply to the delegated administrator. The standard off in *some* accounts is not this exception; it is drift. Revert: [`runbooks/security-hub.md`](plan/runbooks/security-hub.md) §R, from Audit (log-stage-05a, 2026-10-09). Revision trigger: Stage 11 or 15, which give the findings a reader |
+| ~~**EXC-15**~~ | ~~`WH-14` is red in Sandbox: `lab.hello_jupyter` is readable by no role~~ — **closed 2026-10-11.** The table is gone and the structural gap it recorded is answered: a notebook that chains through the access role lands on the **per-project** database user, which already holds `sbx_lab_rw` and is already the owner the schema's default privilege names, so the privilege fires and read-across needs no per-person statement. `WH-14` reads **2 relations, each reachable by a role**. The residue is that the chain is a convention: a direct connection still gets a per-person user holding nothing and fails at the schema | Closed, and the guard that would catch a regression is `WH-14` itself |
+| **EXC-16** | **The Sandbox warehouse's audit log export has STOPPED, since 2026-10-10T03:09:06Z.** All three groups are configured on the namespace (`connectionlog useractivitylog userlog`) and the live workgroup reads `enable_user_activity_logging true`, but `connectionlog`'s last event is 03:09:06Z — **1047 minutes before the reading** — against an internal heartbeat that had fired every ~2h25m for days, including on days the `[E]` workgroup did not exist. `useractivitylog` and `userlog` last wrote on 2026-09-21. In between: 142+ queries, DDL through two different doors, and a workgroup up throughout | **Not a lag, and the mechanism is unknown.** The workgroup was created 03:06:42Z and the export stopped 2.4 minutes later, which is a correlation and not an explanation. Earlier readings here were written as *user activity is not logged*; the groups carry no event of **any** kind since that moment, which is a different and simpler claim. **Stage 11 must not rest its DLP feed on these groups**, and the marker `AUDITMARKER20260920` never landed either. Revision trigger: Stage 11, or a re-read after the next workgroup rebuild — the discriminator being whether the heartbeat resumes when the `[E]` slice is recreated |
 
 ## C. Readings a later stage changes
 
@@ -148,8 +150,10 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | `Sandbox Account 1` | `sandbox` | `lab` | user `sbx_lab_owner` | owner (`AUTHORIZATION`), non-login | 2026-09-20 |
 | `Sandbox Account 1` | `sandbox` | — | user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | created `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`; non-superuser | 2026-09-21 |
 | `Sandbox Account 1` | `sandbox` | `lab` | the same user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-09-21 |
-| `Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | the same, **unprefixed**: `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`, non-superuser | 2026-10-10 |
-| `Sandbox Account 1` | `sandbox` | `lab` | the same unprefixed user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-10-10 |
+| ~~`Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`~~ | ~~the same, **unprefixed**~~ — **`DROP USER` 2026-10-10**, owning no relation and having run no query: the prefixed spelling is the one the platform resolved to | 2026-10-10, removed the same day |
+| `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | `SELECT ON TABLE lab.hello` — the table the project wrote at 6h 3.3, whose `relacl` was null | 2026-10-10 |
+| `Sandbox Account 1` | `sandbox` | `lab` | role `sbx_lab_rw` | **default privilege**: `SELECT ON TABLES` for every future relation created by `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | 2026-10-10 |
+| `Sandbox Account 1` | `sandbox` | `lab` | user `IAMR:user-<Identity Center user id>@avhvbqn37ty7m8` | `GRANT ROLE sbx_lab_rw` — **a stopgap, per PERSON**, for the JupyterLab door's auto-created user | 2026-10-11 |
 
 **Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
 reachable by that project and the namespace admin. The two statements, verbatim, because nothing
@@ -160,13 +164,18 @@ CREATE USER "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISA
 GRANT ROLE sbx_lab_rw TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c";
 ```
 
-**BOTH SPELLINGS EXIST, DELIBERATELY, and one of them is owed a `DROP USER`.** The access role's
-`RedshiftDbUser` tag decides the federated database user and no AWS page read on 2026-09-21 says whether
-the tag's value is used verbatim or prefixed the way an IAM-derived user is spelled. The tag carries the
-project role's name, so the two candidate spellings are exactly the two rows above — and both hold
-`sbx_lab_rw`, so the project's first connection cannot land on a user with no privileges. Which one the
-service picked is read from `pg_user` after that connection ([6h](plan/stages/stage-06h-redshift-connection.md)
-3.2); the other is then removed. Until then `WH-12` reads **2 user-role grants** and one of them is scaffolding.
+**`RedshiftDbUser` is honoured, and Redshift prefixes its value with `IAMR:`** (measured 2026-10-10,
+[6h](plan/stages/stage-06h-redshift-connection.md) 3.2). The access role's tag carries the project
+role's name, and the database user the portal's session runs as is
+`IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` — **142 queries** attributed to it in
+`sys_query_history` from the Query editor's first catalog walk. It is the tag that decides it, not the
+access role's own name: had the tag been ignored the user would have been
+`IAMR:awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, and it is not.
+
+The unprefixed spelling was created as insurance against the opposite answer and is **gone** —
+`DROP USER` the same day, after confirming it owned no relation and had run no query. So one grant
+stands, `WH-12` reads **1 user-role grant**, and the runbook's `IAMR:<role-name>` is now measured rather
+than predicted.
 
 **Two database users nobody created**, read from `pg_user` on 2026-09-20 and recorded because a grantee
 this estate did not author is exactly what this register is for:
@@ -182,6 +191,38 @@ alike — read from `pg_namespace.nspacl` on 2026-09-21 (`rdsdb=UCDA/rdsdb | =U/
 database user cannot create objects outside the schema its role names. `lab` carries no `nspacl` entry
 whatever: its grants are RBAC only, which is why `svv_schema_privileges` and `nspacl` must both be read
 before claiming what a grantee can do on this surface.
+
+**A shared schema shares nothing in it until somebody writes these two rows** (measured 2026-10-10
+on the first table a project ever wrote). `sbx_lab_rw` carries `USAGE, CREATE ON SCHEMA` and nothing
+at table level; `lab.hello`'s `relacl` was **null**, and `pg_default_acl` held **no row anywhere**. So
+a second project granted the role would have had `CREATE` and read **none** of the first's data — not
+reduced access, none. The two rows above close the read half: the existing table explicitly, and every
+future one through the default privilege. `SELECT` and not more, because letting one project write or
+drop another's table is a semantic nobody asked for. **`WH-14` is the check**, and
+`svv_default_privileges` is the only place the second row is readable — `pg_default_acl` is empty on
+this platform.
+
+**THE GRANTEE DEPENDS ON THE DOOR, AND A NOTEBOOK CHOOSES WHICH** (measured 2026-10-11). The Data page resolves to `IAMR:<the project role's name>`, through the access role's
+`RedshiftDbUser` tag. **JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>`** —
+one database user **per person**, auto-created at their first connection, holding nothing. So a grant
+made for one door does not serve the other, and this one's grantee cannot be pre-made because it does
+not exist until somebody connects.
+
+**The per-person `GRANT` was a stopgap and is REVOKED** (2026-10-11). It is not needed: a notebook
+that assumes the **access role** before connecting lands on the per-project user, because no session
+tag is transitive and the access role's own `RedshiftDbUser` governs the chained session. That user
+already holds `sbx_lab_rw` and is already the owner the default privilege names, so **one row covers
+every table either door writes** — proven by `svv_relation_privileges` on a table the chained session
+created. 6h decision 8a holds the reasoning and §P step 3a the procedure.
+
+**The residue is that the chain is a convention, not a control.** A notebook that connects directly
+gets a per-person user holding nothing and fails at the schema with `permission denied`. The guards are
+that failure and `WH-14`.
+
+> **`pg_class.relacl` is blind to a grant made to a ROLE.** Two tables each carrying
+> `sbx_lab_rw / SELECT` in `svv_relation_privileges` read `relacl = (none)` (2026-10-11). The legacy
+> ACL column holds the legacy ACL; RBAC lives in the `SVV_` views. So reading both is **not** two
+> independent readings — a claim that a table has no grants rests on the `SVV_` view alone.
 
 **Two rules for this table**, both there because the plan half is missing on this surface:
 

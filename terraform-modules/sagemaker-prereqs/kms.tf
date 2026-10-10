@@ -20,8 +20,8 @@
 # blueprint (adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html),
 # adapted: our role names for the doc's console names, this Region for its us-east-1, and the
 # category-1 roster for its full menu. The Redshift and Airflow CreateGrant statements are
-# absent because no enabled blueprint reaches either service; each joins in the same commit
-# that promotes its blueprint out of category 2 (Lesson 14).
+# absent because the blueprints they serve, `RedshiftServerless` and `Workflows`, are category 3;
+# each joins in the same commit that enables its blueprint (Lesson 14).
 locals {
   # The IAM-delegation root statement the default policy had - kept first, because losing it
   # would orphan the key from its own account's administration.
@@ -70,8 +70,9 @@ locals {
       Resource = "*"
     },
     # CloudWatch Logs encrypts the blueprint-created log groups with this key. The doc's three
-    # name patterns are kept even though airflow-*/mwaa-* wait on category-2 Workflows - a log
-    # statement scoped by encryption context admits nothing until such a group exists.
+    # name patterns are kept: /aws/mwaa-serverless* matches the groups the serverless Workflows
+    # surface creates (6d step 4), and airflow-* waits on the category-3 Workflows blueprint - a
+    # log statement scoped by encryption context admits nothing until such a group exists.
     {
       Sid       = "AllowKmsPermissionsForCloudWatch"
       Effect    = "Allow"

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. **MWAA Serverless only** (D7 amended): the provisioned rung leaves the plan, **step 4 becomes the fallback ladder**, `OR-6` flips to an **absence** check (`airflow list-environments` empty everywhere), the `Workflows` blueprint moves to category 3, and a `DenyProvisionedMwaa` (`airflow:CreateEnvironment`) statement joins the root SCP with a battery probe, because the SMUS provisioning role's AWS-managed policy grants that action today. Design **B** (EventBridge Scheduler + Step Functions) is **not built** and becomes INT-14's terminal fallback. **`NetworkConfiguration` is always set, on AWS's documented private routing** (1.2): workers are ECS ENIs in `VPC-Workloads`' two private subnets, and the service exposes **no proxy setting**, which makes it the first named exception to D38's single egress — an exception with *no* internet path, so a `PythonOperator` that needs PyPI is rejected by the lint, not routed. **Authoring happens in Sandbox**, and the definition's portability is measured at [6d](stage-06d-unified-studio-remainder.md) step 4, which is this stage's verification (i). **Staging gets its own orchestration slice**: a serverless workflow bills nothing at rest |
+| **Status** | not started. **MWAA Serverless only** (D7 amended): the provisioned rung leaves the plan, **step 4 becomes the fallback ladder**, `OR-6` flips to an **absence** check (`airflow list-environments` empty everywhere), the `Workflows` blueprint moves to category 3, and a `DenyProvisionedMwaa` (`airflow:CreateEnvironment`) statement joins the root SCP with a battery probe, because the SMUS provisioning role's AWS-managed policy grants that action today. Design **B** (EventBridge Scheduler + Step Functions) is **not built** and becomes INT-14's terminal fallback. **`NetworkConfiguration` is always set, on AWS's documented private routing** (1.2): workers are ECS ENIs in `VPC-Workloads`' two private subnets, and the service exposes **no proxy setting**, which makes it the first named exception to D38's single egress — an exception with *no* internet path, so a task's dependencies arrive vendored in its code package or in a container image, never from PyPI at run time. **Authoring happens in Sandbox**, and the definition's portability is measured at [6d](stage-06d-unified-studio-remainder.md) step 4, which is this stage's verification (i). **Staging gets its own orchestration slice**: a serverless workflow bills nothing at rest |
 | **Prerequisites** | Stage 8 (the deploy runner and `awsds-deploy-prod` — the orchestration slice is applied by the pipeline, which is INT-14's proof; the shared gates file the lint joins). Stage 9 (`awsds-prod-job-exec` and the LF regrants the workflow's jobs run under; the registry with its resource policies; `awsds-prod-outputs` — the definitions home). **[6d](stage-06d-unified-studio-remainder.md)** (a live Sandbox project — pass 1 authors there; 6a's decision 5 deferred the Workflows surface to this stage, and 6d step 4 measures the definition's portability). **6b** — Staging exists, so nothing here waits on a vend. **6c** — `VPC-Workloads` is where the workers land, and `production/workloads-egress/` is the `[E]` slice that gives them their endpoints. **6d step 4** — the definition's portability is measured there and consumed here as verification (i) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), **[D38](../decisions/D38-single-egress-hub.md)** (the workers are its first named exception — see 1.2) |
 | **Proves** | [INT-14](../integrations.md). **Exercises, without re-proving:** INT-03 (the workflow's jobs write through Stage 9's share) and INT-07's registry half, which absorbed INT-04 at 6b (the model chain consumes Stage 9 step 3's policies as built) |
@@ -28,7 +28,7 @@ Studio's *Workflows* tool **is** MWAA (open question 15), so the workflow a data
 | `staging/orchestration/` (new) | the same slice, same module, Staging's account — **a serverless workflow bills nothing at rest**, so the promotion chain gains a rehearsal that is not Production | `[E]` |
 | `production/workloads-egress/` (amended) + `staging/egress/` (amended) | the worker endpoints MWAA Serverless's **private routing** shape documents: `logs`, `monitoring`, `kms`, plus `sts`, `sagemaker.api`, `sagemaker.runtime`, `glue`, `ecr.api`, `ecr.dkr` and an S3 gateway policy admitting `prod-<region>-starport-layer-bucket` | `[E]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
-| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML), its ASL port, the terraform that instantiates them; **the D28 promotion lint** in Stage 8's shared gates file | — |
+| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML, `workflow/workflow.yaml`), the code package its Python and Bash tasks run (D28 class 2b, built from `workflow/code/` when there are such tasks) and the terraform that instantiates them; **the D28 promotion lint** in Stage 8's shared gates file. An ASL port exists only if step 4's ladder reaches design B | — |
 | Domain portal (console, recorded) | the serverless-Workflows surface for the `engineering` project — Stage 6 decision 5's deferred half; the **OnDemand Workflows blueprint stays off** (it provisions a fee-bearing MWAA environment) | — |
 | `scripts/` | `layers.py`: `RANKS["orchestration"]` + the `[E]` row; `backend.py`: the slice row | — |
 
@@ -45,7 +45,7 @@ flowchart LR
         STU["a Studio project · Workflows tool<br/>= MWAA Serverless, synced both ways"]
     end
     subgraph GL["GitLab (Production, D14)"]
-        REPO["app-etl repo · YAML + ASL + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
+        REPO["app-etl repo · YAML + code + terraform<br/>D28 lint: ECR URIs only, nothing portal-scoped"]
     end
     subgraph PRD["Production"]
         ORC["orchestration/ [E] · pipeline-applied (INT-14)<br/>workflow + role + log group, workers in VPC-Workloads"]
@@ -115,7 +115,11 @@ readings; the only console half is the user's.
 - **0.2 — [Claude] Verify INT-14's surface, still read-only**: `awscc_mwaaserverless_workflow` present in
   the pinned `awscc` provider (re-verified 2026-08-16 — the classic provider merged only scaffolding,
   PR #45256, issue #45254 still open); `aws mwaa-serverless` present in the installed CLI. The *apply*
-  under the boundary is pass 2's.
+  under the boundary is pass 2's. **A workflow with Python or Bash tasks needs two newer versions** (read
+  2026-10-10): the `code` attribute first appears in `awscc` **v1.99.0** (2026-08-28), and the estate
+  locks **v1.98.0** (2026-08-19) in its two `awscc` slices; the installed CLI (2.36.18) knows neither
+  `--code` nor the `Code` field `GetWorkflow` returns, so `./aws/orchestration.py` cannot read the code
+  location until it is upgraded.
 - **0.3 — [Claude] Record the service-linked-role baseline**: `AWSServiceRoleForAmazonMWAAServerless`
   absent today (`aws iam get-role`, as `awsds-infra-prod`). It auto-creates at the first
   `CreateWorkflow`, manages the service's networking, and carries
@@ -148,8 +152,10 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
 **free at rest**; what meters is the run, plus the `[E]` endpoint set while tasks are in the VPC.
 
 - **1.1 — [Claude] Write the workflow resource**: one `awscc_mwaaserverless_workflow` per application —
-  `awsds-<env>-wf-app-etl` — with `definition_s3_location` pinned to 2.4's object **and `version_id`**;
-  `role_arn` = the execution role; `logging_configuration.log_group_name` = `/awsds/<env>/wf/app-etl`, an
+  `awsds-<env>-wf-app-etl` — with `definition_s3_location` pinned to 2.4's object **and `version_id`**,
+  and `code.s3_location` pinned the same way when the workflow has Python or Bash tasks (the service
+  versions the code with the definition); `role_arn` = the execution role;
+  `logging_configuration.log_group_name` = `/awsds/<env>/wf/app-etl`, an
   explicit `aws_cloudwatch_log_group`, retention 90 days (D28 item 5 — never the auto-created
   `/aws/mwaa-serverless/<id>/` group, which nobody expires); `encryption_configuration` per decision 2.
 - **1.2 — [Claude] Set `network_configuration`, always, on AWS's documented private-routing shape.**
@@ -169,8 +175,9 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
   4. **A security group with a self-referencing inbound rule** and an all-traffic outbound rule.
 
   **The service exposes no proxy setting**, which makes it **the first named exception to D38's single
-  egress — an exception with *no* internet path at all** rather than a second one. A `PythonOperator` that
-  wants PyPI is therefore **rejected by the lint** (2.3), never routed. Verify the guide's private-shape
+  egress — an exception with *no* internet path at all** rather than a second one. A task that wants PyPI
+  at run time therefore has no route: a Python task's dependencies are vendored into its code package
+  (2.3), never fetched. Verify the guide's private-shape
   NACL line (inbound allow-all, **outbound deny-all**) at build time rather than copying it: a stateless
   ACL denying all egress would break the endpoints it fronts.
 - **1.3 — [Claude] Write the execution role**: trust `airflow-serverless.amazonaws.com`
@@ -181,8 +188,10 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
   `iam:PassedToService`** (conventions §6); `sagemaker:CreateTrainingJob`/`Describe*`/`Stop*` +
   `iam:PassRole` on `awsds-prod-job-exec` conditioned `sagemaker.amazonaws.com` (step 5);
   `logs:CreateLogStream`/`PutLogEvents` on its own group; `s3:GetObject` + `kms:Decrypt` on the
-  definitions prefix and its key. **No `s3:*` on any lake bucket, no `lakeformation:GetDataAccess`** —
-  the role orchestrates, the job role touches data.
+  definitions prefix (the YAML and the code package) and its key. **No `s3:*` on any lake bucket, no
+  `lakeformation:GetDataAccess`** — the role orchestrates, the job role touches data. **A Python or Bash
+  task runs with this role's credentials** (the vendor's own statement, read 2026-10-10), which is the
+  second reason it holds no data permission: a Python task is orchestration code, never a data path.
 - **1.4 — [Claude] Write the machinery rows in the same sitting**: `RANKS["orchestration"]` above
   `app/app-etl` (so `make down` removes the trigger before the thing it triggers), **two** `[E]` `SLICES`
   rows — `staging` and `production` (`usd_per_hour` 0.0: nothing in the slice meters by the hour; the runs
@@ -211,7 +220,9 @@ because this stage's design rests on it.
 - **2.1 — [user] Author the workflow in a Sandbox project** (the surface 0.4 recorded): the app-etl DAG —
   the Stage 9 producer/pickup Glue jobs plus the container step — test-run there (Sandbox task-hours,
   metered per run). **This is where D21's "authored and test-run" clause now points**, and Sandbox is the
-  only account it can point at.
+  only account it can point at. No task is a portal *Notebook task*: 6d decision due 14 took (b), and the
+  implementation explores `PythonOperator` and `BashOperator` for the code a task runs itself (user,
+  2026-10-10), measured here first, under Sandbox's private subnets (verification (xv)).
 - **2.2 — [user] Graduate the definition into the repository** (D21 — the rewrite is the gate): the
   YAML lands in `app-etl/workflow/` beside a converted copy if authoring produced Python
   (`python-to-yaml-dag-converter-mwaa-serverless`, the AWS tool — AWS-provider operators only, no
@@ -219,21 +230,29 @@ because this stage's design rests on it.
   validated parameter set: `schedule` (cron — the schedule **is** this line), `retries` ≤ 3,
   `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are
   documented as **ignored** — a DAG that leans on them behaves differently here than it did in an ordinary
-  Airflow, which is a fact to record about the service, not a defect to chase.
+  Airflow, which is a fact to record about the service, not a defect to chase. Python callables graduate
+  as modules in `workflow/code/`. A Python or Bash task runs on a 1 vCPU / 3 GiB x86_64 worker on Python
+  3.12, against a pre-installed Airflow 3.0.6 and Amazon provider 9.32.0 that win over any bundled
+  version (read 2026-10-10), so heavy work belongs in Glue, ECS or SageMaker.
 - **2.3 — [Claude] Consume the D28 promotion lint — it is authored once, at Stage 8 step 5.6**, so there
   is one copy. It rejects a definition that references a domain resource (project connections,
   portal-scoped ids), names a container by anything other than **ECR URI and tag**, exceeds **50 KB**,
   hard-codes a `start_date` (rewritten at deploy time), uses an operator outside MWAA Serverless's
-  Amazon-provider allow-list, exceeds the **3600 s** task cap, or omits a pinned
-  `DefinitionS3Location.VersionId`. **The operator rule is load-bearing here rather than stylistic**: with
-  no internet path in the worker subnets (1.2), a `PythonOperator` reaching PyPI has no route at all, so
-  the lint is what turns a runtime hang into a CI failure. **[user]** Prove it once with a deliberately
-  portal-scoped definition (verification (xi)).
+  supported list (the Amazon-provider operators, plus `PythonOperator` and `BashOperator`, which AWS
+  added on 2026-08-17 by the guide's document history, the day after this stage's 2026-08-16 reading),
+  exceeds the **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`. **The code package
+  is what carries the no-internet constraint now**: with no internet path in the worker subnets (1.2), a
+  Python task's dependencies must be vendored into its package for Linux x86_64 and Python 3.12, so CI
+  builds the package and imports every `python_callable` from it with networking off, which turns a
+  runtime import failure into a CI failure. **[user]** Prove it once with a deliberately portal-scoped
+  definition (verification (xi)).
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: the release job copies
   `workflow/workflow.yaml` to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`**
   (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1) and
   records the returned S3 `VersionId` — the value 1.1 pins, so a definition edit without a deploy
-  cannot reach the workflow (`CreateWorkflow` snapshots anyway; the pin makes the intent explicit).
+  cannot reach the workflow (`CreateWorkflow` snapshots anyway; the pin makes the intent explicit). When
+  the workflow has Python or Bash tasks, the code package built from `workflow/code/` goes beside it and
+  its `VersionId` is recorded the same way. How one definition serves two accounts is decision 6.
 
 ### 3. Schedule, retry, alerting (D28 item 5)
 
@@ -344,9 +363,10 @@ session; read every denial by its wording (standing rule since 1c).
 
 - **6.1 — [user + pipeline] The scheduled end-to-end**: tag → Stage 8's chain (Staging leg, gate) → the
   orchestration slice applies in both accounts → the schedule fires **unattended** — at least one
-  `SCHEDULED`-type run with nobody at the keyboard — the run writes a curated table through the LF share
-  (INT-03 exercised under the job role), and the failure rule stays quiet. Then the pause lever works:
-  `TriggerMode` → paused, no further runs.
+  `SCHEDULED`-type run with nobody at the keyboard, the type read per run with `get-workflow-run`, since
+  `list-workflow-runs` returns it null (measured 2026-10-10) — the run writes a curated table through
+  the LF share (INT-03 exercised under the job role), and the failure rule stays quiet. Then the pause
+  lever works: `TriggerMode` → paused, no further runs.
 - **6.2 — [user] The negatives, from a data-science Production session**: `airflow-serverless:ListWorkflows`
   and `airflow-serverless:StartWorkflowRun` denied — the persona sets grant none of it (implicit deny; the
   wording names no allow, not an SCP) — and `airflow:CreateEnvironment` denied by **`DenyProvisionedMwaa`**
@@ -375,7 +395,8 @@ proofs are the stage's own (Lesson 20):
 - **The scheduled run (6.1):** one unattended `SCHEDULED` run, then the pause lever holding.
 - **The failure path (3.2):** the rule fires on a broken step, and the diagnosis is reachable from the
   service APIs alone — recorded, because there is no environment to log into.
-- **The lint (2.3):** a portal-scoped definition rejected in CI, and a `PythonOperator` rejected with it.
+- **The lint (2.3):** a portal-scoped definition rejected in CI, and a code package whose `python_callable`
+  does not import with networking off rejected with it.
 - **The network negative (1.2):** a task started with `network_configuration` omitted lands **outside** the
   VPC — provoked once, in Staging, and read in the flow logs' silence rather than argued.
 - **The model chain (5.x):** a version registered `PendingManualApproval` by the pipeline, approved at the
@@ -401,7 +422,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
 | Item | Cost | Layer |
 |---|---|---|
 | The workflow at rest | **0** — no environment fee, no standing resource that meters | `[E]` |
-| Managed task-hours | 0.088/task-h, 1-min minimum (~4.40/month for the §1.5 nightly) | per run |
+| Managed task-hours | 0.088/task-h, 1-min minimum (~4.40/month for the §1.5 nightly); Python and Bash tasks bill the same (vendor page, 2026-10-10) | per run |
 | Task compute | Glue 0.44/DPU-h; Fargate ARM ~0.036/vCPU-h + memory; SageMaker training/transform per instance-h (§8) | per run |
 | The worker endpoint set while runs execute | 0.010/h **per endpoint per AZ** — and 1.2's two-AZ requirement **doubles it for this VPC**, which is the D9 exception's price | `[E]` |
 | Provisioned MWAA | **not a line** — 0.29/h, removed from the ladder and denied by SCP (4.3); kept in `PRICING.md` as the record of why | — |
@@ -415,7 +436,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
 1. **The definitions home** (2.4) — recommended: **`awsds-prod-outputs/workflows/<app>/<tag>/` with the
    S3 `VersionId` pinned** — the bucket is already versioned, CMK-protected and perimeter-branched; a
    dedicated bucket buys nothing at N=1. Revisit only if verification (iv) shows the service's
-   definition read failing the perimeter.
+   definition read failing the perimeter. This answers for Production; Staging's copy is decision 6.
 2. **The encryption configuration** (1.1) — recommended: **`CUSTOMER_MANAGED_KEY` with each account's own
    data CMK** (`alias/awsds-prod-data`, `alias/awsds-staging-data`) — D31's argument: what the approvers
    cannot decrypt stays expressible; fall back to `AWS_MANAGED_KEY` only if the service's grant path fails,
@@ -431,6 +452,21 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    only while the slice is applied, which under D11 is a session property, not a defect. The revisit
    trigger (§5.1 rule 7): the day a workload needs the schedule to survive sessions, the workflow is free
    at rest and promotion to `[P]` costs nothing — record it then, with the bill in hand.
+6. **How one definition reaches two accounts** (1.1, 2.4). Both slices pin 2.4's object, but the
+   definition names per-account things: the task-definition family (`awsds-prod-app-etl` against
+   `awsds-staging-app-etl`), the job role (`awsds-prod-job-exec` against `awsds-staging-job-exec`), the
+   subnets and security group, the data key. One YAML cannot name both, and the plan already rewrites
+   one value at deploy time (`start_date`, 2.3). Staging reading `awsds-prod-outputs` is also a
+   cross-account read of a Production bucket and its key by Staging's execution role, which no step here
+   grants or proves. Recommended: **render per environment**, with each account's values taken from the
+   `orchestration/` slice that instantiates the workflow (it already holds that account's subnets, roles
+   and key), the D28 lint run on every rendered file, and each rendered copy (definition and code
+   package) under `awsds-prod-outputs/workflows/<app>/<tag>/<env>/`, read by Staging through an explicit
+   bucket-policy and key grant. That follows the precedent Staging already lives by for images, which it
+   pulls from Production's ECR by grant (INT-07, D14), and it is a new `INT` row when taken. The
+   alternative, a copy in Staging itself, removes the crossing but needs a home Staging does not have:
+   its only content bucket, `awsds-staging-data`, holds the sampled data. `OR-5` encodes today's text
+   (every definition under `awsds-prod-outputs/workflows/`) and changes with this decision.
 
 ## Verifications to answer while executing
 
@@ -441,7 +477,7 @@ Record every answer, including the ones that come out fine.
 | i | What is the Studio's serverless-Workflows surface today, which toggle enables it, and does the OnDemand (provisioned) blueprint stay off (open question 15)? | 0.4 |
 | ii | Does `awscc_mwaaserverless_workflow` apply under a deploy role's boundary (INT-14) — in **Staging first** — and if not, which rung of step 4, on which wording? | 1.5 |
 | iii | Does `AWSServiceRoleForAmazonMWAAServerless` appear at the first `CreateWorkflow` — absent in 0.3, present and enumerated afterwards (Lesson 17)? | 0.3, 1.6 |
-| iv | Does the service's definition read pass the outputs bucket's perimeter branches (the `ViaAWSService` carve-out doing its job)? | 1.5, 2.4 |
+| iv | Does the service's definition read pass the outputs bucket's perimeter branches (the `ViaAWSService` carve-out doing its job) — from Production, and from Staging if decision 6's cross-account copy is taken? | 1.5, 2.4 |
 | v | Does a `SCHEDULED` run fire unattended — and does `TriggerMode` stop the next one? | 6.1 |
 | vi | Does a broken step fire the failure rule, and is the failure diagnosable from the service APIs alone? | 3.2 |
 | vii | Which app-etl steps fit inside the **60-minute task cap** — and what is the plan for a Glue step that does not (it becomes a fire-and-poll pattern, or the step is split)? | 2.2 |
@@ -450,8 +486,9 @@ Record every answer, including the ones that come out fine.
 | xiii | Is `airflow list-environments` empty in **every** account, and does `airflow:CreateEnvironment` deny from a Production session (`OR-6`, `DenyProvisionedMwaa`)? | 4.3, 6.2 |
 | xiv | Does the private-routing NACL the guide describes actually work with the endpoints in front of it, or does its outbound deny-all break them (verified, never copied)? | 1.2 |
 | x | Does the model chain hold end to end — registration only under `awsds-deploy-prod`, training `OutputDataConfig` carrying the CMK, the approved version served in **Staging before Production**? | 5.1-5.4 |
-| xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition (a deliberate bad artifact)? | 2.3 |
+| xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition, and a code package whose `python_callable` does not import offline (deliberate bad artifacts)? | 2.3 |
 | xii | After the stage's redeploys, how many workflow versions exist against the 50-version quota — and is the run-history disposition written before the first `make down` (Lesson 4)? | 1.6, 6.3 |
+| xv | How do `PythonOperator` and `BashOperator` tasks behave on the private shape: does a code package with vendored dependencies run with no internet path, does a task that reaches for PyPI fail visibly, and do the task's AWS calls carry the execution role (6d decision due 14 (b))? | 2.1, 2.3 |
 
 ## Risks
 
@@ -470,10 +507,11 @@ Record every answer, including the ones that come out fine.
 - **Run history and logs are state inside `[E]` resources** (Lesson 4) — the evidence lives in the log
   before any teardown; retention bounds the rest; 6.3 writes the sentence.
 - **The workers have no internet path at all** (1.2), since the service takes no proxy setting. Anything
-  a task needs from the internet must arrive in the container image or through an endpoint, and the lint
-  says so at CI time.
+  a task needs from the internet must arrive in the container image, in the code package or through an
+  endpoint, and CI's offline import of the package says so at CI time.
 - **`TriggerMode`'s literal values are undocumented** (a plain string in every schema) — read the accepted
-  values at 1.5 rather than hard-coding; a wrong literal fails at apply, loudly.
+  values at 1.5 rather than hard-coding; a wrong literal fails at apply, loudly. One literal is read:
+  Sandbox's portal workflows carry `manual_only` (2026-10-10).
 - **The two-AZ requirement is a standing D9 exception with a monthly price** — it is the one place in this
   estate where a metered endpoint is duplicated, and decision 3 bounds how far the duplication goes.
 

@@ -35,27 +35,29 @@
 # ------------------------------------------------------------------- the pin, by digest
 #
 # The tag is kept for a human and the digest is what resolves: bind to contents, never to a
-# name a publisher may move (Lesson 23). Read 2026-08-21 straight from the public registry's
+# name a publisher may move (Lesson 23). Read 2026-10-10 straight from the public registry's
 # manifest API - anonymous, no IAM action, which is why `DenyEcrPublicEntirely` does not reach
-# it:
+# it. The registry sends no Docker-Content-Digest header, so the digest is the sha256 of the
+# manifest bytes as served; the same computation returns 4.3.0-cpu's digest of 2026-08-21:
 #
-#   4.3.0-cpu   sha256:7f5d9c64684cebd53f65173c1f41d7bfe68419e5de9d0f55c4c25910a92f5f2c
-#               linux/amd64, Ubuntu 24.04, micromamba at /opt/conda, built 2026-07-10,
-#               24 layers / ~3.93 GB compressed. Satisfies the ">= 2.6-cpu" floor with room.
+#   4.5.2-cpu   sha256:e4ca47c41a41a4eec2bfe4b21a35c16078f0f7ae767b42c4a25c6757f392476b
+#               linux/amd64, Ubuntu 24.04, micromamba at /opt/conda, built 2026-09-23,
+#               24 layers / ~3.74 GB compressed. Satisfies the ">= 2.6-cpu" floor with room.
 #
-# The version is the user's choice, taken 2026-08-21: `4.3.0-cpu` was asked for by name, and
-# the digest beside it is what that name resolves to. `4.4.1-cpu` (2026-08-07) is the newest
-# `-cpu` tag published, and what an unpinned build would have drifted onto.
+# The version is the user's choice, taken 2026-10-10: the 4.5 line was asked for, and 4.5.2 is
+# its newest patch - the alias `4.5-cpu` resolves to this same digest. No 4.6 or 5.x tag is
+# published.
 #
 # The architecture is not a choice either: SageMaker images are amd64, and the repository
 # publishes `cpu`/`gpu` suffixes with no arm64 variant at all - measured from the tag list the
-# same day. That is what the buildbox exists for (terraform-live/sandbox/buildbox/README.md).
+# same day. That is what the buildbox exists for (terraform-live/production/buildbox/README.md).
 #
 # Revision trigger: a SMUS release raising the floor, or a base advisory the ECR scan flags.
-# Bump the pair together - a tag without its digest defeats the pin.
+# Bump the pair together - a tag without its digest defeats the pin - and read section 3's uv
+# against the new tag's cpu.env.out in the same edit.
 ARG SMD_IMAGE=public.ecr.aws/sagemaker/sagemaker-distribution
-ARG SMD_TAG=4.3.0-cpu
-ARG SMD_DIGEST=sha256:7f5d9c64684cebd53f65173c1f41d7bfe68419e5de9d0f55c4c25910a92f5f2c
+ARG SMD_TAG=4.5.2-cpu
+ARG SMD_DIGEST=sha256:e4ca47c41a41a4eec2bfe4b21a35c16078f0f7ae767b42c4a25c6757f392476b
 
 FROM ${SMD_IMAGE}:${SMD_TAG}@${SMD_DIGEST}
 
@@ -67,7 +69,7 @@ ARG SMD_TAG
 ARG SMD_DIGEST
 
 # The distribution's own identity values, restated so a reader need not inspect the base to
-# know who the image runs as. The live values in 4.4.1-cpu are USER=sagemaker-user with
+# know who the image runs as. The live values in 4.5.2-cpu are USER=sagemaker-user with
 # MAMBA_USER_ID/GID=57439, not the 1000/100 of the sample, and it does not matter: the
 # specification calls 1000/100 "supported values", and SageMaker remaps the ids at runtime
 # either way.
@@ -129,10 +131,11 @@ RUN set -eu; \
 # --------------------------------------- 3. uv - an upgrade in place, never a second binary
 #
 # The distribution already ships uv, and that single fact is the whole shape of this layer.
-# Measured 2026-08-21 from the distribution's own resolved environment - `cpu.env.out` under
-# build_artifacts/v4/v4.3/v4.3.0/ in aws/sagemaker-distribution, the @EXPLICIT list this exact
-# tag is built from - whose line 913 pins `uv-0.11.28` from conda-forge, i.e. /opt/conda/bin/uv.
-# So "install the latest uv" is a version MOVE inside a package that is already here.
+# Measured 2026-10-10 from the distribution's own resolved environment - `cpu.env.out` under
+# build_artifacts/v4/v4.5/v4.5.2/ in aws/sagemaker-distribution, the @EXPLICIT list this exact
+# tag is built from - whose line 923 pins `uv-0.12.17` from conda-forge, i.e. /opt/conda/bin/uv;
+# its cpu.env.in asks for `uv >=0.12.15,<0.13.0`. So any other uv is a version MOVE inside a
+# package that is already here.
 #
 # Dropping Astral's static binary into /opt/uv/bin and putting it first on PATH leaves TWO uv
 # in the image, and which one answers depends on where you ask - a RUN in a descendant, the
@@ -152,17 +155,34 @@ RUN set -eu; \
 # $MAMBA_ROOT_PREFIX/conda-meta holds one `<name>-<version>-<build>.json` per installed package,
 # so the before/after listing IS the change set - no output format to guess at, no solver
 # behaviour to trust. Anything in it that is not `uv-*` means the solve moved a locked
-# environment underneath this build, and it stops with the names printed. The expected change
-# set is exactly two lines: uv 0.12.5 declares only `__glibc >=2.17`, `libgcc >=15` and
-# `libstdcxx >=15`, and this image carries libgcc/libstdcxx 15.2.0 - read from conda-forge and
-# from cpu.env.out the same day.
+# environment underneath this build, and it stops with the names printed.
+#
+# The version is the distribution's own, by the user's decision of 2026-10-10, so the expected
+# change set is EMPTY: the install is a no-op that the guards below confirm. A move to another uv
+# is a change set of exactly two lines. conda-forge's uv packages from 0.12.17 to 0.13.0 declare
+# `__glibc >=2.17`, `libgcc >=15`, `libstdcxx >=15` and `zstd >=1.5.7,<1.6.0a0`, and 0.12.17 to
+# 0.12.21 add `liblzma >=5.8.3,<6.0a0`; this image carries libgcc/libstdcxx 16.2.0, zstd 1.5.7
+# and liblzma 5.8.3 - read from conda-forge and from cpu.env.out the same day.
+#
+# A version OLDER than the base's uv is refused before anything is installed. The change-set
+# guard cannot tell a downgrade from an upgrade - both are a uv-only change set - so without this
+# check a pin bump that leaves the ARG behind the distribution moves uv backwards past every
+# assertion in the layer.
 #
 # The version is an ARG so Stage 8's pipeline bumps it without editing a build. `UV_VERSION` is
 # NOT one of uv's own environment variables (checked against uv-static's `EnvVars` at 0.12.5),
 # so the build argument cannot be read back by the tool it names.
-ARG UV_VERSION=0.12.5
+ARG UV_VERSION=0.12.17
 RUN set -eu; \
-    echo "== uv before: $(uv --version 2>/dev/null || echo none)"; \
+    before="$(uv --version 2>/dev/null | cut -d' ' -f2 || true)"; \
+    echo "== uv before: ${before:-none}"; \
+    if [ -n "${before}" ] \
+       && [ "$(printf '%s\n%s\n' "${before}" "${UV_VERSION}" | sort -V | head -n1)" != "${before}" ]; then \
+      echo "FATAL: UV_VERSION=${UV_VERSION} is older than the base's uv ${before}." >&2; \
+      echo "  The install would be a downgrade, which the change-set guard below admits." >&2; \
+      echo "  Read the pinned tag's cpu.env.out before choosing the version." >&2; \
+      exit 1; \
+    fi; \
     ls "${MAMBA_ROOT_PREFIX}/conda-meta" | sed 's/\.json//' | sort > /tmp/awsds-env-before.txt; \
     micromamba install -y --name base -c conda-forge "uv==${UV_VERSION}"; \
     micromamba clean --all --yes --force-pkgs-dirs; \

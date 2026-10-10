@@ -1597,6 +1597,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   names a `sha256:` digest, so a registered version is pinned to bytes rather than to a tag, and
   re-tagging upstream would not move it. Where: `runbooks/dev-env.md` §C5.
 
+### MWAA Serverless
+
+- **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
+  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares
+  `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and
+  each read `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run
+  whether one fired or not, and that is Stage 10 verification (v)'s evidence. Where:
+  `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+
 ### Athena
 
 - **`DeleteWorkGroup` counts query history as contents, and no API deletes a query execution.** A
@@ -1703,6 +1712,113 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   session's allow-list. A parameter written while the host is stopped is not rendered by the start
   either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
   `log-stage-06d` the fifteenth sitting.
+
+- **The database identity of a SMUS Redshift connection is the ACCESS ROLE, not the project role and
+  not the person** (measured 2026-10-10, from the account's own trail). `redshift-serverless:GetCredentials`
+  is called by the assumed access role; the project role's own calls are `ListWorkgroups`, which fills
+  the compute dropdown, and the `sts:AssumeRole` that gets there. So the `RedshiftDbUser` tag belongs on
+  the access role, layer 2's reach has to be attached to **both** roles for different reasons, and
+  *whose identity reaches the database* is a third answer again after Stage 6d step 7's `StartSession`.
+  **Creating the connection mints no database session**: the compute reads `Available` with `pg_user`
+  unchanged, because a database user is created when credentials are used rather than when they are
+  minted. Where: `log-stage-06h` (2026-10-10).
+
+- **The Redshift audit groups carry an internal heartbeat and no user activity, and the two halves of
+  that claim have different strengths** (measured 2026-09-20 and 2026-10-10). Configuration is not the
+  explanation: the namespace exports all three groups and the live workgroup reads
+  `enable_user_activity_logging true`.
+  **Firm:** a marker query left on 2026-09-20 is **absent** from `useractivitylog`, which holds events
+  *after* it — no lag explains that. And `connectionlog`'s 155 records are **every one `rdsdb`**: not one
+  user connection, by any path, ever.
+  **Not firm, and the correction matters:** today's 142 portal queries were also absent, but
+  `connectionlog`'s internal heartbeat fires only every ~2h25m and its last entry preceded that
+  activity — so a lag of tens of minutes fits the reading, and the first write-up overstated it.
+  `useractivitylog`'s 19-day silence is likewise explainable: the parameter lives on the **workgroup**,
+  and the `[E]` workgroup did not exist for most of that window.
+  **The reading to carry** is that an absence here needs a presence of the *same kind* to be evidence —
+  an internal event does not vouch for a user event (Lesson 62, applied to the half that fails it).
+  Stage 11 must not rest a DLP feed on these groups until a re-read settles it.
+  Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
+
+- **A Redshift schema shared by a role shares nothing IN it, and `pg_default_acl` cannot tell you**
+  (measured 2026-10-10, on the first table a project ever wrote). A role holding
+  `USAGE, CREATE ON SCHEMA` lets every admitted project create its own tables and carries **nothing at
+  table level**: the new table's `relacl` was **null**, so a second project granted the same role would
+  have had `CREATE` and read **none** of the first's data — not reduced access, none. The fix is
+  `ALTER DEFAULT PRIVILEGES`, set **per creating user**, so a shared schema owes one statement per
+  admitted project (Lesson 14) plus one `GRANT` per table that already exists.
+  **And the verification is not where PostgreSQL keeps it**: `pg_default_acl` returns zero rows after a
+  successful `ALTER DEFAULT PRIVILEGES`, and the privilege lives in **`svv_default_privileges`** alone —
+  the mirror of the schema trap, where `nspacl` is the authority and the `SVV_` view shows only RBAC.
+  A statement that reports `FINISHED` and a catalog that reports nothing is Lesson 54's shape, and the
+  cheap resolution is to look for the platform's own view before believing either.
+  Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
+
+- **Two sessions on the same role carry different session tags, and the session NAME is the only
+  thing that tells them apart** (measured 2026-10-11, after reading one for the other). SMUS assumes
+  one project role from two places: the portal's session, named `<Identity Center user id>@<environment
+  id>`, carries `RedshiftDbUser` **and `RedshiftDbRoles`**; the space's session, named `SageMaker`,
+  carries `RedshiftDbUser` and **not** `RedshiftDbRoles`. Both appear in one `lookup-events` output,
+  identical but for `roleSessionName` and the tag list — and a capability read off the wrong one becomes
+  a mechanism you then cannot make work, with nothing broken to find. **`transitiveTagKeys` was `None`
+  on both**, so no tag survives a further chain. Read `roleSessionName` before attributing a session
+  tag, and treat "the role carries X" and "this session carries X" as different claims — a role tag is
+  overridden by a session tag of the same key, so the role's value can be live and irrelevant at once.
+  Where: `log-stage-06h` (2026-10-11), 6h decision 8a.
+
+- **Two doors into one database resolve to two DIFFERENT database users, one per project and one per
+  person** (measured 2026-10-11). The same warehouse, the same schema, the same project: through the
+  portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
+  `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
+  **auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing**. So a `GRANT`
+  written for one door leaves the other with a session that authenticates and can read nothing — and
+  this grantee **cannot be pre-made**, because it does not exist until that person first connects.
+  Asking "is the database user per project or per person" has no answer: it is a property of the path,
+  not of the design. **The per-person `GRANT` is the trap** — it is the identity seam, one statement per
+  person per schema; the mechanism that fits is `RedshiftDbRoles` on the role the user signs in with,
+  which maps roles at first sign-in. Where: `log-stage-06h` (2026-10-11),
+  `runbooks/redshift-connection.md` §T, `docs/AWS_STATE.md`'s Redshift register.
+
+- **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
+  (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session
+  ran as `IAMR:<that name>` — 142 queries attributed to it. The discriminator is that an ignored tag
+  would have produced `IAMR:<the access role's own name>`, and it did not. So the documented
+  `IAMR:<role>` spelling applies to the **tag value**, which is not a role at all, and a grant written
+  for the unprefixed value reaches nobody. Where: `log-stage-06h` (2026-10-10),
+  `runbooks/redshift-connection.md` §P.
+
+- **A CloudTrail `eventName` is not the IAM action that event authorizes, and a policy written from
+  the event name grants nothing** (measured 2026-10-10, and it cost an apply cycle). The portal's
+  refusals logged events `GetResources` and `ExecuteQuery`; the denial **message** on those same events
+  named the action being checked, and it was `sqlworkbench:CreateConnection` — with
+  `sqlworkbench:DriverExecute` behind a second `GetResources`. One event authorizes a differently-named
+  action, and several events authorize the same one. A policy granting `sqlworkbench:GetResources`
+  changed nothing and the next refusal was identical to the first, which is the dangerous part: the
+  symptom does not say the grant missed.
+  **Read `errorMessage`, not `eventName`** — `is not authorized to perform: <action>` is the only
+  authoritative statement of what to grant, and it also distinguishes the policy type
+  (*"no identity-based policy allows"* against an explicit deny). Two services in this same window gave
+  neither: Glue answered `An unknown error occurred` for `GetCatalogs`, and Lake Formation answered
+  *"Insufficient Lake Formation permission(s): Required Describe on raw"* — **not an IAM failure at
+  all**, so the action was inferred from the event name there, by necessity rather than by choice.
+  The corollary for managed policies: `AmazonRedshiftQueryEditorV2NoSharing` v9 **does** carry both
+  real actions (`DriverExecute` unconditionally, `CreateConnection` under
+  `aws:RequestTag/sqlworkbench-resource-owner`), and the earlier reading that it did not was this same
+  confusion written down as a fact about AWS. Where: `log-stage-06h` (2026-10-10),
+  `sandbox/warehouse/iam.tf`, `runbooks/log-debugging.md`.
+
+- **A refused `sts:AssumeRole` records no `roleArn` in CloudTrail** (measured 2026-10-10). Both denials
+  carry `requestParameters.roleArn` absent and no `externalId`, while the successes in the same window
+  carry the target in full. The trail says *denied*, not *denied for what*, so the role that was actually
+  requested comes from the caller's own error text — read it before attributing a refusal from the trail
+  alone. Where: `log-stage-06h` (2026-10-10), `runbooks/log-debugging.md`.
+
+- **`cloudtrail lookup-events` can answer "no events" for events it holds** (measured 2026-10-10). A
+  lookup by `EventName=GetResources` returned nothing; a lookup by
+  `EventSource=sqlworkbench.amazonaws.com` two minutes later returned six `GetResources` events in the
+  same window. Indexing lag or an index that does not carry them — either way, **an absence from a
+  lookup run shortly after the fact is not evidence of absence** (Lesson 62). Sweep by source before
+  concluding that a call was never made. Where: `log-stage-06h` (2026-10-10).
 
 - **The SageMaker Unified Studio portal requires an access role on a SAME-ACCOUNT Redshift
   connection, and both AWS's procedure and the field's own help say it does not** (measured

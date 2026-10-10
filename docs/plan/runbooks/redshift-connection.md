@@ -105,12 +105,28 @@ connect but sees nothing"* as the expected state for a while — which is the am
    Take this order rather than letting the first connection auto-create the user. If the identifier
    turns out wrong the symptom is a second, auto-created user appearing beside the hand-made one —
    a clean diff in `pg_user`, and the correction is one `DROP USER`.
+2a. **The sharing half, in SQL, and only if the schema is shared.** A table belongs to its creator
+   and the theme role carries nothing at table level, so this is what makes a *shared* base readable
+   (§T, measured). One statement per admitted project, which is why it sits beside the `GRANT ROLE`
+   rather than in a slice:
+   ```sql
+   ALTER DEFAULT PRIVILEGES FOR USER "<identifier>" IN SCHEMA <theme>
+     GRANT SELECT ON TABLES TO ROLE sbx_<theme>_rw;
+   ```
 3. **Layers 1 and 2, in Terraform.** Add the entry to `sandbox/warehouse/`'s `projects`, then
    `terraform apply` that slice and re-plan `No changes`. One map produces the tag on both objects,
    the IAM policy and its attachment, the **access role** the portal's form demands, and the `5439`
    ingress rule, so they cannot drift apart. `[P]` is never touched by `make up`, so this apply is by
    hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
    permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
+3a. **Tell the project's notebooks to chain through the access role**, which is what makes the
+   schema work from a space (measured 2026-10-11, §V step 4). Redshift grants to database users and
+   never to an IAM role, and the space's session carries a **per-person** `RedshiftDbUser` that SMUS
+   sets and nobody can change. Assuming the access role first lands the session on the **per-project**
+   database user instead — the one the `GRANT ROLE` and the schema's default privilege already name —
+   because **no session tag is transitive**, so the per-person value does not follow into the chain.
+   A notebook that connects directly still gets a user holding nothing and still fails at the schema,
+   so this is a convention with a loud failure rather than a control.
 4. **The connection, in the portal**, by the project member — it cannot be done any other way:
    `datazone list-connections` is refused to the account's administrator by **DataZone's own**
    authorization layer, because that identity is not a project member. *Compute → Data warehouse →
@@ -127,10 +143,20 @@ connect but sees nothing"* as the expected state for a while — which is the am
      the JDBC URL with the `/dev` suffix replaced.
    - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
      meter cannot be turned on from the portal. It is reachable only through the API.
-5. **Re-run `./aws/warehouse.py --sql`** and add the register row. Then read `pg_user`: the access
-   role's `RedshiftDbUser` tag decides the database user, and whether the platform uses it verbatim or
-   prefixes it `IAMR:` is unmeasured — which is why step 2 creates **both** spellings. The one that did
-   not appear is one `DROP USER`.
+5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
+   **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
+   prefixes its value, so with the tag set to the project role's name the user is
+   `IAMR:datazone_usr_role_<project>_<env>`. Attribute it rather than assuming: `select trim(u.usename),
+   count(*) from sys_query_history q join pg_user u on u.usesysid = q.user_id group by 1`.
+
+**What a correctly wired project sees in the Query editor**, and two of these lines are right rather
+than broken:
+
+| Line | Reading |
+|---|---|
+| `sandbox -> lab -> no data` | the three layers meeting: the schema is visible, and empty until §S's first table |
+| `awsdatacatalog -> failed to fetch database` | **correct.** That mount runs as the namespace role, which holds no policy at all (5b decision 5), and `WH-1b` keeps it that way |
+| a Glue database refused with *"Insufficient Lake Formation permission(s): Required Describe on \<db\>"* | **correct.** The editor enumerates every Glue database it can see; the lake's layers are not this project's to describe, and granting one is a governance act with a named requester |
 
 **What must stay absent, whatever else is granted:** no `GRANT ALL ON DATABASE`, nothing on a schema
 the project's row does not name, no `CREATE` on `public` (revoked at 5b 1.6), and no
@@ -157,14 +183,38 @@ DROP USER "<identifier>";
 
 ## §T Two projects on one schema
 
-One schema may be shared, and admitting the second is one `GRANT ROLE`. **What sharing does not
-give away is ownership**: a table belongs to the user that created it, so project B holding the
-schema's role can `SELECT` and `INSERT` in the schema but is not automatically able to `ALTER` or
-`DROP` project A's tables. Redshift's answer is `ALTER DEFAULT PRIVILEGES`, which is set **per
-granting user**, so a shared schema needs one statement per contributing project — per pair.
+One schema may be shared, and admitting the second is one `GRANT ROLE`. **Sharing the schema shares
+nothing in it, and the baseline is worse than it reads** (measured 2026-10-10 on the first table a
+project ever wrote): `sbx_<theme>_rw` carries `USAGE, CREATE ON SCHEMA` and **nothing at table
+level**, and a table created by project A has a **null `relacl`** — so project B holds `CREATE`, can
+write its own tables, and **cannot `SELECT` project A's at all**. Not a reduced privilege: none.
+
+Redshift's answer is `ALTER DEFAULT PRIVILEGES`, and it is set **per creating user**, so a shared
+schema owes one statement per admitted project — which is Lesson 14's shape, and `WH-14` is what
+notices the one nobody wrote:
+
+```sql
+-- every FUTURE table that user creates in the schema
+ALTER DEFAULT PRIVILEGES FOR USER "IAMR:<project role name>" IN SCHEMA <theme>
+  GRANT SELECT ON TABLES TO ROLE sbx_<theme>_rw;
+-- and each table that already exists, one by one
+GRANT SELECT ON TABLE <theme>.<table> TO ROLE sbx_<theme>_rw;
+```
+
+**`SELECT` and not more, by default.** Letting project B `INSERT` into or `DROP` project A's table is
+a sharing semantic nobody has asked for; read-across is what a shared base means. Widening it is
+[6h](../stages/stage-06h-redshift-connection.md) decision 8's territory, with the argument written.
+
+> **Neither `pg_default_acl` nor `relacl` is the instrument on this platform.**
+> `pg_default_acl` returns zero rows after a successful `ALTER DEFAULT PRIVILEGES` — the privilege is
+> in **`svv_default_privileges`** alone. And **`pg_class.relacl` is blind to a grant made to a ROLE**:
+> measured 2026-10-11, two tables each carrying `sbx_lab_rw / SELECT` in
+> `svv_relation_privileges` read `relacl = (none)`. The legacy PostgreSQL ACL columns hold the legacy
+> ACL; Redshift's RBAC lives in the `SVV_` views and nowhere else, so reading both is not two
+> independent readings — only one of them can ever see a role.
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
-*creates and reads its own*, nothing more is needed. It is also where layer 1's one-project limit
+*creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
 bites: admitting a second project to the **warehouse** needs either the wide tag or a second
 workgroup, and that is a decision with a written argument, not a map entry.
 
@@ -184,6 +234,127 @@ workgroup, and that is a decision with a written argument, not a map entry.
 | `403` on a `redshift-serverless` API call from inside a space | the endpoint | `make up ENV=sandbox GROUPS=redshift`. Without it the call leaves through the proxy as a public request |
 | everything times out and nothing is denied | the compute | **the workgroup may simply not exist.** It is `[E]`: `make down` destroys it, because Redshift Serverless has no pause. `make status` says so |
 | the transaction aborts at commit naming a quota | 3 | working as designed. `Transaction N is aborted due to exceeding the disk space quota in schema(s): (Schema: …, Quota: …, Current Disk Usage: …)` |
+
+---
+
+## §J Running SQL from a notebook
+
+**For a data scientist in a space.** `import redshift_connector, boto3` works in a new notebook on the
+`Python (awsds dev-env)` kernel with nothing installed: both are declared in
+`images/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
+`amazon-sagemaker-sql-execution`; it is named there now so a resolution change cannot remove it
+silently.
+
+**Two prerequisites, and neither is in the notebook.** The environment must be up with the Redshift
+endpoint group — `make up ENV=sandbox GROUPS=redshift` — because `redshift-serverless` is absent from
+the proxy's allow-list, so without that endpoint `GetCredentials` **times out** rather than being
+refused. And the project must be admitted to the warehouse: `sandbox/warehouse/`'s `projects` map, §P.
+
+### The connection
+
+```python
+import boto3
+import redshift_connector
+
+WORKGROUP = "awsds-sandbox-warehouse"
+DATABASE = "sandbox"                     # the class container, NOT the `dev` the dropdown offers
+REGION = "us-west-2"
+PROJECT = "avhvbqn37ty7m8"               # the project id, from the portal's URL
+
+
+def connect():
+    """A session on the warehouse as the PROJECT's database user."""
+    sts = boto3.client("sts", region_name=REGION)
+    account = sts.get_caller_identity()["Account"]
+
+    # THE CHAIN IS WHAT MAKES THE GRANTS APPLY (6h decision 8a). Connecting directly lands on a
+    # database user named after YOU, created empty, holding nothing: SMUS sets a per-person
+    # `RedshiftDbUser` on the space's session and it cannot be changed. The access role carries the
+    # per-project one, and no session tag is transitive, so the chained session gets that instead -
+    # the user the schema's role and its default privilege are written for.
+    creds = sts.assume_role(
+        RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
+        RoleSessionName="notebook",
+        ExternalId=PROJECT,
+    )["Credentials"]
+
+    return redshift_connector.connect(
+        iam=True,
+        is_serverless=True,
+        serverless_work_group=WORKGROUP,
+        database=DATABASE,
+        region=REGION,
+        access_key_id=creds["AccessKeyId"],
+        secret_access_key=creds["SecretAccessKey"],
+        session_token=creds["SessionToken"],
+    )
+```
+
+`select current_user` should answer `IAMR:datazone_usr_role_<project>_<environment>`. If it answers
+`IAMR:user-<a long id>@<project>` the chain was skipped, and the next statement fails as
+`permission denied for schema`.
+
+### Submitting statements
+
+**The driver does not autocommit.** It opens `begin transaction` before your first statement, so a
+`create` or `insert` is lost without `conn.commit()`. Set `conn.autocommit = True` if you prefer
+statement-at-a-time.
+
+```python
+conn = connect()
+
+with conn.cursor() as cur:
+    cur.execute("create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)")
+    cur.execute(
+        "insert into lab.readings values (%s, %s, %s)",     # paramstyle is `format`
+        ("2026-10-11 12:00:00", "t-1", 21.5),
+    )
+conn.commit()                                              # without this the table is not there
+```
+
+**Reading back, into pandas:**
+
+```python
+with conn.cursor() as cur:
+    cur.execute("select sensor, avg(v) as mean_v from lab.readings group by 1 order by 1")
+    df = cur.fetch_dataframe()          # pandas is in the image; fetchall() gives tuples instead
+df
+```
+
+**Always parameterise.** `%s` placeholders with a tuple, never an f-string around a value: the schema
+holds whatever a notebook puts in it, and a quoted literal built by string formatting is how a stray
+apostrophe becomes a syntax error and how an untrusted value becomes an injected statement.
+
+**Close it, or let the context manager do it:**
+
+```python
+with connect() as conn, conn.cursor() as cur:
+    cur.execute("select count(*) from lab.readings")
+    print(cur.fetchone()[0])
+```
+
+### What this costs, because the meter is per query
+
+Every statement runs on compute billed at **0.36 USD per RPU-hour** with **four base RPUs**, so
+1.44 USD per query-hour — and there is a **60-second minimum charge per query**. A cell run fifty times
+while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), so
+leaving a connection open between cells is free; running a heavy query is not.
+
+`max_query_execution_time` is **120 seconds** on this workgroup, so a runaway is cut off — and whether
+that setting binds every queue is [unresolved](../../log/log-stage-05b-redshift-serverless.md). The
+monthly ceiling is **10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup
+refuses queries until somebody raises it. Both are deliberate (5b decision 2).
+
+### Readings that will confuse you otherwise
+
+| Reading | Why |
+|---|---|
+| `select current_user` comes back **padded with spaces** | it is the `name` type; `trim()` it before comparing |
+| `inet_server_addr()` returns **NULL** | not implemented on Redshift Serverless; the server address is the socket's peer |
+| `pg_class.relacl` is **empty** on a table a role can read | `relacl` is the legacy ACL and is **blind to role grants**; `svv_relation_privileges` is the only reader |
+| `pg_default_acl` is **empty** after `ALTER DEFAULT PRIVILEGES` | the privilege is in `svv_default_privileges` alone |
+| `stl_connection_log` is **refused** | to a superuser too; `sys_connection_log` is the readable one, and it has only ever held internal sessions |
+| a `drop table` raises `KeyError` first in the traceback | the driver's prepared-statement cache missing, then the real error below it — read the bottom frame |
 
 ---
 
@@ -223,6 +394,311 @@ warehouse that is answering perfectly.
 security group and no connection, which is why `identity/sso` denies the whole family — and
 `redshift-serverless:GetCredentials` with it — to `DataScientistAccess`: a persona holding it has a
 query path from anywhere.
+
+### The JupyterLab door, from inside a space
+
+**Two doors reach this warehouse and they have different prerequisites**, so one of them answering
+says nothing about the other. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
+Redshift, no network path at all — and the **JupyterLab** door is the space's own ENI opening `5439`
+to the workgroup's ENI inside one VPC. The script below is for the second, and it separates three
+questions a single *"it worked"* cannot:
+
+1. does the name resolve **privately** — the endpoint, or are we leaving the VPC;
+2. does `5439` open — the security group rule and the route;
+3. does a session authenticate and write — `GetCredentials` (layer 2) and the `GRANT` (layer 3).
+
+**Its prerequisite is the optional endpoint group** (measured 2026-10-10): `make up ENV=sandbox
+GROUPS=redshift`. `redshift-serverless` is deliberately absent from the proxy's allow-list, so
+without that endpoint there is no door to the API and no fallback — step 3 fails as a **timeout**,
+which reads like a network fault and is a missing endpoint.
+
+**`redshift_connector` is already importable in the image** (measured 2026-10-10). It is not in
+`images/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
+`sagemaker-studio-dataengineering-sessions` or `aws-glue-sessions`. The script's install step is
+therefore a no-op in practice and stays only as the fallback. A transitive driver is a dependency
+nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by name, plus
+`uv lock`, so that a resolution change cannot remove it silently (Lesson 63's shape).
+
+```python
+# Stage 6h step 3.3 - the JupyterLab door to the Sandbox warehouse.
+#
+# Run this in a SageMaker space, in the project that holds the Redshift connection, on the
+# "Python (awsds dev-env)" kernel. Paste it into one cell; it prints a verdict per step.
+#
+# IT ANSWERS THREE QUESTIONS SEPARATELY, and that is the whole point. The Data page (step 3.4,
+# done 2026-10-10) reaches the warehouse as an AWS SERVICE - sqlworkbench calling Redshift - and
+# needs no network path at all. This door is different: the space's own ENI opening 5439 to the
+# workgroup's ENI inside one VPC. A single "it worked" cannot tell the two apart, and a failure
+# that says only "it did not work" names no layer. So:
+#
+#   1. does the name resolve PRIVATELY            - the endpoint, or we are leaving the VPC
+#   2. does 5439 open                             - the security group rule and the route
+#   3. does a session authenticate and write      - GetCredentials (layer 2) and the GRANT (layer 3)
+#
+# PREREQUISITE, measured 2026-10-10: the VPC needs the `redshift-serverless` interface endpoint,
+# which is the OPTIONAL endpoint group `redshift`. Raise the environment with it:
+#
+#     make up ENV=sandbox GROUPS=redshift
+#
+# Without it there is no door to the API and no fallback: `redshift-serverless` is deliberately
+# absent from the proxy's allow-list, so step 3 fails at GetCredentials with a timeout rather than
+# with a refusal - which looks like a network fault and is a missing endpoint (Lesson 42).
+
+import ipaddress
+import socket
+import subprocess
+import sys
+
+WORKGROUP, DATABASE, SCHEMA = "awsds-sandbox-warehouse", "sandbox", "lab"
+TABLE, REGION, PORT = "hello_jupyter", "us-west-2", 5439
+PROJECT = "avhvbqn37ty7m8"
+
+results = []
+
+
+def say(step, verdict, detail):
+    results.append(verdict)
+    print(f"[{verdict:4}] {step:34} {detail}")
+
+
+# ---------------------------------------------------------------- 0. who this notebook is
+try:
+    import boto3
+
+    who = boto3.client("sts", region_name=REGION).get_caller_identity()
+    arn = who["Arn"]
+    account = who["Account"]
+    say("identity", "ok", arn.split("/")[0].split(":")[-1] + " ... " + arn.split("/")[-1][:24])
+    if "datazone_usr_role" not in arn:
+        say("identity", "warn", "not the project role - a space normally runs as it")
+except Exception as exc:
+    # THE ONLY FATAL STEP, deliberately. Everything below derives the workgroup host from the
+    # account id, so without an identity there is nothing to measure rather than something to
+    # report. In a notebook this prints a traceback notice instead of exiting quietly, which is
+    # accepted here and nowhere else in this script.
+    say("identity", "FAIL", f"{type(exc).__name__}: {exc}")
+    raise SystemExit("no identity, so nothing below can be attributed")
+
+# The host is derivable, so this step needs no API call and cannot fail for a permission reason.
+host = f"{WORKGROUP}.{account}.{REGION}.redshift-serverless.amazonaws.com"
+
+# ------------------------------------------------- 1. does the name resolve, and to a private IP
+try:
+    addrs = sorted({ai[4][0] for ai in socket.getaddrinfo(host, PORT, socket.AF_INET)})
+    private = [a for a in addrs if ipaddress.ip_address(a).is_private]
+    if not addrs:
+        say("1 dns resolves", "FAIL", "no A record")
+    elif private:
+        say("1 dns resolves", "ok", f"{', '.join(private)} - private. These are the WORKGROUP's "
+            "own managed VPC endpoint ENIs, which carry the warehouse security group; the "
+            "redshift-serverless API endpoint is a different address and is not what this name "
+            "resolves to (measured 2026-10-10)")
+    else:
+        say("1 dns resolves", "FAIL", f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
+            "redshift-serverless endpoint is not answering: either the endpoint is absent "
+            "(GROUPS=redshift) or its private DNS is off")
+except socket.gaierror as exc:
+    say("1 dns resolves", "FAIL", f"ENOTFOUND - {exc}. A name that does not resolve inside a "
+        "compute VPC is the DNS Firewall or a missing endpoint, never a security group")
+
+# ------------------------------------------------------------------- 2. does the 5439 door open
+try:
+    with socket.create_connection((host, PORT), timeout=10) as s:
+        peer = s.getpeername()[0]
+        say("2 port 5439 opens", "ok",
+            f"{s.getsockname()[0]} -> {peer}:{PORT}, so the SG rule and the route both exist. The "
+            "local address is the space's container NAT, not an ENI")
+except OSError as exc:
+    say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
+        "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
+        "listener that is not there - check the workgroup is up")
+
+# ------------------------------- 2b. does the thing on 5439 speak the Redshift wire protocol
+#
+# Eight bytes of PostgreSQL SSLRequest - length 8, code 80877103 - and one byte back: `S` accepts
+# TLS, `N` refuses it, and anything else is not this protocol. It separates "the server dropped my
+# session" from "whatever accepted the TCP never spoke Redshift", which a driver's BrokenPipe
+# cannot (measured open 2026-10-10: the driver connected and broke on the first statement).
+try:
+    import struct
+
+    with socket.create_connection((host, PORT), timeout=10) as s:
+        s.sendall(struct.pack("!ii", 8, 80877103))
+        reply = s.recv(1)
+    if reply == b"S":
+        say("2b speaks redshift", "ok", "SSLRequest accepted - TLS required, as the workgroup is set")
+    elif reply == b"N":
+        say("2b speaks redshift", "warn", "SSLRequest refused - the protocol is there and TLS is off")
+    else:
+        say("2b speaks redshift", "FAIL", f"answered {reply!r} - whatever is on 5439 is NOT "
+            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session")
+except OSError as exc:
+    say("2b speaks redshift", "FAIL", f"{type(exc).__name__}: {exc}")
+
+# ------------------------------------------ 3. a session over that door, written and read back
+#
+# EVERY STEP BELOW IS GUARDED RATHER THAN FATAL, and the reason is this script's own history: a
+# `raise SystemExit` in step 3 once killed step 4, which shares nothing with it and was the
+# measurement that mattered. In a notebook `SystemExit` also prints a traceback notice instead of
+# exiting, so it is the wrong mechanism twice over. Each step that cannot run says so and the
+# summary at the end is the verdict.
+#
+# redshift_connector IS importable in the image, transitively - it is absent from
+# images/dev-env/python/pyproject.toml and arrives through one of the SageMaker packages (measured
+# 2026-10-10). The install below is the fallback and is normally a no-op. A transitive driver is a
+# dependency nobody declared: if it is wanted, it belongs in that pyproject by name plus `uv lock`.
+driver = None
+try:
+    import redshift_connector as driver
+
+    say("3a driver present", "ok", "redshift_connector already importable")
+except ImportError:
+    proc = subprocess.run(
+        ["uv", "pip", "install", "--quiet", "--python", sys.executable, "redshift_connector"],
+        capture_output=True, text=True,
+    )
+    if proc.returncode:
+        say("3a driver present", "FAIL",
+            f"install failed: {(proc.stderr or proc.stdout).strip()[-300:]} - PyPI is on the "
+            "proxy allow-list, so a failure here is the proxy variables rather than the index")
+    else:
+        import redshift_connector as driver
+
+        say("3a driver present", "ok", "installed into this space's kernel, not into the image")
+
+
+def open_session(creds=None):
+    """A database session over 5439. `creds` chains through another role; None is this one."""
+    extra = {}
+    if creds:
+        extra = {
+            "access_key_id": creds["AccessKeyId"],
+            "secret_access_key": creds["SecretAccessKey"],
+            "session_token": creds["SessionToken"],
+        }
+    return driver.connect(
+        iam=True,
+        is_serverless=True,
+        serverless_work_group=WORKGROUP,
+        database=DATABASE,
+        region=REGION,
+        **extra,
+    )
+
+
+def measure(label, conn, table):
+    """Read who this session is, what it holds, then write and read the table back."""
+    with conn.cursor() as cur:
+        cur.execute("select current_user")
+        user = cur.fetchone()[0].strip()
+        per_person = user.startswith("IAMR:user-")
+        say(f"{label}c the grantee", "ok",
+            f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
+
+        # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once, and the write's
+        # permission error arrived as a driver traceback instead of a verdict naming the layer.
+        cur.execute("select role_name from svv_user_grants where user_name = current_user")
+        roles = [r[0] for r in cur.fetchall()]
+        say(f"{label}d the roles it holds", "ok" if roles else "FAIL",
+            str(roles) if roles else
+            "none, so the write below fails as `permission denied for schema`. A per-person user "
+            "is granted nothing by anything: SMUS passes `RedshiftDbRoles` only on the PORTAL's "
+            "session, not the space's (runbook section T)")
+
+        try:
+            cur.execute(f"drop table if exists {SCHEMA}.{table}")
+            cur.execute(
+                f"create table {SCHEMA}.{table} as "
+                f"select 1 as n, current_user as by_whom, '{label}' as door"
+            )
+            conn.commit()
+            cur.execute(f"select n, by_whom, door from {SCHEMA}.{table}")
+            say(f"{label}e write and read", "ok", str(cur.fetchone()))
+        except Exception as exc:
+            conn.rollback()
+            say(f"{label}e write and read", "FAIL",
+                f"{str(getattr(exc, 'args', [exc])[0])[:180]} - with the roles empty this is "
+                "layer 3, not the network")
+            return
+
+        # WH-14's question, from inside: is what this session just wrote readable by a role?
+        cur.execute(
+            "select identity_name, privilege_type from svv_relation_privileges "
+            f"where namespace_name = '{SCHEMA}' and relation_name = '{table}'"
+        )
+        rows = cur.fetchall()
+        say(f"{label}f readable by a role", "ok" if rows else "FAIL",
+            f"{rows}" + (" - a role reaches it, so a second project holding the theme role reads "
+                         "this table: the schema's default privilege named this owner"
+                         if rows else
+                         " - EMPTY. No default privilege names this owner, so a second project "
+                         "holding the theme role would see none of this table (section T)"))
+
+
+# ---------------------------------------- 3b-3e. as the project role itself: the PER-PERSON user
+if driver is None:
+    say("3b direct session", "FAIL", "no driver, so the 5439 SQL path cannot be measured")
+else:
+    try:
+        conn = open_session()
+    except Exception as exc:
+        conn = None
+        say("3b direct session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]} - an "
+            "AccessDenied naming redshift-serverless:GetCredentials is layer 2 on the PROJECT "
+            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database")
+    if conn:
+        say("3b direct session", "ok", f"peer {peer} - the VPC door, not the Data page's")
+        measure("3", conn, TABLE)
+        conn.close()
+
+# ------------------- 4. THE SAME DOOR, THROUGH THE ACCESS ROLE, which is the per-project grantee
+#
+# Redshift grants to DATABASE USERS, never to an IAM role, and which database user a session
+# becomes is decided by the caller's `RedshiftDbUser` tag. The space's session carries a per-person
+# one, set by SMUS and unchangeable. The ACCESS ROLE carries the per-project one this repository
+# set, and the project role may assume it: its trust policy names the project role with the project
+# id as the external id, and layer 2 grants `sts:AssumeRole` on that ARN.
+#
+# WHAT MAKES THIS WORK IS THAT NO TAG IS TRANSITIVE. `transitiveTagKeys` is `None` on the space's
+# assume (measured 2026-10-11), so the per-person `RedshiftDbUser` does NOT follow into a chained
+# session and the access role's own tag governs there. Nothing in AWS changes for this; it is a
+# convention in how a notebook connects.
+#
+# IT SHARES NOTHING WITH STEP 3 and runs even when step 3 failed, which is the whole point.
+if driver is None:
+    say("4a the chain", "FAIL", "no driver")
+else:
+    chained = None
+    try:
+        chained = boto3.client("sts", region_name=REGION).assume_role(
+            RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
+            RoleSessionName="redshift-per-project",
+            ExternalId=PROJECT,
+        )["Credentials"]
+        say("4a assumed the access role", "ok", "the per-project grantee's credentials")
+    except Exception as exc:
+        say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
+            "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the "
+            "trust policy is the external id, which must equal the project id")
+    if chained:
+        try:
+            conn2 = open_session(chained)
+        except Exception as exc:
+            conn2 = None
+            say("4b chained session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]}")
+        if conn2:
+            measure("4", conn2, f"{TABLE}_via_access")
+            conn2.close()
+
+print()
+```
+
+**What each failure means**, which is why the script prints a verdict per step rather than one at the
+end: step 1 red is DNS — the DNS Firewall or a missing endpoint, never a security group. Step 2
+timing out is the security group; refusing is a listener that is not there, so check the workgroup is
+up. Step 3 red with 1 and 2 green separates again: an `AccessDenied` naming
+`redshift-serverless:GetCredentials` is layer 2 on the **project role**, and a timeout is the API
+endpoint rather than the database.
 
 **`SVV_SCHEMA_QUOTA_STATE` cannot be read**, nor its `STV_` sibling: both are refused to the
 namespace admin, who is a superuser (measured 2026-09-20). A schema's quota is authored in §S and

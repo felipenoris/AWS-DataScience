@@ -438,13 +438,14 @@ can be diffed against this table directly.
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain**, project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
 | `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Measured at step 1.5 (2026-08-21): a base variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
-| `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **D28's documented last-rung fallback**: enabled only if INT-14's chain falls through at Stage 10 (`awscc_mwaaserverless_workflow`, then the CFN wrapper, then this) — and then as `[E]`, torn down between uses. The *serverless* Workflows surface is **not** this blueprint and needs no configuration of its own: 6d step 4 found it already provided by the eleven category-1 configurations (§The workflow surface) | **2** |
+| `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **Never** while D7 stands: its amendment of 2026-09-05 took provisioned MWAA off INT-14's ladder, which removed the trigger this row's category-2 placement named, and Stage 10 step 4.3's `DenyProvisionedMwaa` (`airflow:CreateEnvironment` on the root SCP) refuses what this blueprint creates once applied. The *serverless* Workflows surface is **not** this blueprint and needs no configuration of its own: 6d step 4 found it already provided by the eleven category-1 configurations (§The workflow surface) | **3** |
 
 **All 23 rows carry a category** (user, 2026-08-21), settled against the measured roster rather than
 against the console grouping decision 5 had addressed: closed at 12/5/6 and re-cut to 11/5/7 the same
-day, when step 1.5's refusal measured `ToolingLite` as a second base (its row above).
+day, when step 1.5's refusal measured `ToolingLite` as a second base (its row above), then to 11/4/8
+when D7's amendment removed the `Workflows` trigger (its row above).
 **Category 1 is eleven**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and
-six of the seven `AmazonBedrock*`. Category 2 is five, category 3 is seven, and **no row is
+six of the seven `AmazonBedrock*`. Category 2 is four, category 3 is eight, and **no row is
 `undefined`** — which is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint as
 it fails on a forbidden one.
 
@@ -510,15 +511,22 @@ workflow a person authored in the portal on 2026-08-27.
   workflow. The roster claim that the serverless surface is separate from the eleven is therefore
   false: it is one of the things they already provide.
 - **It is MWAA Serverless** (D7 amended), billed at USD 0.088 per task-hour. The provisioned
-  `Workflows` blueprint stays out of daily use, and its only remaining role is D28's last-rung
-  fallback.
-- **A run is two attempts**, so the task's `DurationInSeconds` is the reading and the run's is double
-  it.
+  `Workflows` blueprint is category 3: D7's amendment took provisioned MWAA off INT-14's ladder, and
+  Stage 10 step 4.3's `DenyProvisionedMwaa` refuses `airflow:CreateEnvironment` once applied.
+- **A failed task is attempted twice**, with no `retries` key in the definition, so a failed run's
+  duration is about double the task's and the task's `DurationInSeconds` is the reading. The one
+  successful run read (`simple-s3-copy`, 2026-09-10) shows one attempt, 49 s.
+- **`list-workflow-runs` returns `RunType` null for every run**; `get-workflow-run` carries it
+  (`ON_DEMAND` or `SCHEDULED`), so a run's type is read one run at a time (read 2026-10-10).
 - **A "Notebook task" is a `CreateTrainingJob`.** `SageMakerNotebookOperator` executes the notebook as
   a training job, which is why it meets `DenySageMakerJobsOffVpc` in the **D13 boundary's** copy of
   the statement and not in the persona sets' (Lesson 33). Filling the portal's empty `compute` block
   satisfies one of the boundary's five conditions and changes nothing else, so the portal's notebook
-  operator does not run in this estate by design.
+  operator does not run in this estate, by decision: 6d decision due 14 took (b) on 2026-10-10, so the
+  portal's notebook task is not offered and workflows orchestrate with operators the repository
+  controls, `PythonOperator` and `BashOperator` among them. Other operators do run: a portal-authored
+  `S3CopyObjectOperator` task finished `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10).
+  Query-book and Visual ETL tasks are unmeasured.
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 
@@ -1004,7 +1012,8 @@ are selected"* — an **AND** where a list reads like an OR.
 **Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
 and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
-PKI root, is the first scheduled bump and takes both to `default-v0.2.0`.
+PKI root, is a scheduled bump and takes both to the next free minor. The tags spent so far, with their
+dates and what each changed, are [`buildbox.md`](plan/runbooks/buildbox.md) §P.
 
 **When a flavour graduates from a tag to its own repository.** The trigger is reaching for a knob that
 exists **per repository and not per tag**: a different set of accounts allowed to pull (the repository

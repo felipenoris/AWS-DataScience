@@ -460,6 +460,33 @@ def read_account(cli: AwsCli, env: str, want_sql: bool, authored: dict | None) -
                 "select usename, usesuper from pg_user order by usename",
                 probe_db,
             )
+
+            # WH-14's three readings. A themed schema is SHARED by design, and sharing survives
+            # only if the theme role can read what another project's user wrote: ownership is
+            # singular, and `USAGE, CREATE ON SCHEMA` does not carry SELECT on somebody else's
+            # table. `pg_default_acl` is EMPTY on this platform - the default privileges live in
+            # `svv_default_privileges` and nowhere else (measured 2026-10-10).
+            facts["relations"] = sql.rows(
+                "select n.nspname, c.relname, trim(u.usename) "
+                "from pg_class c "
+                "join pg_namespace n on n.oid = c.relnamespace "
+                "join pg_user u on u.usesysid = c.relowner "
+                "where n.nspname not in ('pg_catalog','information_schema','public') "
+                "and n.nspname not like 'pg_%' and c.relkind in ('r','v') "
+                "order by 1,2",
+                probe_db,
+            )
+            facts["relation_role_reads"] = sql.rows(
+                "select namespace_name, relation_name, identity_name "
+                "from svv_relation_privileges "
+                "where identity_type = 'role' and privilege_type = 'SELECT' order by 1,2,3",
+                probe_db,
+            )
+            facts["default_privs"] = sql.rows(
+                "select schema_name, owner_name, grantee_name, privilege_type "
+                "from svv_default_privileges where grantee_type = 'role' order by 1,2,3",
+                probe_db,
+            )
     return facts
 
 
@@ -828,6 +855,26 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 f"{boundary_name}",
             )
 
+    # ------------------------------- WH-9: the connection object, which this identity cannot read
+    #
+    # A NOTE AND IT CAN ONLY EVER BE ONE. 6h 6.2 wanted this check to read the SMUS connection back
+    # and compare it to what the portal was asked for. `datazone list-connections` is refused to
+    # this account's InfrastructureAccess role - "User is not permitted to perform operation:
+    # ListConnections" - by DATAZONE'S OWN authorization layer, because that identity is not a
+    # project member, so no IAM policy reaches it (measured three times: 2026-09-21 with no
+    # connection, and twice on 2026-10-10/11 with one). There is no `aws sqlworkbench` CLI either.
+    #
+    # So the connection's fields are readable only by a project member in the portal, and this check
+    # exists to say that rather than to leave 6.2 looking unfinished. What CAN be checked without
+    # it: WH-7 reads layer 1's tags, WH-11 layer 2's policy and boundary, WH-12 and WH-14 layer 3.
+    checks.note(
+        "WH-9",
+        f"{tag} the connection object as the portal wrote it",
+        "UNREADABLE by this identity: `datazone list-connections` is refused by DataZone's own "
+        "authorization layer, not by IAM, because the infrastructure role is not a project member. "
+        "The connection's fields are a project member's reading, in the portal",
+    )
+
     # ------------------------------------------- the namespace role reaches nothing (5b 2.4/D13)
     if ns is None:
         checks.note("WH-1b", f"{tag} the namespace role holds no policy", "no namespace")
@@ -936,6 +983,55 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
             f"{len(facts.get('user_grants') or [])} user-role grant(s) - "
             "the register is docs/AWS_STATE.md",
         )
+
+    # ---------------------------------- WH-14: a shared schema whose tables nobody else can read
+    #
+    # THE REQUIREMENT IS A SHARED SCHEMA AND OWNERSHIP IS SINGULAR. `sbx_<theme>_rw` carries
+    # `USAGE, CREATE ON SCHEMA`, which lets every admitted project create its own tables - and
+    # carries nothing on a table somebody else created. So a second project reads NOTHING of the
+    # first's unless either the relation grants SELECT to the role, or the creating user has a
+    # default privilege that does it for every future table.
+    #
+    # Measured 2026-10-10, on the first table a project ever wrote: `relacl` null, no default
+    # privilege anywhere, so the schema was shareable in name only. This check is what makes that
+    # state visible instead of arriving at the second project as "I cannot see their data".
+    if not want_sql:
+        checks.note("WH-14", f"{tag} a shared schema's tables are readable", "no database session")
+    else:
+        rels = facts.get("relations") or []
+        reads = {(r[0], r[1]) for r in (facts.get("relation_role_reads") or [])}
+        defaults = {(d[0], d[1]) for d in (facts.get("default_privs") or [])}
+        unreadable = [
+            f"{s}.{rel} (owner {owner})"
+            for s, rel, owner in rels
+            if (s, rel) not in reads and (s, owner) not in defaults
+        ]
+        if not rels:
+            checks.note(
+                "WH-14",
+                f"{tag} a shared schema's tables are readable",
+                "no table in any themed schema yet, so the sharing shape is untested. It is "
+                "tested by the FIRST table a project writes, not by the grant that let it",
+            )
+        elif unreadable:
+            checks.fail(
+                "WH-14",
+                f"{tag} a shared schema's tables are readable",
+                f"{len(unreadable)} relation(s) no role can read: {', '.join(unreadable[:4])}. "
+                "The schema is shared in name only - a second project admitted to it would get "
+                "`CREATE` and see none of this data. Fix per relation with `GRANT SELECT ON "
+                "TABLE <rel> TO ROLE <theme role>`, and for every future table with `ALTER "
+                "DEFAULT PRIVILEGES FOR USER <the creating user> IN SCHEMA <theme> GRANT SELECT "
+                "ON TABLES TO ROLE <theme role>` - which is per creating USER, so it is owed once "
+                "per admitted project (Lesson 14)",
+            )
+        else:
+            checks.ok(
+                "WH-14",
+                f"{tag} a shared schema's tables are readable",
+                f"{len(rels)} relation(s), each reachable by a role through a grant or a default "
+                f"privilege; {len(defaults)} default-privilege pair(s) cover future tables",
+            )
 
     # ------------------------------------- WH-13: the quota, which cannot be read on this platform
     #

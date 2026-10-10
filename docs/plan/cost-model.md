@@ -138,10 +138,10 @@ options as well as the stricter one.
 (~USD 73/month, the D4 alternative), Network Firewall (~USD 290/month, option D5c) and an always-on MWAA
 environment (~USD 212/month for `mw1.micro`, ~USD 358/month for `mw1.small` — D7 alternative A). Any of
 these is affordable only as a short, deliberate experiment, which is what the operating model below is
-for. D7 commits to building MWAA, and this is the line it has to respect: the environment is `[E]`, it
-exists for the length of a comparison run, and at `mw1.micro` an eight-hour experiment costs ~USD 2.30.
-**MWAA Serverless** (USD 0.088 per task-hour, no environment fee) removes the exposure and is the variant
-to try first. Per-unit rates for both `us-west-2` and `sa-east-1` are in `docs/PRICING.md`. The same
+for. D7 builds no MWAA environment: since its amendment of 2026-09-05 **MWAA Serverless** (USD 0.088 per
+task-hour, no environment fee) is the only orchestrator, and Stage 10 step 4.3's `DenyProvisionedMwaa`,
+once applied, makes the always-on environment a call the root SCP refuses rather than a line to respect.
+Per-unit rates for both `us-west-2` and `sa-east-1` are in `docs/PRICING.md`. The same
 discipline applies inside the unified domain (D26): the Lakehouse blueprint is enabled in its Glue/Athena
 form only — its **Redshift Serverless** variant would put a second, larger query bill on top of Athena's,
 and is excluded by decision.

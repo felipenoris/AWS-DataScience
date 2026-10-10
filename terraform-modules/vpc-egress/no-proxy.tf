@@ -40,14 +40,24 @@
 # by hand and by production/buildbox's user-data through terraform_remote_state - so the cost is a
 # first plan printing (known after apply).
 #
-# The service reading survives for one job: the DNS Firewall coverage guard below has to fail at PLAN
-# time, and `dns_entry` cannot do that on a VPC whose endpoints do not exist yet. Measured
-# (staging/egress, torn down, 2026-09-09): with the guard reading `dns_entry` alone, `terraform plan`
-# on an empty state printed `20 to add` and `no_proxy = (known after apply)` and raised nothing - the
-# condition was unknown, so Terraform deferred it to apply (Lesson 39: the strict validator arrives
-# one act late). One plan-time call per declared service, free, requiring no endpoint to exist.
+# The service reading has two jobs, and both need an answer at PLAN time, which `dns_entry` cannot give
+# on a VPC whose endpoints do not exist yet:
+#
+#   The DNS Firewall coverage guard below. Measured (staging/egress, torn down, 2026-09-09): with the
+#   guard reading `dns_entry` alone, `terraform plan` on an empty state printed `20 to add` and
+#   `no_proxy = (known after apply)` and raised nothing - the condition was unknown, so Terraform
+#   deferred it to apply (Lesson 39: the strict validator arrives one act late).
+#
+#   `no_proxy_all_groups`, the bypass list with every optional group on (the last section of this
+#   file). It reads the plural attribute, `private_dns_names`, whose API field `PrivateDnsNames`
+#   returned exactly the names `dns_entry` carries on seven services (2026-10-10: datazone 2, logs 4,
+#   ecr.dkr 2, sagemaker.studio 2, redshift-serverless, bedrock and bedrock-runtime 1 each).
+#
+# So it covers every service this VPC could declare, built or not: one free plan-time call per service
+# (`ec2:DescribeVpcEndpointServices`), requiring no endpoint to exist and creating nothing. The guard
+# selects the services this apply builds.
 data "aws_vpc_endpoint_service" "this" {
-  for_each = local.service_names
+  for_each = local.service_names_all_groups
 
   service_name = each.value
 }
@@ -74,13 +84,20 @@ locals {
     ]
   ]))
 
-  # The declared half, for the guard alone and never for NO_PROXY: one name per service, where the
-  # resolver serves several.
+  # The declared half, for the guard alone and never for NO_PROXY: one name per service this apply
+  # builds, where the resolver serves several.
   declared_private_dns_names = [
     for s, svc in data.aws_vpc_endpoint_service.this :
     svc.private_dns_name
-    if svc.private_dns_name != ""
+    if svc.private_dns_name != "" && contains(keys(local.service_names), s)
   ]
+
+  # Every name the catalog lists for every service this VPC could declare, wildcards included: the
+  # reading behind `no_proxy_all_groups`. No endpoint-specific `vpce-` name can appear here, because
+  # those exist only on an endpoint.
+  all_groups_dns_names = distinct(flatten([
+    for s, svc in data.aws_vpc_endpoint_service.this : svc.private_dns_names
+  ]))
 
   # A wildcard name is forked into both spellings, never deleted. `*.` cannot survive into NO_PROXY -
   # entries there match as suffixes only, so `*.dkr.ecr...` written literally matches nothing, and
@@ -98,12 +115,23 @@ locals {
   # wildcard name, four in Sandbox - the choice 6d step 8.4 made for the two internal zones (Lesson
   # 53: one syntax is not settled by transcribing the other). `trimprefix` rather than `replace`
   # touches only a leading `*`, so a name carrying the sequence elsewhere survives intact.
-  no_proxy_endpoint_entries = distinct(flatten([
-    for name in local.endpoint_dns_names :
-    startswith(name, "*.")
-    ? [trimprefix(name, "*."), trimprefix(name, "*")]
-    : [name]
-  ]))
+  #
+  # The fork, the fixed half below and the sort are written once and mapped over both readings
+  # (Lesson 33): `served` is what this apply's endpoints answer for, and becomes `no_proxy`;
+  # `all_groups` is the catalog's names for every service this VPC could declare, and becomes
+  # `no_proxy_all_groups`.
+  no_proxy_by_reading = {
+    for reading, names in {
+      served     = local.endpoint_dns_names
+      all_groups = local.all_groups_dns_names
+    } :
+    reading => sort(distinct(concat(local.no_proxy_fixed, flatten([
+      for name in names :
+      startswith(name, "*.")
+      ? [trimprefix(name, "*."), trimprefix(name, "*")]
+      : [name]
+    ]))))
+  }
 
   # The fixed half - entries no endpoint list can produce.
   #
@@ -150,7 +178,7 @@ locals {
     ".awsds-pages.internal",
   ]
 
-  no_proxy_entries = sort(distinct(concat(local.no_proxy_fixed, local.no_proxy_endpoint_entries)))
+  no_proxy_entries = local.no_proxy_by_reading["served"]
 
   # ------------------------------------------------- the same reading, put to a second question
   #
@@ -163,9 +191,9 @@ locals {
   # Interactive slices.
   #
   # The names are used here as AWS gives them, wildcard and all, kept as their own local rather than
-  # re-derived from `no_proxy_endpoint_entries`, which has already forked each wildcard into
-  # NO_PROXY's two spellings. The two questions share the reading and never the spelling, the only
-  # arrangement in which they cannot drift (Lesson 53).
+  # re-derived from `no_proxy_by_reading`, which has already forked each wildcard into NO_PROXY's two
+  # spellings. The two questions share the reading and never the spelling, the only arrangement in
+  # which they cannot drift (Lesson 53).
   #
   # This check and NO_PROXY are one intent asked twice - is every name this VPC pays for usable in it
   # - so the check reads `endpoint_dns_names` too; leaving it on the service's single canonical name
@@ -240,6 +268,42 @@ output "no_proxy" {
 
   precondition {
     condition     = length([for e in local.no_proxy_entries : e if strcontains(e, ":")]) == 0
+    error_message = "NO_PROXY carries a port. GitLab documents a port in this variable as breaking DNS resolution for repository mirroring; entries are hosts, never host:port."
+  }
+}
+
+# -------------------------------------------- the bypass list of a client that outlives the apply
+#
+# `no_proxy` names the endpoints this apply created, so it carries only the optional groups this apply
+# named. A client built once and run in every session needs every group's names: the house image
+# (6d decision 8), which serves every session whatever `GROUPS=` that session names. A name a group
+# adds that the client lacks leaves through the proxy, whose compute plane admits `.amazonaws.com`,
+# and succeeds as a public call carrying neither aws:SourceVpc nor aws:SourceVpce. A name the client
+# carries for a group left off times out instead.
+#
+# Read from the catalog, so the value is known at plan time and does not depend on which groups any
+# apply named. It contains `no_proxy` while the catalog and the endpoints agree, and equals it in an
+# apply that names every group. No condition here checks that containment: it is knowable only once
+# the endpoints exist, and a failed output condition would then stop `make up` over a property of an
+# image. ./aws/devenv.py DE-6 reads it from the applied outputs.
+output "no_proxy_all_groups" {
+  description = "NO_PROXY with every optional endpoint group's names, whatever optional_service_groups names: the list a client serving every session must carry (the house image, 6d decision 8). Read from the endpoint-service catalog at plan time, with no_proxy's wildcard fork, fixed entries and order. Comma-joined, no wildcard, no CIDR, no port."
+  value       = join(",", local.no_proxy_by_reading["all_groups"])
+
+  # The three conditions on `no_proxy` above, over this reading. They answer at plan time on any VPC,
+  # because nothing in this list waits on an apply.
+  precondition {
+    condition     = length([for e in local.no_proxy_by_reading["all_groups"] : e if strcontains(e, "*")]) == 0
+    error_message = "NO_PROXY carries a wildcard: entries match as suffixes only, so a `*` matches nothing. Strip it."
+  }
+
+  precondition {
+    condition     = length([for e in local.no_proxy_by_reading["all_groups"] : e if strcontains(e, "/")]) == 0
+    error_message = "NO_PROXY carries a CIDR block. Clients do not evaluate CIDR in this variable; express intranet reach as name suffixes and list any literal address literally."
+  }
+
+  precondition {
+    condition     = length([for e in local.no_proxy_by_reading["all_groups"] : e if strcontains(e, ":")]) == 0
     error_message = "NO_PROXY carries a port. GitLab documents a port in this variable as breaking DNS resolution for repository mirroring; entries are hosts, never host:port."
   }
 }

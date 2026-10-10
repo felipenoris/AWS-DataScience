@@ -62,9 +62,9 @@ resource "aws_sagemaker_image_version" "dev_env" {
 # what Stage 6d steps 2.2 and 8.4(c) name as the delivery mechanism, and CreateAppImageConfig
 # refused both configurations with a ValidationException: `Member must have length less than or
 # equal to 256`. The API reference confirms the shape of the limit - ContainerConfig's map takes at
-# most 25 entries, and each key and each value at most 256 characters. The estate's generated
-# NO_PROXY is 52 entries and about 1,500 characters, so it does not fit and no rewriting of these
-# resources makes it fit.
+# most 25 entries, and each key and each value at most 256 characters. The image's NO_PROXY is 70
+# entries and 2,295 characters (2026-10-10), so it does not fit and no rewriting of these resources
+# makes it fit.
 #
 # The four proxy variables are not delivered without it. NO_PROXY is what keeps AWS traffic on the
 # VPC endpoints; with a proxy set and no bypass list, every AWS call in a space leaves through the

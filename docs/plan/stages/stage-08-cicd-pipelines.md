@@ -345,11 +345,16 @@ Python dependencies, and the two compose rather than substitute.
   step 4 supplies**: a job that refuses a workflow definition which (a) carries a **project-scoped
   reference** — a connection, a path or an id that exists only in the authoring Sandbox project and would
   resolve to nothing in Staging or Production; (b) hard-codes a `start_date`, which is **rewritten at deploy
-  time** rather than promoted; (c) uses an operator outside **MWAA Serverless's Amazon-provider allow-list**
-  or a task that could exceed its **3600 s** cap; (d) references a definition object without a pinned
-  `DefinitionS3Location.VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in
-  the same commit — a workflow that ships its own operator code is a fifth promotable artifact, and D28
-  named four.
+  time** rather than promoted; (c) uses an operator outside **MWAA Serverless's supported list** (the
+  Amazon-provider operators plus `PythonOperator` and `BashOperator`, added by AWS 2026-08-17), names
+  `SageMakerNotebookOperator` (refused by name since 6d decision due 14 took (b)), or exceeds a service
+  cap — **3600 s** per task, **50 KB** per definition; (d) references a definition or code object without
+  a pinned S3 `VersionId`. **Artifact class (2b), the operator code package, joins D28's list** in the
+  same commit — a workflow that ships its own operator code carries an artifact none of D28's six classes
+  names. It is the workflow's `Code` object: one `.py`, one `.sh` or a `.zip` of at most 250 MB, every
+  dependency vendored at the archive root for Linux x86_64 and Python 3.12, versioned by the service
+  together with the definition. The job builds it and imports every `python_callable` from it with
+  networking off, because the workers have no internet path (Stage 10 step 1.2).
 - **5.7 — [Claude] Record what the SMUS CI/CD CLI is**: `aws-smus-cicd-cli`
   deploys **only into existing SMUS projects**, and a Workload account has none. It is therefore an
   **exporter on the Sandbox side** — `bundle` may produce the artifact this pipeline promotes — and **this

@@ -507,6 +507,60 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `locals` (426,667 MB — the metric is in megabytes, on the `Namespace` dimension, so it keeps reading while
    the `[E]` compute is down). The threshold is a variable in USD so that the arithmetic moves with the price
    and the argument stays in dollars.
+8a. **How the per-person user on the JupyterLab door gets its grants** — **TAKEN 2026-10-11: it does
+   not, and a notebook chains through the access role instead.** Measured in one run: assuming
+   `awsds-sandbox-warehouse-access-<project>` from a space lands the session on
+   `IAMR:<the project role's name>`, which holds `sbx_lab_rw` already and is already the owner the
+   schema's default privilege names — so the privilege **fires** on what the chained session writes and
+   read-across needs no per-person statement. `WH-14` reads two relations, each reachable, and
+   `EXC-15` is closed. The direct session in the same run is the control: still per person, still no
+   role, still `permission denied for schema`. **Nothing in AWS changed**: the tag, the trust policy
+   and layer 2's `sts:AssumeRole` were all in place, so this is a convention in how a notebook connects
+   (§P step 3a). The costs, stated before it was taken: in-database attribution becomes per project
+   with CloudTrail keeping the person through `sts:SetSourceIdentity`; the chain is a convention with a
+   loud failure rather than a control; and a helper belongs in the image if it becomes the house path.
+   **The path not taken**, and why: `RedshiftDbUser` is a **session tag**,
+   set per person by SMUS on every `AssumeRole` of the project role, so it overrides the role's own tag
+   and collapsing both doors onto one database user is **not available** — the role already carries
+   `RedshiftDbUser = user-project@<project>` and the session's value wins. `aws_iam_role_tag` does not
+   exist in the AWS provider either, so such a tag would have no declarative home.
+   **The same session carries `RedshiftDbRoles = datazone_env_<environmentId>`**, which SMUS passes and
+   Redshift silently ignored because no role of that name existed. **Taken: create it and nest the
+   theme role inside it** — one role per project environment, the brief's own grain, not growing with
+   headcount, and the platform's own mechanism rather than one this repository invented. The
+   `RedshiftDbRoles` tag refused on 2026-09-21 for its silent ignore is the same tag, and the silent
+   ignore had already happened.
+   **[corrected 2026-10-11] The mapping never fires on the JupyterLab door, and the role is
+   unexercised.** `RedshiftDbRoles` is carried by the **portal's** session (named
+   `<user id>@<environment id>`) and **not** by the **space's** (named `SageMaker`) — read off the wrong
+   record first, with both in one output. The role is kept because a project-role connection initiated
+   from the portal would use it, and that is unproven.
+   **So both halves are non-declarative on that door**, each for a measured reason: the `RedshiftDbUser`
+   session tag overrides the role's; `RedshiftDbRoles` is not passed; a role tag has no provider
+   resource (`aws_iam_role_tag` does not exist) and AWS's procedure for it also wants `tag:GetResources`
+   on the signing identity; and `ALTER DEFAULT PRIVILEGES` is per creating user with no `FOR ROLE`, no
+   wildcard and no tag. **What is left** is a per-person `GRANT` written after each first connect, with
+   `WH-14` and an empty `3c` as the guards, or a **reconciler** covering both halves at the cost of a
+   recurring act against the warehouse — the shape decision 3 refused for `lineageSync`, and needing a
+   runner this estate has not chosen. `EXC-15` stands.
+
+8b. **~~Whether both doors should resolve to ONE database user~~ — closed 2026-10-11, unavailable.**
+   The Data page resolves to `IAMR:<the project role's name>`, because the **access role** carries
+   `RedshiftDbUser`. JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>` — **per
+   person, auto-created at first connect, holding nothing** — because the project role carries no such
+   tag. A shared schema then needs two per-principal things and **only one is declarative**:
+   `RedshiftDbRoles` can carry the role grant at first sign-in, and `ALTER DEFAULT PRIVILEGES` is **per
+   creating user**, with no `FOR ROLE`, no wildcard and no tag. So **read-across cannot be made
+   declarative while the grantee is per person**, and what is left is a recurring
+   `GRANT SELECT ON ALL TABLES IN SCHEMA` or per-person statements forever.
+   **Recommended: put `RedshiftDbUser` on the project role as well**, which collapses both doors onto
+   one per-project user — one owner, one default privilege, one register row, and `WH-14` green for a
+   structural reason rather than a per-person patch. **The price is attribution inside the database**:
+   every person's queries would run as one database user and only CloudTrail would tell them apart,
+   through the session name and the source identity the access role's trust policy already propagates.
+   **Unmeasured and cheap to measure**: one tag, one reconnect, one `pg_user` read. `EXC-15` holds
+   `WH-14`'s red until this is taken, and it touches a role SMUS owns.
+
 8. **How a second project is admitted to the warehouse** — **new 2026-09-20**, and it exists because
    `AmazonDataZoneProject` turned out to be a **single-valued tag key** on both the workgroup and the
    namespace. **At one project nothing is blocked**; the question arrives with the second. The options:
