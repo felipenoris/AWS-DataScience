@@ -2796,3 +2796,13 @@ tagged (`vpc-egress-v0.17.0`), not applied.*
 - `./aws/devenv.py`, edited, against the live state: `DE-2` fails, naming the missing
   `no_proxy_all_groups` (state last applied on `vpc-egress-v0.16.0`); `DE-5` fails, version 4 baking
   52 names against the Dockerfile's 70, 18 lacking.
+
+### [user ran it, Claude read] `vpc-egress-v0.17.0` applied
+
+- The user ran `git pull --ff-only` in the main checkout and `make up ENV=sandbox GROUPS=redshift`. Its
+  output did not reach this session, so the readings below are the record.
+- `./aws/devenv.py` at 20:08:40Z: `DE-2` reads `no_proxy_all_groups` 70 entries, sha256
+  `aafa08da98a61f5c`, and `no_proxy` 51, `b071ccadc2dbd7c6`; `DE-3` passes, both sides
+  `aafa08da98a61f5c`; `DE-6` passes, all 51 inside and 19 more, the names of `bedrock-base`,
+  `bedrock-agent` and `emr`; `DE-5` fails as before, version 4 lacking 18 names.
+- Re-plan of `sandbox/egress` with `GROUPS=redshift`, the module fetched from the tag: `No changes`.

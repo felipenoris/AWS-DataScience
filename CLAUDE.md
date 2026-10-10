@@ -294,7 +294,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   digest): uv stays the distribution's **0.12.17** (the old `0.12.5` ARG would have downgraded it past
   every guard; a downgrade is now refused), and the literal carries **every optional group's names**
   (70 entries, `aafa08da98a61f5c`), since `no_proxy` names only the last apply's groups;
-  `devenv.py` compares it with `no_proxy_all_groups` exactly, and `DE-6` reads the last apply's `no_proxy` inside that; until v0.17.0 is applied `DE-2` fails on the missing output. Pushed, registered and
+  `devenv.py` compares it with `no_proxy_all_groups` exactly, and `DE-6` reads the last apply's `no_proxy` inside that: `DE-2`, `DE-3` and `DE-6` green 2026-10-10, `DE-5` failing until v0.5.0 is registered. Pushed, registered and
   attached: not yet. The house image's own Python sent `GetCredentials` out through the proxy as a
   public call (06:21Z), because v0.4.0's list lacks `redshift-serverless`. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
   private door (the agent its endpoint, the Access Grants plugin the **S3 gateway endpoint** — the
@@ -365,7 +365,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   rather than the service's one canonical name, and a gateway endpoint has no private DNS at all, so
   S3/DynamoDB are hand-named in both spellings. `no_proxy` names only the optional groups of the last
   apply (51 entries under `GROUPS=redshift`, 2026-10-10); the image's literal is `no_proxy_all_groups`
-  (`vpc-egress-v0.17.0`, tagged, not yet applied), every group's names from the catalog's `private_dns_names` at plan
+  (`vpc-egress-v0.17.0`, applied 2026-10-10), every group's names from the catalog's `private_dns_names` at plan
   time, which matches `dns_entry` without an apply - the authoring plan printed the literal byte for byte
   (70, `aafa08da98a61f5c`). **The first question about a `403`
   is whether the name has an endpoint**; `streaming-logs` is still unexercised.
@@ -393,7 +393,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
   every cached session's token, not only the one named, so switching persona costs the other
   identity's session; a browser sign-out invalidates none.
-- **Module tags**: `vpc-egress-v0.16.0` (v0.17.0 tagged 2026-10-10, not yet applied: `no_proxy_all_groups`), `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
+- **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
   a module change is exercised by planning a caller, never by `validate`.
