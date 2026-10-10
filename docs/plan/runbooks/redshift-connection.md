@@ -127,10 +127,20 @@ connect but sees nothing"* as the expected state for a while — which is the am
      the JDBC URL with the `/dev` suffix replaced.
    - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
      meter cannot be turned on from the portal. It is reachable only through the API.
-5. **Re-run `./aws/warehouse.py --sql`** and add the register row. Then read `pg_user`: the access
-   role's `RedshiftDbUser` tag decides the database user, and whether the platform uses it verbatim or
-   prefixes it `IAMR:` is unmeasured — which is why step 2 creates **both** spellings. The one that did
-   not appear is one `DROP USER`.
+5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
+   **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
+   prefixes its value, so with the tag set to the project role's name the user is
+   `IAMR:datazone_usr_role_<project>_<env>`. Attribute it rather than assuming: `select trim(u.usename),
+   count(*) from sys_query_history q join pg_user u on u.usesysid = q.user_id group by 1`.
+
+**What a correctly wired project sees in the Query editor**, and two of these lines are right rather
+than broken:
+
+| Line | Reading |
+|---|---|
+| `sandbox -> lab -> no data` | the three layers meeting: the schema is visible, and empty until §S's first table |
+| `awsdatacatalog -> failed to fetch database` | **correct.** That mount runs as the namespace role, which holds no policy at all (5b decision 5), and `WH-1b` keeps it that way |
+| a Glue database refused with *"Insufficient Lake Formation permission(s): Required Describe on \<db\>"* | **correct.** The editor enumerates every Glue database it can see; the lake's layers are not this project's to describe, and granting one is a governance act with a named requester |
 
 **What must stay absent, whatever else is granted:** no `GRANT ALL ON DATABASE`, nothing on a schema
 the project's row does not name, no `CREATE` on `public` (revoked at 5b 1.6), and no

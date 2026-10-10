@@ -148,8 +148,7 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | `Sandbox Account 1` | `sandbox` | `lab` | user `sbx_lab_owner` | owner (`AUTHORIZATION`), non-login | 2026-09-20 |
 | `Sandbox Account 1` | `sandbox` | — | user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | created `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`; non-superuser | 2026-09-21 |
 | `Sandbox Account 1` | `sandbox` | `lab` | the same user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-09-21 |
-| `Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | the same, **unprefixed**: `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`, non-superuser | 2026-10-10 |
-| `Sandbox Account 1` | `sandbox` | `lab` | the same unprefixed user | `GRANT ROLE sbx_lab_rw`, **`admin_option = false`** | 2026-10-10 |
+| ~~`Sandbox Account 1` | `sandbox` | — | user `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`~~ | ~~the same, **unprefixed**~~ — **`DROP USER` 2026-10-10**, owning no relation and having run no query: the prefixed spelling is the one the platform resolved to | 2026-10-10, removed the same day |
 
 **Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
 reachable by that project and the namespace admin. The two statements, verbatim, because nothing
@@ -160,13 +159,18 @@ CREATE USER "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" PASSWORD DISA
 GRANT ROLE sbx_lab_rw TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c";
 ```
 
-**BOTH SPELLINGS EXIST, DELIBERATELY, and one of them is owed a `DROP USER`.** The access role's
-`RedshiftDbUser` tag decides the federated database user and no AWS page read on 2026-09-21 says whether
-the tag's value is used verbatim or prefixed the way an IAM-derived user is spelled. The tag carries the
-project role's name, so the two candidate spellings are exactly the two rows above — and both hold
-`sbx_lab_rw`, so the project's first connection cannot land on a user with no privileges. Which one the
-service picked is read from `pg_user` after that connection ([6h](plan/stages/stage-06h-redshift-connection.md)
-3.2); the other is then removed. Until then `WH-12` reads **2 user-role grants** and one of them is scaffolding.
+**`RedshiftDbUser` is honoured, and Redshift prefixes its value with `IAMR:`** (measured 2026-10-10,
+[6h](plan/stages/stage-06h-redshift-connection.md) 3.2). The access role's tag carries the project
+role's name, and the database user the portal's session runs as is
+`IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` — **142 queries** attributed to it in
+`sys_query_history` from the Query editor's first catalog walk. It is the tag that decides it, not the
+access role's own name: had the tag been ignored the user would have been
+`IAMR:awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, and it is not.
+
+The unprefixed spelling was created as insurance against the opposite answer and is **gone** —
+`DROP USER` the same day, after confirming it owned no relation and had run no query. So one grant
+stands, `WH-12` reads **1 user-role grant**, and the runbook's `IAMR:<role-name>` is now measured rather
+than predicted.
 
 **Two database users nobody created**, read from `pg_user` on 2026-09-20 and recorded because a grantee
 this estate did not author is exactly what this register is for:

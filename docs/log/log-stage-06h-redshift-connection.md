@@ -838,3 +838,114 @@ and whether the portal sends that tag is readable from the first **successful** 
 2. **[Claude]** the trail for the next refusal, **from `errorMessage` this time**; whether the owner tag
    is sent on the successful `CreateConnection`; and `pg_user`, which is still unchanged and still owes
    the `RedshiftDbUser` answer and one `DROP USER`.
+
+---
+
+## 2026-10-10 — the Query editor answers, `RedshiftDbUser` resolves with an `IAMR:` prefix, and no user query reaches the audit log
+
+*Written by Claude in the sitting that ran it. The Query editor listing is the **user's**, quoted as
+reported; every trail and database reading, the `DROP USER` and the apply are Claude's, from
+`awsds-infra-sandbox-1` (account `Sandbox Account 1`, permission set `InfrastructureAccess`).*
+
+### What the project sees
+
+The user, with the connection open in the Query editor:
+
+```
+awsdatacatalog  -> failed to fetch database
+dev      -> public -> no data
+sandbox  -> lab    -> no data
+sandbox  -> public -> no data
+warehouse -> public -> no data
+```
+
+**`sandbox → lab` is the three layers meeting.** The schema is visible to the project, which requires
+`USAGE` on it, which arrives only through `sbx_lab_rw`. *"no data"* is correct: the schema holds no
+tables, and writing one is 3.3.
+
+**`awsdatacatalog -> failed to fetch database` is the designed state, not a gap.** That database is the
+service's auto-mount of the Glue catalog, and it runs as the namespace role — which
+[5b](log-stage-05b-redshift-serverless.md) decision 5 gave **no policy at all**. A warehouse that could
+read a lake prefix directly would be a second producer into the governed lake, outside Lake Formation.
+`WH-1b` is the check that keeps it that way.
+
+### 1.4 answered: the tag is honoured, and Redshift prefixes it
+
+`sys_query_history`, joined to `pg_user`, after the editor's first catalog walk:
+
+| Database user | Queries | Last |
+|---|---|---|
+| `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | **142** | 2026-10-10 04:47:06 |
+| `dbadmin` | 59 | 04:47:11 — Claude, through the Data API |
+
+**`RedshiftDbUser` decides the database user and its value arrives prefixed `IAMR:`.** The
+discriminator is clean: had the tag been ignored, the user would have been
+`IAMR:awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, the access role's own name, and it is not. So the
+runbook's `IAMR:<role-name>` is measured rather than predicted — for a *tag value*, not for the calling
+role.
+
+The unprefixed spelling, created as insurance against the opposite answer, is **gone**: `DROP USER`
+after confirming it owned no relation (`pg_class` 0) and had run no query (`sys_query_history` 0).
+`WH-12` reads **1 user-role grant** again, and `./aws/warehouse.py --sql` is **13 pass / 1 note**.
+
+### The two refusals that remain, and neither is a gap to close
+
+| Event | What it is | Verdict |
+|---|---|---|
+| `GetResources` → `glue:GetDatabases`, access role ×1 | the editor enumerating Glue databases | **not granted, deliberately.** The only thing it reaches is the `awsdatacatalog` path decision 5 leaves unreachable |
+| `GetDatabase` → *"Insufficient Lake Formation permission(s): Required Describe on raw"*, project role ×2 | Lake Formation, not IAM | **the perimeter working.** The project holds no `DESCRIBE` on the lake's raw layer; granting it is a governance act with a named requester |
+| `GetResources` → *"Unknown resource type EXTERNAL_DATABASE"*, project role ×1 | not an authorization failure | the editor asking for the external-database type, which is the `awsdatacatalog` mount again |
+
+### `CreateConnection` cannot be tightened the way the managed policy tightens it
+
+The promise in the previous entry was that the owner-tag narrowing would cost one trail read rather than
+another cycle. It cost the read, and the answer is **no**. A successful call's request, in full:
+
+```json
+{ "sqlworkbenchSource": "SUS",
+  "connection": { "id": "arn:aws:sqlworkbench:us-west-2:<Sandbox Account 1>:connection/axsiuoykrswosw",
+                  "databaseType": "REDSHIFT", "connectableResourceType": "WORKGROUP" },
+  "type": "EXTERNAL_DATABASE", "maxItems": 50 }
+```
+
+**No `sqlworkbench-resource-owner` tag anywhere in it.** So
+`AmazonRedshiftQueryEditorV2NoSharing`'s `CreateConnection`, guarded by
+`aws:RequestTag/sqlworkbench-resource-owner = ${aws:userid}`, would not have been satisfied on this
+path — and attaching that managed policy would have lifted `DriverExecute` and **left
+`CreateConnection` refused**. The first entry's conclusion was therefore right in outcome and wrong in
+its reason; the measured reason is this condition, not an absent action. The grant stays unconditional
+and the containment is the trust policy: only this project's role may assume this role, with the project
+id as the external id.
+
+### 3.6 — no user query has ever reached the audit log, and the instrument is working
+
+| Group | Last event | Age at reading |
+|---|---|---|
+| `connectionlog` | 2026-10-10T03:09:06Z | 99 min — and the workgroup was created 03:06:42Z, so this is its own startup |
+| `useractivitylog` | 2026-09-21T05:43:33Z | 19 days |
+| `userlog` | 2026-09-21T03:03:40Z | 19 days |
+
+The configuration is not the explanation: the namespace exports **all three**
+(`connectionlog useractivitylog userlog`) and the live workgroup reads
+`enable_user_activity_logging true`.
+
+**The absence passes Lesson 62's bar, which is why it is written down as a finding.** The instrument
+demonstrably reports presences — `useractivitylog`'s last events are `user=rdsdb` health checks,
+`SET QUERY_GROUP TO 'health'` and `SELECT 1` — and the marker left on 2026-09-20,
+`AUDITMARKER20260920`, **is not in the group**, although the group holds events from *after* it. Today's
+**142 queries** are likewise absent 40 minutes on. So twice, by two different paths — the Data API and
+the portal's Query editor — a user query has produced nothing in `useractivitylog` while internal
+`rdsdb` traffic arrives.
+
+**Stage 11 must not rest its DLP feed on this group.** What remains possible is an export lag measured
+in hours or days rather than minutes; the discriminator is a re-read, and it is owed. What is already
+excluded is "the queries are there and nobody looked".
+
+### Owed
+
+1. **[user]** 3.3: write a table into `lab` from the Query editor and read it back. `lab` is visible and
+   empty; this is the first write and the test `sbx_lab_rw`'s `CREATE` exists for.
+2. **[user]** 3.4 from a space's JupyterLab, which is the `5439` door rather than this one — needs
+   `make up ENV=sandbox GROUPS=redshift`.
+3. **[Claude]** a later re-read of the three audit groups, for the lag question above.
+4. **[Claude]** `WH-9`, now that a connection object exists to read.

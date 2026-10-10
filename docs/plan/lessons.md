@@ -1714,6 +1714,24 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unchanged, because a database user is created when credentials are used rather than when they are
   minted. Where: `log-stage-06h` (2026-10-10).
 
+- **`enable_user_activity_logging` delivers `rdsdb` health checks and not user queries** (measured
+  2026-09-20 and again 2026-10-10, two different query paths). The namespace exports all three groups,
+  the live workgroup reads `enable_user_activity_logging true`, and `useractivitylog` receives events —
+  its latest are `user=rdsdb`, `SET QUERY_GROUP TO 'health'` and `SELECT 1`. What it has never received
+  is a query of ours: a marker left on 2026-09-20 is absent although the group holds events from after
+  it, and 142 queries from the portal's Query editor are absent 40 minutes on. **The instrument reports
+  presences, so the absence is evidence** (Lesson 62's bar, met deliberately). A DLP feed must not rest
+  on this group until a re-read settles whether the lag is hours, days, or total.
+  Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
+
+- **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
+  (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session
+  ran as `IAMR:<that name>` — 142 queries attributed to it. The discriminator is that an ignored tag
+  would have produced `IAMR:<the access role's own name>`, and it did not. So the documented
+  `IAMR:<role>` spelling applies to the **tag value**, which is not a role at all, and a grant written
+  for the unprefixed value reaches nobody. Where: `log-stage-06h` (2026-10-10),
+  `runbooks/redshift-connection.md` §P.
+
 - **A CloudTrail `eventName` is not the IAM action that event authorizes, and a policy written from
   the event name grants nothing** (measured 2026-10-10, and it cost an apply cycle). The portal's
   refusals logged events `GetResources` and `ExecuteQuery`; the denial **message** on those same events
