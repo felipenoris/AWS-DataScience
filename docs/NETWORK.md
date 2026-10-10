@@ -175,10 +175,11 @@ interface endpoints answer for at least one name beyond the canonical one, and t
 entries to 50** the day it was repaired — `datazone.<region>.api.aws` beside
 `datazone.<region>.amazonaws.com`, **four** names for `sagemaker.studio`, and
 `streaming-logs.<region>.amazonaws.com`, which is a different *label* that no suffix rule covers.
-That reading is 2026-09-09's and stays as measured; **the Sandbox set is 20 in code since Stage 6e
-step 4** added `bedrock` and `bedrock-runtime` as always-on, so the list the slice generates grows by
-their names on the next apply. What a process inside a space reads is still the dated literal in the
-image (6d decision 8), which is why the two deliveries are separate acts.
+That reading is 2026-09-09's and stays as measured. `bedrock` and `bedrock-runtime` were always-on
+from 2026-09-12 to 2026-10-09 and are the `bedrock-base` optional group since, so the list the slice
+generates carries their names only in an apply that names the group. What a process inside a space
+reads is still the dated literal in the image (6d decision 8), which lists both, which is why the two
+deliveries are separate acts.
 
 **A missing entry fails two different ways and only one of them is visible:**
 

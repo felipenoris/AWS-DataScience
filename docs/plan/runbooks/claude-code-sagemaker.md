@@ -729,18 +729,21 @@ change; §U is the other half.
 
 | What | Where it is declared | State |
 |---|---|---|
-| the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), on `vpc-egress-v0.14.1` | applied 2026-09-12, step 4.2 |
+| the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), the `bedrock-base` group of `vpc-egress-v0.16.0` | applied as always-on 2026-09-12, step 4.2; an optional group since 2026-10-09 |
 | the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
 | the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
 | the client's configuration | [`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.4.0`, image version 4, 2026-09-12 — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
 
 ### The private path
 
-`bedrock` and `bedrock-runtime` are interface endpoints in the Sandbox VPC, about USD 0.010/h each.
-They sit in the caller's always-on list rather than behind an optional service group: a group is per
-apply, and a `make up` without the flag destroys what a flagged one created, so a permanent consumer
-cannot live behind one. The module's `bedrock` group is now the agent pair (`bedrock-agent`,
-`bedrock-agent-runtime`), which only the blueprints use.
+`bedrock` and `bedrock-runtime` are interface endpoints in the Sandbox VPC, about USD 0.010/h each,
+and they are the `bedrock-base` optional group (6e decision 12, 2026-10-09). A session in which a
+space runs Claude Code starts with `make up ENV=sandbox GROUPS=bedrock-base`; a group is per apply,
+so a `make up` without the flag destroys the pair. Without it the image's `NO_PROXY` literal still
+names both endpoints, so the SDK bypasses the proxy for a name the VPC has no route to and the call
+fails inside the VPC rather than leaving through the proxy. From 2026-09-12 to 2026-10-09 the pair
+sat in the caller's always-on list. The module's `bedrock-agent` group is the agent pair
+(`bedrock-agent`, `bedrock-agent-runtime`), which only the blueprints use.
 
 **The endpoints and the `NO_PROXY` bypass list are one change in two places** (Lesson 33). An
 endpoint whose name is missing from the bypass list sends the call to the proxy and out to the
