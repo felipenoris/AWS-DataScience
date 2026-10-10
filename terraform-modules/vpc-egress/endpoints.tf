@@ -23,25 +23,22 @@ locals {
   # SDKs resolve unless a client is configured for FIPS, and adding one by pattern-match would be
   # a cent an hour for a path nothing takes.
   optional_services = {
-    # The agent pair, and ONLY the agent pair since 2026-09-12. `bedrock` and `bedrock-runtime`
-    # moved into the caller's always-on list, where Stage 6e's assistant needs them every session:
-    # an optional group is per apply, and `make up` without the flag destroys what it created, so a
-    # permanent consumer cannot live behind one.
+    # The Bedrock endpoints, two groups for two consumers. `bedrock-base` is the control plane and
+    # the invocation path: `bedrock` resolves an alias to an inference profile
+    # (ListInferenceProfiles, GetInferenceProfile) and authors the objects the AmazonBedrockGuardrail
+    # and AmazonBedrockEvaluation blueprints create (CreateGuardrail, CreateEvaluationJob);
+    # `bedrock-runtime` is InvokeModel. Stage 6e's assistant needs both in every session a space
+    # runs, so such a session is `make up ENV=sandbox GROUPS=bedrock-base`: a group is per apply, and
+    # a `make up` without the flag destroys what a flagged one created. The pair sat in
+    # `sandbox/egress`'s always-on list from 2026-09-12 to 2026-10-09 (6e decision 12).
     #
-    # What is left here is what only the blueprints use. The six enabled AmazonBedrock* blueprints
-    # both author Bedrock objects and invoke them, and the two halves are different services:
-    # `bedrock` is the control plane that `AmazonBedrockGuardrail` (CreateGuardrail) and
-    # `AmazonBedrockEvaluation` (CreateEvaluationJob) call and `bedrock-runtime` is the invocation
-    # path - both now always on - while `bedrock-agent` is the control plane for agents, flows and
-    # prompts and `bedrock-agent-runtime` invokes them. Excluded and named so nobody adds them by
-    # resemblance: bedrock-agentcore*, bedrock-data-automation*, bedrock-mantle.
-    #
-    # A CALLER THAT DOES NOT CARRY THE PAIR GETS A HALF-WORKING GROUP. This list is the module's
-    # and the always-on half is the caller's, which is the seam this restructure introduced: in an
-    # account where `bedrock` is not in extra_services, `GROUPS=bedrock` now creates two endpoints
-    # that have no control plane to talk to. `sandbox/egress` is the only caller that names any of
-    # them today.
-    bedrock = ["bedrock-agent", "bedrock-agent-runtime"]
+    # `bedrock-agent` is the control plane for agents, flows and prompts and `bedrock-agent-runtime`
+    # invokes them; only the blueprints use them. Named without `bedrock-base` beside it, the group
+    # creates two endpoints with no `bedrock` control plane to resolve a model through. Excluded and
+    # named so nobody adds them by resemblance: bedrock-agentcore*, bedrock-data-automation*,
+    # bedrock-mantle.
+    "bedrock-base"  = ["bedrock", "bedrock-runtime"]
+    "bedrock-agent" = ["bedrock-agent", "bedrock-agent-runtime"]
 
     # EmrServerless, the enabled blueprint. All seven measured present in the Region.
     # `emr-containers` is EMR-on-EKS - a category 3 blueprint, not here - and `emrwal.prod`
