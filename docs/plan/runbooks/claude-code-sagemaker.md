@@ -749,8 +749,10 @@ sat in the caller's always-on list. The module's `bedrock-agent` group is the ag
 endpoint whose name is missing from the bypass list sends the call to the proxy and out to the
 internet, and the call still works — with no `aws:SourceVpce` on the far side, which is how the
 perimeter is lost silently. The generated list is `terraform output -raw no_proxy` on
-`sandbox/egress` (52 entries since 2026-09-12); what a process inside a space reads is the dated
-literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), and
+`sandbox/egress`, and it names the Bedrock pair only in an apply with `GROUPS=bedrock-base` (51
+entries under `GROUPS=redshift`, 2026-10-10); what a process inside a space reads is the dated
+literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), which
+carries every optional group's names, the pair included (70 entries, 2026-10-10), and
 [`./aws/devenv.py`](../../../aws/devenv.py) reports the difference between the two.
 
 ### The endpoint policy

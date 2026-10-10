@@ -12,7 +12,9 @@
 
 ## Producing the `NO_PROXY` value
 
-Read it as the output of the endpoints Terraform declares:
+Read it as the output of the endpoints Terraform declares. That output names only the optional
+endpoint groups the slice's last apply enabled, so for a session that uses another group, paste the
+latest reading below instead, which carries every group's names:
 
 ```
 cd terraform-live/sandbox/egress && terraform output -raw no_proxy
@@ -26,14 +28,16 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 ## Latest reading of `NO_PROXY`
 
-**52 entries**, read from `sandbox/egress` after the `vpc-egress-v0.14.1` apply of 2026-09-12 (6e step
-4.2), which added `bedrock.us-west-2.amazonaws.com` and `bedrock-runtime.us-west-2.amazonaws.com`. It
-was 28 until 2026-09-09: the generator read the service's one canonical name and now reads every name
-the endpoint answers for. A copy with 28 entries lacks `datazone.us-west-2.api.aws` among twenty-three
-others, and DataZone is refused in the space.
+**70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10): the 51
+names `sandbox/egress` generated under `GROUPS=redshift`, plus every other optional group's names
+(`bedrock-base`, `bedrock-agent`, `emr`). The slice's output names only the groups its last apply
+enabled, so a copy of it alone drops a group's names, and the day that group is on its calls leave
+through the proxy as public calls. It was 28 until 2026-09-09: the generator read the service's one
+canonical name and now reads every name the endpoint answers for. A copy with 28 entries lacks
+`datazone.us-west-2.api.aws` among twenty-three others, and DataZone is refused in the space.
 
 ```
-export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
+export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
 
 export no_proxy="$NO_PROXY" http_proxy=http://proxy.awsds.internal:3128 https_proxy=http://proxy.awsds.internal:3128 HTTP_PROXY=http://proxy.awsds.internal:3128 HTTPS_PROXY=http://proxy.awsds.internal:3128
 ```

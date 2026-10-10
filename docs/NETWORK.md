@@ -179,7 +179,9 @@ That reading is 2026-09-09's and stays as measured. `bedrock` and `bedrock-runti
 from 2026-09-12 to 2026-10-09 and are the `bedrock-base` optional group since, so the list the slice
 generates carries their names only in an apply that names the group. What a process inside a space
 reads is still the dated literal in the image (6d decision 8), which lists both, which is why the two
-deliveries are separate acts.
+deliveries are separate acts. Since 2026-10-10 the literal carries **every** optional group's names
+(70 entries, `default-v0.5.0` onward), so no `GROUPS=` value sends a group's calls out through the
+proxy, and a group left off times out on its names instead.
 
 **A missing entry fails two different ways and only one of them is visible:**
 
