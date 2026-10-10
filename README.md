@@ -2,7 +2,7 @@
 
 Blueprint for using AWS as a Data Science infrastructure provider.
 
-- `CLAUDE.md` — the working rules and the current position. Size-budgeted (50 KB, enforced by
+- `CLAUDE.md` — the working rules and the current position. Size-budgeted (75 KB, enforced by
   `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
 - `docs/` — the documentation tree, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
@@ -27,7 +27,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `client-vpn-proxy-configuration.md`, the one a device's owner follows (the session up and down, the
     `.conf` with its four checks, the proxy on macOS and Linux); `sg-proxy.md`, the proxy inside a SageMaker
     space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed; plus
-    `buildbox.md` and `sandbox-lake.md`.
+    `buildbox.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.

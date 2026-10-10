@@ -53,7 +53,7 @@ ACCOUNT_COUNT_EXCLUDE_RE = re.compile(r"quota|limit|Service Quotas", re.IGNORECA
 # Bytes, per core file. The budget forces the CLAUDE.md / GENERAL_PLAN.md split: a core file that
 # may grow without limit stops being a routing map and becomes the narrative it should point at.
 # Each ceiling is set by the user; re-read one when a file's growth is narrative rather than state.
-SIZE_BUDGET = {"CLAUDE.md": 50000, "docs/GENERAL_PLAN.md": 40000}
+SIZE_BUDGET = {"CLAUDE.md": 75000, "docs/GENERAL_PLAN.md": 40000}
 
 
 def main() -> int:

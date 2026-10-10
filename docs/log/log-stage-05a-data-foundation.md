@@ -3590,6 +3590,182 @@ prerequisite (13.0a) met by Control Tower, the delegation (13.1) observed rather
 configuration and the root policy (13.1a/13.1b) associated, Management self-managed (13.1c), and `INV-09`
 restated (13.4).
 
+## 2026-10-09 — Pass 6 paused: the FSBP standard removed from `awsds-fsbp-only`
+
+*Provenance: the Cost Explorer reading and the decision to pause are the user's (2026-10-09); the AWS
+acts and the pasted transcripts are **[user]**'s hand, in CloudShell; the cost measurement from the
+member accounts and the prose are Claude's, written in the same sitting. Account ids are redacted as
+`<AUDIT_ACCOUNT_ID>` and `<account>`; OU ids and the root id are written in full, as the 2026-08-20
+entries do.*
+
+### The reading that triggered it
+
+Security Hub's 30-day window closed and the bill began **2026-09-20**, one month after pass 6: usage type
+`USW2-PaidComplianceCheck` at **0.001 USD each**, read from Cost Explorer in each account that holds a
+profile (`ce:GetCostAndUsage` answers a member about its own spend; the organization view is Management's,
+which the user read as **0.45 USD/day**).
+
+| Account | Checks per day (2026-10-05..08) | Total 2026-09-19..10-09 |
+|---|---|---|
+| Sandbox | 75-120 | 1.67 USD |
+| Staging | 22-58 | 1.05 USD |
+| Production | 28-149 | 1.86 USD |
+| Data Governance | 39-85 | 1.21 USD |
+| Identity | 21-42 | 0.80 USD |
+
+The five sum to about 0.27 USD/day; the remainder of the 0.45 is the accounts without a profile, all under
+the same root policy. Finding ingestion (`USW2-SecurityHubProduct:FreeFindingsIngestion`, about 800 a day
+per account) stays inside the free 10,000 a month. AWS Config beside it bills only
+`USW2-ConfigurationItemRecorded` (7 items, 0.021 USD, in Sandbox 2026-10-01..08), so the Security Hub line
+is the standard's checks and nothing else. `docs/PRICING.md`'s floor row carried 1.00-2.00 USD/month for
+this service; the measurement is about **13.5 USD/month** for the organization (Lesson 6).
+
+### The mechanism, and the one that is not available
+
+Every account is centrally managed, so `disable-security-hub` and `batch-disable-standards` are refused in
+a member (AWS: centrally managed accounts *"can't use"* the account-specific operations in the home
+Region). The one door is the policy in Audit, and `update-configuration-policy` propagates on its own:
+*"accounts that are associated with the configuration policy automatically start using the updated
+policy"*. Two shapes were available:
+
+1. **`ServiceEnabled: true` with no standard.** Checks stop in every account, Audit included; the hub
+   stays on; nothing is scheduled for deletion beyond the findings themselves. Taken.
+2. **`ServiceEnabled: false`.** Disables the members, but *"Security Hub CSPM doesn't apply the policy
+   to the delegated administrator account"*, so Audit would keep paying for its own checks, and the
+   service's 90-day deletion of findings, insights and settings starts. Not taken.
+
+Whether the API accepts an empty `EnabledStandardIdentifiers` beside `ServiceEnabled: true` was
+unmeasured before the act (the API reference says only `Required: No`). It does.
+
+### The acts, in Audit
+
+Console sign-in as **`AWS Control Tower Admin` → `Audit` → `AWSAdministratorAccess`**, CloudShell,
+`us-west-2`. The `get-configuration-policy` read before the update is the state to revert to.
+
+```
+~ $ POLICY_ID=$(aws securityhub list-configuration-policies --region us-west-2 --query "ConfigurationPolicySummaries[?Name=='awsds-fsbp-only'].Id" --output text) && echo "$POLICY_ID"
+2f983d0c-8742-4392-8b13-24fa39fe5799
+~ $ aws securityhub get-configuration-policy --identifier "$POLICY_ID" --region us-west-2
+{
+    "Arn": "arn:aws:securityhub:us-west-2:<AUDIT_ACCOUNT_ID>:configuration-policy/2f983d0c-8742-4392-8b13-24fa39fe5799",
+    "Id": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+    "Name": "awsds-fsbp-only",
+    "Description": "FSBP only, all controls incl. future ones (Stage 5 step 13.1b)",
+    "UpdatedAt": "2026-08-20T23:22:04.146000+00:00",
+    "CreatedAt": "2026-08-20T23:22:04.146000+00:00",
+    "ConfigurationPolicy": {
+        "SecurityHub": {
+            "ServiceEnabled": true,
+            "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0"
+            ],
+            "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": []
+            }
+        }
+    }
+}
+~ $ aws securityhub update-configuration-policy --identifier "$POLICY_ID" --region us-west-2 --updated-reason 'Pause the FSBP checks, cost, 2026-10-09' --configuration-policy '{"SecurityHub":{"ServiceEnabled":true,"EnabledStandardIdentifiers":[],"SecurityControlsConfiguration":{"DisabledSecurityControlIdentifiers":[]}}}'
+{
+    "Arn": "arn:aws:securityhub:us-west-2:<AUDIT_ACCOUNT_ID>:configuration-policy/2f983d0c-8742-4392-8b13-24fa39fe5799",
+    "Id": "2f983d0c-8742-4392-8b13-24fa39fe5799",
+    "Name": "awsds-fsbp-only",
+    "Description": "FSBP only, all controls incl. future ones (Stage 5 step 13.1b)",
+    "UpdatedAt": "2026-10-10T02:23:33.698000+00:00",
+    "CreatedAt": "2026-08-20T23:22:04.146000+00:00",
+    "ConfigurationPolicy": {
+        "SecurityHub": {
+            "ServiceEnabled": true,
+            "EnabledStandardIdentifiers": [],
+            "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": []
+            }
+        }
+    }
+}
+```
+
+The `Description` still says "FSBP only"; the field was not passed and the update left it. It is wrong
+while the pause holds and is corrected by the revert, which restores the policy's content.
+
+### The association listing, twice
+
+Read seconds after the update, then again minutes later. The first read had 8 rows not `SUCCESS`; the
+second had **16**: the root, all 7 OUs and 8 accounts. The update re-associates the whole tree, and the
+listing walks it top-down, so the second read is the complete picture and the first was the walk in
+progress. Before the act the same filter returned 2 rows (the root and the suspended Sandbox, `EXC-01`).
+
+```
+~ $ aws securityhub list-configuration-policy-associations --region us-west-2 --query "ConfigurationPolicyAssociationSummaries[?AssociationStatus!='SUCCESS'].{Target:TargetId,Type:TargetType,Status:AssociationStatus}" --output table
+--------------------------------------------------------
+|          ListConfigurationPolicyAssociations         |
++---------+--------------------+-----------------------+
+| Status  |      Target        |         Type          |
++---------+--------------------+-----------------------+
+|  PENDING|  r-zhj6            |  ROOT                 |
+|  PENDING|  ou-zhj6-hrcu9hog  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  ou-zhj6-vn5q14hi  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  ou-zhj6-hisvfbzq  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  ou-zhj6-z3drywoq  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  <AUDIT_ACCOUNT_ID>|  ACCOUNT              |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  <account>         |  ACCOUNT              |
+|  PENDING|  ou-zhj6-u9qe0l0h  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  ou-zhj6-mojnh3rs  |  ORGANIZATIONAL_UNIT  |
+|  PENDING|  ou-zhj6-ebwso7wp  |  ORGANIZATIONAL_UNIT  |
++---------+--------------------+-----------------------+
+```
+
+Audit is among the pending accounts, which is the reading shape 1 predicted: a standards change reaches
+the delegated administrator, where a service disable would not. AWS allows up to 24 h for `PENDING` to
+settle.
+
+### Read back from the members, minutes after the act
+
+*The reads are Claude's, as the infrastructure user, `InfrastructureAccess`, in the five accounts with a
+profile, after the user signed the session in. The first pass ran at about 02:25 UTC with a `length()`
+query under `--output text`, which prints one number per page of `describe-config-rules`; the counts
+below are the page sums, and the second pass (02:29 UTC) used `--output json | jq length`.*
+
+In every one of the five: `describe-hub` answers with the 2026-08-20 `SubscribedAt`, and
+`get-enabled-standards` returns nothing. The `securityhub-*` Config rules were the only Config rules in
+these accounts, and they were going as the reads ran:
+
+| Account | about 02:25 UTC | 02:29 UTC |
+|---|---|---|
+| Sandbox | 191 | 24 |
+| Staging | 309 | 205 |
+| Production | 346 | 346 |
+| Data Governance | 322 | 289 |
+| Identity | 193 | 71 |
+
+So the policy reached the members before their association rows left `PENDING`, and the standard's
+removal is the rule deletion AWS documents, at a pace of the service's own. Still to read, on a later
+sitting: the counts at zero (a count that stops above zero is an orphan, because the 12-hour retry
+cannot run with no standard left, and AWS Support removes it), the findings archived over 3 to 5 days,
+and `USW2-PaidComplianceCheck` at zero in Cost Explorer from 2026-10-10 on, with one small rise in
+Config's `ConfigurationItemRecorded` as the rules go. Nobody triages the findings today (13.3's triage
+never ran), so none were exported. `./aws/datalake.py` `DL-11` now reads the pause as a note, and the
+standard off in *some* accounts as the failure it always was.
+
+### What this changes in the files
+
+`EXC-14` in `docs/AWS_STATE.md`; the `DL-11` discriminator in `aws/datalake.py`; the floor row in
+`docs/PRICING.md`; five pages in `docs/REFERENCES.md`; and a new runbook,
+[`docs/plan/runbooks/security-hub.md`](../plan/runbooks/security-hub.md), with the pause, the revert,
+the readings and the service disable that was not run.
+
+### The revert
+
+[`runbooks/security-hub.md`](../plan/runbooks/security-hub.md) §R: the same `update-configuration-policy` with the FSBP ARN back in
+`EnabledStandardIdentifiers`, from Audit. Findings regenerate from scratch, with duplicates possible for a few days; the free window does
+not reopen; the first full day bills again. `EXC-14` carries the exception until then.
+
 ---
 
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

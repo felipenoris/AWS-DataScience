@@ -212,7 +212,7 @@ that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
 | ACM **imported** certificates (D15 phase 1 — the internal CA's leaves) | free | free | 0 | 0 |
 | CodeArtifact | **not available — see §9** | 0.05 USD/GB-mo + 0.05/10k req | **n/a** | ~0.10 |
-| Security Hub + IAM Access Analyzer (Security Hub **after its own 30-day free window**) | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 |
+| Security Hub + IAM Access Analyzer (Security Hub **after its own 30-day free window**, closed 2026-09-20) | 0.001 USD/check (first 100k) | 0.001 USD/check | 1.00-2.00 | 1.00-2.00 → **billed ~13.5** (`USW2-PaidComplianceCheck`, ~0.45/day for the organization, Cost Explorer 2026-09-20..10-09) → **0 since 2026-10-09**, the FSBP pause (`EXC-14`, [runbook](plan/runbooks/security-hub.md) §P) |
 | GuardDuty (after the 30-day free window) | 1.75 USD/GB, 0.000007 USD/event | 1.00 USD/GB, 0.000004 USD/event | 0 → 5.00-9.00 | 0 → 3.00-5.00 |
 | WireGuard EBS (8 GB) + CloudWatch logs | 0.152 USD/GB-mo; logs 0.90 USD/GB | 0.08; logs 0.50 USD/GB | ~1.80 | ~1.00 |
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
