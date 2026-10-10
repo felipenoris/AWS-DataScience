@@ -93,6 +93,14 @@ dependencies = [
     "sagemaker",
     "sagemaker-studio",
 
+    # The Redshift driver, DECLARED rather than inherited. It was already importable in a space on
+    # 2026-10-10, but transitively - through one of the SageMaker packages above - which means a new
+    # notebook's `import redshift_connector` worked by accident and a resolution change could remove
+    # it without a line of this file moving (Lesson 63's shape). The requirement is that a data
+    # scientist opens a notebook and `import redshift_connector, boto3` works, so both are named here.
+    # The connection recipe is runbooks/redshift-connection.md section J.
+    "redshift-connector",
+
     # The ML frameworks.
     "tensorflow",
     "torch",

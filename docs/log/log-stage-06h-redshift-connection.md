@@ -1834,3 +1834,72 @@ corroboration that cannot disagree is not one.
 `4f` printed *"empty means no default privilege names THIS owner"* **while reporting a non-empty
 result** — the fifth message of the day whose wording assumed its own failure branch. Fixed to say what
 each outcome means.
+
+---
+
+## 2026-10-11 — §J for a notebook, `redshift_connector` declared in the image, and the last two 6h readings
+
+*Written by Claude in the sitting that ran it, at the user's instruction to add a notebook recipe to the
+runbook, take the remaining 6h readings, and make the AWS stack importable in a new notebook by default.*
+
+### §J — running SQL from a notebook
+
+New section in `runbooks/redshift-connection.md`, for a data scientist rather than for an instrument.
+It carries the connection as a reusable `connect()`, parameterised statements, `fetch_dataframe()`, the
+commit rule, what a query costs, and the readings that mislead. Three things in it are measurements
+from this stage rather than documentation:
+
+- **the chain is the recipe**, not an alternative: connecting directly lands on a per-person user
+  holding nothing, and the section says what `select current_user` answers in each case;
+- **the driver does not autocommit** — it opens `begin transaction` itself, so a `create` without
+  `conn.commit()` is lost;
+- **the cost is per query**, with a 60-second minimum charge, so a cell re-run fifty times while
+  debugging is fifty minimum charges. An idle session is free, which `WH-15` measures.
+
+The table of misleading readings collects what cost this stage time: a padded `current_user`, a NULL
+`inet_server_addr()`, a `relacl` blind to role grants, an empty `pg_default_acl`, a refused
+`stl_connection_log`, and the driver's `KeyError` appearing above the real error in a traceback.
+
+### The image: declared, not inherited
+
+`redshift-connector` is now a line in `images/dev-env/python/pyproject.toml`, and `uv lock` changed
+**two lines** — the dependency entry and its `requires-dist` twin. Nothing re-resolved, because the
+package was **already in the lock**: it arrives through `amazon-sagemaker-sql-execution`, which
+`amazon-sagemaker-sql-magic` pulls in. So `import redshift_connector, boto3` worked by accident and now
+works by declaration; a resolution change can no longer remove it without a line of that file moving.
+
+**The rebuild is owed.** The declaration is in the lock; the image a space runs is still
+`default-v0.4.0`, and nothing changes in a notebook until `dev-env.md`'s chain runs. Nothing is broken
+in the meantime — the package is installed either way today.
+
+> I had written that the driver was **absent** from the image, twice, before the user's run printed
+> `redshift_connector already importable`. The pyproject was the file I read and the lock was the file
+> that answered.
+
+### `WH-9` is a permanent note
+
+`datazone list-connections` is refused to this account's `InfrastructureAccess` role a **third** time:
+*"User is not permitted to perform operation: ListConnections"* — DataZone's own authorization layer,
+not IAM, because that identity is not a project member. There is no `aws sqlworkbench` CLI either. So
+6h 6.2's `WH-9` can never read the connection object, and the check now says so instead of leaving the
+step looking unfinished. **14 pass / 2 notes**, the other being `WH-13`.
+
+### `EXC-16` — the audit export has stopped, and that is a simpler claim than the one I made twice
+
+| Group | Last event | Age at reading |
+|---|---|---|
+| `connectionlog` | 2026-10-10T03:09:06Z | **1047 min** |
+| `useractivitylog` | 2026-09-21T05:43:33Z | 28,253 min |
+| `userlog` | 2026-09-21T03:03:40Z | 28,413 min |
+
+The heartbeat had fired every ~2h25m for days, including on days the `[E]` workgroup did not exist.
+Seven intervals are now missing, across a day holding 142+ queries, DDL through two different doors and
+a workgroup up throughout. **So the export is stopped, not lagging**, and the groups carry no event of
+*any* kind since that moment — which is a different and simpler claim than the two I wrote before, both
+of which were about user activity specifically.
+
+**The workgroup was created 03:06:42Z and the export stopped 2.4 minutes later.** That is a correlation
+and it is recorded as one. The discriminator is the next workgroup rebuild: if the heartbeat resumes
+with it, the export dies when an `[E]` workgroup appears; if it does not, something else stopped.
+
+Stage 11 must not rest its DLP feed on these groups, and `AUDITMARKER20260920` never landed either.

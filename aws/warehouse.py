@@ -855,6 +855,26 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 f"{boundary_name}",
             )
 
+    # ------------------------------- WH-9: the connection object, which this identity cannot read
+    #
+    # A NOTE AND IT CAN ONLY EVER BE ONE. 6h 6.2 wanted this check to read the SMUS connection back
+    # and compare it to what the portal was asked for. `datazone list-connections` is refused to
+    # this account's InfrastructureAccess role - "User is not permitted to perform operation:
+    # ListConnections" - by DATAZONE'S OWN authorization layer, because that identity is not a
+    # project member, so no IAM policy reaches it (measured three times: 2026-09-21 with no
+    # connection, and twice on 2026-10-10/11 with one). There is no `aws sqlworkbench` CLI either.
+    #
+    # So the connection's fields are readable only by a project member in the portal, and this check
+    # exists to say that rather than to leave 6.2 looking unfinished. What CAN be checked without
+    # it: WH-7 reads layer 1's tags, WH-11 layer 2's policy and boundary, WH-12 and WH-14 layer 3.
+    checks.note(
+        "WH-9",
+        f"{tag} the connection object as the portal wrote it",
+        "UNREADABLE by this identity: `datazone list-connections` is refused by DataZone's own "
+        "authorization layer, not by IAM, because the infrastructure role is not a project member. "
+        "The connection's fields are a project member's reading, in the portal",
+    )
+
     # ------------------------------------------- the namespace role reaches nothing (5b 2.4/D13)
     if ns is None:
         checks.note("WH-1b", f"{tag} the namespace role holds no policy", "no namespace")

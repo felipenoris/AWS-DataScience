@@ -237,6 +237,127 @@ workgroup, and that is a decision with a written argument, not a map entry.
 
 ---
 
+## §J Running SQL from a notebook
+
+**For a data scientist in a space.** `import redshift_connector, boto3` works in a new notebook on the
+`Python (awsds dev-env)` kernel with nothing installed: both are declared in
+`images/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
+`amazon-sagemaker-sql-execution`; it is named there now so a resolution change cannot remove it
+silently.
+
+**Two prerequisites, and neither is in the notebook.** The environment must be up with the Redshift
+endpoint group — `make up ENV=sandbox GROUPS=redshift` — because `redshift-serverless` is absent from
+the proxy's allow-list, so without that endpoint `GetCredentials` **times out** rather than being
+refused. And the project must be admitted to the warehouse: `sandbox/warehouse/`'s `projects` map, §P.
+
+### The connection
+
+```python
+import boto3
+import redshift_connector
+
+WORKGROUP = "awsds-sandbox-warehouse"
+DATABASE = "sandbox"                     # the class container, NOT the `dev` the dropdown offers
+REGION = "us-west-2"
+PROJECT = "avhvbqn37ty7m8"               # the project id, from the portal's URL
+
+
+def connect():
+    """A session on the warehouse as the PROJECT's database user."""
+    sts = boto3.client("sts", region_name=REGION)
+    account = sts.get_caller_identity()["Account"]
+
+    # THE CHAIN IS WHAT MAKES THE GRANTS APPLY (6h decision 8a). Connecting directly lands on a
+    # database user named after YOU, created empty, holding nothing: SMUS sets a per-person
+    # `RedshiftDbUser` on the space's session and it cannot be changed. The access role carries the
+    # per-project one, and no session tag is transitive, so the chained session gets that instead -
+    # the user the schema's role and its default privilege are written for.
+    creds = sts.assume_role(
+        RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
+        RoleSessionName="notebook",
+        ExternalId=PROJECT,
+    )["Credentials"]
+
+    return redshift_connector.connect(
+        iam=True,
+        is_serverless=True,
+        serverless_work_group=WORKGROUP,
+        database=DATABASE,
+        region=REGION,
+        access_key_id=creds["AccessKeyId"],
+        secret_access_key=creds["SecretAccessKey"],
+        session_token=creds["SessionToken"],
+    )
+```
+
+`select current_user` should answer `IAMR:datazone_usr_role_<project>_<environment>`. If it answers
+`IAMR:user-<a long id>@<project>` the chain was skipped, and the next statement fails as
+`permission denied for schema`.
+
+### Submitting statements
+
+**The driver does not autocommit.** It opens `begin transaction` before your first statement, so a
+`create` or `insert` is lost without `conn.commit()`. Set `conn.autocommit = True` if you prefer
+statement-at-a-time.
+
+```python
+conn = connect()
+
+with conn.cursor() as cur:
+    cur.execute("create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)")
+    cur.execute(
+        "insert into lab.readings values (%s, %s, %s)",     # paramstyle is `format`
+        ("2026-10-11 12:00:00", "t-1", 21.5),
+    )
+conn.commit()                                              # without this the table is not there
+```
+
+**Reading back, into pandas:**
+
+```python
+with conn.cursor() as cur:
+    cur.execute("select sensor, avg(v) as mean_v from lab.readings group by 1 order by 1")
+    df = cur.fetch_dataframe()          # pandas is in the image; fetchall() gives tuples instead
+df
+```
+
+**Always parameterise.** `%s` placeholders with a tuple, never an f-string around a value: the schema
+holds whatever a notebook puts in it, and a quoted literal built by string formatting is how a stray
+apostrophe becomes a syntax error and how an untrusted value becomes an injected statement.
+
+**Close it, or let the context manager do it:**
+
+```python
+with connect() as conn, conn.cursor() as cur:
+    cur.execute("select count(*) from lab.readings")
+    print(cur.fetchone()[0])
+```
+
+### What this costs, because the meter is per query
+
+Every statement runs on compute billed at **0.36 USD per RPU-hour** with **four base RPUs**, so
+1.44 USD per query-hour — and there is a **60-second minimum charge per query**. A cell run fifty times
+while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), so
+leaving a connection open between cells is free; running a heavy query is not.
+
+`max_query_execution_time` is **120 seconds** on this workgroup, so a runaway is cut off — and whether
+that setting binds every queue is [unresolved](../../log/log-stage-05b-redshift-serverless.md). The
+monthly ceiling is **10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup
+refuses queries until somebody raises it. Both are deliberate (5b decision 2).
+
+### Readings that will confuse you otherwise
+
+| Reading | Why |
+|---|---|
+| `select current_user` comes back **padded with spaces** | it is the `name` type; `trim()` it before comparing |
+| `inet_server_addr()` returns **NULL** | not implemented on Redshift Serverless; the server address is the socket's peer |
+| `pg_class.relacl` is **empty** on a table a role can read | `relacl` is the legacy ACL and is **blind to role grants**; `svv_relation_privileges` is the only reader |
+| `pg_default_acl` is **empty** after `ALTER DEFAULT PRIVILEGES` | the privilege is in `svv_default_privileges` alone |
+| `stl_connection_log` is **refused** | to a superuser too; `sys_connection_log` is the readable one, and it has only ever held internal sessions |
+| a `drop table` raises `KeyError` first in the traceback | the driver's prepared-statement cache missing, then the real error below it — read the bottom frame |
+
+---
+
 ## §V The instruments
 
 ```bash
