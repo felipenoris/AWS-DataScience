@@ -2819,3 +2819,102 @@ orchestrate with operators this repository controls. `PythonOperator` and `BashO
 to MWAA Serverless on 2026-08-17, are what the implementation explores, measured first in Sandbox (Stage
 10 step 2.1, verification (xv)), with their code in the workflow's `Code` object (D28 class (2b)). Stage
 8 5.6's lint gains one rule from it: `SageMakerNotebookOperator` is refused by name.
+
+## 2026-10-10 — the twentieth sitting: `default-v0.5.0` built and pushed
+
+*The build of the seventeenth sitting's recipe, on the buildbox that sitting raised.*
+
+### [user at the buildbox, Claude read] The build
+
+**[user]** Both builds completed in the session; the image's own receipts, pasted:
+
+```
+base image      : awsds/base:local
+python (base)   : Python 3.12.14
+python (awsds)  : Python 3.13.15 at /opt/awsds/venv
+uv              : uv 0.12.17 (x86_64-unknown-linux-gnu)
+julia           : julia version 1.12.7
+R               : R version 4.5.3 (2026-03-11) -- "Reassured Reassurer"
+rust            : rustc 1.98.0 (88d9e12ae 2026-08-18)
+proxy           : http://proxy.awsds.internal:3128
+no_proxy entries: 70
+no_proxy sha256 : aafa08da98a61f5c
+```
+
+**[Claude]** The distribution's Python is 4.5.2's 3.12.14, uv is the distribution's 0.12.17 with the
+downgrade guard passed, and the list is the 70-entry literal. Julia, R and Rust are the versions the
+recipe pins.
+
+### [user] The push
+
+**[user]** The two push results, the registry host left out:
+
+```
+default-v0.5.0: digest: sha256:c7ad2c964335dcc7220faf7929b3d8be5e3bd8db2f13ef4e1d97ff2a8e562181 size: 6578
+
+default-v0.5.0: digest: sha256:8ec04e357792e4cb1beaace2c1dcfde0f60ba6074195cc31091452e11db89dd6 size: 9303
+```
+
+The first is `awsds-prod-ecr-base`, the second `awsds-prod-ecr-dev-env`.
+
+**[Claude] Read back from the laptop**, `describe-images`: both digests as pushed. `base` is
+3,745,881,983 bytes against `v0.4.0`'s 3,959,751,921, and `dev-env` 6,969,138,672 against
+7,182,170,437. Both are about 213 MB smaller, the two deltas within 0.9 MB of each other, so the change
+is the ancestor's: `4.5.2-cpu` is 190 MB smaller compressed than `4.3.0-cpu`, and the layers `dev-env`
+adds came out the size they were.
+
+**[Claude] The door the push took**, Production's CloudTrail: `base`'s `PutImage` (20:29:05Z) and every
+`InitiateLayerUpload` of both pushes (20:22:15Z to 20:31:34Z) carry the person's `InfrastructureAccess`
+session, source `ecr.amazonaws.com`, and `vpce-0def0c29199cbefd4`, the `ecr.dkr` interface endpoint of
+`awsds-prod-shared-vpc` that `production/egress` created at 18:04:43Z. This is the first push measured
+since 6c moved the host: the bytes stayed inside the VPC and never reached the proxy, and the
+identity is the token's, not the host role's. `dev-env`'s `PutImage` had not reached CloudTrail when
+this was read.
+
+**[Claude] The recipe moved after the build, and the image did not.** `37ae9e0` (16:11) changed only
+comments in `images/dev-env/Dockerfile`, and `11a790e` (17:40) declared `redshift-connector` in the
+Python project: two lines in `uv.lock`, the same 453 packages, `redshift-connector` 2.1.16 on both
+sides. So the pushed image is HEAD's recipe in effect. `./aws/devenv.py`, now comparing against
+`no_proxy_all_groups`: `DE-3` passes, 70 names on both sides at `aafa08da98a61f5c`, so the generated
+output and the hand composition agree byte for byte; `DE-5` fails until the registered version 4 is
+replaced, 18 names short.
+
+### [Claude] A rebuild for the driver's declaration, weighed and not made
+
+The user asked whether `11a790e`'s change to the Python project needed a new build, as `v0.5.1`. Read
+from the lock the build used, unchanged since 2026-09-10: `redshift-connector` 2.1.16 is a regular
+dependency, reached as `redshift-connector <- amazon-sagemaker-sql-execution <-
+sagemaker-studio-dataengineering-sessions <- awsds-dev-env`, so every image since `v0.2.0` installs it,
+and the project is virtual (`source = { virtual = "." }`), so a rebuild would change only the reference
+copies under `/opt/awsds/python-project/`. A rebuild would also have been `default-v0.6.0`, not
+`v0.5.1`: a commit under `images/` is a recipe change, which the tag rule makes a minor. **The user's
+decision: keep `v0.5.0`**; the declaration reaches the image with the next recipe change.
+
+### [Claude⚡, authorized in chat] `default-v0.5.0` registered and attached
+
+`dev-env.md` §B, every step read back:
+
+1. **No app running** in the project's domain, so there was nothing to delete; the live
+   `DefaultUserSettings` saved as the diff's other half.
+2. **Detach**: the live block with both `CustomImages` set to `[]`. The domain returned to `InService`
+   with no `FailureReason`, and the block read back equals the one sent.
+3. **Apply** of the saved plan: `1 added, 0 changed, 1 destroyed`, version 4 destroyed and **version 5**
+   created; re-plan `No changes`.
+4. **Version 5** reads `CREATED`, `ContainerImage` at
+   `@sha256:8ec04e357792e4cb1beaace2c1dcfde0f60ba6074195cc31091452e11db89dd6`, the pushed digest.
+5. **Re-attach** from the slice's `custom_images` output. The block read back equals the one sent, and
+   against the block before the bump the only fields that moved are the two `ImageVersionNumber`
+   values, 4 to 5: the third measurement in which the whole-block diff carried nothing else.
+6. **No space to repair**: the one space in the domain names AWS's distribution by the alias `4.5`, not
+   a version of this image.
+
+`./aws/devenv.py` afterwards: every check passes, `DE-5` included — version 5 bakes 70 names at
+`aafa08da98a61f5c`, the account's list.
+
+### [Claude⚡, authorized in chat] The build session ended
+
+The destroy plans read `5 to destroy` on `production/buildbox` and `13 to destroy` on
+`production/egress`; `./scripts/buildbox.py down` and `./scripts/slices.py down --env production --only
+egress` destroyed exactly those (`no SageMaker domain in production - nothing to delete` from its app
+sweep). Production holds no interface endpoint, the buildbox reads `absent`, and the hub's proxy is left
+running, as `[D]`.

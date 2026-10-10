@@ -285,18 +285,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **no** policy before 5b 3 and that account has no VPC (decision 6 stands, reading recorded). Stage 9 step 9
   owns `production/warehouse{,-compute}/` and the `governed` class; `INT-24` is unproven.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
-  as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **4**
-  is `default-v0.4.0`, frozen to its digest, attached by hand to the domain's `DefaultUserSettings` —
-  what a new space's picker reads, both app types. INT-01/INT-17 closed (image role by tag, project
-  role by digest). **The app image config caps each env value at 256 chars** vs a `NO_PROXY` of ~2,300,
-  so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal; `./aws/devenv.py`
-  reads the drift. **`default-v0.5.0` is being built (2026-10-10)** on SMD **`4.5.2-cpu`** (pinned by
-  digest): uv stays the distribution's **0.12.17** (the old `0.12.5` ARG would have downgraded it past
-  every guard; a downgrade is now refused), and the literal carries **every optional group's names**
-  (70 entries, `aafa08da98a61f5c`), since `no_proxy` names only the last apply's groups;
-  `devenv.py` compares it with `no_proxy_all_groups` exactly, and `DE-6` reads the last apply's `no_proxy` inside that: `DE-2`, `DE-3` and `DE-6` green 2026-10-10, `DE-5` failing until v0.5.0 is registered. Pushed, registered and
-  attached: not yet. The house image's own Python sent `GetCredentials` out through the proxy as a
-  public call (06:21Z), because v0.4.0's list lacks `redshift-serverless`. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
+  as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **5**
+  is **`default-v0.5.0`** (2026-10-10), frozen to its digest, attached by hand to the domain's
+  `DefaultUserSettings` — what a new space's picker reads, both app types. INT-01/INT-17 closed (image
+  role by tag, project role by digest). **The app image config caps each env value at 256 chars** vs a
+  `NO_PROXY` of ~2,300, so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal;
+  `./aws/devenv.py` reads the drift, **all green** since v0.5.0's registration. `default-v0.5.0`
+  (`dev-env` `sha256:8ec04e35…9dd6`, `base` `sha256:c7ad2c96…2181`, both ~213 MB under v0.4.0, the
+  push through the shared VPC's `ecr.dkr` endpoint) is SMD **`4.5.2-cpu`** pinned by digest; uv stays
+  the distribution's **0.12.17** (the old `0.12.5` ARG would have downgraded it past every guard; a
+  downgrade is now refused), and the literal carries **every optional group's names** (70 entries,
+  `aafa08da98a61f5c`), since `no_proxy` names only the last apply's groups; `devenv.py` compares it with
+  `no_proxy_all_groups` exactly. `redshift-connector`'s declaration (`11a790e`) is not in it, and needs
+  no rebuild: the lock already installs 2.1.16 transitively, so it rides the next recipe change, which
+  takes a minor. The house image's own Python sent `GetCredentials` out through the proxy as a public
+  call (06:21Z) because v0.4.0's list lacked `redshift-serverless`. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
   private door (the agent its endpoint, the Access Grants plugin the **S3 gateway endpoint** — the
   same id 6.1 (xix) wanted); the blueprint's manage-access role **is** an LF admin (OQ 24's other
   half); a blueprint database arrives with no `IAMAllowedPrincipals`; and `q:PassRequest` is granted

@@ -6,7 +6,7 @@
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B on `default-v0.2.0` and again on `v0.4.0` (2026-09-12), §X step 1, §V. §B step 6 was found missing on the second run and has been exercised only through the portal; its CLI route is written and not run. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B on `default-v0.2.0`, again on `v0.4.0` (2026-09-12) and on `v0.5.0` (2026-10-10, no app running and no space to repair), §X step 1, §V. §B step 6 was found missing on the second run and has been exercised only through the portal; its CLI route is written and not run. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -173,9 +173,10 @@ is also the rollback — for this sitting only, since any later act reads the bl
 aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sandbox-1 --query DefaultUserSettings > "$HOME/tmp/after.json" && diff <(python3 -m json.tool "$HOME/tmp/before.json") <(python3 -m json.tool "$HOME/tmp/after.json")
 ```
 
-The only differences must be the entries you added. **Measured twice**, on the attach of 2026-09-10 and
-the re-attach on version 2 of 2026-09-11: both times the diff carried nothing but `CustomImages`, and
-the domain came back `InService` with no `FailureReason`.
+The only differences must be the entries you added. **Measured three times**, on the attach of
+2026-09-10, the re-attach on version 2 of 2026-09-11 and the re-attach on version 5 of 2026-10-10: each
+time the diff carried nothing but `CustomImages`, and the domain came back `InService` with no
+`FailureReason`.
 
 **`ImageVersionNumber` is a decision, and its price is now known.** The API marks the field optional,
 and what an omitted version resolves to — the latest, by the vendor's description — is unread here.
