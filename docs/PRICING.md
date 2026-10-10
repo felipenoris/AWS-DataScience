@@ -270,7 +270,8 @@ the real bill.
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.m5.large` — measured 2026-09-07, the 8 GB general-purpose alternative | 0.184 | **0.115** | 1.60 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.xlarge` — **measured 2026-09-11**, the size the first remote-IDE space was created at (6d step 7.3); twice the 8 GB floor above it | 0.323 | **0.200** | 1.62 |
-| SageMaker processing job `ml.t3.medium` | 0.066 | — | |
+| SageMaker processing job `ml.t3.medium` (2 vCPU, 4 GiB; `USW2-Processing:ml.t3.medium`) — `us-west-2` **measured 2026-10-10**, offer published 2026-10-09 | 0.066 | **0.050** | 1.32 |
+| SageMaker processing job `ml.m5.large` (2 vCPU, 8 GiB) — `us-west-2` measured 2026-10-10 | — | **0.115** | |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
 | Public IPv4 address (in use or idle) | 0.005 | 0.005 | **1.00** |
 | VPC peering data (each way) | 0.01/GB | 0.01/GB | **1.00** |
@@ -793,7 +794,7 @@ Paulo that discipline is worth exactly twice as much.
 | SageMaker Unified Studio **space volume**, USD per GB-month (`UnifiedStudio:VolumeUsage.gp3`) — **measured 2026-09-12**; a space bills this at rest, app stopped, which is why `conventions.md` §5.1 does not put it in `[E]` | 0.2128 | **0.112** | 1.90 |
 | SageMaker Unified Studio notebook compute `sc.t3.medium` (`UnifiedStudio:Notebook-sc.t3.medium`, 2 vCPU, 4 GiB) — measured 2026-09-12, offer published 2026-09-11. The offer has no querybook usage type, so what a querybook bills under is unmeasured (`SMUS.md` §"Querybook compute") | 0.081 | 0.050 | 1.62 |
 | SageMaker notebook instance `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
-| SageMaker processing `ml.t3.medium` | 0.066 | — | |
+| SageMaker processing `ml.t3.medium` (2026-10-10) | 0.066 | 0.050 | 1.32 |
 | SageMaker notebook EBS (USD/GB-mo) | 0.266 | — | |
 | Fargate vCPU / memory | 0.0696 / 0.0076 | 0.04048 / 0.004445 | 1.72 |
 | Fargate ARM vCPU / memory | 0.0557 / 0.00612 | 0.03238 / 0.00356 | 1.72 |
