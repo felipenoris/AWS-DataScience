@@ -340,6 +340,10 @@ try:
     if "datazone_usr_role" not in arn:
         say("identity", "warn", "not the project role - a space normally runs as it")
 except Exception as exc:
+    # THE ONLY FATAL STEP, deliberately. Everything below derives the workgroup host from the
+    # account id, so without an identity there is nothing to measure rather than something to
+    # report. In a notebook this prints a traceback notice instead of exiting quietly, which is
+    # accepted here and nowhere else in this script.
     say("identity", "FAIL", f"{type(exc).__name__}: {exc}")
     raise SystemExit("no identity, so nothing below can be attributed")
 
@@ -401,12 +405,20 @@ except OSError as exc:
 
 # ------------------------------------------ 3. a session over that door, written and read back
 #
+# EVERY STEP BELOW IS GUARDED RATHER THAN FATAL, and the reason is this script's own history: a
+# `raise SystemExit` in step 3 once killed step 4, which shares nothing with it and was the
+# measurement that mattered. In a notebook `SystemExit` also prints a traceback notice instead of
+# exiting, so it is the wrong mechanism twice over. Each step that cannot run says so and the
+# summary at the end is the verdict.
+#
 # redshift_connector IS importable in the image, transitively - it is absent from
 # images/dev-env/python/pyproject.toml and arrives through one of the SageMaker packages (measured
 # 2026-10-10). The install below is the fallback and is normally a no-op. A transitive driver is a
 # dependency nobody declared: if it is wanted, it belongs in that pyproject by name plus `uv lock`.
+driver = None
 try:
-    import redshift_connector  # noqa: F401
+    import redshift_connector as driver
+
     say("3a driver present", "ok", "redshift_connector already importable")
 except ImportError:
     proc = subprocess.run(
@@ -417,167 +429,133 @@ except ImportError:
         say("3a driver present", "FAIL",
             f"install failed: {(proc.stderr or proc.stdout).strip()[-300:]} - PyPI is on the "
             "proxy allow-list, so a failure here is the proxy variables rather than the index")
-        raise SystemExit("no driver, so the 5439 SQL path cannot be measured")
-    import redshift_connector  # noqa: F811
-    say("3a driver present", "ok", "installed into this space's kernel, not into the image")
+    else:
+        import redshift_connector as driver
 
-try:
-    conn = redshift_connector.connect(
+        say("3a driver present", "ok", "installed into this space's kernel, not into the image")
+
+
+def open_session(creds=None):
+    """A database session over 5439. `creds` chains through another role; None is this one."""
+    extra = {}
+    if creds:
+        extra = {
+            "access_key_id": creds["AccessKeyId"],
+            "secret_access_key": creds["SecretAccessKey"],
+            "session_token": creds["SessionToken"],
+        }
+    return driver.connect(
         iam=True,
         is_serverless=True,
         serverless_work_group=WORKGROUP,
         database=DATABASE,
         region=REGION,
-    )
-except Exception as exc:
-    say("3b session", "FAIL", f"{type(exc).__name__}: {str(exc)[:400]}")
-    raise SystemExit(
-        "GetCredentials or the connect failed. Read the wording: an AccessDenied naming "
-        "redshift-serverless:GetCredentials is layer 2 on the PROJECT role; a timeout with step 1 "
-        "and 2 green is the API endpoint, not the database"
+        **extra,
     )
 
-with conn.cursor() as cur:
-    # inet_server_addr() returns NULL on Redshift Serverless (measured 2026-10-11), so the address
-    # that identifies this door is the SOCKET's peer from step 2, not anything the server reports.
-    cur.execute("select current_user, current_database()")
-    user, db = cur.fetchone()
-    say("3b session", "ok", f"as {user} on {db}")
-    say("3b door is the VPC one", "ok" if ipaddress.ip_address(peer).is_private else "FAIL",
-        f"peer {peer} - a private address here is what separates this door from the Data page's, "
-        "which reaches the warehouse as an AWS service and has no VPC path at all")
 
-    # THE DATABASE USER IS PER PERSON ON THIS DOOR, and that is the finding this script exists for.
-    # `IAMR:user-<Identity Center user id>@<project id>` is auto-created at first connect and holds
-    # NOTHING. The Data page's door resolves to `IAMR:<the project role's name>` instead, through
-    # the access role's RedshiftDbUser tag - so a GRANT made for one door does not serve the other.
-    if user.startswith("IAMR:user-"):
-        say("3b grantee is per PERSON", "warn",
-            "this door mints a user per person, not per project. If 3c fails on permission, that "
-            "user holds no role yet - see the runbook on RedshiftDbRoles")
+def measure(label, conn, table):
+    """Read who this session is, what it holds, then write and read the table back."""
+    with conn.cursor() as cur:
+        cur.execute("select current_user")
+        user = cur.fetchone()[0].strip()
+        per_person = user.startswith("IAMR:user-")
+        say(f"{label}c the grantee", "ok",
+            f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
 
-    # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once and the write's permission
-    # error arrived as a driver traceback instead of a verdict naming the layer - which is the one
-    # thing this script exists to avoid (2026-10-11).
-    cur.execute("select role_name from svv_user_grants where user_name = current_user")
-    roles = [r[0] for r in cur.fetchall()]
-    if roles:
-        say("3c the roles this session holds", "ok", str(roles))
-    else:
-        say("3c the roles this session holds", "FAIL",
-            "none. This user holds no database role, so the write below will fail as `permission "
-            "denied for schema`. On this door the user is per person and SMUS passes "
-            "`RedshiftDbRoles=datazone_env_<environmentId>` as a SESSION tag - if that role does "
-            "not exist in the database it is ignored SILENTLY, and if the user already existed "
-            "before it did, the mapping does not apply retroactively (runbook section T)")
+        # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once, and the write's
+        # permission error arrived as a driver traceback instead of a verdict naming the layer.
+        cur.execute("select role_name from svv_user_grants where user_name = current_user")
+        roles = [r[0] for r in cur.fetchall()]
+        say(f"{label}d the roles it holds", "ok" if roles else "FAIL",
+            str(roles) if roles else
+            "none, so the write below fails as `permission denied for schema`. A per-person user "
+            "is granted nothing by anything: SMUS passes `RedshiftDbRoles` only on the PORTAL's "
+            "session, not the space's (runbook section T)")
 
-    # The write, into its OWN table, so the two doors' objects stay distinguishable.
-    try:
-        cur.execute(f"drop table if exists {SCHEMA}.{TABLE}")
+        try:
+            cur.execute(f"drop table if exists {SCHEMA}.{table}")
+            cur.execute(
+                f"create table {SCHEMA}.{table} as "
+                f"select 1 as n, current_user as by_whom, '{label}' as door"
+            )
+            conn.commit()
+            cur.execute(f"select n, by_whom, door from {SCHEMA}.{table}")
+            say(f"{label}e write and read", "ok", str(cur.fetchone()))
+        except Exception as exc:
+            conn.rollback()
+            say(f"{label}e write and read", "FAIL",
+                f"{str(getattr(exc, 'args', [exc])[0])[:180]} - with the roles empty this is "
+                "layer 3, not the network")
+            return
+
+        # WH-14's question, from inside: is what this session just wrote readable by a role?
         cur.execute(
-            f"create table {SCHEMA}.{TABLE} as "
-            f"select 1 as n, 'written over 5439 from jupyterlab' as note, current_user as by_whom"
+            "select identity_name, privilege_type from svv_relation_privileges "
+            f"where namespace_name = '{SCHEMA}' and relation_name = '{table}'"
         )
-        conn.commit()
-        cur.execute(f"select n, note, by_whom from {SCHEMA}.{TABLE}")
-        say("3d write and read", "ok", str(cur.fetchone()))
+        rows = cur.fetchall()
+        say(f"{label}f readable by a role", "ok" if rows else "FAIL",
+            f"{rows} - empty means no default privilege names THIS owner, so a second project "
+            "holding the theme role would see none of this table (section T, EXC-15)")
+
+
+# ---------------------------------------- 3b-3e. as the project role itself: the PER-PERSON user
+if driver is None:
+    say("3b direct session", "FAIL", "no driver, so the 5439 SQL path cannot be measured")
+else:
+    try:
+        conn = open_session()
     except Exception as exc:
-        conn.rollback()
-        msg = str(getattr(exc, "args", [exc])[0])
-        say("3d write and read", "FAIL", f"{msg[:200]} - with 3c empty this is layer 3 and not "
-            "the network; with 3c holding a role it is the GRANT's contents")
-        raise SystemExit("no write, so 3e has nothing to judge")
-
-    # WH-14's question, asked from inside: is what this session just wrote readable by the role?
-    cur.execute(
-        "select identity_name, privilege_type from svv_relation_privileges "
-        f"where namespace_name = '{SCHEMA}' and relation_name = '{TABLE}'"
-    )
-    rows = cur.fetchall()
-    say("3e readable by the role", "ok" if rows else "FAIL",
-        f"{rows} - empty means no default privilege names THIS owner, so a second project holding "
-        "the theme role would see none of this table (runbook section T, EXC-15)")
-
-conn.close()
+        conn = None
+        say("3b direct session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]} - an "
+            "AccessDenied naming redshift-serverless:GetCredentials is layer 2 on the PROJECT "
+            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database")
+    if conn:
+        say("3b direct session", "ok", f"peer {peer} - the VPC door, not the Data page's")
+        measure("3", conn, TABLE)
+        conn.close()
 
 # ------------------- 4. THE SAME DOOR, THROUGH THE ACCESS ROLE, which is the per-project grantee
 #
-# Redshift grants to DATABASE USERS, never to an IAM role, and which database user a session becomes
-# is decided by the caller's `RedshiftDbUser` tag. The space's session carries a per-person one, set
-# by SMUS and unchangeable. The ACCESS ROLE carries the per-project one this repository set - and the
-# project role may assume it (its trust policy names the project role with the project id as the
-# external id; layer 2 grants `sts:AssumeRole` on it).
+# Redshift grants to DATABASE USERS, never to an IAM role, and which database user a session
+# becomes is decided by the caller's `RedshiftDbUser` tag. The space's session carries a per-person
+# one, set by SMUS and unchangeable. The ACCESS ROLE carries the per-project one this repository
+# set, and the project role may assume it: its trust policy names the project role with the project
+# id as the external id, and layer 2 grants `sts:AssumeRole` on that ARN.
 #
 # WHAT MAKES THIS WORK IS THAT NO TAG IS TRANSITIVE. `transitiveTagKeys` is `None` on the space's
-# assume (measured 2026-10-11), so the per-person `RedshiftDbUser` does NOT follow into the chained
-# session, and the access role's own tag governs there. The database user becomes
-# `IAMR:<the project role's name>` - the one that already holds the theme role and is already named by
-# the schema's default privilege.
+# assume (measured 2026-10-11), so the per-person `RedshiftDbUser` does NOT follow into a chained
+# session and the access role's own tag governs there. Nothing in AWS changes for this; it is a
+# convention in how a notebook connects.
 #
-# Nothing in AWS changes for this. It is a convention in how a notebook connects.
-try:
-    sts = boto3.client("sts", region_name=REGION)
-    chained = sts.assume_role(
-        RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
-        RoleSessionName="redshift-per-project",
-        ExternalId=PROJECT,
-    )["Credentials"]
-    say("4a assumed the access role", "ok", "the per-project grantee's credentials")
-except Exception as exc:
-    say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
-        "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the trust "
-        "policy is the external id, which must equal the project id")
-    raise SystemExit("no chained session, so step 4 cannot be measured")
-
-conn2 = redshift_connector.connect(
-    iam=True,
-    is_serverless=True,
-    serverless_work_group=WORKGROUP,
-    database=DATABASE,
-    region=REGION,
-    access_key_id=chained["AccessKeyId"],
-    secret_access_key=chained["SecretAccessKey"],
-    session_token=chained["SessionToken"],
-)
-with conn2.cursor() as cur:
-    cur.execute("select current_user")
-    user2 = cur.fetchone()[0]
-    per_project = not user2.startswith("IAMR:user-")
-    say("4b the grantee", "ok" if per_project else "FAIL",
-        f"{user2} - per PROJECT" if per_project else
-        f"{user2} - still per person, so the chained session inherited the tag after all")
-
-    cur.execute("select role_name from svv_user_grants where user_name = current_user")
-    roles2 = [r[0] for r in cur.fetchall()]
-    say("4c roles", "ok" if roles2 else "FAIL",
-        str(roles2) if roles2 else "none - the per-project user holds no role either, so the "
-        "chain reached a different user than the Data page's")
-
-    chained_table = f"{TABLE}_via_access"
+# IT SHARES NOTHING WITH STEP 3 and runs even when step 3 failed, which is the whole point.
+if driver is None:
+    say("4a the chain", "FAIL", "no driver")
+else:
+    chained = None
     try:
-        cur.execute(f"drop table if exists {SCHEMA}.{chained_table}")
-        cur.execute(
-            f"create table {SCHEMA}.{chained_table} as select 1 as n, current_user as by_whom"
-        )
-        conn2.commit()
+        chained = boto3.client("sts", region_name=REGION).assume_role(
+            RoleArn=f"arn:aws:iam::{account}:role/{WORKGROUP}-access-{PROJECT}",
+            RoleSessionName="redshift-per-project",
+            ExternalId=PROJECT,
+        )["Credentials"]
+        say("4a assumed the access role", "ok", "the per-project grantee's credentials")
     except Exception as exc:
-        conn2.rollback()
-        say("4d write", "FAIL", f"{str(getattr(exc, 'args', [exc])[0])[:200]}")
-        raise SystemExit("no write through the chain, so 4e has nothing to judge")
-    say("4d write", "ok", f"{SCHEMA}.{chained_table} created by this session")
-
-    cur.execute(
-        "select identity_name, privilege_type from svv_relation_privileges "
-        f"where namespace_name = '{SCHEMA}' and relation_name = '{chained_table}'"
-    )
-    rows = cur.fetchall()
-    say("4e the default privilege fires", "ok" if rows else "FAIL",
-        f"{rows} - non-empty means the schema's default privilege named THIS owner, so read-across "
-        "works without one statement per person")
-conn2.close()
+        say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
+            "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the "
+            "trust policy is the external id, which must equal the project id")
+    if chained:
+        try:
+            conn2 = open_session(chained)
+        except Exception as exc:
+            conn2 = None
+            say("4b chained session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]}")
+        if conn2:
+            measure("4", conn2, f"{TABLE}_via_access")
+            conn2.close()
 
 print()
-print(f"{results.count('ok')} ok, {results.count('warn')} warn, {results.count('FAIL')} FAIL")
 ```
 
 **What each failure means**, which is why the script prints a verdict per step rather than one at the

@@ -1716,3 +1716,51 @@ before was corrected: a check whose verdict is a constant, and an act whose fail
 exception. The script's whole purpose is that a failure names a layer, and the author of that purpose
 broke it three times. What catches it is reading the code back before handing it over, which is the only
 reason this entry exists rather than another run reporting a traceback.
+
+---
+
+## 2026-10-11 — step 3's exit killed step 4, and the script's control flow was the fourth defect of the day
+
+*Written by Claude in the sitting that ran it. The run is the **user's**.*
+
+### What happened
+
+```
+[FAIL] 3d write and read   permission denied for schema lab
+SystemExit: no write, so 3e has nothing to judge
+```
+
+Step 4 never ran. It shares nothing with step 3 — it opens its own session through a different
+identity chain — and it was the measurement the whole sitting was for. `raise SystemExit` was correct
+for skipping `3e` and wrong for everything after it.
+
+**And `SystemExit` is the wrong mechanism in a notebook at all**: it prints `An exception has occurred,
+use %tb` rather than exiting quietly, so every one of the five in this script produced noise where a
+verdict belonged.
+
+### Rewritten rather than patched again
+
+Four defects of the same family appeared in one day — a diagnostic after the act it diagnoses, a verdict
+hardcoded to `ok`, an unwrapped write, and now a fatal exit across independent steps — each introduced
+minutes after the previous was fixed. Patching had stopped working, so steps 3 and 4 are one rewritten
+section:
+
+- **every step is guarded, none is fatal.** The only `SystemExit` left is the identity read, labelled in
+  the code as the one deliberate exception: the workgroup host is derived from the account id, so
+  without an identity there is nothing to measure rather than something to report.
+- **the two sessions share one `measure()`**, so the per-person and per-project chains are judged by
+  identical code and cannot differ by a typo in one copy (Lesson 33 in miniature).
+- **`open_session(creds=None)`** is the only place the driver is called; passing chained credentials is
+  the single difference between the doors.
+- **sub-steps are numbered** `3c`..`3f` and `4c`..`4f`, because the sequence of verdicts is the output's
+  whole value and `3 the grantee` after `3b` read as a mistake.
+- the new table in step 4 is `hello_jupyter_via_access`, so three chains leave three distinguishable
+  objects: `hello` from the Data page, `hello_jupyter` from the direct session, and this one.
+
+### What the run did establish
+
+Steps 1, 2, 2b, 3a and 3b are green again, `3c` names the per-person grantee, `3d` reports no roles, and
+`3e` fails as `permission denied for schema lab`. That is the third consistent reading of the same
+thing: **on the JupyterLab door, as the project role, there is no grant and no mechanism that supplies
+one.** Nothing in this entry changes that; it changes only whether the script gets far enough to measure
+the alternative.
