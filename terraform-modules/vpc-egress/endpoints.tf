@@ -108,19 +108,32 @@ locals {
     flatten([for g in var.optional_service_groups : local.optional_services[g]]),
   ))
 
+  # The same list with every optional group on, whatever this apply names. No endpoint exists for a
+  # service only this list carries: no-proxy.tf reads it at plan time for the bypass list of a client
+  # that outlives the apply.
+  services_all_groups = distinct(concat(
+    var.core_services,
+    var.extra_services,
+    flatten(values(local.optional_services)),
+  ))
+
   # The service name is regional and almost uniform - `com.amazonaws.<region>.<token>` -
   # with one measured exception (verification (i), answered 2026-08-15 from the region's
   # catalog, aws/egress.py 7): SageMaker Studio is `aws.sagemaker.<region>.studio`. The same
   # catalog run measured that every service both lists carry supports an endpoint policy, so
   # the document below is attached unconditionally.
-  service_names = {
-    for s in local.services :
+  #
+  # Built over the wider list and selected for the endpoints, so the exception is written once.
+  service_names_all_groups = {
+    for s in local.services_all_groups :
     s => (
       s == "sagemaker.studio"
       ? "aws.sagemaker.${data.aws_region.current.region}.studio"
       : "com.amazonaws.${data.aws_region.current.region}.${s}"
     )
   }
+
+  service_names = { for s in local.services : s => local.service_names_all_groups[s] }
 
   # Step 9's document for every interface endpoint, one copy (Lesson 14) - the
   # trusted-networks axis: this network path serves this organization's principals and the
