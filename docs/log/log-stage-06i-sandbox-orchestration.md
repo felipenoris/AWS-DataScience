@@ -702,3 +702,24 @@ the task execution logs for more details`"
   05:32:30Z and 05:34:00Z are the portal's: the archive (05:32:39Z) and the definition (05:32:41Z).
 - **Reading:** the copy the service keeps, encrypted under the project key, lives in storage the service
   owns, which no reading here reaches. Its bucket and its account are unread.
+
+### [user] Which control refuses the snapshot
+
+**[user]** "Entendi que o snapshot do código é gerenciado pelo serviço. Neste caso, qual controle está barrando o
+acesso ao snapshot?"
+
+### [Claude] The worker's only path to S3 is the gateway endpoint
+
+- **The route:** the worker's subnet, `awsds-sandbox-private-usw2-az1`, has no default route. Its table holds
+  the local range, the peerings and two prefix lists, and `pl-68a54001` (`com.amazonaws.us-west-2.s3`) goes to
+  `vpce-0cc3e139c1167ca83`, the S3 gateway endpoint.
+- **The address:** `3.5.84.222`, the worker's only S3 peer, sits in that prefix list's `3.5.80.0/21`. Its
+  request passed through the endpoint, and the endpoint's policy was evaluated on it.
+- **The policy's two statements** (`terraform-modules/vpc/endpoints.tf`): `AllowWithinOrganization` needs
+  `aws:ResourceOrgID` to be this organization's, which an AWS-owned bucket's is not, and
+  `AllowAwsOwnedServiceBuckets` names seven bucket families, none of them MWAA Serverless's. An endpoint
+  policy is an allow-list, so the request matches neither and is refused, whatever its signer.
+- **The other layers do not refuse a read of an AWS-owned bucket.** The SCP's S3 statement denies writes
+  outside the organization only (`DenyS3ObjectWriteOutsideOrganization`), the security group allows all
+  egress, and the flow log reads `ACCEPT` both ways with a reply from S3: the refusal is S3's answer, not a
+  dropped packet. It lands in the bucket owner's trail, not here.
