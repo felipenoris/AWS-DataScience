@@ -131,7 +131,7 @@ prerequisite of this exercise and stays where 6f handed it.
 
 | Where | What | Layer |
 |---|---|---|
-| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's paste-ready `config`, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
+| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's importable definition, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
 | the project's `shared/orchestration-demo/` | the uploaded copies, and an `inbox/` and `outbox/` per variant | data, not a resource |
 | the project's Workflows, in the portal | `demo-devenv-job`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
@@ -233,7 +233,7 @@ and the files before anything runs.
     `transform.py` (stdlib only: for each input CSV, a JSON result with the row count, the column names and
     the input's sha256), `__main__.py` (local mode, `--input DIR --output DIR`) and `s3.py` (worker mode,
     boto3), and a test for `transform.py`;
-  - the processing task's `config` for passes 2 and 3, paste-ready, every account-scoped value a placeholder,
+  - `demo-devenv-job`'s definition for passes 2 and 3, importable, every account-scoped value a placeholder,
     so the pre-commit check on account ids holds;
   - the operator files for steps 4 and 5;
   - one sample CSV.
@@ -274,7 +274,13 @@ answers them.
     way through is one placeholder operator file, `devenv-job/no_operator_code.py`. The portal writes
     the definition first and deletes it after a refusal, and it injects seven `DataZone*`
     environment variables into every workflow ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
-- **2.2 — [user] Set the processing task's `config`**, every boundary field named:
+- **2.2 — [user] Import the definition**, which sets the processing task's `config` with every boundary
+  field named. **Measured 2026-10-10: the editor's SageMaker Processing task is a form** (task name, job
+  name, input and output data, image URI, entrypoint, arguments, instance type and count, volume, execution
+  role) **with no field for `NetworkConfig`, either KMS key or the tags**, the notebook operator's shape
+  again. *Actions → Import definition file* takes the whole workflow as YAML, so the rendered
+  `devenv-job/demo-devenv-job.probe.yaml` is imported, and the definition the portal saves is read back
+  before the first run, in case the import drops what the form cannot show:
 
   | Field | Value |
   |---|---|
@@ -309,8 +315,9 @@ answers them.
 
 **Action:** replace the probe with the project's command, which makes the second version of the workflow.
 
-- **3.1 — [user] Edit the processing task in the portal** (Stage 10's 0.4, verification i, closes here with
-  the editor's fields recorded in 2.1 and this edit's behaviour):
+- **3.1 — [user] Import `devenv-job/demo-devenv-job.project.yaml` over the probe** (Stage 10's 0.4,
+  verification i, closes here with the editor's fields recorded in 2.1 and 2.2). It changes the processing
+  task's command:
   - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job", "--input",
     "/opt/ml/processing/inbox", "--output", "/opt/ml/processing/outbox"]`, the interpreter decision 2 took;
   - `Environment`: `{"PYTHONPATH": "/opt/ml/processing/code/src"}`.
@@ -435,7 +442,8 @@ with the recommendation stated (Lesson 16).
    leaves nothing reviewable. Taking it adds a line to the repository layout in `README.md`. **Taken
    2026-10-10 (the user): this repository, with the two directions split.** The code is written here and
    uploaded to the project. The definition's source is the portal, which generates and versions it: before a
-   pass the repository holds the paste-ready `config`, and after it the definition the portal holds, read back
+   pass the repository holds the importable definition (first written as a paste-ready `config`, which the
+   editor's form has no field for), and after it the definition the portal holds, read back
    (`get-workflow`'s `WorkflowDefinition`, the YAML *View code* shows) and committed with the same
    placeholders.
 2. **Which interpreter the job runs** (3.1). Recommended: **the house environment, `/opt/awsds/venv/bin/python`**

@@ -224,7 +224,15 @@ def main(argv: list) -> int:
     # ------------------------------------------------------------------ the workflows
     listed = run_json("mwaa-serverless", "list-workflows") or {}
     all_wfs = listed.get("Workflows", [])
-    wf_by_name = {w.get("Name"): w for w in all_wfs}
+    # A name is not unique: the service appends a suffix to the ARN, and one portal save made two
+    # workflows with one name 2 s apart (measured 2026-10-10). The newest is read in detail; SO-1
+    # fails on the duplicates.
+    same_name = {}
+    for w in all_wfs:
+        same_name.setdefault(w.get("Name"), []).append(w)
+    for group in same_name.values():
+        group.sort(key=lambda w: w.get("CreatedAt", ""), reverse=True)
+    wf_by_name = {name: group[0] for name, group in same_name.items()}
     wfs = {}  # contract name -> details
     for name, variant in WORKFLOWS.items():
         w = wf_by_name.get(name)
@@ -476,6 +484,15 @@ def main(argv: list) -> int:
             checks.note("SO-1", name, "absent - not built yet (Stage 6i passes 2, 4, 5).")
             continue
         status = d["summary"].get("WorkflowStatus", "-")
+        twins = same_name.get(name, [])
+        if len(twins) > 1:
+            suffixes = ", ".join(w.get("WorkflowArn", "").rsplit("/", 1)[-1] for w in twins)
+            checks.fail(
+                "SO-1",
+                name,
+                f"{len(twins)} workflows carry this name ({suffixes}) - delete the extra ones; "
+                "the newest is the one read below.",
+            )
         evs = [ev for ev in create_wf if wf_name(ev) == name]
         who = sorted({caller_of(ev)[0] for ev in evs})
         if status != "READY":

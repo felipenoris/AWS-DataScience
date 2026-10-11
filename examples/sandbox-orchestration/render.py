@@ -2,7 +2,7 @@
 """Stage 6i's placeholders, filled with the live values of the Sandbox project.
 
     ./examples/sandbox-orchestration/render.py --values
-    ./examples/sandbox-orchestration/render.py devenv-job/processing-config.probe.json
+    ./examples/sandbox-orchestration/render.py examples/sandbox-orchestration/devenv-job/demo-devenv-job.probe.yaml
     ./examples/sandbox-orchestration/render.py --profile awsds-infra-sandbox-1 README.md
 
 The repository holds every account-scoped value as a `<PLACEHOLDER>` (Stage 6i decision 1),

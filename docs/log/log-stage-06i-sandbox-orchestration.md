@@ -159,3 +159,44 @@ first save came before the other two tasks existed.
 Upload one operator file in the workflow's *Settings → Storage*, so that the portal writes the zip its
 request names: `examples/sandbox-orchestration/devenv-job/no_operator_code.py`, a docstring and nothing
 else.
+
+## 2026-10-10 — pass 2: the save goes through, twice, and the processing form
+
+*The portal session is the user's; every reading is Claude's own, from `awsds-infra-sandbox-1`.*
+
+### [user] The placeholder, and the form
+
+**[user]** "importei um script hello.py com print('hello') na seção Storage e com isso a interface permitiu
+eu salvar o workflow."
+
+**[user]** "No SageMaker Processing Operator não aparece campo config onde posso colar o JSON. Em vez disso
+aparece um formulário com vários campos: Task name, Processing job name, Data (input), Data (output),
+Contianer image URI, Container entrypoint, Container arguments, instance type, instance count, volume,
+execution role arn. Como alternativa, existe a opção \"Actions -> Import definition file\" para o Workflow
+como um todo."
+
+### [Claude] What the save made
+
+- **Two workflows, one name.** `CreateWorkflow` succeeded twice from one save, at 01:00:57Z and 01:00:59Z,
+  and the account now holds `demo-devenv-job-W6HvorwGu9` and `demo-devenv-job-1N0Y70z8Jr`. The service
+  appends a suffix to the ARN, so a name is not unique. Each workflow is `READY` with one version.
+- **One file is uploaded as it is.** Each workflow's `Code` is `dev/operatorFiles/hello.py`, not a zip,
+  each with its own S3 version and `CodeSnapshottedAt` (01:00:57.7Z and 01:00:59.4Z).
+- **Both definitions hold one task**, `wait_for_file`. The form could not express the processing job, so
+  it was never added.
+- **`SO-1` now fails on a duplicated name.** `./aws/sandbox-orchestration.py` reads the newest of the two
+  in detail; `SO-2` and `SO-3` pass on it.
+
+### [Claude] The processing job, as a definition
+
+The form has no field for `NetworkConfig`, for either KMS key or for the tags, so a job it builds meets the
+boundary's four denies and the project-tag condition. This is decision due 14's notebook operator again,
+but this operator can be configured past it: the definition carries the whole `config`.
+
+`examples/sandbox-orchestration/devenv-job/demo-devenv-job.probe.yaml` and `.project.yaml` replace the two
+JSON configurations. Both rendered with `render.py` and parsed with PyYAML:
+
+- three tasks in a chain, through `dependencies`;
+- `EnableNetworkIsolation` and `EnableInterContainerTrafficEncryption` as booleans;
+- the probe's `/bin/bash` command, and the project's `/opt/awsds/venv/bin/python` command with its
+  `PYTHONPATH`.
