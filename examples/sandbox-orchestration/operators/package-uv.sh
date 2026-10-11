@@ -72,14 +72,24 @@ cp "$entry" "$stage/root/"
 rm -rf "$stage/root/.lock" "$stage/root/bin"
 find "$stage/root" -name __pycache__ -type d -prune -exec rm -rf {} +
 
+# Zipped by Python rather than by zip(1), which the house image does not carry, so the script runs
+# in a space as well as on a laptop. The guide's limit is 250 MB, unzipped as well.
 rm -f "$archive"
-(cd "$stage/root" && zip -qr "$archive" . -x '*.pyc')
+uv run --no-project --quiet python - "$stage/root" "$archive" "$python" "$platform" <<'PY'
+import sys, zipfile
+from pathlib import Path
 
-# The guide's limit is 250 MB, unzipped as well.
-unzipped=$(unzip -l "$archive" | tail -1 | awk '{print $1}')
-if ((unzipped > 250000000)); then
-  echo "$archive unzips to $unzipped bytes, over the 250 MB limit" >&2
-  exit 1
-fi
-echo "$archive: $(wc -c <"$archive" | tr -d ' ') bytes, $unzipped unzipped, for CPython $python on $platform"
-unzip -Z1 "$archive" | awk -F/ '{print $1}' | sort -u
+root, archive, python, platform = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4]
+files = sorted(p for p in root.rglob("*") if p.is_file() and p.suffix != ".pyc")
+with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+    for p in files:
+        zf.write(p, p.relative_to(root).as_posix())
+unzipped = sum(p.stat().st_size for p in files)
+if unzipped > 250_000_000:
+    archive.unlink()
+    sys.exit(f"{archive} would unzip to {unzipped} bytes, over the 250 MB limit; nothing written")
+print(f"{archive}: {archive.stat().st_size} bytes, {unzipped} unzipped, for CPython {python} on {platform}")
+print("top level:", ", ".join(sorted({p.relative_to(root).parts[0] for p in files})))
+PY
+echo "next: upload it in the workflow's Settings -> Storage -> Python/Bash Operator Files, save, and"
+echo "      name the callable as python_callable: $(basename "$entry" .py).<function>"

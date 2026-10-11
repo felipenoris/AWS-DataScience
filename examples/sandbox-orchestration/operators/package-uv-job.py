@@ -216,6 +216,11 @@ def main(argv: list | None = None) -> int:
     print(f"from the image ({len(provided)}): {', '.join(sorted(provided)) or '-'}")
     print(f"vendored ({len(vendored)}): {listed}")
     print("top level:", ", ".join(sorted(p.name for p in args.output.iterdir())))
+    print(
+        "next: copy the folder into the project's storage (in a space: cp -r <folder> ~/shared/<name>/),\n"
+        "      name that prefix as the job's code input at /opt/ml/processing/code, and set\n"
+        "      PYTHONPATH: /opt/ml/processing/code in the job's Environment"
+    )
     return 0
 
 

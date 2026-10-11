@@ -16,8 +16,8 @@ exercised: a SageMaker processing job in the house image, a `PythonOperator` and
 | **§O** | both | the pieces: where the definition, the code, the logs and the runs live |
 | **§G** | infrastructure | the grant a project needs before its first processing task, once per project |
 | **§A** | the data scientist | authoring rules every workflow obeys: the editor, the import, the templates, the sensor |
-| **§J** | the data scientist | a processing task in the house image, under the D13 boundary |
-| **§C** | the data scientist | code for a Python or Bash task: the archive, its dependencies, the upload |
+| **§J** | the data scientist | a processing task in the house image, under the D13 boundary; a project with dependencies through `package-uv-job.py` |
+| **§C** | the data scientist | code for a Python or Bash task: what the worker expects, packaging a uv project with `package-uv.sh`, the upload |
 | **§V** | both | reading a run back, one instrument per question |
 | **§X** | both | cleaning up |
 
@@ -26,7 +26,9 @@ image that summarises the sample, and the source deleted after the result landed
 (run `f9L7CKQzmUQWQTR`). **A workflow with a code archive does not run in Sandbox today**: its worker
 fails while preparing its environment, before any task, because the S3 gateway endpoint's allow-list
 refuses the bucket the service keeps the code in (6i decision 7, open). §C describes the packaging that
-was built and verified locally; nothing in it has run on a worker yet.
+was built and verified locally; nothing in it has run on a worker yet. The two packaging scripts live in
+`examples/sandbox-orchestration/operators/`: `package-uv.sh` for a Python or Bash task (§C2) and
+`package-uv-job.py` for a processing job (§J1).
 
 ---
 
@@ -170,12 +172,12 @@ Environment:
 - `/opt/awsds/venv/bin/python` is the house environment (Python 3.13); `/opt/conda/bin/python` is the
   distribution's (3.12).
 
-### J1 — A project with dependencies
+### J1 — A project with dependencies: `package-uv-job.py`
 
 The job has no network, so a project's dependencies either come with the house environment or travel in
 the code input; nothing is installed at run time. Three things differ from a Python task's archive (§C):
 
-- **The interpreter is the house environment's**, CPython 3.13 on linux x86_64, not the worker's 3.12.
+- **The interpreter is the house environment's**, CPython 3.13 on Linux x86_64 today, not the worker's.
 - **The code input is a folder, not an archive.** A `ProcessingInput` downloads an S3 prefix, and an
   extension module cannot be imported from a zip on `sys.path`.
 - **The precedence is the worker's reversed.** `PYTHONPATH` comes before the house environment's
@@ -183,48 +185,92 @@ the code input; nothing is installed at run time. Three things differ from a Pyt
   `images/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
   lacks, and the project's versions must equal the image's for everything they share.
 
-`examples/sandbox-orchestration/operators/package-uv-job.py` applies the three, for a uv project:
+`examples/sandbox-orchestration/operators/package-uv-job.py` applies the three to a project uv manages.
+Run it from a clone of this repository: in a space, where uv and the project's storage (`~/shared/`)
+are both at hand, or on the laptop, carrying the folder to `shared/` afterwards.
 
-```bash
-./examples/sandbox-orchestration/operators/package-uv-job.py [--python X.Y] [--platform TAG] <project dir> <output folder>
-```
+1. **Prepare the project.**
+   - It has a `pyproject.toml` and a current `uv.lock`.
+   - Its `requires-python` admits the image's Python, 3.13 today.
+   - Its own code is pure Python, and it runs as `python -m my_package` (a `__main__.py`).
+2. **Check it against the image and build the folder:**
 
-`--python` defaults to the `ARG PYTHON_VERSION` of `images/dev-env/Dockerfile`, the image's own
-interpreter, so a new image version moves it with no edit here; another value is accepted with a note.
-`--platform` defaults to `x86_64-manylinux_2_28`: the house environment holds `onnxruntime` 1.30.0,
-which publishes no wheel older than `manylinux_2_28`, so the image's glibc is at least 2.28 and
-`manylinux2014` cannot describe it (measured 2026-10-11).
+   ```bash
+   ./examples/sandbox-orchestration/operators/package-uv-job.py ~/src/my-project /tmp/my-job
+   ```
 
-It reads the house environment from `images/dev-env/python/uv.lock`, takes the project's locked closure,
-evaluates both for the target's Python and platform, and sorts the closure three ways: provided by the
-image, vendored (absent from the image), or in conflict. The markers are evaluated by the script rather
-than by a resolver, since the image holds `torch` from PyTorch's own index and packages with no wheel
-for every Python, which a resolver would refuse. A conflict stops it and prints a block to add to the
-project's `pyproject.toml`:
+   The output folder must not exist yet. `--python` defaults to the `ARG PYTHON_VERSION` of
+   `images/dev-env/Dockerfile` and `--platform` to `x86_64-manylinux_2_28`, so a new image moves the
+   target with no flag. The house environment holds `onnxruntime` 1.30.0, which publishes no wheel older
+   than `manylinux_2_28`, so the image's glibc is at least 2.28 and `manylinux2014` cannot describe it
+   (measured 2026-10-11). Another value of either flag is accepted, with a note.
+3. **If it reports a disagreement**, paste the block it prints into the project's `pyproject.toml`, run
+   `uv lock`, and run step 2 again:
 
-```toml
-[tool.uv]
-constraint-dependencies = [
-  "boto3==1.43.92",
-  ...
-]
-```
+   ```toml
+   [tool.uv]
+   constraint-dependencies = [
+     "boto3==1.43.92",
+     ...
+   ]
+   ```
 
-`uv lock` then resolves within the image's versions. A lower bound of the project above an image
-version fails that lock, and then the dependency belongs in the image (a new image version, through
-[`dev-env.md`](dev-env.md)), not in the job. Without a conflict it builds the folder: the project's
-wheel and the vendored packages, built for the job's platform.
+   The block pins every package the project shares with the image to the image's version. A lower bound
+   of the project above an image version fails that lock, and then the dependency belongs in the image (a
+   new image version, through [`dev-env.md`](dev-env.md)), not in the job. `--constraints` prints every
+   image version in requirements form, for `uv pip compile -c` or `uv add -c`.
+4. **Read what it printed**: the folder and its size, what comes from the image, what was vendored, and
+   the top level, which is the project and the vendored packages only. Its last lines are the next steps.
+5. **Copy the folder into the project's storage under a name of its own per version.** A processing input
+   downloads the whole prefix, so a copy over an older folder would mix two versions. In a space:
+
+   ```bash
+   cp -r /tmp/my-job ~/shared/jobs/my-job-0.2.0
+   ```
+
+6. **Name it in the job's `config`**, beside the boundary's settings (§J), and import the definition (§A):
+
+   ```yaml
+   ProcessingInputs:
+     - InputName: code
+       S3Input:
+         S3Uri: s3://<projects bucket>/<domain>/<project>/shared/jobs/my-job-0.2.0/
+         LocalPath: /opt/ml/processing/code
+         S3DataType: S3Prefix
+         S3InputMode: File
+         S3DataDistributionType: FullyReplicated
+   AppSpecification:
+     ContainerEntrypoint: [/bin/bash, -c]
+     ContainerArguments:
+       - 'sudo -n chown "$(id -u)" /opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m my_package --input /opt/ml/processing/inbox --output /opt/ml/processing/outbox'
+   Environment:
+     PYTHONPATH: /opt/ml/processing/code
+   ```
+
+7. **A new image version changes the target.** Run the script from the commit that built the image the
+   job names, so that its lock and its Dockerfile are that image's. A new version of the code is steps
+   2, 5 and 6 under a new folder name. The job reads the prefix at each run, with no copy taken at a
+   save, so this path works in Sandbox today.
+
+**When the script refuses:**
+
+| It says | Meaning | What to do |
+|---|---|---|
+| `no uv.lock in ...` | the project was never locked | `uv lock` in the project |
+| `... exists - name a folder that does not` | the output folder is there already | a new folder, or remove the old one |
+| `the project's lock and the house environment disagree` | a shared package at another version | step 3 |
+| `not pure Python, so it cannot be built here for the job` | the project has extension modules | build its wheel on the target platform, in a pipeline (Stage 8) |
+| `no wheels with a matching platform tag` | a vendored dependency publishes no wheel for the target | another version or another package, or the image |
 
 **Measured 2026-10-11** on a throwaway uv project depending on `petl`, `requests`, `boto3` and `pyyaml`:
 its fresh lock disagreed with the image on `boto3`, `botocore`, `charset-normalizer`, `idna` and
 `urllib3`; with the printed block and a re-lock, 12 packages came from the image and only `petl` was
-vendored, a 1.2 MB folder.
+vendored, a 1.2 MB folder. The image's markers are evaluated by the script rather than by a resolver,
+since the image holds `torch` from PyTorch's own index and packages with no wheel for every Python,
+which a resolver refuses.
 
-**Using the folder:** copy it into the project's storage (from a space, `cp -r <folder>
-~/shared/<name>/`), name that prefix as the `code` input at `/opt/ml/processing/code`, set
-`PYTHONPATH: /opt/ml/processing/code`, and run `exec /opt/awsds/venv/bin/python -m <package>` after the
-`chown`. The lock in the repository must be the one of the image version the job names. The demo job's
-project has no dependencies, so its input is its source tree with `PYTHONPATH` at `src/`.
+**The exercise's own job** needs none of this: `awsds-demo-job` has no dependencies, so its input is its
+source tree, `shared/awsds-demo-job/`, with `PYTHONPATH` at `/opt/ml/processing/code/src`.
 
 **The workflow deletes the source, not the job**: an isolated container cannot reach S3. The third task
 is `S3DeleteObjectsOperator` on the inbox prefix, after the processing task.
@@ -242,8 +288,8 @@ processing task holds its worker for the whole job.
 **Status in Sandbox: blocked.** A workflow with a code archive fails before its first task with
 `Execution environment preparation failed due to an internal server error`. The worker fetches the
 service's copy of the code (§O) through the S3 gateway endpoint, and the endpoint's allow-list names no
-MWAA Serverless bucket. 6i decision 7 holds the options. The packaging below is the guide's and was
-verified locally.
+MWAA Serverless bucket. 6i decision 7 holds the options. Everything below was built and verified
+locally; none of it has run on a worker yet.
 
 ### C1 — What the worker expects
 
@@ -252,92 +298,103 @@ verified locally.
 - **Everything at the archive's root**: your modules, your packages and every third-party package. The
   worker extracts the archive to `/usr/local/airflow/dags`, which is on `sys.path`, so a module at the
   root imports by its name.
-- **Third-party packages built for the worker**: CPython 3.12, Linux, x86_64. A package installed for
-  your laptop or for the house environment (Python 3.13) does not import there.
+- **Third-party packages built for the worker**: CPython 3.12 on Linux x86_64 today. A package installed
+  for your laptop or for the house environment (Python 3.13) does not import there.
 - **No package the worker already has.** The guide says a pre-installed package wins over the archive's
-  copy (6i verification viii, unmeasured): Airflow,
-  the Amazon provider, boto3 and botocore, dag-factory, PyYAML, lz4 and the AWS encryption SDK family.
-  Write against the worker's boto3 1.43.1.
+  copy (6i verification viii, unmeasured): Airflow, the Amazon provider, boto3 and botocore,
+  dag-factory, PyYAML, lz4 and the AWS encryption SDK family. Write against the worker's boto3 1.43.1.
 - **No `__pycache__` or `.pyc`**: bytecode from another platform may not load.
 - **No secret**: the archive is copied by the service and stored outside the account.
 
-### C2 — The layout
+### C2 — Packaging a uv project with `package-uv.sh`
 
-```
-python-operator.zip          the archive: the CONTENTS of the staging folder, no folder of its own
-├── demo_tasks.py            the module the task names: python_callable: demo_tasks.run
-├── awsds_demo_job/          your own package, copied as it is
-│   ├── __init__.py
-│   ├── transform.py
-│   └── s3.py
-├── petl/                    a third-party package, installed for the worker
-├── petl-1.7.28.dist-info/
-└── ...
-```
+`examples/sandbox-orchestration/operators/package-uv.sh` turns a project that uv manages into the archive
+C1 describes. Run it from a clone of this repository, where uv can reach PyPI: on the laptop, whose
+browser uploads the archive, or in a space, which carries uv, and then download the archive from the
+file browser.
 
-### C3 — Building it
+1. **Prepare the project.**
+   - It has a `pyproject.toml` and a current `uv.lock`: run `uv lock` in the project after any change.
+   - Its `requires-python` admits the worker's Python, 3.12 today.
+   - Its own code is pure Python. A project with extension modules cannot be built on a laptop for the
+     worker, and the script refuses it.
+   - An entry module, a small file beside the package rather than inside it, holds the function the
+     task calls:
 
-`examples/sandbox-orchestration/operators/build.sh` is this procedure, with uv. By hand, with pip:
+     ```python
+     # tasks.py
+     from my_package import pipeline
 
-```bash
-rm -rf build && mkdir build
-cp demo_tasks.py build/
-cp -R src/awsds_demo_job build/
-pip install -r requirements.txt --target build \
-    --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all:
-find build -name __pycache__ -type d -prune -exec rm -rf {} +
-(cd build && zip -qr ../python-operator.zip . -x '*.pyc')
-```
 
-With uv, the install line is
-`uv pip install --target build --python-platform x86_64-manylinux2014 --python-version 3.12 --only-binary :all: -r requirements.txt`,
-and `rm -f build/.lock` removes the lock file uv leaves in the target.
+     def run(bucket: str, inbox: str, outbox: str, **_context):
+         return pipeline.process(bucket, inbox, outbox)
+     ```
 
-- `--only-binary` refuses a source distribution, which would compile for the machine that builds.
-- The `cd build` makes every path relative to the folder, so the archive has no top-level `build/`.
-- Check the root before uploading: `unzip -l python-operator.zip | head` lists `demo_tasks.py`, not
-  `build/demo_tasks.py`.
-- The worker has no internet, so every dependency is in the archive or pre-installed; nothing is
-  installed at run time.
+2. **Run the script**, naming the project, the entry module and the archive to write:
 
-### C3a — A uv project
+   ```bash
+   ./examples/sandbox-orchestration/operators/package-uv.sh ~/src/my-project ~/src/my-project/tasks.py ~/Downloads/my-task.zip
+   ```
 
-A project that uv manages, with a `pyproject.toml` and a `uv.lock`, is packaged by
-`examples/sandbox-orchestration/operators/package-uv.sh`:
+   `--python X.Y` and `--platform TAG` change the target; the defaults, 3.12 and `x86_64-manylinux2014`,
+   are the worker the guide describes. The service can move the worker to another interpreter without
+   notice, and a task log names the one it ran, in its paths (`.../python3.12/site-packages/...`): when
+   that path changes, pass the new version. `OMIT="name ..."` leaves out more packages.
+3. **Read what it printed**: the archive's size and its top level, which lists your package, the entry
+   module and the third-party packages, and none of the worker's own (`boto3`, `botocore`, `yaml`,
+   Airflow). Its last line is the next step.
+4. **Upload the archive** in the workflow's *Settings → Storage → Python/Bash Operator Files*, and save.
+5. **Name the callable** in the task (C4): `python_callable: tasks.run`, which the editor shows as *File*
+   `tasks` and *Function* `run`. A Bash task runs `python3 -m my_package ...` from
+   `/usr/local/airflow/dags`, where the archive is extracted.
+6. **A new version of the code** is the same three moves: run the script, upload, save. The workflow
+   keeps running the copy taken at its last save.
 
-```bash
-./examples/sandbox-orchestration/operators/package-uv.sh [--python X.Y] [--platform TAG] <project dir> <entry module .py> <archive .zip>
-```
+**When the script refuses:**
 
-`--python` defaults to 3.12 and `--platform` to `x86_64-manylinux2014`, the worker the guide describes.
-Both are flags because the service can move the worker to another interpreter without notice; a task
-log names the one it ran, in its paths (`.../python3.12/site-packages/...`).
+| It says | Meaning | What to do |
+|---|---|---|
+| `The lockfile at uv.lock needs to be updated` | `pyproject.toml` changed after the lock | `uv lock` in the project |
+| `no wheels with a matching platform tag` | a dependency publishes no wheel for the target | it cannot travel in the archive: another version or another package |
+| `not pure Python, cannot be built here for the worker` | the project has extension modules | build its wheel on the target platform, in a pipeline (Stage 8) |
+| `over the 250 MB limit` | the archive is too big | `OMIT` more, or drop dependencies |
 
-It runs five steps, each one a rule of C1:
+**What it does**, each step one rule of C1:
 
 1. `uv export --locked --no-dev --no-emit-project --prune <name> ...` writes the locked closure as a
-   requirements file. `--locked` refuses a lock that no longer matches `pyproject.toml`, and `--prune`
-   removes each package the worker pre-installs together with the dependencies only it needs, so `boto3`
-   takes `s3transfer` and `jmespath` with it while `urllib3`, which `requests` also needs, stays.
-2. `uv pip install --target <stage> --no-deps --python-platform x86_64-manylinux2014 --python-version 3.12
-   --only-binary :all: -r <file>` installs the worker's wheels for that closure, with the lock's hashes.
-3. `uv build --wheel` builds the project from its `pyproject.toml`, and the same install puts the wheel's
-   package at the root. The project's `requires-python` must admit 3.12, or the install fails.
-4. The entry module, the file `python_callable` names, is copied to the root beside the package.
-5. uv's `.lock`, console scripts and bytecode are removed, the archive is zipped from inside the stage,
-   and an archive over 250 MB unzipped is refused.
-
-`OMIT="name ..."` prunes more packages. A dependency with no CPython 3.12 manylinux wheel fails step 2;
-it cannot be built on a Mac for the worker.
+   requirements file. `--locked` refuses a stale lock, and `--prune` removes each package the worker
+   pre-installs together with the dependencies only it needs, so `boto3` takes `s3transfer` and
+   `jmespath` with it while `urllib3`, which `requests` also needs, stays.
+2. `uv pip install --target <stage> --no-deps --only-binary :all: --python-version <X.Y>
+   --python-platform <TAG> -r <file>` installs the target's wheels for that closure, with the lock's
+   hashes. `--only-binary` refuses a source distribution, which would build for the laptop.
+3. `uv build --wheel` builds the project from its `pyproject.toml`, refused unless it is pure Python, and
+   the same install puts its package at the root.
+4. The entry module is copied to the root.
+5. uv's `.lock`, console scripts and bytecode are removed, and the stage is zipped by Python, since the
+   house image carries `unzip` but no `zip`; an archive over 250 MB unzipped is refused.
 
 **Measured 2026-10-11** on a throwaway uv project depending on `petl`, `requests`, `boto3` and `pyyaml`:
-959,979 bytes, holding the project, `tasks.py`, `petl` and `requests` with `certifi`,
+about 0.9 MB, holding the project, `tasks.py`, `petl` and `requests` with `certifi`,
 `charset_normalizer`, `idna` and `urllib3`; no `boto3`, `botocore`, `s3transfer`, `jmespath` or `yaml`;
-`charset_normalizer`'s compiled modules tagged `cp312-cp312-manylinux2014_x86_64`.
+`charset_normalizer`'s compiled modules tagged `cp312-cp312-manylinux2014_x86_64`, and `cpython-313`
+with `--python 3.13`.
 
 **Keep the entry module thin.** The editor shows `python_callable` as a *File* and a *Function*, so a
-root module such as `tasks.py` that imports from the package is what it can display. A dotted path into
-the package, `pkg.module.function`, is unmeasured here.
+root module that imports from the package is what it can display. A dotted path into the package,
+`pkg.module.function`, is unmeasured here.
+
+### C3 — What the archive holds
+
+```
+my-task.zip                  the CONTENTS of the staging folder, no folder of its own
+├── tasks.py                 the entry module: python_callable: tasks.run
+├── my_package/              your own package, from its wheel
+├── my_package-0.1.0.dist-info/
+├── petl/                    a third-party package, built for the worker
+├── petl-1.7.29.dist-info/
+└── ...
+```
 
 ### C4 — Naming the code in the definition
 
@@ -345,7 +402,7 @@ the package, `pkg.module.function`, is unmeasured here.
 run_project:
   operator: airflow.providers.standard.operators.python.PythonOperator
   dependencies: [wait_for_file]
-  python_callable: demo_tasks.run
+  python_callable: tasks.run
   op_kwargs:
     bucket: <projects bucket>
     inbox: <prefix>/inbox/
@@ -353,10 +410,9 @@ run_project:
   retries: 0
 ```
 
-`python_callable` is `<module>.<function>`, and the editor shows it as *File* `demo_tasks` and
-*Function* `run`. The function receives `op_kwargs` as keyword arguments, and the Airflow context too if
-it accepts `**kwargs`. A Bash task names `bash_command`; a script from the archive runs with
-`/usr/local/airflow/dags` as its working directory. The template is
+`python_callable` is `<module>.<function>`. The function receives `op_kwargs` as keyword arguments, and
+the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`; a script from the
+archive runs with `/usr/local/airflow/dags` as its working directory. The exercise's template is
 `examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`.
 
 ### C5 — Giving the archive to the workflow
@@ -375,10 +431,33 @@ prefix of loose files cannot be named, and a package with dependencies travels a
   save time in the saver's session. Not exercised here.
 
 **The portal guide's dependency recipe omits the platform flags** (`pip install --target ./package
-your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled package. Use C3 or C3a.
+your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled package. Use C2, or C6
+by hand.
 
 **A new version of the code needs a new save.** The workflow runs the copy taken at its last save, so
 replacing the S3 object changes nothing until the workflow is saved or imported again.
+
+### C6 — By hand, without uv
+
+For a project uv does not manage. `examples/sandbox-orchestration/operators/build.sh` builds the
+exercise's own archives this way.
+
+```bash
+rm -rf build && mkdir build
+cp tasks.py build/
+cp -R src/my_package build/
+pip install -r requirements.txt --target build \
+    --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all:
+find build -name __pycache__ -type d -prune -exec rm -rf {} +
+(cd build && zip -qr ../my-task.zip . -x '*.pyc')
+```
+
+- Leave out of `requirements.txt` every package the worker pre-installs (C1).
+- The `cd build` makes every path relative to the folder, so the archive has no top-level `build/`;
+  `unzip -l my-task.zip | head` lists `tasks.py`, not `build/tasks.py`.
+- With uv's pip interface the install line is `uv pip install --target build --python-platform
+  x86_64-manylinux2014 --python-version 3.12 --only-binary :all: -r requirements.txt`, and
+  `rm -f build/.lock` removes the lock file it leaves.
 
 ---
 
