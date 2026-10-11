@@ -278,7 +278,8 @@ answers them.
     `code.s3Location` = `dev/operatorFiles/<workflow name>.zip` on every `CreateWorkflow`, and uploads
     nothing there unless a file was added in *Settings → Storage*, so the service answers
     `ValidationException: Code not found in specified S3 location`. It sent `code: null` on 2026-09-10. The
-    way through is one placeholder operator file, `devenv-job/no_operator_code.py`. The portal writes
+    way through is any `.py` in *Settings → Storage* (pass 2's `hello.py`), or an import into a new
+    empty workflow, which saved with `code: null` (2026-10-10). The portal writes
     the definition first and deletes it after a refusal, and it injects seven `DataZone*`
     environment variables into every workflow ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
 - **2.2 — [user] Import the definition**, which sets the processing task's `config` with every boundary
