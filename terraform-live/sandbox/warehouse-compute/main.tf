@@ -152,15 +152,15 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = tostring(local.capacity.max_query_execution_time)
   }
 
-  # THE SIX THE SERVICE SETS, DECLARED SO THE PLAN IS STABLE. `config_parameter` is a set the
-  # provider owns whole: a workgroup created with three parameters reads back with nine, because
-  # Redshift fills its own defaults, and the provider then plans to REMOVE the six it was not told
-  # about - a perpetual "1 to change" that never converges (found 2026-09-20, on the first re-plan
-  # of this slice after the apply, which is why "re-plan No changes" is a step and not a courtesy).
+  # The six parameters the service sets, declared so their values are pinned. Redshift fills its own
+  # defaults, so a workgroup created with three parameters reads back with nine. Provider 6.66.0 and
+  # later keep only the declared keys in state and ignore the rest; 6.64.0 kept the whole set and
+  # planned to remove the six on every plan (measured 2026-09-20, the first re-plan after the apply).
+  # `enable_large_strings_opt_in`, which the service returns from 2026-10-13, is left undeclared and
+  # takes the service's default.
   #
-  # Declaring them is the fix and it is also the disclosure: these are the values a query actually
-  # runs under, and until now no tracked file said what they were. All six are the service's
-  # defaults, read back from `get-workgroup` after the first apply. Two are worth a sentence:
+  # These are the values a query runs under. All six are the service's defaults, read back from
+  # `get-workgroup` after the first apply. Two are worth a sentence:
   #
   #   auto_mv      automatic materialized views. ON by default, and it is COMPUTE the estate did
   #                not ask for: Redshift decides on its own to build and refresh materialized

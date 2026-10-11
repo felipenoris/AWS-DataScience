@@ -935,3 +935,25 @@ compute destroyed (make down)                         -> NOTE   no workgroup - n
 The runaway case was fed **today's own number**, 7,230 RPU-seconds in a 1,800-second interval, and it
 reports 1.45 USD/h — which is the rate that actually ran for six and a half hours with every check in
 this file passing. Live now: `WH-15` **pass**, *idle: 3 RPU-seconds*.
+
+## 2026-10-11 — the workgroup slice's provider moved to 6.68.0, ahead of `enable_large_strings_opt_in`
+
+*Written by Claude, after the user forwarded an AWS Health notice (Redshift operational notification,
+us-west-2): Redshift Serverless re-introduces the workgroup parameter `enable_large_strings_opt_in` on
+2026-10-13, and hashicorp/aws 6.65.0 and earlier "may report configuration drift or fail create and
+update operations" once it returns.*
+
+- `sandbox/warehouse-compute/` was locked at **6.64.0**. Before 6.66.0 the provider validates
+  `parameter_key` against an allow-list that lacks the key and keeps every key the service returns, so
+  the plan removes the key forever and `UpdateWorkgroup` answers `ValidationException: You didn't
+  specify any changes to the configuration parameters` (hashicorp/terraform-provider-aws#49939).
+  6.66.0 keeps only the declared keys in state and drops the allow-list; 6.68.0 changes only the case
+  with no `config_parameter` block, which this slice does not have.
+- `terraform init -upgrade`, then `providers lock` for the three platforms: **6.64.0 → 6.68.0**;
+  `./scripts/check-provider-locks.py` OK. `sandbox/warehouse/` stays at 6.64.0: the namespace has no
+  `config_parameter`.
+- Reading as InfrastructureAccess on `<Sandbox Account 1>`: `awsds-sandbox-warehouse` `AVAILABLE`,
+  patch **205**, workgroup version `1.0.477953`, nine `configParameters` and no
+  `enable_large_strings_opt_in`, so the key is withdrawn as the notice says.
+- `terraform plan -detailed-exitcode` on 6.68.0 against that workgroup: **`No changes`**, exit 0.
+- Owed: the same plan after 2026-10-13, the reading that shows the key returned and ignored.
