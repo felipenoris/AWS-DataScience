@@ -4,11 +4,14 @@
     ./examples/sandbox-orchestration/render.py --values
     ./examples/sandbox-orchestration/render.py examples/sandbox-orchestration/devenv-job/demo-devenv-job.probe.yaml
     ./examples/sandbox-orchestration/render.py --profile awsds-infra-sandbox-1 README.md
+    ./examples/sandbox-orchestration/render.py --placeholders aws/output/sandbox-orchestration/<workflow>/<NN>-<version>.yaml
 
 The repository holds every account-scoped value as a `<PLACEHOLDER>` (Stage 6i decision 1),
 and the portal needs the real ones. This script reads them with read-only calls, as the
 profile given (the infrastructure user's InfrastructureAccess in Sandbox by default), and
 prints the rendered file to stdout. Nothing it prints is written to the repository.
+--placeholders is the reverse, for a definition the portal saved: each live value becomes its
+placeholder, so the copy committed under definitions/ diffs against the file it was imported from.
 
 Every value is read, never assumed: the project from its role's tags, the security group the
 Tooling blueprint created for the project, the private subnets by name, and the house image's
@@ -122,6 +125,11 @@ def main(argv: list | None = None) -> int:
     parser = argparse.ArgumentParser(prog="render.py", description=__doc__.split("\n")[0])
     parser.add_argument("file", nargs="?", type=Path, help="a file holding <PLACEHOLDER>s")
     parser.add_argument("--values", action="store_true", help="print the values, not a file")
+    parser.add_argument(
+        "--placeholders",
+        action="store_true",
+        help="the reverse: replace each live value in the file with its placeholder",
+    )
     parser.add_argument("--profile", default="awsds-infra-sandbox-1")
     parser.add_argument("--project", help="the project id, when the account holds more than one")
     args = parser.parse_args(argv)
@@ -136,6 +144,13 @@ def main(argv: list | None = None) -> int:
         return 0
 
     text = args.file.read_text()
+    if args.placeholders:
+        # Longest first: the project id is also part of the role name and of the demo prefix.
+        for key, value in sorted(values.items(), key=lambda kv: len(kv[1]), reverse=True):
+            text = text.replace(value, f"<{key}>")
+        sys.stdout.write(text)
+        return 0
+
     unknown = sorted({m.group(1) for m in PLACEHOLDER.finditer(text)} - set(values))
     if unknown:
         sys.exit(f"no value read for: {', '.join(unknown)}")

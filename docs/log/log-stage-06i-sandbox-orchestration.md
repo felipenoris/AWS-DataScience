@@ -396,3 +396,94 @@ again: the token was refused with `UnauthorizedException: Session token not foun
 - **The policy** reads `DefaultVersionId` `v2` with one attachment.
 - **The description stays the first statement's.** Changing an `aws_iam_policy` description forces a new
   policy, so the code comments carry the second statement.
+
+## 2026-10-11 — pass 2: the first processing job
+
+*The run is the user's, in the portal. The readings are Claude's, from `awsds-infra-sandbox-1`
+(`<Sandbox Account 1>`, `InfrastructureAccess`) and, for the image pull, `awsds-infra-prod` (Production,
+`InfrastructureAccess`). Nothing was written to AWS.*
+
+### [user] The fifth run
+
+**[user]** "Falhou:" and then "There was an error executing run 8A08SDQqOTkjDCQ: Workflow execution
+failed, please check the task execution logs for more details"
+
+### [Claude] The boundary admits the job, and the container cannot write its output
+
+- **The tasks:** `wait_for_file` `SUCCESS` in 3 s, `run_project` `FAILED` in 762 s, `remove_source`
+  `UPSTREAM_FAILED`. The sample stays in `inbox/`.
+- **The job, `demo-devenv-20261011T024724`**, was created at 02:47:26Z with the four settings and the tag:
+  isolation `True`, inter-container encryption `True`, the project key on the volume and the output, and
+  `AmazonDataZoneProject` `avhvbqn37ty7m8`. **Verification v is answered: yes.** It ended `Failed`,
+  `AlgorithmError: , exit code: 1`.
+- **The container's output**, stream `demo-devenv-20261011T024724/algo-1-1791687033` of
+  `/aws/sagemaker/ProcessingJobs`:
+
+  ```
+  uid=1000(sagemaker-user) gid=100(users) groups=100(users)
+  total 12
+  drwxr-xr-x. 4 0 0 4096 Oct 11 02:51 code
+  drwxr-xr-x. 2 0 0 4096 Oct 11 02:51 inbox
+  drwxr-xr-x. 2 0 0 4096 Oct 11 02:57 outbox
+  touch: cannot touch '/opt/ml/processing/outbox/probe': Permission denied
+  ```
+
+  **Verification ii is answered: no.** The image runs as `sagemaker-user`, the platform creates every mount
+  as root with mode 755, and the exit code is `touch`'s.
+- **The timeline:** created 02:47:26Z, `ProcessingStartTime` 02:50:34Z, the container's output at
+  02:58:00Z, `ProcessingEndTime` 02:58:20Z. The operator polls every 30 s, read `Failed` at 02:59:59Z, and
+  the task ended at 03:00:04Z. 7.4 of the job's 7.75 minutes passed before the container started: the pull
+  of `default-v0.5.0`, 6,969,138,672 bytes compressed in Production's registry, and the inputs' staging.
+- **The cost:** about 0.027 USD, 14 task-minutes at 0.088/h and 465 s of `ml.t3.medium` at 0.050/h.
+
+### [Claude] The pull, the door, the existence check and the key
+
+- **The pull (verification iv): yes, as the project role.** Production's CloudTrail holds three
+  `BatchGetImage` on `awsds-prod-ecr-dev-env` by digest `sha256:8ec04e35…9dd6`. Each reads
+  `userIdentity.type` `AWSAccount`, the account Sandbox and the principal `AROA47P7U4BDOUDA4B63F:SageMaker`,
+  which is the project role's id with the session name `SageMaker`.
+
+  | Time | Source | Reading |
+  |---|---|---|
+  | 02:47:27Z | `35.165.252.115` | the Java SDK, at the create |
+  | 02:47:28Z | `184.32.187.109` | the Java SDK in Lambda, at the create |
+  | 02:50:34Z | `ecr.amazonaws.com` | invoked by `ecr.amazonaws.com` at the job's start: the pull |
+
+  None carries a `vpcEndpointId`. The platform pulls the image outside Sandbox's network, so the isolated
+  job needs no ECR endpoint.
+- **The door (verification vi):** `CreateProcessingJob` and all 26 `DescribeProcessingJob` came through
+  `vpce-0a72d9d2674245821`, Sandbox's `sagemaker.api` interface endpoint, from `10.20.95.168` in
+  `awsds-sandbox-private-usw2-az2`, as the project role with session name `AmazonMWAAServerless`. No
+  network interface holds that address after the run.
+- **The existence check (verification xiv, first half): yes.** The first `DescribeProcessingJob`, at
+  02:47:26Z, got `ValidationException` "Could not find requested job with name:
+  demo-devenv-20261011T024724", and the create followed in the same second. The other 25 were the
+  operator's polls on the tagged job.
+- **The volume key worked through the operator's session.** At 02:47:29Z the project role, session
+  `AmazonMWAAServerless`, invoked by `sagemaker.amazonaws.com`, created a grant on the project key for
+  `sagemaker.us-west-2.amazonaws.com` (`Encrypt`, `Decrypt`, `ReEncryptFrom`, `ReEncryptTo`,
+  `GenerateDataKeyWithoutPlaintext`, `CreateGrant`). At 02:47:34Z `ec2-frontend-api.amazonaws.com` created a
+  `Decrypt` grant from it.
+- **One `CreateGrant` was refused, and the job went on.** At 02:47:29Z the project role, session
+  `SageMaker`, called `kms:CreateGrant` on the project key directly, from `44.248.190.216` (the Java SDK in
+  Lambda): "User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker
+  is not authorized to perform: kms:CreateGrant on resource:
+  arn:aws:kms:us-west-2:<Sandbox Account 1>:key/a81b1ef3-716f-4105-bb42-14184a6e2174 because no
+  identity-based policy allows the kms:CreateGrant action". `SageMakerKmsPermissions` (v44) allows
+  `CreateGrant` only with `kms:ViaService` `sagemaker.*.amazonaws.com`, which a direct call does not carry.
+  Whether the refusal reaches the output's encryption is verification xiii, in pass 3.
+
+### [Claude] The definition, read back and committed
+
+`./aws/sandbox-orchestration.py` saved version `f945560d2f98f67e2b8773e68a0399f4`. `render.py` gained
+`--placeholders`, the reverse of a render, and the copy is
+`examples/sandbox-orchestration/definitions/demo-devenv-job.probe.yaml`; rendering it again gives the saved
+file byte for byte. Parsed against the imported template, the portal kept every field and added one,
+`is_paused_upon_creation: false`. The rest is formatting: keys reordered and long strings folded.
+
+### [Claude] 2.5 — the `sudo` probe
+
+The probe's command now reads `id; ls -ln /opt/ml/processing; sudo -n chown "$(id -u)"
+/opt/ml/processing/outbox && echo CHOWN-OK; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe
+&& echo WRITE-OK`. `sudo` works in a space (2026-09-08); whether it works in a processing container is the
+question. `-n` makes it fail at once where it would ask for a password.

@@ -23,7 +23,7 @@ demo-devenv-job:
             - /bin/bash
             - -c
           ContainerArguments:
-            - "id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"
+            - 'id; ls -ln /opt/ml/processing; sudo -n chown "$(id -u)" /opt/ml/processing/outbox && echo CHOWN-OK; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK'
         ProcessingResources:
           ClusterConfig:
             InstanceCount: 1

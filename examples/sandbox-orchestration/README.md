@@ -40,6 +40,12 @@ id in a tracked file, so the real values exist only on screen:
 ```
 
 Both read as the infrastructure user's `InfrastructureAccess` in Sandbox (`awsds-infra-sandbox-1`).
+A definition the portal saved goes the other way: `--placeholders` replaces each live value with its
+placeholder, and the result is the copy in `definitions/`:
+
+```bash
+./examples/sandbox-orchestration/render.py --placeholders aws/output/sandbox-orchestration/demo-devenv-job/<NN>-<version>.yaml
+```
 
 ## The workflows' tasks, as the portal asks for them
 

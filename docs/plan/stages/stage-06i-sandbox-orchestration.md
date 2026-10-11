@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 is the user's, in the portal.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2's first job ran 2026-10-11** and failed on the container's write to the output mount (verification ii: no); the boundary admitted the job (v) and the image came across accounts (iv). 2.5's `sudo` probe is next. Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -315,7 +315,11 @@ answers them.
 - **2.5 — If `WRITE-OK` is missing**, the container's user cannot write the output mount, and the fallback is
   the image's own `sudo`, which works in spaces (measured 2026-09-08): the command opens with
   `sudo chown "$(id -u)" /opt/ml/processing/outbox`. A tag of the image for jobs is the larger alternative,
-  and it is a Stage 8 build, not this stage's.
+  and it is a Stage 8 build, not this stage's. **Measured 2026-10-11: `WRITE-OK` is missing.** The container
+  runs as `uid=1000(sagemaker-user) gid=100(users)`, the platform creates `code/`, `inbox/` and `outbox/` as
+  `0 0` with `drwxr-xr-x`, and `touch` is refused, so the job ends `AlgorithmError: , exit code: 1` (job
+  `demo-devenv-20261011T024724`). The probe now runs `sudo -n chown "$(id -u)"` between two listings and
+  prints `CHOWN-OK`; `-n` fails at once where sudo would ask for a password.
 
 ### 3. The project's command, end to end
 
@@ -429,7 +433,7 @@ Unit prices measured (`docs/PRICING.md` §1.3 and §8), `us-west-2`:
 |---|---|
 | MWAA Serverless task-hours | 0.088/task-hour, one-minute minimum per task. The processing task holds a worker while the job runs, because `deferrable` is ignored |
 | Processing `ml.t3.medium` | 0.050/hour (measured 2026-10-10) |
-| One run of `demo-devenv-job` | about 0.02, with a job of 5 to 8 minutes including the pull |
+| One run of `demo-devenv-job` | about 0.02, with a job of 5 to 8 minutes including the pull. **Measured 2026-10-11 on the probe: about 0.027**, 14 task-minutes (0.021) and a 465 s job (0.0065). The job spent 7.4 of its 7.75 minutes before the container, pulling the 6.97 GB image and staging the inputs |
 | One run of each worker variant | about 0.003 to 0.005: two or three tasks at the one-minute minimum |
 | The empty-inbox run of 3.4 | about 0.015: the sensor's 10 minutes |
 | S3 | cents |
@@ -492,11 +496,11 @@ with the recommendation stated (Lesson 16).
 | # | Question | Step |
 |---|---|---|
 | i | Which fields does the portal's editor offer for a serverless workflow, and is `SageMakerProcessingOperator` among its tasks (moved from Stage 10 0.4)? | 2.1, 3.1 |
-| ii | Can the house image's user write to the output mount the job creates? | 2.4 |
+| ii | Can the house image's user write to the output mount the job creates? **Answered 2026-10-11: no.** The container runs as `sagemaker-user` (uid 1000, gid 100) and the platform creates the three mounts as root, mode 755; 2.5 is the fallback | 2.4 |
 | iii | Does `CreateProcessingJob` carrying `AmazonDataZoneProject` succeed, while `sagemaker:AddTags` excludes `AmazonDataZone*` keys? **Answered 2026-10-10: no.** The create is also authorized as `AddTags` and refused, and decision 6's second statement is the grant | 2.4 |
-| iv | Does a job pull the house image cross-account by digest, and as which principal and session? | 2.4 |
-| v | Does the boundary admit a job carrying its four settings, with no other deny naming it? | 2.4 |
-| vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? | 2.4 |
+| iv | Does a job pull the house image cross-account by digest, and as which principal and session? **Answered 2026-10-11: yes**, as the project role with session name `SageMaker`. Production's CloudTrail holds three `BatchGetImage` by digest from Sandbox: two at the create (02:47:27Z and 02:47:28Z, SageMaker's control plane) and the pull at the job's start (02:50:34Z, invoked by `ecr.amazonaws.com`), none through a VPC endpoint | 2.4 |
+| v | Does the boundary admit a job carrying its four settings, with no other deny naming it? **Answered 2026-10-11: yes.** `CreateProcessingJob` with the four settings and the project tag succeeded | 2.4 |
+| vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? **Answered 2026-10-11:** Sandbox's `sagemaker.api` interface endpoint, from `10.20.95.168` in `awsds-sandbox-private-usw2-az2`, as the project role with session name `AmazonMWAAServerless`. No network interface holds the address after the run | 2.4 |
 | vii | Where does the portal store the operator files, and does `CodeSnapshottedAt` move with each edit? | 4.3 |
 | viii | Does a vendored dependency import with no internet path, and which copy wins against the pre-installed set (from Stage 10 (xv))? | 4.3 |
 | ix | Does a reach for PyPI fail visibly, in seconds, and with which wording (from Stage 10 (xv))? | 5.3 |
@@ -504,13 +508,13 @@ with the recommendation stated (Lesson 16).
 | xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? | 3.4 |
 | xii | What did each run cost, read from the run and job durations? | 3.3, 6.1 |
 | xiii | Do the outputs land encrypted with the project key? | 3.3 |
-| xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists | 2.4 |
+| xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
 
 ## Risks
 
-- **The container's user may not write the output mount.** The house image runs as `sagemaker-user`, and a
-  user report describes a non-root processing container that could not write `/opt/ml/processing/output` in a
-  cloud run. The probe of pass 2 isolates it, and 2.5 is the fallback.
+- **The container's user cannot write the output mount** (measured 2026-10-11, verification ii). The house
+  image runs as `sagemaker-user` and the platform creates the mounts as root. 2.5's fallback depends on
+  `sudo` working inside a processing container, which a space does not prove.
 - **The editor may not offer the processing operator.** Then the workflow is created from a space and stays a
   CLI object, and a portal edit afterwards would sever it (Lesson 60).
 - **A pre-installed package wins silently.** The worker imports its boto3 1.43.1 whatever the package
