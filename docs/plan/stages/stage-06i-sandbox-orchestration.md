@@ -395,6 +395,10 @@ identity a worker task's calls carry.
   - **[Claude]** query again. The refused request's bucket is the answer, and its family goes into the `vpc`
     module's `default_aws_buckets`.
 
+  **The store was refused on 2026-10-11:** "CloudTrail Lake is no longer accepting new customers", and this
+  account had never created one. Nothing was created. The remaining instrument is a trail with the same
+  selector, delivering to a bucket of its own.
+
   The store is the first CloudTrail resource this project creates in a member account, the revision
   trigger `POLICIES.md` names for its CloudTrail absence. The proposal is no statement: the store is an
   instrument in Sandbox, destroyed when the decision closes, and tampering with it blinds only this

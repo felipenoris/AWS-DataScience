@@ -748,3 +748,30 @@ acesso ao snapshot?"
   `POLICIES.md`'s revision trigger for its CloudTrail absence, and the plan proposes no statement.
 - **The positive control** is a read of `sentinel-cogs`, a public bucket in the region that the allow-list
   does not name.
+
+### [user] 4.2a authorized
+
+**[user]** "pode aplicar e fazer as consultas. usuário sso infrastructure logado."
+
+### [Claude⚡] 4.2a — the store refused: CloudTrail Lake takes no new customers
+
+*Authorized in chat by the user. The two peer sessions were told before the apply. Run as the
+infrastructure user, `InfrastructureAccess` on `awsds-infra-sandbox-1` (`<Sandbox Account 1>`).*
+
+- **The re-plan**, after the `checkov` skip comment: `1 to add, 0 to change, 0 to destroy`.
+- **The apply failed at the create:**
+
+  ```
+  Error: creating CloudTrail Event Data Store (awsds-sandbox-endpoint-refusals): operation error
+  CloudTrail: CreateEventDataStore, https response error StatusCode: 400, RequestID:
+  72dfacc9-0343-41df-af84-ecb1c53e1386, InvalidParameterException: CloudTrail Lake is no longer accepting
+  new customers. Existing customers can continue to use their event data stores.
+  ```
+
+- **Nothing was created:** `terraform state list` is empty and `list-event-data-stores` returns nothing.
+- **No guide page read for 4.2a says so.** The CloudTrail guide's page on network activity events offers an
+  event data store beside a trail, and the 2024 announcement does too. The account had never created a
+  store, so it is a new customer.
+- **The other instrument is a trail**, with the same selector, delivering to a bucket of its own. Whether
+  network activity events cover a gateway endpoint is still unread; the announcement names S3 and never
+  says "gateway".
