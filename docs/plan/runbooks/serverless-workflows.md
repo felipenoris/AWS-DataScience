@@ -198,7 +198,10 @@ the code input; nothing is installed at run time. Three things differ from a Pyt
 
 `examples/sandbox-orchestration/operators/package-uv-job.py` applies the three to a project uv manages.
 Run it from a clone of this repository: in a space, where uv and the project's storage (`~/shared/`)
-are both at hand, or on the laptop, carrying the folder to `shared/` afterwards.
+are both at hand, or on the laptop, carrying the folder to `shared/` afterwards. In a space uv finds no
+CPython 3.13 of its own, since the image sets `UV_PYTHON_DOWNLOADS=never` and puts the house interpreter
+on no search path, so the script names `$AWSDS_PYTHON_ENV/bin/python` to the uv commands it runs
+(measured 2026-10-11).
 
 1. **Prepare the project.**
    - It has a `pyproject.toml` and a current `uv.lock`.
@@ -272,6 +275,7 @@ are both at hand, or on the laptop, carrying the folder to `shared/` afterwards.
 | `the project's lock and the house environment disagree` | a shared package at another version | step 3 |
 | `not pure Python, so it cannot be built here for the job` | the project has extension modules | build its wheel on the target platform, in a pipeline (Stage 8) |
 | `no wheels with a matching platform tag` | a vendored dependency publishes no wheel for the target | another version or another package, or the image |
+| `No interpreter found for Python 3.13` (or `>=3.13`) | uv found no CPython 3.13 for the project's lock check and build: a space on an image other than the house image, where `AWSDS_PYTHON_ENV` is unset | a house-image space, or the laptop |
 
 **Measured 2026-10-11** on a throwaway uv project depending on `petl`, `requests`, `boto3` and `pyyaml`:
 its fresh lock disagreed with the image on `boto3`, `botocore`, `charset-normalizer`, `idna` and
@@ -280,7 +284,22 @@ vendored, a 1.2 MB folder. The image's markers are evaluated by the script rathe
 since the image holds `torch` from PyTorch's own index and packages with no wheel for every Python,
 which a resolver refuses.
 
-**The exercise's own job** needs none of this: `awsds-demo-job` has no dependencies, so its input is its
+**Measured 2026-10-11 in a job**, `demo-devenv-deps` (Stage 6i step 3.8): the folder of `awsds-demo-deps`,
+built by this procedure in a space and copied to `shared/jobs/awsds-demo-deps-0.1.0/`, ran in the house
+image with no network. The container printed:
+
+```
+python 3.13.15 at /opt/awsds/venv/bin/python
+petl 1.7.29 from /opt/ml/processing/code/petl
+msgspec 0.22.0 from /opt/ml/processing/code/msgspec, extension _core.cpython-313-x86_64-linux-gnu.so
+pyarrow 24.0.0 from /opt/awsds/venv/lib/python3.13/site-packages/pyarrow, extension lib.cpython-313-x86_64-linux-gnu.so
+```
+
+A pure-Python package and an extension module both load from the code input, and the image's own copy
+serves what the image holds. The outputs are byte for byte the laptop's, the Parquet table included. The
+zero-byte folder markers the space's `shared/` writes into the prefix did not disturb the download.
+
+**The exercise's first job** needs none of this: `awsds-demo-job` has no dependencies, so its input is its
 source tree, `shared/awsds-demo-job/`, with `PYTHONPATH` at `/opt/ml/processing/code/src`.
 
 **The workflow deletes the source, not the job**: an isolated container cannot reach S3. The third task

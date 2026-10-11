@@ -1191,6 +1191,7 @@
   - *SageMaker network isolation* (read 2026-10-10) — an isolated container makes no outbound call, S3 included, and receives no AWS credentials; SageMaker downloads inputs and uploads outputs with the execution role, through the job's subnet when a VPC is set. The page names training jobs and models; the processing API carries the same `EnableNetworkIsolation` field: <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
   - *Processing inputs and outputs* (read 2026-10-10) — a `ProcessingInput` downloads an S3 URI into a container path and a `ProcessingOutput` uploads a container path to an S3 URI; both container paths must begin with `/opt/ml/processing/`, the rest of the name is the caller's, and symlinks are not followed on upload: <https://docs.aws.amazon.com/sagemaker/latest/dg/byoc-input-and-output.html>.
   - *A non-root processing container and `/opt/ml/processing/output`* — a user report that an image running as UID 1000 could not write the output mount in a cloud run, open with no answer (read 2026-10-10); the house image runs as `sagemaker-user`, and Stage 6i measured the same refusal on 2026-10-11, with `sudo chown` as the way through: <https://github.com/aws/sagemaker-python-sdk/issues/4764>.
+  - *The dependencies of 6i's `awsds-demo-deps`* (read 2026-10-11 from PyPI's JSON API, to pick one pure-Python package and one extension module absent from the house environment): `msgspec` 0.22.0 publishes a `cp313` wheel tagged `manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64`, 230,472 bytes, <https://pypi.org/pypi/msgspec/json>; `petl` 1.7.29 publishes one `py3-none-any` wheel, <https://pypi.org/pypi/petl/json>.
   - *Step Functions Standard vs Express* — Express supports no `.sync` pattern and caps at 5 minutes, which is what makes design B Standard: <https://docs.aws.amazon.com/step-functions/latest/dg/choosing-workflow-type.html>.
   - *Step Functions logging* — `LoggingConfiguration`, the ten `logs:*` delivery actions on `Resource: "*"`, the `/aws/vendedlogs/states` prefix against the 5 120-character resource-policy limit and the ten-policies-per-Region quota: <https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html>.
   - *Step Functions `.sync` integrations* — ECS (`StepFunctionsGetEventsForECSTaskRule` + scoped `PassRole`): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-ecs.html>; Glue (polling, no managed rule): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-glue.html>; SageMaker (training/transform rules + conditioned `PassRole`): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-sagemaker.html>.
@@ -1845,6 +1846,10 @@
   changelogs: `0.13.0` carries breaking changes, and `0.12.6`..`0.12.24` none, while still naming
   `UV_SYSTEM_CERTS` at `0.12.24`: <https://github.com/astral-sh/uv/blob/main/CHANGELOG.md> and
   <https://github.com/astral-sh/uv/blob/main/changelogs/0.12.x.md>.
+- The SageMaker Distribution's releases (read 2026-10-11, for a question about a "4.15"): the newest
+  forty run from `3.9.13` to `4.5.2`, the last published 2026-10-07 for every maintained minor at once
+  (`3.9.14`, `4.0.13` … `4.5.2`), and no `4.6`, `5.x` or `4.15` exists:
+  <https://api.github.com/repos/aws/sagemaker-distribution/releases>.
 
 ## Books
 

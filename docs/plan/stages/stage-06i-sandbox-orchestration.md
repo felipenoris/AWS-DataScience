@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11), and decision 7 was taken the same day as (a):** a trail (`sandbox/endpoint-audit/`) recorded the refusal, a `GetObject` by `airflow-serverless.amazonaws.com` of the code snapshot in `mwaa-serverless-code-files-<account>-<region>-prod`, refused by the S3 gateway endpoint's policy; `vpc-v0.4.0` admits that family, `sandbox/foundation` applied it, and **pass 4 ran `SUCCESS`** (verifications vii's first half, viii, x and xv answered). **Pass 5's control ran the same day (5.0)**: a probe version of `demo-bash-operator`, inline Bash tasks and no `Code` object, prepared its worker for every task, so the `Code` object is decision 7's variable; verifications ix and x are answered. **Pass 5 done the same day**: the exercise version ran its package and its script from the archive (`run_command` `SUCCESS`, `reach_pypi` `FAILED` by design), every `SO-` check passes, and an edit was measured to re-snapshot the code (vii). Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11), and decision 7 was taken the same day as (a):** a trail (`sandbox/endpoint-audit/`) recorded the refusal, a `GetObject` by `airflow-serverless.amazonaws.com` of the code snapshot in `mwaa-serverless-code-files-<account>-<region>-prod`, refused by the S3 gateway endpoint's policy; `vpc-v0.4.0` admits that family, `sandbox/foundation` applied it, and **pass 4 ran `SUCCESS`** (verifications vii's first half, viii, x and xv answered). **Pass 5's control ran the same day (5.0)**: a probe version of `demo-bash-operator`, inline Bash tasks and no `Code` object, prepared its worker for every task, so the `Code` object is decision 7's variable; verifications ix and x are answered. **Pass 5 done the same day**: the exercise version ran its package and its script from the archive (`run_command` `SUCCESS`, `reach_pypi` `FAILED` by design), every `SO-` check passes, and an edit was measured to re-snapshot the code (vii). **Pass 3b done the same day, at the user's request**: `demo-devenv-deps` ran a uv project whose dependencies the house image lacks, its folder built by `package-uv-job.py` in a space after a fix that let the script run there; `petl` and `msgspec`'s extension module loaded from the code input and `pyarrow` from the house environment (xvi). Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -137,18 +137,20 @@ prerequisite of this exercise and stays where 6f handed it.
 
 | Where | What | Layer |
 |---|---|---|
-| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's importable definition, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
+| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python projects (`awsds-demo-job`, and `awsds-demo-deps`, whose dependencies the house image lacks), the operator files, each pass's importable definition, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
 | the project's `shared/orchestration-demo/` | the uploaded copies, and an `inbox/` and `outbox/` per variant | data, not a resource |
-| the project's Workflows, in the portal | `demo-devenv-job`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
+| the project's Workflows, in the portal | `demo-devenv-job`, `demo-devenv-deps`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
 | `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
 
-**Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
-`shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
-or `bash`; the three workflow names; the job-name prefix
+**Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`, and `awsds-demo-deps`'s
+packaged folder at `shared/jobs/awsds-demo-deps-0.1.0/`; the prefix
+`shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`,
+`devenv-deps`, `python` or `bash`; the workflow names; the job-name prefix
 `demo-devenv-`; the task ids `caller_identity` and `run_command`, which tell `demo-bash-operator`'s probe
-from its exercise, and `reach_pypi`, the negative in both; and the Python package `awsds_demo_job`. `./aws/sandbox-orchestration.py` reads each one, so a
+from its exercise, and `reach_pypi`, the negative in both; and the Python packages `awsds_demo_job` and
+`awsds_demo_deps`. `./aws/sandbox-orchestration.py` reads each one, so a
 rename fails in a check.
 
 ```mermaid
@@ -188,6 +190,7 @@ flowchart LR
 | **1** | 1 | the files in the project's `shared/` | the user, from JupyterLab |
 | **2** | 2 | a probe job: the container's user, the paths, the tag on create, the pull by a job | the user, in the portal |
 | **3** | 3 | `demo-devenv-job` end to end, then once with an empty inbox | the user, in the portal |
+| **3b** | 3.5-3.8 | `demo-devenv-deps`: a project whose dependencies the house image lacks, through `package-uv-job.py` | Claude packages and imports; the user builds the folder in a space and drops the sample |
 | **4** | 4 | `demo-python-operator` | the user, in the portal |
 | **5** | 5 | `demo-bash-operator`, and the PyPI negative | the user, in the portal |
 | **6** | 6 | the readings, the records, the close | Claude; the user decides decision 5 |
@@ -220,7 +223,7 @@ and the files before anything runs.
   task's state was read from whichever attempt the listing returned last, not from the highest attempt.
   **[Claude] Write `./aws/sandbox-orchestration.py`**, read-only, one profile (`awsds-infra-sandbox-1`),
   and run it once before pass 1 so every later run has a before:
-  - `SO-1` the three workflows exist, `READY`, created by the project role (CloudTrail `CreateWorkflow`);
+  - `SO-1` the workflows exist, `READY`, created by the project role (CloudTrail `CreateWorkflow`);
   - `SO-2` each one's role, `NetworkConfiguration` (two private subnets, no default route) and project key;
   - `SO-3` where the definition and the `Code` object live, with `CodeSnapshottedAt` and the version count,
     and each version's `WorkflowDefinition` saved under `aws/output/`;
@@ -353,6 +356,44 @@ answers them.
 - **3.4 — [user] Run once with an empty `inbox/`.** The sensor times out after 600 s, and `soft_fail` should
   end the run `SUCCESS` with the downstream tasks skipped. **[Claude]** reads the run's state and what the wait
   billed (xi).
+
+The exercise's project has no dependency, so 3.1-3.4 never ran the case the runbook's J1 is for. Steps
+3.5-3.8 run it, at the user's request (2026-10-11): a uv project whose dependencies the house image partly
+lacks, packaged by `package-uv-job.py` and run by a fourth workflow, `demo-devenv-deps`.
+
+- **3.5 — Done 2026-10-11. [Claude] The project and its folder.** `awsds-demo-deps` turns each CSV into
+  `awsds-demo-job`'s summary and a Parquet table. It depends on `petl` (pure Python) and `msgspec` (an
+  extension module), both absent from the house environment, and on `pyarrow`, which the house environment
+  holds. Its command first prints each dependency's version, the folder it was imported from and its
+  extension module. **Measured:** the fresh lock took pyarrow 26.0.0, and the script stopped on "pyarrow:
+  26.0.0 in the lock, 24.0.0 in the image"; the block it printed went into `pyproject.toml` and `uv lock`
+  moved pyarrow to 24.0.0 (J1 step 3). The folder is 176 files: the project, msgspec 0.22.0 with
+  `_core.cpython-313-x86_64-linux-gnu.so`, and petl 1.7.29. The local run's summary is byte for byte
+  `awsds-demo-job`'s result, sha256 `1b2bc4d7…a248191`. `demo-devenv-deps` is `demo-devenv-job` with the
+  code input at that folder, `PYTHONPATH` at its root, and the sensor on `inbox/?*`.
+- **3.6 — Done 2026-10-11. [user] The folder built in a space**, by J1 step 2 run from a clone in a new
+  space, then copied to `~/shared/jobs/awsds-demo-deps-0.1.0/`. **Measured: the script could not run in a
+  space.** uv reads `.python-version` from the script's folder upwards, so the repository's 3.14 chose the
+  script's interpreter, and the image's `UV_PYTHON_DOWNLOADS=never` refused it; past that, the project's
+  lock check and build need a CPython 3.13, and the house interpreter is on no search path. The fix
+  (`fcc760b`) asks the shebang for `>=3.11` and names `$AWSDS_PYTHON_ENV/bin/python` to the inner uv
+  commands. The same command then built the folder in the space, 1,735,841 bytes, and the copy reached S3
+  as the 176 files, with their names and sizes, plus a zero-byte marker per folder (`SO-7`).
+- **3.7 — Done 2026-10-11. [Claude⚡] Import, drop and run.** `devenv-job/demo-devenv-deps.yaml` imported
+  into a new, empty workflow, with *Settings → Storage*'s pre-filled operator-files location emptied before
+  the save; the sample dropped from the space; the run started from the portal.
+- **3.8 — Done 2026-10-11. [Claude] Read the run.** The expected end state: three tasks `SUCCESS`; the
+  job's stream naming `petl` and `msgspec` under `/opt/ml/processing/code`, msgspec's extension the Linux
+  one, and `pyarrow` under `/opt/awsds/venv`; `outbox/<run>/sample.summary.json` byte for byte pass 3's
+  result; the inbox empty. The definition is read back to `definitions/demo-devenv-deps.yaml`.
+  **Measured, run `aB2zorz48GP67hx`:** three tasks `SUCCESS` (5 s, 791 s, 6 s); job
+  `demo-devenv-deps-20261011T230601` `Completed` in 450 s; the container printed `petl 1.7.29 from
+  /opt/ml/processing/code/petl`, `msgspec 0.22.0 from /opt/ml/processing/code/msgspec, extension
+  _core.cpython-313-x86_64-linux-gnu.so` and `pyarrow 24.0.0 from
+  /opt/awsds/venv/lib/python3.13/site-packages/pyarrow` (xvi). The summary is pass 3's result byte for
+  byte, sha256 `1b2bc4d7…a248191`, and the Parquet table the laptop's, both under the project key; the
+  inbox is empty, and every `SO-` check passes. The saved definition is the imported one plus
+  `is_paused_upon_creation: false`.
 
 ### 4. `demo-python-operator`
 
@@ -504,7 +545,7 @@ identity a worker task's calls carry.
   - [`docs/PRICING.md`](../../PRICING.md) gets the run costs read in 3.3, beside the measured unit prices.
 - **6.2 — [Claude] The log**, `docs/log/log-stage-06i-sandbox-orchestration.md`: each step Claude executed,
   in the sitting it ran.
-- **6.3 — [user] Decision 5**: keep or delete the three workflows and the demo prefixes.
+- **6.3 — [user] Decision 5**: keep or delete the workflows and the demo prefixes.
 - **6.4 — [user or Claude⚡] Lower the session**: `make down ENV=sandbox`, then `make hub-down`, after telling
   the peer sessions.
 
@@ -517,6 +558,8 @@ identity a worker task's calls carry.
 - **The platform answers** (2.4): the container's user against the output mount, the tag on create, and the
   image pulled by a job rather than a space.
 - **Stage 10's (xv)** (4.3, 5.3): a vendored dependency, a reach for PyPI, the identity on the worker.
+- **A project with dependencies in a job** (3.8): J1's folder built in a space and run with no network,
+  a vendored extension module among its imports (xvi).
 - **What a run costs** (3.3, 3.4), read from the durations rather than predicted.
 - **The runbook** [`serverless-workflows.md`](../runbooks/serverless-workflows.md), written 2026-10-11 at the
   user's request: the editor and its import, the grant, the processing task, the code archive, the readings.
@@ -539,6 +582,7 @@ Unit prices measured (`docs/PRICING.md` §1.3 and §8), `us-west-2`:
 | MWAA Serverless task-hours | 0.088/task-hour, one-minute minimum per task. The processing task holds a worker while the job runs, because `deferrable` is ignored |
 | Processing `ml.t3.medium` | 0.050/hour (measured 2026-10-10) |
 | One run of `demo-devenv-job` | about 0.02, with a job of 5 to 8 minutes including the pull. **Measured 2026-10-11 on the probe: about 0.027**, 14 task-minutes (0.021) and a 465 s job (0.0065). The job spent 7.4 of its 7.75 minutes before the container, pulling the 6.97 GB image and staging the inputs |
+| One run of `demo-devenv-deps` | **Measured 2026-10-11: about 0.029**, 15.2 task-minutes (0.022) and a 450 s job (0.006): `demo-devenv-job`'s figure, the vendored folder adding nothing measurable |
 | One run of each worker variant | about 0.003 to 0.005: two or three tasks at the one-minute minimum. **Measured 2026-10-11**: `demo-python-operator` 0.0029 (two tasks, 96 s), `demo-bash-operator` 0.0044 (three tasks, 148 s) |
 | The empty-inbox run of 3.4 | about 0.015: the sensor's 10 minutes |
 | S3 | cents |
@@ -578,7 +622,7 @@ with the recommendation stated (Lesson 16).
    alternatives are an exact key per drop, or a claim step that moves the files to a run's own prefix first.
    The general case, many files with unknown names, is Stage 10's, and this stage hands it the measured limit:
    a templated list arrives as a string, because `render_template_as_native_obj` is ignored.
-5. **Keep or delete at close** (6.3). Recommended: **keep the three workflows**: they bill nothing at rest, they
+5. **Keep or delete at close** (6.3). Recommended: **keep the workflows**: they bill nothing at rest, they
    are the reference Stage 10's authoring starts from, and the quota is 100 per account. Empty the `inbox/`
    prefixes so a later run starts from a known state.
 6. **The operator's existence check** (2.4). `SageMakerProcessingOperator.execute()` describes the name it
@@ -645,10 +689,11 @@ with the recommendation stated (Lesson 16).
 | ix | Does a reach for PyPI fail visibly, in seconds, and with which wording (from Stage 10 (xv))? **Answered 2026-10-11: yes, in about 2 s per reach, at name resolution.** urllib reads `URLError(OSError(16, 'Device or resource busy'))` and pip `Failed to establish a new connection: [Errno 16] Device or resource busy`; the Sandbox DNS Firewall answered `NXDOMAIN` with `BLOCK` for `pypi.org`, and no packet left for PyPI | 5.0, 5.3 |
 | x | Whose identity do the worker task's AWS calls carry (from Stage 10 (xv))? **Answered 2026-10-11: the project role, session `AmazonMWAAServerless`**, through Sandbox's `sts` interface endpoint from the worker's private address | 5.0, 4.3 |
 | xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? **Answered 2026-10-11: yes**, after 611 s of one task, about 0.015 USD. The API reads the skipped sensor's `Status` as `NONE` and creates no instance for the downstream tasks | 3.4 |
-| xii | What did each run cost, read from the run and job durations? **The project run, 2026-10-11: about 0.029 USD**, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067) | 3.3, 6.1 |
+| xii | What did each run cost, read from the run and job durations? **The project run, 2026-10-11: about 0.029 USD**, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067). **The run with dependencies, the same day: about 0.029 USD**, 15.2 task-minutes and 450 s of the job | 3.3, 3.8, 6.1 |
 | xiii | Do the outputs land encrypted with the project key? **Answered 2026-10-11: yes**, the probe's object and the project's result both `aws:kms` with the project key and the bucket key on, written by the project role in the job's session through S3. The direct `CreateGrant` refused at each create does not reach them | 3.3 |
 | xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
 | xv | Which bucket does a worker with a `Code` object read its code from, and do network activity events record a gateway endpoint's refusal? **Answered 2026-10-11: `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, read by `airflow-serverless.amazonaws.com` itself; and yes**, with `errorCode` `VpceAccessDenied`, under the trail's `CloudTrail-NetworkActivity/` prefix, a path-style request naming its bucket as a virtual-hosted one does | 4.2a |
+| xvi | Does a processing job import a vendored pure-Python package and a vendored extension module from its code input, while the house environment serves what it holds? **Answered 2026-10-11: yes.** `petl` 1.7.29 and `msgspec` 0.22.0 loaded from `/opt/ml/processing/code`, msgspec's `_core.cpython-313-x86_64-linux-gnu.so` included, and `pyarrow` 24.0.0 from `/opt/awsds/venv`; the outputs are byte for byte the laptop's | 3.8 |
 
 ## Risks
 
