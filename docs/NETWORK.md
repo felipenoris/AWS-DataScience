@@ -252,7 +252,12 @@ Every interface endpoint carries the same document: **this organization's princi
 services acting as themselves**. `aws:ResourceOrgID` is deliberately absent — through these endpoints
 pass calls whose *resource* is AWS-owned (public base images, JumpStart artifacts) — and the resource
 axis has its own control where it is load-bearing: the **S3 gateway policy** with its enumerated
-bucket allow-list.
+bucket allow-list. One of its AWS-owned families is measured rather than documented:
+`mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
+preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
+(`vpc-v0.4.0`, Sandbox only since 2026-10-11, 6i decision 7). A refusal by this policy is visible only
+as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`, which `sandbox/endpoint-audit/`'s
+trail records while it exists.
 
 **The endpoint ids are `[E]` and anchor nothing.** The ids a policy may name are the `[P]` **gateway**
 endpoints', and the condition a policy may carry is `aws:SourceVpc`.
