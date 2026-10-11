@@ -287,7 +287,7 @@ answers them.
   | `ProcessingJobName` | `demo-devenv-{{ ts_nodash }}`; the operator's `action_if_job_exists` default handles a collision |
   | `RoleArn` | the project role (0.1) |
   | `AppSpecification.ImageUri` | `<registry>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env@sha256:<digest>` (0.1) |
-  | `AppSpecification.ContainerEntrypoint` | the probe: `["/bin/bash", "-c", "id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"]` |
+  | `AppSpecification.ContainerEntrypoint` and `ContainerArguments` | the probe: `["/bin/bash", "-c"]` and `["id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"]`. The editor refuses a processing task with no arguments, which the API does not (measured 2026-10-10), so every command is a program and its arguments |
   | `ProcessingResources.ClusterConfig` | `InstanceCount: 1`, `InstanceType: ml.t3.medium`, `VolumeSizeInGB: 10`, `VolumeKmsKeyId`: the project key |
   | `NetworkConfig` | `EnableNetworkIsolation: true`, `EnableInterContainerTrafficEncryption: true`, `VpcConfig`: the two private subnets and the project's security group |
   | `ProcessingInputs` | `code/` and `inbox/` as `S3Prefix`, `File` mode, to `/opt/ml/processing/code` and `/opt/ml/processing/inbox` |
@@ -318,8 +318,9 @@ answers them.
 - **3.1 — [user] Import `devenv-job/demo-devenv-job.project.yaml` over the probe** (Stage 10's 0.4,
   verification i, closes here with the editor's fields recorded in 2.1 and 2.2). It changes the processing
   task's command:
-  - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job", "--input",
-    "/opt/ml/processing/inbox", "--output", "/opt/ml/processing/outbox"]`, the interpreter decision 2 took;
+  - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job"]`, the interpreter
+    decision 2 took, and `ContainerArguments`: `["--input", "/opt/ml/processing/inbox", "--output",
+    "/opt/ml/processing/outbox"]`;
   - `Environment`: `{"PYTHONPATH": "/opt/ml/processing/code/src"}`.
   The absolute interpreter path is deliberate: a `ContainerEntrypoint` replaces the image's entry point, so
   the distribution's `_entrypoint.sh` does not run and its `PATH` is not to be assumed.

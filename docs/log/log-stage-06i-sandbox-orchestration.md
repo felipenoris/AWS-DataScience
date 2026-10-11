@@ -200,3 +200,17 @@ JSON configurations. Both rendered with `render.py` and parsed with PyYAML:
 - `EnableNetworkIsolation` and `EnableInterContainerTrafficEncryption` as booleans;
 - the probe's `/bin/bash` command, and the project's `/opt/awsds/venv/bin/python` command with its
   `PYTHONPATH`.
+
+### [user] The import, and the editor's validation
+
+**[user]** "Ele conseguiu importar o yaml. Mas ao validar, mostrou a seguinte mensagem no SageMaker Processing
+Operator: ContainerArguments: Container argument is required."
+
+**[Claude]** The import took the whole definition. The editor's validation, not the API, demands
+`ContainerArguments`, because `CreateProcessingJob` takes an `AppSpecification` without them. Both
+definitions now split the command into a program and its arguments:
+
+- the probe: `["/bin/bash", "-c"]` and the script;
+- the project: `[".../venv/bin/python", "-m", "awsds_demo_job"]` and `--input`/`--output`.
+
+Both rendered and parsed again.

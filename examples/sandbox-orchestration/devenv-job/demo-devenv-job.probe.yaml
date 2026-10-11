@@ -22,6 +22,7 @@ demo-devenv-job:
           ContainerEntrypoint:
             - /bin/bash
             - -c
+          ContainerArguments:
             - "id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"
         ProcessingResources:
           ClusterConfig:

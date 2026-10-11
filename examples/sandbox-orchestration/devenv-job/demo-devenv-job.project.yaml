@@ -23,6 +23,7 @@ demo-devenv-job:
             - /opt/awsds/venv/bin/python
             - -m
             - awsds_demo_job
+          ContainerArguments:
             - --input
             - /opt/ml/processing/inbox
             - --output
