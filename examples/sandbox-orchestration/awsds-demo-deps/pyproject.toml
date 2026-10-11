@@ -1,0 +1,29 @@
+# awsds-demo-deps - the Python project of Stage 6i step 3.5: a processing job whose dependencies
+# are not all in the house image (docs/plan/stages/stage-06i-sandbox-orchestration.md).
+#
+# Each dependency reaches the job a different way. petl (pure Python) and msgspec (an extension
+# module) are absent from the house environment and travel in the job's code input; pyarrow is in
+# it, so the constraint below pins it to the image's version and nothing ships it. The folder the
+# job reads is built by examples/sandbox-orchestration/operators/package-uv-job.py
+# (docs/plan/runbooks/serverless-workflows.md section J1).
+
+[project]
+name = "awsds-demo-deps"
+version = "0.1.0"
+description = "One CSV in, a Parquet table and a JSON summary out, with dependencies the house image lacks"
+requires-python = ">=3.13"
+dependencies = ["msgspec>=0.19", "petl>=1.7", "pyarrow>=20"]
+
+# Printed by package-uv-job.py against images/dev-env/python/uv.lock: every package the project
+# shares with the house environment, at the image's version.
+[tool.uv]
+constraint-dependencies = [
+  "pyarrow==24.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/awsds_demo_deps"]
