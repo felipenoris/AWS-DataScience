@@ -92,9 +92,12 @@ The editor's forms cannot express everything a definition can (§J), and an impo
 saved definition differs from the imported one only by `is_paused_upon_creation: false`, keys reordered
 and long strings folded.
 
-**An import replaces the workflow.** Each import measured here appears in CloudTrail as `DeleteWorkflow`
-then `CreateWorkflow`: the ARN suffix changes and the run and version history restart. The log group is named
-after the workflow and keeps every run's logs.
+**An import does not replace a saved workflow.** Imported into a saved workflow's editor, the file becomes
+a new workflow under the bare name, and its save is refused with `ConflictException: Workflow with given
+name already exists` (measured 2026-10-11). Delete the old workflow first (*Workflows* list, *Delete
+workflow*, type "confirm"), then save: CloudTrail reads `DeleteWorkflow` then `CreateWorkflow`, the ARN
+suffix changes and the run and version history restart. The log group is named after the workflow and
+keeps every run's logs.
 
 **Save errors and their way through:**
 
@@ -422,11 +425,19 @@ run_project:
 
 `python_callable` is `<module>.<function>`. The function receives `op_kwargs` as keyword arguments, and
 the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`; a script from the
-archive runs with `/usr/local/airflow/dags` as its working directory, the guide says. **An inline
-`bash_command` needs no archive** and runs in a temporary folder (`/var/tmp/airflowtmp…`), measured
-2026-10-11; `operators/bash/demo-bash-operator.probe.yaml` is the example, and the service renders it
-through Jinja, so it carries no double brace. The exercise's template is
-`examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`.
+archive runs with `/usr/local/airflow/dags` as its working directory, the guide says. Measured
+2026-10-11:
+
+- **A command that is a script's name** (`bash_command: reach_pypi.sh`) is rendered as a Jinja template
+  from the archive into a temporary file, which the operator runs with `bash`; the script carries no
+  double brace.
+- **An inline `bash_command` needs no archive** and runs in a temporary folder (`/var/tmp/airflowtmp…`);
+  the service renders it through Jinja too.
+- **A Bash task's `PYTHONPATH` carries `/usr/local/airflow/dags`**, so `python3 -m <package>` imports the
+  archive's package from any folder.
+
+The templates are `examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`,
+`operators/bash/demo-bash-operator.yaml` and, with no archive, `operators/bash/demo-bash-operator.probe.yaml`.
 
 ### C5 — Giving the archive to the workflow
 
@@ -448,7 +459,9 @@ your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled pa
 by hand.
 
 **A new version of the code needs a new save.** The workflow runs the copy taken at its last save, so
-replacing the S3 object changes nothing until the workflow is saved or imported again.
+replacing the S3 object changes nothing until the workflow is saved or imported again. Every save takes a
+new copy: a description-only edit moved `CodeSnapshottedAt` with the code unchanged, and the portal
+uploads the file again at every save, a refused one included (measured 2026-10-11).
 
 ### C6 — By hand, without uv
 
