@@ -632,3 +632,19 @@ again as the infrastructure user: **[user]** "infra sso logado".
   `S3DeleteObjectsOperator` removes the marker with the files. The worker variants delete only what they
   processed, so a second run would fire on the marker alone. Their sensors watch `inbox/?*`, which needs
   one character after the slash (tested with `fnmatch` on both keys).
+
+### [user] 4.2 — the workflow, and the *Python Operator* form
+
+**[user]** "Abrindo o python operator, no campo file aparece `demo_tasks`, function `run`."
+
+### [Claude] 4.2 read before the run: the archive is stored as uploaded
+
+- **The form split the import's `python_callable: demo_tasks.run`** into *File* `demo_tasks` and *Function*
+  `run`: the *File* field names a module inside the uploaded archive.
+- **The workflow `demo-python-operator-4ftmCaOAtJ`**, created 05:32:42Z by the project role, is `READY` with
+  one version, `761c2c8e445a9dbad1e41e11f251679e`. `SO-1`, `SO-2` and `SO-3` pass.
+- **The code (verification vii, first half):** `Code` is `dev/operatorFiles/python-operator.zip`, pinned to
+  S3 version `8As0tFX6IybJm5RY_Rnq28psRCxTxryx`, uploaded 05:32:39Z and snapshotted 05:32:43Z. The object
+  is 996,234 bytes under the project key, and its sha256 (`4e95f1a7…b6da`) equals the archive
+  `build.sh` made: the portal stored one `.zip` as it was, neither nested nor re-zipped. Pass 2's `hello.py`
+  is still beside it, two versions.
