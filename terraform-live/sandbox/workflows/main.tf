@@ -15,6 +15,8 @@
 # The boundary is untouched: awsds-sandbox-project-boundary denies no Describe call, and the jobs
 # the operator then creates still meet its four job denies.
 
+# The description names the first statement only: it forces a new policy when it changes, and the
+# comment above each statement is where the grant is described.
 resource "aws_iam_policy" "workflows" {
   name        = "awsds-${var.env}-workflows"
   description = "Describe a SageMaker processing job that carries no project tag, so a workflow's operator can check a name before creating the job. Stage 6i; attached to SMUS project roles by this slice."
@@ -32,6 +34,37 @@ data "aws_iam_policy_document" "workflows" {
       test     = "Null"
       variable = "aws:ResourceTag/AmazonDataZoneProject"
       values   = ["true"]
+    }
+  }
+
+  # CreateProcessingJob with tags is also authorized as sagemaker:AddTags, and the blueprint's
+  # SageMakerTagPermissions excludes every AmazonDataZone* key, while its SageMakerCreatePermissions
+  # requires the job to carry AmazonDataZoneProject. So a project role cannot create the job the
+  # blueprint's own condition asks for (measured 2026-10-10, run FVyFira1LY3BuGi). This statement
+  # allows that one tag with the caller's own value, alone, on a job that carries no project tag or
+  # already the caller's, so a job of another project cannot be claimed.
+  statement {
+    sid       = "TagAProcessingJobWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.processing_jobs]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
     }
   }
 }

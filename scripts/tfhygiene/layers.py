@@ -488,7 +488,7 @@ SLICES = [
     ),
     # Stage 6i decision 6 - one IAM policy and one attachment per SMUS project whose workflows run
     # SageMaker processing jobs: DescribeProcessingJob on a job no project tag marks, which is what
-    # the operator's existence check needs. Free at rest, hand-written per project like `bedrock`.
+    # the operator's existence check needs, and AddTags of the caller's project tag, which the create needs. Free at rest, hand-written per project like `bedrock`.
     Slice(
         "sandbox",
         "workflows",

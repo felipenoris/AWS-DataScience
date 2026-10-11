@@ -334,3 +334,49 @@ stamp now calls only the `time` module's own functions:
 `{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}`. It rendered through an immutable,
 strict sandbox to `demo-devenv-<UTC stamp>`. If the service refuses this one too, the fallback is the epoch
 seconds, `{{ macros.time.time() | int }}`, a built-in filter on a module function.
+
+### [user] The fourth run: the template passes and the create is refused
+
+**[user]** "Falhou: There was an error executing run FVyFira1LY3BuGi: Workflow execution failed, please
+check the task execution logs for more details"
+
+### [Claude] The existence check passed, and the create met `AddTags`
+
+- **The tasks:** `wait_for_file` `SUCCESS` in 5 s, `run_project` `FAILED` in 12 s, `remove_source`
+  `UPSTREAM_FAILED`. No processing job exists.
+- **Decision 6's grant works for the check.** `run_project` reached `CreateProcessingJob`, so
+  `DescribeProcessingJob` on the free name was allowed. The task log:
+
+  ```
+  ClientError: An error occurred (AccessDeniedException) when calling the CreateProcessingJob operation:
+  User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AmazonMWAAServerless
+  is not authorized to perform: sagemaker:AddTags on resource:
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:processing-job/demo-devenv-20261011T023457 because no
+  identity-based policy allows the sagemaker:AddTags action
+  ```
+
+- **Verification iii is answered: no.** A create that carries tags is also authorized as
+  `sagemaker:AddTags`. `SageMakerTagPermissions` excludes every `AmazonDataZone*` key, while
+  `SageMakerCreatePermissions` demands the job carry `AmazonDataZoneProject`. With the blueprint's policies
+  alone, a project role cannot create a processing job.
+- **The job name stamp worked:** `demo-devenv-20261011T023457`, the run's own time.
+- **Every import since 02:07Z went through `DeleteWorkflow` and then `CreateWorkflow`**, about 30 s apart.
+  The ARN suffix is new each time (`It0FUChSnC`, `ODN4LiixCM`, `j39HQ6kTxG`), and the run and version
+  history restart with it. The log group is named after the workflow, so it keeps every run's logs.
+
+### [Claude] The second statement, simulated
+
+`simulate-principal-policy` on the project role read `explicitDeny` with `AllowedByOrganizations: false`
+for both calls. The simulator evaluates the SCPs without the request's network context, and the real call
+had passed that layer, so it cannot answer this question. `simulate-custom-policy` evaluated the slice's
+policy alone. For `AddTags` with `AmazonDataZoneProject` equal to the caller's project tag:
+
+| Case | Decision |
+|---|---|
+| a new job | `allowed` |
+| a job already carrying the caller's project | `allowed` |
+| a job carrying another project's tag | `implicitDeny` |
+| a request tag with another project's value | `implicitDeny` |
+| a second tag key in the request | `implicitDeny` |
+
+`DescribeProcessingJob` read `allowed` on an untagged name and `implicitDeny` on another project's job.

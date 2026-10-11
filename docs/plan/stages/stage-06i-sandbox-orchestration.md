@@ -79,6 +79,9 @@ this repository's boundary and key policy:
 - **Nothing allows describing a job before it exists.** `SageMakerDescribeUpdateDeletePermissions` grants
   `DescribeProcessingJob` only on a job tagged with the caller's project, and the operator describes the
   name it proposes before creating it (measured 2026-10-10). Decision 6's slice is the grant for that gap.
+- **Nothing allows creating the tagged job `SageMakerCreatePermissions` asks for.** A create with tags is
+  also authorized as `sagemaker:AddTags`, and `SageMakerTagPermissions` excludes every `AmazonDataZone*`
+  key (measured 2026-10-10, run `FVyFira1LY3BuGi`). Decision 6's slice carries that grant too.
 - **`SageMakerKmsPermissions`** allows `kms:CreateGrant` on the project key through SageMaker, which is what
   `VolumeKmsKeyId` needs. The boundary's one KMS deny names the lake's data key, never the project key.
 - **The boundary's four job denies** require `VpcConfig`, `EnableNetworkIsolation: true`,
@@ -478,7 +481,10 @@ with the recommendation stated (Lesson 16).
    project, which SMUS refuses to create untagged, stays out of reach. It keeps the operator Stage 10
    promotes, whose own execution role describes what it needs. The alternative was a `PythonOperator` that
    creates the job and a `SageMakerProcessingSensor` that waits for it: no Terraform, but a Sandbox shape
-   the promoted workflow would not share. **Applied 2026-10-10**: `2 added`, re-plan `No changes`
+   the promoted workflow would not share. **Applied 2026-10-10**: `2 added`, re-plan `No changes`. The next
+   run met the create's own refusal, `sagemaker:AddTags` on the `AmazonDataZoneProject` tag, so the same
+   policy gained a second statement: that tag alone, with the caller's value, on a job that carries no
+   project tag or the caller's
    ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
 
 ## Verifications to answer while executing
@@ -487,7 +493,7 @@ with the recommendation stated (Lesson 16).
 |---|---|---|
 | i | Which fields does the portal's editor offer for a serverless workflow, and is `SageMakerProcessingOperator` among its tasks (moved from Stage 10 0.4)? | 2.1, 3.1 |
 | ii | Can the house image's user write to the output mount the job creates? | 2.4 |
-| iii | Does `CreateProcessingJob` carrying `AmazonDataZoneProject` succeed, while `sagemaker:AddTags` excludes `AmazonDataZone*` keys? | 2.4 |
+| iii | Does `CreateProcessingJob` carrying `AmazonDataZoneProject` succeed, while `sagemaker:AddTags` excludes `AmazonDataZone*` keys? **Answered 2026-10-10: no.** The create is also authorized as `AddTags` and refused, and decision 6's second statement is the grant | 2.4 |
 | iv | Does a job pull the house image cross-account by digest, and as which principal and session? | 2.4 |
 | v | Does the boundary admit a job carrying its four settings, with no other deny naming it? | 2.4 |
 | vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? | 2.4 |

@@ -221,8 +221,10 @@ terraform-live/
 │   │                     #     (runbooks/claude-code-sagemaker.md section P)
 │   ├── workflows/        # [P] the workflows grant (6i decision 6, rank 56): one IAM policy -
 │   │                     #     DescribeProcessingJob on a processing job no project tag marks,
-│   │                     #     which SageMakerProcessingOperator's existence check needs - and
-│   │                     #     one attachment per SMUS project role, hand-written like bedrock/'s
+│   │                     #     which SageMakerProcessingOperator's existence check needs, and
+│   │                     #     AddTags of the caller's own project tag, which creating the job
+│   │                     #     needs - and one attachment per SMUS project role, hand-written
+│   │                     #     like bedrock/'s
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
