@@ -309,7 +309,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `get-workgroup` still `AVAILABLE`, **leader-node queries still answering**, and **recovery immediate on
   raising the amount**. A second `deactivate` limit is refused; a second `log` one is not. **Six
   `config_parameter` defaults** the service fills and the provider planned to delete forever (`auto_mv` is
-  **on** — unasked compute on the 1.44/h meter). **`db_name` adds a database, it does not replace `dev`** →
+  **on** — unasked compute on the 1.44/h meter); provider ≥ 6.66.0 ignores undeclared keys, and
+  `warehouse-compute` locks 6.68.0 since 2026-10-11, ahead of `enable_large_strings_opt_in` (2026-10-13). **`db_name` adds a database, it does not replace `dev`** →
   the `PUBLIC` revoke is owed twice. **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser** → `WH-13` can only
   ever be a note.
 - **The Data API is the session, and that is a control question.** `redshift-data execute-statement` +

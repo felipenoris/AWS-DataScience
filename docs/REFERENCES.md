@@ -798,6 +798,19 @@
   `IAMAllowedPrincipals` hazard `aws_lakeformation_data_lake_settings` has, one level up
   ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.5):
   <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/glue_catalog>.
+
+- **The workgroup parameter `enable_large_strings_opt_in` and the provider versions it breaks (read
+  2026-10-11).** AWS's behaviour-changes page: SUPER holds individual strings up to 16,000,000 bytes from
+  patch 206, opted into with `enable_large_strings_opt_in = Yes`; `No` keeps the 65,535-byte behaviour:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/behavior-changes.html#super-large-strings-patch206>.
+  HashiCorp's notice: the service rolled the key back and re-introduces it on 2026-10-13, and
+  `aws_redshiftserverless_workgroup` needs provider 6.66.0 or later:
+  <https://github.com/hashicorp/terraform-provider-aws/issues/50257>. The bug, with the perpetual diff,
+  the `UpdateWorkgroup` `ValidationException` and the allow-list refusal:
+  <https://github.com/hashicorp/terraform-provider-aws/issues/49939>. The fix in 6.66.0 (state keeps only
+  the declared keys, allow-list removed): <https://github.com/hashicorp/terraform-provider-aws/pull/49986>.
+  6.68.0's follow-up for a workgroup with no `config_parameter` block:
+  <https://github.com/hashicorp/terraform-provider-aws/pull/50255>.
   `awscc_datazone_connection` takes `redshift_properties` (`storage.workgroup_name`, `database_name`, `host`,
   `port`, `credentials` as `secret_arn` **or** `username_password`, and `lineage_sync`) plus
   `enable_trusted_identity_propagation` **per connection** — new information against open question 13's
