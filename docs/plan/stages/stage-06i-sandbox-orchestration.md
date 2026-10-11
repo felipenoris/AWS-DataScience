@@ -370,7 +370,8 @@ identity a worker task's calls carry.
   `demo_tasks.py`, `awsds_demo_job/`, petl 1.7.28 (`py3-none-any`) and PyYAML 6.0.1 (`cp312`,
   `manylinux2014_x86_64`, with its compiled `_yaml`). The definition is
   `operators/python/demo-python-operator.yaml`, with `python_callable: demo_tasks.run`, the guide's
-  `<module>.<function>` form.
+  `<module>.<function>` form. Its sensor watches `python/inbox/?*`: a space's `mkdir` leaves a folder marker
+  `inbox/`, `*` matches it, and this variant deletes only the files it processed.
 - **4.2 — [user] Create the workflow in the portal**: the sensor on `python/inbox/`, then the *Python Operator*
   with module `demo_tasks` and function `run`. Upload 4.1's archive as one `.zip` in *Settings → Storage*, and
   record whether the *File* field can name a module inside it. The rendered definition is imported as in 2.2,

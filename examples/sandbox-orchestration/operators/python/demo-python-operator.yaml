@@ -4,7 +4,7 @@ demo-python-operator:
   tasks:
     wait_for_file:
       operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
-      bucket_key: s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/python/inbox/*
+      bucket_key: s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/python/inbox/?*
       wildcard_match: true
       poke_interval: 30
       timeout: 600

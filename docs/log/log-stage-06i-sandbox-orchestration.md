@@ -626,3 +626,9 @@ again as the infrastructure user: **[user]** "infra sso logado".
 - **The definition**, `operators/python/demo-python-operator.yaml`: the sensor on `python/inbox/*`, then
   `PythonOperator` with `python_callable: demo_tasks.run` and the bucket, inbox and outbox as `op_kwargs`.
   It renders and parses.
+- **A folder marker satisfies `inbox/*`.** A space's `mkdir` left zero-byte keys ending in `/`
+  (`devenv/inbox/` at 01:25:25Z), `S3KeySensor` with `wildcard_match` lists the prefix and `fnmatch`es
+  each key, and `*` matches the empty rest of `inbox/`. `demo-devenv-job` never met it, because
+  `S3DeleteObjectsOperator` removes the marker with the files. The worker variants delete only what they
+  processed, so a second run would fire on the marker alone. Their sensors watch `inbox/?*`, which needs
+  one character after the slash (tested with `fnmatch` on both keys).

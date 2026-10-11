@@ -64,14 +64,14 @@ Every task carries `retries: 0`. `render.py README.md` prints these tables with 
 
 | Task | Operator | Fields |
 |---|---|---|
-| `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/python/inbox/*` |
+| `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/python/inbox/?*`: a folder marker `inbox/` matches `*`, and this task, unlike `S3DeleteObjectsOperator`, leaves the marker in place |
 | `run_project` | Python Operator | module `demo_tasks`, function `run`; op kwargs `{"bucket": "<PROJECTS_BUCKET>", "inbox": "<DEMO_PREFIX>/python/inbox/", "outbox": "<DEMO_PREFIX>/python/outbox/"}`; `python-operator.zip` in *Storage* |
 
 ### `demo-bash-operator`
 
 | Task | Operator | Fields |
 |---|---|---|
-| `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/bash/inbox/*` |
+| `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/bash/inbox/?*`, for the same reason |
 | `run_command` | Bash Operator | `python3 -m awsds_demo_job.s3 --bucket <PROJECTS_BUCKET> --inbox <DEMO_PREFIX>/bash/inbox/ --outbox <DEMO_PREFIX>/bash/outbox/`; `bash-operator.zip` in *Storage* |
 | `reach_pypi` | Bash Operator | `reach_pypi.sh`, after `run_command`; it is expected to fail |
 
