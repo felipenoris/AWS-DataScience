@@ -44,7 +44,7 @@ begin with `/opt/ml/processing/`; the rest of each name is ours:
 
 | In S3, under the project's `shared/` | In the job's container | Moved by |
 |---|---|---|
-| `orchestration-demo/devenv/code/` | `/opt/ml/processing/code` | SageMaker, before the command starts |
+| `awsds-demo-job/` | `/opt/ml/processing/code` | SageMaker, before the command starts |
 | `orchestration-demo/devenv/inbox/` | `/opt/ml/processing/inbox` | SageMaker, before the command starts |
 | `orchestration-demo/devenv/outbox/<run>/` | `/opt/ml/processing/outbox` | SageMaker, after the command exits |
 | the source under `inbox/` | — | `remove_source`, on the worker |
@@ -138,8 +138,9 @@ prerequisite of this exercise and stays where 6f handed it.
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
 | Terraform | nothing | — |
 
-**Contracts this stage fixes:** the prefix `shared/orchestration-demo/<variant>/` with `code/`, `inbox/` and
-`outbox/`, where `<variant>` is `devenv`, `python` or `bash`; the three workflow names; the job-name prefix
+**Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
+`shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
+or `bash`; the three workflow names; the job-name prefix
 `demo-devenv-`; and the Python package `awsds_demo_job`. `./aws/sandbox-orchestration.py` reads each one, so a
 rename fails in a check.
 
@@ -147,7 +148,7 @@ rename fails in a check.
 flowchart LR
     subgraph PRJ["Sandbox project · one role, one key, shared/"]
         IN["shared/…/devenv/inbox/"]
-        CODE["shared/…/devenv/code/"]
+        CODE["shared/awsds-demo-job/"]
         OUT["shared/…/devenv/outbox/"]
         subgraph WF["demo-devenv-job · MWAA worker, private tier"]
             S["wait_for_file<br/>S3KeySensor"] --> P["run_project<br/>SageMakerProcessingOperator"] --> D["remove_source<br/>S3DeleteObjectsOperator"]
@@ -245,10 +246,11 @@ and the files before anything runs.
 
 **Action:** put the code and a sample where the workflows read them, written by the project role.
 
-- **1.1 — [user] Upload from JupyterLab** into the project's shared folder, which is `shared/` in S3: the
-  project's `pyproject.toml` and `src/` to `orchestration-demo/devenv/code/`, and the sample to
-  `orchestration-demo/samples/`, outside every `inbox/`. A drop is a copy of the sample into an `inbox/`, made
-  only when a workflow is about to run.
+- **1.1 — [user] Copy the project into the shared folder**, which is `shared/` in S3. Done 2026-10-10 from a
+  clone of this repository in a space: `examples/sandbox-orchestration/awsds-demo-job/` copied whole to
+  `~/shared/awsds-demo-job/` (`pyproject.toml`, `src/`, `tests/`), which the job reads as its code input; the
+  `tests/` folder travels along and is not run. A drop is a copy of the clone's sample into an `inbox/`, made
+  only when a workflow is about to run, so no `samples/` prefix exists.
 - **1.2 — [Claude] Read the objects back** with `SO-7`, and the encryption of one of them (`head-object`:
   `SSEKMSKeyId` is the project key).
 

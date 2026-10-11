@@ -67,7 +67,8 @@ SANDBOX_PROFILE = "awsds-infra-sandbox-1"
 PROJECT_ROLE_PREFIX = "datazone_usr_role_"
 KEY_ALIAS = "alias/awsds-sandbox-project"
 PRIVATE_SUBNET_PREFIX = "awsds-sandbox-private-"
-DEMO_DIR = "orchestration-demo/"  # under each project's shared/
+CODE_DIR = "awsds-demo-job/"  # under each project's shared/: the code demo-devenv-job's job reads
+DEMO_DIR = "orchestration-demo/"  # under each project's shared/: each variant's inbox/ and outbox/
 WORKFLOWS = {  # workflow name -> variant, which is also its prefix under DEMO_DIR
     "demo-devenv-job": "devenv",
     "demo-python-operator": "python",
@@ -81,7 +82,7 @@ HOUSE_IMAGE = "awsds-sandbox-dev-env"
 WORKER_SESSION = "AmazonMWAAServerless"
 PROCESSING_LOG_GROUP = "/aws/sagemaker/ProcessingJobs"
 WF_LOG_PREFIX = "/aws/mwaa-serverless/"
-PACKAGE_MARKER = "src/awsds_demo_job/__main__.py"  # the project's entry point, under devenv/code/
+PACKAGE_MARKER = "src/awsds_demo_job/__main__.py"  # the project's entry point, under CODE_DIR
 
 RUNS_MAX = 10  # recent runs read per workflow
 JOBS_MAX = 20  # recent demo-devenv- jobs
@@ -395,9 +396,9 @@ def main(argv: list) -> int:
     for p in projects.values():
         if not p["bucket"]:
             continue
-        base = p["shared"] + DEMO_DIR
-        rels = ["samples/"] + [
-            f"{v}/{part}/" for v in WORKFLOWS.values() for part in ("code", "inbox", "outbox")
+        base = p["shared"]
+        rels = [CODE_DIR] + [
+            f"{DEMO_DIR}{v}/{part}/" for v in WORKFLOWS.values() for part in ("inbox", "outbox")
         ]
         for rel in rels:
             got = (
@@ -708,31 +709,33 @@ def main(argv: list) -> int:
 
     # SO-7: the demo prefixes, and the encryption of what they hold.
     for p in projects.values():
-        base = f"s3://{p['bucket']}/{p['shared']}{DEMO_DIR}"
-        code_keys = prefixes.get((p["role"], "devenv/code/"), (0, 0, []))[2]
+        base = f"s3://{p['bucket']}/{p['shared']}"
+        code_keys = prefixes.get((p["role"], CODE_DIR), (0, 0, []))[2]
         if not any(k.endswith(PACKAGE_MARKER) for k in code_keys):
             checks.note(
                 "SO-7",
-                f"{base}devenv/code/",
-                f"no {PACKAGE_MARKER} - not uploaded yet (Stage 6i pass 1).",
+                f"{base}{CODE_DIR}",
+                f"no {PACKAGE_MARKER} - not copied yet (Stage 6i pass 1).",
             )
         else:
             checks.ok(
                 "SO-7",
-                f"{base}devenv/code/",
+                f"{base}{CODE_DIR}",
                 f"{len(code_keys)} object(s), the entry point present",
             )
         for v in WORKFLOWS.values():
-            n_in = prefixes.get((p["role"], f"{v}/inbox/"), (0, 0, []))[0]
-            n_out = prefixes.get((p["role"], f"{v}/outbox/"), (0, 0, []))[0]
+            n_in = prefixes.get((p["role"], f"{DEMO_DIR}{v}/inbox/"), (0, 0, []))[0]
+            n_out = prefixes.get((p["role"], f"{DEMO_DIR}{v}/outbox/"), (0, 0, []))[0]
             if n_in:
                 checks.note(
                     "SO-7",
-                    f"{base}{v}/",
+                    f"{base}{DEMO_DIR}{v}/",
                     f"inbox holds {n_in} object(s) - a drop waiting, or a run that did not consume it; outbox {n_out}",
                 )
             else:
-                checks.ok("SO-7", f"{base}{v}/", f"inbox empty; outbox holds {n_out} object(s)")
+                checks.ok(
+                    "SO-7", f"{base}{DEMO_DIR}{v}/", f"inbox empty; outbox holds {n_out} object(s)"
+                )
         if p["role"] in encryption:
             key, kms = encryption[p["role"]]
             if p["key_id"] and p["key_id"] in kms:
@@ -785,7 +788,8 @@ def main(argv: list) -> int:
             "\nSections: 1 who is asking; 2 the project; 3 the workflows; 4 versions and\n"
             "definitions; 5 runs and task instances; 6 processing jobs; 7 log groups; 8 the demo\n"
             "prefixes; 9 CloudTrail; 10 checks SO-1..SO-8; 11 calls that failed.\n"
-            f"Contracts: WORKFLOWS={', '.join(WORKFLOWS)}  JOB_PREFIX={JOB_PREFIX}  DEMO_DIR=shared/{DEMO_DIR}\n"
+            f"Contracts: WORKFLOWS={', '.join(WORKFLOWS)}  JOB_PREFIX={JOB_PREFIX}\n"
+            f"           CODE_DIR=shared/{CODE_DIR}  DEMO_DIR=shared/{DEMO_DIR}\n"
         )
 
         rep.h1("1. Who is asking")
@@ -910,7 +914,7 @@ def main(argv: list) -> int:
             )
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-\t-"])
 
-        rep.h1(f"8. The demo prefixes - shared/{DEMO_DIR}")
+        rep.h1(f"8. The exercise's prefixes - shared/{CODE_DIR} and shared/{DEMO_DIR}")
         rows = ["PROJECT\tPREFIX\tOBJECTS\tBYTES"]
         for (role, rel), (n, size, _keys) in sorted(prefixes.items()):
             rows.append(f"{projects[role]['project']}\t{rel}\t{n}\t{size}")

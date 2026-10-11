@@ -4,7 +4,7 @@ The files [Stage 6i](../../docs/plan/stages/stage-06i-sandbox-orchestration.md) 
 the operator files of its worker variants, the processing job's configuration, and a sample. The stage
 file is the procedure and carries the reasoning; this file says what each piece is and where it goes.
 
-The code is written here and uploaded to the project. The workflow definitions go the other way: the
+The code is written here and copied into the project, from a clone of this repository inside a space. The workflow definitions go the other way: the
 portal generates and versions them, and after each pass the definition the portal holds is committed
 under `definitions/` as the record of what ran (Stage 6i decision 1).
 
@@ -12,13 +12,13 @@ under `definitions/` as the record of what ran (Stage 6i decision 1).
 
 | Path | What it is | Where it goes in the project |
 |---|---|---|
-| `awsds-demo-job/` | the Python project: one CSV in, one JSON summary out, standard library only. `python -m awsds_demo_job` reads and writes directories (the processing job's mode); `python -m awsds_demo_job.s3` reads and writes S3 prefixes (the worker's mode) | `pyproject.toml` and `src/` to `shared/orchestration-demo/devenv/code/` |
+| `awsds-demo-job/` | the Python project: one CSV in, one JSON summary out, standard library only. `python -m awsds_demo_job` reads and writes directories (the processing job's mode); `python -m awsds_demo_job.s3` reads and writes S3 prefixes (the worker's mode) | the whole folder, as `shared/awsds-demo-job/`: `demo-devenv-job`'s processing job reads it as its code input |
 | `devenv-job/processing-config.probe.json` | the processing task's `config` for pass 2: a one-minute probe of the container's user and mounts | pasted into the `SageMakerProcessingOperator` task of `demo-devenv-job` |
 | `devenv-job/processing-config.project.json` | the same `config` for pass 3: the project's command in the house environment's Python | the same task, edited |
 | `operators/python/` | `demo_tasks.py`, the `PythonOperator` callable, and the vendored set in `requirements.txt` | built into `python-operator.zip` |
 | `operators/bash/` | `reach_pypi.sh`, the PyPI negative | built into `bash-operator.zip` |
 | `operators/build.sh` | builds both archives into `operators/dist/` (untracked), the vendored set for CPython 3.12 on manylinux2014 x86_64 | the archives are uploaded in *Settings → Storage* of their workflow |
-| `samples/sample.csv` | ten synthetic rows | `shared/orchestration-demo/samples/`; a drop is a copy into an `inbox/` |
+| `samples/sample.csv` | ten synthetic rows | a drop is a copy of it, from the clone, into a variant's `shared/orchestration-demo/<variant>/inbox/` |
 | `render.py` | fills the placeholders with the live values, read-only, and prints to stdout | — |
 | `definitions/` | each workflow's definition after each pass, account ids replaced | — |
 

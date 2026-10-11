@@ -38,7 +38,7 @@
     {
       "InputName": "code",
       "S3Input": {
-        "S3Uri": "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv/code/",
+        "S3Uri": "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/awsds-demo-job/",
         "LocalPath": "/opt/ml/processing/code",
         "S3DataType": "S3Prefix",
         "S3InputMode": "File",
