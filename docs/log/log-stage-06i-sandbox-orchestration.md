@@ -487,3 +487,62 @@ The probe's command now reads `id; ls -ln /opt/ml/processing; sudo -n chown "$(i
 /opt/ml/processing/outbox && echo CHOWN-OK; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe
 && echo WRITE-OK`. `sudo` works in a space (2026-09-08); whether it works in a processing container is the
 question. `-n` makes it fail at once where it would ask for a password.
+
+### [user] The sixth run
+
+**[user]** "Rodou com sucesso"
+
+### [Claude] 2.5 measured: `sudo` works inside a processing job
+
+- **The run, `oGsqYXMR64rsD8D`:** `wait_for_file` `SUCCESS` in 5 s, `run_project` `SUCCESS` in 759 s,
+  `remove_source` `SUCCESS` in 5 s.
+- **The job, `demo-devenv-20261011T033717`**, created at 03:37:18Z through the same endpoint from
+  `10.20.80.32` (the az2 private subnet again), ran from 03:40:11Z to 03:47:46Z, 455 s, and ended
+  `Completed`. Its stream in `/aws/sagemaker/ProcessingJobs`:
+
+  ```
+  uid=1000(sagemaker-user) gid=100(users) groups=100(users)
+  total 12
+  drwxr-xr-x. 4 0 0 4096 Oct 11 03:40 code
+  drwxr-xr-x. 2 0 0 4096 Oct 11 03:40 inbox
+  drwxr-xr-x. 2 0 0 4096 Oct 11 03:47 outbox
+  CHOWN-OK
+  total 12
+  drwxr-xr-x. 4    0 0 4096 Oct 11 03:40 code
+  drwxr-xr-x. 2    0 0 4096 Oct 11 03:40 inbox
+  drwxr-xr-x. 2 1000 0 4096 Oct 11 03:47 outbox
+  WRITE-OK
+  ```
+
+- **The output:** `outbox/20261011T033717/probe`, 0 bytes, written at 03:47:42Z, `aws:kms` with the project
+  key and `BucketKeyEnabled`. The upload's `GenerateDataKey` (03:47:41Z) was the project role in the session
+  `SageMaker`, through S3. The direct `CreateGrant` was refused again at the create (03:37:25Z), and the
+  output's encryption did not need it: verification xiii for the probe's object.
+- **`remove_source`** put delete markers on `inbox/sample.csv` and `inbox/` at 03:50:36Z. The bucket is
+  versioned, so the sample's version stays.
+- **The job session's calls** (CloudTrail user name `SageMaker`): at the create, a dry-run
+  `CreateNetworkInterface` and a `BatchGetImage`; the job's network interface at 03:39:56Z
+  (`CreateNetworkInterface`, `CreateNetworkInterfacePermission`); `GetAuthorizationToken` at 03:40:10Z and
+  42 `GetDownloadUrlForLayer` by 03:41:09Z; three `Decrypt` through S3 at 03:40:53Z, the inputs;
+  `CreateLogStream` at 03:47:34Z; `Decrypt` and `GenerateDataKey` through S3 at 03:47:12Z and 03:47:41Z,
+  the output. One more `BatchGetImage`, at 03:40:10Z, was refused with `InvalidParameterException` on its
+  `repositoryName`, beside the one that served the pull.
+- **The pull's six minutes:** the last layer URL at 03:41:09Z and the container's output at 03:47:27Z, the
+  download and extraction of the 6.97 GB image on `ml.t3.medium`.
+- **The cost:** about 0.028 USD, 15 task-minutes (0.022) and 455 s of `ml.t3.medium` (0.0063).
+
+### [Claude] Pass 2 closed: the instrument and the definition
+
+- **`SO-5` failed on the first job forever.** A processing job cannot be deleted, so the failed probe stays
+  listed. `SO-5` now fails a setting outside the boundary on any job and a failed outcome on the newest job
+  only; an earlier failure is a note. The instrument exits 0.
+- **The definition** in `definitions/demo-devenv-job.probe.yaml` is now version
+  `9254485323655d399d7f36267799fc04`, the one that ran. It renders back to the saved file byte for byte, and
+  the portal again added only `is_paused_upon_creation: false`.
+
+### [Claude] Pass 3 prepared
+
+`devenv-job/demo-devenv-job.project.yaml` now runs `/bin/bash -c` with one argument: `sudo -n chown "$(id -u)"
+/opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m awsds_demo_job --input /opt/ml/processing/inbox
+--output /opt/ml/processing/outbox`. `exec` hands the job the interpreter's exit code. `PYTHONPATH` stays
+`/opt/ml/processing/code/src`. It renders and parses.

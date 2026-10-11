@@ -645,6 +645,8 @@ def main(argv: list) -> int:
             checks.fail("SO-4", what, f"{state}: {tasks}")
 
     # SO-5: each demo-devenv- job against the boundary's settings, its project and the image.
+    # A setting outside the boundary fails on any job. A failed outcome fails on the newest job
+    # only: a processing job cannot be deleted, so an earlier probe's failure stays listed.
     for j in jobs:
         jname = j.get("ProcessingJobName", "-")
         net = j.get("NetworkConfig") or {}
@@ -694,10 +696,20 @@ def main(argv: list) -> int:
         summary = (
             f"{status}, {cluster.get('InstanceType', '-')}, {secs if secs is not None else '-'} s"
         )
+        failure = None
         if status == "Failed":
-            problems.append(f"Failed: {j.get('FailureReason') or j.get('ExitMessage') or '-'}")
+            failure = f"Failed: {j.get('FailureReason') or j.get('ExitMessage') or '-'}"
+            if j is jobs[0]:
+                problems.append(failure)
         if problems:
             checks.fail("SO-5", jname, "; ".join(problems) + f" ({summary}).")
+        elif failure:
+            checks.note(
+                "SO-5",
+                jname,
+                f"{failure} ({summary}) - an earlier job; the newest is "
+                f"{jobs[0].get('ProcessingJobName', '-')}.",
+            )
         elif status in ("InProgress", "Stopping"):
             checks.note("SO-5", jname, f"{summary} - read again when it ends.")
         else:

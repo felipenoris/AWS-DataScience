@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2's first job ran 2026-10-11** and failed on the container's write to the output mount (verification ii: no); the boundary admitted the job (v) and the image came across accounts (iv). 2.5's `sudo` probe is next. Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3 is the user's.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -319,7 +319,10 @@ answers them.
   runs as `uid=1000(sagemaker-user) gid=100(users)`, the platform creates `code/`, `inbox/` and `outbox/` as
   `0 0` with `drwxr-xr-x`, and `touch` is refused, so the job ends `AlgorithmError: , exit code: 1` (job
   `demo-devenv-20261011T024724`). The probe now runs `sudo -n chown "$(id -u)"` between two listings and
-  prints `CHOWN-OK`; `-n` fails at once where sudo would ask for a password.
+  prints `CHOWN-OK`; `-n` fails at once where sudo would ask for a password. **Measured the same day: the
+  fallback works.** The probe printed `CHOWN-OK`, `outbox` owned by `1000`, and `WRITE-OK`; the job ended
+  `Completed` and its object landed under `outbox/<run>/` with the project key (job
+  `demo-devenv-20261011T033717`).
 
 ### 3. The project's command, end to end
 
@@ -328,17 +331,19 @@ answers them.
 - **3.1 — [user] Import `devenv-job/demo-devenv-job.project.yaml` over the probe** (Stage 10's 0.4,
   verification i, closes here with the editor's fields recorded in 2.1 and 2.2). It changes the processing
   task's command:
-  - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job"]`, the interpreter
-    decision 2 took, and `ContainerArguments`: `["--input", "/opt/ml/processing/inbox", "--output",
-    "/opt/ml/processing/outbox"]`;
+  - `ContainerEntrypoint`: `["/bin/bash", "-c"]`, and one argument: `sudo -n chown "$(id -u)"
+    /opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m awsds_demo_job --input
+    /opt/ml/processing/inbox --output /opt/ml/processing/outbox`. The `chown` is 2.5's; `exec` gives the job
+    the interpreter decision 2 took and its exit code;
   - `Environment`: `{"PYTHONPATH": "/opt/ml/processing/code/src"}`.
   The absolute interpreter path is deliberate: a `ContainerEntrypoint` replaces the image's entry point, so
   the distribution's `_entrypoint.sh` does not run and its `PATH` is not to be assumed.
 - **3.2 — [user] Drop the sample and run.** The expected end state: the result under `outbox/<run>/`, the
   `inbox/` empty, three task instances `SUCCESS`, one processing job `Completed`.
 - **3.3 — [Claude] Read the run**: `SO-4` for the durations, `SO-5` for the job's billed seconds, `SO-7` for
-  the prefixes, the result file's content against the sample's sha256, and the version count, which is now 2
-  (`SO-3`). The second version's definition is committed (decision 1).
+  the prefixes, and the result file's content against the sample's sha256. The definition is read back and
+  committed as `definitions/demo-devenv-job.project.yaml` (decision 1). Each import so far deleted the
+  workflow and created it again, so its version count restarts at 1 (`SO-3`).
 - **3.4 — [user] Run once with an empty `inbox/`.** The sensor times out after 600 s, and `soft_fail` should
   end the run `SUCCESS` with the downstream tasks skipped. **[Claude]** reads the run's state and what the wait
   billed (xi).
@@ -507,14 +512,15 @@ with the recommendation stated (Lesson 16).
 | x | Whose identity do the worker task's AWS calls carry (from Stage 10 (xv))? | 4.3 |
 | xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? | 3.4 |
 | xii | What did each run cost, read from the run and job durations? | 3.3, 6.1 |
-| xiii | Do the outputs land encrypted with the project key? | 3.3 |
+| xiii | Do the outputs land encrypted with the project key? **Answered for the probe's object 2026-10-11: yes**, `aws:kms` with the project key and the bucket key on, written by the project role in the job's session through S3. The direct `CreateGrant` refused at each create does not reach it | 3.3 |
 | xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
 
 ## Risks
 
 - **The container's user cannot write the output mount** (measured 2026-10-11, verification ii). The house
-  image runs as `sagemaker-user` and the platform creates the mounts as root. 2.5's fallback depends on
-  `sudo` working inside a processing container, which a space does not prove.
+  image runs as `sagemaker-user` and the platform creates the mounts as root, so every job's command opens
+  with 2.5's `sudo chown`, which works in a processing container. An image that drops passwordless `sudo`
+  breaks every job at its first write.
 - **The editor may not offer the processing operator.** Then the workflow is created from a space and stays a
   CLI object, and a portal edit afterwards would sever it (Lesson 60).
 - **A pre-installed package wins silently.** The worker imports its boto3 1.43.1 whatever the package

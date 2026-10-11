@@ -20,14 +20,10 @@ demo-devenv-job:
         AppSpecification:
           ImageUri: <REGISTRY_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/awsds-prod-ecr-dev-env@<IMAGE_DIGEST>
           ContainerEntrypoint:
-            - /opt/awsds/venv/bin/python
-            - -m
-            - awsds_demo_job
+            - /bin/bash
+            - -c
           ContainerArguments:
-            - --input
-            - /opt/ml/processing/inbox
-            - --output
-            - /opt/ml/processing/outbox
+            - 'sudo -n chown "$(id -u)" /opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m awsds_demo_job --input /opt/ml/processing/inbox --output /opt/ml/processing/outbox'
         Environment:
           PYTHONPATH: /opt/ml/processing/code/src
         ProcessingResources:
