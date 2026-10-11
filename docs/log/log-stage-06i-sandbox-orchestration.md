@@ -78,3 +78,38 @@ self-test's outputs were deleted.
 
 `render.py --values` read the same project, security group and subnets as 0.1, which the portal also
 uses, and the probe configuration rendered to valid JSON.
+
+## 2026-10-10 — pass 1: the project in `shared/`
+
+*The copy is the user's; every reading is Claude's own, from `awsds-infra-sandbox-1` (account
+`<Sandbox Account 1>`, permission set `InfrastructureAccess`) and `awsds-infra-prod` (account
+`<Production Account>`, the same permission set) after the user signed in again. Nothing was written
+to AWS by Claude.*
+
+### [user] The session raised, and the project copied
+
+**[user]** "Subi o ambiente. Clonei o repositório no alvo. Copiei o awsds-demo-job na pasta shared:"
+
+```
+agemaker-user@default:~/shared/awsds-demo-job$ ls
+pyproject.toml  src  tests
+```
+
+### [Claude] 1.2 — the objects read back
+
+- **The hub is up:** `awsds-prod-vpn` and `awsds-prod-proxy` are `running`, launched 23:54:49Z and
+  23:54:52Z. Sandbox's VPC holds 19 interface endpoints `available`, `sagemaker.api`, `logs`, `sts`, `kms`,
+  `ecr.api` and `ecr.dkr` among them.
+- **The copy reached S3 at 00:32:12-13Z**, under `shared/awsds-demo-job/`. Its six files have the
+  repository's byte counts, file by file: 759, 288, 1675, 2394, 1569 and 3700.
+- **The objects are encrypted with the project key.** `head-object` reads `aws:kms` with the project key
+  (`a81b1ef3-…`) and `BucketKeyEnabled: true`, and each object carries a version id.
+- **The clone itself is outside `shared/`**, since no repository folder appears among the prefixes.
+- **A stray object** remains from the path the plan named first:
+  `orchestration-demo/devenv/code/pyproject.toml` (759 bytes). No contract reads it.
+- **`./aws/sandbox-orchestration.py` exits 0.** `SO-7` passes on the project's code (6 objects, the entry
+  point present), on the three variants' empty `inbox/` and on the encryption. The `SO-1`, `SO-5`, `SO-6`
+  and `SO-8` notes stand until pass 2.
+
+The path the user chose replaced the plan's `orchestration-demo/devenv/code/`. The job's code input,
+`SO-7` and the stage's contract were moved to `shared/awsds-demo-job/` in the same sitting.
