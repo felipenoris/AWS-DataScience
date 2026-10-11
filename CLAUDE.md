@@ -266,6 +266,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
 | Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
+| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
@@ -426,7 +427,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
   2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
-  two portal workflows in Sandbox, `READY`, `manual_only`; a failed task is retried once, so read the
+  two portal workflows in Sandbox, `manual_only`, deleted by the user 2026-10-10 (their log groups stay); a failed task is retried once, so read the
   task's `DurationInSeconds`, never the run's; `list-workflow-runs` returns `RunType` null, so the type
   is read per run. It runs as the project role inside the D13 boundary, workers
   with no proxy (a priced D9 exception). A "Notebook task" is a `CreateTrainingJob` and dies on

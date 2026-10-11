@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 is the user's upload.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. No Terraform changes |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11): the worker's fetch of the code is refused, read as the S3 gateway endpoint's allow-list. Decision 7 is due.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -44,7 +44,7 @@ begin with `/opt/ml/processing/`; the rest of each name is ours:
 
 | In S3, under the project's `shared/` | In the job's container | Moved by |
 |---|---|---|
-| `orchestration-demo/devenv/code/` | `/opt/ml/processing/code` | SageMaker, before the command starts |
+| `awsds-demo-job/` | `/opt/ml/processing/code` | SageMaker, before the command starts |
 | `orchestration-demo/devenv/inbox/` | `/opt/ml/processing/inbox` | SageMaker, before the command starts |
 | `orchestration-demo/devenv/outbox/<run>/` | `/opt/ml/processing/outbox` | SageMaker, after the command exits |
 | the source under `inbox/` | — | `remove_source`, on the worker |
@@ -76,6 +76,12 @@ this repository's boundary and key policy:
   `emr-serverless` and `scheduler` among others, and not to `ecs-tasks`.
 - **`SageMakerECRPermissions`** allows the pull from any repository, so Production's repository policy is the
   half that decides, and INT-01 measured it for a space.
+- **Nothing allows describing a job before it exists.** `SageMakerDescribeUpdateDeletePermissions` grants
+  `DescribeProcessingJob` only on a job tagged with the caller's project, and the operator describes the
+  name it proposes before creating it (measured 2026-10-10). Decision 6's slice is the grant for that gap.
+- **Nothing allows creating the tagged job `SageMakerCreatePermissions` asks for.** A create with tags is
+  also authorized as `sagemaker:AddTags`, and `SageMakerTagPermissions` excludes every `AmazonDataZone*`
+  key (measured 2026-10-10, run `FVyFira1LY3BuGi`). Decision 6's slice carries that grant too.
 - **`SageMakerKmsPermissions`** allows `kms:CreateGrant` on the project key through SageMaker, which is what
   `VolumeKmsKeyId` needs. The boundary's one KMS deny names the lake's data key, never the project key.
 - **The boundary's four job denies** require `VpcConfig`, `EnableNetworkIsolation: true`,
@@ -131,15 +137,16 @@ prerequisite of this exercise and stays where 6f handed it.
 
 | Where | What | Layer |
 |---|---|---|
-| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's paste-ready `config`, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
+| this repository, `examples/sandbox-orchestration/` (decision 1) | the Python project, the operator files, each pass's importable definition, and after each pass the definition the portal holds; placeholders for every account-scoped value | — |
 | the project's `shared/orchestration-demo/` | the uploaded copies, and an `inbox/` and `outbox/` per variant | data, not a resource |
 | the project's Workflows, in the portal | `demo-devenv-job`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
-| Terraform | nothing | — |
+| `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
 
-**Contracts this stage fixes:** the prefix `shared/orchestration-demo/<variant>/` with `code/`, `inbox/` and
-`outbox/`, where `<variant>` is `devenv`, `python` or `bash`; the three workflow names; the job-name prefix
+**Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
+`shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
+or `bash`; the three workflow names; the job-name prefix
 `demo-devenv-`; and the Python package `awsds_demo_job`. `./aws/sandbox-orchestration.py` reads each one, so a
 rename fails in a check.
 
@@ -147,7 +154,7 @@ rename fails in a check.
 flowchart LR
     subgraph PRJ["Sandbox project · one role, one key, shared/"]
         IN["shared/…/devenv/inbox/"]
-        CODE["shared/…/devenv/code/"]
+        CODE["shared/awsds-demo-job/"]
         OUT["shared/…/devenv/outbox/"]
         subgraph WF["demo-devenv-job · MWAA worker, private tier"]
             S["wait_for_file<br/>S3KeySensor"] --> P["run_project<br/>SageMakerProcessingOperator"] --> D["remove_source<br/>S3DeleteObjectsOperator"]
@@ -232,7 +239,7 @@ and the files before anything runs.
     `transform.py` (stdlib only: for each input CSV, a JSON result with the row count, the column names and
     the input's sha256), `__main__.py` (local mode, `--input DIR --output DIR`) and `s3.py` (worker mode,
     boto3), and a test for `transform.py`;
-  - the processing task's `config` for passes 2 and 3, paste-ready, every account-scoped value a placeholder,
+  - `demo-devenv-job`'s definition for passes 2 and 3, importable, every account-scoped value a placeholder,
     so the pre-commit check on account ids holds;
   - the operator files for steps 4 and 5;
   - one sample CSV.
@@ -245,11 +252,13 @@ and the files before anything runs.
 
 **Action:** put the code and a sample where the workflows read them, written by the project role.
 
-- **1.1 — [user] Upload from JupyterLab** into the project's shared folder, which is `shared/` in S3: the
-  project's `pyproject.toml` and `src/` to `orchestration-demo/devenv/code/`, and the sample to
-  `orchestration-demo/samples/`, outside every `inbox/`. A drop is a copy of the sample into an `inbox/`, made
-  only when a workflow is about to run.
-- **1.2 — [Claude] Read the objects back** with `SO-7`, and the encryption of one of them (`head-object`:
+- **1.1 — [user] Copy the project into the shared folder**, which is `shared/` in S3. Done 2026-10-10 from a
+  clone of this repository in a space: `examples/sandbox-orchestration/awsds-demo-job/` copied whole to
+  `~/shared/awsds-demo-job/` (`pyproject.toml`, `src/`, `tests/`), which the job reads as its code input; the
+  `tests/` folder travels along and is not run. A drop is a copy of the clone's sample into an `inbox/`, made
+  only when a workflow is about to run, so no `samples/` prefix exists.
+- **1.2 — Done 2026-10-10: six objects, the repository's byte counts, the project key.** **[Claude] Read
+  the objects back** with `SO-7`, and the encryption of one of them (`head-object`:
   `SSEKMSKeyId` is the project key).
 
 ### 2. A probe job
@@ -264,14 +273,27 @@ answers them.
   `aws mwaa-serverless create-workflow`, and that surface is then the workflow's only one: an
   `update-workflow` from outside the portal is a full replace that severs the state the portal injects
   (Lesson 60).
-- **2.2 — [user] Set the processing task's `config`**, every boundary field named:
+  - **Measured 2026-10-10: a save with no operator file is refused.** The portal sends
+    `code.s3Location` = `dev/operatorFiles/<workflow name>.zip` on every `CreateWorkflow`, and uploads
+    nothing there unless a file was added in *Settings → Storage*, so the service answers
+    `ValidationException: Code not found in specified S3 location`. It sent `code: null` on 2026-09-10. The
+    way through is one placeholder operator file, `devenv-job/no_operator_code.py`. The portal writes
+    the definition first and deletes it after a refusal, and it injects seven `DataZone*`
+    environment variables into every workflow ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
+- **2.2 — [user] Import the definition**, which sets the processing task's `config` with every boundary
+  field named. **Measured 2026-10-10: the editor's SageMaker Processing task is a form** (task name, job
+  name, input and output data, image URI, entrypoint, arguments, instance type and count, volume, execution
+  role) **with no field for `NetworkConfig`, either KMS key or the tags**, the notebook operator's shape
+  again. *Actions → Import definition file* takes the whole workflow as YAML, so the rendered
+  `devenv-job/demo-devenv-job.probe.yaml` is imported, and the definition the portal saves is read back
+  before the first run, in case the import drops what the form cannot show:
 
   | Field | Value |
   |---|---|
-  | `ProcessingJobName` | `demo-devenv-{{ ts_nodash }}`; the operator's `action_if_job_exists` default handles a collision |
+  | `ProcessingJobName` | `demo-devenv-` and the run's UTC time from `macros.time.strftime(..., macros.time.gmtime())`; the operator's `action_if_job_exists` default handles a collision. The service renders a definition's templates when it creates a run, with the documented variables only (`macros`, `ti`, `params`, `ds`, `ts` and their `_nodash` forms): `{{ ts_nodash }}` is the day's midnight on a manual run, `dag_run` fails the run before its first task, and so does a method called on an object a macro returned (`strftime` of a `datetime`), while a module's own functions pass (measured 2026-10-10) |
   | `RoleArn` | the project role (0.1) |
   | `AppSpecification.ImageUri` | `<registry>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env@sha256:<digest>` (0.1) |
-  | `AppSpecification.ContainerEntrypoint` | the probe: `["/bin/bash", "-c", "id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"]` |
+  | `AppSpecification.ContainerEntrypoint` and `ContainerArguments` | the probe: `["/bin/bash", "-c"]` and `["id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"]`. The editor refuses a processing task with no arguments, which the API does not (measured 2026-10-10), so every command is a program and its arguments |
   | `ProcessingResources.ClusterConfig` | `InstanceCount: 1`, `InstanceType: ml.t3.medium`, `VolumeSizeInGB: 10`, `VolumeKmsKeyId`: the project key |
   | `NetworkConfig` | `EnableNetworkIsolation: true`, `EnableInterContainerTrafficEncryption: true`, `VpcConfig`: the two private subnets and the project's security group |
   | `ProcessingInputs` | `code/` and `inbox/` as `S3Prefix`, `File` mode, to `/opt/ml/processing/code` and `/opt/ml/processing/inbox` |
@@ -293,24 +315,39 @@ answers them.
 - **2.5 — If `WRITE-OK` is missing**, the container's user cannot write the output mount, and the fallback is
   the image's own `sudo`, which works in spaces (measured 2026-09-08): the command opens with
   `sudo chown "$(id -u)" /opt/ml/processing/outbox`. A tag of the image for jobs is the larger alternative,
-  and it is a Stage 8 build, not this stage's.
+  and it is a Stage 8 build, not this stage's. **Measured 2026-10-11: `WRITE-OK` is missing.** The container
+  runs as `uid=1000(sagemaker-user) gid=100(users)`, the platform creates `code/`, `inbox/` and `outbox/` as
+  `0 0` with `drwxr-xr-x`, and `touch` is refused, so the job ends `AlgorithmError: , exit code: 1` (job
+  `demo-devenv-20261011T024724`). The probe now runs `sudo -n chown "$(id -u)"` between two listings and
+  prints `CHOWN-OK`; `-n` fails at once where sudo would ask for a password. **Measured the same day: the
+  fallback works.** The probe printed `CHOWN-OK`, `outbox` owned by `1000`, and `WRITE-OK`; the job ended
+  `Completed` and its object landed under `outbox/<run>/` with the project key (job
+  `demo-devenv-20261011T033717`).
 
 ### 3. The project's command, end to end
 
 **Action:** replace the probe with the project's command, which makes the second version of the workflow.
 
-- **3.1 — [user] Edit the processing task in the portal** (Stage 10's 0.4, verification i, closes here with
-  the editor's fields recorded in 2.1 and this edit's behaviour):
-  - `ContainerEntrypoint`: `["/opt/awsds/venv/bin/python", "-m", "awsds_demo_job", "--input",
-    "/opt/ml/processing/inbox", "--output", "/opt/ml/processing/outbox"]`, the interpreter decision 2 took;
+- **3.1 — [user] Import `devenv-job/demo-devenv-job.project.yaml` over the probe** (Stage 10's 0.4,
+  verification i, closes here with the editor's fields recorded in 2.1 and 2.2). It changes the processing
+  task's command:
+  - `ContainerEntrypoint`: `["/bin/bash", "-c"]`, and one argument: `sudo -n chown "$(id -u)"
+    /opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m awsds_demo_job --input
+    /opt/ml/processing/inbox --output /opt/ml/processing/outbox`. The `chown` is 2.5's; `exec` gives the job
+    the interpreter decision 2 took and its exit code;
   - `Environment`: `{"PYTHONPATH": "/opt/ml/processing/code/src"}`.
   The absolute interpreter path is deliberate: a `ContainerEntrypoint` replaces the image's entry point, so
   the distribution's `_entrypoint.sh` does not run and its `PATH` is not to be assumed.
 - **3.2 — [user] Drop the sample and run.** The expected end state: the result under `outbox/<run>/`, the
   `inbox/` empty, three task instances `SUCCESS`, one processing job `Completed`.
 - **3.3 — [Claude] Read the run**: `SO-4` for the durations, `SO-5` for the job's billed seconds, `SO-7` for
-  the prefixes, the result file's content against the sample's sha256, and the version count, which is now 2
-  (`SO-3`). The second version's definition is committed (decision 1).
+  the prefixes, and the result file's content against the sample's sha256. The definition is read back and
+  committed as `definitions/demo-devenv-job.project.yaml` (decision 1). Each import so far deleted the
+  workflow and created it again, so its version count restarts at 1 (`SO-3`). **Measured 2026-10-11, run
+  `f9L7CKQzmUQWQTR`:** three tasks `SUCCESS` (7 s, 758 s, 7 s); job `demo-devenv-20261011T041223`
+  `Completed` in 485 s; the container printed `python 3.13.15 at /opt/awsds/venv/bin/python` and `sample.csv:
+  10 rows`; `outbox/20261011T041223/sample.result.json`, 378 bytes, carries the sample's sha256 and is byte
+  for byte the result of the same command run locally; `inbox/` is empty.
 - **3.4 — [user] Run once with an empty `inbox/`.** The sensor times out after 600 s, and `soft_fail` should
   end the run `SUCCESS` with the downstream tasks skipped. **[Claude]** reads the run's state and what the wait
   billed (xi).
@@ -328,11 +365,45 @@ identity a worker task's calls carry.
   - prints the vendored package's version and `__file__`;
   - for each object under `python/inbox/`: reads it, writes the result to `python/outbox/<run>/`, and deletes
     the source only after the write returns.
+
+  **Built 2026-10-11** by `operators/build.sh`: `python-operator.zip`, 187 entries and 996,234 bytes, holding
+  `demo_tasks.py`, `awsds_demo_job/`, petl 1.7.28 (`py3-none-any`) and PyYAML 6.0.1 (`cp312`,
+  `manylinux2014_x86_64`, with its compiled `_yaml`). The definition is
+  `operators/python/demo-python-operator.yaml`, with `python_callable: demo_tasks.run`, the guide's
+  `<module>.<function>` form. Its sensor watches `python/inbox/?*`: a space's `mkdir` leaves a folder marker
+  `inbox/`, `*` matches it, and this variant deletes only the files it processed.
 - **4.2 — [user] Create the workflow in the portal**: the sensor on `python/inbox/`, then the *Python Operator*
   with module `demo_tasks` and function `run`. Upload 4.1's archive as one `.zip` in *Settings → Storage*, and
-  record whether the *File* field can name a module inside it. If it cannot, upload the files loose and read
+  record whether the *File* field can name a module inside it. The rendered definition is imported as in 2.2,
+  so the form is read, not relied on. If it cannot, upload the files loose and read
   what the portal zipped (`SO-3`): a `.zip` uploaded beside loose files may arrive nested, unextracted. Drop
   the sample and run.
+- **4.2a — The refused bucket, measured** (decision 7 (a)). The store records S3 network activity events
+  with `errorCode` `VpceAccessDenied`, the only record this account can hold of a gateway endpoint's refusal.
+  Whether those events cover a gateway endpoint at all is unread, so a positive control comes before the
+  re-run:
+  - **[Claude⚡]** apply `sandbox/endpoint-audit/` (`1 to add`), the peer sessions told first;
+  - **[user]** from a space's terminal, a read of a public bucket in the region that the allow-list does not
+    name: `aws s3api list-objects-v2 --bucket sentinel-cogs --max-keys 1`. Expected: `AccessDenied` "because
+    no VPC endpoint policy allows the s3:ListBucket action";
+  - **[Claude]** query the store (`start-query` and `get-query-results`, which bill 0.005 USD per GB
+    scanned) until the control's event arrives, naming `sentinel-cogs`. None within 30 minutes means the
+    events do not cover a gateway endpoint: the instrument is blind, the measurement stops there, and
+    decision 7 is taken again without it;
+  - **[user]** run `demo-python-operator` again; the sample is still in `python/inbox/`;
+  - **[Claude]** query again. The refused request's bucket is the answer, and its family goes into the `vpc`
+    module's `default_aws_buckets`.
+
+  **The store was refused on 2026-10-11:** "CloudTrail Lake is no longer accepting new customers", and this
+  account had never created one. Nothing was created, and the slice was removed from the branch the same
+  day; its empty state object stays in `awsds-sandbox-tfstate` under `sandbox/endpoint-audit/`. The
+  remaining instrument is a trail with the same selector, delivering to a bucket of its own, and whether to
+  build it is the user's call.
+
+  The store is the first CloudTrail resource this project creates in a member account, the revision
+  trigger `POLICIES.md` names for its CloudTrail absence. The proposal is no statement: the store is an
+  instrument in Sandbox, destroyed when the decision closes, and tampering with it blinds only this
+  measurement.
 - **4.3 — [Claude] Read it**:
   - `SO-3` for the `Code` location and `CodeSnapshottedAt` (vii);
   - the task log for the ARN, expected `assumed-role/<project role>/AmazonMWAAServerless` (x);
@@ -387,6 +458,8 @@ identity a worker task's calls carry.
   image pulled by a job rather than a space.
 - **Stage 10's (xv)** (4.3, 5.3): a vendored dependency, a reach for PyPI, the identity on the worker.
 - **What a run costs** (3.3, 3.4), read from the durations rather than predicted.
+- **The runbook** [`serverless-workflows.md`](../runbooks/serverless-workflows.md), written 2026-10-11 at the
+  user's request: the editor and its import, the grant, the processing task, the code archive, the readings.
 
 ## Validation
 
@@ -405,7 +478,7 @@ Unit prices measured (`docs/PRICING.md` §1.3 and §8), `us-west-2`:
 |---|---|
 | MWAA Serverless task-hours | 0.088/task-hour, one-minute minimum per task. The processing task holds a worker while the job runs, because `deferrable` is ignored |
 | Processing `ml.t3.medium` | 0.050/hour (measured 2026-10-10) |
-| One run of `demo-devenv-job` | about 0.02, with a job of 5 to 8 minutes including the pull |
+| One run of `demo-devenv-job` | about 0.02, with a job of 5 to 8 minutes including the pull. **Measured 2026-10-11 on the probe: about 0.027**, 14 task-minutes (0.021) and a 465 s job (0.0065). The job spent 7.4 of its 7.75 minutes before the container, pulling the 6.97 GB image and staging the inputs |
 | One run of each worker variant | about 0.003 to 0.005: two or three tasks at the one-minute minimum |
 | The empty-inbox run of 3.4 | about 0.015: the sensor's 10 minutes |
 | S3 | cents |
@@ -425,7 +498,8 @@ with the recommendation stated (Lesson 16).
    leaves nothing reviewable. Taking it adds a line to the repository layout in `README.md`. **Taken
    2026-10-10 (the user): this repository, with the two directions split.** The code is written here and
    uploaded to the project. The definition's source is the portal, which generates and versions it: before a
-   pass the repository holds the paste-ready `config`, and after it the definition the portal holds, read back
+   pass the repository holds the importable definition (first written as a paste-ready `config`, which the
+   editor's form has no field for), and after it the definition the portal holds, read back
    (`get-workflow`'s `WorkflowDefinition`, the YAML *View code* shows) and committed with the same
    placeholders.
 2. **Which interpreter the job runs** (3.1). Recommended: **the house environment, `/opt/awsds/venv/bin/python`**
@@ -447,30 +521,72 @@ with the recommendation stated (Lesson 16).
 5. **Keep or delete at close** (6.3). Recommended: **keep the three workflows**: they bill nothing at rest, they
    are the reference Stage 10's authoring starts from, and the quota is 100 per account. Empty the `inbox/`
    prefixes so a later run starts from a known state.
+6. **The operator's existence check** (2.4). `SageMakerProcessingOperator.execute()` describes the name it
+   proposes before creating the job, and counts only a `ValidationException` as absent; no parameter turns
+   it off (Amazon provider 9.32.0). The project role may describe only a job tagged with its project, so
+   the first run failed before any job existed. **Taken 2026-10-10 (the user): a grant in Terraform**, the
+   `[P]` slice `sandbox/workflows/`: `DescribeProcessingJob` on `processing-job/*` when
+   `aws:ResourceTag/AmazonDataZoneProject` is absent. A name not yet taken passes, and a job of another
+   project, which SMUS refuses to create untagged, stays out of reach. It keeps the operator Stage 10
+   promotes, whose own execution role describes what it needs. The alternative was a `PythonOperator` that
+   creates the job and a `SageMakerProcessingSensor` that waits for it: no Terraform, but a Sandbox shape
+   the promoted workflow would not share. **Applied 2026-10-10**: `2 added`, re-plan `No changes`. The next
+   run met the create's own refusal, `sagemaker:AddTags` on the `AmazonDataZoneProject` tag, so the same
+   policy gained a second statement: that tag alone, with the caller's value, on a job that carries no
+   project tag or the caller's, applied the same day (`1 changed`, re-plan `No changes`, policy `v2`).
+   ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
+7. **How a workflow with a `Code` object reaches its code inside the perimeter** (4.2). The first
+   `demo-python-operator` run failed in the worker's environment preparation, before any task: the worker
+   held one short exchange with S3 by its path-style name and never downloaded the 996 KB archive (run
+   `hmcXpEy18zOKCPR`, 2026-10-11). The service keeps its own encrypted copy of the code from the workflow's
+   creation, and the reading is that the worker fetches it from a bucket the service owns, which the S3
+   gateway endpoint's allow-list (Stage 3 step 3.4) refuses. Unmeasured: no trail here sees a gateway
+   endpoint's refusal, and a path-style request names its bucket only in the URL.
+   - (a) **Measure, then name the bucket in the allow-list.** CloudTrail network activity events for S3,
+     filtered to `VpceAccessDenied`, on an event data store or a trail in Sandbox; a positive control from a
+     space first (a read of a bucket outside the list), since whether these events cover a gateway endpoint
+     is unread; then a re-run. The event names the bucket, and the `vpc` module's `default_aws_buckets`
+     gains its family as it carries ECR's layer bucket. Keeps the perimeter's design; costs a CloudTrail
+     resource for the measurement, a module release and an apply of the network slice.
+   - (b) **The worker variants outside the VPC**, with no `NetworkConfiguration`, so the service's network
+     reaches its own bucket. Through the API only, since the portal injects the project's network, and it
+     moves the workers outside every control this estate places on them.
+   - (c) **No `Code` object**: each task fetches the project's code from the project's own storage, which the
+     perimeter admits. Exercises neither the `Code` mechanism nor verifications vii and viii as written.
+
+   Recommended: **(a)**. The list exists to name AWS-owned buckets that a service needs, and this is one.
+   It was written on 2026-08-16 (Stage 3 pass 1), the day before AWS gave the two operators a `Code`
+   object, so the dependency is new rather than missed. Its names come from documentation or measurement,
+   never a guess (Lesson 23), and neither guide page names this bucket. The name belongs in the module's
+   default rather than in Sandbox's `s3_endpoint_allowed_bucket_names`, which replaces the whole list:
+   Stage 10's workflows in Staging and Production fetch their code the same way.
 
 ## Verifications to answer while executing
 
 | # | Question | Step |
 |---|---|---|
-| i | Which fields does the portal's editor offer for a serverless workflow, and is `SageMakerProcessingOperator` among its tasks (moved from Stage 10 0.4)? | 2.1, 3.1 |
-| ii | Can the house image's user write to the output mount the job creates? | 2.4 |
-| iii | Does `CreateProcessingJob` carrying `AmazonDataZoneProject` succeed, while `sagemaker:AddTags` excludes `AmazonDataZone*` keys? | 2.4 |
-| iv | Does a job pull the house image cross-account by digest, and as which principal and session? | 2.4 |
-| v | Does the boundary admit a job carrying its four settings, with no other deny naming it? | 2.4 |
-| vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? | 2.4 |
+| i | Which fields does the portal's editor offer for a serverless workflow, and is `SageMakerProcessingOperator` among its tasks (moved from Stage 10 0.4)? **Answered 2026-10-11: yes, as a form** with no field for `NetworkConfig`, either KMS key or the tags (2.2). *Actions → Import definition file* carries them, and the saved definition kept every field, adding only `is_paused_upon_creation: false` | 2.1, 3.1 |
+| ii | Can the house image's user write to the output mount the job creates? **Answered 2026-10-11: no.** The container runs as `sagemaker-user` (uid 1000, gid 100) and the platform creates the three mounts as root, mode 755; 2.5 is the fallback | 2.4 |
+| iii | Does `CreateProcessingJob` carrying `AmazonDataZoneProject` succeed, while `sagemaker:AddTags` excludes `AmazonDataZone*` keys? **Answered 2026-10-10: no.** The create is also authorized as `AddTags` and refused, and decision 6's second statement is the grant | 2.4 |
+| iv | Does a job pull the house image cross-account by digest, and as which principal and session? **Answered 2026-10-11: yes**, as the project role with session name `SageMaker`. Production's CloudTrail holds three `BatchGetImage` by digest from Sandbox: two at the create (02:47:27Z and 02:47:28Z, SageMaker's control plane) and the pull at the job's start (02:50:34Z, invoked by `ecr.amazonaws.com`), none through a VPC endpoint | 2.4 |
+| v | Does the boundary admit a job carrying its four settings, with no other deny naming it? **Answered 2026-10-11: yes.** `CreateProcessingJob` with the four settings and the project tag succeeded | 2.4 |
+| vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? **Answered 2026-10-11:** Sandbox's `sagemaker.api` interface endpoint, from `10.20.95.168` in `awsds-sandbox-private-usw2-az2`, as the project role with session name `AmazonMWAAServerless`. No network interface holds the address after the run | 2.4 |
 | vii | Where does the portal store the operator files, and does `CodeSnapshottedAt` move with each edit? | 4.3 |
 | viii | Does a vendored dependency import with no internet path, and which copy wins against the pre-installed set (from Stage 10 (xv))? | 4.3 |
 | ix | Does a reach for PyPI fail visibly, in seconds, and with which wording (from Stage 10 (xv))? | 5.3 |
 | x | Whose identity do the worker task's AWS calls carry (from Stage 10 (xv))? | 4.3 |
-| xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? | 3.4 |
-| xii | What did each run cost, read from the run and job durations? | 3.3, 6.1 |
-| xiii | Do the outputs land encrypted with the project key? | 3.3 |
+| xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? **Answered 2026-10-11: yes**, after 611 s of one task, about 0.015 USD. The API reads the skipped sensor's `Status` as `NONE` and creates no instance for the downstream tasks | 3.4 |
+| xii | What did each run cost, read from the run and job durations? **The project run, 2026-10-11: about 0.029 USD**, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067) | 3.3, 6.1 |
+| xiii | Do the outputs land encrypted with the project key? **Answered 2026-10-11: yes**, the probe's object and the project's result both `aws:kms` with the project key and the bucket key on, written by the project role in the job's session through S3. The direct `CreateGrant` refused at each create does not reach them | 3.3 |
+| xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
+| xv | Which bucket does a worker with a `Code` object read its code from, and do network activity events record a gateway endpoint's refusal? | 4.2a |
 
 ## Risks
 
-- **The container's user may not write the output mount.** The house image runs as `sagemaker-user`, and a
-  user report describes a non-root processing container that could not write `/opt/ml/processing/output` in a
-  cloud run. The probe of pass 2 isolates it, and 2.5 is the fallback.
+- **The container's user cannot write the output mount** (measured 2026-10-11, verification ii). The house
+  image runs as `sagemaker-user` and the platform creates the mounts as root, so every job's command opens
+  with 2.5's `sudo chown`, which works in a processing container. An image that drops passwordless `sudo`
+  breaks every job at its first write.
 - **The editor may not offer the processing operator.** Then the workflow is created from a space and stays a
   CLI object, and a portal edit afterwards would sever it (Lesson 60).
 - **A pre-installed package wins silently.** The worker imports its boto3 1.43.1 whatever the package
@@ -483,6 +599,8 @@ with the recommendation stated (Lesson 16).
 - **A run outside a session fails partway.** The S3 gateway endpoint is `[P]` and keeps answering, so the
   sensor can succeed, and the first call that needs an `[E]` endpoint fails: `sagemaker.api` in
   `run_project`, `logs` for the task logs.
+- **Decision 6's grant reaches a job that carries no project tag.** That includes a job a principal outside
+  SMUS created untagged, whose configuration any listed project role can then describe.
 - **The job's logs are readable by every project role in the account**, and nothing in this stage changes
   that; the code's rule is to print no data.
 - **The definitions carry account-scoped identifiers.** The portal copy needs them and the repository copy must

@@ -277,6 +277,14 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   for none). So `project_roles` is hand-written per project, guarded by a precondition that the role
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
   section P is the procedure, in both the Terraform and the `aws` CLI form.
+- **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
+  policy allowing `sagemaker:DescribeProcessingJob` on a processing job that carries no
+  `AmazonDataZoneProject` tag, which every name not yet taken satisfies, and `sagemaker:AddTags` of that
+  tag with the caller's own value, which creating a tagged job needs; one attachment per SMUS project
+  role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
+  and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
+  this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
+  written by hand after a project exists.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 

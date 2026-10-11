@@ -219,6 +219,12 @@ terraform-live/
 │   │                     #     is hand-written after a project exists - the blueprint offers a
 │   │                     #     boundary for every project role and no grant for any
 │   │                     #     (runbooks/claude-code-sagemaker.md section P)
+│   ├── workflows/        # [P] the workflows grant (6i decision 6, rank 56): one IAM policy -
+│   │                     #     DescribeProcessingJob on a processing job no project tag marks,
+│   │                     #     which SageMakerProcessingOperator's existence check needs, and
+│   │                     #     AddTags of the caller's own project tag, which creating the job
+│   │                     #     needs - and one attachment per SMUS project role, hand-written
+│   │                     #     like bedrock/'s
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -689,6 +695,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the project's SageMaker AI domain, its `DefaultUserSettings` and the `CustomImages` attachment | `[P]` | the blueprint; the attachment by hand ([`dev-env.md`](runbooks/dev-env.md) §C6) | nothing until an app runs | never |
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
+| the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |
