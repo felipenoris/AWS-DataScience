@@ -113,3 +113,49 @@ pyproject.toml  src  tests
 
 The path the user chose replaced the plan's `orchestration-demo/devenv/code/`. The job's code input,
 `SO-7` and the stage's contract were moved to `shared/awsds-demo-job/` in the same sitting.
+
+## 2026-10-10 — pass 2: the first save refused, and why
+
+*The portal session is the user's; every reading is Claude's own, from `awsds-infra-sandbox-1`.*
+
+### [user] The save
+
+**[user]** "Ao salvar o workflow, ele pede Storage -> Definition S3:
+`s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/workflows`, CloudWatch log group -
+optional `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-avhvbqn37ty7m8/demo-devenv-job` (estes são os valores que
+aprecem preenchidos por padrão). E ao salvar, falha com a mensagem: ValidationException: Code not found in
+specified S3 location"
+
+### [Claude] What the portal sent, from CloudTrail
+
+The two attempts were `CreateWorkflow` calls at 00:50:47Z and 00:51:27Z, both refused with
+`ValidationException` and `Code not found in specified S3 location`.
+
+- **The caller** is the project role, with the portal's session name `<Identity Center user id>@<environment id>`.
+- **Every request carries `code.s3Location`**, pointing at `dev/operatorFiles/<workflow name>.zip`. The
+  first named `MyWorkflow-1791679674427.zip`, the editor's default name before the rename. The second named
+  `demo-devenv-job.zip`. No object exists under `dev/operatorFiles/`, and the prefix does not exist at all.
+- **The portal changed between the two dates.** `simple-s3-copy`'s `CreateWorkflow` at 2026-09-10 03:55:15Z
+  carried `code: null` and succeeded. Today the portal sends a code location even for a workflow with no
+  Python or Bash task, and uploads nothing to it when no operator file was added in *Settings → Storage*.
+- **Both requests carry the state the portal injects:**
+  - seven `environmentVariables`: `DataZoneDomainRegion`, `DataZoneEnvironmentId`, `ProjectS3Path`,
+    `DataZoneProjectId`, `DataZoneDomainId`, `DataZoneStage` (`prod`) and `DataZoneEndpoint`;
+  - the tag `AmazonDataZoneProject`;
+  - `triggerMode: manual_only`;
+  - the project key;
+  - the project's two private subnets and security group.
+  September's request carried the same seven variables.
+
+### [Claude] What the portal wrote and removed, from the bucket's versions
+
+At each attempt the portal wrote `dev/workflows/demo-devenv-job.yaml` (374 bytes), and a delete marker
+followed one second after the refusal. The definition it generated holds one task, `wait_for_file`, as
+`airflow.providers.amazon.aws.sensors.s3.S3KeySensor`, with `bucket_key` and `wildcard_match: true`. The
+first save came before the other two tasks existed.
+
+### [Claude] The way through
+
+Upload one operator file in the workflow's *Settings → Storage*, so that the portal writes the zip its
+request names: `examples/sandbox-orchestration/devenv-job/no_operator_code.py`, a docstring and nothing
+else.

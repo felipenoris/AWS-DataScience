@@ -267,6 +267,13 @@ answers them.
   `aws mwaa-serverless create-workflow`, and that surface is then the workflow's only one: an
   `update-workflow` from outside the portal is a full replace that severs the state the portal injects
   (Lesson 60).
+  - **Measured 2026-10-10: a save with no operator file is refused.** The portal sends
+    `code.s3Location` = `dev/operatorFiles/<workflow name>.zip` on every `CreateWorkflow`, and uploads
+    nothing there unless a file was added in *Settings → Storage*, so the service answers
+    `ValidationException: Code not found in specified S3 location`. It sent `code: null` on 2026-09-10. The
+    way through is one placeholder operator file, `devenv-job/no_operator_code.py`. The portal writes
+    the definition first and deletes it after a refusal, and it injects seven `DataZone*`
+    environment variables into every workflow ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
 - **2.2 — [user] Set the processing task's `config`**, every boundary field named:
 
   | Field | Value |
