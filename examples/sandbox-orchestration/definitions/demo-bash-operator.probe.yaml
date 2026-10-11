@@ -1,0 +1,150 @@
+# {"caller_identity":{"x":120,"y":200},"reach_pypi":{"x":420,"y":200},"endpoint_refusal":{"x":120,"y":360}}
+demo-bash-operator:
+  dag_id: demo-bash-operator
+  is_paused_upon_creation: false
+  tasks:
+    caller_identity:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      bash_command: >
+        echo "cwd: $(pwd)"
+
+        ls -la /usr/local/airflow/dags | head -20
+
+        echo "env: $(env | grep -o -E '^(DataZone[A-Za-z]*|ProjectS3Path)=' |
+        sort | tr '\n' ' ')"
+
+        python3 - <<'PY'
+
+        import os
+
+        import socket
+
+        import sys
+
+
+        import boto3
+
+        import botocore
+
+        from botocore.config import Config
+
+
+        print("python", sys.version.split()[0], "at", sys.executable)
+
+        print("boto3", boto3.__version__, "botocore", botocore.__version__,
+        "from", os.path.dirname(boto3.__file__))
+
+        print("AWS_REGION", os.environ.get("AWS_REGION"), "AWS_DEFAULT_REGION",
+        os.environ.get("AWS_DEFAULT_REGION"))
+
+        sts = boto3.client("sts", region_name="<REGION>",
+        config=Config(connect_timeout=10, retries=dict(total_max_attempts=1)))
+
+        host = sts.meta.endpoint_url.split("//", 1)[1]
+
+        try:
+            where = socket.getaddrinfo(host, 443)[0][4][0]
+        except OSError as e:
+            where = repr(e)
+        print("sts endpoint", sts.meta.endpoint_url, "resolves to", where)
+
+        print("caller", sts.get_caller_identity()["Arn"])
+
+        PY
+      retries: 0
+    reach_pypi:
+      dependencies:
+        - caller_identity
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      bash_command: >
+        echo "proxy: $(env | grep -i -o -E '^(https?|no|all)_proxy=' | tr '\n' '
+        ')"
+
+        reached=0
+
+        start=$(date +%s)
+
+        if python3 - <<'PY'
+
+        import socket
+
+        import sys
+
+        import urllib.request
+
+
+        try:
+            print("resolve: pypi.org ->", socket.getaddrinfo("pypi.org", 443)[0][4][0])
+        except OSError as e:
+            print("resolve: pypi.org failed:", repr(e))
+        try:
+            urllib.request.urlopen("https://pypi.org/simple/", timeout=10)
+        except OSError as e:
+            print("urllib:", repr(e))
+            sys.exit(1)
+        PY
+
+        then
+          echo "urllib: pypi.org ANSWERED"
+          reached=1
+        else
+          echo "urllib: no answer from pypi.org"
+        fi
+
+        echo "urllib: $(( $(date +%s) - start )) s"
+
+        python3 -m pip --version
+
+        log=$(mktemp)
+
+        start=$(date +%s)
+
+        python3 -m pip download -vvv --no-deps --timeout 10 --retries 0 -d
+        "$(mktemp -d)" six > "$log" 2>&1
+
+        rc=$?
+
+        grep -E 'Looking in indexes|Could not fetch URL|Successfully
+        downloaded|^ERROR' "$log"
+
+        if [ "$rc" -eq 0 ]; then
+          echo "pip: pypi.org ANSWERED"
+          reached=1
+        else
+          echo "pip: download failed, exit $rc"
+        fi
+
+        echo "pip: $(( $(date +%s) - start )) s"
+
+        if [ "$reached" -eq 1 ]; then
+          exit 0
+        fi
+
+        exit 1
+      retries: 0
+    endpoint_refusal:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      bash_command: |
+        python3 - <<'PY'
+        import sys
+        from datetime import datetime, timezone
+
+        import boto3
+        from botocore.config import Config
+        from botocore.exceptions import ClientError
+
+        refused = 0
+        for style in ("virtual", "path"):
+            config = Config(connect_timeout=10, retries=dict(total_max_attempts=1), s3=dict(addressing_style=style))
+            s3 = boto3.client("s3", region_name="<REGION>", config=config)
+            print(style, datetime.now(timezone.utc).strftime("%H:%M:%S"), "list sentinel-cogs")
+            try:
+                s3.list_objects_v2(Bucket="sentinel-cogs", MaxKeys=1)
+                print(style, "ANSWERED: the endpoint policy let a bucket outside its list through")
+            except ClientError as e:
+                err = e.response.get("Error", dict())
+                print(style, "refused:", err.get("Code"), "-", err.get("Message"))
+                refused += "VPC endpoint" in err.get("Message", "")
+        sys.exit(0 if refused == 2 else 1)
+        PY
+      retries: 0

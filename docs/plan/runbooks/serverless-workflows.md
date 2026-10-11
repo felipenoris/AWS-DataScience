@@ -25,8 +25,10 @@ exercised: a SageMaker processing job in the house image, a `PythonOperator` and
 image that summarises the sample, and the source deleted after the result landed under the project key
 (run `f9L7CKQzmUQWQTR`). **A workflow with a code archive does not run in Sandbox today**: its worker
 fails while preparing its environment, before any task, because the S3 gateway endpoint's allow-list
-refuses the bucket the service keeps the code in (6i decision 7, open). §C describes the packaging that
-was built and verified locally; nothing in it has run on a worker yet. The two packaging scripts live in
+refuses the bucket the service keeps the code in (6i decision 7, open). **A Bash task with an inline
+command runs** (run `b7FgLsjotHxaCde`): with no archive, the worker prepares its environment, which is
+what isolates the archive as the cause. §C describes the packaging that was built and verified locally;
+nothing in it has run on a worker yet. The two packaging scripts live in
 `examples/sandbox-orchestration/operators/`: `package-uv.sh` for a Python or Bash task (§C2) and
 `package-uv-job.py` for a processing job (§J1).
 
@@ -47,7 +49,14 @@ was built and verified locally; nothing in it has run on a worker yet. The two p
 
 **The worker** is 1 vCPU and 3 GiB with Python 3.12, Airflow 3.0.6, the Amazon provider 9.32.0 and boto3
 1.43.1. It has no internet and no proxy. A task holds its worker for its whole duration, sensor waits
-included, and bills 0.088 USD per task-hour with a one-minute minimum.
+included, and bills 0.088 USD per task-hour with a one-minute minimum. Measured on 2026-10-11:
+
+- `python3` is `/opt/mwaa-serverless-venv/bin/python3`, 3.12.14, with pip 23.2.1 and boto3 1.43.1, and the
+  tasks run as `mwaa-serverless-user`;
+- the environment carries `AWS_REGION`, the seven variables the portal injects (`DataZoneDomainId`,
+  `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable;
+- a name the Sandbox DNS Firewall does not list fails at resolution, as `[Errno 16] Device or resource
+  busy` rather than a name error; `/awsds/sandbox/dns-firewall` shows the `BLOCK`.
 
 ---
 
@@ -92,7 +101,7 @@ after the workflow and keeps every run's logs.
 
 | The portal says | What happened | Way through |
 |---|---|---|
-| `ValidationException: Code not found in specified S3 location` | the save sent a code location under `dev/operatorFiles/` with no file there | upload any `.py` in *Settings → Storage*, or import into a new empty workflow |
+| `ValidationException: Code not found in specified S3 location` | the save sent a code location under `dev/operatorFiles/` with no file there. A workflow with a Python or Bash task always sends the editor's pre-filled *Operator files zip S3 location* | upload the task's file in *Settings → Storage*; for a workflow that needs none (inline Bash, or no Python or Bash task), empty that field, and the save sends no `Code` |
 | `ContainerArguments: Container argument is required` | the editor, not the API, demands arguments on a processing task | split the command into a program (`ContainerEntrypoint`) and its arguments |
 | two workflows of one name | two saves raced past the name check, 2 s apart | delete one; the name is checked otherwise |
 
@@ -412,7 +421,10 @@ run_project:
 
 `python_callable` is `<module>.<function>`. The function receives `op_kwargs` as keyword arguments, and
 the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`; a script from the
-archive runs with `/usr/local/airflow/dags` as its working directory. The exercise's template is
+archive runs with `/usr/local/airflow/dags` as its working directory, the guide says. **An inline
+`bash_command` needs no archive** and runs in a temporary folder (`/var/tmp/airflowtmp…`), measured
+2026-10-11; `operators/bash/demo-bash-operator.probe.yaml` is the example, and the service renders it
+through Jinja, so it carries no double brace. The exercise's template is
 `examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`.
 
 ### C5 — Giving the archive to the workflow

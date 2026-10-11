@@ -74,7 +74,10 @@ The statements that must reach every account, including the ones that do not exi
 already denies the recorder, with the `AWSControlTowerExecution` carve-out that keeps the landing zone able
 to update itself) and **no CloudTrail statement** (measured: nothing denies it anywhere — the trail is
 organization-level and lives in Management, which is SCP-exempt, so a member-account deny would bind
-nothing reachable. Revision trigger: the first trail this project creates in a member account).
+nothing reachable. Revision trigger: the first trail this project creates in a member account). **Met
+2026-10-11 by `sandbox/endpoint-audit/`**, a trail in Sandbox that records S3 VPC-endpoint refusals for
+Stage 6i decision 7, and the absence stands: tampering with it blinds that one measurement, and it is
+destroyed when the decision closes. The trigger now waits for a member-account trail kept for an audience.
 
 **`guardduty:UpdateDetector` collides with [Stage 15](../../../docs/plan/stages/stage-15-guardduty.md)
 first and [Stage 11 step 4](../../../docs/plan/stages/stage-11-dlp.md) after it, and both collisions are

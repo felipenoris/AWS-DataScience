@@ -1,4 +1,4 @@
-# {"caller_identity":{"x":120,"y":200},"reach_pypi":{"x":420,"y":200}}
+# {"caller_identity":{"x":120,"y":200},"reach_pypi":{"x":420,"y":200},"endpoint_refusal":{"x":120,"y":360}}
 demo-bash-operator:
   dag_id: demo-bash-operator
   tasks:
@@ -76,4 +76,30 @@ demo-bash-operator:
           exit 0
         fi
         exit 1
+      retries: 0
+    endpoint_refusal:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      bash_command: |
+        python3 - <<'PY'
+        import sys
+        from datetime import datetime, timezone
+
+        import boto3
+        from botocore.config import Config
+        from botocore.exceptions import ClientError
+
+        refused = 0
+        for style in ("virtual", "path"):
+            config = Config(connect_timeout=10, retries=dict(total_max_attempts=1), s3=dict(addressing_style=style))
+            s3 = boto3.client("s3", region_name="<REGION>", config=config)
+            print(style, datetime.now(timezone.utc).strftime("%H:%M:%S"), "list sentinel-cogs")
+            try:
+                s3.list_objects_v2(Bucket="sentinel-cogs", MaxKeys=1)
+                print(style, "ANSWERED: the endpoint policy let a bucket outside its list through")
+            except ClientError as e:
+                err = e.response.get("Error", dict())
+                print(style, "refused:", err.get("Code"), "-", err.get("Message"))
+                refused += err.get("Code") == "AccessDenied"
+        sys.exit(0 if refused == 2 else 1)
+        PY
       retries: 0
