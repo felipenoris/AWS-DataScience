@@ -186,13 +186,21 @@ the code input; nothing is installed at run time. Three things differ from a Pyt
 `examples/sandbox-orchestration/operators/package-uv-job.py` applies the three, for a uv project:
 
 ```bash
-./examples/sandbox-orchestration/operators/package-uv-job.py <project dir> <output folder>
+./examples/sandbox-orchestration/operators/package-uv-job.py [--python X.Y] [--platform TAG] <project dir> <output folder>
 ```
 
-It reads the house environment from `images/dev-env/python/uv.lock`, takes the project's locked closure
-for the job's platform, and sorts it three ways: provided by the image, vendored (absent from the
-image), or in conflict. A conflict stops it and prints a block to add to the project's
-`pyproject.toml`:
+`--python` defaults to the `ARG PYTHON_VERSION` of `images/dev-env/Dockerfile`, the image's own
+interpreter, so a new image version moves it with no edit here; another value is accepted with a note.
+`--platform` defaults to `x86_64-manylinux_2_28`: the house environment holds `onnxruntime` 1.30.0,
+which publishes no wheel older than `manylinux_2_28`, so the image's glibc is at least 2.28 and
+`manylinux2014` cannot describe it (measured 2026-10-11).
+
+It reads the house environment from `images/dev-env/python/uv.lock`, takes the project's locked closure,
+evaluates both for the target's Python and platform, and sorts the closure three ways: provided by the
+image, vendored (absent from the image), or in conflict. The markers are evaluated by the script rather
+than by a resolver, since the image holds `torch` from PyTorch's own index and packages with no wheel
+for every Python, which a resolver would refuse. A conflict stops it and prints a block to add to the
+project's `pyproject.toml`:
 
 ```toml
 [tool.uv]
@@ -298,8 +306,12 @@ A project that uv manages, with a `pyproject.toml` and a `uv.lock`, is packaged 
 `examples/sandbox-orchestration/operators/package-uv.sh`:
 
 ```bash
-./examples/sandbox-orchestration/operators/package-uv.sh <project dir> <entry module .py> <archive .zip>
+./examples/sandbox-orchestration/operators/package-uv.sh [--python X.Y] [--platform TAG] <project dir> <entry module .py> <archive .zip>
 ```
+
+`--python` defaults to 3.12 and `--platform` to `x86_64-manylinux2014`, the worker the guide describes.
+Both are flags because the service can move the worker to another interpreter without notice; a task
+log names the one it ran, in its paths (`.../python3.12/site-packages/...`).
 
 It runs five steps, each one a rule of C1:
 
