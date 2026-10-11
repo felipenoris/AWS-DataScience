@@ -241,3 +241,44 @@ All of it was called by the project role in the portal's session.
   `is_paused_upon_creation: false`. It kept the layout comment as written.
 - **`./aws/sandbox-orchestration.py`:** `SO-1`, `SO-2` and `SO-3` pass on it, and `SO-6` notes its log
   group with no retention.
+
+### [user] The first run fails
+
+**[user]** "O job falhou: There was an error executing run Pzs3TlvfHhqOK6M: Workflow execution failed, please
+check the task execution logs for more details"
+
+### [Claude] Why: the operator's existence check meets the project role's tag condition
+
+`get-workflow-run` reads run `Pzs3TlvfHhqOK6M` as `ON_DEMAND` and `FAILED`, 84 s from 01:27:38Z. Its
+three tasks:
+
+| Task | Status | Seconds |
+|---|---|---|
+| `wait_for_file` | `SUCCESS` | 5 |
+| `run_project` | `FAILED` | 8 |
+| `remove_source` | `UPSTREAM_FAILED` | 0 |
+
+The task log of `run_project`:
+
+```
+An error occurred (AccessDeniedException) when calling the DescribeProcessingJob operation: User:
+arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AmazonMWAAServerless
+is not authorized to perform: sagemaker:DescribeProcessingJob on resource:
+arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:processing-job/demo-devenv-20261011T000000 because no
+identity-based policy allows the sagemaker:DescribeProcessingJob action
+```
+
+- **The refusal precedes the job.** `SageMakerProcessingOperator.execute()` in Amazon provider 9.32.0, read at
+  the provider's tag, always calls `_get_unique_job_name`. It describes the proposed name, counts only a
+  `ValidationException` as "absent" and re-raises anything else. Neither parameter turns it off:
+  `action_if_job_exists` takes `timestamp` or `fail`, and both check.
+- **No `CreateProcessingJob` was called.**
+- **The project role may describe only what carries its tag.** `SageMakerDescribeUpdateDeletePermissions`
+  in `SageMakerStudioProjectRoleMachineLearningPolicy` grants `DescribeProcessingJob` only when
+  `aws:ResourceTag/AmazonDataZoneProject` equals the principal's tag, and a name not yet taken carries none.
+- **The editor's own SageMaker Processing task would fail the same way** under the default managed policy,
+  before the boundary's job denies were ever reached.
+- **`{{ ts_nodash }}` rendered as the day's midnight** (`20261011T000000`): a manual run's logical date is
+  the run id's `scheduled__2026-10-11T00:00:00+00:00`. Every run of a day would therefore propose one job
+  name and share one `outbox/` folder.
+- The sample stayed in `inbox/`, because `remove_source` never ran.
