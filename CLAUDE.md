@@ -443,15 +443,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i passes 0-3 done 2026-10-10/11**:
+  cannot name both accounts, so it is rendered per environment. **6i passes 0-4 done 2026-10-10/11**:
   `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
   delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
   `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
-  **Pass 4 is blocked by decision 7**: any workflow with a `Code` object fails in the worker's
-  environment preparation before its first task, read (not measured) as the S3 gateway endpoint's
-  allow-list refusing the service's snapshot bucket. CloudTrail Lake refused the instrument ("no longer
-  accepting new customers"); `sandbox/endpoint-audit/`'s empty state object stays. Pass 5's control, a
-  `demo-bash-operator` probe with inline commands and no `Code`, is written and not run.
+  **Decision 7 taken as (a)**: a worker with a `Code` object has `airflow-serverless.amazonaws.com` fetch
+  the snapshot from `mwaa-serverless-code-files-<account>-<region>-prod` through the S3 gateway endpoint,
+  measured by `sandbox/endpoint-audit/` (rank 57, `[P]`, a trail of `VpceAccessDenied` network activity
+  events, an instrument destroyed by hand when the stage closes; CloudTrail Lake takes no new customers).
+  `vpc-v0.4.0` admits the family on `sandbox/foundation` only, and `demo-python-operator` ran `SUCCESS`.
+  Pass 5's probe (inline Bash, no `Code`) answered ix and x; its exercise version is not imported yet.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
@@ -459,7 +460,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
   every cached session's token, not only the one named, so switching persona costs the other
   identity's session; a browser sign-out invalidates none.
-- **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.3.1`, `sagemaker-denies-v0.2.0`
+- **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.4.0` (`sandbox/foundation` only, 2026-10-11; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
   a module change is exercised by planning a caller, never by `validate`.

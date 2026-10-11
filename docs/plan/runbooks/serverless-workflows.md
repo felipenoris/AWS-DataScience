@@ -23,12 +23,11 @@ exercised: a SageMaker processing job in the house image, a `PythonOperator` and
 
 **State, 2026-10-11.** **The processing task works end to end in Sandbox**: a sensor, a job in the house
 image that summarises the sample, and the source deleted after the result landed under the project key
-(run `f9L7CKQzmUQWQTR`). **A workflow with a code archive does not run in Sandbox today**: its worker
-fails while preparing its environment, before any task, because the S3 gateway endpoint's allow-list
-refuses the bucket the service keeps the code in (6i decision 7, open). **A Bash task with an inline
-command runs** (run `b7FgLsjotHxaCde`): with no archive, the worker prepares its environment, which is
-what isolates the archive as the cause. §C describes the packaging that was built and verified locally;
-nothing in it has run on a worker yet. The two packaging scripts live in
+(run `f9L7CKQzmUQWQTR`). **A workflow with a code archive runs in Sandbox** (run `N05WyTNjUcdxbw0`):
+a `PythonOperator` read the sample, wrote the same result and deleted the source. Before `vpc-v0.4.0`
+its worker failed while preparing its environment, because the S3 gateway endpoint refused the bucket
+the service keeps the code in (6i decision 7); a Bash task with an inline command, which has no archive,
+ran all along. The exercise's archive was built by C6's recipe; C2's script is verified locally only. The two packaging scripts live in
 `examples/sandbox-orchestration/operators/`: `package-uv.sh` for a Python or Bash task (§C2) and
 `package-uv-job.py` for a processing job (§J1).
 
@@ -40,7 +39,7 @@ nothing in it has run on a worker yet. The two packaging scripts live in
 |---|---|---|
 | the definition | `s3://<projects bucket>/<domain>/<project>/dev/workflows/<name>.yaml` | written by the portal on each save; *View code* shows it |
 | the code archive of a Python or Bash task | `.../dev/operatorFiles/<file>` | uploaded in *Settings → Storage*; one `.zip` is stored as uploaded, and the workflow pins its S3 version |
-| the service's copy of that code | storage the service owns | taken at each save and encrypted under the project key; not written to the projects bucket, and its own bucket is unread (2026-10-11) |
+| the service's copy of that code | `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, key `<account>/<workflow>/<version>/<upload's key>` | taken at each save and encrypted under the project key; each task's worker has `airflow-serverless.amazonaws.com` read it through the VPC's S3 gateway endpoint, whose policy must admit the family (`vpc-v0.4.0`, 6i decision 7) |
 | the task logs | `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, one stream per task attempt | per project; no retention (`EXC-10`'s shape); the group outlives the workflow |
 | a processing job's container output | `/aws/sagemaker/ProcessingJobs`, stream `<job>/algo-1-<n>` | account-wide: every project role in the account can read it |
 | the identity | the project role, `datazone_usr_role_<project>_<env>`, session `AmazonMWAAServerless` on the worker, `SageMaker` inside a job | the D13 boundary applies to both |
@@ -294,11 +293,12 @@ processing task holds its worker for the whole job.
 
 ## §C — Code for a Python or Bash task
 
-**Status in Sandbox: blocked.** A workflow with a code archive fails before its first task with
-`Execution environment preparation failed due to an internal server error`. The worker fetches the
-service's copy of the code (§O) through the S3 gateway endpoint, and the endpoint's allow-list names no
-MWAA Serverless bucket. 6i decision 7 holds the options. Everything below was built and verified
-locally; none of it has run on a worker yet.
+**Status in Sandbox: runs since 2026-10-11.** The worker fetches the service's copy of the code (§O)
+through the S3 gateway endpoint. Where the endpoint's policy does not admit
+`mwaa-serverless-code-files-*-<region>-prod` (any VPC on `vpc-v0.3.1`, Staging and Production today), a
+workflow with a code archive fails before its first task with `Execution environment preparation failed
+due to an internal server error`, and only a CloudTrail network activity event names the refusal. C6's
+recipe built the archive that ran; C2's script is verified locally.
 
 ### C1 — What the worker expects
 
@@ -309,9 +309,10 @@ locally; none of it has run on a worker yet.
   root imports by its name.
 - **Third-party packages built for the worker**: CPython 3.12 on Linux x86_64 today. A package installed
   for your laptop or for the house environment (Python 3.13) does not import there.
-- **No package the worker already has.** The guide says a pre-installed package wins over the archive's
-  copy (6i verification viii, unmeasured): Airflow, the Amazon provider, boto3 and botocore,
-  dag-factory, PyYAML, lz4 and the AWS encryption SDK family. Write against the worker's boto3 1.43.1.
+- **No package the worker already has.** A pre-installed package wins over the archive's copy (measured
+  2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2): Airflow, the Amazon provider, boto3
+  and botocore, dag-factory, PyYAML, lz4 and the AWS encryption SDK family. Write against the worker's
+  boto3 1.43.1.
 - **No `__pycache__` or `.pyc`**: bytecode from another platform may not load.
 - **No secret**: the archive is copied by the service and stored outside the account.
 

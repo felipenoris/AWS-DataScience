@@ -945,3 +945,85 @@ From the portal's *Workflows* list, *Run now*, in the user's Chrome:
   `sentinel-cogs` at 20:52:34Z with both addressing styles, refused both times with `AccessDenied - Access
   Denied`;
 - `demo-python-operator`, run `mObMMosGwVA98XO`, created 20:52:06Z, the sample still in `python/inbox/`.
+
+### [Claude] 4.2a read: the refused bucket, named
+
+The trail delivered three network activity files at 20:57:31Z to 20:57:44Z, under
+`AWSLogs/<Sandbox Account 1>/CloudTrail-NetworkActivity/`, a prefix of its own beside `CloudTrail/`. All
+three records came through `vpce-0cc3e139c1167ca83`, Sandbox's S3 gateway endpoint, with `errorCode`
+`VpceAccessDenied` and `errorMessage` "The request was denied due to a VPC endpoint policy":
+
+| Time | Event | Caller | Resource |
+|---|---|---|---|
+| 20:52:34Z | `ListObjects` | the project role, session `AmazonMWAAServerless`, from `10.20.41.160` | `arn:aws:s3:::sentinel-cogs` |
+| 20:52:34Z | `ListObjects` | the same | `arn:aws:s3:::sentinel-cogs` |
+| 20:52:51Z | `GetObject` | `userIdentity.type` `AWSService`, `invokedBy` and source `airflow-serverless.amazonaws.com` | `arn:aws:s3:::mwaa-serverless-code-files-<AWS-owned account>-us-west-2-prod/<Sandbox Account 1>/demo-python-operator-4ftmCaOAtJ/761c2c8e445a9dbad1e41e11f251679e/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/operatorFiles/python-operator.zip` |
+
+- **The positive control answered: network activity events cover a gateway endpoint**, and a
+  path-style request names its bucket as a virtual-hosted one does (verification xv, second half). The
+  owner's account reads `HIDDEN_DUE_TO_SECURITY_REASONS` in `resources`.
+- **The code fetch is the service's own request**, not the project role's: a `GetObject` by
+  `airflow-serverless.amazonaws.com` of the snapshot the service took at the workflow's creation, keyed
+  by account, workflow, version and the upload's own key (verification xv, first half). The worker's
+  DNS and flow logs match it: `10.20.38.127` resolved `s3.us-west-2.amazonaws.com` at 20:52:51Z and
+  exchanged 12 packets each way with `16.15.35.200:443`, 3,108 bytes out and 6,156 in, the first
+  failure's counts within 4 bytes.
+- **Decision 7's reading is measured**, and (a)'s family is `mwaa-serverless-code-files-*-<region>-prod`,
+  the wildcard standing for the service's account id.
+
+### [Claude⚡] 4.2a: `vpc-v0.4.0`, and `sandbox/foundation` applied
+
+*The user signed in again after Terraform met `Session token not found or invalid` a second time
+("usuário sso infra logado"). No peer session was running at the apply. Run as the infrastructure user,
+`InfrastructureAccess` on `awsds-infra-sandbox-1` (`<Sandbox Account 1>`), by
+`runbooks/terraform-changes.md` Recipe B.*
+
+- **The module:** `default_aws_buckets` gains `mwaa-serverless-code-files-*-${region}-prod`. A plan of
+  `sandbox/foundation` against the local module read `0 to add, 1 to change, 0 to destroy`, the S3
+  gateway endpoint's policy alone; the caller's `source` was reverted and re-initialised.
+- **Commit 1 and the tag:** the module alone (`1305f38`), tagged `vpc-v0.4.0` after `git ls-remote`
+  read `vpc-v0.3.1` as the newest; origin answered `1305f389…	refs/tags/vpc-v0.4.0`.
+- **Commit 2:** `sandbox/foundation` takes `vpc-v0.4.0` (`c8299a6`); the hook first refused it with
+  `Module source has changed` until the slice was re-initialised. The other four callers stay on
+  `vpc-v0.3.1`.
+- **The plan:** `0 to add, 1 to change, 0 to destroy`, the two ARNs of the family added to
+  `AllowAwsOwnedServiceBuckets`.
+- **The apply, from the saved plan:** `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`
+- **The re-plan:** `No changes`, exit 0; the live policy of `vpce-0cc3e139c1167ca83` carries both ARNs.
+
+### [Claude⚡] The re-run, from the CLI
+
+The portal in the user's Chrome had lost its session (the sign-in page), so the run was started as the
+infrastructure user: `aws mwaa-serverless start-workflow-run`, run `N05WyTNjUcdxbw0`, 21:08:54Z. The
+portal's own call carries only the workflow ARN and a client token, so the run is the same one; the
+caller differs.
+
+### [Claude] 4.3 — the re-run read: a `Code` object runs on the private tier
+
+- **The run, `N05WyTNjUcdxbw0`:** `SUCCESS`, 96 s from 21:09:06Z. `wait_for_file` `SUCCESS` in 8 s,
+  `run_project` `SUCCESS` in 6 s. Each task's log opens with `Preparing the execution environment.`
+  and, a second later, `Execution environment is ready.` (21:09:46Z and 21:10:37Z), the line the two
+  failed runs never reached.
+- **`run_project`'s output:**
+
+  ```
+  python 3.12.14 at /opt/mwaa-serverless-venv/bin/python3
+  caller arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AmazonMWAAServerless
+  import petl: 1.7.28 from /usr/local/airflow/dags/petl/__init__.py
+  import yaml: 6.0.2 from /opt/mwaa-serverless-venv/lib64/python3.12/site-packages/yaml/__init__.py
+  sample.csv: 10 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/orchestration-demo/python/outbox/20261011T211041Z/sample.result.json; source deleted
+  1 object(s) processed
+  ```
+
+  **Verification viii: yes, and the pre-installed copy wins.** `petl`, absent from the worker, imported
+  from the archive; the archive's PyYAML 6.0.1 lost to the worker's 6.0.2. **Verification x** for a
+  Python task: the project role, session `AmazonMWAAServerless`.
+- **The result:** `python/outbox/20261011T211041Z/sample.result.json`, 378 bytes, `aws:kms` with the
+  project key and `BucketKeyEnabled`; its sha256, `1b2bc4d7…a248191`, is the processing job's result's
+  and the local run's. `python/inbox/` holds only its folder marker.
+- **`./aws/sandbox-orchestration.py` exits 0:** `SO-4` passes on `demo-python-operator`, `SO-7` reads
+  its inbox empty and one object in its outbox.
+- **The cost:** two tasks at the one-minute minimum, about 0.0029 USD; the failed run before it,
+  `mObMMosGwVA98XO` (125 s, its sensor 89 s), about 0.0022.
+- **The definition**, `definitions/demo-python-operator.yaml`, renders back to the saved file byte for
+  byte; the portal added only `is_paused_upon_creation: false`.
