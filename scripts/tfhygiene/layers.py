@@ -165,6 +165,10 @@ RANKS = {
     # and above `sagemaker` (46) for the same reason. [P], so up/down skip it; 56 is the first free
     # slot, and nothing interleaves with it.
     "workflows": 56,
+    # Stage 6i decision 7: a CloudTrail Lake store of the S3 requests a VPC endpoint policy refused.
+    # [P], so up/down skip it, and it depends on nothing in the account; 57 is the next free slot.
+    # It is destroyed by hand when the decision closes.
+    "endpoint-audit": 57,
     # Stage 5b step 1.7 - the Redshift Serverless warehouse, split across two ranks because the two
     # halves have different lifecycles and the order between them is a real dependency:
     #
@@ -494,6 +498,16 @@ SLICES = [
         "workflows",
         PERSISTENT,
         "the workflows grant: 1 policy + 1 attachment per project",
+    ),
+    # Stage 6i decision 7 - the instrument that names the bucket a VPC endpoint policy refused: one
+    # CloudTrail Lake event data store holding S3 network activity events with errorCode
+    # VpceAccessDenied. [P] because up/down must not cycle it - a deleted store keeps its name for
+    # 7 days - and destroyed by hand once the decision closes.
+    Slice(
+        "sandbox",
+        "endpoint-audit",
+        PERSISTENT,
+        "the endpoint refusals store: 1 CloudTrail Lake event data store",
     ),
     # Stage 5b pass 1 - the data half of the warehouse. [P] and free at rest in the sense this
     # column measures: nothing in it is metered by the hour. What it DOES cost is Redshift Managed

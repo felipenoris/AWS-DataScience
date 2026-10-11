@@ -723,3 +723,28 @@ acesso ao snapshot?"
   outside the organization only (`DenyS3ObjectWriteOutsideOrganization`), the security group allows all
   egress, and the flow log reads `ACCEPT` both ways with a reply from S3: the refusal is S3's answer, not a
   dropped packet. It lands in the bucket owner's trail, not here.
+
+### [user] Decision 7: prepare (a)
+
+**[user]** "Pode preparar a medição da opção (a)"
+
+### [Claude] 4.2a prepared: the store, planned and not applied
+
+- **`sandbox/endpoint-audit/`**, rank 57, `[P]`: one CloudTrail Lake event data store,
+  `awsds-sandbox-endpoint-refusals`, with one selector (`eventCategory` `NetworkActivity`, `eventSource`
+  `s3.amazonaws.com`, `errorCode` `VpceAccessDenied`), this region only, 7-day retention, termination
+  protection off, `EXTENDABLE_RETENTION_PRICING`. Registered in `layers.py`, `conventions.md` §6 and
+  `terraform-live/README.md`.
+- **The plan:** `1 to add, 0 to change, 0 to destroy`, saved, as `InfrastructureAccess` on
+  `awsds-infra-sandbox-1`. The provider (6.64.0) accepts the `errorCode` field and the `NetworkActivity`
+  category. Nothing was applied.
+- **The prices, from the Price List API:** ingestion 0.75 USD per GB at one-year extendable retention
+  (`USW2-Ingestion-Bytes-1yearstore-Live-CloudTrail-Logs`), queries 0.005 USD per GB scanned
+  (`USW2-QueryScanned-Bytes`), and network activity events on a trail 0.000001 each
+  (`USW2-NetworkEventsRecorded`). A handful of refusals costs fractions of a cent. Rows added to
+  `docs/PRICING.md` §6.
+- **The account holds no other trail or store:** `describe-trails` lists only
+  `aws-controltower-BaselineCloudTrail`, the organization's, and `list-event-data-stores` is empty. This is
+  `POLICIES.md`'s revision trigger for its CloudTrail absence, and the plan proposes no statement.
+- **The positive control** is a read of `sentinel-cogs`, a public bucket in the region that the allow-list
+  does not name.

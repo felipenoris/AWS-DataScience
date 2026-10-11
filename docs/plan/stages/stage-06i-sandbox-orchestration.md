@@ -143,6 +143,7 @@ prerequisite of this exercise and stays where 6f handed it.
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
 | `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
+| `sandbox/endpoint-audit/` (new, rank 57) | one CloudTrail Lake event data store of the S3 requests a VPC endpoint policy refused (decision 7's measurement), destroyed by hand when the decision closes | `[P]` |
 
 **Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
 `shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
@@ -378,6 +379,26 @@ identity a worker task's calls carry.
   so the form is read, not relied on. If it cannot, upload the files loose and read
   what the portal zipped (`SO-3`): a `.zip` uploaded beside loose files may arrive nested, unextracted. Drop
   the sample and run.
+- **4.2a — The refused bucket, measured** (decision 7 (a)). The store records S3 network activity events
+  with `errorCode` `VpceAccessDenied`, the only record this account can hold of a gateway endpoint's refusal.
+  Whether those events cover a gateway endpoint at all is unread, so a positive control comes before the
+  re-run:
+  - **[Claude⚡]** apply `sandbox/endpoint-audit/` (`1 to add`), the peer sessions told first;
+  - **[user]** from a space's terminal, a read of a public bucket in the region that the allow-list does not
+    name: `aws s3api list-objects-v2 --bucket sentinel-cogs --max-keys 1`. Expected: `AccessDenied` "because
+    no VPC endpoint policy allows the s3:ListBucket action";
+  - **[Claude]** query the store (`start-query` and `get-query-results`, which bill 0.005 USD per GB
+    scanned) until the control's event arrives, naming `sentinel-cogs`. None within 30 minutes means the
+    events do not cover a gateway endpoint: the instrument is blind, the measurement stops there, and
+    decision 7 is taken again without it;
+  - **[user]** run `demo-python-operator` again; the sample is still in `python/inbox/`;
+  - **[Claude]** query again. The refused request's bucket is the answer, and its family goes into the `vpc`
+    module's `default_aws_buckets`.
+
+  The store is the first CloudTrail resource this project creates in a member account, the revision
+  trigger `POLICIES.md` names for its CloudTrail absence. The proposal is no statement: the store is an
+  instrument in Sandbox, destroyed when the decision closes, and tampering with it blinds only this
+  measurement.
 - **4.3 — [Claude] Read it**:
   - `SO-3` for the `Code` location and `CodeSnapshottedAt` (vii);
   - the task log for the ARN, expected `assumed-role/<project role>/AmazonMWAAServerless` (x);
@@ -551,6 +572,7 @@ with the recommendation stated (Lesson 16).
 | xii | What did each run cost, read from the run and job durations? **The project run, 2026-10-11: about 0.029 USD**, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067) | 3.3, 6.1 |
 | xiii | Do the outputs land encrypted with the project key? **Answered 2026-10-11: yes**, the probe's object and the project's result both `aws:kms` with the project key and the bucket key on, written by the project role in the job's session through S3. The direct `CreateGrant` refused at each create does not reach them | 3.3 |
 | xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
+| xv | Which bucket does a worker with a `Code` object read its code from, and do network activity events record a gateway endpoint's refusal? | 4.2a |
 
 ## Risks
 
