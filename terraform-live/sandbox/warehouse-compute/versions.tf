@@ -7,6 +7,12 @@
 # One provider. `aws_redshiftserverless_namespace` has been in the aws provider since 4.x, and
 # nothing here needs a field only awscc offers - unlike sandbox/sagemaker/, whose blueprint
 # configuration does.
+#
+# The lock file holds hashicorp/aws at 6.66.0 or later. Earlier versions reject a `config_parameter`
+# key outside their own allow-list and keep every key the service returns, so once Redshift returns
+# `enable_large_strings_opt_in` (2026-10-13) the workgroup plans a change forever and its update
+# fails (hashicorp/terraform-provider-aws#50257). The constraint stays the tree's `~> 6.60`, the one
+# scripts/check-provider-locks.py compares.
 
 terraform {
   required_version = "~> 1.15"

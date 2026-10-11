@@ -169,7 +169,13 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
   3. **Interface endpoints for `logs`, `monitoring` and `kms`**, private DNS on, associated to both
      subnets and to the workers' security group — plus the job-facing set (`sts`, `sagemaker.api`,
      `sagemaker.runtime`, `glue`, `ecr.api`, `ecr.dkr`) and an S3 gateway policy admitting
-     `prod-<region>-starport-layer-bucket`.
+     `prod-<region>-starport-layer-bucket`. **A workflow with a Python or Bash task's `Code` also needs
+     `mwaa-serverless-code-files-*-<region>-prod`**: the worker's environment preparation reads the code
+     snapshot from that service-owned bucket as `airflow-serverless.amazonaws.com`, through the S3 gateway
+     endpoint, and a refusal surfaces only as "Execution environment preparation failed due to an internal
+     server error" (measured by [Stage 6i](stage-06i-sandbox-orchestration.md) decision 7, 2026-10-11).
+     `vpc-v0.4.0` carries the family; `staging/foundation/` and Production's three callers are still on
+     `vpc-v0.3.1` and take the bump here.
   4. **A security group with a self-referencing inbound rule** and an all-traffic outbound rule.
 
   **The service exposes no proxy setting**, which makes it **the first named exception to D38's single

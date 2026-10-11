@@ -16,18 +16,22 @@ data "aws_partition" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  # Step 9.3's five families as the documented default - names from AWS's documentation, not
+  # Step 9.3's families as the documented default - names from AWS's documentation, not
   # measured (Lesson 23); verification (iii) confirms each at execution. The list is a
   # variable because it is the statement most likely to be trimmed by somebody tidying up
   # (9.5), and its failure mode is a package manager that hangs, not an AccessDenied.
+  # The MWAA Serverless entry is the one measured rather than documented: Stage 6i's trail
+  # recorded the service principal's GetObject of a workflow's code snapshot, refused here
+  # (decision 7). The wildcard stands for the service's account id.
   default_aws_buckets = [
-    "al2023-repos-${data.aws_region.current.region}-*",             # AL2023 repositories - packages AND the mirror list (9.3's correction)
-    "amazoncloudwatch-agent-${data.aws_region.current.region}",     # CloudWatch agent (Stage 4 step 7)
-    "amazon-ssm-${data.aws_region.current.region}",                 # SSM agent updates (Stage 7; the only way into GitLab)
-    "aws-ssm-${data.aws_region.current.region}",                    # SSM document modules - the documented minimum's second half
-    "prod-${data.aws_region.current.region}-starport-layer-bucket", # ECR image layers - every docker pull (Stages 6-8)
-    "sagemaker-${data.aws_region.current.region}",                  # SageMaker regional bucket (Stage 6)
-    "jumpstart-cache-prod-${data.aws_region.current.region}",       # SageMaker JumpStart artifacts (Stage 6)
+    "al2023-repos-${data.aws_region.current.region}-*",                    # AL2023 repositories - packages AND the mirror list (9.3's correction)
+    "amazoncloudwatch-agent-${data.aws_region.current.region}",            # CloudWatch agent (Stage 4 step 7)
+    "amazon-ssm-${data.aws_region.current.region}",                        # SSM agent updates (Stage 7; the only way into GitLab)
+    "aws-ssm-${data.aws_region.current.region}",                           # SSM document modules - the documented minimum's second half
+    "prod-${data.aws_region.current.region}-starport-layer-bucket",        # ECR image layers - every docker pull (Stages 6-8)
+    "sagemaker-${data.aws_region.current.region}",                         # SageMaker regional bucket (Stage 6)
+    "jumpstart-cache-prod-${data.aws_region.current.region}",              # SageMaker JumpStart artifacts (Stage 6)
+    "mwaa-serverless-code-files-*-${data.aws_region.current.region}-prod", # MWAA Serverless code snapshots - a Python or Bash task's Code (6i)
   ]
 
   aws_buckets = coalesce(var.s3_endpoint_allowed_bucket_names, local.default_aws_buckets)
