@@ -214,3 +214,30 @@ definitions now split the command into a program and its arguments:
 - the project: `[".../venv/bin/python", "-m", "awsds_demo_job"]` and `--input`/`--output`.
 
 Both rendered and parsed again.
+
+### [user] Every workflow deleted, one imported into an empty workflow
+
+**[user]** "Apaguei todos os workflows existentes. Criei um novo vazio, importei o yaml, e salvou com sucesso
+sem precisar importar um script python vazio em storage."
+
+### [Claude] What CloudTrail and the workflow read
+
+All of it was called by the project role in the portal's session.
+
+- **The deletions**, from 01:17:51Z to 01:19:07Z: `simple-s3-copy` and `MyWorkflow`, 6d step 4's two
+  workflows, then both `demo-devenv-job` twins. A deleted workflow takes its run history with it
+  (Lesson 4), and **its log group stays**: `MyWorkflow`'s holds 21,448 bytes and `simple-s3-copy`'s 1,743.
+  6d's run evidence now lives in those groups and in 6d's log.
+- **Two refusals on the way.** `UpdateWorkflow` was refused with "Workflow validation failed: The DAG
+  definition is invalid since it does not contain any tasks" (01:18:31Z), and `CreateWorkflow` with
+  "Workflow with given name already exists" (01:18:47Z). **The name is checked**, so the earlier twins were
+  two creates that raced past the check 2 s apart.
+- **The workflow, `demo-devenv-job-Pjx5WDCyKO`**, created 01:19:39Z, is `READY` with `Code` null: saved with
+  no operator file, so the code location the portal sent on the earlier saves is not sent on every path.
+- **The import kept every field the form cannot show:** `NetworkConfig` (isolation, inter-container
+  encryption, both subnets, the project's security group), both KMS keys, the `AmazonDataZoneProject` tag,
+  `StoppingCondition` and `ContainerArguments`. The portal re-serialized the file: folded scalars split
+  `{{ ts_nodash }}` across a line, which a YAML reader folds back to one space, and it added
+  `is_paused_upon_creation: false`. It kept the layout comment as written.
+- **`./aws/sandbox-orchestration.py`:** `SO-1`, `SO-2` and `SO-3` pass on it, and `SO-6` notes its log
+  group with no retention.

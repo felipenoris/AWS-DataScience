@@ -426,7 +426,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
   2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
 - **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10):
-  two portal workflows in Sandbox, `READY`, `manual_only`; a failed task is retried once, so read the
+  two portal workflows in Sandbox, `manual_only`, deleted by the user 2026-10-10 (their log groups stay); a failed task is retried once, so read the
   task's `DurationInSeconds`, never the run's; `list-workflow-runs` returns `RunType` null, so the type
   is read per run. It runs as the project role inside the D13 boundary, workers
   with no proxy (a priced D9 exception). A "Notebook task" is a `CreateTrainingJob` and dies on
