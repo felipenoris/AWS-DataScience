@@ -1027,3 +1027,76 @@ caller differs.
   `mObMMosGwVA98XO` (125 s, its sensor 89 s), about 0.0022.
 - **The definition**, `definitions/demo-python-operator.yaml`, renders back to the saved file byte for
   byte; the portal added only `is_paused_upon_creation: false`.
+
+## 2026-10-11 — pass 5: `demo-bash-operator`, the exercise
+
+*The session stayed up from the passes before. The user merged the previous PR, asked for pass 5 and
+authorized the AWS writes it needs ("pode aplicar as escritas necessárias na aws"), and later the
+deletion of the probe workflow by name. The portal acts are Claude's, in the user's Chrome through
+Claude in Chrome, signed in as the Data Scientist user (the user signed in); the definition file was
+chosen by the user in Chrome's dialog. Every reading is Claude's own, from `awsds-infra-sandbox-1`
+(`<Sandbox Account 1>`, `InfrastructureAccess`).*
+
+### [Claude] 5.1 — the definition and the archive
+
+- **`operators/bash/demo-bash-operator.yaml`**: the sensor on `bash/inbox/?*`; `run_command`, an inline
+  command that prints its working directory and `PYTHONPATH`, changes to `/usr/local/airflow/dags` and
+  runs `python3 -m awsds_demo_job.s3`; and `reach_pypi`, whose command is the script's name. It renders
+  and parses, and each command passes `bash -n`.
+- **`operators/build.sh`** built `bash-operator.zip`, 4,849 bytes: `reach_pypi.sh` and `awsds_demo_job/`
+  at its root.
+
+### [Claude⚡] 5.2 — the drop, the import, the save and the run
+
+- **The drop:** the portal's *Files* page created `orchestration-demo/bash/` and `bash/inbox/` as folder
+  markers (21:30:15Z and 21:30:36Z) and uploaded the repository's sample there, 279 bytes, through the
+  dialog's file input.
+- **The import:** *Actions → Import definition file* in the probe's editor. The editor then held the
+  three tasks under the workflow's bare name.
+- **The archive:** *Settings → Storage → Python/Bash Operator Files* took `bash-operator.zip` through its
+  file input. The field below it became *Operator file S3 location*, "stored directly (no zip)", at
+  `dev/operatorFiles/bash-operator.zip`.
+- **The first save was refused** at 21:33:41Z: `CreateWorkflow` answered `ConflictException: Workflow
+  with given name already exists`. The import does not replace a saved workflow; the archive was
+  uploaded all the same (S3 version `DXBHpJbq…`, 21:33:37Z).
+- **The probe deleted**, with the user's approval: `demo-bash-operator-Q7BcYzndcz`, from the portal's
+  *Workflows* list, *Delete workflow* and the word "confirm" (`DeleteWorkflow`, 21:35:22Z). Its two runs
+  went with it; its log group stays.
+- **The second save** at 21:35:48Z created `demo-bash-operator-K04PshmXlc`, `READY`, version
+  `ab2013f4ee6c013b506e61a3dc0790a5`, its `Code` `dev/operatorFiles/bash-operator.zip` pinned to S3
+  version `OH84z4Jv…` (4,849 bytes), snapshotted at 21:35:48Z.
+- **The run**, `xn9EZ2kgVIMcI7h`, started by the portal at 21:36:22Z.
+
+### [Claude] 5.3 — the run read
+
+- **The run:** `FAILED` by design, 148 s from 21:36:28Z. `wait_for_file` `SUCCESS` in 4 s,
+  `run_command` `SUCCESS` in 9 s, `reach_pypi` `FAILED` in 13 s. Each task's environment `ready`.
+- **`run_command`:**
+
+  ```
+  cwd /var/tmp/airflowtmp2nab7fnd PYTHONPATH=/usr/local/airflow/dags:/usr/local/airflow/dags:/opt/mwaa-serverless-venv/lib/python3.12/site-packages
+  python 3.12.14 at /opt/mwaa-serverless-venv/bin/python3
+  sample.csv: 10 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/orchestration-demo/bash/outbox/20261011T213800Z/sample.result.json; source deleted
+  1 object(s) processed
+  ```
+
+  A Bash task's `PYTHONPATH` already carries the folder the archive is extracted to.
+- **`reach_pypi`**: the operator ran `['/usr/bin/bash', 'tmp6wm8sj1x.sh']`, the script rendered as a
+  template into a temporary file, and it printed the 5.0 readings again: no proxy variable, `OSError(16,
+  'Device or resource busy')` at resolution, urllib in 2 s, pip 23.2.1 failing in 4 s, exit 1.
+- **The result:** `bash/outbox/20261011T213800Z/sample.result.json`, 378 bytes, `aws:kms` with the
+  project key and `BucketKeyEnabled`, sha256 `1b2bc4d7…a248191`: the processing job's, the Python
+  task's and the local run's. `bash/inbox/` holds only its folder markers.
+- **`./aws/sandbox-orchestration.py` exits 0** with every check passing: `SO-4` reads "reach_pypi
+  FAILED and every other task SUCCESS, as designed", `SO-3` the exercise's `Code`, `SO-7` an empty inbox
+  and one result. The stage's first validation item holds.
+- **The trail** delivered no file after 21:00Z: neither re-run met a refusal.
+- **The cost:** three tasks at the one-minute minimum, about 0.0044 USD.
+
+### [Claude⚡] Verification vii, the second half: an edit takes a new snapshot
+
+The workflow's description was set to "Stage 6i pass 5" in the portal's settings and saved:
+`UpdateWorkflow` at 21:42:08Z, `code` pinned to the same S3 version `OH84z4Jv…`. The workflow gained
+version `b960b35f53191b41210702df9be10475`, and `CodeSnapshottedAt` moved from 21:35:48Z to 21:42:08Z,
+the code unchanged. The description lands in the definition itself, as a top-level `description`.
+`definitions/demo-bash-operator.yaml` is that version, rendered back byte for byte.

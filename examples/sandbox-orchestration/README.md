@@ -21,6 +21,7 @@ under `definitions/` as the record of what ran (Stage 6i decision 1).
 | `operators/python/` | `demo_tasks.py`, the `PythonOperator` callable, and the vendored set in `requirements.txt` | built into `python-operator.zip` |
 | `operators/python/demo-python-operator.yaml` | `demo-python-operator`'s definition: the sensor, then the `PythonOperator` task with `python_callable: demo_tasks.run` | rendered, then imported after `python-operator.zip` is uploaded in *Settings → Storage* |
 | `operators/bash/` | `reach_pypi.sh`, the PyPI negative | built into `bash-operator.zip` |
+| `operators/bash/demo-bash-operator.yaml` | `demo-bash-operator`'s exercise: the sensor, `run_command` running the package from the archive, and `reach_pypi.sh` by name | rendered, then imported after the probe is deleted (an import does not replace a saved workflow), with `bash-operator.zip` uploaded in *Settings → Storage* |
 | `operators/bash/demo-bash-operator.probe.yaml` | the first version of `demo-bash-operator`: two Bash tasks with inline commands, the caller's identity and the PyPI negative, and no `Code` object, the control for Stage 6i decision 7 | rendered, then imported into a new, empty workflow with nothing uploaded in *Settings → Storage* |
 | `operators/build.sh` | builds the exercise's two archives into `operators/dist/` (untracked), the vendored set for CPython 3.12 on manylinux2014 x86_64; for your own project use `package-uv.sh` | the archives are uploaded in *Settings → Storage* of their workflow |
 | `operators/package-uv-job.py` | packages a uv project as a processing job's code input in the house image: a folder with the project and only the packages the house environment lacks, stopping on a version the two disagree on | the folder is copied into the project's `shared/` and named as the job's `code` input; the runbook's section J1 is its procedure |
@@ -81,12 +82,12 @@ The probe, `operators/bash/demo-bash-operator.probe.yaml`, has no sensor and no 
 | `caller_identity` | Bash Operator | inline: the worker's Python and boto3, the region variables, where the STS endpoint resolves, and the caller's ARN from `GetCallerIdentity` |
 | `reach_pypi` | Bash Operator | inline: the commands of `reach_pypi.sh`, after `caller_identity`; it is expected to fail |
 
-The exercise, imported over the probe once a workflow with a `Code` object runs:
+The exercise, `operators/bash/demo-bash-operator.yaml`, which replaced the probe once a workflow with a `Code` object could run:
 
 | Task | Operator | Fields |
 |---|---|---|
 | `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/bash/inbox/?*`, for the same reason |
-| `run_command` | Bash Operator | `python3 -m awsds_demo_job.s3 --bucket <PROJECTS_BUCKET> --inbox <DEMO_PREFIX>/bash/inbox/ --outbox <DEMO_PREFIX>/bash/outbox/`; `bash-operator.zip` in *Storage* |
+| `run_command` | Bash Operator | prints its folder and `PYTHONPATH`, then `cd /usr/local/airflow/dags && python3 -m awsds_demo_job.s3 --bucket <PROJECTS_BUCKET> --inbox <DEMO_PREFIX>/bash/inbox/ --outbox <DEMO_PREFIX>/bash/outbox/`; `bash-operator.zip` in *Storage* |
 | `reach_pypi` | Bash Operator | `reach_pypi.sh`, after `run_command`; it is expected to fail |
 
 ## Running the project's tests

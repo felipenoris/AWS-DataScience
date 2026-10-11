@@ -443,7 +443,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i passes 0-4 done 2026-10-10/11**:
+  cannot name both accounts, so it is rendered per environment. **6i passes 0-5 done 2026-10-10/11**:
   `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
   delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
   `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
@@ -452,7 +452,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measured by `sandbox/endpoint-audit/` (rank 57, `[P]`, a trail of `VpceAccessDenied` network activity
   events, an instrument destroyed by hand when the stage closes; CloudTrail Lake takes no new customers).
   `vpc-v0.4.0` admits the family on `sandbox/foundation` only, and `demo-python-operator` ran `SUCCESS`.
-  Pass 5's probe (inline Bash, no `Code`) answered ix and x; its exercise version is not imported yet.
+  Pass 5's probe (inline Bash, no `Code`) answered ix and x, and its exercise ran package and script from
+  the archive; every `SO-` check passes. Owed: pass 6, the close (records, decision 5, the trail's destroy).
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
