@@ -686,3 +686,19 @@ the task execution logs for more details`"
 - **What the workflows without `Code` never met:** the processing job and the S3 tasks read the project's
   bucket, which the organization statement admits. The worker variants are the first to depend on an
   AWS-owned bucket the list does not name, so pass 5 meets the same refusal.
+
+### [user] Where the code is stored
+
+**[user]** "O arquivo zip do storage fica num bucket fora da minha conta?"
+
+### [Claude] The upload is in the account; the copy the service keeps is not in its bucket
+
+- **The upload is in the account**, measured earlier: `dev/operatorFiles/python-operator.zip` in the
+  projects bucket, the version the workflow's `Code` pins, byte for byte the built archive.
+- **The service generates one more data key for a workflow with code.** At creation, `GenerateDataKey`
+  under the project key with the workflow's encryption context ran twice for `demo-devenv-job` (04:00:39Z)
+  and three times for `demo-python-operator` (05:32:43Z).
+- **It wrote nothing into the projects bucket.** Of its 3,257 object versions, the only two written between
+  05:32:30Z and 05:34:00Z are the portal's: the archive (05:32:39Z) and the definition (05:32:41Z).
+- **Reading:** the copy the service keeps, encrypted under the project key, lives in storage the service
+  owns, which no reading here reaches. Its bucket and its account are unread.
