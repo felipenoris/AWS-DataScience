@@ -172,7 +172,7 @@ eu salvar o workflow."
 **[user]** "No SageMaker Processing Operator não aparece campo config onde posso colar o JSON. Em vez disso
 aparece um formulário com vários campos: Task name, Processing job name, Data (input), Data (output),
 Contianer image URI, Container entrypoint, Container arguments, instance type, instance count, volume,
-execution role arn. Como alternativa, existe a opção \"Actions -> Import definition file\" para o Workflow
+execution role arn. Como alternativa, existe a opção "Actions -> Import definition file" para o Workflow
 como um todo."
 
 ### [Claude] What the save made
