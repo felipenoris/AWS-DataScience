@@ -24,6 +24,7 @@ cp -R "$package" "$stage/python/"
 uv pip install --quiet --target "$stage/python" \
   --python-platform x86_64-manylinux2014 --python-version 3.12 --only-binary :all: \
   -r "$here/python/requirements.txt"
+rm -f "$stage/python/.lock" # uv's lock file for --target, not part of the package
 
 cp "$here/bash/reach_pypi.sh" "$stage/bash/"
 cp -R "$package" "$stage/bash/"

@@ -17,6 +17,7 @@ under `definitions/` as the record of what ran (Stage 6i decision 1).
 | `devenv-job/demo-devenv-job.project.yaml` | the same definition for pass 3: the project's command in the house environment's Python | imported the same way over the first |
 | `devenv-job/no_operator_code.py` | a docstring and nothing else | uploaded in *Settings → Storage*: the portal refuses a save with no operator file. Any `.py` does |
 | `operators/python/` | `demo_tasks.py`, the `PythonOperator` callable, and the vendored set in `requirements.txt` | built into `python-operator.zip` |
+| `operators/python/demo-python-operator.yaml` | `demo-python-operator`'s definition: the sensor, then the `PythonOperator` task with `python_callable: demo_tasks.run` | rendered, then imported after `python-operator.zip` is uploaded in *Settings → Storage* |
 | `operators/bash/` | `reach_pypi.sh`, the PyPI negative | built into `bash-operator.zip` |
 | `operators/build.sh` | builds both archives into `operators/dist/` (untracked), the vendored set for CPython 3.12 on manylinux2014 x86_64 | the archives are uploaded in *Settings → Storage* of their workflow |
 | `samples/sample.csv` | ten synthetic rows | a drop is a copy of it, from the clone, into a variant's `shared/orchestration-demo/<variant>/inbox/` |

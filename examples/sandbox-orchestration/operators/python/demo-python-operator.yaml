@@ -1,0 +1,21 @@
+# {"wait_for_file":{"x":120,"y":200},"run_project":{"x":420,"y":200}}
+demo-python-operator:
+  dag_id: demo-python-operator
+  tasks:
+    wait_for_file:
+      operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
+      bucket_key: s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/python/inbox/*
+      wildcard_match: true
+      poke_interval: 30
+      timeout: 600
+      soft_fail: true
+      retries: 0
+    run_project:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [wait_for_file]
+      python_callable: demo_tasks.run
+      op_kwargs:
+        bucket: <PROJECTS_BUCKET>
+        inbox: <DEMO_PREFIX>/python/inbox/
+        outbox: <DEMO_PREFIX>/python/outbox/
+      retries: 0

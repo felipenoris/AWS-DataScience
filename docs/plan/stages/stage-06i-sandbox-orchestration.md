@@ -365,9 +365,16 @@ identity a worker task's calls carry.
   - prints the vendored package's version and `__file__`;
   - for each object under `python/inbox/`: reads it, writes the result to `python/outbox/<run>/`, and deletes
     the source only after the write returns.
+
+  **Built 2026-10-11** by `operators/build.sh`: `python-operator.zip`, 187 entries and 996,234 bytes, holding
+  `demo_tasks.py`, `awsds_demo_job/`, petl 1.7.28 (`py3-none-any`) and PyYAML 6.0.1 (`cp312`,
+  `manylinux2014_x86_64`, with its compiled `_yaml`). The definition is
+  `operators/python/demo-python-operator.yaml`, with `python_callable: demo_tasks.run`, the guide's
+  `<module>.<function>` form.
 - **4.2 — [user] Create the workflow in the portal**: the sensor on `python/inbox/`, then the *Python Operator*
   with module `demo_tasks` and function `run`. Upload 4.1's archive as one `.zip` in *Settings → Storage*, and
-  record whether the *File* field can name a module inside it. If it cannot, upload the files loose and read
+  record whether the *File* field can name a module inside it. The rendered definition is imported as in 2.2,
+  so the form is read, not relied on. If it cannot, upload the files loose and read
   what the portal zipped (`SO-3`): a `.zip` uploaded beside loose files may arrive nested, unextracted. Drop
   the sample and run.
 - **4.3 — [Claude] Read it**:

@@ -594,3 +594,35 @@ again as the infrastructure user: **[user]** "infra sso logado".
   byte. The portal again added only `is_paused_upon_creation: false`.
 - **Verifications answered:** i (the editor offers the processing operator as a form, and the import carries
   what the form cannot) and xiii (the result is under the project key).
+
+### [user] 3.4 — the run with an empty inbox
+
+**[user]** "Rodou com sucesso"
+
+### [Claude] 3.4 read: `soft_fail` ends the run `SUCCESS`, and the API names the skip `NONE`
+
+- **The run, `2T6nhkziKgM3GA2`:** `SUCCESS`, `Duration` 647 s, from 04:59:23Z to 05:10:10Z.
+- **One task instance, not three.** `RunDetail.TaskInstances` holds only `wait_for_file`, and
+  `get-task-instance` reads its `Status` as `NONE`, not `SKIPPED`, with `DurationInSeconds` 611. The two
+  downstream tasks have no task instance at all. The API alone cannot tell a skipped task from one never
+  scheduled; the task log can.
+- **The sensor's log:** 21 pokes of `.../devenv/inbox/*`, every 30 s from 05:00:02Z to 05:10:04Z, then
+  `Skipping task.` at 05:10:05Z and `Task finished` at 05:10:10Z.
+- **No processing job** was created; the job list is the three of passes 2 and 3.
+- **The wait's cost:** 611 s of one task, about 0.015 USD, the figure the plan carried. Verification xi is
+  answered: yes, and that.
+
+## 2026-10-11 — pass 4: `demo-python-operator`
+
+### [Claude] 4.1 — the archive and the definition
+
+- **`operators/build.sh`** built `python-operator.zip`: 187 entries, 996,234 bytes, with `demo_tasks.py`,
+  `awsds_demo_job/`, petl 1.7.28 (`py3-none-any`) and PyYAML 6.0.1 (`cp312`, `manylinux2014_x86_64`, its
+  `_yaml` compiled for x86_64). The first build also carried uv's `.lock` from `--target`; the script now
+  removes it.
+- **The guide, re-read** ("Using Python and Bash operators"): `python_callable` takes `<module>.<function>`,
+  the code is extracted to `/usr/local/airflow/dags`, and a pre-installed package wins over a bundled one.
+  PyYAML is in that set, so verification viii expects the worker's copy.
+- **The definition**, `operators/python/demo-python-operator.yaml`: the sensor on `python/inbox/*`, then
+  `PythonOperator` with `python_callable: demo_tasks.run` and the bucket, inbox and outbox as `op_kwargs`.
+  It renders and parses.
