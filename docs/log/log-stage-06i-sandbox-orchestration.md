@@ -319,3 +319,18 @@ rendering failed: 'dag_run' is undefined. Check your template for invalid variab
 - **The stamp moved to a macro.** The job name and the outbox now take
   `{{ macros.datetime.utcnow().strftime('%Y%m%dT%H%M%S') }}`, one value per run. Both definitions rendered
   through a sandboxed, strict Jinja environment to `demo-devenv-<UTC stamp>`.
+
+### [user] The third run, refused at creation too
+
+**[user]** "Falhou: There was an error executing run pP721KRCHwBfio7: User template error: DAG template
+rendering failed: access to attribute 'strftime' of 'datetime' object is unsafe.. Check your template for
+invalid variable references."
+
+### [Claude] The service's sandbox is stricter than Jinja's default
+
+Jinja's standard sandbox allows `strftime` on a `datetime`. The service's refuses a method called on an
+object a macro returned, while it let `macros.datetime.utcnow()`, an attribute of the class, through. The
+stamp now calls only the `time` module's own functions:
+`{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}`. It rendered through an immutable,
+strict sandbox to `demo-devenv-<UTC stamp>`. If the service refuses this one too, the fallback is the epoch
+seconds, `{{ macros.time.time() | int }}`, a built-in filter on a module function.
