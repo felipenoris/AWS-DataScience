@@ -546,3 +546,51 @@ question. `-n` makes it fail at once where it would ask for a password.
 /opt/ml/processing/outbox && exec /opt/awsds/venv/bin/python -m awsds_demo_job --input /opt/ml/processing/inbox
 --output /opt/ml/processing/outbox`. `exec` hands the job the interpreter's exit code. `PYTHONPATH` stays
 `/opt/ml/processing/code/src`. It renders and parses.
+
+## 2026-10-11 — pass 3: the project's command
+
+*The import and the run are the user's, in the portal; the sample's drop is the user's, from a space.
+The readings are Claude's, from `awsds-infra-sandbox-1` (`<Sandbox Account 1>`, `InfrastructureAccess`).
+Nothing was written to AWS.*
+
+### [user] 3.1 and 3.2 — the import, the drop and the run
+
+**[user]** "Rodou com sucesso"
+
+### [Claude] The session expired before the reading
+
+The instrument's first call was refused, `Token has expired and refresh failed`, and the user signed in
+again as the infrastructure user: **[user]** "infra sso logado".
+
+### [Claude] 3.3 — the run read
+
+- **The run, `f9L7CKQzmUQWQTR`:** `wait_for_file` `SUCCESS` in 7 s, `run_project` `SUCCESS` in 758 s,
+  `remove_source` `SUCCESS` in 7 s. The workflow is version `e7180b061abe4bc96561b0470ab8792a`, created
+  04:00:35Z: the import replaced it again, so it holds one version and this run alone.
+- **The job, `demo-devenv-20261011T041223`**, created at 04:12:25Z through `vpce-0a72d9d2674245821` from
+  `10.20.49.77`, the az1 private subnet this time. It ran from 04:15:17Z to 04:23:23Z, 485 s, and ended
+  `Completed`. Its stream in `/aws/sagemaker/ProcessingJobs`, at 04:22:58Z:
+
+  ```
+  python 3.13.15 at /opt/awsds/venv/bin/python
+  sample.csv: 10 rows -> /opt/ml/processing/outbox/sample.result.json
+  1 file(s) processed
+  ```
+
+  The interpreter is decision 2's house environment, reached by absolute path behind `exec`.
+- **The result:** `outbox/20261011T041223/sample.result.json`, 378 bytes, written at 04:23:16Z, `aws:kms`
+  with the project key and `BucketKeyEnabled`. Its `sha256` field is the sample's,
+  `1a8127eba56e0574a845f42f84e8222af7d1d23f5bec33c36849d7cbd877a58a`, with `rows` 10. The same command run on
+  the laptop over `samples/sample.csv` wrote a file with the same sha256,
+  `1b2bc4d73bc49bca1a23a6d0971c1365362e785826a33adfcebec7925a248191`: the job's output is byte for byte the
+  local run's. `InfrastructureAccess` read the object, decrypting it with the project key.
+- **`inbox/` is empty** and `outbox/` holds the probe's object and this result.
+- **The keys at the create** repeat the probe's pattern: the grant through SageMaker allowed (04:12:27Z),
+  the direct `CreateGrant` in the session `SageMaker` refused, and the volume's `Decrypt` grant from
+  `ec2-frontend-api.amazonaws.com` (04:12:32Z).
+- **The cost:** about 0.029 USD, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067). Verification
+  xii for this run.
+- **The definition**, `definitions/demo-devenv-job.project.yaml`, renders back to the saved file byte for
+  byte. The portal again added only `is_paused_upon_creation: false`.
+- **Verifications answered:** i (the editor offers the processing operator as a form, and the import carries
+  what the form cannot) and xiii (the result is under the project key).
