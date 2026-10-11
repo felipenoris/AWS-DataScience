@@ -302,3 +302,20 @@ flags two probe security groups whose egress names VPC ranges only: `sandbox/pro
 `staging/probes`' INT-09 probe. Each now carries the inline skip its siblings carry. The hook also scans
 the module clones that `terraform init` leaves under `.terraform/modules/`, which hold older copies of
 those files, so the local clones were removed before the commit.
+
+### [user] The second run, refused before its first task
+
+**[user]** "Falhou: There was an error executing run TLnY6WiydHqF6q6: User template error: DAG template
+rendering failed: 'dag_run' is undefined. Check your template for invalid variable references."
+
+### [Claude] The service renders the definition's templates when it creates a run
+
+- **No task ran.** `get-workflow-run` reads `FAILED` with `StartedOn` null, `Duration` null and no task
+  instance. The run died at creation, so it cost nothing.
+- **The supported context is short.** The guide's *Template Variables, Filters and Macros* page names
+  `macros`, `ti`/`task_instance`, `params`, `ds`, `ds_nodash`, `ts` and `ts_nodash`, plus the macros
+  `datetime`, `timedelta`, `dateutil`, `time`, `uuid`, `random`, `ds_add` and `ds_format`. `dag_run`,
+  `run_id` and `logical_date` are absent, and an undefined name refuses the run.
+- **The stamp moved to a macro.** The job name and the outbox now take
+  `{{ macros.datetime.utcnow().strftime('%Y%m%dT%H%M%S') }}`, one value per run. Both definitions rendered
+  through a sandboxed, strict Jinja environment to `demo-devenv-<UTC stamp>`.

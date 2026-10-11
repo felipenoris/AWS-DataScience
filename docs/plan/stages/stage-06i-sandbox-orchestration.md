@@ -287,7 +287,7 @@ answers them.
 
   | Field | Value |
   |---|---|
-  | `ProcessingJobName` | `demo-devenv-{{ ts_nodash }}`; the operator's `action_if_job_exists` default handles a collision |
+  | `ProcessingJobName` | `demo-devenv-` and the run's UTC time from `macros.datetime.utcnow()`; the operator's `action_if_job_exists` default handles a collision. The service renders a definition's templates when it creates a run, with the documented variables only (`macros`, `ti`, `params`, `ds`, `ts` and their `_nodash` forms): `{{ ts_nodash }}` is the day's midnight on a manual run, and `dag_run` fails the run before its first task (measured 2026-10-10) |
   | `RoleArn` | the project role (0.1) |
   | `AppSpecification.ImageUri` | `<registry>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-dev-env@sha256:<digest>` (0.1) |
   | `AppSpecification.ContainerEntrypoint` and `ContainerArguments` | the probe: `["/bin/bash", "-c"]` and `["id; ls -ln /opt/ml/processing; touch /opt/ml/processing/outbox/probe && echo WRITE-OK"]`. The editor refuses a processing task with no arguments, which the API does not (measured 2026-10-10), so every command is a program and its arguments |
