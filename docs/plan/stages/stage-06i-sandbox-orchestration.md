@@ -484,7 +484,7 @@ with the recommendation stated (Lesson 16).
    the promoted workflow would not share. **Applied 2026-10-10**: `2 added`, re-plan `No changes`. The next
    run met the create's own refusal, `sagemaker:AddTags` on the `AmazonDataZoneProject` tag, so the same
    policy gained a second statement: that tag alone, with the caller's value, on a job that carries no
-   project tag or the caller's
+   project tag or the caller's, applied the same day (`1 changed`, re-plan `No changes`, policy `v2`).
    ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
 
 ## Verifications to answer while executing

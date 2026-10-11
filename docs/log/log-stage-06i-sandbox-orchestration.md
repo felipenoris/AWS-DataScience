@@ -380,3 +380,19 @@ policy alone. For `AddTags` with `AmazonDataZoneProject` equal to the caller's p
 | a second tag key in the request | `implicitDeny` |
 
 `DescribeProcessingJob` read `allowed` on an untagged name and `implicitDeny` on another project's job.
+
+### [Claude⚡] The second statement applied
+
+*Authorized in chat by the user ("pode aplicar"), after the plan read `0 to add, 1 to change, 0 to
+destroy`. The two peer sessions were told before the apply. Run as the infrastructure user,
+`InfrastructureAccess` on `awsds-infra-sandbox-1` (`<Sandbox Account 1>`), after the user signed in
+again: the token was refused with `UnauthorizedException: Session token not found or invalid` at
+02:40Z, though its cache file read `expiresAt 03:03:34Z`.*
+
+- **The plan:** `aws_iam_policy.workflows` updated in place, the statement
+  `TagAProcessingJobWithTheCallersProject` added.
+- **The apply, from the saved plan:** `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`
+- **The re-plan:** `No changes`, exit 0.
+- **The policy** reads `DefaultVersionId` `v2` with one attachment.
+- **The description stays the first statement's.** Changing an `aws_iam_policy` description forces a new
+  policy, so the code comments carry the second statement.
