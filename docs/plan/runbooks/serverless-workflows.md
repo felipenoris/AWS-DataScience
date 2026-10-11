@@ -244,6 +244,41 @@ and `rm -f build/.lock` removes the lock file uv leaves in the target.
 - The worker has no internet, so every dependency is in the archive or pre-installed; nothing is
   installed at run time.
 
+### C3a — A uv project
+
+A project that uv manages, with a `pyproject.toml` and a `uv.lock`, is packaged by
+`examples/sandbox-orchestration/operators/package-uv.sh`:
+
+```bash
+./examples/sandbox-orchestration/operators/package-uv.sh <project dir> <entry module .py> <archive .zip>
+```
+
+It runs five steps, each one a rule of C1:
+
+1. `uv export --locked --no-dev --no-emit-project --prune <name> ...` writes the locked closure as a
+   requirements file. `--locked` refuses a lock that no longer matches `pyproject.toml`, and `--prune`
+   removes each package the worker pre-installs together with the dependencies only it needs, so `boto3`
+   takes `s3transfer` and `jmespath` with it while `urllib3`, which `requests` also needs, stays.
+2. `uv pip install --target <stage> --no-deps --python-platform x86_64-manylinux2014 --python-version 3.12
+   --only-binary :all: -r <file>` installs the worker's wheels for that closure, with the lock's hashes.
+3. `uv build --wheel` builds the project from its `pyproject.toml`, and the same install puts the wheel's
+   package at the root. The project's `requires-python` must admit 3.12, or the install fails.
+4. The entry module, the file `python_callable` names, is copied to the root beside the package.
+5. uv's `.lock`, console scripts and bytecode are removed, the archive is zipped from inside the stage,
+   and an archive over 250 MB unzipped is refused.
+
+`OMIT="name ..."` prunes more packages. A dependency with no CPython 3.12 manylinux wheel fails step 2;
+it cannot be built on a Mac for the worker.
+
+**Measured 2026-10-11** on a throwaway uv project depending on `petl`, `requests`, `boto3` and `pyyaml`:
+959,979 bytes, holding the project, `tasks.py`, `petl` and `requests` with `certifi`,
+`charset_normalizer`, `idna` and `urllib3`; no `boto3`, `botocore`, `s3transfer`, `jmespath` or `yaml`;
+`charset_normalizer`'s compiled modules tagged `cp312-cp312-manylinux2014_x86_64`.
+
+**Keep the entry module thin.** The editor shows `python_callable` as a *File* and a *Function*, so a
+root module such as `tasks.py` that imports from the package is what it can display. A dotted path into
+the package, `pkg.module.function`, is unmeasured here.
+
 ### C4 — Naming the code in the definition
 
 ```yaml

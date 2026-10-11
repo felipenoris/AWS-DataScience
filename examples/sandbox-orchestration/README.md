@@ -23,6 +23,7 @@ under `definitions/` as the record of what ran (Stage 6i decision 1).
 | `operators/python/demo-python-operator.yaml` | `demo-python-operator`'s definition: the sensor, then the `PythonOperator` task with `python_callable: demo_tasks.run` | rendered, then imported after `python-operator.zip` is uploaded in *Settings → Storage* |
 | `operators/bash/` | `reach_pypi.sh`, the PyPI negative | built into `bash-operator.zip` |
 | `operators/build.sh` | builds both archives into `operators/dist/` (untracked), the vendored set for CPython 3.12 on manylinux2014 x86_64 | the archives are uploaded in *Settings → Storage* of their workflow |
+| `operators/package-uv.sh` | packages any uv project (its `uv.lock` closure, minus the worker's pre-installed set, and the project's own wheel) plus an entry module into one archive for the worker | the archive is uploaded in *Settings → Storage*; the runbook's section C3a is its procedure |
 | `samples/sample.csv` | ten synthetic rows | a drop is a copy of it, from the clone, into a variant's `shared/orchestration-demo/<variant>/inbox/` |
 | `render.py` | fills the placeholders with the live values, read-only, and prints to stdout | — |
 | `definitions/` | each workflow's definition after each pass, account ids replaced | — |
