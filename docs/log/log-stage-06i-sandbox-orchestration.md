@@ -783,3 +783,247 @@ branch with its rows in `layers.py`, `conventions.md` §6 and `terraform-live/RE
 it. The failed apply left an empty state, `sandbox/endpoint-audit/terraform.tfstate` (619 bytes), in
 `awsds-sandbox-tfstate`, which stays: removing it is a write nobody asked for, and a trail built under the
 same slice name would reuse it. `docs/PRICING.md` keeps the Lake prices, marked closed to new customers.
+
+## 2026-10-11 — pass 5 prepared, the session left down
+
+*Written by Claude in the sitting that ran it. Every reading is Claude's own, from `awsds-infra-sandbox-1`
+(account `<Sandbox Account 1>`, permission set `InfrastructureAccess`). Nothing was written to AWS.*
+
+### [Claude] The state before
+
+- **`make status`:** every slice down, estimated burn USD 0.0000/h. `sandbox/egress` holds 0 resources
+  and the hub's two hosts are stopped.
+- **`./aws/sandbox-orchestration.py` exits 2 on `SO-4` alone:** `demo-python-operator`'s run
+  `hmcXpEy18zOKCPR` is `FAILED`. `python/inbox/` still holds the sample, `demo-bash-operator` does not
+  exist, and no call failed.
+
+### [user] The scope
+
+**[user]** chose "Só 3, sem AWS": the upkeep and the control's files, with no AWS write. For the next
+raise the user chose "GROUPS=redshift", so it is `make up ENV=sandbox GROUPS=redshift` and 6h's negatives
+can share the window.
+
+### [Claude] 5.0 written, not run
+
+The probe version of `demo-bash-operator` and the instrument's contract for it are in the stage file's
+5.0. Neither has run on a worker.
+
+## 2026-10-11 — 5.0: the probe run, and decision 7's premise
+
+*The session was raised by the user. The portal acts are Claude's, in the user's Chrome through Claude in
+Chrome, signed in as the Data Scientist user; the file was chosen by the user in Chrome's file dialog.
+Every reading is Claude's own, from `awsds-infra-sandbox-1` (`<Sandbox Account 1>`,
+`InfrastructureAccess`). Account ids are redacted as `INDEX.md` requires, and the portal's session name
+as `<Identity Center user id>@<environment id>`.*
+
+### [user] The session and the authorization
+
+**[user]** "Subi o ambiente com GROUPS=redshift, pode importar o probe e fazer as leituras necessárias",
+then "autorizo os applies necessários".
+
+**[Claude]** The hub's two hosts `running` since 20:14:07Z and 20:14:10Z; Sandbox's VPC holds 20 interface
+endpoints `available`, `redshift-serverless` among them.
+
+### [Claude] The probe gained a positive control
+
+`endpoint_refusal`, a third task with no dependency, lists `sentinel-cogs` (a public bucket in the
+region) with virtual-hosted and path-style addressing. The project role's
+`SageMakerStudioProjectUserRolePolicy` v75 (`DataLakeCrossAccountS3Permissions`) allows `s3:ListBucket`
+on any other account's bucket and the boundary (`v2`) allows all but the lake's prefixes, so only the
+gateway endpoint's policy can refuse it.
+
+### [Claude⚡] 5.0 — the import, the save and the run, in the portal
+
+- **The browser.** The built-in browser held no portal session and has no file upload; Claude in Chrome
+  answered after the user connected it. The import creates its file input outside the page, so the user
+  chose `demo-bash-operator.yaml` in Chrome's dialog. The editor showed the three Bash Operator tasks.
+- **The first save was refused** at 20:38:16Z: `CreateWorkflow` carried `code.s3Location`
+  `<domain>/<project>/dev/operatorFiles/demo-bash-operator.zip`, the editor's pre-filled *Operator files
+  zip S3 location*, and the service answered `ValidationException: Code not found in specified S3
+  location`. Nothing was uploaded.
+- **The second save** at 20:39:00Z, with that field emptied in *Settings → Storage*, carried `code` null
+  and succeeded: `demo-bash-operator-Q7BcYzndcz`, `READY`, version `477429955fdcf7c5ce58a1a953ccbda6`,
+  `manual_only`, the project role, both private subnets, the project's security group and key. Both
+  requests carried the seven environment variables.
+- **The run**, `b7FgLsjotHxaCde`, started by the portal's session at 20:39:34Z.
+
+### [Claude] 5.0 read: the `Code` object is decision 7's variable
+
+- **The run:** `FAILED`, 92 s from 20:39:39Z. `caller_identity` `SUCCESS` in 9 s, `endpoint_refusal`
+  `FAILED` in 5 s, `reach_pypi` `FAILED` in 15 s. The worker prepared its environment for every task,
+  where a workflow with a `Code` object failed before its first.
+- **`caller_identity`**, worker `10.20.18.160` in `awsds-sandbox-private-usw2-az1`:
+
+  ```
+  cwd: /var/tmp/airflowtmpjdoxn9ot
+  env: DataZoneDomainId= DataZoneDomainRegion= DataZoneEndpoint= DataZoneEnvironmentId= DataZoneProjectId= DataZoneStage= ProjectS3Path=
+  python 3.12.14 at /opt/mwaa-serverless-venv/bin/python3
+  boto3 1.43.1 botocore 1.43.1 from /opt/mwaa-serverless-venv/lib/python3.12/site-packages/boto3
+  AWS_REGION us-west-2 AWS_DEFAULT_REGION us-west-2
+  sts endpoint https://sts.us-west-2.amazonaws.com resolves to 10.20.51.63
+  caller arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AmazonMWAAServerless
+  ```
+
+  `/usr/local/airflow/dags` held the user's shell files, owned by `mwaa-serverless-user`, the DAG file
+  dag-factory generated (`f2db88a4-….py`, 711 bytes), an `ex_<uuid>` folder and `logs/`. **Verification
+  x: the project role, session `AmazonMWAAServerless`.** CloudTrail's `GetCallerIdentity` at 20:40:23Z came
+  from `10.20.18.160` through `vpce-01a0b145d0f80a185`, Sandbox's `sts` interface endpoint. An inline
+  command runs in a temporary folder, not in `/usr/local/airflow/dags`, and the seven variables the portal
+  injects reach the task, though `get-workflow` returns no `EnvironmentVariables`.
+- **`reach_pypi`**, worker `10.20.105.187` in `awsds-sandbox-private-usw2-az2`:
+
+  ```
+  proxy:
+  resolve: pypi.org failed: OSError(16, 'Device or resource busy')
+  urllib: URLError(OSError(16, 'Device or resource busy'))
+  urllib: no answer from pypi.org
+  urllib: 2 s
+  pip 23.2.1 from /opt/mwaa-serverless-venv/lib/python3.12/site-packages/pip (python 3.12)
+  Could not fetch URL https://pypi.org/simple/six/: connection error: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /simple/six/ (Caused by NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7f6305f06de0>: Failed to establish a new connection: [Errno 16] Device or resource busy'))
+  ERROR: Could not find a version that satisfies the requirement six (from versions: none)
+  ERROR: No matching distribution found for six
+  pip: download failed, exit 1
+  pip: 2 s
+  ```
+
+  `/awsds/sandbox/dns-firewall` holds the cause: at 20:41:01Z, `10.20.105.187` asked for `pypi.org.` and
+  `pypi.org.us-west-2.compute.internal.`, A and AAAA, and got `NXDOMAIN` with `firewall_rule_action`
+  `BLOCK` (rule group `rslvr-frg-833312daf8ef47fc`). **Verification ix: the reach fails in about 2 s,
+  visibly, at name resolution**; the worker's resolver reports the firewall's `NXDOMAIN` as errno 16, not
+  as a name error, and no packet left for PyPI.
+- **`endpoint_refusal`:**
+
+  ```
+  virtual 20:40:17 list sentinel-cogs
+  virtual refused: AccessDenied - Access Denied
+  path 20:40:17 list sentinel-cogs
+  path refused: AccessDenied - Access Denied
+  ```
+
+  Both styles were refused in about 35 ms each. The task's exit 1 was the probe's own criterion, which
+  expected the wording "because no VPC endpoint policy allows": S3 gives that detail only to a requester
+  in the bucket owner's account. The template now counts the `AccessDenied` code, and the definition the
+  portal holds keeps the first criterion.
+- **`./aws/sandbox-orchestration.py`:** `SO-1`, `SO-2` and `SO-3` pass on `demo-bash-operator`, `SO-3`
+  reading "the probe, no Code object"; `SO-4` is a note.
+- **The cost:** three tasks at the one-minute minimum, about 0.0044 USD.
+- **The definition**, `definitions/demo-bash-operator.probe.yaml`, renders back to the saved file byte
+  for byte; the portal added only `is_paused_upon_creation: false`.
+
+## 2026-10-11 — 4.2a: the trail, applied, and the two runs it watches
+
+*Authorized in chat by the user ("autorizo os applies necessários"). The four peer sessions were told
+before the apply. Run as the infrastructure user, `InfrastructureAccess` on `awsds-infra-sandbox-1`
+(`<Sandbox Account 1>`), after the user signed in again ("infra sso logado"): Terraform's first `init`
+met `UnauthorizedException: Session token not found or invalid` while the CLI still answered from its
+cached role credentials.*
+
+### [Claude] `sandbox/endpoint-audit/`, a trail this time
+
+One trail, `awsds-sandbox-endpoint-refusals`, in this region only, with no global service events, log
+file validation on and one advanced selector (`eventCategory` `NetworkActivity`, `eventSource`
+`s3.amazonaws.com`, `errorCode` `VpceAccessDenied`), so it records no management event. Its bucket has the
+same name: SSE-S3, public access blocked, ACLs disabled, TLS-only, CloudTrail's two statements bound to
+the trail by `aws:SourceArn`, a 7-day expiry and `force_destroy`. Registered again in `layers.py`
+(rank 57), `conventions.md` §6 and `terraform-live/README.md`; checkov 16 passed, 9 skipped, 0 failed.
+`init` reused the empty state object.
+
+### [Claude⚡] The apply
+
+- **The plan:** `7 to add, 0 to change, 0 to destroy`.
+- **The apply, from the saved plan:** `Apply complete! Resources: 7 added, 0 changed, 0 destroyed.`
+- **The re-plan:** `No changes`, exit 0.
+- **The trail:** `IsLogging` `True` since 20:49:49Z, no delivery error, the three field selectors as
+  declared. `describe-trails` lists `aws-controltower-BaselineCloudTrail` and this one.
+- **`POLICIES.md`'s CloudTrail revision trigger is met**, and no statement follows.
+
+### [Claude⚡] The positive control and the measurement, started
+
+From the portal's *Workflows* list, *Run now*, in the user's Chrome:
+
+- `demo-bash-operator`, run `0ilW00z6Z1CZfWf`, created 20:51:52Z. Its `endpoint_refusal` listed
+  `sentinel-cogs` at 20:52:34Z with both addressing styles, refused both times with `AccessDenied - Access
+  Denied`;
+- `demo-python-operator`, run `mObMMosGwVA98XO`, created 20:52:06Z, the sample still in `python/inbox/`.
+
+### [Claude] 4.2a read: the refused bucket, named
+
+The trail delivered three network activity files at 20:57:31Z to 20:57:44Z, under
+`AWSLogs/<Sandbox Account 1>/CloudTrail-NetworkActivity/`, a prefix of its own beside `CloudTrail/`. All
+three records came through `vpce-0cc3e139c1167ca83`, Sandbox's S3 gateway endpoint, with `errorCode`
+`VpceAccessDenied` and `errorMessage` "The request was denied due to a VPC endpoint policy":
+
+| Time | Event | Caller | Resource |
+|---|---|---|---|
+| 20:52:34Z | `ListObjects` | the project role, session `AmazonMWAAServerless`, from `10.20.41.160` | `arn:aws:s3:::sentinel-cogs` |
+| 20:52:34Z | `ListObjects` | the same | `arn:aws:s3:::sentinel-cogs` |
+| 20:52:51Z | `GetObject` | `userIdentity.type` `AWSService`, `invokedBy` and source `airflow-serverless.amazonaws.com` | `arn:aws:s3:::mwaa-serverless-code-files-<AWS-owned account>-us-west-2-prod/<Sandbox Account 1>/demo-python-operator-4ftmCaOAtJ/761c2c8e445a9dbad1e41e11f251679e/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/operatorFiles/python-operator.zip` |
+
+- **The positive control answered: network activity events cover a gateway endpoint**, and a
+  path-style request names its bucket as a virtual-hosted one does (verification xv, second half). The
+  owner's account reads `HIDDEN_DUE_TO_SECURITY_REASONS` in `resources`.
+- **The code fetch is the service's own request**, not the project role's: a `GetObject` by
+  `airflow-serverless.amazonaws.com` of the snapshot the service took at the workflow's creation, keyed
+  by account, workflow, version and the upload's own key (verification xv, first half). The worker's
+  DNS and flow logs match it: `10.20.38.127` resolved `s3.us-west-2.amazonaws.com` at 20:52:51Z and
+  exchanged 12 packets each way with `16.15.35.200:443`, 3,108 bytes out and 6,156 in, the first
+  failure's counts within 4 bytes.
+- **Decision 7's reading is measured**, and (a)'s family is `mwaa-serverless-code-files-*-<region>-prod`,
+  the wildcard standing for the service's account id.
+
+### [Claude⚡] 4.2a: `vpc-v0.4.0`, and `sandbox/foundation` applied
+
+*The user signed in again after Terraform met `Session token not found or invalid` a second time
+("usuário sso infra logado"). No peer session was running at the apply. Run as the infrastructure user,
+`InfrastructureAccess` on `awsds-infra-sandbox-1` (`<Sandbox Account 1>`), by
+`runbooks/terraform-changes.md` Recipe B.*
+
+- **The module:** `default_aws_buckets` gains `mwaa-serverless-code-files-*-${region}-prod`. A plan of
+  `sandbox/foundation` against the local module read `0 to add, 1 to change, 0 to destroy`, the S3
+  gateway endpoint's policy alone; the caller's `source` was reverted and re-initialised.
+- **Commit 1 and the tag:** the module alone (`1305f38`), tagged `vpc-v0.4.0` after `git ls-remote`
+  read `vpc-v0.3.1` as the newest; origin answered `1305f389…	refs/tags/vpc-v0.4.0`.
+- **Commit 2:** `sandbox/foundation` takes `vpc-v0.4.0` (`c8299a6`); the hook first refused it with
+  `Module source has changed` until the slice was re-initialised. The other four callers stay on
+  `vpc-v0.3.1`.
+- **The plan:** `0 to add, 1 to change, 0 to destroy`, the two ARNs of the family added to
+  `AllowAwsOwnedServiceBuckets`.
+- **The apply, from the saved plan:** `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`
+- **The re-plan:** `No changes`, exit 0; the live policy of `vpce-0cc3e139c1167ca83` carries both ARNs.
+
+### [Claude⚡] The re-run, from the CLI
+
+The portal in the user's Chrome had lost its session (the sign-in page), so the run was started as the
+infrastructure user: `aws mwaa-serverless start-workflow-run`, run `N05WyTNjUcdxbw0`, 21:08:54Z. The
+portal's own call carries only the workflow ARN and a client token, so the run is the same one; the
+caller differs.
+
+### [Claude] 4.3 — the re-run read: a `Code` object runs on the private tier
+
+- **The run, `N05WyTNjUcdxbw0`:** `SUCCESS`, 96 s from 21:09:06Z. `wait_for_file` `SUCCESS` in 8 s,
+  `run_project` `SUCCESS` in 6 s. Each task's log opens with `Preparing the execution environment.`
+  and, a second later, `Execution environment is ready.` (21:09:46Z and 21:10:37Z), the line the two
+  failed runs never reached.
+- **`run_project`'s output:**
+
+  ```
+  python 3.12.14 at /opt/mwaa-serverless-venv/bin/python3
+  caller arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AmazonMWAAServerless
+  import petl: 1.7.28 from /usr/local/airflow/dags/petl/__init__.py
+  import yaml: 6.0.2 from /opt/mwaa-serverless-venv/lib64/python3.12/site-packages/yaml/__init__.py
+  sample.csv: 10 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/orchestration-demo/python/outbox/20261011T211041Z/sample.result.json; source deleted
+  1 object(s) processed
+  ```
+
+  **Verification viii: yes, and the pre-installed copy wins.** `petl`, absent from the worker, imported
+  from the archive; the archive's PyYAML 6.0.1 lost to the worker's 6.0.2. **Verification x** for a
+  Python task: the project role, session `AmazonMWAAServerless`.
+- **The result:** `python/outbox/20261011T211041Z/sample.result.json`, 378 bytes, `aws:kms` with the
+  project key and `BucketKeyEnabled`; its sha256, `1b2bc4d7…a248191`, is the processing job's result's
+  and the local run's. `python/inbox/` holds only its folder marker.
+- **`./aws/sandbox-orchestration.py` exits 0:** `SO-4` passes on `demo-python-operator`, `SO-7` reads
+  its inbox empty and one object in its outbox.
+- **The cost:** two tasks at the one-minute minimum, about 0.0029 USD; the failed run before it,
+  `mObMMosGwVA98XO` (125 s, its sensor 89 s), about 0.0022.
+- **The definition**, `definitions/demo-python-operator.yaml`, renders back to the saved file byte for
+  byte; the portal added only `is_paused_upon_creation: false`.

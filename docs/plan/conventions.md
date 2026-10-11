@@ -225,6 +225,10 @@ terraform-live/
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
 │   │                     #     like bedrock/'s
+│   ├── endpoint-audit/   # [P] the endpoint refusals trail (6i decision 7, rank 57): one
+│   │                     #     CloudTrail trail of S3 network activity events with errorCode
+│   │                     #     VpceAccessDenied and the bucket it delivers to, 7-day expiry;
+│   │                     #     destroyed by hand when the decision closes
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -696,6 +700,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
+| the endpoint refusals trail | `[P]` | `sandbox/endpoint-audit/`, rank 57 | 0.000001 USD per network activity event recorded, plus S3 storage: cents for a handful of refusals | by hand, when 6i decision 7 closes |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

@@ -69,7 +69,7 @@ variable "flow_log_retention_days" {
 }
 
 variable "s3_endpoint_allowed_bucket_names" {
-  description = "AWS-owned bucket names (wildcards allowed) the S3 gateway endpoint admits beside the organization - step 9.3's five families. null = the documented default in endpoints.tf; names are documentation, not measurement (Lesson 23), confirmed by verification (iii)."
+  description = "AWS-owned bucket names (wildcards allowed) the S3 gateway endpoint admits beside the organization. null = the default in endpoints.tf; its names come from documentation or measurement, never a guess (Lesson 23), and a list given here replaces the whole default."
   type        = list(string)
   default     = null
 }

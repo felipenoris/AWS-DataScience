@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11): the worker's fetch of the code is refused, read as the S3 gateway endpoint's allow-list. Decision 7 is due.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11), and decision 7 was taken the same day as (a):** a trail (`sandbox/endpoint-audit/`) recorded the refusal, a `GetObject` by `airflow-serverless.amazonaws.com` of the code snapshot in `mwaa-serverless-code-files-<account>-<region>-prod`, refused by the S3 gateway endpoint's policy; `vpc-v0.4.0` admits that family, `sandbox/foundation` applied it, and **pass 4 ran `SUCCESS`** (verifications vii's first half, viii, x and xv answered). **Pass 5's control ran the same day (5.0)**: a probe version of `demo-bash-operator`, inline Bash tasks and no `Code` object, prepared its worker for every task, so the `Code` object is decision 7's variable; verifications ix and x are answered. Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -147,7 +147,8 @@ prerequisite of this exercise and stays where 6f handed it.
 **Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
 `shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
 or `bash`; the three workflow names; the job-name prefix
-`demo-devenv-`; and the Python package `awsds_demo_job`. `./aws/sandbox-orchestration.py` reads each one, so a
+`demo-devenv-`; the task ids `caller_identity` and `run_command`, which tell `demo-bash-operator`'s probe
+from its exercise, and `reach_pypi`, the negative in both; and the Python package `awsds_demo_job`. `./aws/sandbox-orchestration.py` reads each one, so a
 rename fails in a check.
 
 ```mermaid
@@ -379,33 +380,45 @@ identity a worker task's calls carry.
   so the form is read, not relied on. If it cannot, upload the files loose and read
   what the portal zipped (`SO-3`): a `.zip` uploaded beside loose files may arrive nested, unextracted. Drop
   the sample and run.
-- **4.2a — The refused bucket, measured** (decision 7 (a)). The store records S3 network activity events
+- **4.2a — The refused bucket, measured** (decision 7 (a)). A trail records S3 network activity events
   with `errorCode` `VpceAccessDenied`, the only record this account can hold of a gateway endpoint's refusal.
-  Whether those events cover a gateway endpoint at all is unread, so a positive control comes before the
+  Whether those events cover a gateway endpoint at all is unread, so a positive control runs beside the
   re-run:
-  - **[Claude⚡]** apply `sandbox/endpoint-audit/` (`1 to add`), the peer sessions told first;
-  - **[user]** from a space's terminal, a read of a public bucket in the region that the allow-list does not
-    name: `aws s3api list-objects-v2 --bucket sentinel-cogs --max-keys 1`. Expected: `AccessDenied` "because
-    no VPC endpoint policy allows the s3:ListBucket action";
-  - **[Claude]** query the store (`start-query` and `get-query-results`, which bill 0.005 USD per GB
-    scanned) until the control's event arrives, naming `sentinel-cogs`. None within 30 minutes means the
-    events do not cover a gateway endpoint: the instrument is blind, the measurement stops there, and
-    decision 7 is taken again without it;
-  - **[user]** run `demo-python-operator` again; the sample is still in `python/inbox/`;
-  - **[Claude]** query again. The refused request's bucket is the answer, and its family goes into the `vpc`
-    module's `default_aws_buckets`.
+  - **[Claude⚡]** apply `sandbox/endpoint-audit/` (`7 to add`: the trail and its bucket), the peer sessions
+    told first. **Applied 2026-10-11**, re-plan `No changes`, the trail logging since 20:49:49Z;
+  - **[Claude]** run `demo-bash-operator` again: its `endpoint_refusal` task lists `sentinel-cogs` from the
+    worker, on the code fetch's own path, and is the positive control (5.0);
+  - **[Claude]** run `demo-python-operator` again; the sample is still in `python/inbox/`;
+  - **[Claude]** read the trail's files in its bucket (`AWSLogs/<account>/CloudTrail/<region>/`), which
+    arrive within about 15 minutes. The control's events name `sentinel-cogs`; none within 30 minutes means
+    the events do not cover a gateway endpoint, the instrument is blind, and decision 7 is taken again
+    without it. The code fetch's refused request names the service's bucket, and its family goes into the
+    `vpc` module's `default_aws_buckets`.
+  - **Measured 2026-10-11** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the files arrived
+    within five minutes, under `CloudTrail-NetworkActivity/` rather than `CloudTrail/`. The control's two
+    `ListObjects` (20:52:34Z) and the Python worker's `GetObject` (20:52:51Z) all read `VpceAccessDenied`
+    through `vpce-0cc3e139c1167ca83`; the second came from `airflow-serverless.amazonaws.com` and named
+    `mwaa-serverless-code-files-<AWS-owned account>-us-west-2-prod`.
 
   **The store was refused on 2026-10-11:** "CloudTrail Lake is no longer accepting new customers", and this
   account had never created one. Nothing was created, and the slice was removed from the branch the same
   day; its empty state object stays in `awsds-sandbox-tfstate` under `sandbox/endpoint-audit/`. The
   remaining instrument is a trail with the same selector, delivering to a bucket of its own, and whether to
-  build it is the user's call.
+  build it is the user's call. The CloudTrail guide (read 2026-10-11) gives a trail the same selector
+  and never says whether a gateway endpoint is covered. A third-party write-up describes `VpceAccessDenied`
+  events from an S3 endpoint that works by a route-table entry, naming the bucket in `resources`: a
+  reason to expect coverage, not a measurement, so the positive control stays first.
 
-  The store is the first CloudTrail resource this project creates in a member account, the revision
-  trigger `POLICIES.md` names for its CloudTrail absence. The proposal is no statement: the store is an
-  instrument in Sandbox, destroyed when the decision closes, and tampering with it blinds only this
-  measurement.
-- **4.3 — [Claude] Read it**:
+  The trail is the first CloudTrail resource this project creates in a member account, the revision
+  trigger `POLICIES.md` names for its CloudTrail absence. No statement follows, and `POLICIES.md` records
+  the trigger met: the trail is an instrument in Sandbox, destroyed when the decision closes, and
+  tampering with it blinds only this measurement.
+- **4.3 — [Claude] Read it**. **Measured 2026-10-11, run `N05WyTNjUcdxbw0`, after decision 7's
+  apply ([log](../../log/log-stage-06i-sandbox-orchestration.md)):** `SUCCESS` in 96 s, both tasks'
+  environments `ready`; `petl` imported from `/usr/local/airflow/dags`, the worker's PyYAML 6.0.2 won over
+  the archive's 6.0.1, the caller was the project role with session `AmazonMWAAServerless`, and the result
+  is byte for byte the processing job's, under the project key, the source deleted. The run was started
+  from the CLI as the infrastructure user, the portal's session having ended:
   - `SO-3` for the `Code` location and `CodeSnapshottedAt` (vii);
   - the task log for the ARN, expected `assumed-role/<project role>/AmazonMWAAServerless` (x);
   - the vendored package's `__file__`: under `/usr/local/airflow/dags` it ran from the package, and under
@@ -417,11 +430,48 @@ identity a worker task's calls carry.
 
 **Action:** the same project as a command on the worker, and a task that reaches for the internet on purpose.
 
+- **5.0 — The control, before the exercise.** Decision 7's reading rests on one variable, the `Code`
+  object. `operators/bash/demo-bash-operator.probe.yaml` is the first version of `demo-bash-operator`:
+  two Bash tasks with inline commands and no `Code` object, on the worker and the network the failed
+  Python run had. `caller_identity` prints the worker's Python and boto3, the region variables, where the
+  STS endpoint resolves and the caller's ARN (x); `reach_pypi` runs `reach_pypi.sh`'s commands inline (ix).
+  - **[Claude] Written 2026-10-11.** Both tasks' commands ran on the laptop: with the internet
+    `reach_pypi` exits 0, and against an unresolvable name and index it exits 1 with each cause on one
+    line. `reach_pypi.sh` carries the same commands for the exercise. `./aws/sandbox-orchestration.py`
+    tells the two versions apart by a task id: `SO-3` fails a probe that carries a `Code` object, and
+    `SO-4` passes when `reach_pypi` `FAILED` and every other task `SUCCESS`.
+  - **[user] Create a new, empty workflow, `demo-bash-operator`, import the rendered probe and upload
+    nothing in *Settings → Storage*.** The editor pre-fills *Operator files zip S3 location*, and a save
+    with that field set and no file is refused (`Code not found in specified S3 location`); emptying the
+    field makes the save send no `Code`. A code file makes the probe no control. Run it; no drop is
+    needed.
+  - **[Claude] Read it**: `SO-3` and `SO-4`, the task logs, `/awsds/sandbox/dns-firewall` for the
+    worker's queries, and the trail's `GetCallerIdentity` for its door.
+  - **The outcomes.** The tasks reach their commands: the `Code` object is decision 7's variable, and
+    ix and x are answered without it. They fail in environment preparation: the reading is wrong, the
+    failure belongs to the worker's operators rather than to its code fetch, and (a)'s instrument would
+    measure the wrong request.
+  - **A third task, `endpoint_refusal`, is (a)'s positive control**, run from the worker on the code
+    fetch's own path: it lists `sentinel-cogs`, a public bucket in the region, with virtual-hosted and
+    path-style addressing. The project role's identity policy allows `s3:ListBucket` on another account's
+    bucket (`DataLakeCrossAccountS3Permissions`) and the boundary allows it, so only the endpoint policy
+    can refuse.
+  - **Measured 2026-10-11, run `b7FgLsjotHxaCde` ([log](../../log/log-stage-06i-sandbox-orchestration.md)):
+    the `Code` object is decision 7's variable.** The workflow saved with `Code` null on the second try,
+    the field emptied by Claude in the user's Chrome. `caller_identity` `SUCCESS`: the worker is
+    `/opt/mwaa-serverless-venv/bin/python3` 3.12.14 with boto3 1.43.1, the caller is the project role
+    with session `AmazonMWAAServerless` (x), and its `GetCallerIdentity` took Sandbox's `sts` endpoint.
+    `reach_pypi` `FAILED` in about 2 s per reach with `[Errno 16] Device or resource busy`, Python's
+    reading of the Sandbox DNS Firewall's `BLOCK`, an `NXDOMAIN` for `pypi.org` (ix). `endpoint_refusal`
+    met `AccessDenied` on both styles in about 35 ms and failed only on its own criterion, which expected
+    the detailed wording S3 gives a requester in the bucket owner's account alone; the template now
+    counts the code. The run: 92 s, three tasks at the one-minute minimum, about 0.0044 USD.
 - **5.1 — [Claude] The operator files**: the package directory `awsds_demo_job/` at the archive's root and a
   script `reach_pypi.sh` that opens `https://pypi.org/simple/` with Python's `urllib` and a 10-second timeout,
   then runs `pip download --no-deps --timeout 10 -d /tmp/x six`. Python rather than `curl`, because the
   worker's image is not ours and `curl` on it is an assumption.
-- **5.2 — [user] Create the workflow in the portal**, three tasks:
+- **5.2 — [user] Import the exercise over the probe**, once a workflow with a `Code` object runs, three
+  tasks:
   - the sensor on `bash/inbox/`;
   - `run_command`, a *Bash Operator* with
     `python3 -m awsds_demo_job.s3 --bucket <bucket> --inbox <prefix>/bash/inbox/ --outbox <prefix>/bash/outbox/`
@@ -544,9 +594,9 @@ with the recommendation stated (Lesson 16).
    gateway endpoint's allow-list (Stage 3 step 3.4) refuses. Unmeasured: no trail here sees a gateway
    endpoint's refusal, and a path-style request names its bucket only in the URL.
    - (a) **Measure, then name the bucket in the allow-list.** CloudTrail network activity events for S3,
-     filtered to `VpceAccessDenied`, on an event data store or a trail in Sandbox; a positive control from a
-     space first (a read of a bucket outside the list), since whether these events cover a gateway endpoint
-     is unread; then a re-run. The event names the bucket, and the `vpc` module's `default_aws_buckets`
+     filtered to `VpceAccessDenied`, on a trail in Sandbox (an event data store is refused to this
+     account, 4.2a); a positive control from a space first (a read of a bucket outside the list), since
+     whether these events cover a gateway endpoint is unread; then a re-run. The event names the bucket, and the `vpc` module's `default_aws_buckets`
      gains its family as it carries ECR's layer bucket. Keeps the perimeter's design; costs a CloudTrail
      resource for the measurement, a module release and an apply of the network slice.
    - (b) **The worker variants outside the VPC**, with no `NetworkConfiguration`, so the service's network
@@ -555,12 +605,21 @@ with the recommendation stated (Lesson 16).
    - (c) **No `Code` object**: each task fetches the project's code from the project's own storage, which the
      perimeter admits. Exercises neither the `Code` mechanism nor verifications vii and viii as written.
 
+   **Taken 2026-10-11 as (a)**, the applies authorized by the user. The trail measured the premise: the
+   worker's environment preparation is a `GetObject` by the service principal `airflow-serverless.amazonaws.com`
+   of the snapshot at `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod/<account>/<workflow>/<version>/<key>`,
+   refused with `VpceAccessDenied` by the S3 gateway endpoint. `vpc-v0.4.0` adds the family
+   `mwaa-serverless-code-files-*-<region>-prod` to `default_aws_buckets`, `sandbox/foundation` applied it
+   (`1 changed`, re-plan `No changes`), and the re-run ended `SUCCESS`. Staging's and Production's callers
+   stay on `vpc-v0.3.1` until Stage 10 runs a workflow with a `Code` object there.
+
    Recommended: **(a)**. The list exists to name AWS-owned buckets that a service needs, and this is one.
    It was written on 2026-08-16 (Stage 3 pass 1), the day before AWS gave the two operators a `Code`
    object, so the dependency is new rather than missed. Its names come from documentation or measurement,
    never a guess (Lesson 23), and neither guide page names this bucket. The name belongs in the module's
    default rather than in Sandbox's `s3_endpoint_allowed_bucket_names`, which replaces the whole list:
-   Stage 10's workflows in Staging and Production fetch their code the same way.
+   Stage 10's workflows in Staging and Production fetch their code the same way. The premise is tested
+   first, with no instrument: 5.0's probe runs on the same worker and network with no `Code` object.
 
 ## Verifications to answer while executing
 
@@ -572,15 +631,15 @@ with the recommendation stated (Lesson 16).
 | iv | Does a job pull the house image cross-account by digest, and as which principal and session? **Answered 2026-10-11: yes**, as the project role with session name `SageMaker`. Production's CloudTrail holds three `BatchGetImage` by digest from Sandbox: two at the create (02:47:27Z and 02:47:28Z, SageMaker's control plane) and the pull at the job's start (02:50:34Z, invoked by `ecr.amazonaws.com`), none through a VPC endpoint | 2.4 |
 | v | Does the boundary admit a job carrying its four settings, with no other deny naming it? **Answered 2026-10-11: yes.** `CreateProcessingJob` with the four settings and the project tag succeeded | 2.4 |
 | vi | Which door does the worker's `CreateProcessingJob` take: Sandbox's `sagemaker.api` endpoint, from which address? **Answered 2026-10-11:** Sandbox's `sagemaker.api` interface endpoint, from `10.20.95.168` in `awsds-sandbox-private-usw2-az2`, as the project role with session name `AmazonMWAAServerless`. No network interface holds the address after the run | 2.4 |
-| vii | Where does the portal store the operator files, and does `CodeSnapshottedAt` move with each edit? | 4.3 |
-| viii | Does a vendored dependency import with no internet path, and which copy wins against the pre-installed set (from Stage 10 (xv))? | 4.3 |
-| ix | Does a reach for PyPI fail visibly, in seconds, and with which wording (from Stage 10 (xv))? | 5.3 |
-| x | Whose identity do the worker task's AWS calls carry (from Stage 10 (xv))? | 4.3 |
+| vii | Where does the portal store the operator files, and does `CodeSnapshottedAt` move with each edit? **First half answered 2026-10-11:** the portal stores one uploaded `.zip` as it is at `dev/operatorFiles/<file>` and pins its S3 version; at the workflow's creation the service copies it to `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod/<account>/<workflow>/<version>/<key>`, the copy the worker fetches. The second half needs an edit, and none was made | 4.3 |
+| viii | Does a vendored dependency import with no internet path, and which copy wins against the pre-installed set (from Stage 10 (xv))? **Answered 2026-10-11: yes, and the pre-installed copy wins.** `petl` 1.7.28 imported from `/usr/local/airflow/dags/petl/`; the archive's PyYAML 6.0.1 lost to the worker's 6.0.2 in `/opt/mwaa-serverless-venv` | 4.3 |
+| ix | Does a reach for PyPI fail visibly, in seconds, and with which wording (from Stage 10 (xv))? **Answered 2026-10-11: yes, in about 2 s per reach, at name resolution.** urllib reads `URLError(OSError(16, 'Device or resource busy'))` and pip `Failed to establish a new connection: [Errno 16] Device or resource busy`; the Sandbox DNS Firewall answered `NXDOMAIN` with `BLOCK` for `pypi.org`, and no packet left for PyPI | 5.0, 5.3 |
+| x | Whose identity do the worker task's AWS calls carry (from Stage 10 (xv))? **Answered 2026-10-11: the project role, session `AmazonMWAAServerless`**, through Sandbox's `sts` interface endpoint from the worker's private address | 5.0, 4.3 |
 | xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? **Answered 2026-10-11: yes**, after 611 s of one task, about 0.015 USD. The API reads the skipped sensor's `Status` as `NONE` and creates no instance for the downstream tasks | 3.4 |
 | xii | What did each run cost, read from the run and job durations? **The project run, 2026-10-11: about 0.029 USD**, 15 task-minutes (0.022) and 485 s of `ml.t3.medium` (0.0067) | 3.3, 6.1 |
 | xiii | Do the outputs land encrypted with the project key? **Answered 2026-10-11: yes**, the probe's object and the project's result both `aws:kms` with the project key and the bucket key on, written by the project role in the job's session through S3. The direct `CreateGrant` refused at each create does not reach them | 3.3 |
 | xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists. **First half answered 2026-10-11: yes.** The first `DescribeProcessingJob` got `ValidationException` ("Could not find requested job"), not `AccessDenied`, and the create followed | 2.4 |
-| xv | Which bucket does a worker with a `Code` object read its code from, and do network activity events record a gateway endpoint's refusal? | 4.2a |
+| xv | Which bucket does a worker with a `Code` object read its code from, and do network activity events record a gateway endpoint's refusal? **Answered 2026-10-11: `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, read by `airflow-serverless.amazonaws.com` itself; and yes**, with `errorCode` `VpceAccessDenied`, under the trail's `CloudTrail-NetworkActivity/` prefix, a path-style request naming its bucket as a virtual-hosted one does | 4.2a |
 
 ## Risks
 
