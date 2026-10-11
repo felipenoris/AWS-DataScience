@@ -252,6 +252,7 @@ resource "aws_instance" "perimeter" {
 # the permitted address and the forbidden one are equally allowed here - the security group must not
 # be part of what distinguishes them.
 resource "aws_security_group" "peering" {
+  # checkov:skip=CKV_AWS_382:deliberate - every rule names a VPC range, never 0.0.0.0/0; the peer ranges are kept whole so the route is the only difference between the permitted and the forbidden address
   name        = "awsds-${var.env}-probe-peering"
   description = "Stage 3 peering probe - egress to the peer VPC and to the resolver of this VPC"
   vpc_id      = local.vpc_id

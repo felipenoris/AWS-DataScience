@@ -15,7 +15,7 @@ demo-devenv-job:
       dependencies: [wait_for_file]
       retries: 0
       config:
-        ProcessingJobName: "demo-devenv-{{ ts_nodash }}"
+        ProcessingJobName: "demo-devenv-{{ dag_run.start_date.strftime('%Y%m%dT%H%M%S') }}"
         RoleArn: arn:aws:iam::<SANDBOX_ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>
         AppSpecification:
           ImageUri: <REGISTRY_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/awsds-prod-ecr-dev-env@<IMAGE_DIGEST>
@@ -61,7 +61,7 @@ demo-devenv-job:
           Outputs:
             - OutputName: outbox
               S3Output:
-                S3Uri: "s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv/outbox/{{ ts_nodash }}/"
+                S3Uri: "s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv/outbox/{{ dag_run.start_date.strftime('%Y%m%dT%H%M%S') }}/"
                 LocalPath: /opt/ml/processing/outbox
                 S3UploadMode: EndOfJob
           KmsKeyId: arn:aws:kms:<REGION>:<SANDBOX_ACCOUNT_ID>:key/<PROJECT_KEY_ID>

@@ -161,6 +161,10 @@ RANKS = {
     # PROJECT must exist in the portal, because the role this slice attaches to is named after
     # it (runbooks/claude-code-sagemaker.md section P).
     "bedrock": 52,
+    # Stage 6i decision 6: the workflows grant for SMUS project roles, the same shape as `bedrock`
+    # and above `sagemaker` (46) for the same reason. [P], so up/down skip it; 56 is the first free
+    # slot, and nothing interleaves with it.
+    "workflows": 56,
     # Stage 5b step 1.7 - the Redshift Serverless warehouse, split across two ranks because the two
     # halves have different lifecycles and the order between them is a real dependency:
     #
@@ -481,6 +485,15 @@ SLICES = [
     # hand-written once per project, which decision 8 took deliberately.
     Slice(
         "sandbox", "bedrock", PERSISTENT, "the Bedrock grant: 1 policy + 1 attachment per project"
+    ),
+    # Stage 6i decision 6 - one IAM policy and one attachment per SMUS project whose workflows run
+    # SageMaker processing jobs: DescribeProcessingJob on a job no project tag marks, which is what
+    # the operator's existence check needs. Free at rest, hand-written per project like `bedrock`.
+    Slice(
+        "sandbox",
+        "workflows",
+        PERSISTENT,
+        "the workflows grant: 1 policy + 1 attachment per project",
     ),
     # Stage 5b pass 1 - the data half of the warehouse. [P] and free at rest in the sense this
     # column measures: nothing in it is metered by the hour. What it DOES cost is Redshift Managed

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 is the user's, in the portal.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. No Terraform changes |
+| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 is the user's, in the portal.** Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -76,6 +76,9 @@ this repository's boundary and key policy:
   `emr-serverless` and `scheduler` among others, and not to `ecs-tasks`.
 - **`SageMakerECRPermissions`** allows the pull from any repository, so Production's repository policy is the
   half that decides, and INT-01 measured it for a space.
+- **Nothing allows describing a job before it exists.** `SageMakerDescribeUpdateDeletePermissions` grants
+  `DescribeProcessingJob` only on a job tagged with the caller's project, and the operator describes the
+  name it proposes before creating it (measured 2026-10-10). Decision 6's slice is the grant for that gap.
 - **`SageMakerKmsPermissions`** allows `kms:CreateGrant` on the project key through SageMaker, which is what
   `VolumeKmsKeyId` needs. The boundary's one KMS deny names the lake's data key, never the project key.
 - **The boundary's four job denies** require `VpcConfig`, `EnableNetworkIsolation: true`,
@@ -136,7 +139,7 @@ prerequisite of this exercise and stays where 6f handed it.
 | the project's Workflows, in the portal | `demo-devenv-job`, `demo-python-operator`, `demo-bash-operator` | portal objects, free at rest |
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
-| Terraform | nothing | — |
+| `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
 
 **Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
 `shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
@@ -466,6 +469,16 @@ with the recommendation stated (Lesson 16).
 5. **Keep or delete at close** (6.3). Recommended: **keep the three workflows**: they bill nothing at rest, they
    are the reference Stage 10's authoring starts from, and the quota is 100 per account. Empty the `inbox/`
    prefixes so a later run starts from a known state.
+6. **The operator's existence check** (2.4). `SageMakerProcessingOperator.execute()` describes the name it
+   proposes before creating the job, and counts only a `ValidationException` as absent; no parameter turns
+   it off (Amazon provider 9.32.0). The project role may describe only a job tagged with its project, so
+   the first run failed before any job existed. **Taken 2026-10-10 (the user): a grant in Terraform**, the
+   `[P]` slice `sandbox/workflows/`: `DescribeProcessingJob` on `processing-job/*` when
+   `aws:ResourceTag/AmazonDataZoneProject` is absent. A name not yet taken passes, and a job of another
+   project, which SMUS refuses to create untagged, stays out of reach. It keeps the operator Stage 10
+   promotes, whose own execution role describes what it needs. The alternative was a `PythonOperator` that
+   creates the job and a `SageMakerProcessingSensor` that waits for it: no Terraform, but a Sandbox shape
+   the promoted workflow would not share.
 
 ## Verifications to answer while executing
 
@@ -484,6 +497,7 @@ with the recommendation stated (Lesson 16).
 | xi | Does `soft_fail` end an empty-inbox run `SUCCESS`, and what did the wait bill? | 3.4 |
 | xii | What did each run cost, read from the run and job durations? | 3.3, 6.1 |
 | xiii | Do the outputs land encrypted with the project key? | 3.3 |
+| xiv | Does decision 6's grant let the existence check through, and does it leave another project's jobs out of reach? The second half needs a second project, and is a reading of the condition until one exists | 2.4 |
 
 ## Risks
 
@@ -502,6 +516,8 @@ with the recommendation stated (Lesson 16).
 - **A run outside a session fails partway.** The S3 gateway endpoint is `[P]` and keeps answering, so the
   sensor can succeed, and the first call that needs an `[E]` endpoint fails: `sagemaker.api` in
   `run_project`, `logs` for the task logs.
+- **Decision 6's grant reaches a job that carries no project tag.** That includes a job a principal outside
+  SMUS created untagged, whose configuration any listed project role can then describe.
 - **The job's logs are readable by every project role in the account**, and nothing in this stage changes
   that; the code's rule is to print no data.
 - **The definitions carry account-scoped identifiers.** The portal copy needs them and the repository copy must

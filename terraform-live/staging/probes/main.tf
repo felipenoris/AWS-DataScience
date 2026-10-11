@@ -89,6 +89,7 @@ locals {
 # the forbidden one are equally allowed here: the security group must not be part of what
 # distinguishes them.
 resource "aws_security_group" "int09" {
+  # checkov:skip=CKV_AWS_382:deliberate - every rule names a VPC range, never 0.0.0.0/0; the peer ranges are kept whole so the route is the only difference between the permitted and the forbidden address
   name        = "awsds-${var.env}-probe-int09"
   description = "Stage 3 INT-09 probe - egress to the peer VPC and to the resolver of this VPC"
   vpc_id      = local.vpc_id
