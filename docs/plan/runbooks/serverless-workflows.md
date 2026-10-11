@@ -170,6 +170,54 @@ Environment:
 - `/opt/awsds/venv/bin/python` is the house environment (Python 3.13); `/opt/conda/bin/python` is the
   distribution's (3.12).
 
+### J1 — A project with dependencies
+
+The job has no network, so a project's dependencies either come with the house environment or travel in
+the code input; nothing is installed at run time. Three things differ from a Python task's archive (§C):
+
+- **The interpreter is the house environment's**, CPython 3.13 on linux x86_64, not the worker's 3.12.
+- **The code input is a folder, not an archive.** A `ProcessingInput` downloads an S3 prefix, and an
+  extension module cannot be imported from a zip on `sys.path`.
+- **The precedence is the worker's reversed.** `PYTHONPATH` comes before the house environment's
+  site-packages, so a package in both would shadow the image's copy, the failure
+  `images/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
+  lacks, and the project's versions must equal the image's for everything they share.
+
+`examples/sandbox-orchestration/operators/package-uv-job.py` applies the three, for a uv project:
+
+```bash
+./examples/sandbox-orchestration/operators/package-uv-job.py <project dir> <output folder>
+```
+
+It reads the house environment from `images/dev-env/python/uv.lock`, takes the project's locked closure
+for the job's platform, and sorts it three ways: provided by the image, vendored (absent from the
+image), or in conflict. A conflict stops it and prints a block to add to the project's
+`pyproject.toml`:
+
+```toml
+[tool.uv]
+constraint-dependencies = [
+  "boto3==1.43.92",
+  ...
+]
+```
+
+`uv lock` then resolves within the image's versions. A lower bound of the project above an image
+version fails that lock, and then the dependency belongs in the image (a new image version, through
+[`dev-env.md`](dev-env.md)), not in the job. Without a conflict it builds the folder: the project's
+wheel and the vendored packages, built for the job's platform.
+
+**Measured 2026-10-11** on a throwaway uv project depending on `petl`, `requests`, `boto3` and `pyyaml`:
+its fresh lock disagreed with the image on `boto3`, `botocore`, `charset-normalizer`, `idna` and
+`urllib3`; with the printed block and a re-lock, 12 packages came from the image and only `petl` was
+vendored, a 1.2 MB folder.
+
+**Using the folder:** copy it into the project's storage (from a space, `cp -r <folder>
+~/shared/<name>/`), name that prefix as the `code` input at `/opt/ml/processing/code`, set
+`PYTHONPATH: /opt/ml/processing/code`, and run `exec /opt/awsds/venv/bin/python -m <package>` after the
+`chown`. The lock in the repository must be the one of the image version the job names. The demo job's
+project has no dependencies, so its input is its source tree with `PYTHONPATH` at `src/`.
+
 **The workflow deletes the source, not the job**: an isolated container cannot reach S3. The third task
 is `S3DeleteObjectsOperator` on the inbox prefix, after the processing task.
 
