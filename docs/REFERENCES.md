@@ -1163,7 +1163,7 @@
 
 - Stage 10's documentation pass (read 2026-08-16):
   - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
-  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory.
+  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
   - *MWAA Serverless quotas* — 50 KB YAML, 60-minute task timeout, 100 workflows, 50 versions per workflow, 20 concurrent runs per workflow: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>.
@@ -1237,6 +1237,17 @@
   with (`resources.type = AWS::S3::Object`, `resources.ARN` starts-with, `readOnly`), and the
   statement that a trail logging *only* data events carries no management copy:
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html>.
+
+- Logging CloudTrail network activity events (read 2026-10-11, Stage 6i decision 7) — trails and event
+  data stores both take them, `s3.amazonaws.com` is a valid `eventSource`, and `VpceAccessDenied` is the
+  only `errorCode`. The page names no endpoint type, so whether a gateway endpoint is covered is not on it:
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-network-events-with-cloudtrail.html>.
+
+- A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
+  `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works
+  by adding a route to your VPC's route table", with the bucket in the event's `resources` (read
+  2026-10-11, updated 2025-10-30; a third-party reading, not AWS's):
+  <https://www.varonis.com/blog/exploiting-vpc-endpoints-for-s3buckets>.
 
 - AWS service events delivered via CloudTrail to EventBridge — the rule-state table Stage 11's alarm
   design rests on: data events are matched by rules in the default `ENABLED` state once a trail logs

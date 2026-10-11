@@ -434,7 +434,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
   changes nothing, an S3 operator task ran `SUCCESS`, and **6d decision due 14 took (b)** (user,
   2026-10-10): no portal notebook task; `PythonOperator`/`BashOperator` are explored instead, and
-  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i** (written 2026-10-10, not started) is
+  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i** is
   the Sandbox exercise: a portal workflow whose `SageMakerProcessingOperator` runs a Python project in the
   house image under the boundary's four job settings (no network in the container, so the workflow deletes
   the source), then both worker operators; it took Stage 10's verifications (i), (xv) and 0.2's CLI half. `update-workflow` is a full replace (Lesson 60)
@@ -443,9 +443,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i pass 0 done 2026-10-10**:
-  `./aws/sandbox-orchestration.py` (`SO-1`..`SO-8`) and `examples/sandbox-orchestration/` (the
-  project, 6 tests green; `render.py` fills the placeholders on screen); pass 1 is the user's upload.
+  cannot name both accounts, so it is rendered per environment. **6i passes 0-3 done 2026-10-10/11**:
+  `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
+  delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
+  `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
+  **Pass 4 is blocked by decision 7**: any workflow with a `Code` object fails in the worker's
+  environment preparation before its first task, read (not measured) as the S3 gateway endpoint's
+  allow-list refusing the service's snapshot bucket. CloudTrail Lake refused the instrument ("no longer
+  accepting new customers"); `sandbox/endpoint-audit/`'s empty state object stays. Pass 5's control, a
+  `demo-bash-operator` probe with inline commands and no `Code`, is written and not run.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6

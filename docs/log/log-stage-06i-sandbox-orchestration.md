@@ -783,3 +783,27 @@ branch with its rows in `layers.py`, `conventions.md` §6 and `terraform-live/RE
 it. The failed apply left an empty state, `sandbox/endpoint-audit/terraform.tfstate` (619 bytes), in
 `awsds-sandbox-tfstate`, which stays: removing it is a write nobody asked for, and a trail built under the
 same slice name would reuse it. `docs/PRICING.md` keeps the Lake prices, marked closed to new customers.
+
+## 2026-10-11 — pass 5 prepared, the session left down
+
+*Written by Claude in the sitting that ran it. Every reading is Claude's own, from `awsds-infra-sandbox-1`
+(account `<Sandbox Account 1>`, permission set `InfrastructureAccess`). Nothing was written to AWS.*
+
+### [Claude] The state before
+
+- **`make status`:** every slice down, estimated burn USD 0.0000/h. `sandbox/egress` holds 0 resources
+  and the hub's two hosts are stopped.
+- **`./aws/sandbox-orchestration.py` exits 2 on `SO-4` alone:** `demo-python-operator`'s run
+  `hmcXpEy18zOKCPR` is `FAILED`. `python/inbox/` still holds the sample, `demo-bash-operator` does not
+  exist, and no call failed.
+
+### [user] The scope
+
+**[user]** chose "Só 3, sem AWS": the upkeep and the control's files, with no AWS write. For the next
+raise the user chose "GROUPS=redshift", so it is `make up ENV=sandbox GROUPS=redshift` and 6h's negatives
+can share the window.
+
+### [Claude] 5.0 written, not run
+
+The probe version of `demo-bash-operator` and the instrument's contract for it are in the stage file's
+5.0. Neither has run on a worker.

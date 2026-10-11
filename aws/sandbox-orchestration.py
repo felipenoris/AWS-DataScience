@@ -74,9 +74,12 @@ WORKFLOWS = {  # workflow name -> variant, which is also its prefix under DEMO_D
     "demo-python-operator": "python",
     "demo-bash-operator": "bash",
 }
-CODE_VARIANTS = ("python", "bash")  # the variants whose tasks run the workflow's Code object
+# demo-bash-operator has two versions, told apart by a task id. The probe runs inline commands
+# and must carry no Code object, or it is no control for decision 7; the exercise runs the
+# package from its Code object. The PyPI negative is in both, and it must FAIL.
+BASH_PROBE_TASK = "caller_identity"
 BASH_COMMAND_TASK = "run_command"
-BASH_NEGATIVE_TASK = "reach_pypi"  # the PyPI negative: it must FAIL
+BASH_NEGATIVE_TASK = "reach_pypi"
 JOB_PREFIX = "demo-devenv-"
 HOUSE_IMAGE = "awsds-sandbox-dev-env"
 WORKER_SESSION = "AmazonMWAAServerless"
@@ -122,6 +125,12 @@ def _task_attempt(instance_id: str) -> tuple:
 
 def _task_id(instance_id: str) -> str:
     return _task_attempt(instance_id)[0]
+
+
+def has_task(definition: str, task: str) -> bool:
+    """Whether a workflow definition declares a task of that id. The definition is YAML and this
+    script parses none: a task id is a mapping key alone on its line, as the portal saves it."""
+    return re.search(rf"^\s+{re.escape(task)}:\s*$", definition, re.M) is not None
 
 
 def last_attempts(task_instances: list) -> dict:
@@ -572,8 +581,18 @@ def main(argv: list) -> int:
             problems.append(
                 f"definition at s3://{loc.get('Bucket', '-')}/{loc.get('ObjectKey', '-')}, outside the project's dev/workflows/"
             )
-        if d["variant"] in CODE_VARIANTS and not code:
-            problems.append("no Code object - its Python or Bash task has nothing to run")
+        body = det.get("WorkflowDefinition") or ""
+        if d["variant"] == "python" and not code:
+            problems.append("no Code object - its Python task has nothing to run")
+        elif d["variant"] == "bash":
+            if has_task(body, BASH_COMMAND_TASK):
+                if not code:
+                    problems.append(f"no Code object - {BASH_COMMAND_TASK} has nothing to run")
+            elif has_task(body, BASH_PROBE_TASK):
+                if code:
+                    problems.append("the probe carries a Code object, so it is no control")
+            else:
+                problems.append(f"neither {BASH_PROBE_TASK} (the probe) nor {BASH_COMMAND_TASK}")
         # every version, as served and with the account ids replaced
         files = []
         for i, v in enumerate(d["versions"], start=1):
@@ -603,6 +622,8 @@ def main(argv: list) -> int:
         detail = f"{len(d['versions'])} version(s); definition {loc.get('ObjectKey', '-')}"
         if code:
             detail += f"; Code s3://{code.get('Bucket', '-')}/{code.get('ObjectKey', '-')} snapshotted {det.get('CodeSnapshottedAt', '-')}"
+        elif d["variant"] == "bash":
+            detail += "; the probe, no Code object"
         if problems:
             checks.fail("SO-3", name, "; ".join(problems) + ".")
         else:
@@ -622,18 +643,18 @@ def main(argv: list) -> int:
         what = f"{name}: run {latest['id']} ({kind})"
         if wfs[name]["variant"] == "bash":
             neg = by_task.get(BASH_NEGATIVE_TASK)
-            cmd = by_task.get(BASH_COMMAND_TASK)
+            others = [v for k, v in by_task.items() if k != BASH_NEGATIVE_TASK]
             if neg == "SUCCESS":
                 checks.fail(
                     "SO-4",
                     what,
                     f"{BASH_NEGATIVE_TASK} SUCCEEDED - the worker reached the internet: {tasks}.",
                 )
-            elif cmd == "SUCCESS" and neg == "FAILED":
+            elif neg == "FAILED" and others and all(v == "SUCCESS" for v in others):
                 checks.ok(
                     "SO-4",
                     what,
-                    f"{BASH_COMMAND_TASK} SUCCESS and {BASH_NEGATIVE_TASK} FAILED, as designed",
+                    f"{BASH_NEGATIVE_TASK} FAILED and every other task SUCCESS, as designed: {tasks}",
                 )
             else:
                 checks.note("SO-4", what, f"{state}: {tasks}")
