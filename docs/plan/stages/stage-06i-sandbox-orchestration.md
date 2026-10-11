@@ -527,6 +527,11 @@ with the recommendation stated (Lesson 16).
      perimeter admits. Exercises neither the `Code` mechanism nor verifications vii and viii as written.
 
    Recommended: **(a)**. The list exists to name AWS-owned buckets that a service needs, and this is one.
+   It was written on 2026-08-16 (Stage 3 pass 1), the day before AWS gave the two operators a `Code`
+   object, so the dependency is new rather than missed. Its names come from documentation or measurement,
+   never a guess (Lesson 23), and neither guide page names this bucket. The name belongs in the module's
+   default rather than in Sandbox's `s3_endpoint_allowed_bucket_names`, which replaces the whole list:
+   Stage 10's workflows in Staging and Production fetch their code the same way.
 
 ## Verifications to answer while executing
 
