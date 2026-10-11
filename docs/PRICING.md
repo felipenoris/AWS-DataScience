@@ -634,7 +634,7 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | CloudTrail **data events** (each) | 0.000001 | 0.000001 | **1.00** |
 | CloudTrail Insights events (each) | 0.0000035 | — | |
 | CloudTrail **network activity events** on a trail (each; `USW2-NetworkEventsRecorded`, measured 2026-10-11) | — | 0.000001 | |
-| CloudTrail **Lake** ingestion, one-year extendable retention, live CloudTrail events (USD/GB; `USW2-Ingestion-Bytes-1yearstore-Live-CloudTrail-Logs`, measured 2026-10-11; Stage 6i decision 7's store) | — | 0.75 | |
+| CloudTrail **Lake** ingestion, one-year extendable retention, live CloudTrail events (USD/GB; `USW2-Ingestion-Bytes-1yearstore-Live-CloudTrail-Logs`, measured 2026-10-11). **Closed to new customers**: Stage 6i's `CreateEventDataStore` was refused that day, so this account cannot buy it | — | 0.75 | |
 | CloudTrail Lake query, data scanned (USD/GB; `USW2-QueryScanned-Bytes`, measured 2026-10-11) | — | 0.005 | |
 | **GuardDuty** CloudTrail events analyzed (each) | 0.000007 | 0.000004 | 1.75 |
 | GuardDuty VPC flow + DNS logs, first 500 GB (USD/GB) | 1.75 | 1.00 | 1.75 |

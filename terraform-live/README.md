@@ -285,10 +285,6 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
   written by hand after a project exists.
-- **`sandbox/endpoint-audit/` `[P]` — the endpoint refusals store** (Stage 6i decision 7): one CloudTrail
-  Lake event data store holding the S3 network activity events with `errorCode` `VpceAccessDenied`, the
-  requests a VPC endpoint policy refused. Such a refusal otherwise lands only in the bucket owner's trail.
-  An instrument: `[P]` so `make` never cycles it, and destroyed by hand when the decision closes.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 

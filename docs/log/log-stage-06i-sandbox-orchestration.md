@@ -775,3 +775,11 @@ infrastructure user, `InfrastructureAccess` on `awsds-infra-sandbox-1` (`<Sandbo
 - **The other instrument is a trail**, with the same selector, delivering to a bucket of its own. Whether
   network activity events cover a gateway endpoint is still unread; the announcement names S3 and never
   says "gateway".
+
+### [Claude] The refused slice removed from the branch
+
+`sandbox/endpoint-audit/` describes a resource AWS no longer creates for this account, so it left the
+branch with its rows in `layers.py`, `conventions.md` §6 and `terraform-live/README.md`; git history keeps
+it. The failed apply left an empty state, `sandbox/endpoint-audit/terraform.tfstate` (619 bytes), in
+`awsds-sandbox-tfstate`, which stays: removing it is a write nobody asked for, and a trail built under the
+same slice name would reuse it. `docs/PRICING.md` keeps the Lake prices, marked closed to new customers.

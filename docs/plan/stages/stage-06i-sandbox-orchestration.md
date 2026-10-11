@@ -143,7 +143,6 @@ prerequisite of this exercise and stays where 6f handed it.
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
 | `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
-| `sandbox/endpoint-audit/` (new, rank 57) | one CloudTrail Lake event data store of the S3 requests a VPC endpoint policy refused (decision 7's measurement), destroyed by hand when the decision closes | `[P]` |
 
 **Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`; the prefix
 `shared/orchestration-demo/<variant>/` with `inbox/` and `outbox/`, where `<variant>` is `devenv`, `python`
@@ -396,8 +395,10 @@ identity a worker task's calls carry.
     module's `default_aws_buckets`.
 
   **The store was refused on 2026-10-11:** "CloudTrail Lake is no longer accepting new customers", and this
-  account had never created one. Nothing was created. The remaining instrument is a trail with the same
-  selector, delivering to a bucket of its own.
+  account had never created one. Nothing was created, and the slice was removed from the branch the same
+  day; its empty state object stays in `awsds-sandbox-tfstate` under `sandbox/endpoint-audit/`. The
+  remaining instrument is a trail with the same selector, delivering to a bucket of its own, and whether to
+  build it is the user's call.
 
   The store is the first CloudTrail resource this project creates in a member account, the revision
   trigger `POLICIES.md` names for its CloudTrail absence. The proposal is no statement: the store is an
