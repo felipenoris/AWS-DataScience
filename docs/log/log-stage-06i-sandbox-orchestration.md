@@ -648,3 +648,41 @@ again as the infrastructure user: **[user]** "infra sso logado".
   is 996,234 bytes under the project key, and its sha256 (`4e95f1a7…b6da`) equals the archive
   `build.sh` made: the portal stored one `.zip` as it was, neither nested nor re-zipped. Pass 2's `hello.py`
   is still beside it, two versions.
+
+### [user] 4.2 — the first run
+
+**[user]** "Falhou: `There was an error executing run hmcXpEy18zOKCPR: Workflow execution failed, please check
+the task execution logs for more details`"
+
+### [Claude] The worker failed before any task: its code fetch
+
+- **The tasks:** `wait_for_file` `FAILED` in 102 s, `run_project` `UPSTREAM_FAILED`. The sensor's log holds
+  two lines, `Preparing the execution environment.` at 05:35:55.613Z and `Execution environment preparation
+  failed due to an internal server error.` at 05:35:55.664Z. No task code ran, the sensor's included.
+- **The worker:** its network interface was created at 05:35:28Z by the service-linked role
+  (`AmazonMWAAServerless-vpc-networking`) and attached by ECS at 05:35:31Z, address `10.20.2.142` in the az1
+  private subnet. Its only call in CloudTrail is `CreateLogStream` through the logs endpoint at 05:35:55Z.
+- **Its DNS and flow logs at 05:35:55Z:** it resolved `logs.us-west-2.amazonaws.com` (the endpoint,
+  `10.20.10.146`) and `s3.us-west-2.amazonaws.com` (public addresses, reached through the gateway route), and
+  held one connection with S3, `3.5.84.222:443`: 12 packets each way, 3,112 bytes out and 6,156 in. The
+  archive is 996,234 bytes, so it never came down.
+- **The comparison:** 3.4's worker, in a workflow with no `Code`, resolved only
+  `awsds-sandbox-smus-projects.s3.us-west-2.amazonaws.com`, the sensor's listing, and never the path-style
+  name.
+- **The service keeps its own copy of the code.** At the creation (05:32:42Z) it read the archive from the
+  projects bucket in the portal's session (a `Decrypt` through S3) and called `GenerateDataKey` three times
+  with the encryption context `aws:airflow-serverless:workflow-arn`. At the run it called `Decrypt` with that
+  context at 05:35:21Z and 05:35:55Z. `CodeSnapshottedAt` and the guide's 75 GB per-account code quota say
+  the same.
+- **The S3 gateway endpoint's policy** (`terraform-modules/vpc/endpoints.tf`, Stage 3 step 3.4) admits the
+  organization's buckets and seven AWS-owned bucket families, and nothing else.
+- **The reading, not yet measured:** the worker fetches the code's snapshot from a bucket the service owns,
+  the endpoint's allow-list refuses it, and the platform reports the refusal as an internal error. The
+  project's own bucket is ruled out by reading: every layer over the project role's read of
+  `dev/operatorFiles/` allows it (identity `s3:GetObject*` on the project's prefix, the endpoint's
+  organization statement, the bucket's TLS-only policy, the S3-scoped KMS grant), and a KMS refusal would
+  have left an event. Nothing held here names the service's bucket: a path-style request carries it in the
+  URL, which neither log sees, and a gateway endpoint's refusal lands in no trail of ours (Lesson 55).
+- **What the workflows without `Code` never met:** the processing job and the S3 tasks read the project's
+  bucket, which the organization statement admits. The worker variants are the first to depend on an
+  AWS-owned bucket the list does not name, so pass 5 meets the same refusal.
