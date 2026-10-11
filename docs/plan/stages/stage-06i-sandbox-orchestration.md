@@ -537,12 +537,16 @@ identity a worker task's calls carry.
 
 ### 6. Close
 
-- **6.1 — [Claude] The records**:
+- **6.1 — [Claude] The records. Done 2026-10-11 at the user's request, except `AWS_STATE.md`, which
+  waits on decision 3**:
   - [`docs/SMUS.md`](../../SMUS.md) §"The workflow surface" gets the editor's fields, the operators measured
     and the `Code` location;
   - [`docs/AWS_STATE.md`](../../AWS_STATE.md) gets the log groups per decision 3;
-  - Stage 10's pointers name what this stage answered;
-  - [`docs/PRICING.md`](../../PRICING.md) gets the run costs read in 3.3, beside the measured unit prices.
+  - Stage 10's pointers name what this stage answered, and its decision 7 (new) takes the processing
+    input's missing version pin; Stage 8 step 5.6 points at it;
+  - [`docs/PRICING.md`](../../PRICING.md) gets the run costs read in 3.3, beside the measured unit prices;
+  - [`docs/plan/lessons.md`](../lessons.md) gets Lesson 65, instances of Lessons 54 and 55, and the
+    platform behaviours this stage measured.
 - **6.2 — [Claude] The log**, `docs/log/log-stage-06i-sandbox-orchestration.md`: each step Claude executed,
   in the sitting it ran.
 - **6.3 — [user] Decision 5**: keep or delete the workflows and the demo prefixes.

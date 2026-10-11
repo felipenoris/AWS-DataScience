@@ -23,7 +23,9 @@ exercised: a SageMaker processing job in the house image, a `PythonOperator` and
 
 **State, 2026-10-11.** **The processing task works end to end in Sandbox**: a sensor, a job in the house
 image that summarises the sample, and the source deleted after the result landed under the project key
-(run `f9L7CKQzmUQWQTR`). **A workflow with a code archive runs in Sandbox** (run `N05WyTNjUcdxbw0`):
+(run `f9L7CKQzmUQWQTR`). **So does a project with dependencies** (run `aB2zorz48GP67hx`): the folder
+`package-uv-job.py` built in a space, its pure-Python and extension modules imported from the code input
+(§J1). **A workflow with a code archive runs in Sandbox** (run `N05WyTNjUcdxbw0`):
 a `PythonOperator` read the sample, wrote the same result and deleted the source. Before `vpc-v0.4.0`
 its worker failed while preparing its environment, because the S3 gateway endpoint refused the bucket
 the service keeps the code in (6i decision 7); a Bash task with an inline command, which has no archive,
@@ -40,7 +42,7 @@ ran all along. The exercise's archive was built by C6's recipe; C2's script is v
 | the definition | `s3://<projects bucket>/<domain>/<project>/dev/workflows/<name>.yaml` | written by the portal on each save; *View code* shows it |
 | the code archive of a Python or Bash task | `.../dev/operatorFiles/<file>` | uploaded in *Settings → Storage*; one `.zip` is stored as uploaded, and the workflow pins its S3 version |
 | the service's copy of that code | `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, key `<account>/<workflow>/<version>/<upload's key>` | taken at each save and encrypted under the project key; each task's worker has `airflow-serverless.amazonaws.com` read it through the VPC's S3 gateway endpoint, whose policy must admit the family (`vpc-v0.4.0`, 6i decision 7) |
-| the task logs | `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, one stream per task attempt | per project; no retention (`EXC-10`'s shape); the group outlives the workflow |
+| the task logs | `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, one stream per task attempt | per project; no retention (`EXC-10`'s shape); the group exists from the workflow's first save, before any run, and outlives the workflow |
 | a processing job's container output | `/aws/sagemaker/ProcessingJobs`, stream `<job>/algo-1-<n>` | account-wide: every project role in the account can read it |
 | the identity | the project role, `datazone_usr_role_<project>_<env>`, session `AmazonMWAAServerless` on the worker, `SageMaker` inside a job | the D13 boundary applies to both |
 | the network | the two private subnets and the project's security group, injected by the portal | no default route: AWS is reached through the VPC endpoints, S3 through the gateway endpoint |
@@ -56,6 +58,14 @@ included, and bills 0.088 USD per task-hour with a one-minute minimum. Measured 
   `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable;
 - a name the Sandbox DNS Firewall does not list fails at resolution, as `[Errno 16] Device or resource
   busy` rather than a name error; `/awsds/sandbox/dns-firewall` shows the `BLOCK`.
+
+**Two identities, one browser.** The portal runs as the Data Scientist user, and the readings in §V as the
+infrastructure user. A CLI login whose browser step is answered in the browser holding the portal session
+ends that session, and the next portal act lands on the sign-in page (seen twice on 2026-10-11, each
+time right after such a login; the cause is inferred, not isolated).
+`./aws/login.py` passes `--no-browser`: open the URL it prints in another browser or a private window
+([`aws/AWS-CLI.md`](../../../aws/AWS-CLI.md), "Signing in"). The same day the CLI's `awsds` token was found
+deleted from `~/.aws/sso/cache` mid-session, by an unknown hand; a new login restores it.
 
 ---
 
@@ -103,7 +113,7 @@ keeps every run's logs.
 
 | The portal says | What happened | Way through |
 |---|---|---|
-| `ValidationException: Code not found in specified S3 location` | the save sent a code location under `dev/operatorFiles/` with no file there. A workflow with a Python or Bash task always sends the editor's pre-filled *Operator files zip S3 location* | upload the task's file in *Settings → Storage*; for a workflow that needs none (inline Bash, or no Python or Bash task), empty that field, and the save sends no `Code` |
+| `ValidationException: Code not found in specified S3 location` | the save sent a code location under `dev/operatorFiles/` with no file there. The editor pre-fills *Operator files zip S3 location* on every new workflow, a processing-only one included (2026-10-11), and a workflow with a Python or Bash task always sends it | upload the task's file in *Settings → Storage*; for a workflow that needs none (inline Bash, or no Python or Bash task), empty that field before the save, and the save sends no `Code` |
 | `ContainerArguments: Container argument is required` | the editor, not the API, demands arguments on a processing task | split the command into a program (`ContainerEntrypoint`) and its arguments |
 | two workflows of one name | two saves raced past the name check, 2 s apart | delete one; the name is checked otherwise |
 
@@ -229,7 +239,8 @@ on no search path, so the script names `$AWSDS_PYTHON_ENV/bin/python` to the uv 
    ]
    ```
 
-   The block pins every package the project shares with the image to the image's version. A lower bound
+   The block pins every package the project shares with the image to the image's version, which also puts
+   the project's local tests on the versions the job imports. A lower bound
    of the project above an image version fails that lock, and then the dependency belongs in the image (a
    new image version, through [`dev-env.md`](dev-env.md)), not in the job. `--constraints` prints every
    image version in requirements form, for `uv pip compile -c` or `uv add -c`.
@@ -309,7 +320,9 @@ is `S3DeleteObjectsOperator` on the inbox prefix, after the processing task.
 
 **What a run costs and how long it takes** (measured 2026-10-11): about 15 minutes and 0.03 USD. The job
 spends about 7.5 of its 8 minutes pulling the 6.97 GB house image before the container starts, and the
-processing task holds its worker for the whole job.
+processing task holds its worker for the whole job. `demo-devenv-deps`'s task held it 791 s for a command
+of one second: about 3 minutes of provisioning before `ProcessingStartTime`, 7 of image pull, and 2.5
+after `ProcessingEndTime` before the job reads `Completed`, which is what the operator waits on.
 
 ---
 
@@ -524,6 +537,10 @@ execution logs for more details". The task log does, and for a processing task t
 **A failure before the first task** ("User template error: ...") is a template the service could not
 render at run creation (§A).
 
+**The run's state lags its tasks.** `get-workflow-run` read `QUEUED` until 23:06:16Z while the sensor had
+finished at 23:05:23Z and the job was being created (2026-10-11). Read progress from the task instances,
+never from `RunState`.
+
 ---
 
 ## §X — Cleaning up
@@ -532,3 +549,5 @@ render at run creation (§A).
 - **Empty the inboxes** so the next run starts from a known state; the outboxes are the results.
 - **Processing jobs cannot be deleted**: they stay listed, which is why `SO-5` fails only the newest.
 - **The code archives** under `dev/operatorFiles/` stay with every version, since the bucket is versioned.
+- **The code folders** under `shared/jobs/` stay, one per version (§J1 step 5); delete an old one only
+  when no definition names it.

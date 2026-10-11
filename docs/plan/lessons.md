@@ -1142,6 +1142,13 @@ can be recognised without opening this file; the reasoning that makes each one u
     module change is exercised by planning a caller against the local path (`terraform-changes.md`
     Recipe B step 1), never by validating it.
 
+    Stage 6i, 2026-10-11, adds a procedure documented for an environment it had never run in. The
+    runbook's J1 told the reader to run `package-uv-job.py` from a clone "in a space, where uv and the
+    project's storage are both at hand", and every measurement behind it was the laptop's. The first run
+    in a space stopped before the script's first line, on the repository's `.python-version`
+    (Lesson 65), and past that the space had no CPython 3.13 that uv could find. A sentence naming an
+    environment is a claim about that environment until a run there makes it a reading.
+
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
     [Lesson 42](#) separates a permission failure, which is a response, from a network failure,
     which is the absence of one. This is its mirror and the harder case: there is a response, and
@@ -1162,6 +1169,14 @@ can be recognised without opening this file; the reasoning that makes each one u
     When a control is expected to answer rather than drop, write the verification against the
     enforcing end, and treat any prediction about what the sender will observe as a claim about
     someone else's stack, which this project measures rather than reasons about.
+
+    Stage 6i decision 7, 2026-10-11, is the same shape one layer up. A workflow with a `Code` object
+    failed before its first task with "Execution environment preparation failed due to an internal
+    server error", which names no control, no principal and no bucket. The refusal was real, and it
+    lived on the refusing side: the VPC's S3 gateway endpoint denied `airflow-serverless.amazonaws.com`'s
+    `GetObject` of the service's code snapshot, and only a trail of network activity events recorded it
+    (`VpceAccessDenied`), naming the bucket, the principal and the policy type. The sender's error had
+    nothing to read; the enforcing end's log was the reading.
 
 56. **A configuration line that names a capability the surrounding configuration does not have is
     inert, and it reads exactly like a working control.** Stage 6c, 2026-09-07. Every client config
@@ -1368,6 +1383,36 @@ between the tree and AWS: `describe-instance-attribute --attribute userData` rea
 carries and settles whose edit is pending. Here the replacement was harmless — the proxy is stateless,
 rebuilt from this template at every boot, and its address is no longer `[P]`. On a host that keeps
 anything, this is Lesson 4's shape arriving through a comment.
+
+## Lesson 65 — a repository-wide pin is a claim about the machine it was written on, and every script inside it carries it
+
+**What happened.** Stage 6i step 3.6, 2026-10-11. `package-uv-job.py` declares `requires-python >=3.11`
+in its inline metadata and runs under the shebang `uv run --script`. In a space it stopped before its
+first line: "No interpreter found for Python 3.14". The 3.14 was the repository's `.python-version`,
+written for the tooling project at the root, and uv reads that file from the script's folder upwards,
+wherever the command is typed, so running from another folder failed the same way. The house image sets
+`UV_PYTHON_DOWNLOADS=never` by decision, so the space could not fetch 3.14, and the only interpreters on
+uv's search path were the distribution's 3.12. Past that pin, the project's own `.python-version` (3.13)
+stopped the inner `uv export --locked` the same way, in a simulation of the space.
+
+**Why it is a class rather than a slip.** A tool's configuration file is found by location, never by
+intent: `.python-version`, `.terraform-version`, `.tool-versions`, a tool table in `pyproject.toml`. A
+pin written for one environment binds every environment the repository is carried to (a space, a CI
+runner, CloudShell), and the machine that wrote it always satisfies it, so no local run can show the
+failure. When the failure arrives it reads as the target environment's defect, "no interpreter found",
+and the remedy it suggests, allowing downloads, undoes a decision the target environment made on
+purpose.
+
+**The rule.** A script meant to run in more than one environment states its own requirement where the
+tool honours it over the repository's (here `--python >=3.11` in the shebang), and names the interpreter
+it needs where the environment has one the tool cannot find (`UV_PYTHON` to the house environment's
+interpreter). Before a document says a procedure runs in an environment, it is run there once
+(Lesson 54).
+
+**What makes it expensive.** Nothing in the repository looks wrong: the pin is right for the laptop, the
+script's metadata is right for the script, and the image's setting is right for the image. The failure
+lives in their combination, in the one environment none of the three was tried in, and the first person
+to meet it is the reader the document was written for.
 
 ## What AWS does that its documentation does not say
 
@@ -1596,6 +1641,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   from an AWS-internal address. Four ECR read actions are enough. The version's `ContainerImage` then
   names a `sha256:` digest, so a registered version is pinned to bytes rather than to a tag, and
   re-tagging upstream would not move it. Where: `runbooks/dev-env.md` §C5.
+- **A space's `~/shared/` writes a zero-byte folder marker for every directory** (measured 2026-10-11,
+  Stage 6i step 3.6). A `cp -r` of a 176-file folder left 192 objects, 16 of them `…/` keys, and a
+  `mkdir` leaves `inbox/`, which a sensor's `inbox/*` matches before any file lands. A processing input
+  downloads such a prefix without complaint. Where: `runbooks/serverless-workflows.md` §A and §J1.
+- **The portal's session ended twice right after another Identity Center user's CLI login** (seen
+  2026-10-11, Stage 6i). Each time the user had just signed in to the CLI as the infrastructure user while
+  Chrome held the Data Scientist User's portal session, and the next portal act landed on the sign-in
+  page. The shared browser is the inferred cause, not an isolated one. Where: `aws/AWS-CLI.md`, "Signing
+  in".
 
 ### MWAA Serverless
 
@@ -1605,6 +1659,64 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   each read `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run
   whether one fired or not, and that is Stage 10 verification (v)'s evidence. Where:
   `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+- **A worker fetches its `Code` snapshot as the service principal, through the customer's S3 gateway
+  endpoint** (measured 2026-10-11, Stage 6i decision 7). At each save the service copies the code object
+  to `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, keyed by account, workflow, version
+  and the upload's key. Each task's environment preparation then has `airflow-serverless.amazonaws.com`
+  `GetObject` it through the workers' VPC, so the gateway endpoint's policy must admit a bucket the
+  customer neither owns nor names. A refusal surfaces only as "Execution environment preparation failed
+  due to an internal server error". The guide names neither the bucket nor the path. Where:
+  `runbooks/serverless-workflows.md` §O and §C, `log-stage-06i`'s 4.2a entries.
+- **Every save takes a new code snapshot, and the portal uploads the code again at every save**
+  (measured 2026-10-11, Stage 6i verification vii). A description-only edit made a new workflow version
+  and moved `CodeSnapshottedAt` with the code unchanged, and a refused save uploaded the file all the
+  same. Where: `runbooks/serverless-workflows.md` §C5.
+- **The portal's save sends a code location the editor pre-fills, and an import cannot replace a saved
+  workflow** (measured 2026-10-10/11, Stage 6i). A new workflow's *Settings → Storage* carries
+  `dev/operatorFiles/<workflow>.zip`, a processing-only workflow's included; saved with no file there,
+  the service answers `ValidationException: Code not found in specified S3 location`. An import into a
+  saved workflow's editor makes a new workflow under the bare name, whose save is refused with
+  `ConflictException`. Where: `runbooks/serverless-workflows.md` §A.
+- **A Bash task's script is rendered as a Jinja template, and its `PYTHONPATH` carries the code folder**
+  (measured 2026-10-11, Stage 6i pass 5). `bash_command: reach_pypi.sh` ran as `bash <tmp>.sh`, the
+  archive's file rendered into a temporary file; an inline command needs no archive; `PYTHONPATH` starts
+  with `/usr/local/airflow/dags`. Where: `runbooks/serverless-workflows.md` §C4.
+- **The worker's resolver reports a DNS Firewall block as errno 16** (measured 2026-10-11, Stage 6i
+  step 5.0). `pypi.org` answered `NXDOMAIN` with `firewall_rule_action` `BLOCK`, and Python read
+  `OSError(16, 'Device or resource busy')`, pip `[Errno 16]`, rather than a name error. A worker failing at
+  resolution with "Device or resource busy" is a blocked name. Where: `runbooks/serverless-workflows.md` §O.
+- **A run's state lags its task instances, and the workflow's log group exists from its first save**
+  (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while the
+  sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
+  empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
+
+### CloudTrail
+
+- **CloudTrail Lake refuses a new customer, and the network activity guide still offers it** (measured
+  2026-10-11, Stage 6i step 4.2a). `CreateEventDataStore` answered `InvalidParameterException: CloudTrail
+  Lake is no longer accepting new customers. Existing customers can continue to use their event data
+  stores.` An account that never created a store is a new customer. The guide's network activity page
+  and the 2024 announcement both offer an event data store beside a trail. Where: `log-stage-06i`'s
+  4.2a entry, `PRICING.md`.
+- **Network activity events cover an S3 gateway endpoint, under a prefix of their own** (measured
+  2026-10-11, Stage 6i step 4.2a). A trail's files arrive under `AWSLogs/<account>/CloudTrail-NetworkActivity/`,
+  beside `CloudTrail/`. A refusal by the gateway endpoint's policy reads `errorCode` `VpceAccessDenied`,
+  names the bucket for a path-style request as for a virtual-hosted one, and shows another owner's
+  account as `HIDDEN_DUE_TO_SECURITY_REASONS`. The announcement names S3 and never says "gateway".
+  Where: `log-stage-06i`'s 4.2a reading.
+
+### SageMaker processing jobs
+
+- **A processing job reads `Completed` minutes after it ends, and the operator bills the wait**
+  (measured 2026-10-11, Stage 6i step 3.8). `ProcessingEndTime` was 23:16:26Z, the outputs had landed at
+  23:16:21Z, and `describe-processing-job` still read `InProgress` at 23:18:33Z and `Completed` at
+  23:18:54Z. `SageMakerProcessingOperator` waits on that status, so its task held a worker 791 s for a
+  one-second command: about 3 minutes of provisioning before `ProcessingStartTime`, 7 of image pull, and
+  this tail. Where: `runbooks/serverless-workflows.md` §J.
+- **An extension module imports from a processing input** (measured 2026-10-11, Stage 6i verification
+  xvi). `msgspec`'s `_core.cpython-313-x86_64-linux-gnu.so` loaded from `/opt/ml/processing/code`, which
+  SageMaker had downloaded from S3 with the prefix's folder markers. No page says whether the input
+  volume admits executable mappings. Where: `runbooks/serverless-workflows.md` §J1.
 
 ### Athena
 

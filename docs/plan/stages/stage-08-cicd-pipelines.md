@@ -354,7 +354,11 @@ Python dependencies, and the two compose rather than substitute.
   names. It is the workflow's `Code` object: one `.py`, one `.sh` or a `.zip` of at most 250 MB, every
   dependency vendored at the archive root for Linux x86_64 and Python 3.12, versioned by the service
   together with the definition. The job builds it and imports every `python_callable` from it with
-  networking off, because the workers have no internet path (Stage 10 step 1.2).
+  networking off, because the workers have no internet path (Stage 10 step 1.2). A processing task's code
+  input is a different case: a `ProcessingInput` names a prefix the job reads at each run, with no version
+  to pin ([Stage 6i](stage-06i-sandbox-orchestration.md) verification xvi), so rule (d) cannot cover it.
+  Stage 10 decision 7 decides whether a promoted job takes its dependencies from its image or from an
+  immutable release prefix, and this lint gains the matching rule.
 - **5.7 — [Claude] Record what the SMUS CI/CD CLI is**: `aws-smus-cicd-cli`
   deploys **only into existing SMUS projects**, and a Workload account has none. It is therefore an
   **exporter on the Sandbox side** — `bundle` may produce the artifact this pipeline promotes — and **this

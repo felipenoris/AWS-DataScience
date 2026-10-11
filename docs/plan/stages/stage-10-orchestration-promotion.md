@@ -155,7 +155,9 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
   versions the code with the definition); `role_arn` = the execution role;
   `logging_configuration.log_group_name` = `/awsds/<env>/wf/app-etl`, an
   explicit `aws_cloudwatch_log_group`, retention 90 days (D28 item 5 — never the auto-created
-  `/aws/mwaa-serverless/<id>/` group, which nobody expires); `encryption_configuration` per decision 2.
+  `/aws/mwaa-serverless/<id>/` group, which nobody expires; [6i](stage-06i-sandbox-orchestration.md)
+  measured the portal's group existing from the workflow's first save, before any run, with no
+  retention); `encryption_configuration` per decision 2.
 - **1.2 — [Claude] Set `network_configuration`, always, on AWS's documented private-routing shape.**
   Omitting it runs tasks in the *service's* VPC, outside every endpoint policy and flow log — the
   Athena-Spark bypass again, which is why `OR-3` reads it. The private shape's constraints, none of them
@@ -227,7 +229,9 @@ design rests on it.
   only account it can point at. No task is a portal *Notebook task*: 6d decision due 14 took (b). The code a
   task runs itself uses `PythonOperator`, `BashOperator` or a SageMaker processing job in the house image,
   the three shapes [6i](stage-06i-sandbox-orchestration.md) measures first on Sandbox's private shape; this
-  step consumes its readings.
+  step consumes its readings. The portal's authoring rules (an import into an empty workflow, an import
+  that cannot replace a saved one, the pre-filled operator-files location to empty when no file is
+  uploaded) are [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §A.
 - **2.2 — [user] Graduate the definition into the repository** (D21 — the rewrite is the gate): the
   YAML lands in `app-etl/workflow/` beside a converted copy if authoring produced Python
   (`python-to-yaml-dag-converter-mwaa-serverless`, the AWS tool — AWS-provider operators only, no
@@ -251,6 +255,14 @@ design rests on it.
   builds the package and imports every `python_callable` from it with networking off, which turns a
   runtime import failure into a CI failure. **[user]** Prove it once with a deliberately portal-scoped
   definition (verification (xi)).
+
+  **A processing task's dependencies are a different artifact.** 6i ran one (its verification xvi,
+  2026-10-11): the folder `package-uv-job.py` builds, the project plus the packages its image lacks, for the
+  image's interpreter, given to the job as a code input with no network. A `ProcessingInput` names an S3
+  prefix the job reads at each run, with no version to pin, so the lint's `VersionId` rule cannot hold it,
+  and what runs is whatever the prefix holds when the job starts: decision 7. A CI runner that builds such
+  a folder needs a CPython of the image's version for the project's lock check and build, named through
+  `UV_PYTHON` where uv's downloads are off.
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: the release job copies
   `workflow/workflow.yaml` to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`**
   (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1) and
@@ -274,7 +286,9 @@ definition rather than configured beside it.
   argument), run once — the rule fires, and the failure is *diagnosable* from what the service offers:
   `list-workflow-runs`, `list-task-instances`, `get-task-instance` (the `LogStream` field), the log group
   and the console page. **Record the diagnosis session**: with no environment to log into, what those APIs
-  report is the whole operational surface.
+  report is the whole operational surface. A run's `RunState` lags its task instances (6i step 3.8: `QUEUED`
+  after the first task had finished), so the diagnosis reads the task instances and the alert reads 3.1's
+  rule, never a poll of the run's state.
 
 - **3.3 — [Claude] Does the orchestrator emit lineage, and if not, what does?** Handed over from
   [6f](stage-06f-data-governance.md) step 6.2 (2026-09-18) rather than left in that stage's log
@@ -429,6 +443,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
 | The workflow at rest | **0** — no environment fee, no standing resource that meters | `[E]` |
 | Managed task-hours | 0.088/task-h, 1-min minimum (~4.40/month for the §1.5 nightly); Python and Bash tasks bill the same (vendor page, 2026-10-10) | per run |
 | Task compute | Glue 0.44/DPU-h; Fargate ARM ~0.036/vCPU-h + memory; SageMaker training/transform per instance-h (§8) | per run |
+| A processing task | holds its worker for the whole job, provisioning and teardown included: about 13 task-minutes per run in [6i](stage-06i-sandbox-orchestration.md) for a one-second command, about 0.029 with `ml.t3.medium`, 7 of those minutes the 6.97 GB image pull | per run |
 | The worker endpoint set while runs execute | 0.010/h **per endpoint per AZ** — and 1.2's two-AZ requirement **doubles it for this VPC**, which is the D9 exception's price | `[E]` |
 | Provisioned MWAA | **not a line** — 0.29/h, removed from the ladder and denied by SCP (4.3); kept in `PRICING.md` as the record of why | — |
 | Log storage, 2 EventBridge rules, SNS | cents; free tier at this volume | `[P]`/`[E]` |
@@ -472,6 +487,17 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    alternative, a copy in Staging itself, removes the crossing but needs a home Staging does not have:
    its only content bucket, `awsds-staging-data`, holds the sampled data. `OR-5` encodes today's text
    (every definition under `awsds-prod-outputs/workflows/`) and changes with this decision.
+7. **Where a promoted processing job's dependencies come from** (2.3). [6i](stage-06i-sandbox-orchestration.md)
+   ran the Sandbox path: the folder `package-uv-job.py` builds, as the job's code input (its verification
+   xvi). The processing API pins no version on an input, so in Staging and Production that folder would run
+   whatever its prefix holds when the job starts, past the lint's `VersionId` rule. Recommended: **the job's
+   own image**: the project and its dependencies built into the application image by Stage 8 and named by
+   digest, D28's class (1), the one pin the processing API honours; the lint's container rule, written as
+   "ECR URI and tag" in 2.3, then admits a digest. The alternative is the folder under the
+   release's prefix (`workflows/<app>/<tag>/code/`), written once by the release job, kept from overwrite
+   and delete by a bucket-policy statement on that prefix, and checked against the release's manifest: a
+   new artifact class and a new lint rule. Either way the image pull is the cost to watch: about 7 of the
+   processing task's 13 minutes in 6i (step 3.8).
 
 ## Verifications to answer while executing
 
@@ -493,7 +519,7 @@ Record every answer, including the ones that come out fine.
 | x | Does the model chain hold end to end — registration only under `awsds-deploy-prod`, training `OutputDataConfig` carrying the CMK, the approved version served in **Staging before Production**? | 5.1-5.4 |
 | xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition, and a code package whose `python_callable` does not import offline (deliberate bad artifacts)? | 2.3 |
 | xii | After the stage's redeploys, how many workflow versions exist against the 50-version quota — and is the run-history disposition written before the first `make down` (Lesson 4)? | 1.6, 6.3 |
-| xv | Moved to [6i](stage-06i-sandbox-orchestration.md) (its verifications viii-x): Sandbox's workers sit on a private shape with no internet path, so the vendored package, the reach for PyPI and the task's identity are measured there and consumed here | 2.1, 2.3 |
+| xv | Moved to [6i](stage-06i-sandbox-orchestration.md) (its verifications viii-x): Sandbox's workers sit on a private shape with no internet path, so the vendored package, the reach for PyPI and the task's identity are measured there and consumed here. A processing job's vendored folder is its verification xvi, answered 2026-10-11 | 2.1, 2.3 |
 
 ## Risks
 
