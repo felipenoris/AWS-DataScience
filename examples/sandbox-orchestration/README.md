@@ -4,6 +4,9 @@ The files [Stage 6i](../../docs/plan/stages/stage-06i-sandbox-orchestration.md) 
 the operator files of its worker variants, the processing job's configuration, and a sample. The stage
 file is the procedure and carries the reasoning; this file says what each piece is and where it goes.
 
+The procedure for a reader who is not running the stage is
+[`runbooks/serverless-workflows.md`](../../docs/plan/runbooks/serverless-workflows.md).
+
 The code is written here and copied into the project, from a clone of this repository inside a space. The workflow definitions go the other way: the
 portal generates and versions them, and after each pass the definition the portal holds is committed
 under `definitions/` as the record of what ran (Stage 6i decision 1).

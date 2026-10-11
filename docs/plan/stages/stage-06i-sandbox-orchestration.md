@@ -457,6 +457,8 @@ identity a worker task's calls carry.
   image pulled by a job rather than a space.
 - **Stage 10's (xv)** (4.3, 5.3): a vendored dependency, a reach for PyPI, the identity on the worker.
 - **What a run costs** (3.3, 3.4), read from the durations rather than predicted.
+- **The runbook** [`serverless-workflows.md`](../runbooks/serverless-workflows.md), written 2026-10-11 at the
+  user's request: the editor and its import, the grant, the processing task, the code archive, the readings.
 
 ## Validation
 
