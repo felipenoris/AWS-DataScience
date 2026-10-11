@@ -121,6 +121,14 @@ minimum.
 |---|---|---|---|
 | Managed task (USD per task-hour) | 0.104 | 0.088 | 1.18 |
 
+**Runs measured in Sandbox** (Stage 6i, 2026-10-11, `us-west-2`). A processing workflow (a sensor, a
+`SageMakerProcessingOperator` job on `ml.t3.medium`, a delete) costs about **0.029 per run**: about 15
+task-minutes (0.022), because the processing task holds its worker for the whole job, and 450-485 s of
+the job (0.006-0.007). Of the processing task's 13 minutes, about 3 are the instance's provisioning, 7
+the 6.97 GB image pull and 2.5 the tail after the job ends; the command ran in one second. A workflow
+whose work runs on the worker costs 0.003-0.0044 per run (two or three tasks at the one-minute minimum),
+and a sensor that waits out its 10 minutes 0.015.
+
 D7 tries this variant first: Airflow with the cost shape of alternative B, and the one place in this file
 where the São Paulo premium nearly disappears (1.18x against 1.72x). Available in both `us-west-2` and
 `sa-east-1`. Terraform: **`awscc_mwaaserverless_workflow`** (Cloud Control, from

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run --quiet --script
+#!/usr/bin/env -S uv run --quiet --script --python >=3.11
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["packaging>=24"]
@@ -33,11 +33,18 @@ pinning every package the project shares with the image to the image's version, 
 resolves within them. --constraints prints every house version in requirements form, for
 `uv pip compile -c` or `uv add -c`. The procedure: docs/plan/runbooks/serverless-workflows.md
 section J.
+
+In a space, uv finds no CPython 3.13 of its own: the image sets UV_PYTHON_DOWNLOADS=never and puts
+the house interpreter on no search path. The uv commands this script runs therefore name it through
+UV_PYTHON when the house image's AWSDS_PYTHON_ENV is set. The shebang's --python keeps the
+repository's .python-version, the tooling's 3.14, from choosing this script's own interpreter; uv
+reads that file from the script's folder upwards, wherever the command is typed.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -48,6 +55,7 @@ from pathlib import Path
 from packaging.markers import Marker
 
 IMAGE = Path(__file__).resolve().parents[3] / "images" / "dev-env"
+HOUSE_PYTHON = Path(os.environ.get("AWSDS_PYTHON_ENV", "/nonexistent")) / "bin" / "python"
 HOUSE_ENV = IMAGE / "python"
 DEFAULT_PLATFORM = "x86_64-manylinux_2_28"
 PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;\\]+)(?:\s*;\s*([^\\]+?))?\s*\\?$")
@@ -58,7 +66,10 @@ def norm(name: str) -> str:
 
 
 def uv(*args: str, cwd: Path | None = None) -> str:
-    proc = subprocess.run(["uv", *args], cwd=cwd, capture_output=True, text=True)
+    env = dict(os.environ)
+    if HOUSE_PYTHON.is_file():
+        env.setdefault("UV_PYTHON", str(HOUSE_PYTHON))
+    proc = subprocess.run(["uv", *args], cwd=cwd, capture_output=True, text=True, env=env)
     if proc.returncode != 0:
         sys.exit(f"uv {' '.join(args[:2])} failed:\n{proc.stderr.strip()}")
     return proc.stdout

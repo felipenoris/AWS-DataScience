@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`,
+`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -444,7 +444,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i passes 0-5 done 2026-10-10/11**:
+  cannot name both accounts, so it is rendered per environment. **6i passes 0-5 and 3b done 2026-10-10/11**:
   `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
   delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
   `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
@@ -454,14 +454,22 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   events, an instrument destroyed by hand when the stage closes; CloudTrail Lake takes no new customers).
   `vpc-v0.4.0` admits the family on `sandbox/foundation` only, and `demo-python-operator` ran `SUCCESS`.
   Pass 5's probe (inline Bash, no `Code`) answered ix and x, and its exercise ran package and script from
-  the archive; every `SO-` check passes. Owed: pass 6, the close (records, decision 5, the trail's destroy).
+  the archive; every `SO-` check passes. Pass 3b ran a uv project with dependencies
+  (`demo-devenv-deps`): `package-uv-job.py`'s folder, built in a space once the script stopped taking
+  the repository's `.python-version` and named the house interpreter to uv, loaded `petl` and
+  `msgspec`'s extension module from the code input and `pyarrow` from the image (xvi). A processing
+  input is a prefix read at each run with no version to pin, so Stage 10 decision 7 (new) owns where a
+  promoted job's dependencies come from (recommended: its image). Owed: pass 6,
+  the close (records, decision 5, the trail's destroy).
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
   every cached session's token, not only the one named, so switching persona costs the other
-  identity's session; a browser sign-out invalidates none.
+  identity's session; a browser sign-out invalidates none. A CLI login answered in the browser that
+  holds a SageMaker portal session as another user ends that portal session (seen twice 2026-10-11,
+  cause inferred), so `aws/login.py` passes `--no-browser` and its URL goes to another browser.
 - **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.4.0` (`sandbox/foundation` only, 2026-10-11; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
@@ -602,6 +610,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 63. **A default is read once, when the consumer is created — the copy outlives it, and an alias
     survives a bump where an id does not.**
 64. **A comment inside a rendered template is a host replacement in waiting.**
+65. **A repository-wide pin is a claim about the machine it was written on, and every script inside it
+    carries it.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

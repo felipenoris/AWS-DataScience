@@ -18,6 +18,8 @@ under `definitions/` as the record of what ran (Stage 6i decision 1).
 | `awsds-demo-job/` | the Python project: one CSV in, one JSON summary out, standard library only. `python -m awsds_demo_job` reads and writes directories (the processing job's mode); `python -m awsds_demo_job.s3` reads and writes S3 prefixes (the worker's mode) | the whole folder, as `shared/awsds-demo-job/`: `demo-devenv-job`'s processing job reads it as its code input |
 | `devenv-job/demo-devenv-job.probe.yaml` | `demo-devenv-job`'s definition for pass 2: the three tasks, the processing task's command a one-minute probe of the container's user and mounts | rendered, then imported with *Actions → Import definition file*: the editor's processing form has no field for the boundary's settings |
 | `devenv-job/demo-devenv-job.project.yaml` | the same definition for pass 3: the project's command in the house environment's Python | imported the same way over the first |
+| `awsds-demo-deps/` | a uv project with dependencies: one CSV in, a JSON summary (byte for byte `awsds-demo-job`'s) and a Parquet table out. `petl` (pure Python) and `msgspec` (an extension module) are absent from the house environment; `pyarrow` is in it, pinned to the image's version | packaged by `operators/package-uv-job.py` into a folder of its own, copied as `shared/jobs/awsds-demo-deps-0.1.0/`: `demo-devenv-deps`'s processing job reads it as its code input |
+| `devenv-job/demo-devenv-deps.yaml` | `demo-devenv-deps`'s definition: `demo-devenv-job`'s three tasks, with that folder as the code input and `PYTHONPATH` at its root | rendered, then imported into a new, empty workflow |
 | `operators/python/` | `demo_tasks.py`, the `PythonOperator` callable, and the vendored set in `requirements.txt` | built into `python-operator.zip` |
 | `operators/python/demo-python-operator.yaml` | `demo-python-operator`'s definition: the sensor, then the `PythonOperator` task with `python_callable: demo_tasks.run` | rendered, then imported after `python-operator.zip` is uploaded in *Settings → Storage* |
 | `operators/bash/` | `reach_pypi.sh`, the PyPI negative | built into `bash-operator.zip` |
@@ -66,6 +68,14 @@ Every task carries `retries: 0`. `render.py README.md` prints these tables with 
 | `run_project` | `SageMakerProcessingOperator` | `config`: the whole job request, carried by the rendered `devenv-job/demo-devenv-job.*.yaml`; the editor's form for this operator cannot express it |
 | `remove_source` | `S3DeleteObjectsOperator` | `bucket`: `<PROJECTS_BUCKET>`; `prefix`: `<DEMO_PREFIX>/devenv/inbox/` |
 
+### `demo-devenv-deps`
+
+| Task | Operator | Fields |
+|---|---|---|
+| `wait_for_file` | `S3KeySensor` | as above, on `<DEMO_PREFIX>/devenv-deps/inbox/?*`: a folder marker `inbox/` matches `*` and would start the job with no file |
+| `run_project` | `SageMakerProcessingOperator` | `config`: `demo-devenv-job`'s, with the code input `shared/jobs/awsds-demo-deps-0.1.0/`, `PYTHONPATH` `/opt/ml/processing/code` and the command `python -m awsds_demo_deps` |
+| `remove_source` | `S3DeleteObjectsOperator` | `bucket`: `<PROJECTS_BUCKET>`; `prefix`: `<DEMO_PREFIX>/devenv-deps/inbox/` |
+
 ### `demo-python-operator`
 
 | Task | Operator | Fields |
@@ -94,4 +104,10 @@ The exercise, `operators/bash/demo-bash-operator.yaml`, which replaced the probe
 
 ```bash
 uv run python -m unittest discover -s examples/sandbox-orchestration/awsds-demo-job/tests
+```
+
+`awsds-demo-deps` runs in its own environment, CPython 3.13 with the locked dependencies:
+
+```bash
+uv run --directory examples/sandbox-orchestration/awsds-demo-deps python -m unittest discover -s tests
 ```

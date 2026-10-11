@@ -530,6 +530,31 @@ workflow a person authored in the portal on 2026-08-27.
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 
+Measured at [6i](plan/stages/stage-06i-sandbox-orchestration.md), 2026-10-10/11, on Sandbox's private
+shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-workflows.md).
+
+- **The editor is a form per task, and the import carries the whole YAML.** The processing form has no
+  field for `NetworkConfig`, either KMS key or the tags, so a processing workflow is imported (*Actions →
+  Import definition file*). The saved definition keeps every field and adds `is_paused_upon_creation:
+  false`. An import into a saved workflow's editor is refused at save with `ConflictException`.
+- **Every save sends a code location.** The editor pre-fills *Operator files zip S3 location* on a new
+  workflow, a processing-only one included; with no file there the service answers `Code not found in
+  specified S3 location`, and emptying the field saves with no `Code`.
+- **Operators run on the private shape**: `S3KeySensor`, `S3DeleteObjectsOperator`,
+  `SageMakerProcessingOperator` (a job in the house image under the D13 boundary's four settings, once
+  `sandbox/workflows/` grants the existence check and the tag), `PythonOperator` and `BashOperator`.
+- **A Python or Bash task's code is a `Code` object the service copies at every save** to
+  `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`. Each worker has
+  `airflow-serverless.amazonaws.com` fetch that copy through the VPC's S3 gateway endpoint, whose policy
+  must admit the family (`vpc-v0.4.0`, 6i decision 7).
+- **The worker** is Python 3.12.14 with boto3 1.43.1, no proxy and no internet, and a pre-installed
+  package wins over a bundled one. A processing job takes its dependencies as a folder in its code
+  input (6i verification xvi).
+- **The workflow's log group exists from its first save**, `/aws/mwaa-serverless/<domain>-<project>/<workflow>`,
+  with no retention, and outlives the workflow.
+- **A run's state lags its task instances**: `RunState` read `QUEUED` after the first task had
+  finished.
+
 ## The CI/CD tool is an exporter
 
 The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and it deploys only
