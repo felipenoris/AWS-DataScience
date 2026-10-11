@@ -301,14 +301,21 @@ it accepts `**kwargs`. A Bash task names `bash_command`; a script from the archi
 
 ### C5 — Giving the archive to the workflow
 
-The *Settings → Storage* panel takes the code two ways, and both end as the workflow's `Code`, an S3
-object the service copies at each save:
+**The code is always one S3 object, never a folder.** The API's `Code` is an `S3Location`: a bucket, a key
+and an optional version of a single `.py`, `.sh` or `.zip`. The worker extracts that one object, so a
+prefix of loose files cannot be named, and a package with dependencies travels as a `.zip`.
 
-- **Upload the `.zip`.** The portal stores it as uploaded at `dev/operatorFiles/<file>` and pins its S3
-  version (measured: the stored object's sha256 equals the built archive's).
-- **Point to an S3 path.** An object already in the project's storage, such as `shared/…/python-operator.zip`
-  copied from a space. The service reads it at save time in your session, so it must be an object the
-  project role can read. Not exercised here.
+- **In the portal**, *Settings → Storage → Python/Bash Operator Files* uploads files, and the *operator
+  files S3 location* beside it is where they are stored (`dev/operatorFiles/` by default), not a source to
+  read from. The guide: one file is stored as it is, several files are zipped into one archive, only
+  `.py`, `.sh` and `.zip` are accepted, and the archive stays under 250 MB. Measured here: one `.zip`
+  stored as uploaded, its S3 version pinned, its sha256 equal to the built archive's.
+- **Through the API** (`create-workflow --code`, or Terraform's `awscc` from 1.99.0), the object can be
+  any one the saver can read, such as an archive in the project's `shared/`. The service reads it at
+  save time in the saver's session. Not exercised here.
+
+**The portal guide's dependency recipe omits the platform flags** (`pip install --target ./package
+your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled package. Use C3 or C3a.
 
 **A new version of the code needs a new save.** The workflow runs the copy taken at its last save, so
 replacing the S3 object changes nothing until the workflow is saved or imported again.
