@@ -73,7 +73,7 @@ variable "project_roles" {
 
 # ------------------------------------------------------------------------------ the scoped set
 #
-# Stage 6e's three models, as `model id => us. inference profile id`. THIS IS ONE LIST WITH FOUR
+# Stage 6e's scoped models, as `model id => us. inference profile id`. THIS IS ONE LIST WITH FOUR
 # CONSUMERS (the stage's step 3): this map, the endpoint policy of step 4, the managed-settings
 # pins of 5.2, and the retention deny of 7.5 which must not catch any of them. They drift apart
 # the moment one is edited alone.
@@ -83,19 +83,22 @@ variable "project_roles" {
 # the foundation model is exactly what the blueprint already gives the role, and 3.1 measured that
 # it is not enough.
 variable "models" {
-  description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. All three are inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
+  description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. Every one is inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
   type        = map(string)
 
-  # THE 4.5 GENERATION, AND NOT BY PREFERENCE (2026-09-12, Stage 6e decision 14). `claude-opus-5`
-  # and `claude-sonnet-5` are refused for this account by AWS - every principal, `AdministratorAccess`
-  # included - with the agreement created, the use-case form present and every availability field
-  # green (`AWS_STATE.md` EXC-08). All three below were proven by invocation the same day, and all
-  # three route to the same us-east-1, us-east-2, us-west-2. Moving back is this map plus an image
-  # release, since the pins also live in images/dev-env/claude-code/managed-settings.json.
+  # TWO GENERATIONS WHILE THE SET MOVES FROM 4.5 TO 5.5 (Stage 6e decision 17). The image pins the
+  # 4.5 three (`default-v0.5.0`), so they stay until the release pinning 5.5 is the domain's default;
+  # removing them first would refuse every running space at the first prompt. Sonnet 4.5 is LEGACY
+  # since 2026-10-08 and reaches end of life 2027-04-08. The 5.5 three route to the same us-east-1,
+  # us-east-2, us-west-2 (read 2026-10-11) and are NOT YET PROVEN BY INVOCATION: their ids have the
+  # shape EXC-08 found refused for this account with every reading green, and only a call answers.
   default = {
     "anthropic.claude-opus-4-5-20251101-v1:0"   = "us.anthropic.claude-opus-4-5-20251101-v1:0"
     "anthropic.claude-sonnet-4-5-20250929-v1:0" = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
     "anthropic.claude-haiku-4-5-20251001-v1:0"  = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    "anthropic.claude-opus-5-5"                 = "us.anthropic.claude-opus-5-5"
+    "anthropic.claude-sonnet-5-5"               = "us.anthropic.claude-sonnet-5-5"
+    "anthropic.claude-haiku-5-5"                = "us.anthropic.claude-haiku-5-5"
   }
 
   validation {
