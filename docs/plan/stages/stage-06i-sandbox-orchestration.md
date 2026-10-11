@@ -478,7 +478,8 @@ with the recommendation stated (Lesson 16).
    project, which SMUS refuses to create untagged, stays out of reach. It keeps the operator Stage 10
    promotes, whose own execution role describes what it needs. The alternative was a `PythonOperator` that
    creates the job and a `SageMakerProcessingSensor` that waits for it: no Terraform, but a Sandbox shape
-   the promoted workflow would not share.
+   the promoted workflow would not share. **Applied 2026-10-10**: `2 added`, re-plan `No changes`
+   ([log](../../log/log-stage-06i-sandbox-orchestration.md)).
 
 ## Verifications to answer while executing
 
