@@ -4,7 +4,7 @@
 # Each dependency reaches the job a different way. petl (pure Python) and msgspec (an extension
 # module) are absent from the house environment and travel in the job's code input; pyarrow is in
 # it, so the constraint below pins it to the image's version and nothing ships it. The folder the
-# job reads is built by examples/sandbox-orchestration/operators/package-uv-job.py
+# job reads is built by `awsds-workflows package-job`
 # (docs/plan/runbooks/serverless-workflows.md section J1).
 
 [project]
@@ -14,8 +14,8 @@ description = "One CSV in, a Parquet table and a JSON summary out, with dependen
 requires-python = ">=3.13"
 dependencies = ["msgspec>=0.19", "petl>=1.7", "pyarrow>=20"]
 
-# Printed by package-uv-job.py against images/dev-env/python/uv.lock: every package the project
-# shares with the house environment, at the image's version.
+# Every package the project shares with the house environment, at the image's version: the block
+# `awsds-workflows package-job` prints against images/dev-env/python/uv.lock (section J1 step 3).
 [tool.uv]
 constraint-dependencies = [
   "pyarrow==24.0.0",

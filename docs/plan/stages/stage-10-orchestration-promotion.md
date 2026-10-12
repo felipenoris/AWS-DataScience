@@ -257,12 +257,14 @@ design rests on it.
   definition (verification (xi)).
 
   **A processing task's dependencies are a different artifact.** 6i ran one (its verification xvi,
-  2026-10-11): the folder `package-uv-job.py` builds, the project plus the packages its image lacks, for the
-  image's interpreter, given to the job as a code input with no network. A `ProcessingInput` names an S3
-  prefix the job reads at each run, with no version to pin, so the lint's `VersionId` rule cannot hold it,
-  and what runs is whatever the prefix holds when the job starts: decision 7. A CI runner that builds such
-  a folder needs a CPython of the image's version for the project's lock check and build, named through
-  `UV_PYTHON` where uv's downloads are off.
+  2026-10-11): the folder `awsds-workflows package-job` builds
+  ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1), the project plus the packages
+  its image lacks, for the image's interpreter, given to the job as a code input with no network. A
+  `ProcessingInput` names an S3 prefix the job reads at each run, with no version to pin, so the lint's
+  `VersionId` rule cannot hold it, and what runs is whatever the prefix holds when the job starts:
+  decision 7. A CI runner that builds such a folder needs the image's environment as a file, a CPython of
+  the image's version for the project's lock check and build, named through `UV_PYTHON` where uv's
+  downloads are off, and the package installed by URL at a commit, never by name.
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: the release job copies
   `workflow/workflow.yaml` to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`**
   (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1) and
@@ -488,8 +490,9 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    its only content bucket, `awsds-staging-data`, holds the sampled data. `OR-5` encodes today's text
    (every definition under `awsds-prod-outputs/workflows/`) and changes with this decision.
 7. **Where a promoted processing job's dependencies come from** (2.3). [6i](stage-06i-sandbox-orchestration.md)
-   ran the Sandbox path: the folder `package-uv-job.py` builds, as the job's code input (its verification
-   xvi). The processing API pins no version on an input, so in Staging and Production that folder would run
+   ran the Sandbox path: the folder [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1
+   builds, as the job's code input (its verification xvi). The processing API pins no version on an
+   input, so in Staging and Production that folder would run
    whatever its prefix holds when the job starts, past the lint's `VersionId` rule. Recommended: **the job's
    own image**: the project and its dependencies built into the application image by Stage 8 and named by
    digest, D28's class (1), the one pin the processing API honours; the lint's container rule, written as

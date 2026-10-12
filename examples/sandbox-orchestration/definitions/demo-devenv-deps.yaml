@@ -6,7 +6,7 @@ demo-devenv-deps:
     wait_for_file:
       operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
       bucket_key: >-
-        s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv-deps/inbox/?*
+        s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv-deps/inbox/?*
       wildcard_match: true
       poke_interval: 30
       timeout: 600
@@ -34,7 +34,7 @@ demo-devenv-deps:
           - InputName: inbox
             S3Input:
               S3Uri: >-
-                s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv-deps/inbox/
+                s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv-deps/inbox/
               LocalPath: /opt/ml/processing/inbox
               S3DataType: S3Prefix
               S3InputMode: File
@@ -44,16 +44,16 @@ demo-devenv-deps:
             - OutputName: outbox
               S3Output:
                 S3Uri: >-
-                  s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv-deps/outbox/{{
+                  s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv-deps/outbox/{{
                   macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime())
                   }}/
                 LocalPath: /opt/ml/processing/outbox
                 S3UploadMode: EndOfJob
           KmsKeyId: >-
-            arn:aws:kms:<REGION>:<SANDBOX_ACCOUNT_ID>:key/<PROJECT_KEY_ID>
+            arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>
         AppSpecification:
           ImageUri: >-
-            <REGISTRY_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/awsds-prod-ecr-dev-env@<IMAGE_DIGEST>
+            <JOB_IMAGE_URI>
           ContainerEntrypoint:
             - /bin/bash
             - "-c"
@@ -68,9 +68,9 @@ demo-devenv-deps:
             InstanceCount: 1
             VolumeSizeInGB: 10
             VolumeKmsKeyId: >-
-              arn:aws:kms:<REGION>:<SANDBOX_ACCOUNT_ID>:key/<PROJECT_KEY_ID>
+              arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>
         RoleArn: >-
-          arn:aws:iam::<SANDBOX_ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>
+          arn:aws:iam::<ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>
         StoppingCondition:
           MaxRuntimeInSeconds: 1800
         Environment:
@@ -93,5 +93,5 @@ demo-devenv-deps:
       operator: airflow.providers.amazon.aws.operators.s3.S3DeleteObjectsOperator
       bucket: <PROJECTS_BUCKET>
       prefix: >-
-        <DEMO_PREFIX>/devenv-deps/inbox/
+        <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv-deps/inbox/
       retries: 0

@@ -6,7 +6,7 @@ demo-python-operator:
     wait_for_file:
       operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
       bucket_key: >-
-        s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/python/inbox/?*
+        s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/python/inbox/?*
       wildcard_match: true
       poke_interval: 30
       timeout: 600
@@ -20,7 +20,7 @@ demo-python-operator:
       op_kwargs:
         bucket: <PROJECTS_BUCKET>
         inbox: >-
-          <DEMO_PREFIX>/python/inbox/
+          <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/python/inbox/
         outbox: >-
-          <DEMO_PREFIX>/python/outbox/
+          <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/python/outbox/
       retries: 0

@@ -7,7 +7,7 @@ demo-bash-operator:
     wait_for_file:
       operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
       bucket_key: >-
-        s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/bash/inbox/?*
+        s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/bash/inbox/?*
       wildcard_match: true
       poke_interval: 30
       timeout: 600
@@ -21,9 +21,9 @@ demo-bash-operator:
         echo "cwd $(pwd) PYTHONPATH=${PYTHONPATH:-}" && cd
         /usr/local/airflow/dags && python3 -m awsds_demo_job.s3 --bucket
         <PROJECTS_BUCKET> --inbox
-        <DEMO_PREFIX>/bash/inbox/
+        <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/bash/inbox/
         --outbox
-        <DEMO_PREFIX>/bash/outbox/
+        <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/bash/outbox/
       retries: 0
     reach_pypi:
       dependencies:
