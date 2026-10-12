@@ -428,3 +428,47 @@ Account ids are replaced by the account's name in angle brackets.*
   `CN=*.awsds-pages.internal` issued by `CN=awsds internal root CA`, `notAfter` 2027-10-22. **Step 4.2
   done: Pages answers on two of INT-19's surfaces, the laptop and the runner.** Each user who visits a
   private project's site authorizes the same application once.
+
+## 2026-10-12 — step 2.6, `default-v0.6.0` built on the runner
+
+- **[Claude] The readings before the build.** The root has been in the recipe since pass 1
+  (`images/base/ca-certificates/awsds-root.crt`, `CA_ROOTS_EXPECTED=1`). `./aws/devenv.py` could not
+  compare the baked bypass list (`DE-2` fails while `sandbox/egress` is down, which leaves no outputs); a
+  read-only plan of that slice gave `no_proxy_all_groups` 70 entries, sha256 `aafa08da98a61f5c`, equal to
+  the Dockerfile's literal (`DE-1`) and to version 5's (`DE-5`): no edit owed.
+- **[user] Items 1 to 4 of Claude's proposal taken, in chat**: the image's trust beyond the OS store, the
+  build as a pipeline of the GitLab project `awsds/dev-env`, the distribution through the pull-through
+  cache, a smoke test inside the job.
+- **[Claude] `e885dcd`**: `base` section 5 sets `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`
+  and `NODE_EXTRA_CA_CERTS` to `/etc/ssl/certs/ca-certificates.crt` and asserts the root reached that
+  bundle; `images/smoke/Dockerfile` reads `https://gitlab.awsds.internal` with curl, git and both
+  Pythons; `images/build.gitlab-ci.yml` is the pipeline (the recipe cloned at `RECIPE_SHA`, `base` with
+  `SMD_IMAGE` pointed at the cache and the digest pin kept, `dev-env` `FROM` the pushed base, the smoke
+  build discarded). Pushed to GitHub, the commit served at 200.
+- **[user] The runner linked to `awsds/dev-env`** (GitLab 19.4's label for the action is "Link", not
+  "Enable") **and the file pushed as its `.gitlab-ci.yml`** (commit `63f3fe47`); the push created no
+  pipeline, as the rules require a web trigger. **[Claude]** Read through the user's Chrome: the runner
+  is assigned to `dev-env` and reads Protected, Lock to current projects and Run untagged jobs; the
+  project lets Developers and above set pipeline variables.
+- **[Claude] Pipeline #4 started through the user's Chrome, at the user's request**, on `main` with
+  `IMAGE_TAG=default-v0.6.0` and `RECIPE_SHA=e885dcd484458a9fbffb4d7f6fd9d4f43566c194`: job 13 on the
+  runner from 19:24:12 UTC.
+- **[Claude] Job 13 succeeded in about 16 minutes**, read through the user's Chrome and from ECR. The
+  distribution came through the cache: `ecr-public/sagemaker/sagemaker-distribution` held its one image
+  at 19:27:57 UTC, pulled by the digest pin, its 2.94 GB layer arriving at about 35 MB/s through the
+  endpoint (the buildbox took about 27 minutes through the proxy for the same order of bytes, 6d).
+  **Pushed**, digests from the job's metadata and from `describe-images`:
+
+  | Image | Digest | Size (ECR) | Pushed (UTC) |
+  |---|---|---|---|
+  | `awsds-prod-ecr-base:default-v0.6.0` | `sha256:94359041f65b8bfada3ec1603937dadd49055854c034910f20d8be4a53341975` | 3,745,648,934 | 19:29:13 |
+  | `awsds-prod-ecr-dev-env:default-v0.6.0` | `sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518` | 6,675,093,373 | 19:40:24 |
+
+  They replace `default-v0.5.0`'s `sha256:c7ad2c964335…` (3,745,881,983) and `sha256:8ec04e357792…`
+  (6,969,138,672); the new `dev-env` is 294 MB smaller compressed. **The smoke test passed, 19:40:25
+  UTC**, every client reading `https://gitlab.awsds.internal` through the image's own trust:
+  `curl (/usr/bin/curl): 200 ssl_verify=0`; `git (/usr/bin/git): fatal: could not read Username ...
+  terminal prompts disabled`, the authentication wall and not a certificate; `/opt/conda/bin/python
+  urllib 200`, `requests 200`; `/opt/awsds/venv/bin/python urllib 200`, `requests 200`. The seven
+  `FATAL` matches in the log are the guards' own command text. Basic scan-on-push started on the new
+  `dev-env` (`IN_PROGRESS` at the reading).
