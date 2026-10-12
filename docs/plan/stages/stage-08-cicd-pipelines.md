@@ -112,6 +112,7 @@ compute plane's allow-list serves PyPI, Julia, crates and CRAN since 6d, and D38
 a space installs most packages in seconds; what still needs this chain is what the image itself carries — the
 conda-built R stack, the toolchains under `/opt`, the proxy literal, the assistant's pins.
 
+- **1.0 — Done 2026-10-12, at Stage 7 step 3.6**: on `awsds/dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only; read back in the project's settings (Stage 7's log).
 - **1.0 — [user] Set the repository's roles and protection** (with Stage 7 steps 3.4-3.5, restated with
   the fields named): on `dev-env/` — `data-scientists` **Developer**, `dev-env-stewards` **Maintainer**;
   the release tag pattern **protected, creation Maintainers-only** — in CE that role mapping *is*

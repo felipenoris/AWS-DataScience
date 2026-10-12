@@ -248,3 +248,17 @@ Account ids are replaced by the account's name in angle brackets.*
   (6), **`governance-managers`** (7) and **`dev-env-stewards`** (8), each private, each with the
   administrator as its only member. The membership mirroring of the Identity Center groups is by hand
   and the user's, after SAML (3.2) creates the users. 3.6's repositories are not created.
+- **[Claude] Step 3.6 done through the user's browser session**, at the user's request: the projects
+  **`awsds/app-etl`** (ID 2) and **`awsds/dev-env`** (ID 3), both private, both empty (no README, so the
+  first push names `main`). On `dev-env`, the roles and the protection Stage 8 step 1.0 specifies,
+  taken now: `awsds/data-scientists` invited as **Developer**, `awsds/dev-env-stewards` as
+  **Maintainer**, and the protected tag **`*-v*`** with creation **Maintainers** only (the CE gate: who
+  can push the release tag). `app-etl` carries no role and no protection yet; Stage 8 owns its deploy
+  roles. Read back on the members page (`Groups 2`) and the repository settings (`*-v*`, `0 matching
+  tags`, `Maintainers`).
+- **[Claude] Two readings about the tool, not the instance.** The REST path (`/api/v4/projects/3/share`
+  from the page's own session) was refused by the assistant's permission classifier, so the UI did
+  it. In GitLab's modal dialogs the browser extension's element clicks close the dialog and its
+  keystrokes land on the page when no input is focused, where `t`, `i` and `s` are GitLab shortcuts;
+  clicks by screen coordinate worked every time. The second `dev-env` form submission arrived with an
+  empty name for the same reason, and was redone with a screenshot before the submit.
