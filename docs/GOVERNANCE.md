@@ -155,8 +155,9 @@ Every data bucket encrypts SSE-KMS under the data CMK of the account it lives in
 the user, replacing the `security-zone` dimension. One alias pattern, `alias/awsds-<env>-data`: the
 lake's five buckets under `alias/awsds-data-data` in Data Governance; `alias/awsds-sandbox-data` carries
 the sandbox lake (Stage 16), and carried the derived zone until D19's 2026-08-26 revision removed it;
-`alias/awsds-dev-data` is held empty for that account's next data bucket; Production's arrives with
-Stage 9 (`alias/awsds-prod-data`, that stage's re-read). The `tfstate` keys (Stage 2), the PKI key (D36)
+`alias/awsds-dev-data` was destroyed with `development/data/` at Stage 6b step 2.4, and Stage 9 creates
+Staging's (`alias/awsds-staging-data`) and Production's (`alias/awsds-prod-data`, that stage's re-read).
+The `tfstate` keys (Stage 2), the PKI key (D36)
 and each Interactive account's project CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects
 bucket `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it since 2026-08-22;
 its key policy carries the documented SMUS statement set and is
@@ -183,10 +184,13 @@ consumer's derived zone under that key would put Production's job role over that
 `restricted` copies, with S3 as the only remaining barrier. It would also put a cross-account KMS
 dependency under a local working bucket. Per-account keys close both.
 
-D31 is what the per-account key delivers: the key policy in each consumer account says who may read the
-copies — `DataScientistAccess` today, the project execution roles from Stage 6 — and it delegates
+D31 is what the per-account key delivers: the key policy in each consumer account delegates
 administration to the account root while withholding every cryptographic action, so no IAM policy in
-the account can grant `Decrypt` behind it.
+the account can grant `Decrypt` behind it. Since `consumer-data-v0.6.0` it names no persona, and every
+use of the key is a statement the calling slice adds: in Sandbox, the sandbox lake's access role through
+S3, and any principal whose IAM allows it through Redshift Serverless, the one delegation to IAM
+(`sandbox/data/`). The copies, and the project roles that read them, moved to the project CMK with D19's
+2026-08-26 revision (§The derived zone).
 
 The rule's origin (withdrawn 2026-08-19, the user's revision): encryption entered the ontology on
 2026-08-18 as the LF-Tag `security-zone` (one value, `zn-lab`), on the premise that the tag carried the
@@ -732,8 +736,9 @@ A curated table exists before its first write. Production's write grant carries 
 `INSERT`, `DELETE` and `ALTER` and no `CREATE_TABLE` (Stage 9 2.1), so the table and its tags are
 declared in the register; a table without `classification` matches no expression and is invisible to
 every consumer (§`classification`), so the tag is part of the product's delivery. Nothing in the portal
-or the pipeline assigns one: publishing wrote nothing to Lake Formation (measured 2026-09-13), and a
-per-workflow role holds the producer grants and nothing else (D28).
+or the pipeline assigns one: publishing wrote nothing to Lake Formation (measured 2026-09-13), the
+per-workflow execution role holds no data permission (D28), and the job role holds the producer grants
+and nothing else on the catalog (Stage 9 2.3).
 
 | Moment | Act | Whose hand | Recorded in |
 |---|---|---|---|

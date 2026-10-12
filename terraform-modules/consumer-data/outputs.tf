@@ -6,7 +6,7 @@
 # state.
 
 output "data_key_arn" {
-  description = "The account's data CMK - today the sandbox lake's key in Sandbox (Stage 16); the copy in Staging stands empty under its original `awsds-dev-data` alias."
+  description = "The account's data CMK - in Sandbox, the key of the sandbox lake (Stage 16) and the warehouse namespace (Stage 5b)."
   value       = module.data_key.key_arn
 }
 

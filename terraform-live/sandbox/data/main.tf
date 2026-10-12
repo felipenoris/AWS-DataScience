@@ -64,9 +64,9 @@ module "consumer_data" {
   # DataScientistAccess, and to nobody else", and this is a third reader. It stays inside the
   # decision because the role is not a human's: it is a vending role with one bucket in its identity
   # policy, assumable only by S3 Access Grants (and, from pass 4, by named project roles), and every
-  # session it issues is scope-reduced to one grant's prefix. It is now the only cryptographic
-  # statement on the key - the persona's went with the derived zone (D19 revision) - so the vending
-  # door is the one path to anything encrypted here.
+  # session it issues is scope-reduced to one grant's prefix. It is the only statement on the key
+  # that admits a call through S3 - the persona's went with the derived zone (D19 revision) - so
+  # the vending door is the one path to an S3 object encrypted here.
   additional_data_key_policy_statements = [
     {
       Sid       = "AllowSandboxLakeAccessRoleViaS3"
