@@ -103,10 +103,10 @@ cross-account grants that are how a consumer reaches the lake at all - Sandbox a
 slices that are **one module applied twice** — `terraform-modules/consumer-data/` — so the design lives
 once and each slice says only which account. Each holds the account's own `DataLakeSettings`, its
 `alias/awsds-<env>-data` CMK (one data CMK per account, the 2026-08-19 revision that withdrew the
-`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox, and the copy in the
-account Stage 6b renamed to Staging stands empty under its original `awsds-dev-data` alias — D19 revised:
+`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox — D19 revised:
 the derived bucket and the enforced workgroup **left the module at
-`consumer-data-v0.6.0`**, the derived zone being the SMUS project path now), the two resource links to the
+`consumer-data-v0.6.0`**, the derived zone being the SMUS project path now; `awsds-dev-data` was
+destroyed with the second slice), the two resource links to the
 lake, and the local re-grants without which a held share cannot be used by anybody. All `[P]`.
 
 **Two properties of the lake slice are unlike anything else in the tree, and both are permanent:**

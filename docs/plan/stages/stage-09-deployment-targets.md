@@ -392,8 +392,7 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
     without it.
 
   **Recommended: (a)**: a condition attached to every submitter by hand will be missing from one
-  (Lesson 14). The module's comment that a single-instance job does not carry the inter-container field is
-  wrong by 6i's measurement and is corrected in the same commit.
+  (Lesson 14).
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read
