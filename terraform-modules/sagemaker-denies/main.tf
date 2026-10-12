@@ -48,7 +48,8 @@ locals {
   network_isolation_actions = local.vpc_config_actions
 
   # EnableInterContainerTrafficEncryption - distributed training/processing only. A single-
-  # instance job has no inter-container traffic and the API does not carry the field.
+  # instance job has no inter-container traffic but still sends the field as true: the deny
+  # below is BoolIfExists, so an omitted field is refused (Stage 6i).
   inter_container_actions = [
     "sagemaker:CreateTrainingJob",
     "sagemaker:CreateProcessingJob",
