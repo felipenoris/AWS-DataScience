@@ -76,7 +76,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make status
    ```
 
-Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host.
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 14 at 0.010 USD/h each, the SageMaker pair and the data-plane three included (Stage 7 decision 9): a GitLab session carries them whether or not anything in the VPC calls them.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
@@ -130,7 +130,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
    sudo awsds-gitlab-refresh
    ```
 
-6. **The instance settings**, once. **Admin area → Settings → General → New user account restrictions → Allow new user accounts** off (the home page's *"allows anyone to register"* banner is this), since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it; **Admin area → Settings → CI/CD → Auto DevOps → Default to Auto DevOps pipeline for all projects** off, or a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists. The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays.
+6. **The instance settings**, once. **Admin area → Settings → General → New user account restrictions → Allow new user accounts** off (the home page's *"allows anyone to register"* banner is this), since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3), kept on by the user through pass 1 (2026-10-12); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it; **Admin area → Settings → CI/CD → Auto DevOps → Default to Auto DevOps pipeline for all projects** off, or a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists. The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays.
 
 7. **The namespace, the groups and the repositories** (Stage 7 steps 3.4-3.6): the group `awsds/`; inside it the four persona groups `data-scientists`, `deployment-managers`, `governance-managers` and `dev-env-stewards`, whose membership mirrors the Identity Center groups by hand and whose names are deliberately bare; the repositories `awsds/app-etl` and `awsds/dev-env`, the latter writable by `data-scientists` with its release tag protected to `dev-env-stewards`.
 

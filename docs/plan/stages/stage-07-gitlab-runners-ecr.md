@@ -618,6 +618,19 @@ awkward, and it would land in `production/egress/`.
    the bootstrap fetches, with a re-fetch and `gitlab-ctl reconfigure` through an SSM session for every later
    change**, and the user data held by `ignore_changes`. The alternative, `user_data_replace_on_change`,
    makes every configuration edit a replacement of the host that holds the repositories.
+9. **The SharedServices endpoint set a GitLab session carries** (1.6). Opened 2026-10-12 by the user's reading
+   of `make gitlab-down`: `production/egress/` is one flat list, the module's core eight (`sts`, `logs`, `kms`,
+   `ecr.api`, `ecr.dkr`, `athena`, `glue`, `lakeformation`) plus the slice's six extras (`sagemaker.api`,
+   `sagemaker.runtime`, the Session Manager trio, `secretsmanager`): 14 endpoints at 0.010 USD/h each, created
+   by `gitlab-up` and destroyed by `gitlab-down` whole. Production defines no optional group, and the module's
+   closed group list names the Sandbox blueprint families. GitLab and the runner use the trio, `secretsmanager`,
+   the ECR pair and `sts`; `kms` and `logs` are the core's and unexercised by these hosts; `athena`, `glue`,
+   `lakeformation` and the SageMaker pair serve nothing in this VPC today, the pair marked vestigial in the slice
+   since 6c with the question deferred to this stage. Recommended: **drop the SageMaker pair from the extras**
+   (12 endpoints, 0.120 USD/h; `tooling/`'s bypass literal re-copied, `SC-11` the check) and leave the core
+   alone, which the module overrides never and whose `lakeformation` is load-bearing for Production's share
+   (D22). A per-session group for the data-plane three is a module change (the closed list, Lesson 33) for
+   0.030 USD/h, not worth it.
 
 ## Verifications to answer while executing
 

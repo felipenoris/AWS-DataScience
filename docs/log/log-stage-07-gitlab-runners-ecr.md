@@ -213,3 +213,14 @@ Account ids are replaced by the account's name in angle brackets.*
   the browser stopped marking `https://gitlab.awsds.internal` "Not secure" (verification x's laptop
   surface). The runbook's §C is now the client procedure, numbered, with the verification at its end,
   and the client runbook points at it.
+- **[user] Sign-up kept open**, in chat, after runbook §I step 6 recommended it off.
+- **[user] `make gitlab-down` run at the end of the first session**, with the reading that it destroys
+  every SageMaker-related endpoint in Production, and the question whether a GitLab session raises the
+  whole production egress.
+- **[Claude] It does.** `production/egress/` is one flat list - the module's core eight plus the
+  slice's six extras, 14 interface endpoints - with no optional group in Production, so `gitlab-up`
+  creates all 14 and `gitlab-down` destroys all 14 (at 15:40 UTC: `athena` deleted, ten `deleting`,
+  the hub untouched). The SageMaker pair has carried a comment since 6c calling it vestigial and
+  deferring the question to this stage; `athena`, `glue` and `lakeformation` are the module's core,
+  overridden never. Opened as **decision 9** in the stage file, recommended: drop the pair, keep the
+  core.
