@@ -5,7 +5,7 @@
 # state in the same revision.
 
 output "data_key_arn" {
-  description = "This account's data CMK - the sandbox lake's key in Sandbox (Stage 16), held empty in Development (D19 as revised 2026-08-26)."
+  description = "This account's data CMK - the key of the sandbox lake (Stage 16) and the warehouse namespace (Stage 5b)."
   value       = module.consumer_data.data_key_arn
 }
 

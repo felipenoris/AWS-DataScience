@@ -155,8 +155,9 @@ Every data bucket encrypts SSE-KMS under the data CMK of the account it lives in
 the user, replacing the `security-zone` dimension. One alias pattern, `alias/awsds-<env>-data`: the
 lake's five buckets under `alias/awsds-data-data` in Data Governance; `alias/awsds-sandbox-data` carries
 the sandbox lake (Stage 16), and carried the derived zone until D19's 2026-08-26 revision removed it;
-`alias/awsds-dev-data` is held empty for that account's next data bucket; Production's arrives with
-Stage 9 (`alias/awsds-prod-data`, that stage's re-read). The `tfstate` keys (Stage 2), the PKI key (D36)
+`alias/awsds-dev-data` was destroyed with `development/data/` at Stage 6b step 2.4, and Stage 9 creates
+Staging's (`alias/awsds-staging-data`) and Production's (`alias/awsds-prod-data`, that stage's re-read).
+The `tfstate` keys (Stage 2), the PKI key (D36)
 and each Interactive account's project CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects
 bucket `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it since 2026-08-22;
 its key policy carries the documented SMUS statement set and is

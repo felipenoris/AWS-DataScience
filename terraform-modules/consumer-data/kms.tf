@@ -5,11 +5,9 @@
 # to a CMK, and the binding is the bucket's default-encryption configuration below.
 #
 # The derived zone this key was created for is gone (D19 as revised, 2026-08-26, re-homes the
-# zone onto the SMUS project path). The key survives on a second consumer: the sandbox lake
-# (Stage 16) encrypts under it, admitted through the additional-statements input below. The other
-# copy, in the account Stage 6b renamed to Staging, stands empty under its original
-# `awsds-dev-data` alias, held for that account's next data bucket - the explicit no-consumer
-# branch verification (xx) of Stage 6 asks for.
+# zone onto the SMUS project path). The key survives on later consumers: the sandbox lake
+# (Stage 16) and the Sandbox warehouse namespace (Stage 5b) encrypt under it, each admitted
+# through the additional-statements input below.
 #
 # It is a different key from the lake's. The alternative, declined 2026-08-19, was to encrypt
 # these buckets with the lake's own key:
