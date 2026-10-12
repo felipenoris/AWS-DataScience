@@ -123,9 +123,9 @@ lake, and the local re-grants without which a held share cannot be used by anybo
   Production and Staging at Stage 9.
 
 **Checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, Stage 4's, `check-identifiers.py`
-(2026-08-17) and `check-provider-locks.py` (2026-08-21) — and there is no CI to run them in.** Until
-Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
-calling the same scripts:
+(2026-08-17) and `check-provider-locks.py` (2026-08-21).** The surfaces are `pre-commit`, the
+repository's `Makefile` and the CI, [`.github/workflows/offline-gates.yml`](../.github/workflows/offline-gates.yml)
+(Stage 8 step 6.2), which runs the other two on every pull request; all three call the same scripts:
 
 ```bash
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
@@ -214,7 +214,8 @@ export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 
 **The by-hand change procedure is [`docs/plan/runbooks/terraform-changes.md`](../docs/plan/runbooks/terraform-changes.md)** —
 the recipes, the two-commit tag order a module change requires, and the table of what to do when a hook
-blocks the commit. Until Stage 8 there is no CI: that runbook *is* the pipeline.
+blocks the commit. The CI runs the offline gates and never plans or applies, so for `plan` and `apply`
+that runbook *is* the pipeline.
 
 **[`identity/sso/`](identity/sso/README.md) is the entitlement plane**, written 2026-08-16 (Stage 2
 step 5). The **six persona permission sets**, their inline policies, and every **group→account

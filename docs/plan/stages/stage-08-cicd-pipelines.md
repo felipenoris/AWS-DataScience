@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 6 and 7 (refusal 5 is the `[D]` one, since Stage 4). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in the first scan), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
-| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.5.0`, version 5, or `default-v0.6.0` if Stage 7 step 2.6 lands first. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken and step 6.2's workflow is written, both with the environment down; nothing is applied. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 6 and 7 (refusal 5 is the `[D]` one, since Stage 4). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
+| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
 
@@ -86,6 +86,19 @@ change. The sequence to work in is **six passes**:
 | **3** | 1 | the dev-env chain, ending in the INT-18 image version and the steward's domain writes | passes 1-2 |
 | **4** | 3 | the promotion chain: tag → Staging → Production | passes 1-2 (**6b**, not a vend) |
 | **5** | 6 | the infrastructure repository's own pipeline; validation | pass 0 (7.1's answer) |
+
+**Pass 0, read 2026-10-12 with the environment down.** The edition: CE v19.4.2 shows neither protected
+environments nor deployment approvals (Stage 7 3.3, its verification iv), so both gates take the
+protected-tag shape (verification i). The registration mechanism ran end to end at Stage 7 step 2.6:
+`default-v0.6.0` became Sandbox's version 6 in `dev-env.md` §B's order, with no space stranded. The mirror:
+none standing (Stage 7 decision 4), and this repository stays on GitHub. The scans, read with
+`DescribeImageScanFindings`: `base` and `dev-env` at `default-v0.5.0` and `default-v0.6.0` all read
+**CRITICAL 0, HIGH 130, MEDIUM 88, LOW 4, UNDEFINED 45**, against CRITICAL 30, HIGH 430 and MEDIUM 514 for
+6a's `default-v0.1.0`, and each scan completed between 1 min 42 s and 7 min 22 s after its push.
+`DescribeImages` carries no scan field for any image in either repository, as its reference warns for
+AWS-native basic scanning, so a reader of that call sees images that were never scanned. The distribution's own digest has no scan: the cache repositories are
+created with scan on push off. `./aws/cicd.py` reads 0 FAILED and 9 notes, each an absence a step of this
+stage fills.
 
 **On ordering:** this stage builds the promotion *machinery* — the chain, the gates, the deploy roles. The
 Staging and Production *data platforms* are Stage 9's, so until then the chain is exercised with an
@@ -170,9 +183,10 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   residual is **accepted with a named control** — the Dev Env Steward's review of a version-pinned manifest —
   and both the acceptance and its price live in [`institutional-delta.md`](../institutional-delta.md)'s row
   *"Vulnerability scanning of what the notebook image actually contains"*. **Do not close it by enabling
-  enhanced scanning**: Inspector's ECR language list has no Julia and no R (Stage 7 decision 2). No scan of
-  `default-v0.2.0` to `v0.5.0` is recorded; pass 0 reads `default-v0.5.0`'s, which is the baseline decision
-  1 compares against.
+  enhanced scanning**: Inspector's ECR language list has no Julia and no R (Stage 7 decision 2). Pass 0 measured
+  two constraints on the gate: the `dev-env` scan of `default-v0.6.0` completed 7 min 22 s after its push,
+  past the waiter's 300 s (it exits 255 after 60 checks), so the gate polls under a bound of its own; and the
+  counts come from `DescribeImageScanFindings`, since `DescribeImages` carries no scan field here.
 - **1.5 — [user] Run the release gate**: a **blocking manual job** — `when: manual` under `rules:`, so
   `allow_failure` defaults false and the pipeline stops — with the package manifests, the scan report and
   the smoke output in its artifacts. A byte diff is not evidence here: a rebuild of an unchanged recipe moved
@@ -191,7 +205,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   `DefaultResourceSpec`, because a space keeps the version number it was created with and a bump strands it
   (`EXC-09`). `./aws/devenv.py` `DE-3` reads the recipe before, `DE-5` the registered bytes after. The writes
   repeat in **every project's domain**, since each project has its own. **The first pipeline run replaces**
-  `default-v0.5.0` (version 5), or `default-v0.6.0` if Stage 7 step 2.6 has landed. Record the changeover in
+  `default-v0.6.0` (version 6). Record the changeover in
   the log. Whether the hand half can shrink is decision 7.
 - **1.7 — [user] Measure the release loop once**: time one change the image must carry — MR → tag → chain
   → gate → version → the domain writes — and write the number into `docs/plan/architecture.md` §4.3 as the
@@ -469,6 +483,12 @@ institutional answer.
   laptop** (a second push URL on `origin` — the same manual-path shape as INT-13), refreshed in the same
   sitting as any change the pipelines consume; each deploy job **prints the mirror's commit SHA** into its
   log so a stale mirror is visible in the evidence, not discovered by drift.
+- **6.2 — Written 2026-10-12**: [`offline-gates.yml`](../../../.github/workflows/offline-gates.yml), on
+  every pull request and by hand, with the pinned tool versions, every action pinned by commit, the module
+  sources read over HTTPS, and every folder initialised one at a time before the hooks run, because the
+  plugin cache is not safe for concurrent writes; an init that rewrites a committed lock file fails the job.
+  The validate hook now runs three folders at a time: its default, one per CPU less one, failed five module
+  folders with "Failed to load plugin schemas" in each of two `--all-files` runs on the 11-core laptop.
 - **6.2 — [Claude] Write the GitHub Actions workflow**: on pull requests, `pre-commit run --all-files`
   (`fmt`, `validate -backend=false`, `tflint`, `checkov`, `ruff` and the repository's own hooks) and
   `make check` (the scripts: layers, the 9.2 wildcard check, `check-index.py`, the plan references, the
@@ -516,8 +536,7 @@ behavioural proofs are the stage's own (Lesson 20):
    event rows may change).
 2. Run `./aws/egress.py` §6 after every pipeline session — zero burn everywhere, and **no NAT gateway in
    any account**; a Staging endpoint set left up by a half-failed promotion is this stage's likeliest leak
-   (3.4's `after_script` is the control, this the instrument). Its report still prints Staging as unvended
-   ("no profile"), a line written before 6b, which this stage corrects.
+   (3.4's `after_script` is the control, this the instrument).
 3. Prove 3.8's by-hand parity once.
 4. Read every denial by its wording, never its exit code (standing rule since 1c).
 
@@ -539,21 +558,27 @@ Measured (`docs/PRICING.md`), us-west-2:
 `docs/log/log-stage-08-cicd-pipelines.md` (Lesson 16), with a recommendation stated.
 
 1. **The blocking rule for the two scanners** (1.4, 5.2, 5.5). Every image inherits the SageMaker
-   Distribution's findings (CRITICAL 30 and HIGH 430 in 6a's first scan, identical in both images), so a
-   plain "CRITICAL blocks" blocks the first run and every run after it. Recommended: **block on a CRITICAL
-   finding absent from the pinned upstream digest's own scan** (a baseline file committed beside the gate,
-   read from pass 0's scan of `default-v0.5.0`), warn on HIGH, and for `pip-audit` block on a known
-   vulnerability with a fixed version available; tightened against real findings rather than set maximally
-   strict and then overridden ad hoc.
+   Distribution's findings, identical in `base` and `dev-env`: 6a's first scan read CRITICAL 30 and HIGH
+   430, and pass 0 read `default-v0.5.0` and `default-v0.6.0` (SageMaker Distribution 4.5.2) at CRITICAL 0
+   and HIGH 130. The distribution's own digest has no scan to compare against (the cache repositories scan
+   nothing on push). Recommended: **block on a CRITICAL or HIGH finding absent from a baseline file
+   committed beside the gate**, the findings of the release the steward last approved, starting from
+   `default-v0.6.0`'s, which holds no CRITICAL, so every CRITICAL blocks until someone writes it into the
+   baseline by name; warn on the rest; for `pip-audit`, block on a known vulnerability with a fixed version
+   available. Tightened against real findings rather than set maximally strict and then overridden ad hoc.
 2. **The infrastructure-repository mirror for the deploy jobs** (6.1) — recommended: **dual-push from the
    laptop**, no standing mirror machinery; revisit only if staleness actually bites (the printed SHA is
    the instrument).
 3. **The infrastructure pipeline's credentials** (6.2) — recommended: **none** — offline gates only;
    GitHub OIDC is possible (the RCP excludes `AssumeRoleWithWebIdentity`) and declined while `plan`/`apply`
    are deliberate by-hand acts under the runbook.
-4. **Deploy runner size** (4.3) — recommended: **`t4g.small`** (0.0168/h measured) — its jobs are
-   `terraform` and tests, not image builds, which stay on the build runner; the deploy image is therefore
-   built for `arm64`, and the lint's offline import runs on the `amd64` build runner.
+4. **Deploy runner size** (4.3). Its jobs are `terraform` and tests, not image builds, which stay on
+   the build runner. A `t4g.small` (0.0168/h) needs an `arm64` deploy image, and the build runner is
+   `amd64` with rootless BuildKit and its user data registers no emulator, so a `RUN` step in an `arm64`
+   stage has nothing to execute it; an `amd64` runner takes the image the build runner already builds,
+   at `t3a.small` 0.0188/h or `t3.small` 0.0208/h (measured 2026-10-12). Recommended: **`t3a.small`**,
+   +0.0020/h over `t4g.small` while up, against an emulator on the build host or an image assembled with
+   no `RUN` in its target stage. The lint's offline import runs on the build runner either way.
 5. **The alarm target** (4.6; Stage 9 6.2 and Stage 10 3.1/5.3 consume it). The "Stage 1b SNS pattern" is
    one topic, `awsds-org-break-glass-alerts`, in the Management account, and no member account has a topic
    (`sandbox/warehouse/alarms.tf` says so and defers it to Stage 12). Recommended: **one topic per
@@ -565,7 +590,11 @@ Measured (`docs/PRICING.md`), us-west-2:
    is empty. Recommended: **the recipe moves to GitLab `awsds/dev-env`** at pass 3, with `devenv.py` reading
    a checkout of it by path: the protected tag is the steward's control only on the repository that holds
    what it builds. The alternative is this repository as the source and GitLab's `dev-env` as its mirror (6.1's
-   dual push), which keeps one home and makes a GitHub write the real authorization.
+   dual push), which keeps one home and makes a GitHub write the real authorization. Stage 7 step 2.6 ran a
+   third shape: GitLab's `awsds/dev-env` holds only `images/build.gitlab-ci.yml`, which clones this
+   repository at the commit a web trigger names (`RECIPE_SHA`), so the authorization is who can run a
+   pipeline on that project. The brief names GitLab as the source-code control
+   ([`objectives.md`](../objectives.md)), which keeps the recommendation where it was.
 7. **Whether the dev-env hand half can shrink** (1.6). `dev-env.md` records two levers, both undecided:
    omitting `ImageVersionNumber` at the attach, so the domain follows the image's newest version and an apply
    alone changes what every new space starts (the review gate goes with it); and version aliases.
@@ -581,7 +610,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? | pass 0 |
+| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); the second half is answered when 1.5 and 3.5 are written | pass 0 |
 | ii | Does a job container on the deploy runner obtain instance-profile credentials — the declarative hop-limit-2 default reaching a real launch? | 4.3 |
 | iii | Does a job on a non-protected ref fail to schedule onto the protected runner? | 4.5 |
 | iv | Does the scan gate read the push's scan (wait → findings), and is a re-scan inside 24 h refused rather than silently absorbed? | 1.4 |

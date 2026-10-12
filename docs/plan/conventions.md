@@ -578,8 +578,8 @@ blanket off in an account the module never touches.
 - **Any ARN condition uses an enumerated list, never a wildcard account.** `arn:aws:iam::*:role/x` reads
   as "any principal named `x`, in any account", so a condition written to name one role silently names a
   role that anybody able to create a role can mint. This applies to the per-function carve-outs above and
-  is checked by **`make check`** (Stage 2 step 9.2) — there is no CI before Stage 7 — moving into the
-  pipeline at Stage 8.
+  is checked by **`make check`** (Stage 2 step 9.2), which the CI runs on every pull request
+  (`.github/workflows/offline-gates.yml`, Stage 8 step 6.2).
   **The one exception, which the check knows by name** (decision 7, 2026-08-13): the `Sid` that carves
   `InfrastructureAccess` out of the organization-root deny on `s3:PutAccountPublicAccessBlock` (1c step
   7.5). It must reach accounts that **do not exist yet** — the Identity Center role ARN carries a

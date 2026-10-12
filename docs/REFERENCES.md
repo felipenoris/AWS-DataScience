@@ -209,6 +209,13 @@
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/ui_input.go>.
 
+- The provider plugin cache (read 2026-10-12, for Stage 8 step 6.2): *"The plugin cache directory is not
+  guaranteed to be concurrency safe. The provider installer's behavior in environments with multiple
+  `terraform init` calls is undefined."* By default a cached package is used only if it matches a
+  checksum in the lock file, so a module folder, which commits none, downloads its providers. The CI
+  fills the cache one folder at a time on this reading:
+  <https://developer.hashicorp.com/terraform/cli/config/config-file>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
@@ -1018,6 +1025,20 @@
   <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
 
 - Amazon ECR image scanning: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
+
+- `aws ecr describe-images` (read 2026-10-12, Stage 8 pass 0): *"The new version of Amazon ECR Basic
+  Scanning doesn't use the ImageDetail$imageScanFindingsSummary and ImageDetail$imageScanStatus
+  attributes from the API response to return scan results. Use the DescribeImageScanFindings API
+  instead."* Measured the same day, the response carried neither attribute for 14 scanned images:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/describe-images.html>. Its waiter polls every
+  5 s and exits 255 after 60 checks, shorter than the 442 s one `dev-env` scan took:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/wait/image-scan-complete.html>.
+
+- The GitHub Actions the offline gates use (Stage 8 step 6.2, read 2026-10-12: each release's date and
+  commit from the GitHub API, each `action.yml`'s inputs at that commit):
+  <https://github.com/actions/checkout> (v7.0.1), <https://github.com/actions/cache> (v6.1.0),
+  <https://github.com/astral-sh/setup-uv> (v10.2.0), <https://github.com/hashicorp/setup-terraform>
+  (v4.0.1), <https://github.com/terraform-linters/setup-tflint> (v6.3.1).
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --quiet
 # cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
-# (protected, [E]) and its narrow instance role, the four deploy roles with their permissions
+# (protected, [E]) and its narrow instance role, the three deploy roles with their permissions
 # boundaries and single-principal trust (INT-08, INT-18), the misuse-alarm rules, the
 # app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
 # side across the Interactive accounts (D17's identical-runtime claim), and the recent
@@ -17,7 +17,7 @@
 #   reads:    ec2:DescribeInstances, iam:GetRole, ListRolePolicies, GetRolePolicy,
 #             ListAttachedRolePolicies, events:ListRules, ecr:GetRepositoryPolicy,
 #             DescribeRepositories, DescribeImages, sagemaker:ListImages,
-#             ListImageVersions, cloudtrail:LookupEvents, sts:GetCallerIdentity.
+#             DescribeImageVersion, cloudtrail:LookupEvents, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything, and it never assumes a role:
 #             reading who assumed one is CloudTrail's job, and this file only looks it up.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
@@ -30,7 +30,7 @@
 # Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
-#     awsds-deploy-devenv-sandbox, awsds-deploy-devenv-dev (step 4.2, INT-18)
+#     awsds-deploy-devenv-sandbox (step 4.2, INT-18)
 #   - the misuse-alarm rules carry "deploy-misuse" in their name (step 4.6)
 #   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
@@ -201,7 +201,7 @@ def main(argv: list) -> int:
                         if s == "*" or "::*:" in s or "/awsds-deploy-" not in s:
                             runner_bad_resources.append((str(pname), s))
 
-    # ----------------------- the four deploy roles: existence, boundary, trust (per home)
+    # ---------------------- the three deploy roles: existence, boundary, trust (per home)
     role_rows: list = []  # (profile, role, state, boundary tail, trust summary)
     trust_bad: list = []  # (role, principal or action that breaks the contract)
     roles_found = 0
@@ -337,7 +337,7 @@ def main(argv: list) -> int:
             staging_read = "(call failed)"
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
-    image_rows: list = []  # (profile, image name, latest version, base image tail)
+    image_rows: list = []  # (profile, image name, latest version, container image tail)
     for p in ("awsds-infra-sandbox-1",):
         if p not in live:
             continue
@@ -361,27 +361,24 @@ def main(argv: list) -> int:
             image_rows.append((p, "(none)", "-", "-"))
             continue
         for iname in names:
+            # ListImageVersions carries no image reference at all. DescribeImageVersion with no
+            # version reads the latest, and its ContainerImage is the digest the version resolved
+            # to (BaseImage is the tag it was created from); devenv.py DE-5 reads the same field.
             r = cli.run(
                 "sagemaker",
-                "list-image-versions",
+                "describe-image-version",
                 "--image-name",
                 iname,
-                "--sort-by",
-                "CREATION_TIME",
-                "--sort-order",
-                "DESCENDING",
-                "--max-results",
-                "1",
                 "--query",
-                "ImageVersions[0].[Version,BaseImage]",
+                "[Version,ContainerImage]",
                 "--output",
                 "json",
                 log=False,
             )
             if r.ok and r.stdout:
-                version, base = json.loads(r.stdout or "[null,null]") or [None, None]
-                base_tail = str(base).rsplit("/", 1)[-1] if base else "-"
-                image_rows.append((p, iname, str(version), base_tail))
+                version, container = json.loads(r.stdout or "[null,null]") or [None, None]
+                tail = str(container).rsplit("/", 1)[-1] if container else "-"
+                image_rows.append((p, iname, str(version), tail))
             else:
                 image_rows.append((p, iname, "(read failed)", "-"))
 
@@ -512,13 +509,21 @@ def main(argv: list) -> int:
             )
         else:
             checks.note("CI-5", f"repository {APP_REPO}", "absent - Stage 7 step 5.1 creates it.")
+    # The read is refused until 3.0 writes the grant, so a refusal with no policy and nothing of
+    # Stage 8 built is the expected reading (Lesson 50); with a policy present it is a failure.
     if staging_read.startswith("ok"):
         checks.ok("CI-5", "the Staging cross-account read", staging_read)
     elif "awsds-infra-staging" in live and app_repo_exists:
-        checks.fail(
+        granted = app_policy_state.startswith("present")
+        (checks.fail if granted or built else checks.note)(
             "CI-5",
             "the Staging cross-account read",
-            f"{staging_read} - the repository exists, so the 3.0 grant is missing.",
+            f"{staging_read} - "
+            + (
+                "the policy is present, so the grant does not admit Staging."
+                if granted
+                else "no grant on the repository yet, expected before step 3.0."
+            ),
         )
 
     # CI-6: the registered dev-env versions agree across the Interactive accounts -
@@ -527,14 +532,16 @@ def main(argv: list) -> int:
     if len(real) >= 2:
         tails = {r[3] for r in real}
         if len(tails) == 1:
-            checks.ok("CI-6", "dev-env parity", f"one base image everywhere: {tails.pop()}")
+            checks.ok("CI-6", "dev-env parity", f"one container image everywhere: {tails.pop()}")
         else:
             checks.fail(
                 "CI-6",
                 "dev-env parity",
-                f"{len(tails)} different base images across the Interactive accounts - "
+                f"{len(tails)} different container images across the Interactive accounts - "
                 "D17's premise; re-run step 1.6 on the lagging account.",
             )
+    elif len(real) == 1:
+        checks.note("CI-6", "dev-env parity", f"N = 1, parity trivially true: {real[0][3]}")
     elif image_rows and built:
         checks.note(
             "CI-6",
@@ -591,7 +598,7 @@ produced  : aws/cicd.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The deploy runner and its role (Production, [E])
-  3. The four deploy roles: boundary and trust (INT-08, INT-18)
+  3. The three deploy roles: boundary and trust (INT-08, INT-18)
   4. The misuse-alarm rules (step 4.6)
   5. The application repository: the grant, and the read from Staging (INT-07)
   6. The dev-env registrations, side by side (INT-17/INT-18, D17)
@@ -651,7 +658,7 @@ never a compliant one.
                 rep.line(f"No role named {RUNNER_NAME}. Expected before step 4.3.")
 
         # ==============================================================================
-        rep.h1("3. The four deploy roles: boundary and trust (INT-08, INT-18)")
+        rep.h1("3. The three deploy roles: boundary and trust (INT-08, INT-18)")
         if role_rows:
             rep.tabulate(
                 ["PROFILE\tROLE\tSTATE\tBOUNDARY\tTRUSTED PRINCIPAL(S)"]
@@ -684,12 +691,13 @@ D35 Interactive consumer map (supplychain.py section 9 records why).""")
         rep.h1("6. The dev-env registrations, side by side (INT-17/INT-18, D17)")
         if image_rows:
             rep.tabulate(
-                ["PROFILE\tIMAGE\tLATEST VERSION\tBASE IMAGE"] + ["\t".join(r) for r in image_rows]
+                ["PROFILE\tIMAGE\tLATEST VERSION\tCONTAINER IMAGE"]
+                + ["\t".join(r) for r in image_rows]
             )
         else:
             rep.line("No Interactive account was measured.")
         rep.text("""
-D17's claim is the BASE IMAGE column agreeing across every row: the same digest
+D17's claim is the CONTAINER IMAGE column agreeing across every row: the same digest
 registered everywhere, promoted by approval rather than pushed by whoever built
 last. One row lagging after a 1.6 run is the registration failing quietly.""")
 
@@ -719,7 +727,7 @@ What the checks are, and where each comes from:
   CI-3  every trust policy: the runner's role only, sts:AssumeRole only (4.1-4.2)
   CI-4  the runner role assumes ONLY the enumerated awsds-deploy-* ARNs (4.3)
   CI-5  the app-repository grant, and the read from Staging (3.0, INT-07)
-  CI-6  the dev-env base image agrees across Interactive accounts (1.6, D17)
+  CI-6  the dev-env container image agrees across Interactive accounts (1.6, D17)
   CI-7  the *deploy-misuse* rules exist and are ENABLED (4.6)
   CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)""")
 

@@ -1,7 +1,8 @@
 # The checks (Stage 2 step 9) and the D11 lifecycle targets.
 #
-# There is no CI until Stage 7 (GitLab) and Stage 8 (.gitlab-ci.yml). `pre-commit` and `make check`
-# call the same scripts in scripts/, so the pipeline will add a caller, not a rewrite.
+# `pre-commit` and `make check` call the same scripts in scripts/, and the CI runs both on every pull
+# request (.github/workflows/offline-gates.yml, Stage 8 step 6.2), so the pipeline is a caller, not a
+# rewrite.
 #
 # Every script is Python run through uv: its shebang `#!/usr/bin/env -S uv run --quiet` resolves the
 # project in pyproject.toml and the interpreter in .python-version. uv on PATH is the one prerequisite;

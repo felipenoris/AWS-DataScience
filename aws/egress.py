@@ -47,8 +47,8 @@
 # an endpoint policy at all - what keeps check EG-1 from failing a service that cannot comply.
 #
 # What it cannot see, stated because an empty listing and a missing account look alike:
-#   - Staging is unvended and has no profile; every Sandbox beyond the first likewise
-#     (Stage 14). Absence from this report is silence, not evidence.
+#   - Every Sandbox beyond the first is unvended and has no profile (Stage 14). Absence from
+#     this report is silence, not evidence.
 #   - Whether the allow-list of 9.3 is complete is behavioural: `dnf makecache` from a probe
 #     instance with no NAT route is the honest test, and it is the stage's, not this script's.
 #     This file proves the statement is present, never that it is sufficient.
@@ -409,7 +409,7 @@ HOW TO READ THIS FILE
   - THE CHECKS PROVE PRESENCE, NOT SUFFICIENCY. EG-4 sees that the 9.3 allow-list
     EXISTS; only the stage`s no-NAT dnf probe shows it is COMPLETE. Both halves
     matter and neither substitutes (deliverables, Lesson 13).
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 9, Staging above all.
+  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 9.
 
 THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.
 Do not copy one into a tracked file.""")
@@ -627,9 +627,6 @@ What the checks are, and where each comes from:
 
         rep.text("""Read this BEFORE reading section 8 as a pass.
 
-  - `Staging` has no profile because the account is UNVENDED, held on the account
-    cap (Stage 1a). Its endpoint list (8.3: no sagemaker.studio, NO lakeformation)
-    is unmeasurable until the vend.
   - Management, Log Archive and Audit hold NO CLI profile, by design (D33/D34),
     and none of them gets an egress/ slice.
   - Every Sandbox beyond the first has no profile until Stage 14 vends it (D35).

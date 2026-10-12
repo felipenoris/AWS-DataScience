@@ -788,13 +788,15 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.large` (8 GiB) | 0.1072 | 0.0672 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
+| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0302 | 0.0188 | 1.61 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
 | EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EC2 `m8i.large` (2 vCPU, 8 GiB, x86) — measured 2026-09-11 | 0.1687 | 0.1058 | 1.59 |
-| EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the Stage 6 build host since 2026-09-11**; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
+| EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the image build host**: the buildbox from 2026-09-11, Stage 7's build runner since; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
 | EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
