@@ -172,3 +172,21 @@ Account ids are replaced by the account's name in angle brackets.*
   and `tooling/` planned `0 to add, 1 to change, 0 to destroy` - the S3 object alone, no replacement
   (verification xiii's plan half) - applied 14:22 UTC, re-plan `No changes`. The running host holds the
   previous file until the first `sudo awsds-gitlab-refresh`, in 1.8's session.
+
+## 2026-10-12 — step 1.8, the first sign-in
+
+- **[user] 1.8 done.** In the SSM session: `sudo cat /etc/gitlab/initial_root_password`, then
+  `sudo awsds-gitlab-refresh`. Signed in at `https://gitlab.awsds.internal` as `root`, changed the
+  username to `felipenoris` and set a new password. The account stays local: it is the break-glass.
+  The browser still marks the address "Not secure", `https` struck through.
+- **[Claude] The "Not secure" is the laptop, not the host.** Read through the tunnel: the host serves
+  the leaf and the root (`s:/O=AWS-DataScience/CN=gitlab.awsds.internal`, issued by `CN=awsds internal
+  root CA`), the chain verifies against the published root (`Verify return code: 0 (ok)`; `curl
+  --cacert` reads `200` on the sign-in page) and the system store refuses it (`self signed certificate
+  in certificate chain`); `security find-certificate` finds no copy of the root in the login or System
+  keychain. The leaf meets Apple's TLS requirements (SAN `gitlab.awsds.internal`, `TLS Web Server
+  Authentication`, 375 days, ECDSA P-256), so runbook §C's `add-trusted-cert` is the whole fix:
+  verification x's laptop surface, half-answered. The refresh's `gitlab Reconfigured!` was not read
+  here (verification xiii's host half).
+- **[Claude] The runbook gained §I, the initial setup of a fresh host, and §U names the up/down order
+  with the hub and the tunnel**, at the user's request.

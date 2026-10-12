@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Scope** | The GitLab host (`production/tooling/`, `[D]`), its anchors (`production/foundation/`), the internal CA that certifies it (`production/pki/`), the build runner (`production/runners/`, `[E]`) and the acts a person performs on them. Built by [Stage 7](../stages/stage-07-gitlab-runners-ecr.md); the design is in the stage file and the slices' own comments, and this file repeats none of it |
-| **Operator** | The **infrastructure user** through `awsds-infra-prod` (Production, `InfrastructureAccess`) for every AWS act; the GitLab `root` account or a SAML user for everything inside GitLab's UI |
+| **Operator** | The **infrastructure user** through `awsds-infra-prod` (Production, `InfrastructureAccess`) for every AWS act; GitLab's local administrator (`felipenoris`, §I) or a SAML user for everything inside GitLab's UI |
 | **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-12`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end |
 
 ## S. The pieces
@@ -22,25 +22,61 @@
 
 Everything reaches the internet through `proxy.awsds.internal:3128` and nothing else: there is no default route in the VPC (D38). Everything reaches AWS through the VPC's endpoints and the S3 gateway, which is what the bypass list says.
 
-## U. The session
+## U. The session: up and down
 
-The hub is somebody else's dependency, so a GitLab session leaves it alone (Stage 7 step 1.6):
+The hub is somebody else's dependency, so a GitLab session leaves it alone (Stage 7 step 1.6): `make gitlab-up` and `make gitlab-down` touch `tooling/`, `egress/` and `runners/` and nothing else, and both refuse while a hub host is stopped. `make up ENV=production` / `make down ENV=production` do the same for every Production `[E]` slice and never touch the hub pair either (refusal 6).
 
-```bash
-make hub-up
-```
+**Up**, in this order:
 
-```bash
-make gitlab-up
-```
+1. Sign in as the infrastructure user (Production, `InfrastructureAccess`; one login covers every `awsds-infra-*` profile):
 
-`gitlab-up` starts the host, applies `production/egress/` (the SSM endpoints are the only door into both hosts) and applies `production/runners/`, which registers against GitLab at boot. The reverse order ends the session, destroying the runner and the endpoints and stopping GitLab:
+   ```bash
+   ./aws/login.py
+   ```
 
-```bash
-make gitlab-down
-```
+2. The hub, unless `make status` already reads both hosts running:
 
-`make up ENV=production` and `make down ENV=production` do the same for every Production `[E]` slice and never touch the hub pair (refusal 6). `make status` prices the host while it runs; stopped, it bills its two volumes and its snapshots.
+   ```bash
+   make hub-up
+   ```
+
+3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, the runner applied and registering at boot (§K):
+
+   ```bash
+   make gitlab-up
+   ```
+
+   Until the runner's token is in its container (§K), the same without the runner, or a runner boots that cannot register and bills until `gitlab-down`:
+
+   ```bash
+   ./scripts/slices.py up --env production --only tooling,egress
+   ```
+
+4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
+
+5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears in **Admin area → CI/CD → Runners** within a minute of its own boot.
+
+**Down**, in the reverse order:
+
+1. The runner and the endpoints destroyed, then GitLab stopped:
+
+   ```bash
+   make gitlab-down
+   ```
+
+2. The tunnel down ([client runbook](client-vpn-proxy-configuration.md) §2), unless another session needs it.
+
+3. The hub, unless another session is on it; then what is left to bill:
+
+   ```bash
+   make hub-down
+   ```
+
+   ```bash
+   make status
+   ```
+
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
@@ -54,7 +90,51 @@ aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --insta
 aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
 ```
 
-**The first sign-in** (step 1.8) is the local `root` account, whose initial password the host wrote to `/etc/gitlab/initial_root_password` and deletes after 24 hours. Read it in the shell above, sign in at `https://gitlab.awsds.internal` with the tunnel up, set a new password, and keep the account: it is GitLab's own break-glass when SAML breaks.
+## I. The initial setup, on a fresh host
+
+Once per host: after the stage's first apply, and after a replacement or the restore rehearsal (§B). Done on 2026-10-12 for the host the stage built; the local administrator is **`felipenoris`** since that day, born `root` and renamed at the first sign-in, still local and still the break-glass.
+
+1. **Wait for the bootstrap**, fourteen minutes from launch (§U's first boot): `=== awsds gitlab first boot done` in the console, or in the shell:
+
+   ```bash
+   sudo cloud-init status --wait
+   ```
+
+2. **Trust the root on the laptop** (§C's first surface). Without it every browser marks `https://gitlab.awsds.internal` "Not secure", and the SAML round-trip later (§A) stops at the same wall; the chain the host serves verifies against the published root and against nothing else (`Verify return code: 0 (ok)` with the root, `self signed certificate in certificate chain` with the system store, 2026-10-12):
+
+   ```bash
+   aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
+   ```
+
+   ```bash
+   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$HOME/awsds-root.crt"
+   ```
+
+   Then restart the browser. Safari and Chrome read the keychain; Firefox reads it with `security.enterprise_roots.enabled` set to `true` in `about:config`, or takes the file under **Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import**. `git` and Python are §C's other two commands.
+
+3. **Read the initial password** in the shell; the file self-deletes 24 hours after the boot:
+
+   ```bash
+   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+   ```
+
+   ```bash
+   sudo cat /etc/gitlab/initial_root_password
+   ```
+
+4. **The first sign-in**: `https://gitlab.awsds.internal`, user `root`, that password, with the tunnel up. Set a new password (**User settings → Password**) and keep the account local: it is GitLab's own break-glass when SAML breaks (Stage 7 step 1.8), and step 3 creates no other local account. The username may change (**User settings → Account**); it did on 2026-10-12.
+
+5. **Bring the configuration current.** An apply that changed the S3 object after the boot (the first one did: `ci_catalog_bundles`) reaches the host only through the refresh, in the same shell; it ends in `gitlab Reconfigured!`, and anything else is read before going on:
+
+   ```bash
+   sudo awsds-gitlab-refresh
+   ```
+
+6. **The instance settings**, in **Admin area → Settings → General**, once: **Sign-up restrictions → Sign-up enabled** off, since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it.
+
+7. **The namespace, the groups and the repositories** (Stage 7 steps 3.4-3.6): the group `awsds/`; inside it the four persona groups `data-scientists`, `deployment-managers`, `governance-managers` and `dev-env-stewards`, whose membership mirrors the Identity Center groups by hand and whose names are deliberately bare; the repositories `awsds/app-etl` and `awsds/dev-env`, the latter writable by `data-scientists` with its release tag protected to `dev-env-stewards`.
+
+8. **Then the runner** (§K), **SAML** (§A), and **Pages**, which the first pipeline proves (Stage 7 step 4.2).
 
 ## R. A configuration change
 
@@ -86,7 +166,7 @@ The leaves live 375 days and Terraform proposes their replacement inside the las
 aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text | openssl x509 -noout -fingerprint -sha256
 ```
 
-**Trusting the root on a laptop** (step 2.5, INT-19's first surface). Each client has its own store:
+**Trusting the root on a laptop** (step 2.5, INT-19's first surface; §I step 2 is the occasion). Each client has its own store, and a browser's "Not secure" on `gitlab.awsds.internal` means the root is in none of them: `security find-certificate -c "awsds internal root CA" /Library/Keychains/System.keychain` prints nothing until the command below has run.
 
 ```bash
 aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
