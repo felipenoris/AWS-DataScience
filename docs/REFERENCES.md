@@ -722,6 +722,109 @@
   principle 2 admits nowhere in this estate, so it is refused here for the same reason
   `AWS_BEARER_TOKEN_BEDROCK` is.
 
+- **The AI/ML menu of a SageMaker Unified Studio project** (read 2026-10-12 for Stage 17): the user
+  guide's machine-learning section, one page per entry of the portal's menu — the overview
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker.html>; JumpStart's *Discover models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-discover-models.html>; *Build models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-build-models.html>; *Train models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-train-models.html>; *Register models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-register-models.xml.html>; *Deploy models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-deploy-models.html>; *Pipelines*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-pipelines.html>; *HyperPod clusters*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-hyperpods.html>; *Partner AI apps*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-partner-apps.html>; *Experiments* (MLflow)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>; the XGBoost recipe, whose dataset is a CSV fetched from
+  `raw.githubusercontent.com` (Stage 17 decision 3's choice, taken 2026-10-12) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+  the Bedrock IDE's getting-started page, where the Generative AI menu's app kinds are listed (prompt,
+  guardrail, chat agent, flow, evaluation, knowledge base, function) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/getting-started-use-amazon-bedrock-ide.html>;
+  Identity Center domains <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-identity-center-based-domains.html>; the guide's table of
+  contents <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/toc-contents.json>.
+
+- **The admin guide pages Stage 17 reads against** (read 2026-10-12): the capabilities list
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/all-capabilities.html>; the supported blueprints (`MLExperiments` an OnDemand MLflow tracking
+  server, `MLflowApp` an MLflow App) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>; project profiles
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/project-profiles.html>; the Tooling blueprint's parameters, among them `enableNetworkIsolation`,
+  documented as network isolation for training and deployed inference containers
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>; the key permissions a project's provisioned resources need, which
+  name no MLflow statement <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>; the
+  admin guide's table of contents <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/toc-contents.json>.
+
+- **SageMaker with MLflow** (read 2026-10-12): the overview, which says to prefer MLflow Apps over tracking
+  servers <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>; the app setup <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup.html>, whose *create app* and
+  *prerequisites* pages returned only their headings that day, in `.html` and `.md`, so the parameters
+  were read on the API reference <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup-create-app.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup-prerequisites.md> (the China-partition mirror of the create-app page was tried
+  for the same reason <https://docs.amazonaws.cn/en_us/sagemaker/latest/dg/mlflow-app-setup-create-app.html>);
+  the interface endpoint pages, where the tracking server's service name is
+  `aws.sagemaker.<region>.experiments`, the MLflow App's is `aws.sagemaker.<region>.mlflow`, and the
+  presigned URL travels through the SageMaker API endpoint <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-interface-endpoint.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-interface-endpoint-create.html>; `CreateMlflowApp` (`Name`, `ArtifactStoreUri`, `RoleArn`,
+  `ModelRegistrationMode`, `AccountDefaultStatus`, `DefaultDomainIdList`, `WeeklyMaintenanceWindowStart`,
+  `Tags`) <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateMlflowApp.html>; the launch
+  post of 2025-12-02, which prices the serverless MLflow at no additional cost beyond the artifact store
+  <https://aws.amazon.com/blogs/aws/accelerate-ai-development-using-amazon-sagemaker-ai-with-serverless-mlflow>.
+
+- **The project role's managed policy** `SageMakerStudioProjectRoleMachineLearningPolicy` (read
+  2026-10-12: v44, last edited 2026-09-14): `SageMakerCreatePermissions` is conditioned on the principal
+  tag `EnableSageMakerMLWorkloadsPermissions = true` and on the resource's project tag matching the
+  caller's; `SageMakerTagPermissions` lets `AddTags` write only `ProjectUserTag*`, `sagemaker*`,
+  `sm-jumpstart*` and `endpoint-has-jumpstart-model`, never `AmazonDataZone*`;
+  `SageMakerMlflowServerlessPermission` admits `CreateMlflowApp` on the project's tag; no statement names
+  `lambda:` or `bedrock:`:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+
+- **SageMaker AI pricing** (read 2026-10-12): the public page <https://aws.amazon.com/sagemaker/ai/pricing/>,
+  and the `AmazonSageMaker` offer file for `us-west-2`, published `2026-10-12T18:05:38Z`, which gave
+  `PRICING.md` §8's rows of that date — the `ml.m5.large` instance rows, the MLflow tracking-server sizes
+  and storage, the HyperPod `Cluster:` and `PartnerApp-*` SKUs, and no usage type for the MLflow App:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSageMaker/current/us-west-2/index.json>.
+- **The Bedrock IDE's knowledge base and chat agent** (read 2026-10-12 for Stage 17 pass 7): the
+  component's page, with its configuration (the embeddings model, the vector store created on the user's
+  behalf among OpenSearch Serverless, S3 Vectors and Neptune Analytics, chunking, parsing)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/creating-a-knowledge-base-component.html>;
+  its sources: local files (PDF, Markdown, text, Office, HTML and CSV at 50 MB a file and 50 files)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document.html>,
+  a web crawler of up to ten seed URLs under `robots.txt`
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document-web-crawler.html>,
+  and the project's S3 prefix, Redshift tables and Lakehouse catalog, read with the project user role
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-project.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-sources.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>;
+  the manual sync <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-sync.html>
+  and the project as the component's boundary
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-security-boundaries.html>;
+  the chat agent app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app.html>,
+  its components <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app-with-components.html>,
+  the knowledge base as its *Data*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-chat-app.html>,
+  its deploy, aliases and versions <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy.html>,
+  and its share, which deploys a snapshot, publishes the app to the catalog and cannot be withdrawn
+  without deleting the app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>;
+  the prompts page <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/explore-prompts.html>.
+
+- **Amazon Bedrock Knowledge Bases** (read 2026-10-12): the setup page
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-setup.html> and the supported
+  models and stores, the embeddings models (`amazon.titan-embed-text-v2:0` at 256, 512 or 1024
+  dimensions, `amazon.titan-embed-text-v1`, Cohere's two) and the vector stores (OpenSearch Serverless
+  and managed, S3 Vectors, Aurora, Neptune Analytics, Pinecone, Redis, MongoDB Atlas)
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>.
+
+- **Amazon S3 Vectors** (read 2026-10-12), which names Amazon Bedrock in SageMaker Unified Studio
+  knowledge bases among its uses <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html>.
+
+- **OpenSearch Serverless capacity** (read 2026-10-12): the scaling page, where a classic collection holds
+  a minimum of 1 OCU in dev/test and 2 in production and a next-generation collection scales to zero after
+  ten idle minutes <https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-scaling.html>;
+  the pricing page, which gives no Oregon figure by itself <https://aws.amazon.com/opensearch-service/pricing/>.
+
+- **The offer files behind `PRICING.md` §5's knowledge-base rows** (read 2026-10-12): `AmazonBedrock`
+  (published `2026-10-10T18:22:42Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>,
+  `AmazonES` (`2026-09-27T12:24:24Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonES/current/us-west-2/index.json> and
+  `AmazonS3` (`2026-10-12T17:53:18Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.

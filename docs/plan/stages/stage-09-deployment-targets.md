@@ -406,7 +406,10 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   nobody has asked for is cheaper to refuse than to fence. Read first whether 3.5's (a) already refuses it:
   `DenySageMakerJobsOffVpc` covers `CreateModel`, so every model in these accounts carries a `VpcConfig`,
   and a serverless endpoint over such a model may be refused by the service itself. If it is, (b) is a
-  reading rather than a second statement.
+  reading rather than a second statement. **The reading is
+  [Stage 17](stage-17-sandbox-machine-learning.md) 4.4's**: a serverless endpoint configuration over a model
+  that carries the project's `VpcConfig`, and one over a model created without it, under the Sandbox copy of
+  the same boundary; Stage 17 decision 8 records the outcome in this step and leaves the decision here.
 - **3.4 — [Claude⚡] Apply as `awsds-infra-prod`** (after 3.5-3.7, so the enforcement is in place before any
   role can submit a job), then **[user] prove the registry gate** with the reader decision 10 picked:
   `DescribeModelPackageGroup` answers while `CreateModelPackage` and `UpdateModelPackage` are denied; an
