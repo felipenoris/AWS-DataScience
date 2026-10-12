@@ -461,7 +461,9 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   be created with 6a's eleven configurations unchanged; if the portal asks for a capability, blueprint or
   connection first, record its exact name. **[Claude]** Record the answer in `docs/SMUS.md`'s roster — it
   decides whether 6a's decision 5 re-opens.
-- **4.2 — [user] Author a two-task workflow** in the Sandbox `experimentation` project.
+- **4.2 — [user] Author a two-task workflow** in the Sandbox `experimentation` project. **Run by
+  [Stage 6i](stage-06i-sandbox-orchestration.md) (2026-10-10/11)**: four workflows of two and three tasks
+  in the Sandbox project, kept at its close.
 - **4.3 — [Claude] Read the definition**: `aws mwaa-serverless list-workflows` / `get-workflow` as
   `awsds-infra-sandbox-1`; fetch `DefinitionS3Location` and run the YAML through D28's promotion lint.
 - **4.4 — [Claude] Read the run's identity** from CloudTrail: the vendor says every serverless workflow
