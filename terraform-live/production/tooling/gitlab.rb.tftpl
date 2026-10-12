@@ -56,6 +56,7 @@ gitlab_rails['object_store']['objects']['dependency_proxy']['bucket'] = '${objec
 gitlab_rails['object_store']['objects']['terraform_state']['bucket'] = '${objects_bucket}/terraform-state'
 gitlab_rails['object_store']['objects']['ci_secure_files']['bucket'] = '${objects_bucket}/ci-secure-files'
 gitlab_rails['object_store']['objects']['pages']['bucket'] = '${objects_bucket}/pages'
+gitlab_rails['object_store']['objects']['ci_catalog_bundles']['bucket'] = '${objects_bucket}/ci-catalog-bundles'
 
 gitlab_rails['backup_upload_connection'] = {
   'provider' => 'AWS',

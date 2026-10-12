@@ -1126,6 +1126,14 @@
     `package['systemd_wanted_by']` in `gitlab.rb`, then `gitlab-ctl reconfigure` and `systemctl restart
     gitlab-runsvdir`. The page gives no example values; `tooling/` uses `network-online.target`
     (Stage 7 step 1.3): <https://docs.gitlab.com/omnibus/troubleshooting/>.
+  - *GitLab health check endpoints and the monitoring IP allowlist* (read 2026-10-12, after the
+    bootstrap's readiness probe read `404` on a host that was up): *"To access monitoring resources, the
+    requesting client IP needs to be included in the allowlist"*, and *"with default allowlist settings,
+    the probes can be accessed from localhost"*; the Linux package setting is
+    `gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '192.168.0.1']`. A probe that connects by
+    name arrives from the host's VPC address, so `tooling/`'s bootstrap resolves the name to loopback
+    (Stage 7 step 1.5): <https://docs.gitlab.com/administration/monitoring/health_check/> and
+    <https://docs.gitlab.com/administration/monitoring/ip_allowlist/>.
   - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
     repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
     creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from

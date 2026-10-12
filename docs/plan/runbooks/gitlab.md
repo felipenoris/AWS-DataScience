@@ -42,7 +42,7 @@ make gitlab-down
 
 `make up ENV=production` and `make down ENV=production` do the same for every Production `[E]` slice and never touch the hub pair (refusal 6). `make status` prices the host while it runs; stopped, it bills its two volumes and its snapshots.
 
-**The first boot** of a fresh instance takes about ten minutes: the Omnibus package through the proxy, `gitlab-ctl reconfigure`, the readiness probe. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
+**The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
 ```bash
 aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)" --latest --output text

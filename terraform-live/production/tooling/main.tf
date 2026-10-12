@@ -367,6 +367,10 @@ resource "aws_instance" "gitlab" {
 
   user_data = local.user_data
 
+  # The bootstrap fetches the rendered gitlab.rb on its first boot, so the object is written
+  # before the host launches.
+  depends_on = [aws_s3_object.gitlab_rb]
+
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"

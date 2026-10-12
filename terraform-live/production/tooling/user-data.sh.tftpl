@@ -187,8 +187,11 @@ echo
 BANNER
 
 echo "--- readiness"
+# Over loopback: the default monitoring allowlist admits 127.0.0.0/8 only, and a probe that connects
+# by name arrives from the host's own VPC address and reads 404 (measured 2026-10-12). --resolve
+# keeps the name for TLS.
 for _ in $(seq 1 60); do
-  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "https://$GITLAB_HOST/-/readiness" || true)"
+  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' --resolve "$GITLAB_HOST:443:127.0.0.1" "https://$GITLAB_HOST/-/readiness" || true)"
   [ "$code" = "200" ] && break
   sleep 5
 done

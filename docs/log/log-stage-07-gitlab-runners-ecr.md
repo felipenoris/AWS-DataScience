@@ -116,3 +116,59 @@ Account ids are replaced by the account's name in angle brackets.*
   mid-run step), after which `awsds-gitlab-refresh` installs the new unit ordering, or the instance and
   its data volume are replaced (`terraform apply -replace=...`) once a session exists, and the new
   first boot carries the fix from the start. Neither has run; the host holds nothing worth keeping.
+
+## 2026-10-12 — the host replaced with the fix; `registry/` 5.b applied
+
+- **[Claude] The deadlock's end, read from the console before the replacement.** Chef gave up at
+  07:44:09 UTC: `Mixlib::ShellOut::CommandTimeout: execute[systemctl start gitlab-runsvdir]
+  (package::runit_systemd line 58) had an error: ... Command timed out after 3600s`; cloud-init
+  `finished ... Up 3895.09 seconds` with `Failed to start cloud-final`. The host had run 65 minutes
+  and configured nothing, and `awsds-prod-gitlab-secrets` still held no version.
+- **[user] SSO login as the infrastructure user**, 14:07 UTC; `awsds-infra-prod` and
+  `awsds-infra-sandbox-1` both answered `get-caller-identity`.
+- **[Claude] `production/tooling/` applied with `-replace=aws_instance.gitlab
+  -replace=aws_ebs_volume.data`**, 14:10-14:11 UTC: `3 added, 4 changed, 3 destroyed`. The attachment
+  went first (the instance stopped before the detach, 32 s), then the old instance and volume; the S3
+  object was rewritten with the two `package['systemd_*']` lines before the new volume
+  `vol-072c3d3dc9883b104` and host `i-0e661200795f0e62e` (`10.30.52.94`, the same subnet) were
+  created; both records and the alarm were repointed. `aws_instance.gitlab` now carries `depends_on =
+  [aws_s3_object.gitlab_rb]`, so a replacement launches after the object it fetches is written.
+  Re-plan `No changes` at 14:13 UTC.
+- **[Claude] `production/registry/` 5.b applied**, 14:11 UTC, from a fresh plan identical to the
+  morning's: `8 added, 6 changed, 0 destroyed` - `awsds-prod-ecr-app-etl` and its lifecycle policy,
+  the three pull-through cache rules (`ecr-public`, `k8s`, `quay`) and their creation templates, the
+  registry key's policy, the two repository policies and the three CodeArtifact policies re-written
+  without Staging's principal (decision 7). Re-plan `No changes`.
+- **[Claude] The instruments after the applies**, 14:14 UTC. `./aws/supplychain.py`: `SC-1` reads
+  the new host (`t4g.large`, running, IMDSv2 required); `SC-7` both cross-account reads from Sandbox
+  pass; `SC-8` 374 days of runway on both leaves; `SC-11` 60 entries, equal to egress's list;
+  **`SC-12` fails three times** - no repository under any cache prefix, because nothing has pulled
+  through yet. It reads red until 6.4's first pipeline pulls an image (verification vii): a dated gap,
+  not a finding (Lesson 50). `./aws/egress.py` `0 FAILED`, `EG-5` 14 interface endpoints at 0.140
+  USD/h. The persona and `ctadmin` profiles read `Token ... does not exist` in both snapshots: only
+  the `awsds` session was signed in, which the scripts list as failed calls.
+- **[Claude] The second first boot passed the point where the first one stopped.** `=== awsds gitlab
+  first boot: 2026-10-12T14:11:21+00:00`; the package installed by 14:14; at 14:15:10 UTC Chef was
+  writing nginx's configuration and at 14:16:30 running `migrate gitlab-rails database`, so
+  `systemctl start gitlab-runsvdir` returned this time. One warning so far: `Object storage for
+  ci_catalog_bundles must have a bucket specified`, a consolidated-storage object type the template
+  does not name.
+- **[Claude] The second boot's end.** `gitlab Reconfigured!` at 14:19:53 UTC (`Infra Phase complete,
+  529/1346 resources updated in 05 minutes 03 seconds`, no `letsencrypt` or ACME line anywhere in the
+  console: verification xii), the generated `gitlab-secrets.json` pushed as the container's first
+  version (`AWSCURRENT`, 14:19:59), the refresh helper and the backup timer installed, then **the
+  readiness probe read `404` on every try for five minutes**: `https://gitlab.awsds.internal/-/readiness
+  -> 404`, `=== awsds gitlab first boot done: 2026-10-12T14:25:03+00:00 ===`, cloud-init `finished ...
+  Up 829.32 seconds`. A `404` is Rails answering, not nginx's `502`, so the stack was up. GitLab's
+  health-check page says the probes are reachable from localhost under the default allowlist
+  (`docs/REFERENCES.md`); this probe connected to the host's own name, so it arrived from
+  `10.30.52.94`, a client the allowlist does not admit. The bootstrap now probes with `--resolve
+  "$GITLAB_HOST:443:127.0.0.1"`, the name kept for TLS; the user data is held, so the change rides the
+  next first boot (8.2's rehearsal is the first). Both status checks `ok`, the alarm `OK` on the new
+  id, the data volume `in-use` at `/dev/sdf`, no `available` volume and no snapshot in the account.
+  Launch to a reconfigured host 8 min 44 s, to the end of cloud-init 13 min 54 s (verification vi:
+  outside D8's 3-5 minutes).
+- **[Claude] `ci_catalog_bundles` added to the consolidated object store**, the warning's object type,
+  and `tooling/` planned `0 to add, 1 to change, 0 to destroy` - the S3 object alone, no replacement
+  (verification xiii's plan half) - applied 14:22 UTC, re-plan `No changes`. The running host holds the
+  previous file until the first `sudo awsds-gitlab-refresh`, in 1.8's session.
