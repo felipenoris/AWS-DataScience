@@ -472,3 +472,21 @@ Account ids are replaced by the account's name in angle brackets.*
   urllib 200`, `requests 200`; `/opt/awsds/venv/bin/python urllib 200`, `requests 200`. The seven
   `FATAL` matches in the log are the guards' own command text. Basic scan-on-push started on the new
   `dev-env` (`IN_PROGRESS` at the reading).
+- **[user] The registration authorized as one sequence, in chat** (runbook `dev-env.md` §B, steps 2, 3
+  and 5). **[Claude] The readings first**: one SageMaker domain, `d-p6gthxc82ckg`, with version 5
+  attached to both app types; no app running (`down-studio-apps.py sandbox --dry-run`: `no running
+  app`), so step 1 had nothing to delete; one space, `default-28f1b390-…`, on AWS's distribution by
+  alias `4.5`, so step 6 had nothing to repair. The first plan of `sandbox/dev-env/` read `1 to add, 1 to
+  change, 1 to destroy`: the change was the image role's read statement gaining
+  `awsds-prod-ecr-app-etl`, because `registry/`'s `ecr_repository_arns` output carries it since 5.b.
+  The statement now names `base` and `dev-env` by key, and the plan read `1 to add, 0 to change, 1 to
+  destroy`. The three peer sessions told before the writes.
+- **[Claude] Executed**: 19:47:50 UTC the detach (`update-domain` from the live block with both
+  `CustomImages` emptied; domain `InService`); 19:48:13 the apply of the saved plan, version 5
+  destroyed and **version 6 created** (`1 added, 0 changed, 1 destroyed`); version 6 `CREATED` with
+  `ContainerImage` `…/awsds-prod-ecr-dev-env@sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518`,
+  the pushed digest; 19:48:45 the re-attach, its block differing from the pre-detach read only in
+  `ImageVersionNumber` 5 -> 6 on both app types, and read back identical to what was sent. Re-plan `No
+  changes`. `./aws/devenv.py`: `DE-5` pass, *"version 6, sha256:43079013d424...: 70 names, sha256
+  aafa08da98a61f5c"*; `DE-2` fails because `sandbox/egress` is down, the known reading. **`default-v0.6.0`
+  is what a new space's picker offers** since 19:48:45 UTC. INT-09's clone from a notebook is owed.

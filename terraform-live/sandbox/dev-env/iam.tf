@@ -50,10 +50,12 @@ data "aws_iam_policy_document" "image_read" {
       "ecr:GetDownloadUrlForLayer",
     ]
 
-    # The four actions the repository policy admits, on the two repositories that exist. Both ARNs
-    # are read from the registry's own state: an ARN carries the account id, and the pair has to
-    # agree with the repository policy or the grant is half a grant (Lesson 28).
-    resources = values(data.terraform_remote_state.registry.outputs.ecr_repository_arns)
+    # The four actions the repository policy admits, on the two repositories whose policies admit
+    # this account. Both ARNs are read from the registry's own state: an ARN carries the account id,
+    # and the pair has to agree with the repository policy or the grant is half a grant (Lesson 28).
+    # Named by key: the output also carries awsds-prod-ecr-app-etl since Stage 7 5.b, an application
+    # repository no Sandbox principal reads (decision 7).
+    resources = [for k in ["base", "dev-env"] : data.terraform_remote_state.registry.outputs.ecr_repository_arns[k]]
   }
 
   statement {
