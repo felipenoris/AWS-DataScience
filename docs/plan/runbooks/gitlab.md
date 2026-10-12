@@ -275,18 +275,36 @@ build-image:
 
 ## A. SAML
 
-Step 3.1 creates the custom SAML 2.0 application in the Identity Center console (Identity, as the delegated administrator) and downloads its metadata. The two values GitLab needs are typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses:
+Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) stays as the break-glass. The order:
 
-```hcl
-saml_idp_sso_target_url = "https://portal.sso.us-west-2.amazonaws.com/saml/assertion/<application id>"
-saml_idp_cert_pem       = <<-PEM
-  -----BEGIN CERTIFICATE-----
-  ...
-  -----END CERTIFICATE-----
-PEM
-```
+1. **The application, in the Identity Center console** (step 3.1): the AWS access portal as the **infrastructure user**, account **Identity** (the delegated administrator of IAM Identity Center), permission set **InfrastructureAccess**, the console in `us-west-2`. **IAM Identity Center → Applications → Customer managed → Add application → I have an application I want to set up → Application type: SAML 2.0 → Next**, then every field named (Lesson 16):
+   - Display name `GitLab`.
+   - **IAM Identity Center metadata**: copy the **IAM Identity Center sign-in URL** (`https://portal.sso.us-west-2.amazonaws.com/saml/assertion/<application id>`) and **download the IAM Identity Center certificate** (PEM). These are the two values step 4 types.
+   - **Application properties**: Application start URL `https://gitlab.awsds.internal` (the portal tile), relay state empty, session duration as it comes.
+   - **Application metadata → Manually type your metadata values**: Application ACS URL `https://gitlab.awsds.internal/users/auth/saml/callback`; Application SAML audience `https://gitlab.awsds.internal`. Submit.
 
-Then §R: apply `tooling/` (the rendered `gitlab.rb` gains the `omniauth_providers` block) and refresh the host. A loop at sign-in has two suspects, an untrusted certificate and the browser's policy on a `POST` from Identity Center's public origin to a private host (Lesson 43); the fix for the first is §C, the reading for the second is the browser's own.
+2. **Attribute mappings** (the application's **Actions → Edit attribute mappings**): `Subject` → `${user:email}`, format `emailAddress`; a second row `email` → `${user:email}`, format `basic`. Save. GitLab reads the first as the NameID and the second as the `email` attribute; without the second the sign-in fails with an empty e-mail.
+
+3. **Assign users and groups**: the four persona groups among the five `sso-group-*` groups (`INV-04`), `sso-group-infrastructure` left out, since GitLab's administrator is the local account.
+
+4. **The two values**, typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses; the certificate is public, the file is the record:
+
+   ```hcl
+   saml_idp_sso_target_url = "https://portal.sso.us-west-2.amazonaws.com/saml/assertion/<application id>"
+   saml_idp_cert_pem       = <<-PEM
+     -----BEGIN CERTIFICATE-----
+     ...
+     -----END CERTIFICATE-----
+   PEM
+   ```
+
+5. **Apply and refresh** (§R): the plan on `production/tooling/` changes the S3 object alone, the rendered `gitlab.rb` gaining `omniauth_enabled`, `omniauth_allow_single_sign_on = ['saml']`, `omniauth_block_auto_created_users = false`, `omniauth_auto_link_saml_user = true` and the `saml` provider (label `AWS Identity Center`, the ACS URL, `idp_cert`, `idp_sso_target_url`, issuer `https://gitlab.awsds.internal`, NameID format `emailAddress`, `attribute_statements email`). Apply, then on the host `sudo awsds-gitlab-refresh`.
+
+6. **Prove it** (step 3.2's user half, verification iii), in a browser profile that holds no other Identity Center session (a sign-in there ends a portal session held as another user), with the tunnel up and the root trusted (§C): `https://gitlab.awsds.internal/users/sign_in` shows the **AWS Identity Center** button; sign in as a data-scientist persona user. GitLab creates the account on the first sign-in and links it by e-mail. Try the portal tile too (the IdP-initiated path). Record which NameID and attribute shape worked, and what the browser did.
+
+7. **After**: add the new users to the persona subgroups of `awsds/` by hand (§I step 7's membership mirroring); keep the local administrator.
+
+A loop at sign-in has two suspects, an untrusted certificate and the browser's policy on a `POST` from Identity Center's public origin to a private host (Lesson 43); the fix for the first is §C, the reading for the second is the browser's own. A refused assertion with the clock named is time: SAML assertions carry a validity window and the host runs `chronyd`. The Identity Center certificate expires; its date is read from the file (`openssl x509 -noout -enddate`) and a rotation re-enters step 4.
 
 ## V. The instruments
 
