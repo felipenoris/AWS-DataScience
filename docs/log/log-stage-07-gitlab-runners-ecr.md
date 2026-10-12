@@ -323,3 +323,23 @@ Account ids are replaced by the account's name in angle brackets.*
   `10.30.52.94`, 14 interface endpoints `available`, the sign-in page `200` from the laptop through the
   tunnel with the chain verified (`ssl_verify=0`); `awsds-prod-runner-token` holds no version. Decision 9
   stays open: `egress/` came up with its 14.
+- **[user] Step 6.1's GitLab half and the token**: the project runner created on `awsds/app-etl`
+  (protected, untagged jobs, `awsds-prod-runner`) and its token put into `awsds-prod-runner-token`
+  (version `AWSCURRENT` at 18:12:31 UTC). A first `put-secret-value`, at 18:04:41 UTC, ran before the
+  runner existed and wrote whatever was typed at the silent prompt; that version is `AWSPREVIOUS`.
+- **[Claude] `production/runners/` planned `6 to add, 0 to change, 0 to destroy`** (the role, its two
+  inline policies, the SSM managed policy, the profile, the instance); the rendered bootstrap read in
+  the plan: the proxy, `egress/`'s 40-entry `no_proxy`, the helper's version and digest, the registry.
+  The three peer sessions told before the write. **Applied through `make gitlab-up AUTO=1`** (the
+  user's authorization), 18:15:45 to 18:16:55 UTC: GitLab `already running`, `egress/` `No changes`,
+  `runners/` `6 added`; the instance `i-002105d808682af49` on `10.30.32.132`.
+- **[Claude] The runner's first boot, read from the serial console: 1 min 42 s, registered.** Boot start
+  18:16:49 UTC; the helper passed its digest check; GitLab's sign-in page `200` on the first try;
+  `Runner registered successfully`, `Verifying runner... is valid` as
+  `awsds-prod-runner-i-002105d808682af49`; the egress check `pypi.org` `200` through the proxy,
+  `10.31.0.1` `403`, GitLab direct `200`; `first boot done` at 18:18:31 UTC, cloud-init `Up 106.84
+  seconds`. Verification viii's registration half: yes, from the Secrets Manager token on a fresh
+  instance.
+- **[user] `make gitlab-up RUNNERS=0` asked for**, to raise GitLab without the runner. **[Claude]**
+  Added (`edbc3ad`): `RUNNERS=0` narrows `gitlab-up` to `tooling,egress`, any value but `0` or `1` is
+  refused, and `gitlab-down` destroys the runner whatever the flag says.
