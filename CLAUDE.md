@@ -278,7 +278,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
+- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c, 6i are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
   Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h step 5's negatives** (5.2, 5.2a, 5.3 from the project, 5.4 as the persona; 5.1 and 5.2b wait for a second project), 0.4's portal reading and 6.4's keep-or-drop of `lab`, each session after `make hub-up` and `make up ENV=sandbox GROUPS=redshift`.
 - **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20); 6h's passes 0-2 and 6.1-6.3 are done, its negatives are not.** Two slices:
@@ -435,7 +435,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
   changes nothing, an S3 operator task ran `SUCCESS`, and **6d decision due 14 took (b)** (user,
   2026-10-10): no portal notebook task; `PythonOperator`/`BashOperator` are explored instead, and
-  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i** is
+  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i (done 2026-10-12)** was
   the Sandbox exercise: a portal workflow whose `SageMakerProcessingOperator` runs a Python project in the
   house image under the boundary's four job settings (no network in the container, so the workflow deletes
   the source), then both worker operators; it took Stage 10's verifications (i), (xv) and 0.2's CLI half. `update-workflow` is a full replace (Lesson 60)
@@ -444,27 +444,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i passes 0-5 and 3b done 2026-10-10/11**:
-  `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
-  delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
-  `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
-  **Decision 7 taken as (a)**: a worker with a `Code` object has `airflow-serverless.amazonaws.com` fetch
-  the snapshot from `mwaa-serverless-code-files-<account>-<region>-prod` through the S3 gateway endpoint,
-  measured by `sandbox/endpoint-audit/` (rank 57, `[P]`, a trail of `VpceAccessDenied` network activity
-  events, an instrument destroyed by hand when the stage closes; CloudTrail Lake takes no new customers).
-  `vpc-v0.4.0` admits the family on `sandbox/foundation` only, and `demo-python-operator` ran `SUCCESS`.
-  Pass 5's probe (inline Bash, no `Code`) answered ix and x, and its exercise ran package and script from
-  the archive; every `SO-` check passes. Pass 3b ran a uv project with dependencies
-  (`demo-devenv-deps`): `package-uv-job.py`'s folder, built in a space once the script stopped taking
-  the repository's `.python-version` and named the house interpreter to uv, loaded `petl` and
-  `msgspec`'s extension module from the code input and `pyarrow` from the image (xvi). A processing
-  input is a prefix read at each run with no version to pin, so Stage 10 decision 7 (new) owns where a
-  promoted job's dependencies come from (recommended: its image). Owed: pass 6,
-  the close (records, decision 5, the trail's destroy). **The workflow tooling is
-  [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) since 2026-10-12**, installed by URL
-  at the commit the runbook's §T pins: `render.py`, `package-uv.sh` and `package-uv-job.py` are deleted,
-  the example YAML carry the package's placeholder names, and `operators/build.sh` stays, since its
-  archive vendors PyYAML, which `package-task` leaves out.
+  cannot name both accounts, so it is rendered per environment. **What 6i left**: four workflows in the
+  Sandbox project, kept (`demo-devenv-job`, `demo-devenv-deps`, `demo-python-operator`,
+  `demo-bash-operator`); a job's command opens with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`;
+  `sandbox/workflows/` (rank 56, `[P]`, policy v2) grants the operator's existence check and the project
+  tag on create. A worker with a `Code` object has `airflow-serverless.amazonaws.com` fetch the snapshot
+  from `mwaa-serverless-code-files-<account>-<region>-prod` through the S3 gateway endpoint, which
+  `vpc-v0.4.0` admits on `sandbox/foundation` only; the trail that named it, `sandbox/endpoint-audit/`,
+  was destroyed 2026-10-12 and is recoverable from `c0baddd` (CloudTrail Lake takes no new customers).
+  A job imports a vendored extension module from its code input (`package-uv-job.py`). 6i's log groups
+  sit under `EXC-10`. A processing input is a prefix read at each run with no version to pin, so Stage 10
+  decision 7 owns where a promoted job's dependencies come from (recommended: its image). **The workflow
+  tooling is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) since 2026-10-12**,
+  installed by URL at the commit the runbook's §T pins: `render.py`, `package-uv.sh` and
+  `package-uv-job.py` are deleted, the example YAML carry the package's placeholder names, and
+  `operators/build.sh` stays, since its archive vendors PyYAML, which `package-task` leaves out.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6

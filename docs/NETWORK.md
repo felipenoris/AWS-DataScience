@@ -256,8 +256,8 @@ bucket allow-list. One of its AWS-owned families is measured rather than documen
 `mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
 preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
 (`vpc-v0.4.0`, Sandbox only since 2026-10-11, 6i decision 7). A refusal by this policy is visible only
-as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`, which `sandbox/endpoint-audit/`'s
-trail records while it exists.
+as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`. The trail 6i built to record
+them, `sandbox/endpoint-audit/`, ran from 2026-10-11 to 2026-10-12 and is recoverable from `c0baddd`.
 
 **The endpoint ids are `[E]` and anchor nothing.** The ids a policy may name are the `[P]` **gateway**
 endpoints', and the condition a policy may carry is `aws:SourceVpc`.

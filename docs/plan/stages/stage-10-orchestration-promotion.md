@@ -177,7 +177,8 @@ LF regrant through Stage 9 2.3's local two-step only if a task ever queries gove
      endpoint, and a refusal surfaces only as "Execution environment preparation failed due to an internal
      server error" (measured by [Stage 6i](stage-06i-sandbox-orchestration.md) decision 7, 2026-10-11).
      `vpc-v0.4.0` carries the family; `staging/foundation/` and Production's three callers are still on
-     `vpc-v0.3.1` and take the bump here.
+     `vpc-v0.3.1` and take the bump here. The trail that named the bucket, 6i's `sandbox/endpoint-audit/`,
+     was destroyed on 2026-10-12 and is recoverable from `c0baddd` for the next refusal of this kind.
   4. **A security group with a self-referencing inbound rule** and an all-traffic outbound rule.
 
   **The service exposes no proxy setting**, which makes it **the first named exception to D38's single

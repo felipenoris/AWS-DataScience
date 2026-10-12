@@ -1261,3 +1261,71 @@ sagemaker-user@default:~/AWS-DataScience$ find ~/shared/jobs/awsds-demo-deps-0.1
   `definitions/demo-devenv-deps.yaml` renders back to it byte for byte.
 - **The cost:** 15.2 task-minutes (5 s and 6 s billed at the one-minute minimum, and 791 s), 0.022 USD,
   plus 450 s of `ml.t3.medium`, 0.006 USD: about 0.029 USD, pass 3's figure.
+
+## 2026-10-12 — pass 6: the close
+
+*Written by Claude in the sitting that ran it, which the user opened in chat with "Veja o que falta para
+concluir a etapa 6i". Every reading is Claude's own, from `awsds-infra-sandbox-1` (`<Sandbox Account 1>`,
+`InfrastructureAccess`), with `awsds-infra-prod` and `awsds-infra-staging` for the hub and the other
+accounts' endpoints. The session was lowered by the user. The one write by Claude, the trail's destroy,
+was authorized in chat, and the four peer sessions were told before it.*
+
+### [Claude] The validations, with the session up
+
+- **`./aws/sandbox-orchestration.py`**, 2026-10-11 23:56Z: exit 0, 30 checks `pass` and 6 `note`:
+  `SO-5` on the first probe job, whose failure answered verification ii, and `SO-6` on five groups with
+  no retention, decision 3's.
+- **`./aws/studio.py`**, 23:57Z: `US-8` `pass`, all 3 blueprint-provisioned roles bounded; `US-10` no
+  running app. It exits 1 only because seven profiles of other identities had no SSO session
+  (`awsds-ctadmin-orgfull-*`, `awsds-deploy-sandbox`, `awsds-devenv-prod`, `awsds-governance-data`,
+  `awsds-scientist-*`); every `awsds-infra-*` profile answered.
+- **`./aws/devenv.py`**, 23:57Z: every check `pass`. Its `DE-2` reads `sandbox/egress`'s outputs from
+  the state object, which an `[E]` destroy removes, so this reading needed the session up.
+- **`make check`**: `OK`.
+
+### [Claude] What was up before the close
+
+- **Sandbox:** 20 interface endpoints, `redshift-serverless` among them; the workgroup
+  `awsds-sandbox-warehouse` `AVAILABLE`; the two probe hosts; no SageMaker app `InService` or `Pending`.
+  **Production:** `awsds-prod-vpn` and `awsds-prod-proxy` `running`. Staging and Production: no interface
+  endpoint.
+- **The trail** `IsLogging` `True`, its latest delivery at 20:57:43Z. The organization trail's selectors
+  are not readable from Sandbox: `GetEventSelectors` on `aws-controltower-BaselineCloudTrail` answers
+  `TrailNotFoundException`.
+- **The workflows:** the four `READY`. `python/inbox/` and `bash/inbox/` hold their folder marker only,
+  `devenv/` and `devenv-deps/` hold no `inbox/`, and every variant's results stay under its `outbox/`.
+- **The log groups** (decision 3): `/aws/sagemaker/ProcessingJobs`, created 2026-10-11T02:58:06Z, no
+  retention and no CMK; six `/aws/mwaa-serverless/<domain>-<project>/…` groups (the four workflows,
+  `MyWorkflow-1787856980954` and `simple-s3-copy`), no retention, all under `alias/awsds-sandbox-project`.
+
+### [user] The session lowered
+
+**[user]** "o destroy está rodando. podemos prosseguir."
+
+**[Claude]** Read at 00:15Z: Sandbox holds no interface endpoint, no workgroup and no probe host;
+`awsds-prod-vpn` and `awsds-prod-proxy` `stopped`; the trail still `IsLogging` `True`.
+
+### [user] Decisions 3, 4 and 5, and the trail's destroy
+
+**[user]**, answering four questions in chat: decision 3 "Registrar sob EXC-10 (Recomendado)", decision 4
+"Prefixo, um drop por vez (Recomendado)", decision 5 "Manter tudo (Recomendado)", and the destroy of
+`sandbox/endpoint-audit/` "Autorizo (Recomendado)".
+
+### [Claude] The trail's last reading
+
+Read at 00:16Z: 7 files in `awsds-sandbox-endpoint-refusals` and 3 events, all 4.2a's, each
+`VpceAccessDenied` through `vpce-0cc3e139c1167ca83`: the control's two `ListObjects` of `sentinel-cogs`
+at 20:52:34Z, and the `GetObject` of `mwaa-serverless-code-files-<AWS-owned account>-us-west-2-prod` by
+`airflow-serverless.amazonaws.com` at 20:52:51Z. None after `vpc-v0.4.0`'s apply: pass 4's re-run,
+pass 5 and pass 3b met no S3 endpoint refusal.
+
+### [Claude⚡] The trail destroyed
+
+- **`init`** reused the state object; `state list` the seven resources and the two data sources.
+- **The plan**, to a file outside the repository: `Plan: 0 to add, 0 to change, 7 to destroy.`, the
+  bucket's `force_destroy = true`.
+- **The apply**, from the saved plan, 00:26:06Z to 00:26:19Z:
+  `Apply complete! Resources: 0 added, 0 changed, 7 destroyed.`
+- **After:** `state list` empty; `describe-trails` lists `aws-controltower-BaselineCloudTrail` alone;
+  `head-bucket` on `awsds-sandbox-endpoint-refusals` answers `404 Not Found`; the state object
+  `sandbox/endpoint-audit/terraform.tfstate` stays in `awsds-sandbox-tfstate`, 540 bytes.

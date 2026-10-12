@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 done 2026-10-10** ([log](../../log/log-stage-06i-sandbox-orchestration.md)): the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11), and decision 7 was taken the same day as (a):** a trail (`sandbox/endpoint-audit/`) recorded the refusal, a `GetObject` by `airflow-serverless.amazonaws.com` of the code snapshot in `mwaa-serverless-code-files-<account>-<region>-prod`, refused by the S3 gateway endpoint's policy; `vpc-v0.4.0` admits that family, `sandbox/foundation` applied it, and **pass 4 ran `SUCCESS`** (verifications vii's first half, viii, x and xv answered). **Pass 5's control ran the same day (5.0)**: a probe version of `demo-bash-operator`, inline Bash tasks and no `Code` object, prepared its worker for every task, so the `Code` object is decision 7's variable; verifications ix and x are answered. **Pass 5 done the same day**: the exercise version ran its package and its script from the archive (`run_command` `SUCCESS`, `reach_pypi` `FAILED` by design), every `SO-` check passes, and an edit was measured to re-snapshot the code (vii). **Pass 3b done the same day, at the user's request**: `demo-devenv-deps` ran a uv project whose dependencies the house image lacks, its folder built by `package-uv-job.py` in a space after a fix that let the script run there; `petl` and `msgspec`'s extension module loaded from the code input and `pyarrow` from the house environment (xvi). Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
+| **Status** | **Done 2026-10-12** ([log](../../log/log-stage-06i-sandbox-orchestration.md)). **Pass 6 closed it**: the validations read green with the session up, the session lowered by the user, decisions 3-5 taken as recommended (the log groups under `EXC-10`, the inbox consumed as a prefix one drop at a time, the four workflows and the demo prefixes kept), and decision 7's trail destroyed after a last reading that held only 4.2a's three events. **Pass 0 done 2026-10-10**: the CLI at 2.37.12, the instrument and the files written, and the instrument's first run is the before (no contract workflow, no job, an empty `orchestration-demo/`). **Pass 1 done the same day**: the project at `shared/awsds-demo-job/`, read back. **Pass 2 done 2026-10-11**: the boundary admits the job (v), the image comes across accounts (iv), and the container's user writes the output mount only after `sudo chown` (ii, 2.5). **Pass 3's project run done the same day**: the house Python wrote the sample's summary, byte for byte the local run's, under the project key. 3.4's empty-inbox run ended `SUCCESS` after a 611 s wait (xi). **Pass 4's first run failed in the worker's environment preparation, before any task (2026-10-11), and decision 7 was taken the same day as (a):** a trail (`sandbox/endpoint-audit/`) recorded the refusal, a `GetObject` by `airflow-serverless.amazonaws.com` of the code snapshot in `mwaa-serverless-code-files-<account>-<region>-prod`, refused by the S3 gateway endpoint's policy; `vpc-v0.4.0` admits that family, `sandbox/foundation` applied it, and **pass 4 ran `SUCCESS`** (verifications vii's first half, viii, x and xv answered). **Pass 5's control ran the same day (5.0)**: a probe version of `demo-bash-operator`, inline Bash tasks and no `Code` object, prepared its worker for every task, so the `Code` object is decision 7's variable; verifications ix and x are answered. **Pass 5 done the same day**: the exercise version ran its package and its script from the archive (`run_command` `SUCCESS`, `reach_pypi` `FAILED` by design), every `SO-` check passes, and an edit was measured to re-snapshot the code (vii). **Pass 3b done the same day, at the user's request**: `demo-devenv-deps` ran a uv project whose dependencies the house image lacks, its folder built by `package-uv-job.py` in a space after a fix that let the script run there; `petl` and `msgspec`'s extension module loaded from the code input and `pyarrow` from the house environment (xvi). Written 2026-10-10. An exercise, not a promotion path: one workflow authored and stored in the Sandbox project waits for a file in the project's `shared/` storage, runs a Python project's command in the house image as a SageMaker processing job, and removes the source once the result is in a second `shared/` folder. Two smaller workflows then run the same exercise on the MWAA worker, one with `PythonOperator` and one with `BashOperator`. One Terraform change, by decision 6: the `[P]` grant slice `sandbox/workflows/` |
 | **Prerequisites** | **[6d](stage-06d-unified-studio-remainder.md)**: step 4's workflow surface (it exists with no blueprint change, and its workers land on Sandbox's private tier) and step 2's house image, selectable and pulled cross-account by the project role, by digest (INT-01). **[6c](stage-06c-networking-hub.md)**: the private tier with no default route. **A raised session**: `make hub-up`, then `make up ENV=sandbox`, because `sagemaker.api`, `logs`, `sts`, `kms`, `ecr.api` and `ecr.dkr` are `[E]` endpoints of `sandbox/egress`; only the gateway endpoints are `[P]`. **An AWS CLI that knows the workflow's `Code` field** (step 0.2, moved here from Stage 10 0.2) |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the workflow, the job and the data are in Sandbox, and the image's cross-account pull is INT-01's, already closed). It answers [Stage 10](stage-10-orchestration-promotion.md)'s verifications (i) and (xv) and the Sandbox halves of its steps 0.2 and 0.4, all moved here (§"What this stage took from Stage 10"), and it runs the multi-task workflow [6d](stage-06d-unified-studio-remainder.md) step 4.2 still owes |
@@ -143,6 +143,7 @@ prerequisite of this exercise and stays where 6f handed it.
 | SageMaker | one processing job per run of `demo-devenv-job` | `[E]`, nothing at rest |
 | `aws/sandbox-orchestration.py` (new) | `SO-1`..`SO-8`, read-only | — |
 | `sandbox/workflows/` (new, rank 56) | one policy, `DescribeProcessingJob` on a processing job no project tag marks, and one attachment per project role (decision 6) | `[P]` |
+| `sandbox/endpoint-audit/` (rank 57) | the trail of S3 `VpceAccessDenied` network activity events and its bucket (decision 7): applied 2026-10-11, destroyed 2026-10-12 and removed from the tree, recoverable from `c0baddd` | `[P]`, an instrument |
 
 **Contracts this stage fixes:** the project's code at `shared/awsds-demo-job/`, and `awsds-demo-deps`'s
 packaged folder at `shared/jobs/awsds-demo-deps-0.1.0/`; the prefix
@@ -427,6 +428,7 @@ identity a worker task's calls carry.
   re-run:
   - **[Claude⚡]** apply `sandbox/endpoint-audit/` (`7 to add`: the trail and its bucket), the peer sessions
     told first. **Applied 2026-10-11**, re-plan `No changes`, the trail logging since 20:49:49Z;
+    destroyed 2026-10-12 (6.5);
   - **[Claude]** run `demo-bash-operator` again: its `endpoint_refusal` task lists `sentinel-cogs` from the
     worker, on the code fetch's own path, and is the positive control (5.0);
   - **[Claude]** run `demo-python-operator` again; the sample is still in `python/inbox/`;
@@ -537,8 +539,8 @@ identity a worker task's calls carry.
 
 ### 6. Close
 
-- **6.1 — [Claude] The records. Done 2026-10-11 at the user's request, except `AWS_STATE.md`, which
-  waits on decision 3**:
+- **6.1 — [Claude] The records. Done 2026-10-11 at the user's request, and `AWS_STATE.md` on 2026-10-12,
+  once decision 3 was taken**:
   - [`docs/SMUS.md`](../../SMUS.md) §"The workflow surface" gets the editor's fields, the operators measured
     and the `Code` location;
   - [`docs/AWS_STATE.md`](../../AWS_STATE.md) gets the log groups per decision 3;
@@ -548,10 +550,21 @@ identity a worker task's calls carry.
   - [`docs/plan/lessons.md`](../lessons.md) gets Lesson 65, instances of Lessons 54 and 55, and the
     platform behaviours this stage measured.
 - **6.2 — [Claude] The log**, `docs/log/log-stage-06i-sandbox-orchestration.md`: each step Claude executed,
-  in the sitting it ran.
-- **6.3 — [user] Decision 5**: keep or delete the workflows and the demo prefixes.
+  in the sitting it ran. Pass 6's entries written 2026-10-12.
+- **6.3 — [user] Decision 5**: keep or delete the workflows and the demo prefixes. **Taken 2026-10-12:
+  keep.**
 - **6.4 — [user or Claude⚡] Lower the session**: `make down ENV=sandbox`, then `make hub-down`, after telling
-  the peer sessions.
+  the peer sessions. **Done 2026-10-12 by the user.** Read at 00:15Z: no interface endpoint in Sandbox, no
+  workgroup, no probe host, and the hub's two hosts `stopped`.
+- **6.5 — [Claude⚡] Destroy decision 7's trail**, `sandbox/endpoint-audit/`, after a last reading of its
+  bucket and with the peer sessions told first, then remove the slice from the tree. **Done 2026-10-12.**
+  Read at 00:16Z, the bucket held 3 events, all 4.2a's (the control's two `ListObjects` of
+  `sentinel-cogs` and the worker's `GetObject` of the code snapshot), the latest delivery at 20:57:43Z:
+  no S3 endpoint refusal after `vpc-v0.4.0`'s apply, through pass 4's re-run, pass 5 and pass 3b. Plan
+  `0 to add, 0 to change, 7 to destroy`, apply `7 destroyed` at 00:26Z; `describe-trails` lists only the
+  Control Tower trail, the bucket answers 404, and the empty state object stays in `awsds-sandbox-tfstate`.
+  The slice left `layers.py`, `conventions.md` §6 and `terraform-live/README.md` as `sandbox/vpn/` did,
+  and its code is recoverable from `c0baddd`.
 
 ## Deliverables
 
@@ -578,6 +591,14 @@ identity a worker task's calls carry.
 3. `./aws/devenv.py`: the digest the job pulled is the registered version's.
 4. `make check` clean.
 5. Every denial read by its wording, never its exit code.
+
+**Read 2026-10-11 at 23:56Z, the session up:** 1 exits 0 with 30 checks passing and 6 notes (the first
+probe job, whose failure answered verification ii, and five groups with no retention, decision 3's);
+against the before of pass 0 (no contract workflow, no job, an empty `orchestration-demo/`) it reads four
+workflows `READY`, their runs and jobs, every `inbox/` empty, and each variant's results under its
+`outbox/`. 2 `US-8` passes, the three blueprint-provisioned roles bounded, and `US-10` reads no running
+app. 3 passes every check; its `DE-2` reads `sandbox/egress`'s outputs, which a destroy removes, so this
+is the reading to keep. 4 `OK`.
 
 ## Cost
 
@@ -621,16 +642,23 @@ with the recommendation stated (Lesson 16).
    `/aws/mwaa-serverless/<domain>-<project>/<workflow>` per workflow, all without retention. Recommended:
    **record them under `EXC-10`**, whose open decision is the same one: a group the service chooses, with no
    retention, that no slice declares. One decision for the family beats a hand write here. The alternatives are a retention set by hand (an authorized write
-   on a group no slice declares) or adoption into `sandbox/sagemaker/`.
+   on a group no slice declares) or adoption into `sandbox/sagemaker/`. **Taken 2026-10-12 (the user): under
+   `EXC-10`.** Read the same day: `ProcessingJobs` has no retention and no CMK; the six
+   `/aws/mwaa-serverless/` groups, two of them for 6d's deleted workflows, have no retention and the project
+   key.
 4. **The inbox contract** (2.2). Recommended: **any file under the variant's `inbox/`, consumed as a prefix,
    one drop at a time.** A file that lands between the job's download and `remove_source` is deleted
    unprocessed, and it is recoverable as a noncurrent version because the bucket is versioned. The
    alternatives are an exact key per drop, or a claim step that moves the files to a run's own prefix first.
    The general case, many files with unknown names, is Stage 10's, and this stage hands it the measured limit:
-   a templated list arrives as a string, because `render_template_as_native_obj` is ignored.
+   a templated list arrives as a string, because `render_template_as_native_obj` is ignored. **Taken
+   2026-10-12 (the user): the prefix, one drop at a time**, the contract every pass ran on.
 5. **Keep or delete at close** (6.3). Recommended: **keep the workflows**: they bill nothing at rest, they
    are the reference Stage 10's authoring starts from, and the quota is 100 per account. Empty the `inbox/`
-   prefixes so a later run starts from a known state.
+   prefixes so a later run starts from a known state. **Taken 2026-10-12 (the user): keep** the four
+   workflows, the code under `shared/` and the results under each `outbox/`. No `inbox/` held a file:
+   `python/` and `bash/` keep a folder marker, which their `?*` sensors do not match, and the other two
+   hold nothing, so nothing was deleted.
 6. **The operator's existence check** (2.4). `SageMakerProcessingOperator.execute()` describes the name it
    proposes before creating the job, and counts only a `ValidationException` as absent; no parameter turns
    it off (Amazon provider 9.32.0). The project role may describe only a job tagged with its project, so
@@ -670,7 +698,8 @@ with the recommendation stated (Lesson 16).
    refused with `VpceAccessDenied` by the S3 gateway endpoint. `vpc-v0.4.0` adds the family
    `mwaa-serverless-code-files-*-<region>-prod` to `default_aws_buckets`, `sandbox/foundation` applied it
    (`1 changed`, re-plan `No changes`), and the re-run ended `SUCCESS`. Staging's and Production's callers
-   stay on `vpc-v0.3.1` until Stage 10 runs a workflow with a `Code` object there.
+   stay on `vpc-v0.3.1` until Stage 10 runs a workflow with a `Code` object there. **Closed 2026-10-12**:
+   the trail recorded no refusal after the apply, and it was destroyed (6.5).
 
    Recommended: **(a)**. The list exists to name AWS-owned buckets that a service needs, and this is one.
    It was written on 2026-08-16 (Stage 3 pass 1), the day before AWS gave the two operators a `Code`
