@@ -1,5 +1,8 @@
 external_url "https://${gitlab_host}"
 
+package['systemd_after'] = 'network-online.target'
+package['systemd_wanted_by'] = 'multi-user.target'
+
 letsencrypt['enable'] = false
 nginx['ssl_certificate'] = "/etc/gitlab/ssl/${gitlab_host}.crt"
 nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${gitlab_host}.key"

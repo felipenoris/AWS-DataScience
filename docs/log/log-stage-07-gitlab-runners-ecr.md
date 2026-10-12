@@ -92,3 +92,27 @@ Account ids are replaced by the account's name in angle brackets.*
   rules and three creation templates added; the six policies losing Staging's principal) is owed. The
   `aws` CLI kept answering for `awsds-infra-prod` from its cached role credential, which is how the
   readings below were taken. The session token lived about an hour and could not be refreshed.
+
+## 2026-10-12 — the first boot deadlocked at `systemctl start gitlab-runsvdir`
+
+- **[Claude] The reading.** The serial console (`get-console-output --latest`, the 64 KB window)
+  stopped at 06:43:12 UTC on `template[/usr/lib/systemd/system/gitlab-runsvdir.service] sending run
+  action to execute[systemctl start gitlab-runsvdir] (immediate)` and did not move for twenty minutes.
+  CPU averaged 30% in the five minutes of the package install and **0.95% every five minutes after
+  06:41**; network out fell from 2.5 MB to kilobytes; both status checks `ok`; the SSM agent `Online`
+  (3.3.5226.0, through the `ssm` endpoints); the `gitlab-secrets` container still holds no version, so
+  the bootstrap never reached the step after `gitlab-ctl reconfigure`. A reconfigure that is working
+  does not sit at 1%; one that is waiting does.
+- **[Claude] The cause, from GitLab's troubleshooting page** (`docs/REFERENCES.md`): *"The GitLab
+  systemd unit file by default uses `multi-user.target` for both `After` and `WantedBy` fields"*, and
+  *"this interacts poorly with cloud-init's own unit ordering"*. The bootstrap runs inside cloud-init's
+  final stage, a dependency of `multi-user.target`; the start job for `gitlab-runsvdir` waits for that
+  target, which waits for cloud-init, which waits for the reconfigure. The page's fix is
+  `package['systemd_after']` and `package['systemd_wanted_by']` in `gitlab.rb`.
+- **[Claude] The fix, in code:** `package['systemd_after'] = 'network-online.target'` and
+  `package['systemd_wanted_by'] = 'multi-user.target'` in `gitlab.rb.tftpl`; `tooling/`'s next apply
+  changes the S3 object alone. The stuck host has fetched the old file: either a `sudo systemctl
+  restart gitlab-runsvdir` in an SSM session lets the stalled reconfigure continue (the page's own
+  mid-run step), after which `awsds-gitlab-refresh` installs the new unit ordering, or the instance and
+  its data volume are replaced (`terraform apply -replace=...`) once a session exists, and the new
+  first boot carries the fix from the start. Neither has run; the host holds nothing worth keeping.

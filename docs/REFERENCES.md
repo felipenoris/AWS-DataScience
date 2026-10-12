@@ -1119,6 +1119,13 @@
     requirement for credentialed ones, the immutability trap (an immutable tag blocks the cache
     update) and the first-pull internet-route requirement (Stage 7 step 5.2):
     <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *GitLab Linux package troubleshooting - the systemd ordering conflict with cloud-init* (read
+    2026-10-12, after the first boot deadlocked at `systemctl start gitlab-runsvdir`): *"The GitLab
+    systemd unit file by default uses `multi-user.target` for both `After` and `WantedBy` fields"*, which
+    *"interacts poorly with cloud-init's own unit ordering"*; the fix is `package['systemd_after']` and
+    `package['systemd_wanted_by']` in `gitlab.rb`, then `gitlab-ctl reconfigure` and `systemctl restart
+    gitlab-runsvdir`. The page gives no example values; `tooling/` uses `network-online.target`
+    (Stage 7 step 1.3): <https://docs.gitlab.com/omnibus/troubleshooting/>.
   - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
     repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
     creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from
