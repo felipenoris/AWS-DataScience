@@ -293,3 +293,6 @@ Account ids are replaced by the account's name in angle brackets.*
   `email` attribute in `basic` format; no loop and no browser refusal reported. **Owed**: the user into
   `awsds/data-scientists` as Developer (§I step 7's mirroring), which gives Developer on `dev-env` through
   the share; the remaining personas as they first sign in.
+- **[user] The data-scientist persona added to `awsds/data-scientists` as Developer**, in the UI, as the
+  administrator. The session ends here; the next one starts at the remaining personas' memberships,
+  Pages (4.2) and pass 3 (runbook §K).
