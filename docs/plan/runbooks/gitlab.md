@@ -90,6 +90,32 @@ aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --insta
 aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
 ```
 
+## P. The installation
+
+There is no hand installation. A GitLab host is built by Terraform and configured by its own first boot; what a person touches is the applies, then §I. The order, for a host that does not exist yet:
+
+1. **Prerequisites**, as the infrastructure user with the hub up (§U steps 1-2): `production/foundation/` applied (the two buckets, the key, the two secret containers), `production/pki/` applied (the root and the two leaves, published), `production/egress/` up (`./scripts/slices.py up --env production --only egress`). The bootstrap reaches S3 through the gateway, Secrets Manager and SSM through the endpoints and `packages.gitlab.com` through the proxy; without the endpoints it dies at its first `aws` call.
+
+2. **The apply** ([terraform-changes.md](terraform-changes.md) Recipe A) in `terraform-live/production/tooling/`: `terraform init -backend-config=backend.hcl`, plan, apply. 17 resources on 2026-10-12: the two security groups, the role and its profile, the rendered `gitlab.rb` as the S3 object, the 50 GiB data volume, the instance, the attachment, the two records, the DLM role and policy, the alarm. `slices.py up` does not build: for a `[D]` slice it starts an instance that exists and says so when none does.
+
+3. **The first boot**, cloud-init running `user-data.sh.tftpl` as root, logged to the serial console and to `/var/log/awsds-gitlab-boot.log` (§U gives the console command):
+   1. the proxy into `/etc/environment`: the explicit proxy and the generated `NO_PROXY`;
+   2. the data volume: the one disk that is not the root, formatted XFS only when it carries no filesystem (a re-attached volume keeps its data), mounted at `/var/opt/gitlab` by UUID through `/etc/fstab`;
+   3. `jq` from the AL2023 repositories (S3, no proxy);
+   4. the GitLab package repository for Amazon Linux 2023 with its three keys and `proxy=` set per repository, then `dnf install gitlab-ce` under `/etc/gitlab/skip-auto-reconfigure`, so the package installs without configuring;
+   5. the fetch: `gitlab.rb` from `s3://awsds-prod-gitlab-objects/config/gitlab.rb`; the root into `/etc/gitlab/trusted-certs/`; the two leaves from their SSM parameters into `/etc/gitlab/ssl/<host>.crt`, each followed by the root, which is the chain the host serves; the two keys from Secrets Manager into `/etc/gitlab/ssl/<host>.key` at mode 600; `update-ca-trust`;
+   6. `gitlab-secrets.json`: restored from `awsds-prod-gitlab-secrets` when the container holds a value, otherwise left for the reconfigure to generate;
+   7. `gitlab-ctl reconfigure`, the first and the long one: Chef converges every service, initialises PostgreSQL and runs the migrations (5 min 03 s on 2026-10-12). `gitlab.rb` orders the supervisor after `network-online.target`, since Omnibus's default `After=multi-user.target` waits for cloud-init, which is waiting for this step;
+   8. the generated `gitlab-secrets.json` pushed into its container, when step 6 generated nothing to restore;
+   9. `/usr/local/sbin/awsds-gitlab-refresh` (§R) and the daily backup timer (§B) installed;
+   10. the readiness probe over loopback, then `=== awsds gitlab first boot done`.
+
+   Nine minutes to `gitlab Reconfigured!` and fourteen to the end, measured 2026-10-12.
+
+4. **Then §I**: the root trusted on the laptop, the initial password, the first sign-in, the first refresh, the instance settings, the namespace.
+
+**A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors.
+
 ## I. The initial setup, on a fresh host
 
 Once per host: after the stage's first apply, and after a replacement or the restore rehearsal (§B). Done on 2026-10-12 for the host the stage built; the local administrator is **`felipenoris`** since that day, born `root` and renamed at the first sign-in, still local and still the break-glass.
@@ -287,7 +313,7 @@ Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) 
 
 3. **Assign users and groups**: the four persona groups among the five `sso-group-*` groups (`INV-04`), `sso-group-infrastructure` left out, since GitLab's administrator is the local account.
 
-4. **The two values**, typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses; the certificate is public, the file is the record:
+4. **The two values**, typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses; the certificate is public, the file is the record. Both are in the application's metadata, the **IAM Identity Center metadata** URL on the application's page (public, no sign-in): the `SingleSignOnService` with the HTTP-POST binding is the sign-in URL and `X509Certificate` the certificate, which is how 2026-10-12's file was written (`curl`, then a parse). The file exists only in the checkout that wrote it (Lesson 61): a plan from another checkout proposes removing the `omniauth` block from the object, and that plan is the signal to copy the file, never a change to apply:
 
    ```hcl
    saml_idp_sso_target_url = "https://portal.sso.us-west-2.amazonaws.com/saml/assertion/<application id>"

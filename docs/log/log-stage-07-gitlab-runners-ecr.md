@@ -262,3 +262,23 @@ Account ids are replaced by the account's name in angle brackets.*
   keystrokes land on the page when no input is focused, where `t`, `i` and `s` are GitLab shortcuts;
   clicks by screen coordinate worked every time. The second `dev-env` form submission arrived with an
   empty name for the same reason, and was redone with a screenshot before the submit.
+
+## 2026-10-12 — step 3.2, the SAML block delivered
+
+- **[user] Steps 3.1 to 3.3 of runbook §A done in the Identity Center console**: the `GitLab` application,
+  the two attribute mappings, the four persona groups assigned; the application's metadata URL handed
+  over in chat.
+- **[Claude] Step 4 and 5.** The metadata XML (public, `200`, 2575 bytes) carries one `SingleSignOnService`
+  (HTTP-POST) and one certificate: `CN=amazonaws.com, OU=IDAS, O=Amazon`, valid **2026-10-12 to
+  2031-10-12**, SHA256 `05:61:B4:BB:C4:9A:4A:63:FA:81:AC:2B:C9:CF:BA:5C:76:66:9C:09:5C:5C:87:38:12:EF:F4:73:0A:FD:75:B7`.
+  Written into `terraform-live/production/tooling/saml.auto.tfvars` in this session's worktree (ignored by
+  the `*.tfvars` rule). `production/tooling/` planned `0 to add, 1 to change, 0 to destroy`, the S3 object
+  gaining `omniauth_enabled`, `omniauth_allow_single_sign_on = ['saml']`, `block_auto_created_users =
+  false`, `auto_link_saml_user = true` and the `saml` provider; applied 16:37 UTC, re-plan `No changes`.
+  The host runs the previous file until `sudo awsds-gitlab-refresh` (the user). The round-trip (3.2's
+  user half, verification iii) is unread. The `.tfvars` lives in one checkout: a plan elsewhere proposes
+  removing the block, and runbook §A names that plan as the signal (Lesson 61).
+- **[user] Asked for the installation procedure in the runbook**, having read the build as an EC2 instance
+  with an EBS volume and GitLab installed on it. **[Claude]** That is the shape, with the install done by
+  the first boot and nothing by hand: runbook §P now carries it, the ten bootstrap steps in order, with
+  the measured timings and the rebuild's two forms.
