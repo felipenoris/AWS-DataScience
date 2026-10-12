@@ -464,7 +464,6 @@ NETWORK_SLICES = {
     "egress",
     "vpn",
     "probes",
-    "buildbox",
     # 6c step 0.3's slices, declared here with their ranks. `networking` and `workloads` are
     # VPC-bearing; `proxy` and `workloads-egress` ride inside one and read its state, exactly
     # as `egress` and `vpn` do.
@@ -473,7 +472,7 @@ NETWORK_SLICES = {
     "proxy",
     "workloads-egress",
     # Stage 7's two hosts in VPC-SharedServices: GitLab ([D]) and the build runner ([E]). Both
-    # read production/foundation/'s state for the subnet and anchor on a zone id, like `buildbox`.
+    # read production/foundation/'s state for the subnet and anchor on a zone id.
     "tooling",
     "runners",
 }
@@ -698,12 +697,6 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # And the ULA: the module takes both, and an IPv4-only tunnel is what let a
                 # device's IPv6 leave outside it entirely.
                 values["peer_cidr_v6"] = WIREGUARD_PEER_CIDR_V6
-            # Nothing extra for `buildbox`, and the absence is a decision. It briefly took
-            # WIREGUARD_PEER_CIDR, to admit the tunnel's clients on its security group, and the
-            # requirement behind that was withdrawn by the user the same day, once a measurement
-            # showed the rule did not gate the one path anybody uses: `ssm start-session` reaches
-            # the agent's outbound channel and no security group sees it. The buildbox has no
-            # ingress rule at all, so an emission here would feed a variable that feeds nothing.
             # Stage 7 step 1.2 - GitLab's security group admits HTTPS from the Interactive
             # accounts' private tiers, where a project's app ENI is the source (INT-09). The
             # list is derived (private_tier_cidrs above), never typed into the slice.

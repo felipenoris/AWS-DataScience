@@ -27,7 +27,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `client-vpn-proxy-configuration.md`, the one a device's owner follows (the session up and down, the
     `.conf` with its four checks, the proxy on macOS and Linux); `sg-proxy.md`, the proxy inside a SageMaker
     space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed; plus
-    `buildbox.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
+    `gitlab.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
@@ -59,7 +59,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
   `sandbox/sagemaker/` (the `sagemaker-prereqs` module; `development/sagemaker/` went with the account at
-  Stage 6b), and the `[E]` `production/buildbox/`, moved there from Sandbox at 6c step 5.8.
+  Stage 6b), and the `[E]` build host, which moved to Production at 6c step 5.8 and retired into Stage 7's
+  build runner (`production/runners/`) at its step 6.5.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5a's. `wireguard` has called `iam-role` by

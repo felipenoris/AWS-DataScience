@@ -50,7 +50,7 @@
 #
 # The architecture is not a choice either: SageMaker images are amd64, and the repository
 # publishes `cpu`/`gpu` suffixes with no arm64 variant at all - measured from the tag list the
-# same day. That is what the buildbox exists for (terraform-live/production/buildbox/README.md).
+# same day. That is why the images are built on the amd64 build runner (terraform-live/production/runners/).
 #
 # Revision trigger: a SMUS release raising the floor, or a base advisory the ECR scan flags.
 # Bump the pair together - a tag without its digest defeats the pin - and read section 3's uv

@@ -1063,8 +1063,8 @@ are selected"* — an **AND** where a list reads like an OR.
 **Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
 and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
-PKI root, is a scheduled bump and takes both to the next free minor. The tags spent so far, with their
-dates and what each changed, are [`buildbox.md`](plan/runbooks/buildbox.md) §P.
+PKI root, took both to the next free minor, `default-v0.6.0` (2026-10-12). The tags spent so far, with their
+dates, digests and what each changed, are [`images/README.md`](../images/README.md) §*The releases*.
 
 **When a flavour graduates from a tag to its own repository.** The trigger is reaching for a knob that
 exists **per repository and not per tag**: a different set of accounts allowed to pull (the repository

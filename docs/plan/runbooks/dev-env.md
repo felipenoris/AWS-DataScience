@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version bump when a steward approves a new build, and the detach. The build and the push are [`images/README.md`](../../../images/README.md)'s and [`buildbox.md`](buildbox.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
+| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version bump when a steward approves a new build, and the detach. The build and the push are [`images/README.md`](../../../images/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
@@ -43,7 +43,7 @@ either. Steps 1-2 are read-and-check; 3-6 are the work; 7 is the proof.
 
 | Prerequisite | How to check it | If it is missing |
 |---|---|---|
-| The image, built and pushed under a `<flavour>-v<semver>` tag | `aws ecr describe-images --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` | [`buildbox.md`](buildbox.md) §P — a build session, not a five-minute job |
+| The image, built and pushed under a `<flavour>-v<semver>` tag | `aws ecr describe-images --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` | [`images/README.md`](../../../images/README.md) — the build runner's pipeline, about 16 minutes (2026-10-12) |
 | The repository's pull grant naming this account | `aws ecr get-repository-policy --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` — the `AllowConsumerAccountsToPull` statement | add the account to `REGISTRY_CONSUMERS` (`scripts/tfhygiene/backend.py`) and apply `production/registry/` |
 | `ecr.api` and `ecr.dkr` endpoints in the account's VPC | they are in `vpc-egress`'s `core_services`, so `make up ENV=<env>` is enough | there is no NAT anywhere (D38): without them a space cannot pull at all |
 | The SMUS domain for the project, and the account association | `./aws/studio.py` | [Stage 6a](../stages/stage-06a-unified-studio.md); an image cannot be attached to a domain that does not exist |
@@ -286,8 +286,8 @@ repair is the whole chain:
    depends on no resource, so with the session down a `terraform plan` on the slice prints it under
    *Changes to Outputs*, as the authoring plan of `vpc-egress-v0.17.0` printed it before the output
    existed (2026-10-10).
-2. A buildbox session ([`buildbox.md`](buildbox.md) §U): `base` if it moved, then `dev-env`, and a push
-   under a **new tag** — the repositories are tag-immutable.
+2. A build on the runner ([`images/README.md`](../../../images/README.md)): `base` if it moved, then `dev-env`, and a
+   push under a **new tag** — the repositories are tag-immutable.
 3. `image_tag` in [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf), then apply — a version replace (§B).
 4. Re-attach: the domain's `CustomImages` names a version number (§C6).
 5. Every space restarts. A running app keeps the environment it started with, under any mechanism.

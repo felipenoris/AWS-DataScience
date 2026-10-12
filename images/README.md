@@ -33,8 +33,8 @@ Since Stage 7 step 2.6 the images are built by a pipeline on the build runner
 The GitLab project `awsds/dev-env` carries [`build.gitlab-ci.yml`](build.gitlab-ci.yml) as its
 `.gitlab-ci.yml`; the recipe stays here, and the job clones this repository at the commit it is given.
 
-1. With `make gitlab-up` done, enable the runner on `awsds/dev-env` (§K step 3) and push the file there as
-   `.gitlab-ci.yml`.
+1. With `make gitlab-up` done (the runner linked to `awsds/dev-env`, §K step 3), push the file there as
+   `.gitlab-ci.yml` when it changes.
 2. **Build → Pipelines → Run pipeline** on `main`, with `IMAGE_TAG` (the tag to spend, `docs/SMUS.md`) and
    `RECIPE_SHA` (a commit of this repository that GitHub serves).
 3. The job builds `base` with the distribution pulled through the pull-through cache (`SMD_IMAGE`
@@ -47,39 +47,20 @@ The push is the runner role's, through the credential helper the runner mounts i
 repositories are tag-immutable, so a failure after the base push is retried with `SKIP_BASE=1` on the same
 tag. Making the version selectable is [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §B.
 
-## Building them on the buildbox
+## Before a build
 
-Both images are `linux/amd64` and the laptop is `arm64`. The SageMaker Distribution publishes `-cpu` and
-`-gpu` tags and no `arm64` variant (read 2026-08-21 from the public registry's tag list), and SMUS spaces
-run on x86 instance types, so the platform is not a choice; the laptop has no docker installed either.
-The build happens on
-[`terraform-live/production/buildbox/`](../terraform-live/production/buildbox/README.md) — an `[E]`
-`m8i.xlarge` in `VPC-SharedServices`'s private tier (Production, since
-[6c step 5.8](../docs/plan/stages/stage-06c-networking-hub.md)), reached over Session Manager through
-`production/egress/`'s SSM endpoints, with no ingress rule at all, reaching the internet only as a client
-of the explicit proxy. It exists while a build runs and is destroyed after; the session's order — the
-door first, then the host — is [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §U.
+**Both images are `linux/amd64`**, and the laptop is `arm64` with no docker. The SageMaker Distribution
+publishes `-cpu` and `-gpu` tags and no `arm64` variant (read 2026-08-21 from the public registry's tag
+list), and SMUS spaces run on x86 instance types, so the platform is not a choice: it is why the build
+runner is an `amd64` `m8i.xlarge`. The six builds before it ran by hand on the buildbox, an `[E]` host of
+the same shape that Stage 7 step 6.5 retired on 2026-10-12.
 
-```bash
-./scripts/buildbox.py up && ./scripts/buildbox.py sync && ./scripts/buildbox.py ssm
-```
-
-Then, in the session (you land as `ssm-user` with `sudo`; the `docker` group belongs to `ec2-user`):
-
-```bash
-cd /opt/awsds/images && sudo docker build -t awsds/base:local base
-```
-
-```bash
-sudo docker build -t awsds/dev-env:local dev-env
-```
-
-**Check the baked `NO_PROXY` before that build** (6d decision 8, 2026-09-10). The image carries the six
-proxy variables as `ENV`, and `NO_PROXY` — what keeps AWS traffic on the VPC endpoints — is a **literal
-in the Dockerfile**, dated in its own comment. An image whose list predates the account's current
-endpoint set still works, and sends the names added since out through the proxy as public calls. So
-read it on the laptop before the session with `./aws/devenv.py`: `DE-3` fails when `dev-env/Dockerfile`
-§7 and the account's list differ in either direction, and that is the edit to make first.
+**Check the baked `NO_PROXY` first** (6d decision 8, 2026-09-10). The image carries the six proxy
+variables as `ENV`, and `NO_PROXY` — what keeps AWS traffic on the VPC endpoints — is a **literal in the
+Dockerfile**, dated in its own comment. An image whose list predates the account's current endpoint set
+still works, and sends the names added since out through the proxy as public calls. So read it on the
+laptop before the run with `./aws/devenv.py`: `DE-3` fails when `dev-env/Dockerfile` §7 and the account's
+list differ in either direction, and that is the edit to make first.
 
 The account's list is the output `no_proxy_all_groups`, and the literal is that output verbatim. The
 image serves every session whatever `GROUPS=` it names, so it carries **every** optional endpoint
@@ -91,8 +72,9 @@ created and is not the image's list:
 AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
 ```
 
-Another account's image overrides it without editing the file:
-`--build-arg NO_PROXY_LIST="$(…)"`.
+While `sandbox/egress` is down its state holds no outputs (`DE-2` fails); a read-only `terraform plan` of
+the slice prints `no_proxy_all_groups` all the same, which is how 2026-10-12's check was taken. Another
+account's image overrides the literal without editing the file: `--build-arg NO_PROXY_LIST="$(…)"`.
 
 **This is what makes the image estate-shaped.** It is baked with one VPC's endpoint list, so an endpoint
 added anywhere in that account — `sandbox/egress` went 28 → 50 entries on 2026-09-09 without a hand edit,
@@ -106,10 +88,6 @@ Dockerfile** is `./aws/devenv.py`, which compares the literal against the accoun
 enforced by a gate: both are readings, and [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §E says when
 to take them.
 
-```bash
-./scripts/buildbox.py down
-```
-
 **The uv cache must never be written into a layer.** Measured on the first `default-v0.2.0` build
 (2026-09-11): the Python layer came out at 10.7 GB against a 5.2 GB environment, because `uv` unpacks
 every wheel into `/root/.cache/uv` before materialising it into the venv and both live in the same
@@ -117,10 +95,8 @@ layer. `UV_NO_CACHE=1` inside that `RUN` is the fix and a later `rm -rf` is not 
 committed the moment the layer closes. With it the image is **22.7 GB** on disk, against 28.1 GB
 without; the ECR figure is the compressed one and is roughly a third of that.
 
-**A change to `base` rebuilds `dev-env` from its first layer**, and a rebuild needs room for a second
-copy of a ~23 GB image before the old one loses its tag. The 64 GiB root is enough for that and not for
-much more: [`docs/plan/runbooks/buildbox.md`](../docs/plan/runbooks/buildbox.md) §S is how to look before
-starting one, and what to prune when the answer is no.
+**A change to `base` rebuilds `dev-env` from its first layer.** A build of both on the runner's 64 GiB root
+succeeded on 2026-10-12, its disk use not read; the runner is `[E]`, so every session starts with an empty disk.
 
 Neither `Dockerfile` builds anything from source: Julia is a prebuilt tarball, `rustup` fetches prebuilt
 binaries, the R environment is conda-forge binaries. That is why the build is short. The one compilation
@@ -128,23 +104,37 @@ either of them performs is Julia's `Pkg.precompile()`, kept as the build's proof
 compiles and then **discarded** — a precompilation cache carries native code for the CPU that produced it,
 so the first `using` in a space compiles for that space's CPU instead.
 
-**The buildbox cannot push.** Its role carries Session Manager and no `ecr:` permission, and the host
-lives in the registry's own account, where no repository policy grants a push to anybody (read live on
-2026-08-22: both carry one statement, `AllowConsumerAccountsToPull`) and same-account access is decided
-by the identity policy alone. The push into `awsds-prod-ecr-base` / `awsds-prod-ecr-dev-env` is the
-user's own act from an identity that may (`awsds-infra-prod`; first done at Stage 6a step 5.0), and it
-reaches this host as a 12-hour ECR **authorization token** rather than as a permission. The procedure is
-[`buildbox.md`](../docs/plan/runbooks/buildbox.md) §P; read it before the build. The host is `[E]` and
-its volume dies with it, so build and push are one session, and a `down` in between costs the rebuild.
-The repositories are tag-immutable: a tag is spent the first time it lands and a re-push under the same
+**The repositories are tag-immutable**: a tag is spent the first time it lands and a re-push under the same
 tag is rejected. **Record the pushed digests in the stage log** —
 [Stage 6d step 2.1](../docs/plan/stages/stage-06d-unified-studio-remainder.md) registers a SageMaker
-image *version*, and Stage 7 step 2.6 has to be able to say which digest it replaced.
+image *version* against one, and the next release has to be able to say which digest it replaced.
 
 **What tag to spend is not decided here.** The convention — `<flavour>-v<major>.<minor>.<patch>`, the
 same number in both repositories, `default-v0.1.0` first written 2026-08-22 — lives in
 [`docs/SMUS.md`](../docs/SMUS.md) §*Custom images (BYOI) — and how they are named*, with the reason the
 flavour comes first and the trigger that turns a flavour into a repository of its own.
+
+## The releases
+
+Every tag spent in both repositories, the one complete record (moved here from the buildbox's runbook at
+Stage 7 step 6.5). Sizes are ECR's, compressed and per repository.
+
+| Tag | Built | What changed | Reading |
+|---|---|---|---|
+| `default-v0.1.0` | 2026-08-22, buildbox | the first build (Stage 6a step 5.0) | 12.1 and 17.5 GB on the host became 3.96 and 5.65 GB in ECR |
+| `default-v0.1.1` | 2026-09-08, buildbox | nothing under `images/`: the same recipe rebuilt | `base` +942 bytes, `dev-env` −11.8 MB, all upstream drift: a **patch** |
+| `default-v0.2.0` | 2026-09-11, buildbox | the proxy environment as `ENV`, the apt and sudoers files, a second Python environment with its own kernel | the recipe changed: a **minor**; the uv-cache measurement above |
+| `default-v0.3.0` | 2026-09-12, buildbox | `/etc/claude-code/managed-settings.json`, a `NO_PROXY` literal of 52 entries with the two Bedrock names, `rust-src`, no Julia precompilation cache | |
+| `default-v0.4.0` | 2026-09-12, buildbox | Stage 6e's model pins, the 4.5 generation ([`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md) M4) | `dev-env` 5,453 bytes smaller than `v0.3.0` (7,182,170,437 against 7,182,175,890): a string change |
+| `default-v0.5.0` | 2026-10-10, buildbox | the ancestor moved to SageMaker Distribution `4.5.2-cpu`, uv kept at the distribution's 0.12.17, a `NO_PROXY` literal of 70 entries | both about 213 MB smaller than `v0.4.0`, within 0.9 MB of each other (`base` 3,745,881,983, `dev-env` 6,969,138,672): the ancestor's delta |
+| `default-v0.6.0` | 2026-10-12, the build runner's pipeline | the internal CA root in `base`, with OpenSSL, `requests`, curl and Node pointed at the system bundle (Stage 7 step 2.6); `redshift-connector` declared | `base` 3,745,648,934 (`sha256:94359041…1975`), `dev-env` 6,675,093,373 (`sha256:43079013…5518`), 294 MB smaller; built in about 16 minutes with the distribution through the pull-through cache |
+
+**The recipe is not reproducible byte-for-byte**: `v0.1.1` moved both digests with no commit under
+`images/`, and a retry of the same commit builds another manifest (Stage 7 6.4). A pipeline that assumes
+otherwise reports a spurious change on every run. **The push takes the registry's `dkr.ecr` name**, which
+resolves to `VPC-SharedServices`' `ecr.dkr` interface endpoint: measured on `v0.5.0`'s push in CloudTrail
+(`vpcEndpointId` on every `InitiateLayerUpload` and the `PutImage`), and on `v0.6.0`'s by the absence of
+any ECR name in the proxy's access log.
 
 ## Before editing either file
 

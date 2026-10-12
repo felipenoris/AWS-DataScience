@@ -36,10 +36,11 @@ module "egress" {
   endpoint_subnet_id         = data.terraform_remote_state.foundation.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.foundation.outputs.endpoints_security_group_id
 
-  # Step 8.3, the Production row: sagemaker.api + sagemaker.runtime, no sagemaker.studio (no Studio
-  # domain here - endpoints for people belong to the Interactive accounts). lakeformation stays in
-  # the core: Production holds the LF read and governed write share (D22), so there it is
-  # load-bearing.
+  # No SageMaker endpoint (Stage 7 decision 9, 2026-10-12): nothing in this VPC calls SageMaker.
+  # Stage 9 puts the job-facing set in VPC-Workloads, and the deploy runner's model-registry calls
+  # (Stage 10) are control-plane calls the open build plane carries through the proxy; the stage
+  # that wants them private adds `sagemaker.api` here. lakeformation stays in the core: Production
+  # holds the LF read and governed write share (D22), so there it is load-bearing.
   #
   # The Session Manager trio arrives at step 5.5 (2026-09-06). Session Manager does not work
   # through an HTTPS proxy listener, so with no default route in this VPC the shell is these three
@@ -48,16 +49,9 @@ module "egress" {
   #
   # They precede their first user by one step. This VPC held zero instances when they were added
   # (measured 2026-09-06 - Production's only two are in VPC-Networking, and those reach SSM through
-  # the IGW); step 5.8 lands the buildbox here and Stage 7 the runners. The slice is `[E]`, so
-  # nothing is billed until a `make up`.
+  # the IGW); GitLab and the build runner arrived at Stage 7. The slice is `[E]`, so nothing is
+  # billed until a `make gitlab-up`.
   extra_services = [
-    # Vestigial from Stage 3, when production/foundation was simply "the" Production VPC. This VPC
-    # is SharedServices now - the supply chain and the build hosts - and whether a SageMaker name
-    # still belongs is Stage 7/9's question. Left rather than trimmed on the way past: removing an
-    # endpoint because it looks out of place is how a path disappears.
-    "sagemaker.api",
-    "sagemaker.runtime",
-
     "ssm",
     "ssmmessages",
     "ec2messages",

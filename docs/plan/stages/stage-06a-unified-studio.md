@@ -1120,7 +1120,8 @@ identity that may, but they share **one session**: the volume is `[E]` and dies 
 statement and nothing grants a push to anyone, because a same-account push needs no resource statement —
 and granting the near half of a permission the far half denies would produce a role that reads as if it
 could publish. **The whole procedure, with the token relay that carries `awsds-infra-prod`'s identity to
-a host that holds none of its permissions, is [`buildbox.md`](../runbooks/buildbox.md) §P.**
+a host that holds none of its permissions, was the buildbox runbook's §P**, retired with the host at Stage 7
+step 6.5; the release ledger it held is [`images/README.md`](../../../images/README.md) §*The releases*.
 
 Two readings from the same sitting, both of which remove a reason to redesign the path. **No preventive
 control requires the push to cross the tunnel** — a `grep` over all ten organization policy documents
