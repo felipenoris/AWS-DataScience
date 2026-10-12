@@ -276,9 +276,13 @@ RUN set -eu; \
 # only the notebook's concern - the runner, and any application container that speaks to an
 # internal TLS surface, want the same trust. The price is that step 2.6 rebuilds BOTH images.
 #
-# Not covered here, and Stage 7's to close: Python does not read the OS trust store - `certifi`
-# ships its own bundle, and `git`, `curl` and conda each have their own opinion. uv's is
-# already answered in section 3 (UV_SYSTEM_CERTS).
+# The OS store is one of several. `update-ca-certificates` writes the root into
+# /etc/ssl/certs/ca-certificates.crt, and the ENV below points the other readers at that same
+# file, the Mozilla set plus the root: OpenSSL's default for conda's Python, curl and git
+# (SSL_CERT_FILE), `requests` in both Python environments, which reads certifi's bundle otherwise
+# (REQUESTS_CA_BUNDLE), curl (CURL_CA_BUNDLE), and Node, which keeps its own roots and appends
+# the file's (NODE_EXTRA_CA_CERTS). uv's is section 3 (UV_SYSTEM_CERTS). Julia and R are not
+# measured; Stage 7 step 2.6's smoke test reads curl, git and both Pythons.
 COPY ca-certificates/ /usr/local/share/ca-certificates/awsds/
 RUN set -eu; \
     installed="$(find /usr/local/share/ca-certificates/awsds -name '*.crt' -type f | wc -l | tr -d ' ')"; \
@@ -287,7 +291,16 @@ RUN set -eu; \
       echo "FATAL: CA root count mismatch - build arg says ${CA_ROOTS_EXPECTED}, context has ${installed}." >&2; \
       exit 1; \
     fi; \
-    update-ca-certificates
+    update-ca-certificates; \
+    for c in /usr/local/share/ca-certificates/awsds/*.crt; do \
+      [ -e "${c}" ] || continue; \
+      grep -qF "$(sed -n 2p "${c}")" /etc/ssl/certs/ca-certificates.crt \
+        || { echo "FATAL: ${c} is not in /etc/ssl/certs/ca-certificates.crt after update-ca-certificates." >&2; exit 1; }; \
+    done
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # --------------------------------------------------------------------------- 6. provenance
 #

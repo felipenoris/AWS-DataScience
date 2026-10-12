@@ -25,6 +25,27 @@ prove it moved nothing else.
 (D36 §3, amended 2026-08-21). The layer already exists and is asserted empty — see
 [`base/ca-certificates/README.md`](base/ca-certificates/README.md).
 
+## Building them on the build runner
+
+Since Stage 7 step 2.6 the images are built by a pipeline on the build runner
+(`terraform-live/production/runners/`, [`gitlab.md`](../docs/plan/runbooks/gitlab.md) §K), not by hand.
+The GitLab project `awsds/dev-env` carries [`build.gitlab-ci.yml`](build.gitlab-ci.yml) as its
+`.gitlab-ci.yml`; the recipe stays here, and the job clones this repository at the commit it is given.
+
+1. With `make gitlab-up` done, enable the runner on `awsds/dev-env` (§K step 3) and push the file there as
+   `.gitlab-ci.yml`.
+2. **Build → Pipelines → Run pipeline** on `main`, with `IMAGE_TAG` (the tag to spend, `docs/SMUS.md`) and
+   `RECIPE_SHA` (a commit of this repository that GitHub serves).
+3. The job builds `base` with the distribution pulled through the pull-through cache (`SMD_IMAGE`
+   overridden, the digest pin kept), pushes it, builds `dev-env` `FROM` it and pushes it, then builds
+   [`smoke/`](smoke/Dockerfile) `FROM` the new `dev-env` and discards it: curl, git and both Pythons read
+   `https://gitlab.awsds.internal` through the image's own trust configuration. Both digests close the job's
+   log; record them in the stage log.
+
+The push is the runner role's, through the credential helper the runner mounts into every job; the
+repositories are tag-immutable, so a failure after the base push is retried with `SKIP_BASE=1` on the same
+tag. Making the version selectable is [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §B.
+
 ## Building them on the buildbox
 
 Both images are `linux/amd64` and the laptop is `arm64`. The SageMaker Distribution publishes `-cpu` and
