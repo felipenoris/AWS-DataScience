@@ -72,3 +72,40 @@ output "awsds_pages_internal_zone_id" {
   description = "The awsds-pages.internal apex - a separate registrable parent, by decision (D36)."
   value       = aws_route53_zone.awsds_pages_internal.zone_id
 }
+
+# Stage 7 step 1.1 - GitLab's [P] anchors, read by production/tooling/, production/pki/ and
+# production/runners/ through terraform_remote_state.
+output "gitlab_key_arn" {
+  description = "The CMK under GitLab's two buckets and its data volume (alias/awsds-<env>-gitlab)."
+  value       = module.gitlab_key.key_arn
+}
+
+output "gitlab_objects_bucket" {
+  description = "GitLab's object storage, one prefix per object type; also config/gitlab.rb and the published certificates under pki/."
+  value       = module.gitlab_objects.bucket_name
+}
+
+output "gitlab_objects_bucket_arn" {
+  description = "The same bucket's ARN - what the host role's S3 statements name."
+  value       = module.gitlab_objects.bucket_arn
+}
+
+output "gitlab_backup_bucket" {
+  description = "gitlab-backup's upload target; every object expires after 30 days."
+  value       = module.gitlab_backup.bucket_name
+}
+
+output "gitlab_backup_bucket_arn" {
+  description = "The backup bucket's ARN."
+  value       = module.gitlab_backup.bucket_arn
+}
+
+output "gitlab_secrets_secret_arn" {
+  description = "The gitlab-secrets.json container. The host's first boot restores from it or pushes into it (1.5); the value never crosses Terraform."
+  value       = aws_secretsmanager_secret.gitlab_secrets.arn
+}
+
+output "runner_token_secret_arn" {
+  description = "The runner authentication token's container - the user copies the token in once the runner exists in GitLab (6.1)."
+  value       = aws_secretsmanager_secret.runner_token.arn
+}

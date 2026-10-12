@@ -15,12 +15,23 @@ output "ecr_dev_env_repository_url" {
   value       = module.ecr_dev_env.repository_url
 }
 
+output "ecr_app_etl_repository_url" {
+  description = "The push/pull target for the first application image (Stage 7 step 5.1, Stage 8 step 2)."
+  value       = module.ecr_app_etl.repository_url
+}
+
 output "ecr_repository_arns" {
-  description = "Both ARNs - what a consumer-side IAM statement names."
+  description = "The three ARNs - what a consumer-side IAM statement names, and what the runner's push statement names (Stage 7 step 6.1)."
   value = {
     base    = module.ecr_base.repository_arn
     dev-env = module.ecr_dev_env.repository_arn
+    app-etl = module.ecr_app_etl.repository_arn
   }
+}
+
+output "pull_through_cache_prefixes" {
+  description = "The cache rules' repository prefixes (Stage 7 step 5.2) - the repository families the runner may import into."
+  value       = keys(aws_ecr_pull_through_cache_rule.this)
 }
 
 output "codeartifact_domain_name" {

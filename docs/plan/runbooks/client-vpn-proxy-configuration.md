@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| **Scope** | §1 up and §2 down — the session: the two hub hosts, and a spoke's `[E]` slices when the day needs them. §3 — the device and the tunnel: enrol, write the `.conf` in one of two profiles, monitored and split-tunnel (§3.3; the rule for choosing is `vpn.md` §C7), up with its checks, down. §4 — the device and the proxy: macOS (system, terminal, Chrome) and Linux |
+| **Scope** | §1 up and §2 down — the session: the two hub hosts, and a spoke's `[E]` slices when the day needs them. §3 — the device and the tunnel: enrol, write the `.conf` in one of two profiles, monitored and split-tunnel (§3.3; the rule for choosing is `vpn.md` §C7), up with its checks, down. §4 — the device and the proxy: macOS (system, terminal, Chrome) and Linux. §5 — the device and the internal CA: one pointer to the GitLab runbook |
 | **Operator** | §1-§2: the **infrastructure user** (`sso-session awsds`), account **Production**, permission set **`InfrastructureAccess`**, profile `awsds-infra-prod` — plus the spoke's profile on the same session (`awsds-infra-sandbox-1` for `ENV=sandbox`). §3-§4: the **device's owner, on the device** — no AWS profile, no SSO session |
 | **The values** | `Endpoint` **`52.89.212.1:51820`** · the host's `PublicKey` **`LCD1d6xjsxRAmOZA/FTo72TToGUkLYqlOryEJwfup28=`** · `DNS` **`10.31.0.2`** · `MTU` **`1280`** · this device's `Address` **`10.90.0.<n>/32, fd90::<n>/128`** · the proxy **`proxy.awsds.internal:3128`**. All `[P]`: they survive every host stop, start and replacement. The proxy's private address is the one thing looked up by name and never written down |
 
@@ -294,6 +294,13 @@ up (`git push https://github.com/felipenoris/AWS-DataScience.git HEAD:refs/heads
 through the proxy with `proxy-on` (§4.1 [b]) and appear in its access log as `CONNECT github.com:443`.
 With the tunnel down, SSH works again and the proxy variables must be off — the same rule as every
 other setting in this section.
+
+## 5. The device and the internal CA
+
+A laptop that opens `https://gitlab.awsds.internal` or a Pages site trusts the estate's root once, per
+[`gitlab.md`](gitlab.md) §C: the root fetched from its parameter, put in the system store the browser
+reads, named to `git`, and verified with `curl`. Until then every browser marks the address "Not
+secure" and `git clone` refuses the certificate; the tunnel and the proxy are not the suspects.
 
 ---
 

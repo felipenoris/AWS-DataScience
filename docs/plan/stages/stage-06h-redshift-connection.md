@@ -112,9 +112,10 @@ flowchart LR
 
 ## Step numbers are identifiers, not an order
 
-**Step 3** is cited from [Stage 9](stage-09-deployment-targets.md) (the same wiring, applied to a `gov_`
-database with a different writer) and **step 1** from
-`runbooks/redshift-connection.md`. The sequence is the passes below:
+**Step 1** is cited from [Stage 9](stage-09-deployment-targets.md) (9.3 does for `governed` what 1.1-1.5
+did for `sandbox` and `lab`, with a different writer and no connection) and **step 3** from
+`runbooks/redshift-connection.md`, `docs/NETWORK.md` and the `sandbox/warehouse/` code, where 3.3 is in a
+security group rule's description. The sequence is the passes below:
 
 | Pass | # | What | Applied as |
 |---|---|---|---|

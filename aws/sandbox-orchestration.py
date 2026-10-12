@@ -4,8 +4,8 @@
 # The workflows (role, private network, project key, where the definition and the Code object
 # live, the versions), their recent runs and task instances, each demo-devenv- processing job
 # read against the D13 boundary's four job settings and the registered house image, the log
-# groups the exercise makes, the shared/orchestration-demo/ prefixes, and CloudTrail's record
-# of who created each workflow and each job, and through which door.
+# groups the exercise makes, the code inputs and the shared/orchestration-demo/ prefixes, and
+# CloudTrail's record of who created each workflow and each job, and through which door.
 #
 #   needs:    a live SSO session, the only prerequisite:
 #
@@ -67,13 +67,31 @@ SANDBOX_PROFILE = "awsds-infra-sandbox-1"
 PROJECT_ROLE_PREFIX = "datazone_usr_role_"
 KEY_ALIAS = "alias/awsds-sandbox-project"
 PRIVATE_SUBNET_PREFIX = "awsds-sandbox-private-"
-CODE_DIR = "awsds-demo-job/"  # under each project's shared/: the code demo-devenv-job's job reads
 DEMO_DIR = "orchestration-demo/"  # under each project's shared/: each variant's inbox/ and outbox/
 WORKFLOWS = {  # workflow name -> variant, which is also its prefix under DEMO_DIR
     "demo-devenv-job": "devenv",
+    "demo-devenv-deps": "devenv-deps",
     "demo-python-operator": "python",
     "demo-bash-operator": "bash",
 }
+# Each processing workflow's code input under shared/, the entry point in it, and the PYTHONPATH
+# its definition sets: a source tree (src/) for the project with no dependencies, the folder
+# `awsds-workflows package-job` builds for the one with dependencies.
+CODE_DIRS = {
+    "demo-devenv-job": (
+        "awsds-demo-job/",
+        "src/awsds_demo_job/__main__.py",
+        "/opt/ml/processing/code/src",
+    ),
+    "demo-devenv-deps": (
+        "jobs/awsds-demo-deps-0.1.0/",
+        "awsds_demo_deps/__main__.py",
+        "/opt/ml/processing/code",
+    ),
+}
+# An extension module in a code input must be built for the house environment's interpreter,
+# CPython 3.13 on x86_64 Linux (images/dev-env/Dockerfile), or carry the stable ABI.
+JOB_EXTENSION_SUFFIXES = (".cpython-313-x86_64-linux-gnu.so", ".abi3.so")
 # demo-bash-operator has two versions, told apart by a task id. The probe runs inline commands
 # and must carry no Code object, or it is no control for decision 7; the exercise runs the
 # package from its Code object. The PyPI negative is in both, and it must FAIL.
@@ -85,7 +103,6 @@ HOUSE_IMAGE = "awsds-sandbox-dev-env"
 WORKER_SESSION = "AmazonMWAAServerless"
 PROCESSING_LOG_GROUP = "/aws/sagemaker/ProcessingJobs"
 WF_LOG_PREFIX = "/aws/mwaa-serverless/"
-PACKAGE_MARKER = "src/awsds_demo_job/__main__.py"  # the project's entry point, under CODE_DIR
 
 RUNS_MAX = 10  # recent runs read per workflow
 JOBS_MAX = 20  # recent demo-devenv- jobs
@@ -125,6 +142,13 @@ def _task_attempt(instance_id: str) -> tuple:
 
 def _task_id(instance_id: str) -> str:
     return _task_attempt(instance_id)[0]
+
+
+def env_value(definition: str, name: str) -> str | None:
+    """The value a definition gives an environment variable, as the portal saves it: the key and
+    a value with no spaces on one line."""
+    m = re.search(rf"^\s+{re.escape(name)}:\s*(\S+)\s*$", definition, re.M)
+    return m.group(1) if m else None
 
 
 def has_task(definition: str, task: str) -> bool:
@@ -414,7 +438,7 @@ def main(argv: list) -> int:
         if not p["bucket"]:
             continue
         base = p["shared"]
-        rels = [CODE_DIR] + [
+        rels = [code_dir for code_dir, _entry, _path in CODE_DIRS.values()] + [
             f"{DEMO_DIR}{v}/{part}/" for v in WORKFLOWS.values() for part in ("inbox", "outbox")
         ]
         for rel in rels:
@@ -490,7 +514,7 @@ def main(argv: list) -> int:
     for name in WORKFLOWS:
         d = wfs.get(name)
         if d is None:
-            checks.note("SO-1", name, "absent - not built yet (Stage 6i passes 2, 4, 5).")
+            checks.note("SO-1", name, "absent - not built yet (Stage 6i steps 2, 3.7, 4, 5).")
             continue
         status = d["summary"].get("WorkflowStatus", "-")
         twins = same_name.get(name, [])
@@ -582,6 +606,14 @@ def main(argv: list) -> int:
                 f"definition at s3://{loc.get('Bucket', '-')}/{loc.get('ObjectKey', '-')}, outside the project's dev/workflows/"
             )
         body = det.get("WorkflowDefinition") or ""
+        if name in CODE_DIRS:
+            code_dir, _entry, python_path = CODE_DIRS[name]
+            if f"/shared/{code_dir}" not in body:
+                problems.append(f"no code input at shared/{code_dir}")
+            if env_value(body, "PYTHONPATH") != python_path:
+                problems.append(
+                    f"PYTHONPATH {env_value(body, 'PYTHONPATH') or '(unset)'} - expected {python_path}"
+                )
         if d["variant"] == "python" and not code:
             problems.append("no Code object - its Python task has nothing to run")
         elif d["variant"] == "bash":
@@ -620,6 +652,8 @@ def main(argv: list) -> int:
             files.append(clean.name)
         saved[name] = files
         detail = f"{len(d['versions'])} version(s); definition {loc.get('ObjectKey', '-')}"
+        if name in CODE_DIRS:
+            detail += f"; code input shared/{CODE_DIRS[name][0]}, PYTHONPATH {CODE_DIRS[name][2]}"
         if code:
             detail += f"; Code s3://{code.get('Bucket', '-')}/{code.get('ObjectKey', '-')} snapshotted {det.get('CodeSnapshottedAt', '-')}"
         elif d["variant"] == "bash":
@@ -760,19 +794,31 @@ def main(argv: list) -> int:
     # SO-7: the demo prefixes, and the encryption of what they hold.
     for p in projects.values():
         base = f"s3://{p['bucket']}/{p['shared']}"
-        code_keys = prefixes.get((p["role"], CODE_DIR), (0, 0, []))[2]
-        if not any(k.endswith(PACKAGE_MARKER) for k in code_keys):
-            checks.note(
-                "SO-7",
-                f"{base}{CODE_DIR}",
-                f"no {PACKAGE_MARKER} - not copied yet (Stage 6i pass 1).",
-            )
-        else:
-            checks.ok(
-                "SO-7",
-                f"{base}{CODE_DIR}",
-                f"{len(code_keys)} object(s), the entry point present",
-            )
+        for code_dir, entry, _path in CODE_DIRS.values():
+            code_keys = prefixes.get((p["role"], code_dir), (0, 0, []))[2]
+            extensions = [k.rsplit("/", 1)[-1] for k in code_keys if k.endswith(".so")]
+            foreign = [e for e in extensions if not e.endswith(JOB_EXTENSION_SUFFIXES)]
+            if not any(k.endswith(entry) for k in code_keys):
+                checks.note(
+                    "SO-7",
+                    f"{base}{code_dir}",
+                    f"no {entry} - not copied yet (Stage 6i steps 1.1, 3.6).",
+                )
+            elif foreign:
+                checks.fail(
+                    "SO-7",
+                    f"{base}{code_dir}",
+                    f"extension modules built for another interpreter: {', '.join(foreign)}.",
+                )
+            else:
+                checks.ok(
+                    "SO-7",
+                    f"{base}{code_dir}",
+                    f"{len(code_keys)} object(s), the entry point present"
+                    + (
+                        f", {len(extensions)} extension module(s) for the job" if extensions else ""
+                    ),
+                )
         for v in WORKFLOWS.values():
             n_in = prefixes.get((p["role"], f"{DEMO_DIR}{v}/inbox/"), (0, 0, []))[0]
             n_out = prefixes.get((p["role"], f"{DEMO_DIR}{v}/outbox/"), (0, 0, []))[0]
@@ -839,7 +885,8 @@ def main(argv: list) -> int:
             "definitions; 5 runs and task instances; 6 processing jobs; 7 log groups; 8 the demo\n"
             "prefixes; 9 CloudTrail; 10 checks SO-1..SO-8; 11 calls that failed.\n"
             f"Contracts: WORKFLOWS={', '.join(WORKFLOWS)}  JOB_PREFIX={JOB_PREFIX}\n"
-            f"           CODE_DIR=shared/{CODE_DIR}  DEMO_DIR=shared/{DEMO_DIR}\n"
+            f"           CODE_DIRS={', '.join(f'shared/{c}' for c, _e, _p in CODE_DIRS.values())}\n"
+            f"           DEMO_DIR=shared/{DEMO_DIR}\n"
         )
 
         rep.h1("1. Who is asking")
@@ -964,7 +1011,7 @@ def main(argv: list) -> int:
             )
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-\t-"])
 
-        rep.h1(f"8. The exercise's prefixes - shared/{CODE_DIR} and shared/{DEMO_DIR}")
+        rep.h1(f"8. The exercise's prefixes - the code inputs and shared/{DEMO_DIR}")
         rows = ["PROJECT\tPREFIX\tOBJECTS\tBYTES"]
         for (role, rel), (n, size, _keys) in sorted(prefixes.items()):
             rows.append(f"{projects[role]['project']}\t{rel}\t{n}\t{size}")

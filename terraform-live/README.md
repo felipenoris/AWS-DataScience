@@ -103,10 +103,10 @@ cross-account grants that are how a consumer reaches the lake at all - Sandbox a
 slices that are **one module applied twice** — `terraform-modules/consumer-data/` — so the design lives
 once and each slice says only which account. Each holds the account's own `DataLakeSettings`, its
 `alias/awsds-<env>-data` CMK (one data CMK per account, the 2026-08-19 revision that withdrew the
-`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox, and the copy in the
-account Stage 6b renamed to Staging stands empty under its original `awsds-dev-data` alias — D19 revised:
+`security-zone` dimension; since 2026-08-26 it is the sandbox lake's key in Sandbox — D19 revised:
 the derived bucket and the enforced workgroup **left the module at
-`consumer-data-v0.6.0`**, the derived zone being the SMUS project path now), the two resource links to the
+`consumer-data-v0.6.0`**, the derived zone being the SMUS project path now; `awsds-dev-data` was
+destroyed with the second slice), the two resource links to the
 lake, and the local re-grants without which a held share cannot be used by anybody. All `[P]`.
 
 **Two properties of the lake slice are unlike anything else in the tree, and both are permanent:**
@@ -152,6 +152,15 @@ re-plans as a *replacement*, and a routine bring-up is no place to rebuild the o
 reads a `[D]` row's **power state from EC2**, not its state file, or a stopped host would report a burn
 forever.
 
+**GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
+(rank 42) holds the `t4g.large`, its 50 GiB data volume and the two internal records, and is applied by
+hand like the hub hosts. Its session is **`make gitlab-up` / `make gitlab-down`** — `--only
+tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the build runner applied,
+and the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
+same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the proxy would
+blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's name, and
+`layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
+
 **The WireGuard host was also a NAT instance for the isolated tier, from Stage 6 step 5.0 until 6c step
 5.8.** `wireguard-v0.4.0`'s `vpc_nat_cidrs` input turned source/destination checking **off** and added
 masquerade rules, which is what let an `[E]` `amd64` build host reach the internet with no NAT gateway
@@ -166,8 +175,8 @@ door into the host) rather than a slice a build could avoid.
 **`buildbox/` is raised by [`scripts/buildbox.py`](../scripts/buildbox.py), not by `make up` — by
 convention, not by refusal.** It is `[E]` with a row and no refusal in `layers.py`, so `make status` sees
 it, `make down ENV=production` destroys it, **and `make up ENV=production` applies it** with the account's
-other three `[E]` slices — `egress/`, `workloads-egress/`, `probes/` — at 0.2117/h for an `m8i.xlarge` a
-Sandbox session never needs. The script exists for the reverse case: a build needs `egress/` and this slice
+other four `[E]` slices — `egress/`, `workloads-egress/`, `probes/`, `runners/` — at 0.2117/h for an `m8i.xlarge` a
+Sandbox session never needs. It retires into `runners/` at Stage 7 step 6.5. The script exists for the reverse case: a build needs `egress/` and this slice
 and neither of the other two, so it raises this one alone, checks the two prerequisites a rank cannot
 express, syncs the context, opens the shell and tears down.
 **Its two refusals** read the **`ssmmessages` endpoint** before applying — without it the apply
@@ -259,7 +268,27 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   fight the blueprint.
 - **`production/registry/` `[P]`** — written under Stage 7 step 5 and applied a stage early, because Stage 6
   step 5.0 has nowhere to push the first `dev-env` image otherwise: the `base`/`dev-env` ECR pair,
-  CodeArtifact, the slice's own key, and the consumer policies built from the D35 map.
+  CodeArtifact, the slice's own key, and the consumer policies built from the D35 map. **5.b** (Stage 7,
+  2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
+  `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
+  blocks the cache's own update, and AES256 for a public upstream's bytes.
+- **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
+  (`gitlab.awsds.internal`, `*.awsds-pages.internal`) in the `tls` provider's state, under the account's
+  **second** state key; the certificates published as three SSM parameters under `/datascience/prod/pki/`
+  and three S3 objects under the GitLab objects bucket's `pki/` prefix; the leaf keys in two Secrets
+  Manager secrets only the GitLab host's role and `InfrastructureAccess` may read. Never destroyed
+  (`layers.NEVER_DESTROY`); the root's private key is never an output.
+- **`production/tooling/` `[D]` — GitLab CE** (Stage 7 step 1): the host, its data volume and daily DLM
+  snapshots, the two records, both security groups, the host's role, and `config/gitlab.rb` rendered into
+  the objects bucket - the configuration travels outside the user data (decision 8), which is held with
+  `ignore_changes`, so an edit is an apply plus `sudo awsds-gitlab-refresh` on the host and never a
+  replacement. The bypass list is a dated literal (step 1.3), since a `[D]` slice cannot read a destroyed
+  `egress/`'s output. Anchors in `production/foundation/`: the two buckets, their key, the
+  `gitlab-secrets.json` and runner-token containers.
+- **`production/runners/` `[E]` — the build runner** (Stage 7 step 6, the buildbox's successor): one
+  `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
+  to the three image repositories with its own instance profile and pulling through the cache - and no
+  deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
   AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
   per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
@@ -285,11 +314,6 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
   written by hand after a project exists.
-- **`sandbox/endpoint-audit/` `[P]` — the endpoint refusals trail** (Stage 6i decision 7): one CloudTrail
-  trail logging the S3 network activity events with `errorCode` `VpceAccessDenied`, the requests a VPC
-  endpoint policy refused, and the bucket it delivers to. Such a refusal otherwise lands only in the
-  bucket owner's trail. An instrument: `[P]` so `make` never cycles it, and destroyed by hand when the
-  decision closes.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 

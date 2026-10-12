@@ -38,6 +38,11 @@
 
 - etl-cookbook-tutorial: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
+- `awsds-workflows`: <https://github.com/felipenoris/awsds-workflows>. Renders a serverless workflow's
+  definition and packages its tasks' code; installed by git URL from `main`, never by name, and since
+  2026-10-12 the tool of `docs/plan/runbooks/serverless-workflows.md` (§T). Its documentation, in
+  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>.
+
 ## Organization and identity
 
 - AWS Control Tower: <https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html>.
@@ -191,6 +196,18 @@
   without releasing it (read 2026-09-05). Available since v1.7; the resource block is replaced by
   `removed { from = <address>  lifecycle { destroy = false } }`, which removes the resource from state
   and leaves it alone: <https://developer.hashicorp.com/terraform/language/block/removed>.
+
+- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, not measured). The apply page
+  says the flag also prevents the approval prompt, so a run without `-auto-approve` fails:
+  <https://developer.hashicorp.com/terraform/cli/commands/apply>. The 1.15.8 source says otherwise. An
+  S3-backend apply runs in the local backend, which asks for approval whenever `-auto-approve` is
+  absent and the plan has changes, and reads stdin without consulting the flag; the flag gates only the
+  prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` and
+  `scripts/buildbox.py` pass the flag on every apply and destroy on this reading:
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_apply.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_local.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/ui_input.go>.
 
 ## Networking and access
 
@@ -1075,6 +1092,13 @@
   supported set is enumerated on the page:
   <https://docs.aws.amazon.com/codeartifact/latest/ug/external-connection.html>.
 
+- AWS CodeArtifact, the S3 gateway endpoint a client in a VPC needs (read 2026-10-11, Stage 7 step 5.3):
+  package assets download from an AWS-owned `assets-<AWS account>-<region>` bucket through the S3 gateway
+  endpoint, so its policy has to admit that bucket, and *"an Amazon S3 endpoint is not needed when using
+  Python or Swift package formats"* — `crates` needs it, `pypi` does not. `describe-domain` returns the
+  domain's `s3BucketArn`:
+  <https://docs.aws.amazon.com/codeartifact/latest/ug/create-s3-gateway-endpoint.html>.
+
 - AWS CodeArtifact (package proxy for egress design B; check the supported formats page for Cargo, and note that Julia and CRAN are not covered): <https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html>.
 
 - Julia `PkgServer.jl` (self-hosted Julia package server, the D5(B) fallback for Julia): <https://github.com/JuliaPackaging/PkgServer.jl>.
@@ -1120,6 +1144,50 @@
     requirement for credentialed ones, the immutability trap (an immutable tag blocks the cache
     update) and the first-pull internet-route requirement (Stage 7 step 5.2):
     <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *GitLab Linux package troubleshooting - the systemd ordering conflict with cloud-init* (read
+    2026-10-12, after the first boot deadlocked at `systemctl start gitlab-runsvdir`): *"The GitLab
+    systemd unit file by default uses `multi-user.target` for both `After` and `WantedBy` fields"*, which
+    *"interacts poorly with cloud-init's own unit ordering"*; the fix is `package['systemd_after']` and
+    `package['systemd_wanted_by']` in `gitlab.rb`, then `gitlab-ctl reconfigure` and `systemctl restart
+    gitlab-runsvdir`. The page gives no example values; `tooling/` uses `network-online.target`
+    (Stage 7 step 1.3): <https://docs.gitlab.com/omnibus/troubleshooting/>.
+  - *GitLab health check endpoints and the monitoring IP allowlist* (read 2026-10-12, after the
+    bootstrap's readiness probe read `404` on a host that was up): *"To access monitoring resources, the
+    requesting client IP needs to be included in the allowlist"*, and *"with default allowlist settings,
+    the probes can be accessed from localhost"*; the Linux package setting is
+    `gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '192.168.0.1']`. A probe that connects by
+    name arrives from the host's VPC address, so `tooling/`'s bootstrap resolves the name to loopback
+    (Stage 7 step 1.5): <https://docs.gitlab.com/administration/monitoring/health_check/> and
+    <https://docs.gitlab.com/administration/monitoring/ip_allowlist/>.
+  - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
+    repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
+    creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from
+    updating images using the same tag"*:
+    <https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-creation-templates.html>.
+  - *The GitLab package repositories for Amazon Linux 2023* (read 2026-10-12, Stage 7 steps 1.5 and 6.2):
+    the `.repo` files the install scripts download, `baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/$basearch`
+    and `.../runner/gitlab-runner/amazon/2023/$basearch`, with their three GPG keys each. Both hosts write
+    the file themselves and add a per-repository `proxy=` line, because `dnf.conf`'s global proxy would send
+    the AL2023 repositories, which come through the S3 gateway, at the proxy (6c 5.8):
+    <https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/amazon/2023/config_file.repo> and
+    <https://packages.gitlab.com/install/repositories/runner/gitlab-runner/amazon/2023/config_file.repo>.
+  - *GitLab Runner with a self-signed or private CA* (read 2026-10-12, Stage 7 step 6.1): the runner reads
+    `/etc/gitlab-runner/certs/<gitlab host>.crt` on its own, passes it to the helper as
+    `CI_SERVER_TLS_CA_FILE` for the clone and the artifacts, and a job's own scripts see it only through a
+    volume mapped to `/etc/gitlab-runner/certs/ca.crt`:
+    <https://docs.gitlab.com/runner/configuration/tls-self-signed/>.
+  - *GitLab Runner advanced configuration* (read 2026-10-12): `[[runners]] environment` as `KEY=VALUE`
+    strings, `tls-ca-file`, and `[runners.docker]` `security_opt`, `volumes`, `pull_policy`, `privileged`:
+    <https://docs.gitlab.com/runner/configuration/advanced-configuration/>.
+  - *Building images with BuildKit in GitLab CI* (read 2026-10-12, Stage 7 step 6.3): the rootless image
+    `moby/buildkit:rootless` with `entrypoint: [""]`, `BUILDKITD_FLAGS: --oci-worker-no-process-sandbox`,
+    `buildctl-daemonless.sh build ... --output type=image,name=...,push=true`, a hand-written
+    `~/.docker/config.json` for the registry, and the warning that a non-privileged docker executor needs
+    the syscalls BuildKit uses (`security_opt`, or rootless Buildah) — the page names no `seccomp=unconfined`
+    and warns against it: <https://docs.gitlab.com/ci/docker/using_buildkit/>.
+  - *AWS Price List Query API* (`aws pricing get-products`, read 2026-10-12 for the EBS snapshot rate): the
+    filtered read of the same catalogue the bulk offer files publish, served from `us-east-1`:
+    <https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-price-list-query-api.html>.
   - *ECR scanning types* — basic (free, OS-only, scan-on-push, findings via
     `DescribeImageScanFindings`) versus enhanced (Amazon Inspector, OS + language packages, continuous,
     metered) — Stage 7 decision 2: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
@@ -1204,6 +1272,7 @@
   - *SageMaker network isolation* (read 2026-10-10) — an isolated container makes no outbound call, S3 included, and receives no AWS credentials; SageMaker downloads inputs and uploads outputs with the execution role, through the job's subnet when a VPC is set. The page names training jobs and models; the processing API carries the same `EnableNetworkIsolation` field: <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
   - *Processing inputs and outputs* (read 2026-10-10) — a `ProcessingInput` downloads an S3 URI into a container path and a `ProcessingOutput` uploads a container path to an S3 URI; both container paths must begin with `/opt/ml/processing/`, the rest of the name is the caller's, and symlinks are not followed on upload: <https://docs.aws.amazon.com/sagemaker/latest/dg/byoc-input-and-output.html>.
   - *A non-root processing container and `/opt/ml/processing/output`* — a user report that an image running as UID 1000 could not write the output mount in a cloud run, open with no answer (read 2026-10-10); the house image runs as `sagemaker-user`, and Stage 6i measured the same refusal on 2026-10-11, with `sudo chown` as the way through: <https://github.com/aws/sagemaker-python-sdk/issues/4764>.
+  - *The dependencies of 6i's `awsds-demo-deps`* (read 2026-10-11 from PyPI's JSON API, to pick one pure-Python package and one extension module absent from the house environment): `msgspec` 0.22.0 publishes a `cp313` wheel tagged `manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64`, 230,472 bytes, <https://pypi.org/pypi/msgspec/json>; `petl` 1.7.29 publishes one `py3-none-any` wheel, <https://pypi.org/pypi/petl/json>.
   - *Step Functions Standard vs Express* — Express supports no `.sync` pattern and caps at 5 minutes, which is what makes design B Standard: <https://docs.aws.amazon.com/step-functions/latest/dg/choosing-workflow-type.html>.
   - *Step Functions logging* — `LoggingConfiguration`, the ten `logs:*` delivery actions on `Resource: "*"`, the `/aws/vendedlogs/states` prefix against the 5 120-character resource-policy limit and the ten-policies-per-Region quota: <https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html>.
   - *Step Functions `.sync` integrations* — ECS (`StepFunctionsGetEventsForECSTaskRule` + scoped `PassRole`): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-ecs.html>; Glue (polling, no managed rule): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-glue.html>; SageMaker (training/transform rules + conditioned `PassRole`): <https://docs.aws.amazon.com/step-functions/latest/dg/connect-sagemaker.html>.
@@ -1858,6 +1927,10 @@
   changelogs: `0.13.0` carries breaking changes, and `0.12.6`..`0.12.24` none, while still naming
   `UV_SYSTEM_CERTS` at `0.12.24`: <https://github.com/astral-sh/uv/blob/main/CHANGELOG.md> and
   <https://github.com/astral-sh/uv/blob/main/changelogs/0.12.x.md>.
+- The SageMaker Distribution's releases (read 2026-10-11, for a question about a "4.15"): the newest
+  forty run from `3.9.13` to `4.5.2`, the last published 2026-10-07 for every maintained minor at once
+  (`3.9.14`, `4.0.13` … `4.5.2`), and no `4.6`, `5.x` or `4.15` exists:
+  <https://api.github.com/repos/aws/sagemaker-distribution/releases>.
 
 ## Books
 

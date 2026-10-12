@@ -4,7 +4,7 @@ demo-devenv-job:
   tasks:
     wait_for_file:
       operator: airflow.providers.amazon.aws.sensors.s3.S3KeySensor
-      bucket_key: s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv/inbox/*
+      bucket_key: s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv/inbox/*
       wildcard_match: true
       poke_interval: 30
       timeout: 600
@@ -16,9 +16,9 @@ demo-devenv-job:
       retries: 0
       config:
         ProcessingJobName: "demo-devenv-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
-        RoleArn: arn:aws:iam::<SANDBOX_ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>
+        RoleArn: arn:aws:iam::<ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>
         AppSpecification:
-          ImageUri: <REGISTRY_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/awsds-prod-ecr-dev-env@<IMAGE_DIGEST>
+          ImageUri: <JOB_IMAGE_URI>
           ContainerEntrypoint:
             - /bin/bash
             - -c
@@ -31,7 +31,7 @@ demo-devenv-job:
             InstanceCount: 1
             InstanceType: ml.t3.medium
             VolumeSizeInGB: 10
-            VolumeKmsKeyId: arn:aws:kms:<REGION>:<SANDBOX_ACCOUNT_ID>:key/<PROJECT_KEY_ID>
+            VolumeKmsKeyId: arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>
         NetworkConfig:
           EnableNetworkIsolation: true
           EnableInterContainerTrafficEncryption: true
@@ -48,7 +48,7 @@ demo-devenv-job:
               S3DataDistributionType: FullyReplicated
           - InputName: inbox
             S3Input:
-              S3Uri: s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv/inbox/
+              S3Uri: s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv/inbox/
               LocalPath: /opt/ml/processing/inbox
               S3DataType: S3Prefix
               S3InputMode: File
@@ -57,10 +57,10 @@ demo-devenv-job:
           Outputs:
             - OutputName: outbox
               S3Output:
-                S3Uri: "s3://<PROJECTS_BUCKET>/<DEMO_PREFIX>/devenv/outbox/{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}/"
+                S3Uri: "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv/outbox/{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}/"
                 LocalPath: /opt/ml/processing/outbox
                 S3UploadMode: EndOfJob
-          KmsKeyId: arn:aws:kms:<REGION>:<SANDBOX_ACCOUNT_ID>:key/<PROJECT_KEY_ID>
+          KmsKeyId: arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>
         StoppingCondition:
           MaxRuntimeInSeconds: 1800
         Tags:
@@ -70,5 +70,5 @@ demo-devenv-job:
       operator: airflow.providers.amazon.aws.operators.s3.S3DeleteObjectsOperator
       dependencies: [run_project]
       bucket: <PROJECTS_BUCKET>
-      prefix: <DEMO_PREFIX>/devenv/inbox/
+      prefix: <DOMAIN_ID>/<PROJECT_ID>/shared/orchestration-demo/devenv/inbox/
       retries: 0

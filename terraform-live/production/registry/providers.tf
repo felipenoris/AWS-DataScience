@@ -26,8 +26,8 @@ provider "aws" {
 
 # ------------------------------------------------- the read-only consumer providers
 #
-# Two aliases, each for exactly one data.aws_caller_identity read, following the idiom in
-# data-governance/data/providers.tf: they create nothing, so they carry no default_tags, and the
+# One alias per consumer, each for exactly one data.aws_caller_identity read, following the idiom
+# in data-governance/data/providers.tf: they create nothing, so they carry no default_tags, and the
 # profiles arrive from the generated tfvars (REGISTRY_CONSUMERS in scripts/tfhygiene/backend.py),
 # never as literals here.
 #
@@ -35,18 +35,13 @@ provider "aws" {
 # CodeArtifact domain and repository policies, and the key policy - and aws/INDEX.md rule 1 keeps
 # account ids out of tracked files (Lesson 3).
 #
-# The alias keys are static while D35 says sandboxes multiply. Terraform cannot for_each a
-# provider, so unit 2 adds an alias here by hand - the same seam data-governance/data/ carries, and
-# this file joins Stage 14's edit list by construction.
+# One alias since Stage 7 decision 7 (2026-10-12): Staging left the map, and its alias and identity
+# read left with it. The alias keys are static while D35 says sandboxes multiply. Terraform cannot
+# for_each a provider, so unit 2 adds an alias here by hand - the same seam data-governance/data/
+# carries, and this file joins Stage 14's edit list by construction.
 
 provider "aws" {
   alias   = "sandbox"
   region  = var.region
   profile = var.consumers["sandbox"].profile
-}
-
-provider "aws" {
-  alias   = "staging"
-  region  = var.region
-  profile = var.consumers["staging"].profile
 }

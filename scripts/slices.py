@@ -26,6 +26,11 @@
 #   5. a [D] slice is never destroyed   layers.is_refused on the layer. Nothing said this while
 #      and never applied from here      nothing was [D], so a [D] row would have joined the
 #                                       list `down` destroys - against D11 and conventions 5.1
+#   6. ENV=production leaves the hub    the dormant hook skips `vpn` and `proxy` unless `--only`
+#      alone (Stage 7 step 1.6)         names them (`make hub-up`/`hub-down` do). A `make down
+#                                       ENV=production` that stopped the proxy would blackhole
+#                                       every peer session's spoke; GitLab's session (`make
+#                                       gitlab-up`/`gitlab-down`) is `--only tooling,egress,runners`
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES, and no
 # credential is ever exported into this process's environment. A borrowed session outlives the
@@ -79,20 +84,24 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
 
 # ------------------------------------------------------------------ the two dormant hooks
 #
-# [D] is "stop, never destroy" (D11). The first row is Stage 4's WireGuard `vpn/` and the
-# second will be Stage 7's GitLab EC2 with its EBS volume - conventions 5.1 names exactly
-# those two; everything else stateful is [P] by rule 2, since "stateful" is what makes a
-# slice [D] *or* [P]. The hooks print what they did not do, because a hook that is silent
-# when empty is indistinguishable from a hook that ran (Lesson 13).
+# [D] is "stop, never destroy" (D11). The rows are the two hub hosts (Stage 4's WireGuard
+# `vpn/`, 6c's `proxy/`) and Stage 7's GitLab (`tooling/`, with its data volume) - conventions
+# 5.1 names exactly those; everything else stateful is [P] by rule 2, since "stateful" is what
+# makes a slice [D] *or* [P]. The hooks print what they did not do, because a hook that is
+# silent when empty is indistinguishable from a hook that ran (Lesson 13).
 
 
 def instance_name(env: str, slice_name: str) -> str:
     """The Name tag a [D] slice's host carries - derived from the row, never written twice.
 
     `sandbox`+`vpn` is `awsds-sandbox-vpn`, which is the contract Stage 4 step 1.1 writes into
-    the module and `./aws/vpn.py` reads back; Stage 7's row becomes `awsds-prod-gitlab` without
-    touching this file.
+    the module and `./aws/vpn.py` reads back. `production`+`tooling` is the one exception, read
+    from layers.DORMANT_HOST_NAMES: the slice is `tooling/` (conventions 6) and the host is
+    `awsds-prod-gitlab` (Stage 7 step 1.2, the contract ./aws/supplychain.py SC-1 reads).
     """
+    override = layers.DORMANT_HOST_NAMES.get((env, slice_name))
+    if override:
+        return override
     return f"awsds-{backend.env_token(env)}-{slice_name}"
 
 
@@ -178,8 +187,13 @@ def hub_state(dry: bool) -> list:
     return out
 
 
-def refuse_if_hub_down(env: str, dry: bool) -> bool:
-    """True to proceed. Applies to spokes only - the hub's own env starts it as part of `up`.
+def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
+    """True to proceed. Every `up` checks the hub except the one that starts it.
+
+    The hub's own env was exempt until Stage 7 step 1.6, when `make up ENV=production` stopped
+    starting the hub (refusal 6): the runner it raises reaches the internet only through the
+    proxy, so Production's `up` is a spoke's in this respect. The exemption is now `--only`
+    naming a hub slice, which is `make hub-up` itself.
 
     UNREADABLE is not a refusal, and the asymmetry is deliberate: a spoke operator may hold no
     session on Production at all (the profiles are per account), so a failed read here would make
@@ -187,7 +201,7 @@ def refuse_if_hub_down(env: str, dry: bool) -> bool:
     that fails is reported and waved through; a read that succeeds and says `stopped` stops the
     apply. The two nothings are told apart, and only one of them is a finding (Lesson 13).
     """
-    if env == HUB_ENV:
+    if env == HUB_ENV and only and set(only) & set(HUB_SLICES):
         return True
     print(
         f"\n  {BOLD}the hub (step 7.2){RESET} - the private network's way in and the estate's way"
@@ -236,9 +250,19 @@ def dormant(env: str, action: str, dry: bool, only: list | None = None) -> None:
     declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
     if only is not None:
         declared = [s for s in declared if s.name in only]
+    elif env == HUB_ENV:
+        # Refusal 6 (Stage 7 step 1.6): the hub pair is every other account's dependency, so
+        # `make up`/`make down ENV=production` leave it alone and say so. `make hub-up` and
+        # `make hub-down` reach it through `--only`, which is the branch above.
+        left = [s for s in declared if s.name in HUB_SLICES]
+        declared = [s for s in declared if s.name not in HUB_SLICES]
+        for s in left:
+            print(
+                f"    {s.path}: refusal 6 - the hub is not {'started' if action == 'up' else 'stopped'}"
+                f" by ENV={env}; `make hub-{'up' if action == 'up' else 'down'}` is its target"
+            )
     if not declared:
         print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
-        print("      (the first is Stage 4's WireGuard vpn/; Stage 7 adds GitLab's instance)")
         return
 
     profile = backend.profile(env)
@@ -456,7 +480,7 @@ def cmd_updown(args) -> int:
 
     # The hub check goes before the [D] hook and before the first apply (step 7.2), because a
     # refusal after either would leave the env half-raised, which is worse than not starting.
-    if action == "up" and not refuse_if_hub_down(args.env, args.dry_run):
+    if action == "up" and not refuse_if_hub_down(args.env, args.dry_run, only):
         return 1
 
     if action == "up":
@@ -472,7 +496,16 @@ def cmd_updown(args) -> int:
         if not prepare(sl, args.dry_run):
             print(f"    init failed for {sl.path}", file=sys.stderr)
             return 1
-        cmd = ["terraform", f"-chdir={sl.path}", "destroy" if action == "down" else "apply"]
+        # -input=false makes an unset variable an immediate error, not a prompt that waits on stdin
+        # holding the state lock (Lesson 47). The approval is a separate prompt that only
+        # -auto-approve skips, so without AUTO apply and destroy still ask for a yes. The Terraform
+        # 1.15.8 source says so; its apply documentation says -input=false fails the run instead.
+        cmd = [
+            "terraform",
+            f"-chdir={sl.path}",
+            "destroy" if action == "down" else "apply",
+            "-input=false",
+        ]
         if args.auto_approve:
             cmd.append("-auto-approve")
         res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
@@ -618,7 +651,8 @@ def main(argv: list) -> int:
             "--only",
             help="comma-separated slice names to act on, instead of the whole env (6c step 7.1). "
             "Narrows only: a slice this env refuses stays refused. `make hub-up` is "
-            "`up --env production --only vpn,proxy`.",
+            "`up --env production --only vpn,proxy`; `make gitlab-up` is "
+            "`up --env production --only tooling,egress,runners` (Stage 7 step 1.6).",
         )
         p.set_defaults(fn=cmd_updown, action=action)
     p = sub.add_parser("status")

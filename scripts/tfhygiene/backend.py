@@ -324,10 +324,14 @@ DATA_LAKE = ["data-governance"]
 #
 # It is not DATA_CONSUMERS. The two lists answer different questions: who reads the governed
 # lake, and who pulls images and packages. Stage 9 adds production to the first and must not add
-# it to the second (the registry lives there). `staging` is here and not in DATA_CONSUMERS: a
-# deployment target pulls images and packages like anything else, and stopped being a lake
-# consumer at Stage 6b step 2.4.
-REGISTRY_CONSUMERS = ["sandbox", "staging"]
+# it to the second (the registry lives there).
+#
+# Interactive accounts only, since Stage 7 decision 7 (the user, 2026-10-12): this map grants the
+# dev-env image and the package proxy, which a deployment target has no use for. Staging stood here
+# from 6b's rename until then, on a comment that called it deliberate without arguing it; it pulls
+# an APPLICATION image through Stage 8's own deploy grant, never through this map, which keeps the
+# two intents apart (Lesson 51). N Sandboxes, N = 1.
+REGISTRY_CONSUMERS = ["sandbox"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.
@@ -468,6 +472,10 @@ NETWORK_SLICES = {
     "workloads",
     "proxy",
     "workloads-egress",
+    # Stage 7's two hosts in VPC-SharedServices: GitLab ([D]) and the build runner ([E]). Both
+    # read production/foundation/'s state for the subnet and anchor on a zone id, like `buildbox`.
+    "tooling",
+    "runners",
 }
 
 # The subset that creates a VPC rather than living inside one, named the day Production got three
@@ -475,6 +483,32 @@ NETWORK_SLICES = {
 # `vpc_cidr` is emitted to whichever slice owns a VPC, and every other network slice reads its
 # host VPC's [P] facts through terraform_remote_state instead.
 VPC_SLICES = {"foundation", "networking", "workloads"}
+
+# The private tier of an Interactive account's VPC, cut the way terraform-modules/vpc/main.tf
+# cuts it: a /18 per AZ, `cidrsubnet(cidr, 2, 0..1)`. Stage 7 step 1.2's GitLab security group
+# admits HTTPS from exactly these ranges - where a SMUS project's app ENIs land - and never from
+# the whole /16, which would admit the public and isolated tiers too. Derived from VPC_CIDRS and
+# SMUS_MEMBERS rather than authored in the slice: an address literal in a .tf file is a copy of
+# this table that nothing keeps in step (Lesson 14), and a second business unit (D35) arrives
+# here by being written down once. The cut mirrors the module's locals; scripts/check-network-doc.py
+# parses the module's shape and fails loudly if it changes, which is the signal to revisit this.
+PRIVATE_TIER_NEWBITS = 2
+PRIVATE_TIER_COUNT = 2
+
+
+def private_tier_cidrs(account: str, slice_name: str = "foundation") -> list[str]:
+    """The private-tier subnet CIDRs the vpc module cuts from one slice's /16, in AZ order."""
+    import ipaddress
+
+    cidr = VPC_CIDRS[(account, slice_name)]
+    pieces = list(ipaddress.ip_network(cidr).subnets(prefixlen_diff=PRIVATE_TIER_NEWBITS))
+    return [str(p) for p in pieces[:PRIVATE_TIER_COUNT]]
+
+
+def interactive_private_cidrs() -> list[str]:
+    """Every SMUS member's private tier, flattened - the GitLab group's Sandbox sources."""
+    return [c for acct in SMUS_MEMBERS for c in private_tier_cidrs(acct)]
+
 
 # Stage 3's reachability probes: which accounts each side has to admit or reach. Every side's
 # security group names the other side's VPC range, and the pairing is derived from `PEERINGS`
@@ -670,6 +704,11 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             # showed the rule did not gate the one path anybody uses: `ssm start-session` reaches
             # the agent's outbound channel and no security group sees it. The buildbox has no
             # ingress rule at all, so an emission here would feed a variable that feeds nothing.
+            # Stage 7 step 1.2 - GitLab's security group admits HTTPS from the Interactive
+            # accounts' private tiers, where a project's app ENI is the source (INT-09). The
+            # list is derived (private_tier_cidrs above), never typed into the slice.
+            if (account, slice_name) == ("production", "tooling"):
+                values["interactive_private_cidrs"] = interactive_private_cidrs()
             if slice_name == "probes":
                 # Each side's security group names the other side's VPC range: Production
                 # admits the source, Sandbox egresses to the target. Keeping the peer range
@@ -733,6 +772,12 @@ def tfvars_values(account: str, slice_name: str) -> dict:
         values["account_folder"] = account
         if slice_name == "warehouse-compute":
             values["zone_ids"] = ZONE_IDS[account]
+
+    # Stage 7 step 2.1 - production/pki/ reads production/foundation/'s state for the bucket its
+    # certificates are published into, and the state key is built from the account folder, which
+    # no .tf file may re-derive from the env token (Lesson 14).
+    if account == "production" and slice_name == "pki":
+        values["account_folder"] = account
 
     # Stage 6d step 2.1 - the member's dev-env/ slice, which registers an image that lives in the
     # registry account: the repository URL its version is built from and the ARNs its image role
@@ -851,6 +896,9 @@ def render_tfvars(account: str, slice_name: str) -> str:
     if "peer_cidrs" in v:
         cidr_list = ", ".join(f'"{c}"' for c in v["peer_cidrs"])
         out += f"peer_cidrs      = [{cidr_list}]\n"
+    if "interactive_private_cidrs" in v:
+        cidr_list = ", ".join(f'"{c}"' for c in v["interactive_private_cidrs"])
+        out += f"interactive_private_cidrs = [{cidr_list}]\n"
     if "peerings" in v:
         rows = "".join(
             "  {\n"

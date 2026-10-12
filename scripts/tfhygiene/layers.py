@@ -165,10 +165,6 @@ RANKS = {
     # and above `sagemaker` (46) for the same reason. [P], so up/down skip it; 56 is the first free
     # slot, and nothing interleaves with it.
     "workflows": 56,
-    # Stage 6i decision 7: a CloudTrail trail of the S3 requests a VPC endpoint policy refused, and
-    # its bucket. [P], so up/down skip it, and it depends on nothing in the account; 57 is the next
-    # free slot. It is destroyed by hand when the decision closes.
-    "endpoint-audit": 57,
     # Stage 5b step 1.7 - the Redshift Serverless warehouse, split across two ranks because the two
     # halves have different lifecycles and the order between them is a real dependency:
     #
@@ -196,6 +192,15 @@ RANKS = {
     # is no NAT gateway anywhere, so a spoke with its endpoints up and no proxy has no route to
     # the internet at all.
     "proxy": 41,
+    # Stage 7 step 1.6 - GitLab, [D]. Below `egress` (50) for the reason `vpn` and `proxy` are:
+    # `up` ascends, so the host is started before the [E] slices exist, and `down` descends, so it
+    # is stopped after they are gone. A started GitLab needs nothing from `egress/` to serve: its
+    # configuration, certificates and secrets are on its data volume from the first boot, S3 is
+    # the gateway endpoint, and the proxy is in another account. Only the FIRST boot needs the
+    # endpoints (the bootstrap reads Secrets Manager and registers with SSM), and that apply is by
+    # hand, after `egress/` (step 1.7). The host's Name tag is `awsds-prod-gitlab`, not the slice
+    # name - DORMANT_HOST_NAMES below carries the exception.
+    "tooling": 42,
     "egress": 50,
     # VPC-Workloads' own [E] endpoint slice (Stage 6c step 1.3a). 51 rather than 50 only so the
     # two Production egress slices have a defined order between them; both sit above `proxy`.
@@ -221,6 +226,12 @@ RANKS = {
     #            route while this slice's mechanism was adding one there; this slice creates no
     #            route anywhere now and is not in that account.
     "buildbox": 55,
+    # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor. Above `egress` (50): it
+    # needs the SSM endpoints for its only door and reads `egress/`'s `no_proxy` output at apply
+    # time, which a destroyed slice fails by name. Above `buildbox` (55) only because the two
+    # coexist until 6.5 retires the buildbox, and a defined order between two [E] hosts in one VPC
+    # costs nothing.
+    "runners": 57,
     "probes": 60,
 }
 
@@ -321,7 +332,10 @@ SLICES = [
         "11 interface endpoints (8.3) - no NAT",
         0.110,
     ),
-    Slice("production", "egress", EPHEMERAL, "13 interface endpoints (5.5) - no NAT", 0.130),
+    # 14 since Stage 7 step 1.7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager`, which the GitLab
+    # host's bootstrap reads its leaf keys and gitlab-secrets.json through, and the runner its
+    # registration token.
+    Slice("production", "egress", EPHEMERAL, "14 interface endpoints (5.5, 7 1.7) - no NAT", 0.140),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, written empty and egress_mode "B" from
     # birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so usd_per_hour is 0.0
     # and true rather than 0.0 and pending. It exists now because an [E] slice that arrives
@@ -444,6 +458,39 @@ SLICES = [
         PERSISTENT,
         "consumer side: account data CMK, links, DataLakeSettings (derived zone removed 2026-08-26)",
     ),
+    # Stage 7 pass 1 (step 2.1) - the internal CA: the root and two leaves in the `tls`
+    # provider's state, three SSM parameters and three S3 objects publishing the certificates,
+    # two Secrets Manager secrets holding the leaf keys. [P], never destroyed (NEVER_DESTROY,
+    # D36), and free at rest but for the two secrets (USD 0.40/month each, docs/PRICING.md 6).
+    Slice(
+        "production",
+        "pki",
+        PERSISTENT,
+        "the internal CA root + 2 leaves, published; leaf keys in Secrets Manager (D36)",
+    ),
+    # Stage 7 step 1.2 - GitLab CE, the repository's third [D] row. usd_per_hour is the t4g.large
+    # row of docs/PRICING.md 8, measured us-west-2 (Lesson 6), the while-running figure: the two
+    # EBS volumes (12 GiB root, 50 GiB data) and the daily DLM snapshots bill monthly while the
+    # host is stopped and are floor lines in docs/plan/cost-model.md. Started and stopped by
+    # `make gitlab-up` / `make gitlab-down`, which name this slice through `--only`; a plain
+    # `make up ENV=production` starts it too, and leaves the hub pair to `make hub-up` (1.6).
+    Slice(
+        "production",
+        "tooling",
+        DORMANT,
+        "GitLab CE on a t4g.large + its 50 GiB data volume (Stage 7 step 1.2)",
+        0.0672,
+    ),
+    # Stage 7 step 6.1 - the build runner, [E], and the buildbox's successor on the same measured
+    # shape (m8i.xlarge, docs/PRICING.md 8). Destroyed by `make gitlab-down` and by `make down
+    # ENV=production`; a forgotten one is this stage's likeliest leak, at 0.2117/h.
+    Slice(
+        "production",
+        "runners",
+        EPHEMERAL,
+        "the build runner, m8i.xlarge + 64 GiB (Stage 7 step 6.1)",
+        0.2117,
+    ),
     # Stage 6 pass 0 - Stage 7 step 5.a, applied one stage early because Stage 6 step 5.0
     # pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK (key-month,
     # docs/PRICING.md 2), two ECR repositories and a CodeArtifact domain with two repositories -
@@ -498,16 +545,6 @@ SLICES = [
         "workflows",
         PERSISTENT,
         "the workflows grant: 1 policy + 1 attachment per project",
-    ),
-    # Stage 6i decision 7 - the instrument that names the bucket a VPC endpoint policy refused: one
-    # CloudTrail trail logging S3 network activity events with errorCode VpceAccessDenied, and the
-    # bucket it delivers to. [P] because up/down must not cycle it, and destroyed by hand once the
-    # decision closes.
-    Slice(
-        "sandbox",
-        "endpoint-audit",
-        PERSISTENT,
-        "the endpoint refusals trail: 1 CloudTrail trail + its bucket",
     ),
     # Stage 5b pass 1 - the data half of the warehouse. [P] and free at rest in the sense this
     # column measures: nothing in it is metered by the hour. What it DOES cost is Redshift Managed
@@ -575,6 +612,13 @@ SLICES = [
 # Rotating a root on a session boundary invalidates three client surfaces at 09:00, so the
 # slice is unreachable from `down` whatever layer its row claims.
 NEVER_DESTROY = {("production", "pki")}
+
+# A [D] slice whose host carries a Name tag other than `awsds-<env>-<slice>`. The dormant hook
+# derives the tag from the row (slices.py instance_name) and this map is the one exception:
+# conventions 6 names the slice `tooling/` while Stage 7 step 1.2 names the host
+# `awsds-prod-gitlab`, the contract ./aws/supplychain.py SC-1 reads. One map, read by the hook,
+# so the two names cannot drift apart in a third place (Lesson 14).
+DORMANT_HOST_NAMES = {("production", "tooling"): "awsds-prod-gitlab"}
 
 # Refusal 4 - `bootstrap/` is unreachable from either target. It holds its own state (step
 # 2.2), so a destroy would delete the bucket that records the destroy. This is the case the

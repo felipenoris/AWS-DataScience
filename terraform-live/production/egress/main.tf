@@ -6,8 +6,8 @@
 # foundation/'s [P] facts arrive through terraform_remote_state - never pasted (Lesson 3).
 #
 # Not here yet, each with its trigger (8.7): `states` + `scheduler` under D7(B) when Stage 8 builds
-# orchestration; `secretsmanager` with gitlab-secrets.json (Stage 7 step 1). The internal ALB for
-# GitLab/Pages joins this slice at Stage 7 (conventions §6).
+# orchestration. `secretsmanager` arrived at Stage 7 step 1.7 (2026-10-12). No internal ALB joins
+# this slice: Stage 7 decision 1 terminates TLS on GitLab's own nginx.
 
 data "terraform_remote_state" "foundation" {
   backend = "s3"
@@ -21,7 +21,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.11.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.17.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -61,5 +61,12 @@ module "egress" {
     "ssm",
     "ssmmessages",
     "ec2messages",
+
+    # Stage 7 step 1.7. The GitLab host's first boot reads its two leaf keys and restores or
+    # pushes gitlab-secrets.json (1.5), and every [E] runner reads its registration token (6.1):
+    # Secrets Manager calls that must take an endpoint, since this VPC has no default route and
+    # a call that left by the proxy would be a public one. Sandbox has carried the same name
+    # since 6c 5.2.
+    "secretsmanager",
   ]
 }

@@ -49,6 +49,12 @@ Lesson 25 is the general form.
 persona costs the infrastructure user's token too. That is a re-login, never a lockout: every
 permission set signs in and calls AWS from any network (D39).
 
+**The login's browser step is a sign-in of that browser.** Answered in the browser that holds the
+SageMaker portal as another user, it ends the portal session, and the next portal act lands on the
+sign-in page (seen twice on 2026-10-11, each time right after the infrastructure user's login, with the
+Data Scientist User's portal open; the shared browser is the inferred cause, not an isolated one). `./aws/login.py` therefore passes `--no-browser`: the CLI prints the URL and the code,
+and the URL goes to another browser or a private window.
+
 ## Account names and ids
 
 Login as `AWS Control Tower Admin User`.

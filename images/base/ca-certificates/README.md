@@ -1,18 +1,19 @@
 # The CA-install layer's source directory
 
 `images/base/Dockerfile` copies this directory into `/usr/local/share/ca-certificates/awsds/`
-and runs `update-ca-certificates`. It contains no certificate, and the build asserts that:
-`CA_ROOTS_EXPECTED` defaults to `0`, and a `.crt` appearing here without the build argument
-being raised fails the build rather than being silently trusted.
+and runs `update-ca-certificates`. It holds one certificate, `awsds-root.crt`, the internal CA's
+root (`production/pki/`, D36), and the build asserts the count: `CA_ROOTS_EXPECTED` is `1`, and a
+file lost from here or a second one appearing fails the build rather than changing what the image
+trusts in silence.
 
-**Why it is empty** — D36 §3, amended 2026-08-21. The internal CA root moved back to
-[Stage 7](../../../docs/plan/stages/stage-07-gitlab-runners-ecr.md) with the leaf certificates,
-because the only names the root lets a container trust — `gitlab.prod.internal`,
-`*.pages.internal` — do not exist while Stage 6 runs. Every endpoint Stage 6 touches is an AWS
-public endpoint with a publicly-signed certificate.
+**Where the file comes from** — Stage 7 step 2.6 (2026-10-12), read from the published parameter
+`/datascience/prod/pki/ca-root-pem` with `aws ssm get-parameter`, never pasted (INT-19). Its SHA256
+fingerprint is in [the Stage 7 log](../../../docs/log/log-stage-07-gitlab-runners-ecr.md); a root
+rotation (D36 §6) replaces the file from the same parameter and rebuilds both images.
 
-**Who fills it** — Stage 7 step 2.6, from `production/pki/`'s output (INT-19), never a pasted
-PEM. One file, `.crt` extension, then rebuild with `--build-arg CA_ROOTS_EXPECTED=1`.
+**What the file lets a container reach** — `gitlab.awsds.internal` and `*.awsds-pages.internal`, the
+two names the root certifies: a `git clone` from a notebook (INT-09) and nothing else. Every AWS
+endpoint the image touches carries a public certificate and needs nothing from here.
 
-This file is not a certificate, so `update-ca-certificates` ignores it; it exists so the
-directory survives in git and the `COPY` has something to copy.
+The layer stood empty from Stage 6 until this step (D36 §3, amended 2026-08-21), because the names it
+certifies did not exist before Stage 7.

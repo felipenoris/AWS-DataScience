@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.5**, `jq`,
+`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -262,11 +262,12 @@ This table is the only routing map; every other file points here rather than rep
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Anything buildbox: the `[E]` `amd64` build host, `production/buildbox/` | [`docs/plan/runbooks/buildbox.md`](docs/plan/runbooks/buildbox.md) |
+| Anything GitLab: the host and its session (`make gitlab-up`/`gitlab-down`, the order with the hub and the tunnel), how a host is built from nothing (the applies, what the first boot does, a rebuild), a fresh host's initial setup (trusting the root, the first sign-in, the instance settings), a `gitlab.rb` change reaching the host, the leaves and their re-issue, trusting the root on a laptop, the backup and the restore, the runner's token, SAML's inputs | [`docs/plan/runbooks/gitlab.md`](docs/plan/runbooks/gitlab.md): §S the pieces, §U up and down, §P the installation, §I the initial setup, §R the refresh, §C the certificates, §B backup and restore, §K the runner, §A SAML, §V the instruments |
 | Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a version bump, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
 | Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
 | Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
-| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
+| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §T the `awsds-workflows` tool, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
@@ -278,7 +279,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
+- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c, 6i are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
   Development account, ever; interactive compute is Sandbox only. All 40 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h step 5's negatives** (5.2, 5.2a, 5.3 from the project, 5.4 as the persona; 5.1 and 5.2b wait for a second project), 0.4's portal reading and 6.4's keep-or-drop of `lab`, each session after `make hub-up` and `make up ENV=sandbox GROUPS=redshift`.
 - **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20); 6h's passes 0-2 and 6.1-6.3 are done, its negatives are not.** Two slices:
@@ -382,7 +383,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `status` field because each run stops when its successor starts. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps `ServiceEnabled: true` with no standard, so the hub answers everywhere and no check runs. The window closed 2026-09-20 and FSBP billed ~0.45 USD/day for the organization (13.5/month against a floor row of 1-2). `DL-11` reads the pause as a note; revert is `runbooks/security-hub.md` §R, from Audit.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`), Staging 11, SharedServices 13,
+  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`), Staging 11, SharedServices 14 (`secretsmanager` since Stage 7),
   Workloads 0; estate fixed rate 0.390/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
   stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
   PX-1..PX-4; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
@@ -435,7 +436,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DenySageMakerJobsOffVpc` in the **boundary's** copy (Lesson 20); filling the portal's empty `compute`
   changes nothing, an S3 operator task ran `SUCCESS`, and **6d decision due 14 took (b)** (user,
   2026-10-10): no portal notebook task; `PythonOperator`/`BashOperator` are explored instead, and
-  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i** is
+  the lint refuses `SageMakerNotebookOperator` by name. **Stage 6i (done 2026-10-12)** was
   the Sandbox exercise: a portal workflow whose `SageMakerProcessingOperator` runs a Python project in the
   house image under the boundary's four job settings (no network in the container, so the workflow deletes
   the source), then both worker operators; it took Stage 10's verifications (i), (xv) and 0.2's CLI half. `update-workflow` is a full replace (Lesson 60)
@@ -444,23 +445,31 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   supported** (added by AWS 2026-08-17, the day after our 08-16 reading): code in a separate `Code` S3
   object, D28 class (2b), needing `awscc` ≥ 1.99.0 (the estate locks 1.98.0); the laptop's CLI is
   2.37.12 since 2026-10-10, the first here that reads `Code`. Stage 10 decision 6 (new): one YAML
-  cannot name both accounts, so it is rendered per environment. **6i passes 0-4 done 2026-10-10/11**:
-  `demo-devenv-job` runs end to end (sensor, processing job in the house image under the boundary,
-  delete), the job's command opening with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`, and
-  `sandbox/workflows/` (rank 56, `[P]`, decision 6, policy v2) grants the existence check and the tag.
-  **Decision 7 taken as (a)**: a worker with a `Code` object has `airflow-serverless.amazonaws.com` fetch
-  the snapshot from `mwaa-serverless-code-files-<account>-<region>-prod` through the S3 gateway endpoint,
-  measured by `sandbox/endpoint-audit/` (rank 57, `[P]`, a trail of `VpceAccessDenied` network activity
-  events, an instrument destroyed by hand when the stage closes; CloudTrail Lake takes no new customers).
-  `vpc-v0.4.0` admits the family on `sandbox/foundation` only, and `demo-python-operator` ran `SUCCESS`.
-  Pass 5's probe (inline Bash, no `Code`) answered ix and x; its exercise version is not imported yet.
+  cannot name both accounts, so it is rendered per environment. **What 6i left**: four workflows in the
+  Sandbox project, kept (`demo-devenv-job`, `demo-devenv-deps`, `demo-python-operator`,
+  `demo-bash-operator`); a job's command opens with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`;
+  `sandbox/workflows/` (rank 56, `[P]`, policy v2) grants the operator's existence check and the project
+  tag on create. A worker with a `Code` object has `airflow-serverless.amazonaws.com` fetch the snapshot
+  from `mwaa-serverless-code-files-<account>-<region>-prod` through the S3 gateway endpoint, which
+  `vpc-v0.4.0` admits on `sandbox/foundation` only; the trail that named it, `sandbox/endpoint-audit/`,
+  was destroyed 2026-10-12 and is recoverable from `c0baddd` (CloudTrail Lake takes no new customers).
+  A job imports a vendored extension module from its code input (`package-uv-job.py`). 6i's log groups
+  sit under `EXC-10`. A processing input is a prefix read at each run with no version to pin, so Stage 10
+  decision 7 owns where a promoted job's dependencies come from (recommended: its image). **The workflow
+  tooling is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) since 2026-10-12**,
+  installed by URL from its `main` (user, 2026-10-12; the runbook's §T): `render.py`, `package-uv.sh` and
+  `package-uv-job.py` are deleted, the example YAML carry the package's placeholder names, and
+  `operators/build.sh` stays, since its archive vendors PyYAML, which `package-task` leaves out.
+- **Stage 7 in progress: pass 1 closed 2026-10-12, pass 2 nearly closed, pass 3 not started.** `production/pki/` (root to 2036, leaves to 2027-10-22, published as `/datascience/prod/pki/*-pem`; fingerprints in the stage log), `production/tooling/` (GitLab **CE v19.4.2** `[D]`, rank 42, host `awsds-prod-gitlab`, `gitlab.rb` as an S3 object the host fetches, `sudo awsds-gitlab-refresh` after an apply), `production/runners/` written (`[E]`, rank 57, unapplied until the runner token is in `awsds-prod-runner-token`), `egress/` 14 endpoints at v0.17.0, `registry/` 5.b (`app-etl`, three cache rules; `SC-12` red until 6.4's first pull). Decisions 1, 5-8 taken; **9 open** (the user's: `gitlab-up` raises all 14 SharedServices endpoints, the vestigial SageMaker pair included; recommended cut). Inside GitLab: the local administrator `felipenoris` (born `root`), the namespace `awsds/` with four persona subgroups, `app-etl` and `dev-env` (the latter with Stage 8 1.0's roles and the protected tag `*-v*`), SAML through the Identity Center application `GitLab` (certificate to 2031-10-12), the data-scientist persona signed in and a Developer in its subgroup; sign-up and Auto DevOps left on by the user; a self-created `GitLab Duo` bot. **Measured**: a reconfigure run from cloud-init deadlocks on Omnibus's `After=multi-user.target` (fixed in `gitlab.rb`); `/-/readiness` answers `404` to a probe by name (the monitoring allowlist, fixed with `--resolve`); first boot 8 min 44 s to `gitlab Reconfigured!`; a stop/start keeps the address; the `awsds` SSO token lives about an hour and does not refresh. **`saml.auto.tfvars` exists only in the worktree `verify-stage-7-a6b2e6`** (gitignored): copy it before any `tooling/` plan elsewhere, or the plan proposes removing the SAML block. **Owed**: the other personas' memberships, Pages (4.2), pass 3 (the token, `make gitlab-up`, 6.4's pipeline, 2.6's `default-v0.6.0`, 6.5's buildbox retirement), 8.x. `ENV=production` never touches the hub (refusal 6).
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
   (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
   the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
   every cached session's token, not only the one named, so switching persona costs the other
-  identity's session; a browser sign-out invalidates none.
+  identity's session; a browser sign-out invalidates none. A CLI login answered in the browser that
+  holds a SageMaker portal session as another user ends that portal session (seen twice 2026-10-11,
+  cause inferred), so `aws/login.py` passes `--no-browser` and its URL goes to another browser.
 - **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.4.0` (`sandbox/foundation` only, 2026-10-11; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`
   (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
   `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
@@ -601,6 +610,10 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 63. **A default is read once, when the consumer is created — the copy outlives it, and an alias
     survives a bump where an id does not.**
 64. **A comment inside a rendered template is a host replacement in waiting.**
+65. **A repository-wide pin is a claim about the machine it was written on, and every script inside it
+    carries it.**
+66. **A control on a request's parameters binds whoever makes the request, never the role the request
+    passes — and where the two are one principal, the measurement agrees with the wrong design.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

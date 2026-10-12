@@ -5,4 +5,4 @@ from __future__ import annotations
 import subprocess
 import sys
 
-sys.exit(subprocess.call(["aws", "sso", "login", "--sso-session", "awsds"]))
+sys.exit(subprocess.call(["aws", "sso", "login", "--sso-session", "awsds", "--no-browser"]))

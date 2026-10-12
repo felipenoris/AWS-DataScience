@@ -225,10 +225,6 @@ terraform-live/
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
 │   │                     #     like bedrock/'s
-│   ├── endpoint-audit/   # [P] the endpoint refusals trail (6i decision 7, rank 57): one
-│   │                     #     CloudTrail trail of S3 network activity events with errorCode
-│   │                     #     VpceAccessDenied and the bucket it delivers to, 7-day expiry;
-│   │                     #     destroyed by hand when the decision closes
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -331,10 +327,11 @@ terraform-live/
     │                     #     prod.internal and pages.internal zones were destroyed at
     │                     #     6c 2.6 (2026-09-07). Built in Stage 3, because Stage 7
     │                     #     (GitLab) depends on it (D14). Also GitLab's [P] anchors - the
-    │                     #     object-storage and backup buckets and the gitlab-secrets
-    │                     #     container (Stage 7 step 1.1): the restore path must survive
-    │                     #     tooling/'s destruction, the same argument that keeps both
-    │                     #     hub hosts' anchors in networking/ below. No public zone, no
+    │                     #     object-storage and backup buckets, the gitlab-secrets container
+    │                     #     and the runner-token container (Stage 7 step 1.1): an anchor
+    │                     #     must survive the destruction of tooling/ and runners/, the same
+    │                     #     argument that keeps both hub hosts' anchors in networking/
+    │                     #     below. No public zone, no
     │                     #     registered domain: those are Stage 13, and not the CA - see
     │                     #     pki/ below
     ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the
@@ -402,32 +399,34 @@ terraform-live/
     ├── warehouse-compute/# [E] the governed workgroup and its usage limit (D40, Stage 9 step 9,
     │                     #     rank 54). Same split and same reason as sandbox/'s: no pause exists
     ├── warehouse/        # [P] the governed half of the warehouse (D40, Stage 9 step 9, rank 53):
-    │                     #     namespace + workgroup awsds-prod-warehouse in VPC-Workloads'
-    │                     #     private tier - the two-AZ pair 6c built as the estate's one D9
-    │                     #     exception, so this account needs no new network work. Holds the
-    │                     #     `governed` database, written by awsds-prod-job-exec alone, and the
-    │                     #     namespace is REGISTERED to the Glue Data Catalog as a federated
-    │                     #     catalog (aws_glue_catalog's federated_catalog), which is what puts
-    │                     #     a warehouse schema under the same Lake Formation permissions as the
-    │                     #     lake. No project tag, no connection: D26 keeps deployment targets
-    │                     #     out of the domain, so 6h's three layers collapse to the GRANT alone
+    │                     #     the namespace awsds-prod-warehouse; its workgroup is
+    │                     #     warehouse-compute/'s, in VPC-Workloads' two private subnets, so
+    │                     #     this account needs no new network work. Holds the `governed`
+    │                     #     database, whose rows awsds-prod-job-exec writes, and reaches readers
+    │                     #     only through Lake Formation, by Stage 9 decision 5's shape: a
+    │                     #     federated catalog or a Lake Formation-managed datashare. No project
+    │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
+    │                     #     so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] VPC-SharedServices' interface endpoints (13 since 6c 5.5) -
-    │                     #     no NAT anywhere (D38; the NAT code left vpc-egress at v0.6.0,
-    │                     #     6c 5.1 - nothing was destroyed, every egress/ was down) - and
-    │                     #     the internal ALB for GitLab/Pages only if Stage 7 decision 1
-    │                     #     picks it over nginx-on-instance (an ALB cannot stop, so it
-    │                     #     is [E])
+    ├── egress/           # [E] VPC-SharedServices' interface endpoints (14 since Stage 7 1.7:
+    │                     #     6c 5.5's 13 plus secretsmanager) - no NAT anywhere (D38; the NAT
+    │                     #     code left vpc-egress at v0.6.0, 6c 5.1). No internal ALB: Stage 7
+    │                     #     decision 1 terminates TLS on GitLab's own nginx
     ├── probes/           # [E] Stage 3's instrument here: the peering target
-    ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
-    │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1).
-    │                     #     letsencrypt['enable'] = false is mandatory: Omnibus turns it
-    │                     #     on whenever external_url is https and retries every
-    │                     #     reconfigure (Stage 7 step 1.3)
-    ├── runners/          # [E] GitLab Runners (D14) - amd64, and the buildbox's successor:
-    │                     #     production/buildbox/ above retires into the build runner at
-    │                     #     Stage 7 step 6
+    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 42,
+    │                     #     applied 2026-10-12. TLS terminates on its own nginx with pki/'s
+    │                     #     leaves (Stage 7 decision 1); letsencrypt['enable'] = false is
+    │                     #     mandatory, since Omnibus turns it on whenever external_url is
+    │                     #     https and retries every reconfigure (1.3). gitlab.rb is rendered
+    │                     #     into the objects bucket and fetched by the host (decision 8);
+    │                     #     the user data and the AMI are held. Also both security groups,
+    │                     #     the two records and the daily DLM snapshot policy
+    ├── runners/          # [E] the build runner (D14), rank 57 - amd64 on the buildbox's
+    │                     #     measured m8i.xlarge, registered at boot with the token in
+    │                     #     foundation/'s container, pushing with its instance profile and
+    │                     #     holding no deploy permission; production/buildbox/ above retires
+    │                     #     into it at Stage 7 step 6.5
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
@@ -662,7 +661,8 @@ subscription decisions — which is state in rule 2's sense and settles the laye
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the WireGuard host and the Squid proxy — D38's two hub hosts, in `production/` since
-Stage 6c (2026-09-06) — and, from Stage 7, the GitLab EC2 instance and its EBS volume. `make down` stops
+Stage 6c (2026-09-06) — and, since Stage 7 (2026-10-12), the GitLab host and its data volume
+(`production/tooling/`, started and stopped by `make gitlab-up`/`gitlab-down`). `make down` stops
 them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
 2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
 is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated
@@ -700,7 +700,6 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
-| the endpoint refusals trail | `[P]` | `sandbox/endpoint-audit/`, rank 57 | 0.000001 USD per network activity event recorded, plus S3 storage: cents for a handful of refusals | by hand, when 6i decision 7 closes |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

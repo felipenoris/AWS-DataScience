@@ -1027,3 +1027,305 @@ caller differs.
   `mObMMosGwVA98XO` (125 s, its sensor 89 s), about 0.0022.
 - **The definition**, `definitions/demo-python-operator.yaml`, renders back to the saved file byte for
   byte; the portal added only `is_paused_upon_creation: false`.
+
+## 2026-10-11 — pass 5: `demo-bash-operator`, the exercise
+
+*The session stayed up from the passes before. The user merged the previous PR, asked for pass 5 and
+authorized the AWS writes it needs ("pode aplicar as escritas necessárias na aws"), and later the
+deletion of the probe workflow by name. The portal acts are Claude's, in the user's Chrome through
+Claude in Chrome, signed in as the Data Scientist user (the user signed in); the definition file was
+chosen by the user in Chrome's dialog. Every reading is Claude's own, from `awsds-infra-sandbox-1`
+(`<Sandbox Account 1>`, `InfrastructureAccess`).*
+
+### [Claude] 5.1 — the definition and the archive
+
+- **`operators/bash/demo-bash-operator.yaml`**: the sensor on `bash/inbox/?*`; `run_command`, an inline
+  command that prints its working directory and `PYTHONPATH`, changes to `/usr/local/airflow/dags` and
+  runs `python3 -m awsds_demo_job.s3`; and `reach_pypi`, whose command is the script's name. It renders
+  and parses, and each command passes `bash -n`.
+- **`operators/build.sh`** built `bash-operator.zip`, 4,849 bytes: `reach_pypi.sh` and `awsds_demo_job/`
+  at its root.
+
+### [Claude⚡] 5.2 — the drop, the import, the save and the run
+
+- **The drop:** the portal's *Files* page created `orchestration-demo/bash/` and `bash/inbox/` as folder
+  markers (21:30:15Z and 21:30:36Z) and uploaded the repository's sample there, 279 bytes, through the
+  dialog's file input.
+- **The import:** *Actions → Import definition file* in the probe's editor. The editor then held the
+  three tasks under the workflow's bare name.
+- **The archive:** *Settings → Storage → Python/Bash Operator Files* took `bash-operator.zip` through its
+  file input. The field below it became *Operator file S3 location*, "stored directly (no zip)", at
+  `dev/operatorFiles/bash-operator.zip`.
+- **The first save was refused** at 21:33:41Z: `CreateWorkflow` answered `ConflictException: Workflow
+  with given name already exists`. The import does not replace a saved workflow; the archive was
+  uploaded all the same (S3 version `DXBHpJbq…`, 21:33:37Z).
+- **The probe deleted**, with the user's approval: `demo-bash-operator-Q7BcYzndcz`, from the portal's
+  *Workflows* list, *Delete workflow* and the word "confirm" (`DeleteWorkflow`, 21:35:22Z). Its two runs
+  went with it; its log group stays.
+- **The second save** at 21:35:48Z created `demo-bash-operator-K04PshmXlc`, `READY`, version
+  `ab2013f4ee6c013b506e61a3dc0790a5`, its `Code` `dev/operatorFiles/bash-operator.zip` pinned to S3
+  version `OH84z4Jv…` (4,849 bytes), snapshotted at 21:35:48Z.
+- **The run**, `xn9EZ2kgVIMcI7h`, started by the portal at 21:36:22Z.
+
+### [Claude] 5.3 — the run read
+
+- **The run:** `FAILED` by design, 148 s from 21:36:28Z. `wait_for_file` `SUCCESS` in 4 s,
+  `run_command` `SUCCESS` in 9 s, `reach_pypi` `FAILED` in 13 s. Each task's environment `ready`.
+- **`run_command`:**
+
+  ```
+  cwd /var/tmp/airflowtmp2nab7fnd PYTHONPATH=/usr/local/airflow/dags:/usr/local/airflow/dags:/opt/mwaa-serverless-venv/lib/python3.12/site-packages
+  python 3.12.14 at /opt/mwaa-serverless-venv/bin/python3
+  sample.csv: 10 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/orchestration-demo/bash/outbox/20261011T213800Z/sample.result.json; source deleted
+  1 object(s) processed
+  ```
+
+  A Bash task's `PYTHONPATH` already carries the folder the archive is extracted to.
+- **`reach_pypi`**: the operator ran `['/usr/bin/bash', 'tmp6wm8sj1x.sh']`, the script rendered as a
+  template into a temporary file, and it printed the 5.0 readings again: no proxy variable, `OSError(16,
+  'Device or resource busy')` at resolution, urllib in 2 s, pip 23.2.1 failing in 4 s, exit 1.
+- **The result:** `bash/outbox/20261011T213800Z/sample.result.json`, 378 bytes, `aws:kms` with the
+  project key and `BucketKeyEnabled`, sha256 `1b2bc4d7…a248191`: the processing job's, the Python
+  task's and the local run's. `bash/inbox/` holds only its folder markers.
+- **`./aws/sandbox-orchestration.py` exits 0** with every check passing: `SO-4` reads "reach_pypi
+  FAILED and every other task SUCCESS, as designed", `SO-3` the exercise's `Code`, `SO-7` an empty inbox
+  and one result. The stage's first validation item holds.
+- **The trail** delivered no file after 21:00Z: neither re-run met a refusal.
+- **The cost:** three tasks at the one-minute minimum, about 0.0044 USD.
+
+### [Claude⚡] Verification vii, the second half: an edit takes a new snapshot
+
+The workflow's description was set to "Stage 6i pass 5" in the portal's settings and saved:
+`UpdateWorkflow` at 21:42:08Z, `code` pinned to the same S3 version `OH84z4Jv…`. The workflow gained
+version `b960b35f53191b41210702df9be10475`, and `CodeSnapshottedAt` moved from 21:35:48Z to 21:42:08Z,
+the code unchanged. The description lands in the definition itself, as a top-level `description`.
+`definitions/demo-bash-operator.yaml` is that version, rendered back byte for byte.
+
+## 2026-10-11 — step 3.5: a processing job whose project has dependencies
+
+*The user merged pass 5's PR and asked for this exercise in chat: "Peço exercitar o caso de um SageMaker
+Processing Operator com dependências externas, num projeto com dependências gerenciadas pelo uv." After
+the plan was shown, the user authorized its AWS writes ("Pode seguir (Recomendado)"), and the three peer
+sessions were told before the first one. The session stayed up from pass 5 (hub and Sandbox endpoints,
+`GROUPS=redshift`). The portal acts are Claude's, in the user's Chrome through Claude in Chrome, signed in
+as the Data Scientist user (the user signed in); the definition file was chosen by the user in Chrome's
+dialog. The space's commands are the user's. Every reading is Claude's own, from `awsds-infra-sandbox-1`
+(`<Sandbox Account 1>`, `InfrastructureAccess`).*
+
+### [Claude] 3.5 — the project and its folder, on the laptop
+
+- **`awsds-demo-deps`** (`examples/sandbox-orchestration/awsds-demo-deps/`): one CSV in, a JSON summary
+  and a Parquet table out. It depends on `petl` (pure Python) and `msgspec` (an extension module), both
+  absent from the house environment, and on `pyarrow`, which the house environment holds at 24.0.0.
+  Its command prints each dependency's version, the folder it was imported from and its extension module.
+- **The fresh lock disagreed with the image**, and `package-uv-job.py` stopped on it: "pyarrow: 26.0.0 in
+  the lock, 24.0.0 in the image". The block it printed, `constraint-dependencies = ["pyarrow==24.0.0"]`,
+  went into the project's `pyproject.toml`, and `uv lock` moved pyarrow 26.0.0 to 24.0.0 (J1 step 3).
+- **The tests**: 8 pass on CPython 3.13.13 with the locked versions. Under pyarrow 26.0.0 the same tests
+  passed and the interpreter then hung at exit, the main thread waiting in Arrow's thread pool
+  destructor; under 24.0.0 it exited at once. Observed once, on macOS arm64, and not chased further.
+- **The local run's summary is byte for byte `awsds-demo-job`'s result** for the sample, sha256
+  `1b2bc4d7…a248191`, 378 bytes; the Parquet table is 1,404 bytes, sha256 `31787bc6…8d77b75`.
+- **The folder**: 1,735,854 bytes in 176 files, for CPython 3.13 on `x86_64-manylinux_2_28`. From the
+  image: pyarrow. Vendored: msgspec 0.22.0 (`msgspec/_core.cpython-313-x86_64-linux-gnu.so`, 438,984
+  bytes) and petl 1.7.29.
+- **`demo-devenv-deps`** (`devenv-job/demo-devenv-deps.yaml`) is `demo-devenv-job` with the code input at
+  `shared/jobs/awsds-demo-deps-0.1.0/`, `PYTHONPATH` at its root, the command `python -m
+  awsds_demo_deps`, the job-name prefix `demo-devenv-deps-` and the variant `devenv-deps`. The sensor
+  waits on `inbox/?*`, since a folder marker `inbox/` matches `*`.
+- **`./aws/sandbox-orchestration.py`** learned the fourth workflow, each processing workflow's code input
+  and `PYTHONPATH` (`SO-3`), and an extension module built for another interpreter (`SO-7`). Its run
+  before any write exited 0, `demo-devenv-job`'s new `SO-3` assertions passing.
+
+### [Claude⚡] 3.7 — the import and the save
+
+- **The portal session had expired** when the editor's *Actions* menu was first opened, after the user
+  signed in to the CLI as the infrastructure user; the user signed in to the portal again as the Data
+  Scientist user. A minute later the CLI's token for the `awsds` session was gone from
+  `~/.aws/sso/cache` (the folder modified at 22:30Z, the file absent): a deletion, which is what `aws sso
+  logout` does, and not an expiry. Who deleted it is not known. The user signed in to the CLI again.
+- **The import** went into a new, empty workflow: *Create workflow*, *Actions → Import definition file*,
+  *Upload a local file*. The editor then held the three tasks as `demo-devenv-deps`.
+- ***Settings → Storage*** offered *Operator files zip S3 location* filled with
+  `dev/operatorFiles/demo-devenv-deps.zip`, with no file uploaded. The field was emptied before the save:
+  pass 5's probe was refused with `Code not found in specified S3 location` from the same state.
+- **The save** at 22:36:12Z (`CreateWorkflow` by the project role) created
+  `demo-devenv-deps-5EVIcrWSh3`, `READY`, version `912d88aeae83fca25c3085fc7537b775`, `Code` null. Its
+  log group, `/aws/mwaa-serverless/<domain>-<project>/demo-devenv-deps`, existed from the save, empty and
+  with no retention.
+
+### [user] 3.6 — the folder built in a space, and the first attempt refused
+
+The user started a new space, `jupyter-houseimage`, cloned this branch into `~/AWS-DataScience` and ran
+J1 step 2 as written. The pasted output:
+
+```
+sagemaker-user@default:~$ cd ~/AWS-DataScience && ./examples/sandbox-orchestration/operators/package-uv-job.py examples/sandbox-orchestration/awsds-demo-deps /tmp/awsds-demo-deps-0.1.0
+error: No interpreter found for Python 3.14 in virtual environments, managed installations, or search path
+
+hint: A managed Python download is available for Python 3.14, but Python downloads are set to 'never'
+```
+
+### [Claude] Why the script could not run in a space, and the fix
+
+- **uv reads `.python-version` from the script's folder upwards**, wherever the command is typed, so the
+  repository's 3.14 (the tooling's) chose the script's own interpreter, and the image's
+  `UV_PYTHON_DOWNLOADS=never` refused to fetch it. Reproduced on the laptop with the space's layout: uv's
+  downloads off, no managed Python, a 3.12 on `PATH`. Running from another folder failed the same way.
+- **Past that, the project's `uv export --locked` and `uv build` need a CPython 3.13**, the project's
+  `.python-version`, and in a space the house interpreter is on no search path: it was installed under
+  `/opt/awsds/python` by a `uv python install` whose `UV_PYTHON_INSTALL_DIR` lives only in its build step.
+  The simulation's next refusal read "No interpreter found for Python 3.13 in managed installations or
+  search path".
+- **The fix**, commit `fcc760b`: the shebang asks for `--python >=3.11`, the script's own requirement, and
+  the uv commands it runs name `$AWSDS_PYTHON_ENV/bin/python` through `UV_PYTHON` when the house image
+  sets that variable. In the simulation the unchanged command then built the folder; on the laptop the
+  output is unchanged but for install metadata.
+
+### [user] 3.6 — the folder built in the space, and copied
+
+```
+sagemaker-user@default:~/AWS-DataScience$ which python
+/opt/conda/bin/python
+sagemaker-user@default:~/AWS-DataScience$ which uv
+/opt/conda/bin/uv
+sagemaker-user@default:~/AWS-DataScience$ cd ~/AWS-DataScience && git pull
+...
+Updating 8bc26ee..fcc760b
+Fast-forward
+ examples/sandbox-orchestration/operators/package-uv-job.py | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+sagemaker-user@default:~/AWS-DataScience$ ./examples/sandbox-orchestration/operators/package-uv-job.py examples/sandbox-orchestration/awsds-demo-deps /tmp/awsds-demo-deps-0.1.0
+/tmp/awsds-demo-deps-0.1.0: 1735841 bytes, for CPython 3.13 on x86_64-manylinux_2_28
+from the image (1): pyarrow
+vendored (2): msgspec==0.22.0, petl==1.7.29
+top level: awsds_demo_deps, awsds_demo_deps-0.1.0.dist-info, msgspec, msgspec-0.22.0.dist-info, petl, petl-1.7.29.dist-info
+next: copy the folder into the project's storage (in a space: cp -r <folder> ~/shared/<name>/),
+      name that prefix as the job's code input at /opt/ml/processing/code, and set
+      PYTHONPATH: /opt/ml/processing/code in the job's Environment
+sagemaker-user@default:~/AWS-DataScience$ mkdir -p ~/shared/jobs && cp -r /tmp/awsds-demo-deps-0.1.0 ~/shared/jobs/
+sagemaker-user@default:~/AWS-DataScience$ find ~/shared/jobs/awsds-demo-deps-0.1.0 -type f | wc -l
+176
+```
+
+### [Claude] 3.6 read: the folder in S3
+
+- **192 objects under `shared/jobs/awsds-demo-deps-0.1.0/`**, written 22:57:32Z to 22:57:51Z: the 176
+  files, 1,735,841 bytes, and 16 zero-byte folder markers, one per folder, which the space's `shared/`
+  creates.
+- **The 176 files have the names and sizes of the folder the simulation built**, the extension module
+  among them.
+- **`./aws/sandbox-orchestration.py` exits 0**: `SO-1` `demo-devenv-deps` `READY`, created by the project
+  role; `SO-2` its network and key; `SO-3` the code input `shared/jobs/awsds-demo-deps-0.1.0/` and
+  `PYTHONPATH` `/opt/ml/processing/code`; `SO-7` "176 object(s), the entry point present, 1 extension
+  module(s) for the job".
+
+### [Claude⚡] 3.7 — the drop and the run
+
+- **The drop**, by the user from the space: `orchestration-demo/devenv-deps/inbox/sample.csv`, 279 bytes,
+  at 23:03:49Z, with the folder markers `devenv-deps/` and `devenv-deps/inbox/`.
+- **The run**, `aB2zorz48GP67hx`, started by the portal at 23:04:21Z.
+
+### [Claude] 3.8 — the run read
+
+- **The run:** `SUCCESS`, 909 s from 23:04:42Z. `wait_for_file` `SUCCESS` in 5 s (23:05:18Z),
+  `run_project` `SUCCESS` in 791 s, `remove_source` `SUCCESS` in 6 s (23:19:51Z). `get-workflow-run`
+  read `QUEUED` until 23:06:16Z, after the sensor had finished and while the job was being created: the
+  run's state lags its task instances.
+- **The job:** `demo-devenv-deps-20261011T230601`, created 23:06:03Z through Sandbox's `sagemaker.api`
+  endpoint (`SO-8`; the endpoint's id changed with the session's), processing from 23:08:56Z to
+  23:16:26Z, 450 s, `Completed`. The container ran its command at 23:16:11Z and printed:
+
+  ```
+  python 3.13.15 at /opt/awsds/venv/bin/python
+  petl 1.7.29 from /opt/ml/processing/code/petl
+  msgspec 0.22.0 from /opt/ml/processing/code/msgspec, extension _core.cpython-313-x86_64-linux-gnu.so
+  pyarrow 24.0.0 from /opt/awsds/venv/lib/python3.13/site-packages/pyarrow, extension lib.cpython-313-x86_64-linux-gnu.so
+  sample.csv: 10 rows -> sample.summary.json, sample.parquet
+  1 file(s) processed
+  ```
+
+  **Verification xvi: yes.** A vendored pure-Python package and a vendored extension module load from
+  the code input, and the house environment serves the package it holds. The folder markers in the
+  prefix did not disturb the download.
+- **The outputs**, under `devenv-deps/outbox/20261011T230601/` at 23:16:21Z, both `aws:kms` with the
+  project key and `BucketKeyEnabled`: `sample.summary.json`, 378 bytes, sha256 `1b2bc4d7…a248191`, byte
+  for byte `awsds-demo-job`'s result and pass 3's; `sample.parquet`, 1,404 bytes, sha256
+  `31787bc6…8d77b75`, byte for byte the laptop's, pyarrow 24.0.0 on macOS arm64 and on Linux x86_64
+  writing the same file.
+- **The inbox is gone**, the marker `devenv-deps/inbox/` with the sample; `devenv-deps/` stays.
+- **`./aws/sandbox-orchestration.py` exits 0**, every check passing or a standing note: `SO-4`
+  `demo-devenv-deps` three tasks `SUCCESS`, `SO-5` the job isolated, encrypted, with the project's role,
+  key and tag and the house image, `SO-7` the inbox empty and two results.
+- **The definition** the portal saved is the imported one plus `is_paused_upon_creation: false`;
+  `definitions/demo-devenv-deps.yaml` renders back to it byte for byte.
+- **The cost:** 15.2 task-minutes (5 s and 6 s billed at the one-minute minimum, and 791 s), 0.022 USD,
+  plus 450 s of `ml.t3.medium`, 0.006 USD: about 0.029 USD, pass 3's figure.
+
+## 2026-10-12 — pass 6: the close
+
+*Written by Claude in the sitting that ran it, which the user opened in chat with "Veja o que falta para
+concluir a etapa 6i". Every reading is Claude's own, from `awsds-infra-sandbox-1` (`<Sandbox Account 1>`,
+`InfrastructureAccess`), with `awsds-infra-prod` and `awsds-infra-staging` for the hub and the other
+accounts' endpoints. The session was lowered by the user. The one write by Claude, the trail's destroy,
+was authorized in chat, and the four peer sessions were told before it.*
+
+### [Claude] The validations, with the session up
+
+- **`./aws/sandbox-orchestration.py`**, 2026-10-11 23:56Z: exit 0, 30 checks `pass` and 6 `note`:
+  `SO-5` on the first probe job, whose failure answered verification ii, and `SO-6` on five groups with
+  no retention, decision 3's.
+- **`./aws/studio.py`**, 23:57Z: `US-8` `pass`, all 3 blueprint-provisioned roles bounded; `US-10` no
+  running app. It exits 1 only because seven profiles of other identities had no SSO session
+  (`awsds-ctadmin-orgfull-*`, `awsds-deploy-sandbox`, `awsds-devenv-prod`, `awsds-governance-data`,
+  `awsds-scientist-*`); every `awsds-infra-*` profile answered.
+- **`./aws/devenv.py`**, 23:57Z: every check `pass`. Its `DE-2` reads `sandbox/egress`'s outputs from
+  the state object, which an `[E]` destroy removes, so this reading needed the session up.
+- **`make check`**: `OK`.
+
+### [Claude] What was up before the close
+
+- **Sandbox:** 20 interface endpoints, `redshift-serverless` among them; the workgroup
+  `awsds-sandbox-warehouse` `AVAILABLE`; the two probe hosts; no SageMaker app `InService` or `Pending`.
+  **Production:** `awsds-prod-vpn` and `awsds-prod-proxy` `running`. Staging and Production: no interface
+  endpoint.
+- **The trail** `IsLogging` `True`, its latest delivery at 20:57:43Z. The organization trail's selectors
+  are not readable from Sandbox: `GetEventSelectors` on `aws-controltower-BaselineCloudTrail` answers
+  `TrailNotFoundException`.
+- **The workflows:** the four `READY`. `python/inbox/` and `bash/inbox/` hold their folder marker only,
+  `devenv/` and `devenv-deps/` hold no `inbox/`, and every variant's results stay under its `outbox/`.
+- **The log groups** (decision 3): `/aws/sagemaker/ProcessingJobs`, created 2026-10-11T02:58:06Z, no
+  retention and no CMK; six `/aws/mwaa-serverless/<domain>-<project>/…` groups (the four workflows,
+  `MyWorkflow-1787856980954` and `simple-s3-copy`), no retention, all under `alias/awsds-sandbox-project`.
+
+### [user] The session lowered
+
+**[user]** "o destroy está rodando. podemos prosseguir."
+
+**[Claude]** Read at 00:15Z: Sandbox holds no interface endpoint, no workgroup and no probe host;
+`awsds-prod-vpn` and `awsds-prod-proxy` `stopped`; the trail still `IsLogging` `True`.
+
+### [user] Decisions 3, 4 and 5, and the trail's destroy
+
+**[user]**, answering four questions in chat: decision 3 "Registrar sob EXC-10 (Recomendado)", decision 4
+"Prefixo, um drop por vez (Recomendado)", decision 5 "Manter tudo (Recomendado)", and the destroy of
+`sandbox/endpoint-audit/` "Autorizo (Recomendado)".
+
+### [Claude] The trail's last reading
+
+Read at 00:16Z: 7 files in `awsds-sandbox-endpoint-refusals` and 3 events, all 4.2a's, each
+`VpceAccessDenied` through `vpce-0cc3e139c1167ca83`: the control's two `ListObjects` of `sentinel-cogs`
+at 20:52:34Z, and the `GetObject` of `mwaa-serverless-code-files-<AWS-owned account>-us-west-2-prod` by
+`airflow-serverless.amazonaws.com` at 20:52:51Z. None after `vpc-v0.4.0`'s apply: pass 4's re-run,
+pass 5 and pass 3b met no S3 endpoint refusal.
+
+### [Claude⚡] The trail destroyed
+
+- **`init`** reused the state object; `state list` the seven resources and the two data sources.
+- **The plan**, to a file outside the repository: `Plan: 0 to add, 0 to change, 7 to destroy.`, the
+  bucket's `force_destroy = true`.
+- **The apply**, from the saved plan, 00:26:06Z to 00:26:19Z:
+  `Apply complete! Resources: 0 added, 0 changed, 7 destroyed.`
+- **After:** `state list` empty; `describe-trails` lists `aws-controltower-BaselineCloudTrail` alone;
+  `head-bucket` on `awsds-sandbox-endpoint-refusals` answers `404 Not Found`; the state object
+  `sandbox/endpoint-audit/terraform.tfstate` stays in `awsds-sandbox-tfstate`, 540 bytes.
