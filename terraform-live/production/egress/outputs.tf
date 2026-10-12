@@ -40,3 +40,14 @@ output "no_proxy_entries" {
   description = "The same list, one entry per element - for a consumer that renders its own separator."
   value       = module.egress.no_proxy_entries
 }
+
+# The third output, re-exported since Stage 7 step 1.7 (2026-10-12): every optional group's names,
+# the list a client that outlives this [E] slice has to carry. In this VPC that client is the GitLab
+# host: production/tooling/ is [D] and cannot read a destroyed slice's output, so its `no_proxy`
+# variable carries a DATED COPY of this value, and ./aws/supplychain.py SC-11 compares the two in
+# both directions. Known at plan time, from the endpoint-service catalog, whether or not the
+# endpoints exist.
+output "no_proxy_all_groups" {
+  description = "NO_PROXY with every optional endpoint group's names, whatever GROUPS= this apply named - the literal production/tooling/'s no_proxy variable copies (Stage 7 step 1.3), and the one ./aws/supplychain.py SC-11 compares it with."
+  value       = module.egress.no_proxy_all_groups
+}

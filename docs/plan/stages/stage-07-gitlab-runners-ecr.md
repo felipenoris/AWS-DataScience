@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. Everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16), on the **build plane, which is `open`**: any public name answers through the proxy and is logged, so an unlisted host is not a 403 here. The names are in the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call. The **buildbox retires into the build runner** after six hand builds (`default-v0.1.0` to `default-v0.5.0`, on an `m8i.xlarge`). **CodeArtifact, applied at 6a, has no consumer**: every installer in the estate reads public PyPI through the proxy (decision 6). Three readings from the executed stages shape the build: `make up`/`down ENV=production` starts and stops the hub with GitLab, so GitLab gets targets of its own (1.6); a `[D]` host's rendered user data is a replacement in waiting (Lesson 64), so GitLab's configuration travels outside it (1.3); and Pages is not resolvable from a Sandbox notebook, by design (4.2). One GitLab group `awsds/` is the shared namespace. **Pass 0 is applied**: step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
+| **Status** | **in progress - pass 1 closed and pass 2 nearly so, 2026-10-12** ([log](../../log/log-stage-07-gitlab-runners-ecr.md)): `foundation/`'s anchors (`18 added`), `egress/` at v0.17.0 with `secretsmanager` (`14 added`), `pki/` (`20 added`; the root's fingerprint in the log), `tooling/` (`17 added`; the first boot deadlocked on Omnibus's unit ordering and the host was replaced the same day with the fix, `3 added, 4 changed, 3 destroyed`; the second boot's reconfigure took 5 min 03 s), `registry/` 5.b (`8 added, 6 changed`, the Staging cut included); every slice re-planned `No changes`. 1.8's first sign-in done by the user (the administrator is `felipenoris`, local). The root is trusted on the user's laptop; verifications i, x (the laptop) and xiii are answered; the first `gitlab-down`/up cycle ran. **Pass 1 is closed.** Pass 2 has begun: 3.4, 3.5 and 3.6 done (the namespace, the persona groups, the two repositories with `dev-env`'s roles and protected tag), 3.1 and 3.2 done, the SAML round-trip proven by the user (verification iii); the data-scientist persona is a Developer in `awsds/data-scientists` (the user); the other three personas join their subgroups at their first sign-in, and Pages (4.2) waits for the first pipeline. **Pass 3 is not started**: the runner token (§K), `make gitlab-up` with `runners/`, 6.4's pipeline, 2.6's `default-v0.6.0`, 6.5's buildbox retirement, then 8.x. `saml.auto.tfvars` lives only in the session's worktree (runbook §A). Decisions 1, 5 and 8 taken as recommended; 6 and 7 taken by the user as recommended, in chat; 9 opened by the user's reading of the first `gitlab-down`, recommendation stated, not taken. Three implementation choices departed from the text below and are recorded where they land: the published certificates and `config/gitlab.rb` sit in the objects bucket (the only pre-existing bucket was the state bucket), the root volume (12 GiB) is separate from the 50 GiB data volume, and the cache's creation templates use AES256. Everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16), on the **build plane, which is `open`**: any public name answers through the proxy and is logged, so an unlisted host is not a 403 here. The names are in the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call. The **buildbox retires into the build runner** after six hand builds (`default-v0.1.0` to `default-v0.5.0`, on an `m8i.xlarge`). **CodeArtifact, applied at 6a, has no consumer**: every installer in the estate reads public PyPI through the proxy (decision 6). Three readings from the executed stages shape the build: `make up`/`down ENV=production` starts and stops the hub with GitLab, so GitLab gets targets of its own (1.6); a `[D]` host's rendered user data is a replacement in waiting (Lesson 64), so GitLab's configuration travels outside it (1.3); and Pages is not resolvable from a Sandbox notebook, by design (4.2). One GitLab group `awsds/` is the shared namespace. **Pass 0 is applied**: step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) passes 1-4 — met 2026-09-06**: `VPC-SharedServices` exists under its new name, `awsds.internal` resolves in all five VPCs, the Sandbox↔SharedServices peering carries routes both ways, and the proxy answers on `proxy.awsds.internal:3128`. **[6d](stage-06d-unified-studio-remainder.md)** for one deliverable only — the INT-09 clone needs a live Sandbox project. **`production/registry/` exists**: step 5.a was applied at 6a, so this stage starts with the two ECR repositories and CodeArtifact already there and **`production/pki/` not yet written** |
 | **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | [INT-09](../integrations.md) (the `git clone` from a **Sandbox** project over the SharedServices peering), [INT-13](../integrations.md) (CodeConnections against a private GitLab — expected to fail; the manual `git remote add` is the accepted path), [INT-19](../integrations.md) (the CA root on **four** client surfaces — the laptop, the `dev-env` image, the runner and GitLab itself), and [INT-21](../integrations.md) for GitLab and the runners, which the buildbox first exercised at 6c 5.8. **Supplies** [INT-02](../integrations.md)'s provider half — already applied at 6a. INT-08 is **not** here: the deploy roles are Stage 8's |
@@ -66,6 +66,9 @@ What the vendor documentation says and what the executed stages measured, each w
 | GitLab's own trust store | a **fourth** CA surface: roots are dropped in **`/etc/gitlab/trusted-certs/`** and picked up by `reconfigure`; the leaf pair is **hostname-named**, `/etc/gitlab/ssl/gitlab.awsds.internal.{crt,key}`, 644/600 | GitLab documentation | 1.3, 2.5 |
 | Omnibus and the proxy | taken **per component**: `gitlab_rails['env']`, `gitaly['env']`, `gitlab_workhorse['env']`, `gitlab_pages['env']`; `no_proxy` accepts wildcards and **must carry no port**, which breaks DNS resolution for repository mirroring | GitLab documentation | 1.3, 7.1 |
 | The runner and the proxy | GitLab Runner needs its own **systemd drop-in**, the docker daemon a second one, and the build container the values through `config.toml`'s `environment`, **in both cases**; `NO_PROXY` wildcards work only as **suffixes**: no prefixes, **no CIDR** | GitLab documentation | 6.2 |
+| **A reconfigure run from cloud-init deadlocks on Omnibus's unit ordering** | `gitlab-runsvdir.service` is `After=multi-user.target` by default; the bootstrap runs inside cloud-init's final stage, a dependency of that target, so Chef's `systemctl start gitlab-runsvdir` waits for the stage that is waiting for Chef. Measured 2026-10-12: the console stopped at the start job, CPU 1% for twenty minutes, and Chef gave up after its 3600 s timeout with cloud-init's final stage failed. The fix is `package['systemd_after'] = 'network-online.target'` in `gitlab.rb`, GitLab's own troubleshooting page naming the two `package['systemd_*']` settings | GitLab troubleshooting, the log | 1.3, 1.5 |
+| **A health probe by name is a client outside the monitoring allowlist** | `/-/readiness` answers `404` to a client the allowlist does not admit, and the default admits loopback only; a probe from the host that connects to its own name arrives from its VPC address. Measured 2026-10-12: the bootstrap's probe read `404` for its five minutes on a host that was up. The probe now connects over loopback (`--resolve`), the name kept for TLS | GitLab health check and IP allowlist pages, the log | 1.5, 8.2 |
+| **A fresh instance turns things on that nobody asked for** | Read 2026-10-12 on CE v19.4.2: sign-up enabled, Auto DevOps `instance enabled` (a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists), and a `GitLab Duo` bot user created by the instance itself (Lesson 17). Runbook §I step 6 turns the first two off; the bot stays, holding nothing | the admin area, the log | 1.8, 3 |
 | A host's boot and the proxy | cloud-init does not read `/etc/environment`, so the boot script needs its own `export`; `dnf.conf`'s `proxy=` broke the AL2023 repositories, which come through the S3 gateway endpoint, so `dnf` takes no proxy; the docker client's `proxies` block injects the host's `noProxy` into every container, outranking an image's own `ENV` | 6c, `buildbox.md` | 1.3, 6.2 |
 | The build plane | `open` since 2026-09-08: any public name through the proxy, logged; the only 403s are the global denies (a private destination, a non-443 `CONNECT`), and a refusal over `https://` reads `000` at the client. A name missing from a host's `NO_PROXY` fails open: the call leaves by the proxy to the public endpoint instead of the VPC endpoint | 6c, 6d, `NETWORK.md` | 1.3, 6.2, 6.3 |
 | A `[D]` host's user data | runs at first boot only, and a change replaces the instance only under `user_data_replace_on_change`, which the proxy host sets; an SSM-resolved AMI also replaced a `[D]` host on its next apply (6g). A comment edited inside a rendered template is a replacement in waiting (Lesson 64) | 6g, Lesson 64 | 1.2, 1.3 |
@@ -122,6 +125,7 @@ instance is `[D]` — stopped between sessions, ~USD 4/month of EBS — because 
 backup every session is the fragile path (conventions §5.1 rule 2). Everything that must survive a rebuild
 lives in `[P]` slices.
 
+- **1.1 — Done 2026-10-12** (`gitlab-anchors.tf`, `18 added`, re-plan `No changes`): the two buckets under a key of their own, `alias/awsds-prod-gitlab`, the backup bucket expiring at 30 days, the two containers with a `GetSecretValue` deny carved for the consuming role and `InfrastructureAccess`.
 - **1.1 — [Claude] Create GitLab's `[P]` anchors in `production/foundation/`**, exported for `tooling/`:
   the object-storage bucket `awsds-prod-gitlab-objects` (one bucket, virtual buckets by prefix — the
   documented consolidated form: artifacts, LFS, uploads), the backup bucket `awsds-prod-gitlab-backup`
@@ -129,6 +133,7 @@ lives in `[P]` slices.
   `awsds-prod-runner-token` — `aws_secretsmanager_secret` with **no value resource**, so no value enters
   Terraform state. They sit in `foundation/` because 8.2's rehearsal destroys `tooling/` and every session
   destroys `runners/`: an anchor must survive the destruction of the slice it serves.
+- **1.2 — Done 2026-10-12**: the host, a separate 50 GiB data volume (`aws_ebs_volume` + attachment, so a replaced instance re-attaches it) at `/var/opt/gitlab`, a 12 GiB root, the DLM daily snapshot (03:30 UTC, 7 kept, by the volume's tag). The DLM description admits `[0-9A-Za-z _-]` only - the first plan refused an apostrophe. The runners' group is declared here too, so GitLab's HTTPS rule never names an `[E]` object.
 - **1.2 — [Claude] Write `production/tooling/`**: a `t4g.large` on **Amazon Linux 2023 arm64** (Omnibus has
   supported it since 16.3.0), in `usw2-az1`; the AMI is resolved once from the SSM public parameter and
   then held — pinned in the slice, or `ignore_changes = [ami]` — because an SSM-resolved AMI replaced a
@@ -142,6 +147,7 @@ lives in `[P]` slices.
   two private subnets**, `10.20.0.0/18` and `10.20.64.0/18`, where a space's app ENI is the source the group
   matches (INT-09; inside the container the socket reads `169.255.254.3`); and the **runners' security
   group**, in this VPC. A security-group description refuses `'` and `>`, and only at apply.
+- **1.3 — Done 2026-10-12**: `gitlab.rb.tftpl` rendered into `s3://awsds-prod-gitlab-objects/config/gitlab.rb` (the backup bucket expires whole, so the object sits in the objects bucket, outside every GitLab prefix); `no_proxy` is the 60-entry literal of `production/egress`'s plan-time `no_proxy_all_groups` (sha256 `f8bc1df99d224181`), which the slice now re-exports; the bootstrap installs `/usr/local/sbin/awsds-gitlab-refresh` for decision 8's re-fetch. The plan printed the rendered file (Lesson 54).
 - **1.3 — [Claude] Render `gitlab.rb` from a Terraform template, and deliver it outside the user data** —
   configuration is code, not console, and the user data of a `[D]` host is the wrong carrier for code that
   changes. User data runs at first boot only; with `user_data_replace_on_change = true` (the proxy host's
@@ -175,10 +181,12 @@ lives in `[P]` slices.
 
   The instance role gets S3 on the two buckets, `GetSecretValue` on the two leaf secrets,
   `PutSecretValue`/`GetSecretValue` on 1.1's GitLab secret, and nothing else.
+- **1.4 — Done 2026-10-12**: both records read back carrying the host's primary private address.
 - **1.4 — [Claude] Create the two DNS records in `tooling/`**: `gitlab.awsds.internal` and
   `*.awsds-pages.internal` → the instance's **primary private IPv4**, documented to survive stop/start and
   measured to at 6g on the proxy host (one address throughout); verification i reads it again for GitLab.
   Both zones are `[P]` and were created at 6c pass 2; the record is still owed and belongs here.
+- **1.5 — Done 2026-10-12** in `user-data.sh.tftpl`. **The first boot deadlocked** at `systemctl start gitlab-runsvdir` (the readings table above) and Chef timed out after 3600 s; the instance and its data volume were replaced with `package['systemd_after']` in `gitlab.rb`, and the second boot ran through: `gitlab Reconfigured!` after 5 min 03 s of Chef, the generated `gitlab-secrets.json` pushed as the container's first version at 14:19:59 UTC (verification ii's generate half; the restore half is 8.2's). The readiness probe read `404` for its five minutes (the readings table: the monitoring allowlist) and now connects over loopback, a held user-data change that rides the next first boot.
 - **1.5 — [Claude] Write the restore-or-generate flow into the bootstrap**: on first boot, if 1.1's secret
   holds a value, install it as `/etc/gitlab/gitlab-secrets.json` **before** `gitlab-ctl reconfigure`; if not,
   reconfigure and push the generated file with `put-secret-value`. GitLab excludes this file from its own
@@ -186,6 +194,7 @@ lives in `[P]` slices.
   the proxy variables for itself (cloud-init does not read `/etc/environment`), leaves `dnf` unproxied (the
   AL2023 repositories come through the S3 gateway, and `dnf.conf`'s `proxy=` broke them), and reaches
   Secrets Manager through `egress/`'s endpoint, so the first boot happens with `egress/` up.
+- **1.6 — Done 2026-10-12**: `tooling` 42 `[D]`, `runners` 57 `[E]`, `layers.DORMANT_HOST_NAMES` (the slice is `tooling/`, the host `awsds-prod-gitlab`); `slices.py` refusal 6 and the hub check on Production's own `up`; `make gitlab-up`/`gitlab-down`. `-input=false` on `apply`/`destroy` was left to the session that announced it.
 - **1.6 — [Claude] Add the machinery in the same commit**: `("production", "tooling")` `[D]` and
   `("production", "runners")` `[E]` in `scripts/tfhygiene/layers.py`, `runners` ranked **above `egress`
   (50)**, since it needs the endpoints and the `[D]` hook acts on GitLab as one block before or after the
@@ -197,6 +206,7 @@ lives in `[P]` slices.
   stops the proxy blackholes every peer session's spoke. `ENV=production`'s own `up` then checks the hub as a
   spoke's does, since the runner it raises reaches the internet only through the proxy. A slice with no row
   fails `make check`.
+- **1.7 — Done 2026-10-12**, in that order, `egress/` through `./scripts/slices.py up --env production --only egress` (the hub check read both hosts `running`). The `awsds` SSO token expired between `tooling/`'s apply and its re-plan.
 - **1.7 — [Claude⚡] Apply `foundation/` (amended), then `egress/` (amended), then `tooling/`** as
   `awsds-infra-prod`, `fmt`/`validate`/`plan` clean first, `-input=false` always. `egress/` comes before
   `tooling/`: without its SSM endpoints there is no shell on the host, Session Manager does not work through
@@ -204,6 +214,7 @@ lives in `[P]` slices.
   trio is already there** (6c 5.5); this amendment bumps the module and adds `secretsmanager`. The two
   SageMaker endpoints stay: the deploy runner's calls into Sandbox's and Production's SageMaker (Stage 8 1.6,
   Stage 9 and 10's registry) leave from this VPC.
+- **1.8 — Done 2026-10-12** by the user: the SSM session, the initial password, the first sign-in as `root`, the account renamed `felipenoris` with a new password and kept local (the break-glass). The browser marked the address "Not secure": the root was in no keychain, while the served chain verified against the published root (the log); runbook §I step 2 is the trust step.
 - **1.8 — [user] Take first sign-in**: wait for the bootstrap to finish (`cloud-init status --wait` in the
   SSM session — the agent reports `Online` before the user data is done), read
   `/etc/gitlab/initial_root_password` (it self-deletes after 24 h), set the root password, and record in the
@@ -218,6 +229,7 @@ surface fails as an opaque TLS error at `git clone` time rather than as an acces
 the whole CA is one pass. The fourth trust surface is GitLab itself, which needs the root in
 `/etc/gitlab/trusted-certs/` to trust its own Pages and webhook targets.
 
+- **2.1, 2.2 — Done 2026-10-12** (`20 added`, re-plan `No changes`): an ECDSA P-384 root valid to 2036-10-09, two P-256 leaves valid to 2027-10-22 with `early_renewal_hours` 720; the root's SHA256 fingerprint is in the log.
 - **2.1 — [Claude] Write `production/pki/`**: the root CA through the `tls` provider — its own slice, its
   own state file, its own KMS key, and **the private key never an output** (D36 states the state-file
   custody trade). Outputs: the CA certificate, and from 2.4 the leaves' certificates.
@@ -225,6 +237,7 @@ the whole CA is one pass. The fourth trust surface is GitLab itself, which needs
   (`alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` at Stage 2 step 3.4) and encrypts
   nothing until this apply. **[user]** Record the CA certificate's **fingerprint** in the stage log in the
   same sitting (D36 §5) — without it a substituted root is indistinguishable from the real one.
+- **2.3, 2.4 — Done 2026-10-12**: three parameters under `/datascience/prod/pki/`, three objects under the objects bucket's `pki/` prefix, two leaf-key secrets `awsds-prod-tls-{gitlab,pages}` written by the slice (the one place a secret version exists in this repository) with the host-role carve-out.
 - **2.3 — [Claude] Publish the root from one source** (INT-19, Lesson 14): a `[P]` S3 object in an existing
   Production bucket **and** the SSM parameter `/datascience/prod/pki/ca-root-pem` (the `/datascience/` path
   because Parameter Store reserves `aws*`). 2.6's image rebuild, step 6's runner user data and 1.3's
@@ -285,6 +298,7 @@ shape is `when: manual` under `rules:` on a protected tag.
   and **`email` →** `${user:email}` (format `basic`); assign the four persona groups of the five
   `sso-group-*` groups (`INV-04`) — `sso-group-infrastructure` is left out, since GitLab's administrator is
   the local root (1.8). Download the IdC metadata (SSO URL + certificate) for 3.2.
+- **3.2 — Claude's half done 2026-10-12**: the two values from the application's metadata URL into the gitignored `saml.auto.tfvars`, the object applied (`0 added, 1 changed`, 16:37 UTC), the refresh and the round-trip the user's; the Identity Center certificate runs to 2031-10-12 (fingerprint in the log).
 - **3.2 — [Claude] Add the SAML block to the `gitlab.rb` template**: `idp_sso_target_url` and
   `idp_cert_fingerprint` from 3.1 as variables, not literals; `issuer "https://gitlab.awsds.internal"`;
   `name_identifier_format "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"`;
@@ -296,14 +310,17 @@ shape is `when: manual` under `rules:` on a protected tag.
   certificate, and the browser's own policy on a `POST` from IdC's public origin to a private host
   (private-network access, cookie partitioning), which no AWS instrument reads (Lesson 43); record the
   browser and what it did.
+- **3.3 — Read 2026-10-12**: CE v19.4.2 shows neither section in a project's CI/CD settings; the CE fallback is Stage 8's shape.
 - **3.3 — [user] Read the edition answer off the running instance** (verification iv): in a test project's
   settings, are **Protected environments** and **deployment approval rules** present at all? Expected:
   absent in CE. The answer decides whether Stage 8's two gates are D20's approval as designed (Premium) or
   the CE fallback — **protected tags plus hand-maintained membership**, where the control becomes *who can
   push the tag* and CloudTrail on the deploy roles (INT-08) becomes the record of what happened.
+- **3.4 — Done 2026-10-12** by Claude through the user's browser session: group `awsds`, ID 4, private.
 - **3.4 — [user] Create the shared namespace `awsds/`** — one group holding `base`, `dev-env` and `app-etl`.
   It is what D21's larger branch requires: with one Interactive account, the repositories are shared by
   every persona rather than owned per environment.
+- **3.5 — Done 2026-10-12** the same way: `awsds/data-scientists` (5), `awsds/deployment-managers` (6), `awsds/governance-managers` (7), `awsds/dev-env-stewards` (8), private, the administrator their only member at creation. The data-scientist persona is a Developer in `awsds/data-scientists` since 2026-10-12, added by the user after its first SAML sign-in; the other three follow the same way.
 - **3.5 — [user] Create the four persona groups inside it**, mirroring the Identity Center groups 1:1 in
   *membership* and deliberately not in name — `data-scientists`, `deployment-managers`,
   `governance-managers`, `dev-env-stewards`, **without** the `sso-group-` prefix (the identity seam's first
@@ -311,6 +328,7 @@ shape is `when: manual` under `rules:` on a protected tag.
   Premium upgrade automates it — re-check it by hand when people change. `governance-managers` holds no
   repository role yet: `docs/GOVERNANCE.md` routes a table's classification through a merge request on the
   versioned schema source, and which repository holds that source is Stage 9 decision 3's.
+- **3.6 — Done 2026-10-12** by Claude through the user's browser session: `awsds/app-etl` (ID 2) and `awsds/dev-env` (ID 3), private and empty; on `dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only (Stage 8 step 1.0's shape, taken here). `app-etl`'s roles are Stage 8's.
 - **3.6 — [user] Create the repositories**: `app-etl` (conventions §6's template) and `dev-env`, the latter
   writable by `data-scientists` with its **release tag protected** so only `dev-env-stewards` can push it —
   the CE shape of Stage 8 step 1's gate. `dev-env` starts empty: the recipe lives in this repository's
@@ -343,6 +361,7 @@ settle who consumes what. **Why:** under design B this is how public images reac
 and no application image exists until Stage 8. **Explanation:** 5.a is already applied (6a, `14 added`), so
 this is a second apply of one folder. Everything is `[P]` and free at rest except stored bytes.
 
+- **5.1, 5.2, 5.3, 5.4 — Written 2026-10-12, apply owed**: `awsds-prod-ecr-app-etl` with no cross-account principal (decision 7), three cache rules with `MUTABLE`/AES256 creation templates (`cache.tf`), CodeArtifact untouched (decision 6, the user), `REGISTRY_CONSUMERS = ["sandbox"]` (decision 7, the user) with the Staging alias and identity read removed from the slice and `supplychain.py`'s consumer list. The plan read `8 to add, 6 to change, 0 to destroy`.
 - **5.1 — [Claude] Record what 5.a already built, and do not re-author it**: `awsds-prod-ecr-base` and
   `awsds-prod-ecr-dev-env` (tag immutability on, basic scan-on-push, a lifecycle policy of two rules:
   untagged images expire after 14 days, and the 30 newest tagged images are kept, counted across flavours),
@@ -387,6 +406,9 @@ this is a second apply of one folder. Everything is `[P]` and free at rest excep
   Production consume the **application** repositories through Stage 8's own grant, never through this map,
   which keeps a deployment target off the `dev-env` image and the package proxy. Cutting Staging re-applies
   5.a's policies (both repository policies, CodeArtifact's two, the key) and rewrites the comment.
+- **5.5 — Done 2026-10-12**: `egress/` at 06:33 UTC (`14 added`, through `slices.py`) and `registry/` at
+  14:11 UTC (`8 added, 6 changed, 0 destroyed`, after the morning's attempt died on an expired SSO token),
+  both re-planned `No changes`. `SC-12` reads red until 6.4's first pull (the log).
 - **5.5 — [Claude⚡] Apply `registry/` (5.b) and the amended `egress/`** as `awsds-infra-prod`. The
   cross-account pull proof is 6d's (INT-01); `./aws/supplychain.py` §§5-7 keep the mechanical half readable.
 
@@ -402,6 +424,7 @@ permission and every push used the person's own token, an absence its README cal
 runner pushes by itself, so the control moves to who can run a job on it (protected refs, project locks)
 and to the immutable tags.
 
+- **6.1, 6.2 — Written 2026-10-12, unapplied** (`production/runners/`): the role, the host, the five proxy layers in the user data, registration from the token container, the CA root from the parameter at `/etc/gitlab-runner/certs/gitlab.awsds.internal.crt` and mapped into every job as `/etc/gitlab-runner/certs/ca.crt`. `seccomp=unconfined` on the docker executor is the trade BuildKit rootless asks for; verification viii measures it.
 - **6.1 — [Claude] Write `production/runners/`**: instance `Name` tag **`awsds-prod-runner`** (the script's
   contract), **`amd64`** — the images are `amd64` and the laptop is not, which was the buildbox's whole
   reason to exist. The shape is the buildbox's, measured: **`m8i.xlarge`** (4 vCPU, 16 GiB, 0.2117 USD/h) in
@@ -568,8 +591,7 @@ awkward, and it would land in `production/egress/`.
 **Blocking questions for the user: none.** Each is decided during the stage and written into
 `docs/log/log-stage-07-gitlab-runners-ecr.md` (Lesson 16), with a recommendation stated.
 
-1. **TLS termination: nginx on the instance, or an internal ALB** (steps 1-2) — recommended and effectively
-   settled: **nginx on the instance**, for the reasons in the Cost note above.
+1. **TLS termination: nginx on the instance, or an internal ALB** (steps 1-2) — **taken 2026-10-12: nginx on the instance**, for the reasons in the Cost note above.
 2. **ECR scanning: basic or enhanced** (5.1) — recommended: **basic scan-on-push** (free), which feeds
    `DescribeImageScanFindings`, the API Stage 8's gate reads. Enhanced (Inspector) is measured at USD
    0.09/image + 0.01/re-scan and is decided at **Stage 11 step 4** against a real bill.
@@ -585,21 +607,40 @@ awkward, and it would land in `production/egress/`.
    first pull succeeds through the proxy or from the hub's public tier; if it needs a route, prefer fallback
    (a) — measured at 6c 5.8 — or (b) over standing up this estate's first NAT gateway.
 4. **The mirroring policy** (7.1) — recommended: no standing mirror.
-5. **Runner shape** (6.1) — recommended: **one `[E]` `amd64` instance, `m8i.xlarge` as measured on the
+5. **Runner shape** (6.1) — **taken 2026-10-12 as written**: **one `[E]` `amd64` instance, `m8i.xlarge` as measured on the
    buildbox, docker executor**, rebuilt per session. The docker-autoscaler/fleeting path is adopted when a
    measured queue wait justifies it.
-6. **CodeArtifact** (5.3). Nothing consumes it, and it costs nothing at rest. Recommended: **keep it, idle,
+6. **CodeArtifact** (5.3). **Taken by the user 2026-10-12, as recommended.** Nothing consumes it, and it costs nothing at rest. Recommended: **keep it, idle,
    and add neither its endpoints nor the `assets` bucket family until a consumer exists**; the first consumer
    that needs it is a build that must not reach public PyPI, and it arrives with a token mechanism, an
    index URL and the gateway family in one change. The alternative is to retire it, which loses D14's package
    proxy and INT-02 with it.
-7. **Staging in the registry consumer map** (5.4). Recommended: **cut it**: Staging pulls application
+7. **Staging in the registry consumer map** (5.4). **Taken by the user 2026-10-12: cut**, applied with 5.b. Recommended: **cut it**: Staging pulls application
    images through Stage 8's grant and has no use for the `dev-env` image or the package proxy; the comment in
    `backend.py` records the other choice, made at a rename, not argued.
-8. **How a change to `gitlab.rb` reaches the host** (1.3). Recommended: **the rendered file as an S3 object
+8. **How a change to `gitlab.rb` reaches the host** (1.3). **Taken 2026-10-12 as recommended**, with the helper `awsds-gitlab-refresh` on the host. Recommended: **the rendered file as an S3 object
    the bootstrap fetches, with a re-fetch and `gitlab-ctl reconfigure` through an SSM session for every later
    change**, and the user data held by `ignore_changes`. The alternative, `user_data_replace_on_change`,
    makes every configuration edit a replacement of the host that holds the repositories.
+9. **The SharedServices endpoint set a GitLab session carries** (1.6). Opened 2026-10-12 by the user's reading
+   of `make gitlab-down`: `production/egress/` is one flat list, the module's core eight (`sts`, `logs`, `kms`,
+   `ecr.api`, `ecr.dkr`, `athena`, `glue`, `lakeformation`) plus the slice's six extras (`sagemaker.api`,
+   `sagemaker.runtime`, the Session Manager trio, `secretsmanager`): 14 endpoints at 0.010 USD/h each, created
+   by `gitlab-up` and destroyed by `gitlab-down` whole. Production defines no optional group, and the module's
+   closed group list names the Sandbox blueprint families. GitLab and the runner use the trio, `secretsmanager`,
+   the ECR pair and `sts`; `kms` and `logs` are the core's and unexercised by these hosts; `athena`, `glue`,
+   `lakeformation` and the SageMaker pair serve nothing in this VPC today, the pair marked vestigial in the slice
+   since 6c with the question deferred to this stage. Recommended: **drop the SageMaker pair from the extras**
+   (12 endpoints, 0.120 USD/h; `tooling/`'s bypass literal re-copied, `SC-11` the check) and leave the core
+   alone, which the module overrides never and whose `lakeformation` is load-bearing for Production's share
+   (D22). A per-session group for the data-plane three is a module change (the closed list, Lesson 33) for
+   0.030 USD/h, not worth it. **The plan names no SageMaker caller in this VPC**: Stage 9 3.3a puts the
+   job-facing set (`sagemaker.api` among it) in `production/workloads-egress/`, where Production's jobs and
+   Stage 10's workers run, and 4.3a re-cuts Staging's; the runner's own SageMaker calls, Stage 10's
+   `CreateModelPackage`/`UpdateModelPackage` as `awsds-deploy-prod`, are control-plane calls the proxy carries
+   as public calls on this `open` plane, so the stage that makes them declares `sagemaker.api` here if it wants
+   them private. Nothing in any stage invokes an inference endpoint from this VPC, so `sagemaker.runtime` has no
+   future caller here.
 
 ## Verifications to answer while executing
 
@@ -607,20 +648,20 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does the primary private IPv4 survive stop/start, so the two records never need repointing (measured for the proxy host at 6g; read for GitLab)? | 1.4 |
-| ii | Does the restore-or-generate flow round-trip `gitlab-secrets.json` through Secrets Manager on a fresh boot? | 1.5 |
-| iii | Does the SAML round-trip complete — and which NameID format + attribute mapping worked, in which browser? | 3.2 |
-| iv | The edition check: are protected environments / deployment approval rules absent on this CE instance? | 3.3 |
+| i | Does the primary private IPv4 survive stop/start, so the two records never need repointing (measured for the proxy host at 6g; read for GitLab)? **Yes, 2026-10-12**: stopped 15:44, started 15:59, `10.30.52.94` before and after, both records untouched | 1.4 |
+| ii | Does the restore-or-generate flow round-trip `gitlab-secrets.json` through Secrets Manager on a fresh boot? **The generate half, 2026-10-12**: the container was empty, reconfigure generated the file and the bootstrap pushed it (`AWSCURRENT`, 14:19:59 UTC); the restore half is 8.2's rehearsal | 1.5 |
+| iii | Does the SAML round-trip complete — and which NameID format + attribute mapping worked, in which browser? **Yes, 2026-10-12**: a data-scientist persona signed in through the Identity Center button and GitLab created the account; NameID `emailAddress` from `Subject = ${user:email}` plus the `email` attribute (`basic`); Chrome on macOS, no loop | 3.2 |
+| iv | The edition check: are protected environments / deployment approval rules absent on this CE instance? **Absent, 2026-10-12** (CE v19.4.2, the test project's CI/CD settings read through the user's browser): Stage 8's gates take the protected-tag shape | 3.3 |
 | v | Does backup → destroy → restore reproduce a working instance, and in how long? | 8.2 |
-| vi | Is the boot inside D8's assumed 3-5 minutes? | 8.1 |
+| vi | Is the boot inside D8's assumed 3-5 minutes? **No, 2026-10-12**: launch 14:11:09 UTC, `gitlab Reconfigured!` 14:19:53 (8 min 44 s: the package through the proxy, then 5 min 03 s of Chef), cloud-init done 14:25:03 after the probe's five minutes | 8.1 |
 | vii | **Does the first pull through a cache rule succeed with no route to the internet?** If not, which fallback was taken, and does the cached copy then pull cleanly? | 5.2 |
 | viii | Does the runner register through the authentication-token flow from the Secrets Manager token on a fresh instance, and does BuildKit rootless build and push without privileged mode? | 6.1, 6.3 |
 | ix | Can a CodeConnections host be created toward `gitlab.awsds.internal` from the no-VPC domain account (INT-13 — expected: no)? | 7.2 |
-| x | Do GitLab and `https://<project>.awsds-pages.internal` validate against the CA on every surface that resolves them (INT-19)? | 2.5, 4.2 |
+| x | Do GitLab and `https://<project>.awsds-pages.internal` validate against the CA on every surface that resolves them (INT-19)? **The laptop, 2026-10-12**: the served chain verifies against the published root (`openssl s_client`, `curl --cacert`), failed against the system store until the root was added, and Chrome accepts it since runbook §C's two commands (the user). The image, the runner and Pages are the other surfaces | 2.5, 4.2 |
 | xi | Does a Sandbox project clone and push over the SharedServices peering (INT-09)? | deliverables |
-| xii | **Does `gitlab-ctl reconfigure` complete without reaching the ACME server** once `letsencrypt['enable'] = false` is set? | 1.3 |
-| xiii | Does a change to `gitlab.rb` reach the running host through 1.3's path, with the plan proposing no replacement of the instance? | 1.3 |
-| xiv | Does `make gitlab-down` leave both hub hosts running, and does `make down ENV=production` refuse them by name? | 1.6, 8.1 |
+| xii | **Does `gitlab-ctl reconfigure` complete without reaching the ACME server** once `letsencrypt['enable'] = false` is set? **Yes, 2026-10-12**: the second boot's reconfigure completed (529/1346 resources, 5 min 03 s) with no `letsencrypt` or ACME line in the console | 1.3 |
+| xiii | Does a change to `gitlab.rb` reach the running host through 1.3's path, with the plan proposing no replacement of the instance? **The plan half, 2026-10-12**: adding `ci_catalog_bundles` to the object store planned `0 to add, 1 to change, 0 to destroy`, the S3 object alone, applied 14:22 UTC; the host half, the first `sudo awsds-gitlab-refresh` in 1.8's session, ended in `gitlab Reconfigured!` (the user, 2026-10-12): **yes on both halves** | 1.3 |
+| xiv | Does `make gitlab-down` leave both hub hosts running, and does `make down ENV=production` refuse them by name? **The first half yes, 2026-10-12**: after the first `gitlab-down`, `awsds-prod-vpn` and `awsds-prod-proxy` read `running` and the burn 0.0156 USD/h; the second half is unexercised | 1.6, 8.1 |
 
 ## Risks
 

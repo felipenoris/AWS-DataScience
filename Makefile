@@ -33,7 +33,7 @@
 # platforms in every committed lock file).
 
 SHELL := /bin/bash
-.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down status slices guard-env
+.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
 help:
 	@printf 'make - the checks, and the D11 lifecycle. READ targets change nothing in AWS;\n'
@@ -59,12 +59,17 @@ help:
 	@printf '\n'
 	@printf '\033[1mWRITE\033[0m - changes AWS; run one only when it was asked for by name\n'
 	@printf '  up   ENV=x  START the [D] hosts of one account folder, then terraform APPLY its\n'
-	@printf '              [E] slices in dependency order. Refuses while a hub host is stopped\n'
+	@printf '              [E] slices in dependency order. Refuses while a hub host is stopped.\n'
+	@printf '              ENV=production leaves the hub pair to hub-up (Stage 7 step 1.6)\n'
 	@printf '  down ENV=x  DELETE the running Studio apps, terraform DESTROY the [E] slices in\n'
 	@printf '              reverse order, then STOP the [D] hosts. Spaces and their volumes stay\n'
 	@printf '  hub-up      START the two hub hosts and nothing else - no apply, no endpoint\n'
 	@printf '  hub-down    STOP them - nothing is destroyed: the addresses, the host key and\n'
 	@printf '              the security groups are [P] anchors and survive the stop\n'
+	@printf '  gitlab-up   START GitLab and APPLY production/egress and production/runners - a\n'
+	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6)\n'
+	@printf '  gitlab-down DESTROY the runner and the SharedServices endpoints, STOP GitLab; the\n'
+	@printf '              hub keeps running for every other session\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
 	@printf '    DRY=1       print every command the target would run, and run none\n'
@@ -90,7 +95,7 @@ help:
 	@printf '                  groups are production/networking anchors\n'
 	@printf '  [D] DORMANT     kept, powered off between sessions: STOP and START, never destroy.\n'
 	@printf '                  Stateful hosts whose rebuild is riskier than the idle cost - the\n'
-	@printf '                  WireGuard host and the Squid proxy today, GitLab at Stage 7.\n'
+	@printf '                  WireGuard host and the Squid proxy, and GitLab since Stage 7.\n'
 	@printf '                  up = ec2 start-instances, down = ec2 stop-instances, by Name tag.\n'
 	@printf '                  status reads the power state from EC2, not the state file. A\n'
 	@printf '                  stopped host still bills its EBS volume and its [P] Elastic IP,\n'
@@ -109,9 +114,11 @@ help:
 	@printf '\n'
 	@printf '\033[1mTHE HUB\033[0m - the way into the private network and the way out, in Production (D38; 6c 7.1/7.2)\n'
 	@printf '  The WireGuard host and the Squid proxy are [D] hosts every other account depends\n'
-	@printf '  on. `make hub-up` starts the pair without raising Production endpoints or GitLab.\n'
-	@printf '  A spoke `make up` refuses while either is stopped, naming it: with a stopped hub\n'
-	@printf '  the apply would succeed and every symptom afterwards would be a timeout. With no\n'
+	@printf '  on. `make hub-up` starts the pair without raising Production endpoints or GitLab,\n'
+	@printf '  and `make up`/`make down ENV=production` never touch the pair (Stage 7 step 1.6):\n'
+	@printf '  a Production session that stopped the proxy would blackhole every peer. Every\n'
+	@printf '  `make up` refuses while the proxy is stopped, naming it: with a stopped hub the\n'
+	@printf '  apply would succeed and every symptom afterwards would be a timeout. With no\n'
 	@printf '  session on Production the check is waived, and says so.\n'
 	@printf '\n'
 	@printf '\033[1mGROUPS\033[0m - optional interface endpoints, per apply (6c step 5.3)\n'
@@ -216,6 +223,17 @@ hub-up:
 # forget, which is why `make status` prices the two hosts.
 hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+# GitLab's session (Stage 7 step 1.6): the [D] host started, VPC-SharedServices' endpoints and the
+# build runner applied, and the hub left to `hub-up`. `make up ENV=production` would do the same
+# and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
+gitlab-up:
+	@./scripts/slices.py up --env production --only tooling,egress,runners $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+
+# The reverse order is the script's: the runner and the endpoints are destroyed, then GitLab is
+# stopped. Nothing here touches the hub, so every other session's proxy and tunnel stay up.
+gitlab-down:
+	@./scripts/slices.py down --env production --only tooling,egress,runners $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
 status:
 	@./scripts/slices.py status $(if $(ENV),--env $(ENV),)

@@ -10,9 +10,10 @@
 # survives the SSO role suffix being minted per account (1c decision 7).
 
 locals {
+  # Interactive accounts only (Stage 7 decision 7, 2026-10-12): a deployment target pulls an
+  # application image through Stage 8's deploy grant, never through this list.
   consumer_account_ids = [
     data.aws_caller_identity.sandbox.account_id,
-    data.aws_caller_identity.staging.account_id,
   ]
 
   consumer_account_arns = [

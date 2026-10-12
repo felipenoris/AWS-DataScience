@@ -79,6 +79,8 @@ module's arithmetic:
 | **SMUS project app ENIs** | Sandbox · private · both AZs offered | one per running app | created by the blueprint, not by this repository |
 | **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
 | **Build host** `awsds-prod-buildbox` | **VPC-SharedServices · private** · az1 | `[E]` | `[E]` `production/buildbox/` |
+| **GitLab** `awsds-prod-gitlab` | **VPC-SharedServices · private** · az1 | one primary private IPv4, kept across stop/start; `gitlab.awsds.internal` and `*.awsds-pages.internal` both carry it (Stage 7 step 1.4) | `[D]` `production/tooling/` |
+| **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 7 step 6.1) | `[E]` `production/runners/` |
 | **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path**. From a space on 2026-10-10 it answered two private addresses, the workgroup's own managed-endpoint ENIs, never the `redshift-serverless` API endpoint's | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
 
 **No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
@@ -98,6 +100,8 @@ module's arithmetic:
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs, the DNS Firewall |
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/buildbox/` | `[E]` | the build host and its egress-only security group — **and no route at all** |
+| `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
+| `production/runners/` | `[E]` | the build runner, in the group `tooling/` declares - and no route at all, like the buildbox it succeeds (Stage 7 step 6.1) |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
@@ -276,6 +280,8 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-proxy` `[P]` | TCP/3128 from the four spoke CIDRs **and the tunnel range**, and nothing else |
 | `awsds-<env>-endpoints` `[P]` | TCP/443 from that VPC's own range |
 | `awsds-prod-buildbox` `[E]` | **nothing** — no ingress rule at all; Session Manager needs none |
+| `awsds-prod-gitlab` `[D]` | TCP/443 from **three sources and nothing else** (Stage 7 step 1.2): the WireGuard host's group `awsds-prod-vpn` — a same-account, cross-VPC group reference over the peering, since the host masquerades every tunnel packet not bound for the proxy and a laptop arrives as its address; the Interactive **private tiers** by CIDR (`10.20.0.0/18`, `10.20.64.0/18` today, generated from the allocation table), where a SMUS project's app ENI is the source of the INT-09 clone; and the runners' group. No port 22, no port 80 |
+| `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
 
@@ -293,11 +299,11 @@ peer VPC"*.
 
 | Zone | Associated with | Why |
 |---|---|---|
-| **`awsds.internal`** (apex) | **all five VPCs** | the shared names — `gitlab`, `proxy`, `vpn` — and the `[E]` probe records |
+| **`awsds.internal`** (apex) | **all five VPCs** | the shared names — `gitlab` (an A record to the GitLab host since Stage 7 step 1.4), `proxy`, `vpn` — and the `[E]` probe records |
 | `sandbox.awsds.internal` | Sandbox, VPC-Networking | per-account names, plus the client plane |
 | `staging.awsds.internal` | Staging, VPC-Networking | as above |
 | `prod.awsds.internal` | the three Production VPCs | **deliberately not Sandbox or Staging** |
-| `awsds-pages.internal` | VPC-SharedServices, VPC-Networking | Pages keeps a sibling apex for the cookie-scope reason D36 gives |
+| `awsds-pages.internal` | VPC-SharedServices, VPC-Networking | Pages keeps a sibling apex for the cookie-scope reason D36 gives; `*.awsds-pages.internal` is an A record to the GitLab host since Stage 7 step 1.4, so a Pages site resolves from the tunnel and the runners and from no spoke's compute (4.2) |
 
 **`NT-12` reads this table against AWS and is two-sided**: 5, 2, 2, 3, 2 associations **and no
 others**. An *extra* association is a spoke resolving into a plane the matrix keeps it out of — the

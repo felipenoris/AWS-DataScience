@@ -200,7 +200,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (`production/pki/` does not exist; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. Not yet applied: the count moves to 14 on the apply that builds the proxy | 1.00 USD/key-mo | 1.00 USD/key-mo | 13.00 | 13.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (`production/pki/` does not exist; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason: 15 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 15.00 | 15.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 
 The KMS row's unit is a key **version**, not a key — read from AWS's KMS pricing and key-rotation pages
@@ -660,7 +660,7 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | Access Analyzer custom policy checks (per API request) | 0.002 | 0.002 | **1.00** |
 | **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
 | Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
-| **Secrets Manager** secret (USD/secret-mo; `gitlab-secrets.json`, Stage 7 step 1.1) | 0.40 | 0.40 | **1.00** |
+| **Secrets Manager** secret (USD/secret-mo). **Four at Stage 7** (2026-10-12): `gitlab-secrets.json` and the runner token (step 1.1), the two leaf keys (2.4) — 1.60/month on the floor; the VPN host key was the first (6c 4.1) | 0.40 | 0.40 | **1.00** |
 | Secrets Manager API calls (per 10k) | 0.05 | 0.05 | **1.00** |
 | **CloudWatch** logs ingested, Standard class (USD/GB) | 0.90 | 0.50 | 1.80 |
 | CloudWatch logs, Infrequent Access class (USD/GB) | 0.45 | — | |
@@ -798,7 +798,8 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
-| EBS snapshot storage (USD/GB-mo) | 0.068 | — | |
+| EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |
+| EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 50 GiB data, gp3) bill ~4.96/month stopped or not | | | |
 | SageMaker Studio JupyterLab `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / Code Editor `ml.m5.large` (2026-09-07) | 0.184 | **0.115** | 1.60 |
@@ -880,7 +881,8 @@ shared resource)**, **AWS CloudFormation** (stacks managing AWS-namespace resour
 third-party resource-type handler operations bill; it is the deploy mechanism of every SMUS project
 environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
-storage bill), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
+storage bill), **Amazon Data Lifecycle Manager** (the policy is free; the snapshots it takes are §8's
+EBS snapshot row — Stage 7 step 1.2), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
 window — the first 30 days of **Security Hub CSPM** per account, from that account's first enablement.
 The two windows open at different stages (Security Hub at Stage 5a step 13, GuardDuty at Stage 15), so "the
 first thirty days" is never one date for the whole floor. Neither trial covers the AWS Config cost

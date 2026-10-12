@@ -6,9 +6,8 @@
 #             account without a pipeline, once, at Stage 6 step 5.0, and is replaced by Stage
 #             8's pipeline building the same Dockerfile.
 #
-# 5.b adds what is not here: the pull-through cache rules (registry-scoped, and priming one needs
-# Production's NAT up) and awsds-prod-ecr-app-etl. No application image exists before Stage 8, so
-# that repository would have nothing pushing to it for two stages.
+# 5.b (Stage 7, 2026-10-12) added the pull-through cache rules (cache.tf) and awsds-prod-ecr-app-etl
+# below: Stage 7 step 6.4's first pipeline is what pushes into it.
 #
 # Both carry the consumer pull policy. `base` carries it although design B's rebuild loop is `FROM
 # base` on a runner in Production today: the moment a project builds its own image, the missing
@@ -30,4 +29,18 @@ module "ecr_dev_env" {
   name                = "awsds-${var.env}-ecr-dev-env"
   kms_key_arn         = module.registry_key.key_arn
   pull_principal_arns = local.consumer_account_arns
+}
+
+# The first application repository (Stage 7 step 5.1, the 5.b half): one per application, the same
+# three settings. No cross-account pull principal - decision 7's reading: a deployment target pulls
+# an application image through Stage 8's own deploy grant, never through the consumer map, which
+# keeps Staging off the dev-env image and the package proxy. The runner pushes in this account by
+# its identity policy (6.1).
+module "ecr_app_etl" {
+  # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/ecr-repo?ref=ecr-repo-v0.1.0"
+
+  name                = "awsds-${var.env}-ecr-app-etl"
+  kms_key_arn         = module.registry_key.key_arn
+  pull_principal_arns = []
 }

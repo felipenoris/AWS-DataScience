@@ -409,21 +409,24 @@ terraform-live/
     │                     #     so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] VPC-SharedServices' interface endpoints (13 since 6c 5.5) -
-    │                     #     no NAT anywhere (D38; the NAT code left vpc-egress at v0.6.0,
-    │                     #     6c 5.1 - nothing was destroyed, every egress/ was down) - and
-    │                     #     the internal ALB for GitLab/Pages only if Stage 7 decision 1
-    │                     #     picks it over nginx-on-instance (an ALB cannot stop, so it
-    │                     #     is [E])
+    ├── egress/           # [E] VPC-SharedServices' interface endpoints (14 since Stage 7 1.7:
+    │                     #     6c 5.5's 13 plus secretsmanager) - no NAT anywhere (D38; the NAT
+    │                     #     code left vpc-egress at v0.6.0, 6c 5.1). No internal ALB: Stage 7
+    │                     #     decision 1 terminates TLS on GitLab's own nginx
     ├── probes/           # [E] Stage 3's instrument here: the peering target
-    ├── tooling/          # [D] GitLab EC2 + EBS (D8, D14) - TLS terminates on its own
-    │                     #     nginx, or on the egress/ ALB (Stage 7 decision 1).
-    │                     #     letsencrypt['enable'] = false is mandatory: Omnibus turns it
-    │                     #     on whenever external_url is https and retries every
-    │                     #     reconfigure (Stage 7 step 1.3)
-    ├── runners/          # [E] GitLab Runners (D14) - amd64, and the buildbox's successor:
-    │                     #     production/buildbox/ above retires into the build runner at
-    │                     #     Stage 7 step 6
+    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 42,
+    │                     #     applied 2026-10-12. TLS terminates on its own nginx with pki/'s
+    │                     #     leaves (Stage 7 decision 1); letsencrypt['enable'] = false is
+    │                     #     mandatory, since Omnibus turns it on whenever external_url is
+    │                     #     https and retries every reconfigure (1.3). gitlab.rb is rendered
+    │                     #     into the objects bucket and fetched by the host (decision 8);
+    │                     #     the user data and the AMI are held. Also both security groups,
+    │                     #     the two records and the daily DLM snapshot policy
+    ├── runners/          # [E] the build runner (D14), rank 57 - amd64 on the buildbox's
+    │                     #     measured m8i.xlarge, registered at boot with the token in
+    │                     #     foundation/'s container, pushing with its instance profile and
+    │                     #     holding no deploy permission; production/buildbox/ above retires
+    │                     #     into it at Stage 7 step 6.5
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
@@ -658,7 +661,8 @@ subscription decisions — which is state in rule 2's sense and settles the laye
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the WireGuard host and the Squid proxy — D38's two hub hosts, in `production/` since
-Stage 6c (2026-09-06) — and, from Stage 7, the GitLab EC2 instance and its EBS volume. `make down` stops
+Stage 6c (2026-09-06) — and, since Stage 7 (2026-10-12), the GitLab host and its data volume
+(`production/tooling/`, started and stopped by `make gitlab-up`/`gitlab-down`). `make down` stops
 them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
 2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
 is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated

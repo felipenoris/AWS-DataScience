@@ -85,9 +85,10 @@ ENV MAMBA_USER=$NB_USER
 ARG PIP_INDEX_URL=""
 
 # How many CA roots the layer below is expected to install: 0 for every build Stage 6 makes,
-# 1 from Stage 7 step 2.6 onward. The RUN asserts the count, so the number is a check rather
-# than a label (section 5).
-ARG CA_ROOTS_EXPECTED=0
+# 1 since Stage 7 step 2.6 (2026-10-12), when the root landed in the context. The RUN asserts the
+# count, so the number is a check rather than a label (section 5): a build whose context lost the
+# file fails here, and so does one that gained a second.
+ARG CA_ROOTS_EXPECTED=1
 
 USER root
 
@@ -258,18 +259,17 @@ RUN set -eu; \
       echo "package index: default (public PyPI)"; \
     fi
 
-# ------------------------------------------------- 5. the CA-install layer - empty by design
+# ------------------------------------------------- 5. the CA-install layer - the internal root
 #
-# The layer is here; the content arrives at Stage 7 step 2.6 (D36 §3, amended 2026-08-21). The
-# internal CA root moved back to Stage 7 with the leaves, because the only names the root lets
-# a container trust - gitlab.prod.internal, *.pages.internal - do not exist while Stage 6 runs,
-# and every endpoint this stage touches is an AWS public endpoint with a public certificate.
-# What stays behind is the hook, so that step 2.6 fills a blank instead of editing a build.
+# The internal CA root (production/pki/, Stage 7 step 2.6, 2026-10-12): ca-certificates/awsds-root.crt,
+# read from the published parameter /datascience/prod/pki/ca-root-pem and never pasted (INT-19).
+# It is what lets a container trust gitlab.awsds.internal and *.awsds-pages.internal - the INT-09
+# clone from a notebook. The layer stood empty from Stage 6 until this step (D36 §3, amended
+# 2026-08-21): the names it certifies did not exist before Stage 7.
 #
-# To fill it (Stage 7 step 2.6): drop the root PEM into images/base/ca-certificates/ with a
-# .crt extension, read from production/pki/'s output and never pasted (INT-19), and build with
-# --build-arg CA_ROOTS_EXPECTED=1. The assertion below fails the build on a mismatch in either
-# direction.
+# Refreshing it (a root rotation, D36 §6): replace the file from the parameter and rebuild; the
+# assertion below fails the build on a count mismatch in either direction, so a lost or a second
+# file is a failed build rather than a trusting-nothing or a trusting-too-much image.
 #
 # It lives in `base`, not in `dev-env`, which deviates from the sentence Stage 7 step 2.6 is
 # written with: one intent enforced in two places diverges (Lesson 33), and the root is not
