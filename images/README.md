@@ -21,8 +21,9 @@ every download **checksum-verified**, every assumption about the base image expr
 assertion rather than a comment, and every package moved inside the base's conda environment made to
 prove it moved nothing else.
 
-**One rebuild in between**: **Stage 7 step 2.6** fills the CA-install layer with the internal PKI root
-(D36 §3, amended 2026-08-21). The layer already exists and is asserted empty — see
+**One rebuild in between**: **Stage 7 step 2.6** filled the CA-install layer with the internal PKI root
+(D36 §3, amended 2026-08-21) and pointed the image's other trust readers at it; `default-v0.6.0`, built on
+2026-10-12 by the build runner's pipeline (below), is the first image that carries it — see
 [`base/ca-certificates/README.md`](base/ca-certificates/README.md).
 
 ## Building them on the build runner

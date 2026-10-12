@@ -1201,6 +1201,10 @@
     in-practice half stays at Stage 6): <https://docs.aws.amazon.com/codeartifact/latest/ug/configure-use-cargo.html>.
   - *Custom SAML 2.0 applications in IAM Identity Center* — the ACS URL / SAML audience fields and
     attribute mappings Stage 7 step 3.1 names: <https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html>.
+  - *GitLab Pages, the `pages` job keyword* (read 2026-10-12, Stage 7 step 4.2): a job with `pages: true`
+    *"publishes the default public directory"*, and *"every new project uses Pages unique domains"*, which is
+    why `app-etl`'s site is `app-etl-ffa1fa.awsds-pages.internal` and `$CI_PAGES_URL` is the way a job finds it:
+    <https://docs.gitlab.com/user/project/pages/>.
   - *CodeConnections hosts for self-managed GitLab* — a host needs network reach to the instance, which the
     no-VPC domain account does not have (INT-13's expected failure, Stage 7 step 7.2):
     <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-host.html>.

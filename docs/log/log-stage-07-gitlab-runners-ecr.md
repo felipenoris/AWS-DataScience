@@ -490,3 +490,10 @@ Account ids are replaced by the account's name in angle brackets.*
   changes`. `./aws/devenv.py`: `DE-5` pass, *"version 6, sha256:43079013d424...: 70 names, sha256
   aafa08da98a61f5c"*; `DE-2` fails because `sandbox/egress` is down, the known reading. **`default-v0.6.0`
   is what a new space's picker offers** since 19:48:45 UTC. INT-09's clone from a notebook is owed.
+- **[user] The session ended**: the runner destroyed at 19:51:29 UTC, `awsds-prod-vpn` and
+  `awsds-prod-proxy` stopped at 19:51:52 and 19:51:55, `awsds-prod-gitlab` at 19:57:40 (the instances'
+  own transition records). **[Claude]** Read back at 20:10 UTC: no interface endpoint in Production or
+  Sandbox, no instance and no app running in Sandbox, `make status` `estimated burn: USD 0.0000/h` across
+  every environment, `./aws/egress.py` `0 check(s) FAILED` (its exit 1 is the persona and `ctadmin`
+  profiles, signed out). Owed for the next session: INT-09's clone from a notebook on version 6, step 6.5,
+  pass 4.

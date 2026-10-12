@@ -264,7 +264,7 @@ The runner is a **protected project runner** of `awsds/app-etl`, never an instan
    aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
    ```
 
-3. **Enable it on `dev-env` when step 2.6 needs it**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available runners → Enable for this project**, then on the runner's edit page **Lock to current projects**, so no third project enables it.
+3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`images/README.md`](../../../images/README.md)).
 
 Every `make gitlab-up` then boots a new instance that waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
 
