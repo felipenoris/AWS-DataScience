@@ -472,7 +472,16 @@ def cmd_updown(args) -> int:
         if not prepare(sl, args.dry_run):
             print(f"    init failed for {sl.path}", file=sys.stderr)
             return 1
-        cmd = ["terraform", f"-chdir={sl.path}", "destroy" if action == "down" else "apply"]
+        # -input=false makes an unset variable an immediate error, not a prompt that waits on stdin
+        # holding the state lock (Lesson 47). The approval is a separate prompt that only
+        # -auto-approve skips, so without AUTO apply and destroy still ask for a yes. The Terraform
+        # 1.15.8 source says so; its apply documentation says -input=false fails the run instead.
+        cmd = [
+            "terraform",
+            f"-chdir={sl.path}",
+            "destroy" if action == "down" else "apply",
+            "-input=false",
+        ]
         if args.auto_approve:
             cmd.append("-auto-approve")
         res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
