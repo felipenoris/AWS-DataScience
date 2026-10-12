@@ -1149,8 +1149,26 @@
   - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
     repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
     creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from
-    updating images using the same tag"*:
+    updating images using the same tag"*. Re-read the same day after the first pull failed: the creation
+    role *"must be provided when using repository tags and/or KMS in the template, otherwise the
+    repository creation will fail"*; without one, ECR creates as `AWSServiceRoleForECRTemplate`, whose
+    `ECRTemplateServiceRolePolicy` grants `ecr:CreateRepository` alone (read with `aws iam
+    get-policy-version`):
     <https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-creation-templates.html>.
+  - *ECR pull-through cache, the multi-architecture rule* (read 2026-10-12, after `pause:3.10` stored two
+    Windows images of 270 and 308 MB): *"the manifest list and each image referenced in the manifest list
+    are pulled to the Amazon ECR repository. If you only want to pull a specific architecture, you can
+    pull the image using the image digest or tag associated with the architecture"*:
+    <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *Amazon ECR Docker Credential Helper* (read 2026-10-12, Stage 7 step 6.1): v0.12.0 (2026-02-27), the
+    `linux-amd64` binary and its `.sha256` in the release bucket the release page links, built with
+    `CGO_ENABLED=0` (`scripts/build_binary.sh`), so it runs in Alpine and glibc images alike. `runners/`
+    pins version and digest and mounts it into every job, where `credHelpers` in `~/.docker/config.json`
+    turns the instance role into the registry login:
+    <https://github.com/awslabs/amazon-ecr-credential-helper/releases/tag/v0.12.0>.
+  - *BuildKit's Dockerfile, the `rootless` stage* (read 2026-10-12): it ends in `USER 1000:1000`, so
+    `apk add` fails inside `moby/buildkit:rootless` and a job cannot install a registry client there:
+    <https://github.com/moby/buildkit/blob/master/Dockerfile>.
   - *The GitLab package repositories for Amazon Linux 2023* (read 2026-10-12, Stage 7 steps 1.5 and 6.2):
     the `.repo` files the install scripts download, `baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/$basearch`
     and `.../runner/gitlab-runner/amazon/2023/$basearch`, with their three GPG keys each. Both hosts write

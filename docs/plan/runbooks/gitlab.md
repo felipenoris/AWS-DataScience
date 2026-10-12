@@ -354,9 +354,11 @@ proxy-pair:
 
 The readings, in order:
 
-1. `build-image` and `cache-probe` run on the push. `moby/buildkit:rootless` and the job images come from Docker Hub and ECR Public through the proxy (the plane is `open`); every `FROM` is a pull through a cache rule, which ECR answers by importing the upstream image and creating `<prefix>/<upstream path>` from the rule's creation template; the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. If the jobs of the very first push sit pending, the branch was not yet protected when the pipeline was created: **Build → Pipelines → Run pipeline** on `main` runs them.
-2. **Retry** `build-image`: the same commit builds the same tag, and ECR refuses the push, the tag being immutable. The refusal's wording is the deliverable's second half.
-3. Run `proxy-pair` by hand: `through the proxy -> 200`, then `no proxy, no answer`.
+1. `build-image` and `cache-probe` run on the push; the protected runner takes the first push's pipeline, since `main` is protected before that pipeline exists. `moby/buildkit:rootless` and the job images come from Docker Hub and ECR Public through the proxy (the plane is `open`); every `FROM` is a pull through a cache rule, which ECR answers by creating `<prefix>/<upstream path>` from the rule's creation template and importing every platform of the upstream index; the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. A `FROM` that reads `not found` while the runner's `GetAuthorizationToken` succeeds is ECR failing to create the cache's repository: CloudTrail names the refusal under `AWSServiceRoleForECRTemplate`, and a creation template that carries tags or a KMS key needs a creation role (`registry/cache.tf`).
+2. **Retry** `build-image`: the same commit builds the same tag, and ECR refuses the push: *"The image tag '…' already exists in the 'awsds-prod-ecr-app-etl' repository and cannot be overwritten because the tag is immutable."* That refusal is the deliverable's second half.
+3. Run `proxy-pair` by hand: `through the proxy -> 200`, then `curl: (28) Connection timed out` and `no proxy, no answer`.
+
+Measured 2026-10-12 (the stage log): `build-image` in about 8 s, the cache's first pull 1.3 s with the import, and all three readings as written here.
 
 If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 

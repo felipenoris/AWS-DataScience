@@ -343,3 +343,56 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user] `make gitlab-up RUNNERS=0` asked for**, to raise GitLab without the runner. **[Claude]**
   Added (`edbc3ad`): `RUNNERS=0` narrows `gitlab-up` to `tooling,egress`, any value but `0` or `1` is
   refused, and `gitlab-down` destroys the runner whatever the flag says.
+
+## 2026-10-12 — step 6.4, the first pipeline
+
+- **[user] The three files of runbook §K pushed to `awsds/app-etl`'s `main`** (commit `0817e161`).
+  Pipeline #1: `build-image` and `cache-probe` failed in 12 and 11 s. The runner took both jobs (the
+  protected runner served the first push's pipeline), so the branch was protected before the pipeline
+  was created.
+- **[Claude] Both logs read through the user's Chrome, at the user's request.** Everything before the
+  first `FROM` worked: runner 19.4.1, `moby/buildkit:rootless` pulled from Docker Hub through the proxy,
+  the clone with the CA root (`Updating CA certificates...`), BuildKit rootless up with no privileged mode,
+  and `[auth] sharing credentials for <the registry>`. Then every pull through the cache read `not found`:
+  `ecr-public/docker/library/alpine:3.22` in one job, the probe's three in the other.
+- **[Claude] The cause, from CloudTrail.** The runner role's two `GetAuthorizationToken` calls succeeded
+  (the credential helper works); its four `BatchGetImage` calls read `RepositoryNotFoundException`; and
+  ECR's four `CreateRepository` calls, made as
+  `AWSServiceRoleForECRTemplate/ECRPullThroughCacheWithTemplate`, were refused: *"is not authorized to
+  perform: ecr:TagResource"*. That service-linked role (created 2026-10-12T14:11:54Z by `registry/`'s 5.b
+  apply) carries `ECRTemplateServiceRolePolicy`, which grants `ecr:CreateRepository` and nothing else,
+  and the three creation templates carried the five tags. The repository creation templates page says it:
+  the creation role *"must be provided when using repository tags and/or KMS in the template, otherwise
+  the repository creation will fail"*. `cache.tf` had carried the KMS half of that sentence and not the
+  tags half.
+- **[user] Option (a) taken: the templates carry no tags**, recommended over a custom creation role
+  (a second principal for public bytes, `cache.tf`'s own argument against a CMK). **[Claude]
+  `production/registry/` applied 18:34 UTC: `0 added, 3 changed, 0 destroyed`**, the saved plan the
+  user approved, re-plan `No changes`; the three templates read back with no tags, `MUTABLE`, `AES256`
+  and no custom role.
+- **[Claude] Pipeline #2 started through the user's Chrome, at the user's request: both jobs passed.**
+  ECR created the four cache repositories at 18:34:57 UTC (`MUTABLE`, `AES256`, the templates' two
+  lifecycle rules, no tags) and filled them between 18:35:00 and 18:35:08 as
+  `AWSServiceRoleForECRPullThroughCache` (`InitiateLayerUpload` to `PutImage` in CloudTrail).
+  **Verification vii: yes.** The first pull through each of the three rules succeeded with no route to
+  the internet: the upstreams need no credential and ECR fetches them itself. **Verification viii: yes**,
+  on both halves: BuildKit rootless built and pushed with no privileged mode under `seccomp=unconfined`.
+  `build-image` took about 8 s: the `FROM` through the cache 1.3 s with the import, `apk add` through the
+  proxy (`dl-cdn.alpinelinux.org`), and the push of `awsds-prod-ecr-app-etl:v0.1.0-0817e161`
+  (`sha256:9a37b6929c23…`, 4.0 MB) at 18:34:59 UTC.
+- **[Claude] A pull through the cache imports every platform of a multi-architecture index**, as the
+  pull-through cache page says: `pause:3.10` stored five Linux images of 0.2 to 0.36 MB and two Windows
+  images of 270 and 308 MB; `alpine:3.22` and `busybox:1.37` seventeen entries each, attestation
+  manifests included. A large multi-architecture image is pulled by its platform digest when the other
+  platforms are not wanted.
+- **[Claude] The retry of `build-image` (job 7) was refused, the deliverable's second half:** *"failed to
+  push …/awsds-prod-ecr-app-etl:v0.1.0-0817e161: unknown: The image tag 'v0.1.0-0817e161' already exists
+  in the 'awsds-prod-ecr-app-etl' repository and cannot be overwritten because the tag is immutable."*
+  The rebuild had produced another manifest (`sha256:a580d4771ad5…`): the build is not byte-reproducible,
+  and the layers uploaded before the refusal came at the manifest.
+- **[Claude] `proxy-pair` (job 6), run by hand: `through the proxy -> 200`, then `curl: (28) Connection
+  timed out after 20001 milliseconds` with the proxy variables unset.** INT-21's job half; the access
+  log's half (the proxy naming the runner's requests) is unread and needs `./aws/proxy.py --on-host`,
+  which writes through `ssm:SendCommand`.
+- **[Claude] `./aws/supplychain.py`: all checks passed**, `SC-12` green on all three rules (2, 1 and 1
+  cached repositories) and `SC-10` the note of a runner running.
