@@ -197,6 +197,18 @@
   `removed { from = <address>  lifecycle { destroy = false } }`, which removes the resource from state
   and leaves it alone: <https://developer.hashicorp.com/terraform/language/block/removed>.
 
+- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, not measured). The apply page
+  says the flag also prevents the approval prompt, so a run without `-auto-approve` fails:
+  <https://developer.hashicorp.com/terraform/cli/commands/apply>. The 1.15.8 source says otherwise. An
+  S3-backend apply runs in the local backend, which asks for approval whenever `-auto-approve` is
+  absent and the plan has changes, and reads stdin without consulting the flag; the flag gates only the
+  prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` and
+  `scripts/buildbox.py` pass the flag on every apply and destroy on this reading:
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_apply.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_local.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
+  <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/ui_input.go>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
