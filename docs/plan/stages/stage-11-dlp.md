@@ -339,7 +339,9 @@ control at all. A threat model that lists a control nobody implemented is worse 
   its path — no proxy, no DNS Firewall, no flow log. The row names the control that would close it, a deny
   on `lambda:CreateFunction` and `lambda:UpdateFunctionConfiguration` unless `lambda:VpcIds` names a VPC
   of the account, and whether it was written; until it is, Stage 17 does not create that entry (its
-  decision 10, Lesson 34).
+  decision 10, Lesson 34). The same row names the two Lambdas the `AmazonBedrockKnowledgeBase` blueprint
+  creates, the OpenSearch index and the ingestion trigger (AWS's blueprint page, read 2026-10-12), which
+  Stage 17 7.4a does create and its `ML-8` reads for where they run.
 
 ### 4. GuardDuty's two paid features, decided against a real bill
 

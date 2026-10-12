@@ -734,7 +734,7 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-hyperpods.html>; *Partner AI apps*
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-partner-apps.html>; *Experiments* (MLflow)
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>; the XGBoost recipe, whose dataset is a CSV fetched from
-  `raw.githubusercontent.com` (Stage 17 decision 3's alternative b) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+  `raw.githubusercontent.com` (Stage 17 decision 3's choice, taken 2026-10-12) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
   the Bedrock IDE's getting-started page, where the Generative AI menu's app kinds are listed (prompt,
   guardrail, chat agent, flow, evaluation, knowledge base, function) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/getting-started-use-amazon-bedrock-ide.html>;
   Identity Center domains <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-identity-center-based-domains.html>; the guide's table of
@@ -778,6 +778,52 @@
   `PRICING.md` §8's rows of that date — the `ml.m5.large` instance rows, the MLflow tracking-server sizes
   and storage, the HyperPod `Cluster:` and `PartnerApp-*` SKUs, and no usage type for the MLflow App:
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSageMaker/current/us-west-2/index.json>.
+- **The Bedrock IDE's knowledge base and chat agent** (read 2026-10-12 for Stage 17 pass 7): the
+  component's page, with its configuration (the embeddings model, the vector store created on the user's
+  behalf among OpenSearch Serverless, S3 Vectors and Neptune Analytics, chunking, parsing)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/creating-a-knowledge-base-component.html>;
+  its sources: local files (PDF, Markdown, text, Office, HTML and CSV at 50 MB a file and 50 files)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document.html>,
+  a web crawler of up to ten seed URLs under `robots.txt`
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document-web-crawler.html>,
+  and the project's S3 prefix, Redshift tables and Lakehouse catalog, read with the project user role
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-project.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-sources.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>;
+  the manual sync <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-sync.html>
+  and the project as the component's boundary
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-security-boundaries.html>;
+  the chat agent app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app.html>,
+  its components <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app-with-components.html>,
+  the knowledge base as its *Data*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-chat-app.html>,
+  its deploy, aliases and versions <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy.html>,
+  and its share, which deploys a snapshot, publishes the app to the catalog and cannot be withdrawn
+  without deleting the app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>;
+  the prompts page <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/explore-prompts.html>.
+
+- **Amazon Bedrock Knowledge Bases** (read 2026-10-12): the setup page
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-setup.html> and the supported
+  models and stores, the embeddings models (`amazon.titan-embed-text-v2:0` at 256, 512 or 1024
+  dimensions, `amazon.titan-embed-text-v1`, Cohere's two) and the vector stores (OpenSearch Serverless
+  and managed, S3 Vectors, Aurora, Neptune Analytics, Pinecone, Redis, MongoDB Atlas)
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>.
+
+- **Amazon S3 Vectors** (read 2026-10-12), which names Amazon Bedrock in SageMaker Unified Studio
+  knowledge bases among its uses <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html>.
+
+- **OpenSearch Serverless capacity** (read 2026-10-12): the scaling page, where a classic collection holds
+  a minimum of 1 OCU in dev/test and 2 in production and a next-generation collection scales to zero after
+  ten idle minutes <https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-scaling.html>;
+  the pricing page, which gives no Oregon figure by itself <https://aws.amazon.com/opensearch-service/pricing/>.
+
+- **The offer files behind `PRICING.md` §5's knowledge-base rows** (read 2026-10-12): `AmazonBedrock`
+  (published `2026-10-10T18:22:42Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>,
+  `AmazonES` (`2026-09-27T12:24:24Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonES/current/us-west-2/index.json> and
+  `AmazonS3` (`2026-10-12T17:53:18Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
 
 ## Data platform
 

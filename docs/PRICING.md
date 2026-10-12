@@ -601,8 +601,34 @@ catalogue is DeepSeek, Qwen, Llama, Mistral, GPT-OSS and others. The Ratio colum
 premium, and a move would be a change of *model*, not of price.
 
 Not priced here: provisioned throughput (model units by the hour, the one standing Bedrock shape and the
-one D12 would notice), model customisation, Knowledge Bases (which bill their own vector store), and
-Guardrails. None is reachable from the blueprint as enabled.
+one D12 would notice) and model customisation, neither reachable from the blueprint as enabled.
+
+**Knowledge Bases and Guardrails, measured 2026-10-12** for
+[Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 7, from the `us-west-2` offer files
+`AmazonBedrock` (published `2026-10-10T18:22:42Z`), `AmazonES` (`2026-09-27T12:24:24Z`) and `AmazonS3`
+(`2026-10-12T17:53:18Z`). A knowledge base bills its embeddings per token and its vector store by the
+store's own shape, which is the half that can bill while idle:
+
+| Item | Unit | USD |
+|---|---|---|
+| Titan Text Embeddings V2 (`amazon.titan-embed-text-v2:0`), input tokens | per 1K tokens | **0.00002** (batch 0.00001) |
+| Guardrails: content policy, topic policy | per 1K text units | 0.15 each |
+| Guardrails: sensitive information (paid tier), contextual grounding | per 1K text units | 0.10 each |
+| Guardrails: word policy | per 1K text units | 0 |
+| Guardrails: automated reasoning policy | per 1K text units | 0.17 |
+| OpenSearch Serverless: indexing, search, semantic-search or vector-acceleration OCU | per OCU-hour | **0.24** — a classic collection holds at least 1 OCU in dev/test or 2 in production, 5.76 or 11.52 a day while it exists; a next-generation collection scales to zero after ten idle minutes (AWS's scaling page, read 2026-10-12) |
+| OpenSearch Serverless: managed storage | per GB-month | 0.024 |
+| S3 Vectors: storage | per GB-month | **0.06** |
+| S3 Vectors: bytes put | per GB | 0.20 |
+| S3 Vectors: put and other requests | per 1,000 | 0.055 |
+| S3 Vectors: query requests | per request | 0.0000025 |
+| S3 Vectors: query bytes processed | per GB | 0.000003906 (tier 1), 0.000001953 (tier 2), 0.000000391 (tier 3) |
+| S3 Vectors: query bytes returned | per GB | 0.01 |
+
+For the stage's knowledge base, the repository's runbooks (550 KB, about 140,000 tokens), the embeddings
+are under 0.01 USD a sync and an S3 Vectors store cents a month; an OpenSearch Serverless classic
+collection would be the standing line, which is why Stage 17 decision 12 recommends S3 Vectors and its
+7.6 deletes a store with a minimum OCU.
 
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 

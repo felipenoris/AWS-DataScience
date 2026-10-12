@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Not started. Written 2026-10-12** from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each (pass 7, decision 1). Two Terraform changes are planned: `MLflowApp` promoted out of category 2 (decision 2) and an `mlflow` endpoint group in `vpc-egress` (decision 4); a third, the `[P]` grant slice `sandbox/ml/`, joins if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Pre-instrumented at pass 0 by `./aws/sandbox-ml.py` (`ML-1`..`ML-9`), written and run as the before. Decisions 1-3 were put to the user on 2026-10-12 with the recommendations below and wait for an answer |
+| **Status** | **Not started. Written 2026-10-12** from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each, a chat agent over a knowledge base of the user's own documents among them (pass 7, decision 1). The Terraform changes planned are `MLflowApp` and `AmazonBedrockKnowledgeBase` promoted out of category 2 (decisions 2 and 1), an `mlflow` endpoint group in `vpc-egress` (decision 4) and the embeddings model admitted by the SCP `DenyBedrockInvocationOutsideTheScopedModels` (decision 11); the `[P]` grant slice `sandbox/ml/` joins them if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Pre-instrumented at pass 0 by `./aws/sandbox-ml.py` (`ML-1`..`ML-9`), written and run as the before. Decisions 1-3 were taken by the user on 2026-10-12: the Generative AI menu in, with a knowledge base; the `MLflowApp`; the public CSV of AWS's XGBoost recipe |
 | **Prerequisites** | **[6a](stage-06a-unified-studio.md) and [6d](stage-06d-unified-studio-remainder.md)**: the Sandbox project, its project role under the D13 boundary, the house image selectable in a space. **[6c](stage-06c-networking-hub.md)**: the private tier with no default route, and a raised session, `make hub-up` then `make up ENV=sandbox GROUPS=mlflow` for passes 1-6 and `GROUPS=mlflow,bedrock-base,bedrock-agent` for pass 7, because `sagemaker.api`, `sagemaker.runtime`, `ecr.api`, `ecr.dkr`, `logs`, `kms` and `sts` are `[E]` endpoints of `sandbox/egress` and only the gateway endpoints are `[P]`. **[6e](stage-06e-claude-code-bedrock.md)** for pass 7: the use-case form, the retention mode `none`, the three scoped models and the grant slice `sandbox/bedrock/`. **[6i](stage-06i-sandbox-orchestration.md)**: the measurements this stage reuses rather than repeats, a processing job admitted under the four settings, the house image pulled cross-account by a job, and the tag gap on create. **Stage 3's S3 gateway allow-list**, which has named `jumpstart-cache-prod-<region>` and `sagemaker-<region>` since it was written and has never been exercised for either (verification iii) |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the project, the jobs, the models, the endpoint and the apps are all in Sandbox). It answers the reading [Stage 9](stage-09-deployment-targets.md) 3.7 asks for before its decision, whether `DenySageMakerJobsOffVpc` on `CreateModel` already refuses serverless inference (4.4), and it gives the Model Registry its first version, the event `EXC-11` names as the one that turns the `Tooling` data source's daily failure into a gap (3.3) |
@@ -19,14 +19,17 @@ and model here is written against. The documentation rows are the 2026-10-12 ent
 inside the Sandbox project with every identity, key and path inside the project: an MLflow App tracking
 an experiment, a training job the D13 boundary admits, a version in the Model Registry, a real-time endpoint
 invoked and deleted in the same sitting, a batch transform, an ML pipeline doing the same chain, and the
-Generative AI menu's prompt, guardrail, chat agent, flow and evaluation over the scoped models. Each entry
-is read for what it creates, through which door, as whom, and what this estate's controls do to it.
+Generative AI menu's prompt, guardrail, flow and evaluation over the scoped models, and a chat agent that
+answers from a knowledge base of the user's own documents. Each entry is read for what it creates, through
+which door, as whom, and what this estate's controls do to it.
 
 **Nothing here is promotable, by design.** The jobs name the project's subnets, security group, key, role
 and tag, which D28's lint refuses for a deployment target; the Model Registry here is the Sandbox one, and
-[Stage 9](stage-09-deployment-targets.md) owns Production's. The data is synthetic (decision 3), written by
-the notebook into the project's `shared/`, so no governed data enters any of this, and the catalog is not
-touched.
+[Stage 9](stage-09-deployment-targets.md) owns Production's. The training data is a public CSV, the Telco
+churn table of AWS's XGBoost recipe, fetched by the notebook through the proxy (decision 3) and written
+under the project's `shared/`; the knowledge base's documents are this repository's runbooks, public too.
+No governed data enters any of this, and the catalog is touched only by what the registry and the shared
+chat agent publish into it (3.3, 7.4b).
 
 ## The menu, entry by entry
 
@@ -47,8 +50,8 @@ names the control that admits, refuses or sizes it. A row that says "read" is ex
 | **ML pipelines** (AI/ML → ML pipelines → the visual editor, *Import*, *Execute*, *Download pipeline definition*) | a pipeline whose steps are a processing job, a training job, a condition on the validation metric and a registration | `sagemaker.api`; each step's job as above | each step's job carries the four settings; the editor's forms against those settings (Lesson 16, 6i i's shape); the pipeline's role is the project role | 5 |
 | **HyperPod clusters** (Compute → HyperPod clusters → *Add compute*) | nothing here: the entry connects a project to an existing cluster, and the project role's policy grants no `sagemaker:CreateCluster` | — | read: a cluster is standing compute (`Cluster:ml.m5.large` 0.115 USD/h in the offer) no decision has asked for | 6 |
 | **Partner AI apps** (AI/ML → Partner AI apps) | nothing here: Lakera Guard, Comet, DeepChecks and Fiddler, each an EKS stack with its own EC2, cache and database SKUs | — | read: the `PartnerApps` blueprint is category 3 and the SKUs are standing (Cost) | 6 |
-| **Generative AI** (Generative AI → Playground, Chat agent apps, Prompts, Guardrails, Functions, Flows, Evaluations) | Bedrock objects in the Sandbox account: a prompt, a guardrail, an agent, a flow, an evaluation job; a Function is a Lambda | the portal's own backend, not the VPC, as the project role or the project's Bedrock roles (verification xviii); a notebook's invocation through `bedrock-runtime` and `bedrock-agent-runtime` | the SCP's `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`; the project role's conditional Bedrock grants (6e 3.1: `InvokeBRModel` needs the IDE tag the role did not carry on 2026-09-11); no control names a Lambda (7.4, decision 10) | 7 |
-| **Knowledge bases** (Generative AI → Knowledge bases) | a Bedrock knowledge base over a vector store | — | out (decision 1): `AmazonBedrockKnowledgeBase` is category 2 and its store bills while idle | — |
+| **Generative AI** (Generative AI → Playground, Chat agent apps, Prompts, Guardrails, Functions, Flows, Evaluations) | Bedrock objects in the Sandbox account: a prompt, a guardrail, a flow, an evaluation job, and a chat agent over the knowledge base below, shared as a snapshot; a Function is a Lambda | the portal's own backend, not the VPC, as the project role or the project's Bedrock roles (verification xviii); a notebook's invocation through `bedrock-runtime` and `bedrock-agent-runtime` | the SCP's `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`; the project role's conditional Bedrock grants (6e 3.1: `InvokeBRModel` needs the IDE tag the role did not carry on 2026-09-11); no control names a Lambda (7.4, decision 10) | 7 |
+| **Knowledge bases** (Generative AI → AI apps → Asset gallery → *My components* → *Knowledge Base*) | a Bedrock knowledge base, its data source, its execution role, two Lambdas (the OpenSearch index and the ingestion trigger, with their role; AWS's blueprint page, read 2026-10-12) and a vector store created on the user's behalf, OpenSearch Serverless, S3 Vectors or Neptune Analytics by the form's choice (decision 12) | the IDE's backend for the create; the sync is the service's own calls as the knowledge base's role, `InvokeModel` on the embeddings model and the store's API; a notebook's `Retrieve` through `bedrock-agent-runtime` | `AmazonBedrockKnowledgeBase`, category 2 until decision 1; the SCP's `NotResource`, which names no embeddings model and refuses the first sync (7.4a, decision 11); the store's billing shape (decision 12) | 7 |
 
 ### Why the experiment is logged from the space, and never from the job
 
@@ -78,13 +81,14 @@ the notebook must.
 
 | Where | What | Layer |
 |---|---|---|
-| `terraform-live/sandbox/sagemaker/` (through `sagemaker-prereqs`) | `MLflowApp` joins `blueprint_names` (decision 2): a blueprint configuration and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant arrive in one apply (`grants.tf`'s `for_each`). The roster has three copies, the module default, the governance profile and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`, and they move in one commit (Lesson 14). `kms.tf` is untouched: AWS's key-permissions page for the Tooling blueprint names no MLflow statement (read 2026-10-12), and a refusal naming KMS at 1.5 reopens it | `[P]` |
-| `terraform-live/data-governance/governance/` | the `experimentation` profile gains `MLflowApp`, `deployment_mode = ON_DEMAND`, like its six Bedrock siblings | `[P]` |
+| `terraform-live/sandbox/sagemaker/` (through `sagemaker-prereqs`) | `MLflowApp` and `AmazonBedrockKnowledgeBase` join `blueprint_names` (decisions 2 and 1): a blueprint configuration and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant per blueprint arrive in one apply (`grants.tf`'s `for_each`). The roster has three copies, the module default, the governance profile and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`, and they move in one commit (Lesson 14). `kms.tf` is untouched: AWS's key-permissions page for the Tooling blueprint names no MLflow statement (read 2026-10-12); whether it names a knowledge-base statement is read at 1.2 (the checklist's step 2), and a refusal naming KMS at 1.5 or 7.4a reopens it | `[P]` |
+| `terraform-live/data-governance/governance/` | the `experimentation` profile gains `MLflowApp` and `AmazonBedrockKnowledgeBase`, `deployment_mode = ON_DEMAND`, like the six Bedrock blueprints already there | `[P]` |
 | `terraform-modules/vpc-egress` (new tag, `v0.18.0`) and `terraform-live/sandbox/egress/` | the optional group `mlflow`, one endpoint, `aws.sagemaker.<region>.mlflow`: the module's `sagemaker.studio` special case in `service_names_all_groups` generalised to every `sagemaker.*` short name. `no_proxy_all_groups` grows by the endpoint's names, so the house image's dated literal (70 entries, `aafa08da98a61f5c`, 6d decision 8) goes stale and `DE-5` reads the drift until the next image version (decision 4). Raised per session with `GROUPS=mlflow` | `[E]` |
+| `terraform-live/identity/org-policies/` | `DenyBedrockInvocationOutsideTheScopedModels` in `awsds-org-scp-ou-interactive.json` gains the embeddings model's `foundation-model` ARN in its `NotResource` (decision 11), the first entry there outside the scoped set's six spellings; `POLICIES.md`'s row gains the second trigger, `./scripts/check-index.py` reads it, and the battery runs with its Bedrock rows, owed since 6e ([`scp-battery.md`](../runbooks/scp-battery.md); `aws/probes/probes.py` has none, read 2026-10-12). Applied from `Identity` with `awsds-infra-identity`, the slice's profile precondition | `[P]` |
 | `terraform-live/sandbox/ml/` (new, rank 57, decision 7, only if 2.2 measures the gap) | the grants the project role lacks for the exercise, in `sandbox/workflows/`'s shape: `sagemaker:AddTags` of the key `AmazonDataZoneProject` with the caller's own value, alone, on a resource that carries no project tag or already the caller's, for each resource type the measurements name (training jobs, models, endpoint configurations, endpoints, transform jobs, model package groups, pipelines, MLflow apps). Attached to the project roles, each checked for the D13 boundary as `sandbox/workflows/` checks them | `[P]` |
 | `aws/sandbox-ml.py` (new) | `ML-1`..`ML-9`, the evidence: the project role's tags and policy version, the MLflow App, each training job against the five statements and the tag, the registry, the serving objects (no endpoint may survive a sitting), the pipeline, the read-only entries and the quotas, the Generative AI objects and their doors, the session's `mlflow` endpoint and the DNS Firewall list | — |
-| `examples/sandbox-ml/` (new) | the notebook as scripts a person reviews: `data.py` (the synthetic table), `train.py` (the estimator, the MLflow run, the negatives), `register.py`, `serve.py` (the endpoint, the transform, the serverless negative), `pipeline.py` and `pipeline/definition.json` with a placeholder for every account-scoped value (6i decision 1's shape), `bedrock/` for the prompt, guardrail, flow and evaluation definitions the portal exports, and a `README.md` | — |
-| `docs/` | this file; the stage log; `SMUS.md`'s two MLflow rows; `PRICING.md` §8's rows measured 2026-10-12; `REFERENCES.md`; `AWS_STATE.md` if a reading becomes an exception | — |
+| `examples/sandbox-ml/` (new) | the notebook as scripts a person reviews: `data.py` (the recipe's CSV fetched, prepared and split), `train.py` (the estimator, the MLflow run, the negatives), `register.py`, `serve.py` (the endpoint, the transform, the serverless negative), `pipeline.py` and `pipeline/definition.json` with a placeholder for every account-scoped value (6i decision 1's shape), `bedrock/` for the prompt, guardrail, flow and evaluation definitions the portal exports, the knowledge base's document list and the chat agent's exported snapshot, and a `README.md` | — |
+| `docs/` | this file; the stage log; `SMUS.md`'s two MLflow rows and its knowledge-base row; `PRICING.md` §8's rows and §5's knowledge-base and guardrail rows, measured 2026-10-12; `REFERENCES.md`; `terraform-live/identity/org-policies/POLICIES.md`'s row (decision 11); `AWS_STATE.md` if a reading becomes an exception | — |
 
 Nothing in any other account. The Data Governance account's domain carries the profile change (the
 governance slice applies from there, as 6a did), and that is the only call outside Sandbox.
@@ -106,13 +110,19 @@ flowchart LR
     app["MLflow App (serverless)"]
     reg["Model Registry: group, versions, collection"]
     pipe["ML pipeline"]
-    br["Bedrock: prompt, guardrail, agent, flow, evaluation<br/>(scoped models, retention none)"]
+    br["Bedrock: prompt, guardrail, flow, evaluation<br/>(scoped models, retention none)"]
+    kb["Knowledge base: the runbooks embedded by Titan V2<br/>into a vector store (S3 Vectors, decision 12)"]
+    agent["Chat agent app over the knowledge base<br/>(Haiku 4.5, the guardrail, a shared snapshot)"]
     key["Project key alias/awsds-sandbox-project"]
   end
   portal -->|"the portal's own backend"| app
   portal --> reg
   portal --> pipe
   portal --> br
+  portal --> kb
+  portal --> agent
+  agent --> kb
+  vpce -->|"Retrieve"| kb
   space --> vpce
   space --> gw
   vpce -->|"tracking calls"| app
@@ -130,7 +140,7 @@ flowchart LR
 | Marker | Meaning |
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls, as the [infrastructure user](../../ORGANIZATION.md#infrastructure-user), `InfrastructureAccess`, on `awsds-infra-sandbox-1` (Sandbox) and `awsds-infra-data` (the domain's profile and blueprint configurations, read) |
-| **[Claude⚡]** | an AWS write, only after the user authorizes that act in chat with the SSO user, account and permission set stated first. Planned: the roster apply on `sandbox/sagemaker/` and the governance slice (1.3), `sandbox/egress` with `GROUPS=mlflow` (1.4), `sandbox/ml/` if decision 7 takes (2.2), and raising and lowering the session |
+| **[Claude⚡]** | an AWS write, only after the user authorizes that act in chat with the SSO user, account and permission set stated first. Planned: the roster apply on `sandbox/sagemaker/` and the governance slice (1.3), `sandbox/egress` with `GROUPS=mlflow` (1.4), `sandbox/ml/` if decision 7 takes (2.2), the SCP amendment from `Identity` and the battery (7.4a, decision 11), and raising and lowering the session |
 | **[user]** | the portal and JupyterLab, signed in as the **Data Scientist User**, a member of the Sandbox project: the apps, the notebook, the runs, the approvals, the deletions, and log entries whenever the user wants |
 
 ## Step numbers are identifiers, not an order
@@ -144,12 +154,12 @@ flowchart LR
 | **4** | 4 | deployed and served: the endpoint, the invocations, the deletion, the transform, the serverless negative, the GPU negative | the user, from JupyterLab and the portal |
 | **5** | 5 | the pipeline: authored from the SDK, run, read back, the editor's forms | the user |
 | **6** | 6 | HyperPod and Partner AI apps, read | the user reads the pages; Claude reads the APIs |
-| **7** | 7 | the Generative AI menu: the roles before, the capability, the playground, the objects, the doors | the user; Claude reads before and after |
+| **7** | 7 | the Generative AI menu: the roles before, the capability, the playground, the objects, the knowledge base and the chat agent over it, the doors | the user; Claude reads before and after, and applies decision 11's amendment between the two syncs |
 | **8** | 8 | the readings, the records, the close | Claude; the user decides decisions 5 and 7's close |
 
 Pass 1 precedes pass 2 because every later run is logged into the app, and pass 4 follows pass 3 because
-the endpoint and the transform serve the registered version. Passes 6 and 7 are independent of the rest,
-and pass 7 is skipped whole if decision 1 takes (b).
+the endpoint and the transform serve the registered version. Passes 6 and 7 are independent of the rest;
+inside pass 7, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a.
 
 ---
 
@@ -181,7 +191,11 @@ and pass 7 is skipped whole if decision 1 takes (b).
 - **0.4 — [Claude] The prices, measured 2026-10-12** from the `AmazonSageMaker` offer file for `us-west-2`,
   published `2026-10-12T18:05:38Z`, read as `docs/PRICING.md` §0 describes; the rows are in §8 and in Cost
   below. The offer carries no MLflow App SKU, four `MLflow:TrackingServer*` SKUs, `ServerlessInf:Mem-*`
-  per second, `Host:ml.m5.large`, and `PartnerApp-*` SKUs per partner and size.
+  per second, `Host:ml.m5.large`, and `PartnerApp-*` SKUs per partner and size. The knowledge base's units
+  come from three more offers of the same day, `AmazonBedrock` (published `2026-10-10T18:22:42Z`: Titan
+  Text Embeddings V2 and the guardrail policies), `AmazonES` (`2026-09-27T12:24:24Z`: the OpenSearch
+  Serverless OCU and its storage) and `AmazonS3` (`2026-10-12T17:53:18Z`: S3 Vectors); the rows are in
+  `docs/PRICING.md` §5.
 - **0.5 — [Claude] Read the network as it stands.** `sandbox/egress`'s always-on list carries
   `sagemaker.api`, `sagemaker.runtime`, `ecr.api`, `ecr.dkr`, `logs`, `kms` and `sts`; the S3 gateway
   endpoint's allow-list names `jumpstart-cache-prod-<region>` and `sagemaker-<region>` (Stage 3's
@@ -192,8 +206,10 @@ and pass 7 is skipped whole if decision 1 takes (b).
   guard. The scripts print no data.
 - **0.7 — [user] Read the forms** (Lesson 16), before any run, and record each in the log: JumpStart's
   *Train* form (instance type default, VPC, isolation, key, tags), *Create endpoint* and *Add model*,
-  *Create MLflow App*, the pipeline editor's step forms, and the Generative AI menu's *Functions* wizard.
-  Which boundary fields each form lacks decides whether a pass goes through the portal or the SDK.
+  *Create MLflow App*, the pipeline editor's step forms, the Generative AI menu's *Functions* wizard, the
+  *Create Knowledge Base* pane (its sources, the embeddings models in its dropdown, its vector stores, its
+  chunking and parsing options, the *Local file* limits) and the chat agent's *Model* list. Which boundary
+  fields each form lacks decides whether a pass goes through the portal or the SDK.
 - **0.8 — [Claude] Read the Tooling environment's `enableNetworkIsolation`**, a parameter AWS's Tooling
   page documents as "network isolation for training and deployed inference containers" (read 2026-10-12)
   and which this estate's profile neither sets nor locks: the deployed value, from the environment's
@@ -232,21 +248,29 @@ and pass 7 is skipped whole if decision 1 takes (b).
 
 ### 2. A model trained
 
-- **2.1 — [user] The data** (decision 3): `data.py` writes a binary-classification table, 10,000 rows and
-  20 numeric features from a seeded generator, the label a linear rule over five of them plus noise, split
-  80/20 into `train.csv` and `validation.csv` in XGBoost's CSV layout (label first, no header), under
-  `shared/ml-demo/data/`. Nothing enters through the proxy or the lake.
+- **2.1 — [user] The data** (decision 3): the Telco customer churn CSV of AWS's XGBoost recipe, which
+  `data.py` fetches from the space through the proxy, from
+  `https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv`
+  (7,043 rows), a name on the compute plane's allow-list since 2026-09-19 that answered a space `200 × 7`
+  that evening (`docs/NETWORK.md`); the proxy's access log line for the fetch is the reading (verification
+  xxvi). Prepared as the recipe does: `TotalCharges` coerced to numeric and the blank rows dropped, the
+  label `churn_label`, the features `tenure_months`, `monthly_charges`, `total_charges`, `lifetime_value`,
+  `is_month_to_month` and `is_fiber_optic`, shuffled with `random_state=1729`, split 70/15/15 into
+  `train.csv`, `validation.csv` and `test.csv` in XGBoost's CSV layout (label first, no header), under
+  `shared/ml-demo/data/`. Nothing enters through the lake.
 - **2.2 — [user] The job, three times, one change each** (Lesson 20: a refusal proves one statement when
   one thing differs). The estimator: XGBoost `1.7-1` from AWS's algorithm registry for the Region,
   `ml.m5.xlarge`, one instance, 30 GB volume under the project key, `max_run` 600 s, the project's subnets
   and security group, network isolation and inter-container encryption on, the output under
-  `shared/ml-demo/models/`, hyperparameters `objective=binary:logistic`, `num_round=100`,
-  `eval_metric=auc`; the MLflow run opened before the call. (a) **With no project tag**: expected
+  `shared/ml-demo/models/`, the recipe's hyperparameters `objective=binary:logistic`, `eval_metric=auc`,
+  `num_round=200`, `max_depth=5`, `eta=0.2`, `subsample=0.8`; the MLflow run opened before the call. (a)
+  **With no project tag**: expected
   `AccessDeniedException` from `SageMakerCreatePermissions`' `aws:ResourceTag` condition. (b) **With
   `AmazonDataZoneProject` set to the project's id**: expected refused as `sagemaker:AddTags`, the gap 6i
   measured on a processing job; if the space's configuration (0.3) sets the tag by itself, (a) and (b) are
-  one reading. (c) **After decision 7's slice is applied**, the same request: expected `Completed` in under
-  five minutes with a validation AUC above 0.9 on this data. Each refusal's `errorMessage` is the record,
+  one reading. (c) **After decision 7's slice is applied**, the same request: expected `Completed` in about
+  five minutes, the recipe's own time, the validation AUC recorded as a reading and not a gate, since the
+  data is real and the stage measures doors, not models. Each refusal's `errorMessage` is the record,
   never the exit code; a refusal that names no statement is attributed by varying one field (Lesson 42).
 - **2.3 — [user] The boundary's negatives**, each the admitted request with one field removed: no
   `VpcConfig`; isolation off; inter-container encryption off; no volume key; then `ml.m5.2xlarge` instead
@@ -352,41 +376,94 @@ and pass 7 is skipped whole if decision 1 takes (b).
   `AmazonBedrockServiceRole` and `AmazonBedrockLambdaExecutionRole` beside `datazone_usr_role` as the
   roles its `PermissionsBoundaryArn` reaches, read 2026-10-12), their policies and whether each carries
   the D13 boundary; `ListFunctions` in Sandbox; and which control, if any, names a Lambda: none in the
-  SCPs or the boundary as read 2026-10-12 (decision 10).
+  SCPs or the boundary as read 2026-10-12 (decision 10). For the knowledge base: `bedrock-agent
+  list-knowledge-bases`, `aoss list-collections` and `s3vectors list-vector-buckets` in Sandbox, all
+  expected empty; `bedrock get-foundation-model-availability` on `amazon.titan-embed-text-v2:0`, whether
+  the account may use the embeddings model at all; and the SCP's `NotResource` as it stands, six spellings
+  of three models and no embeddings model (read 2026-10-12), so 7.4a's first sync is expected refused.
 - **7.1 — [Claude⚡] The session** with `GROUPS=mlflow,bedrock-base,bedrock-agent`, so a refusal in this
   pass is attributable to identity and never to a door that was not there (Lesson 42), whatever door the
   portal's backend turns out to take.
 - **7.2 — [user] The capability**: the project's capabilities page, *Generative AI application
-  development*, which deploys the six category-1 blueprints `ON_DEMAND`. [Claude] `ML-8` after: what the
-  deployment provisioned, and the role's tags, because the IDE tag's absence in 6e is this stage's
-  hypothesis for what the capability adds (verification xvii).
+  development*, which deploys the profile's Bedrock blueprints `ON_DEMAND`, the knowledge base's among
+  them after 1.3. [Claude] `ML-8` after: what the deployment provisioned, and the role's tags, because the
+  IDE tag's absence in 6e is this stage's hypothesis for what the capability adds (verification xvii).
 - **7.3 — [user] Playground**: a chat with Claude Haiku 4.5, the scoped model with the lowest rate; then a
   model outside the scoped three, expected refused by `DenyBedrockInvocationOutsideTheScopedModels`, the
   SCP's first refusal from the portal. `bedrock-usage.py` reads the tokens.
 - **7.4 — [user] The objects, one each**: a prompt with a variable and two versions; a guardrail with one
-  denied topic and the PII filter; a chat agent over the prompt and the guardrail, exercised in the app's
-  chat; a flow with a prompt node and a model node, run once; an evaluation job, automatic, over a
-  twenty-line dataset in `shared/ml-demo/bedrock/`, Haiku 4.5 as the evaluator. **A function is not
-  created** unless decision 10 takes (b): the wizard's fields are read (0.7), and the Lambda it would make
-  runs outside the VPC with the internet a function has by default, outside D38's hub and every proxy
-  reading, the one shape here no control names.
+  denied topic and the PII filter, attached to 7.4b's chat agent; a flow with a prompt node and a model
+  node, run once; an evaluation job, automatic, over a twenty-line dataset in `shared/ml-demo/bedrock/`,
+  Haiku 4.5 as the evaluator. **A function is not created** unless decision 10 takes (b): the wizard's
+  fields are read (0.7), and the Lambda it would make runs outside the VPC with the internet a function
+  has by default, outside D38's hub and every proxy reading, the one shape here no control names.
+- **7.4a — [user] The knowledge base** (decisions 1, 11 and 12), the Bedrock IDE's component for a chatbot
+  over one's own documents, read against this estate's controls. The documents are this repository's
+  runbooks, `docs/plan/runbooks/*.md` (16 files, 550 KB, public), copied by the notebook from a clone of
+  the repository (`github.com` on the plane since 2026-09-19) into `shared/ml-demo/bedrock/kb/`, the project
+  bucket prefix the component's *Project data sources* takes; the *Local file* upload (PDF, Markdown, text,
+  Office, HTML and CSV, 50 MB a file, 50 files, read 2026-10-12) is read as a form at 0.7 and not used, so
+  the documents stay where `ML-8` and the trail read them. Generative AI → AI apps → Asset gallery → *My
+  components* → *Create component* → *Knowledge Base*: embeddings model Titan Text Embeddings V2
+  (`amazon.titan-embed-text-v2:0`, 1024 dimensions), the store S3 Vectors (decision 12), default chunking
+  and Bedrock's parser; the web crawler is not configured, since its crawl leaves from Bedrock's own
+  network and not this estate's. **Sync once before decision 11 is applied**: the sync embeds through
+  `InvokeModel` on the embeddings model as the knowledge base's role, and the SCP's `NotResource` names no
+  embeddings model, so the expected reading is a failed sync whose error carries `explicit deny in a
+  service control policy` (verification xxii); the trail's `InvokeModel` event carries the role and the
+  `errorMessage`. Then [Claude⚡] **the amendment** from `Identity`, the infrastructure user,
+  `InfrastructureAccess`, `AWS_PROFILE=awsds-infra-identity`: the embeddings model's `foundation-model`
+  ARN into the statement's `NotResource`, `POLICIES.md`'s row with the second trigger,
+  `./scripts/check-index.py`, and the battery with its Bedrock rows, owed since 6e 7.5 and written now
+  (`probes.py` has none, read 2026-10-12). Sync again: expected `COMPLETE`, with the document count and
+  the time. [Claude] `ML-8` reads the knowledge base, its role with the role's policies and boundary, the
+  data source, the two Lambdas and their role, the store (which OpenSearch Serverless kind or which S3
+  Vectors bucket the IDE created, as which identity, and what it bills at idle: decision 12's reading), and
+  whether every object carries the project tag (verification xxiii).
+- **7.4b — [user] The chat agent over it**: Chat agent apps → *Create*; the *Model* list is read first,
+  which of the scoped three it offers and under which id, a `us.` profile or a foundation model, since the
+  SCP admits both spellings (verification xxv); Haiku 4.5, a system instruction that confines the answers
+  to the documents, *Data* → *Use Knowledge Base* with hybrid search and the default five source chunks,
+  the guardrail of 7.4; then *Preview*: five questions whose answers are in the runbooks (the hub's up and
+  down order, the proxy's port, what `make check` runs), one whose answer is not, to read how the app says
+  so, and one on the guardrail's denied topic, to read the refusal. The answers' citations name the
+  chunks. **Share** once, with the Data Scientist User alone and link access off: the share deploys a
+  snapshot (an alias and a version, up to eight aliases) and publishes the app to the project's catalog,
+  which `./aws/catalog.py` then reads (3.3's instrument); AWS's page says a shared snapshot cannot be
+  unshared without deleting the app (read 2026-10-12), so the share is decision 5's to keep or delete.
+  From the space, one `Retrieve` on the knowledge base through `bedrock-agent-runtime`, the
+  `bedrock-agent` group's endpoint, as the project role: admitted or refused by wording, the reading of
+  whether the role reaches the store from a notebook and which door it takes (verification xxiv).
+  `bedrock-usage.py` reads the sitting's tokens.
+- **7.4c — [user] The project data source, read and not created**: the *Create Knowledge Base* pane
+  offers the project's Redshift (Lakehouse) tables, up to 50, with descriptions and curated queries, and
+  the Lakehouse catalog, read with the project user role's permissions (AWS's page, read 2026-10-12). The
+  form's fields are recorded (0.7) and nothing is selected: a structured source copies the project's
+  tables into the store, and whether the D13 boundary and Lake Formation reach that copy is a reading for
+  a stage that owns governed data in Sandbox, not this one.
 - **7.5 — [Claude] `ML-8`**: the objects by project tag, their encryption, the model ids inside the scoped
-  three, and the trail's `CreateAgent`, `CreateGuardrail`, `CreatePrompt`, `CreateFlow`,
-  `CreateEvaluationJob` and `InvokeModel` events: principal, session, `vpcEndpointId` present or absent
-  (verification xviii).
+  three plus the embeddings model, and the trail's `CreateAgent`, `CreateGuardrail`, `CreatePrompt`,
+  `CreateFlow`, `CreateEvaluationJob`, `CreateKnowledgeBase`, `CreateDataSource`, `StartIngestionJob`,
+  `CreateAgentAlias` and `InvokeModel` events, with `Retrieve` and `InvokeAgent` if the trail carries them:
+  principal, session, `vpcEndpointId` present or absent (verification xviii).
 - **7.6 — [user] Delete or keep** (decision 5): the agent, the flow, the prompt, the guardrail and the
-  evaluation job's outputs bill nothing at rest.
+  evaluation job's outputs bill nothing at rest; the knowledge base's store is the one object here that
+  can, so it stays only if 7.4a's reading of its idle bill is zero (S3 Vectors bills storage at 0.06 USD
+  per GB-month, cents for the runbooks; an OpenSearch Serverless collection with a minimum OCU is deleted
+  in the same sitting).
 
 ### 8. Close
 
 - **8.1 — [Claude] The instrument's final run** against the before of 0.1; `ML-5` reads no endpoint;
-  `US-3` passes with `MLflowApp` on its list; `DE-5`'s state as decision 4 left it; `make check`.
+  `US-3` passes with `MLflowApp` and `AmazonBedrockKnowledgeBase` on its list; the battery's Bedrock rows
+  green; `DE-5`'s state as decision 4 left it; `make check`.
 - **8.2 — [Claude] The records**: the log, with every form reading, every refusal's wording and every
   measurement's time; `docs/SMUS.md`'s MLflow rows and `AWS_STATE.md` for `EXC-11` and any new exception;
-  Stage 9 3.7's evidence written into Stage 9's file in this sitting (Lesson 34); `PRICING.md` with the
-  MLflow App's bill once Cost Explorer shows the sitting's day.
-- **8.3 — [user] Lower the session** after 4.6 reads no endpoint; the MLflow App and the registry stay
-  (decision 5).
+  Stage 9 3.7's evidence written into Stage 9's file in this sitting (Lesson 34); `POLICIES.md`'s row and
+  6e's decision 15 row with the amendment; `PRICING.md` with the MLflow App's and the store's bills once
+  Cost Explorer shows the sitting's day.
+- **8.3 — [user] Lower the session** after 4.6 reads no endpoint; the MLflow App, the registry and, if its
+  idle bill read zero, the knowledge base stay (decision 5).
 
 ## Deliverables
 
@@ -404,25 +481,31 @@ and pass 7 is skipped whole if decision 1 takes (b).
   it bills.
 - **The Generative AI menu's objects** (7.3-7.5): which identity creates each, through which door, under
   the scoped models; and the Function left uncreated, with the control it waits for named.
+- **A chatbot over the user's own documents** (7.4a, 7.4b): whether the Bedrock IDE in SageMaker Unified
+  Studio builds one in this estate, and at what price: the blueprint promoted, the embeddings model the
+  SCP had to admit, the store the IDE chose and what it bills at idle, the share's snapshot and its catalog
+  asset, and the answers read against the runbooks.
 - **The Model Registry's first version and `EXC-11`'s answer** (3.3).
 - **`./aws/sandbox-ml.py`** and `examples/sandbox-ml/`.
 
 ## Validation
 
-1. `./aws/sandbox-ml.py`: `ML-1`..`ML-9` pass after pass 7 (`ML-8` passes with notes if decision 1 takes
-   (b)); diff the runs before pass 1 and after pass 8.
-2. `./aws/studio.py`: `US-3` passes with `MLflowApp` on its list; `US-8` still green, the project role
-   still carrying the D13 boundary.
+1. `./aws/sandbox-ml.py`: `ML-1`..`ML-9` pass after pass 7; diff the runs before pass 1 and after pass 8.
+2. `./aws/studio.py`: `US-3` passes with `MLflowApp` and `AmazonBedrockKnowledgeBase` on its list; `US-8`
+   still green, the project role still carrying the D13 boundary.
 3. `./aws/egress.py` with the session up: `EG-1`..`EG-4` green with the `mlflow` endpoint.
 4. `./aws/devenv.py`: `DE-5` in the state decision 4 chose, and no other check changed.
 5. `./aws/catalog.py`: `CT-6`'s reading of `EXC-11`'s data source after 3.2.
 6. `make check` clean.
 7. Every denial read by its wording, never its exit code.
+8. The battery green with its Bedrock rows after decision 11's apply, and `./scripts/check-index.py` clean.
 
 ## Cost
 
 Unit prices measured 2026-10-12 (`docs/PRICING.md` §8; offer `AmazonSageMaker`, `us-west-2`, published
-`2026-10-12T18:05:38Z`; the Bedrock rates are §5's, read 2026-09-11):
+`2026-10-12T18:05:38Z`; the Bedrock token rates are §5's, read 2026-09-11; the knowledge base's and the
+guardrail's units are §5's rows measured 2026-10-12 from the `AmazonBedrock`, `AmazonES` and `AmazonS3`
+offers):
 
 | Item | Cost |
 |---|---|
@@ -434,7 +517,11 @@ Unit prices measured 2026-10-12 (`docs/PRICING.md` §8; offer `AmazonSageMaker`,
 | MLflow App | **no SKU in the offer**; AWS's launch post (2025-12-02) says no additional cost beyond the artifact store. The measurement is the bill of the sitting's day (8.2), Lesson 6 |
 | MLflow tracking server (not built, decision 2) | Small 0.60, Medium 1.04, Large 1.91 per hour while it exists, plus 0.10 per GB-month |
 | The `mlflow` interface endpoint | 0.010/hour per session with `GROUPS=mlflow`, one AZ (D9) |
-| Bedrock, pass 7 | Haiku 4.5 at 1.10 per million input and 5.50 per million output tokens: a playground chat, an agent's turns, a flow run and a twenty-line evaluation **under 0.20**; the guardrail's own unit is §5's |
+| Bedrock, pass 7 | Haiku 4.5 at 1.10 per million input and 5.50 per million output tokens: a playground chat, the chat agent's turns, a flow run and a twenty-line evaluation **under 0.20** |
+| The guardrail (7.4, 7.4b) | 0.15 per 1,000 text units for the content and the topic policies, 0.10 for sensitive information and contextual grounding, 0 for the word policy: the preview's questions **cents** |
+| The knowledge base's embeddings (7.4a) | Titan Text Embeddings V2 at 0.00002 per 1,000 input tokens: the runbooks, 550 KB, about 140,000 tokens, **under 0.01** a sync, and two syncs are planned |
+| S3 Vectors (decision 12's recommendation) | storage 0.06 per GB-month, 0.20 per GB put, 0.055 per 1,000 requests, 0.0000025 per query: the runbooks' vectors, a few MB, **cents a month and nothing at idle beyond their bytes** |
+| OpenSearch Serverless (decision 12's alternative) | 0.24 per OCU-hour and 0.024 per GB-month: a classic collection holds at least 1 OCU in dev/test and 2 in production, **5.76 or 11.52 a day while it exists, idle or not**; a next-generation collection scales to zero after ten idle minutes (AWS's scaling page, read 2026-10-12); which kind the IDE creates is 7.4a's reading |
 | HyperPod (read only) | `Cluster:ml.m5.large` 0.115/hour per node, the smallest the offer prices; nothing billed |
 | Partner AI apps (read only) | standing stacks: Lakera Guard Small on `m5.2xlarge` 0.384/hour; Fiddler Small adds Aurora Serverless v2 at 0.12 per ACU-hour, `cache.m5.large` 0.156/hour and `mq.m5.large` 0.288/hour; Comet Small `m6i.2xlarge` 0.384/hour and `cache.r5.xlarge` 0.431/hour; DeepChecks Small `m5.2xlarge` 0.384/hour and a `g4dn.xlarge` 0.526/hour; nothing billed |
 | S3, CloudWatch | cents |
@@ -442,31 +529,40 @@ Unit prices measured 2026-10-12 (`docs/PRICING.md` §8; offer `AmazonSageMaker`,
 
 The stage spends **under 2 USD** in ML compute if every endpoint dies in its sitting, plus the session's
 hours. What it does not spend, by decision, is the standing kind: a tracking server, a cluster, a partner
-stack, a GPU, a knowledge base's store.
+stack, a GPU, an OpenSearch Serverless collection with a minimum OCU. The knowledge base is admitted
+because its store can be the one that bills only storage (decision 12), and 7.6 deletes it if the reading
+says otherwise.
 
 ## Decisions due while executing
 
-**Questions put to the user: 1, 2 and 3, on 2026-10-12, each with the recommendation below.** The rest
-are decided during the stage and written into the stage log with the recommendation stated (Lesson 16).
+**Decisions 1, 2 and 3 were taken by the user on 2026-10-12**, on the cards put to them with the
+recommendations kept below: 1 widened to (c) by the user's own ask of the same day, a chatbot over a
+custom knowledge base through the Bedrock features SageMaker exposes; 2 as recommended; 3 against the
+recommendation. The rest are decided during the stage and written into the stage log with the
+recommendation stated (Lesson 16).
 
-1. **The Generative AI menu** (pass 7). Recommended: **(b) in, with knowledge bases out**: the six
-   `AmazonBedrock*` blueprints are category 1 already, exercising them costs one pass and a few cents of
-   tokens, and the knowledge base is the one entry that stands up a vector store that bills while idle
-   (`AmazonBedrockKnowledgeBase`, category 2). The alternatives: **(a)** the AI/ML menu only, the Bedrock
-   IDE left for a stage of its own; **(c)** with a knowledge base, which promotes a category-2 blueprint
-   and prices OpenSearch Serverless first (Lesson 6).
-2. **Experiment tracking** (pass 1). Recommended: **(a) the `MLflowApp` blueprint**: serverless, no hourly
-   SKU in the offer, the offering AWS's own page says to prefer over tracking servers (read 2026-10-12).
-   The alternatives: **(b)** `MLExperiments`, a tracking server at 0.60 USD/hour for Small while it
-   exists, one per project, the standing shape `SMUS.md` kept in category 2 for that reason; **(c)** no
-   MLflow, the registry alone. Either blueprint needs the category-2 checklist and the `mlflow` or
-   `experiments` endpoint, whose service names differ (`aws.sagemaker.<region>.mlflow` for an app,
-   `.experiments` for a server, read 2026-10-12).
-3. **The data** (2.1). Recommended: **(a) synthetic, generated in the notebook**: the exercise measures the
-   SageMaker doors, and a dataset that enters through the proxy or the lake adds a measurement those
-   stages already made. The alternatives: **(b)** the Telco churn CSV AWS's XGBoost recipe uses, from
-   `raw.githubusercontent.com`, on the compute plane's allow-list since 2026-09-19; **(c)** a table the
-   user places in `awsds-sandbox-lake`, read through the S3 gateway endpoint.
+1. **The Generative AI menu** (pass 7). **Taken 2026-10-12: (c) in, with a knowledge base and a chat agent
+   over it**, the user's ask being whether the Bedrock features SageMaker exposes build a chatbot over a
+   custom knowledge base. It promotes `AmazonBedrockKnowledgeBase` out of category 2 through the
+   checklist, admits an embeddings model at the SCP (decision 11) and prices the vector store first
+   (decision 12, Lesson 6). The recommendation had been **(b)** in, with knowledge bases out, because the
+   six `AmazonBedrock*` blueprints are category 1 already and the knowledge base is the one entry whose
+   store can bill while idle; **(a)** was the AI/ML menu only, the Bedrock IDE left for a stage of its
+   own.
+2. **Experiment tracking** (pass 1). **Taken 2026-10-12: (a) the `MLflowApp` blueprint**, as recommended:
+   serverless, no hourly SKU in the offer, the offering AWS's own page says to prefer over tracking
+   servers (read 2026-10-12). The alternatives: **(b)** `MLExperiments`, a tracking server at 0.60
+   USD/hour for Small while it exists, one per project, the standing shape `SMUS.md` kept in category 2
+   for that reason; **(c)** no MLflow, the registry alone. Either blueprint needs the category-2
+   checklist and the `mlflow` or `experiments` endpoint, whose service names differ
+   (`aws.sagemaker.<region>.mlflow` for an app, `.experiments` for a server, read 2026-10-12).
+3. **The data** (2.1). **Taken 2026-10-12: (b) the Telco churn CSV AWS's XGBoost recipe uses**, from
+   `raw.githubusercontent.com`, on the compute plane's allow-list since 2026-09-19: a public table the
+   recipe's preparation and hyperparameters are written for, so 2.2's job is the recipe's and its result
+   is comparable to AWS's page; the fetch is one more reading of the proxy (verification xxvi). The
+   recommendation had been **(a)** synthetic data generated in the notebook, because the exercise
+   measures the SageMaker doors and a dataset entering through the proxy adds a measurement 6d made;
+   **(c)** was a table the user places in `awsds-sandbox-lake`, read through the S3 gateway endpoint.
 4. **The `mlflow` group against the image's `no_proxy` literal** (1.4). Recommended: **(a) add the group
    now and accept `DE-5` red until the next image version** carries the new `no_proxy_all_groups`, with
    the red recorded as a dated exception in `AWS_STATE.md`; the literal is read by the image's processes,
@@ -476,10 +572,11 @@ are decided during the stage and written into the stage log with the recommendat
    `sandbox/egress`'s always-on list, which 6e decision 12 refused for the Bedrock pair and is refused
    here for the same reason.
 5. **Keep or delete at close** (7.6, 8.3). Recommended: **keep the MLflow App, the model package group and
-   its versions, and the Bedrock objects; delete every endpoint, model and endpoint configuration.** The
-   kept objects bill nothing at rest on AWS's statements, which the bill of 8.2 checks; the endpoint
-   bills while it exists. The alternative is deleting everything, which leaves nothing for Stage 9 and 10
-   to read.
+   its versions, the Bedrock objects and the knowledge base if its store read zero at idle; delete every
+   endpoint, model and endpoint configuration, and a store with a minimum OCU.** The kept objects bill
+   nothing at rest on AWS's statements, which the bill of 8.2 checks; the endpoint bills while it exists,
+   and the shared chat agent's snapshot cannot be unshared without deleting the app, so keeping it keeps
+   the share. The alternative is deleting everything, which leaves nothing for Stage 9 and 10 to read.
 6. **The endpoint's lifetime** (4.1). Recommended: **within the sitting**, deleted before the session
    lowers, because no slice declares it and D11's cycle does not reach it. The alternative, kept overnight
    for a cost reading, buys a number the offer already gives (2.76 a day).
@@ -505,7 +602,32 @@ are decided during the stage and written into the stage log with the recommendat
     `UpdateFunctionConfiguration` without `lambda:VpcIds`, is written into Stage 11 §3's ledger in this
     sitting (Lesson 34), and the entry is exercised when that control exists. The alternative, **(b)**,
     creates one function, reads where it runs and what it reaches, and deletes it; the reading is worth
-    having and the path it opens is the one this estate exists to close.
+    having and the path it opens is the one this estate exists to close. The knowledge base's two Lambdas
+    (7.4a) are the blueprint's, not the entry's: AWS's blueprint page lists them with their execution
+    role, they are the service's plumbing for the index and the ingestion trigger, and `ML-8` reads where
+    they run; Stage 11 §3's ledger gets them in the same row.
+11. **The embeddings model at the SCP** (7.4a). Recommended: **(a) the `foundation-model` ARN of
+    `amazon.titan-embed-text-v2:0` added to `DenyBedrockInvocationOutsideTheScopedModels`'s
+    `NotResource`**, region-less like the six entries there, applied from `Identity` with the battery's
+    Bedrock rows written in the same sitting (6e 7.5's standing rule). It is the first entry of that list
+    outside the scoped set of 6e decision 14, so the two lists that were one diverge (Lesson 51):
+    `sandbox/bedrock/`'s `models` map, the image's pins and the `bedrock-runtime` endpoint policy stay as
+    they are, since none of them invokes an embeddings model, and `POLICIES.md`'s row names both
+    triggers. An embeddings model returns vectors, and Titan is the one entry of the component's dropdown
+    that is AWS's own; the others are Cohere's, read at 0.7. The alternatives: **(b)** a condition that
+    exempts the knowledge base's role by name from the statement, which keeps the ceiling tight but binds
+    the SCP to a role name the blueprint generates; **(c)** no knowledge base, which takes decision 1 back
+    to (b).
+12. **The vector store** (7.4a). Recommended: **(a) S3 Vectors**: storage at 0.06 USD per GB-month and
+    requests per use (measured 2026-10-12), nothing at idle beyond the vectors' bytes, and AWS's S3
+    Vectors page names Amazon Bedrock in SageMaker Unified Studio knowledge bases among its uses (read
+    2026-10-12); the component's page says this store takes no web crawler source, which 7.4a does not
+    use. The alternatives: **(b)** OpenSearch Serverless, the store the blueprint's own resource list
+    names (a collection and an index Lambda), at 0.24 per OCU-hour, 5.76 a day at its smallest classic
+    minimum, the standing shape that kept the blueprint in category 2, acceptable only if the IDE creates
+    a next-generation collection that scales to zero, a reading 7.4a makes before the store is kept;
+    **(c)** Neptune Analytics for GraphRAG, refused: it needs Claude 3 Haiku, a model outside the scoped
+    set, and bills by the hour while it exists, a rate not measured here.
 
 ## Verifications to answer while executing
 
@@ -532,6 +654,11 @@ are decided during the stage and written into the stage log with the recommendat
 | xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? | 7.3 |
 | xx | What did the MLflow App bill on the sitting's day, read in Cost Explorer? | 8.2 |
 | xxi | Which quotas does a young account hold for the four instance types, and is any zero? | 0.2 |
+| xxii | Does the knowledge base's first sync fail on the SCP's explicit deny of `InvokeModel` on the embeddings model, as which role, and does the second sync complete after decision 11's apply? | 7.4a |
+| xxiii | Which vector store does the IDE create for the knowledge base, as which identity, under which key, with the project tag or not, and what does it bill at idle? | 7.4a, 8.2 |
+| xxiv | Does the project role reach the knowledge base from a space with `Retrieve` through the `bedrock-agent-runtime` endpoint, and does the shared chat agent's snapshot appear in the project's catalog? | 7.4b |
+| xxv | Does the chat agent's *Model* list offer the scoped models under a `us.` profile id or a foundation-model id, and do its answers cite the runbooks' chunks? | 7.4b |
+| xxvi | Does the recipe's CSV fetch leave the space through the proxy, as one access-log line on `raw.githubusercontent.com`? | 2.1 |
 
 ## Risks
 
@@ -560,6 +687,19 @@ are decided during the stage and written into the stage log with the recommendat
 - **The Generative AI roles are outside the reading until 7.0.** A project Bedrock role the Tooling
   template creates without the D13 boundary would be the first interactive principal outside it; 7.0 reads
   before 7.2 deploys anything.
+- **The knowledge base's store bills at idle.** The IDE chooses the store's kind on the user's behalf; an
+  OpenSearch Serverless collection with a minimum OCU bills 5.76 a day whether or not anyone asks it
+  anything. 7.4a reads the kind before the first sync, 7.6 deletes a store with a minimum, and decision
+  12's S3 Vectors is the default for that reason.
+- **A sync fails halfway.** A sync that embeds part of the runbooks before the SCP refuses it leaves a
+  partial index; the second sync after decision 11 is read for its document count against the sixteen
+  files, and a short count is a re-sync from the IDE.
+- **A shared chat agent cannot be unshared.** AWS's page says a shared snapshot is withdrawn only by
+  deleting the app, and the share publishes an asset into the project's catalog; 7.4b shares with one
+  user and no link, and decision 5 owns the rest.
+- **The embeddings model widens the SCP's list.** A reader of `DenyBedrockInvocationOutsideTheScopedModels`
+  after decision 11 sees a model the scoped set does not name; `POLICIES.md`'s row says why, and the
+  battery's Bedrock rows say what the statement still refuses.
 
 ---
 
