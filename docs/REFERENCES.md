@@ -39,9 +39,9 @@
 - etl-cookbook-tutorial: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
 - `awsds-workflows`: <https://github.com/felipenoris/awsds-workflows>. Renders a serverless workflow's
-  definition and packages its tasks' code; installed by git URL at a commit, never by name, and since
+  definition and packages its tasks' code; installed by git URL from `main`, never by name, and since
   2026-10-12 the tool of `docs/plan/runbooks/serverless-workflows.md` (§T). Its documentation, in
-  Portuguese, read 2026-10-12 at commit `937a66a`: <https://felipenoris.github.io/awsds-workflows/>.
+  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>.
 
 ## Organization and identity
 

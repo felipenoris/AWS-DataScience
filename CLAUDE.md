@@ -456,7 +456,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   sit under `EXC-10`. A processing input is a prefix read at each run with no version to pin, so Stage 10
   decision 7 owns where a promoted job's dependencies come from (recommended: its image). **The workflow
   tooling is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) since 2026-10-12**,
-  installed by URL at the commit the runbook's §T pins: `render.py`, `package-uv.sh` and
+  installed by URL from its `main` (user, 2026-10-12; the runbook's §T): `render.py`, `package-uv.sh` and
   `package-uv-job.py` are deleted, the example YAML carry the package's placeholder names, and
   `operators/build.sh` stays, since its archive vendors PyYAML, which `package-task` leaves out.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =

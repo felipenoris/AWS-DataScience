@@ -265,7 +265,7 @@ design rests on it.
   `VersionId` rule cannot hold it, and what runs is whatever the prefix holds when the job starts:
   decision 7. A CI runner that builds such a folder needs the image's environment as a file, a CPython of
   the image's version for the project's lock check and build, named through `UV_PYTHON` where uv's
-  downloads are off, and the package installed by URL at a commit, never by name.
+  downloads are off, and the package installed by URL, never by name.
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: the release job copies
   `workflow/workflow.yaml` to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`**
   (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1) and

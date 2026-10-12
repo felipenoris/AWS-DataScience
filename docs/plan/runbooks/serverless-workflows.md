@@ -88,16 +88,21 @@ reference for every option and every message; this section says how this lab use
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
 
-**Install it by URL, at the commit this runbook was verified against**, never by name: the name is free
-on PyPI, and a package someone else published there under it would install instead (the package's
-documentation, read 2026-10-11).
+**Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
+else published there under it would install instead (the package's documentation, read 2026-10-11).
 
 ```bash
-uv tool install git+https://github.com/felipenoris/awsds-workflows@937a66a18231f041a52e9ea68b96a5fb35e722b4
+uv tool install git+https://github.com/felipenoris/awsds-workflows
 ```
 
-The package needs Python 3.12 or newer, which uv installs. It calls `uv` as a program, and `aws` for
-`--profile`. A later commit is adopted by editing the command above once the readings below hold for it.
+```bash
+uv tool upgrade awsds-workflows
+```
+
+The second command takes the newest commit of `main`: measured 2026-10-12 with uv 0.12.13, on an install
+from a local git remote that gained a commit. The commit installed is the `commit_id` in
+`direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The package needs Python 3.12 or newer,
+which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
 
 **Where it runs:**
 
@@ -135,7 +140,8 @@ on 2026-10-11 the two printed the same JSON, byte for byte
 `SUBNET_AZ1`, `SUBNET_AZ2` and `JOB_IMAGE_URI`. `render` refuses a file holding a placeholder with no
 value, and names every one.
 
-**Measured 2026-10-12 on the laptop**, the package at that commit against the scripts at `c0baddd`:
+**Measured 2026-10-12 on the laptop**, the package at `937a66a` and again at `3499530`, the `main` of
+that hour, against the scripts at `c0baddd`, with the same results at both commits:
 
 - `render`, with the live Sandbox values, printed each of the twelve YAML files of
   `examples/sandbox-orchestration/` byte for byte as `render.py` printed it under the old names, and
