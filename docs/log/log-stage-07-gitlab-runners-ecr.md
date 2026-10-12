@@ -190,3 +190,20 @@ Account ids are replaced by the account's name in angle brackets.*
   here (verification xiii's host half).
 - **[Claude] The runbook gained §I, the initial setup of a fresh host, and §U names the up/down order
   with the hub and the tunnel**, at the user's request.
+- **[Claude] The instance read through the user's Chrome session** (read-only, the user's offer).
+  **GitLab CE v19.4.2** (Shell 14.57.3, Workhorse and KAS v19.4.2, Pages 19.4.2, Ruby 3.3.12, Rails
+  7.2.3.1, PostgreSQL 17.11 for `main` and `ci`, Redis 7.2.16), components `Up to date`. Users: 2 -
+  the administrator `felipenoris` and **`GitLab Duo`, a bot the instance created on its own** 12
+  minutes after the reconfigure (Lesson 17); administrators 1, both without 2FA. Features: **sign-up
+  `Enabled`** (the home page carries the banner *"Your GitLab instance allows anyone to register for an
+  account"*), OmniAuth `Enabled` with no provider yet, GitLab Pages `Enabled`, container registry
+  `Not enabled`, instance runners `Enabled` and none registered, groups 0, projects 1: the user's
+  `felipenoris/test-project` with `main` pushed over HTTPS through the tunnel 8 minutes before the
+  reading. **Auto DevOps reads `instance enabled`** in the project's CI/CD settings: a project without
+  a `.gitlab-ci.yml` would run a pipeline nobody wrote once a runner exists, so runbook §I step 6
+  turns it off. **Verification iv, read in the test project's CI/CD settings**: the sections are
+  General pipelines, Auto DevOps, Runners, Artifacts, Variables, Pipeline trigger tokens, Deploy
+  freezes, Job token permissions and Secure files - **no Protected environments, no deployment
+  approvals**: this is CE, and Stage 8's two gates take the protected-tag shape (3.3). The tab opened
+  with no certificate interstitial because Chrome keeps the bypass for the session; the trust step
+  stands as read above.
