@@ -224,3 +224,13 @@ Account ids are replaced by the account's name in angle brackets.*
   deferring the question to this stage; `athena`, `glue` and `lakeformation` are the module's core,
   overridden never. Opened as **decision 9** in the stage file, recommended: drop the pair, keep the
   core.
+- **[user] Are the two to be cut used later by the plan?** **[Claude]** Read across the stages: no.
+  Stage 9 3.3a names the job-facing set for `VPC-Workloads` (`sagemaker.api` among it) and 4.3a re-cuts
+  Staging's; the runner's future SageMaker calls (Stage 10's model-package registration as
+  `awsds-deploy-prod`) are control-plane calls the `open` build plane carries through the proxy, and
+  `sagemaker.api` is added here by the stage that wants them private; no stage invokes an inference
+  endpoint from this VPC. Recorded in decision 9.
+- **[Claude] `make gitlab-down` read back at 15:53 UTC**: the host `stopped` (user initiated 15:44:08
+  UTC) and still `10.30.52.94`, with `gitlab.awsds.internal` pointing at it; interface endpoints in the
+  account: none; no runner; `awsds-prod-vpn` and `awsds-prod-proxy` `running`. Verification i's first
+  half: the address survived the stop; the start answers the second.

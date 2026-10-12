@@ -630,7 +630,13 @@ awkward, and it would land in `production/egress/`.
    (12 endpoints, 0.120 USD/h; `tooling/`'s bypass literal re-copied, `SC-11` the check) and leave the core
    alone, which the module overrides never and whose `lakeformation` is load-bearing for Production's share
    (D22). A per-session group for the data-plane three is a module change (the closed list, Lesson 33) for
-   0.030 USD/h, not worth it.
+   0.030 USD/h, not worth it. **The plan names no SageMaker caller in this VPC**: Stage 9 3.3a puts the
+   job-facing set (`sagemaker.api` among it) in `production/workloads-egress/`, where Production's jobs and
+   Stage 10's workers run, and 4.3a re-cuts Staging's; the runner's own SageMaker calls, Stage 10's
+   `CreateModelPackage`/`UpdateModelPackage` as `awsds-deploy-prod`, are control-plane calls the proxy carries
+   as public calls on this `open` plane, so the stage that makes them declares `sagemaker.api` here if it wants
+   them private. Nothing in any stage invokes an inference endpoint from this VPC, so `sagemaker.runtime` has no
+   future caller here.
 
 ## Verifications to answer while executing
 
