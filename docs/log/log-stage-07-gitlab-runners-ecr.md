@@ -519,3 +519,6 @@ Account ids are replaced by the account's name in angle brackets.*
   records. `docs/plan/runbooks/buildbox.md` stays as a pointer page, because two stage logs link to it
   and `check-plan-refs.py` fails on a dead link. `make check` OK; `check-network-doc.py` clean. The empty
   state object stays in the state bucket.
+- **[user] Decisions 2 and 4 taken as recommended, in chat**: ECR keeps basic scan-on-push, with enhanced
+  scanning left to Stage 11 step 4 and the Julia/R residual accepted; no standing mirror between this
+  repository and GitLab (step 7.1). Only decision 9 is open.
