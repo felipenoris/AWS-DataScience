@@ -427,10 +427,12 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   `python_callable` naming a module at the archive's root, imported with networking off against the
   worker's pre-installed packages on x86_64 CPython 3.12 — on the `amd64` build runner, never the `arm64`
   deploy runner. A Bash task's script is rendered as a Jinja template with the code folder on its
-  `PYTHONPATH`, so the job renders each `.sh` the same way before it runs it. If the packaging and rendering
-  tool [`serverless-workflows.md`](../runbooks/serverless-workflows.md) names is adopted, it is installed by
-  URL at a commit recorded in `app-etl`, never by name or from a branch, and what it builds runs once on a
-  worker before this gate trusts it. A processing task's code input is a different case: a
+  `PYTHONPATH`, so the job renders each `.sh` the same way before it runs it. The packaging and rendering
+  tool is `awsds-workflows` ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §T): the
+  runbook installs it from `main` for hand use, and CI installs it by URL at a commit recorded in `app-etl`,
+  never by name, so two builds of one tag cannot differ. No folder or archive it built has run in a job or
+  on a worker yet, so one does before this gate trusts it; its `compare` reads a graduated definition
+  against its template at review. A processing task's code input is a different case: a
   `ProcessingInput` names a prefix the job reads at each run, with no version to pin
   ([Stage 6i](stage-06i-sandbox-orchestration.md) verification xvi), so rule (d) cannot cover it; Stage 10
   decision 7 recommends the job's image instead, which rule (e) then covers.
