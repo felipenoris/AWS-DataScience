@@ -450,7 +450,9 @@ through the S3 gateway endpoint. Where the endpoint's policy does not admit
 `mwaa-serverless-code-files-*-<region>-prod` (any VPC on `vpc-v0.3.1`, Staging and Production today), a
 workflow with a code archive fails before its first task with `Execution environment preparation failed
 due to an internal server error`, and only a CloudTrail network activity event names the refusal. C6's
-recipe built the archive that ran; no archive of C2's `package-task` has run on a worker yet (§T).
+recipe built the archive that ran here. Archives of C2's `package-task` ran on a worker on 2026-10-12,
+in a Python task and a Bash task outside this lab
+([the package's documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#o-codigo-de-uma-task-python-ou-bash)).
 
 ### C1 — What the worker expects
 
@@ -461,10 +463,12 @@ recipe built the archive that ran; no archive of C2's `package-task` has run on 
   root imports by its name.
 - **Third-party packages built for the worker**: CPython 3.12 on Linux x86_64 today. A package installed
   for your laptop or for the house environment (Python 3.13) does not import there.
-- **No package the worker already has.** A pre-installed package wins over the archive's copy (measured
-  2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2): Airflow, the Amazon provider, boto3
-  and botocore, dag-factory, PyYAML, lz4 and the AWS encryption SDK family. Write against the worker's
-  boto3 1.43.1.
+- **No package the worker already has**: Airflow, the Amazon provider, boto3 and botocore, dag-factory,
+  PyYAML, lz4 and the AWS encryption SDK family. In a Python task the pre-installed package wins over the
+  archive's copy (measured 2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2). A Bash
+  task's `python3` imports the archive's copy first, since its `PYTHONPATH` starts with
+  `/usr/local/airflow/dags` (measured outside this lab on 2026-10-12: the archive's `six` 1.16.0
+  imported, though Airflow requires a `six` of its own). Write against the worker's boto3 1.43.1.
 - **No `__pycache__` or `.pyc`**: bytecode from another platform may not load.
 - **No secret**: the archive is copied by the service and stored outside the account.
 
@@ -584,9 +588,10 @@ run_project:
 ```
 
 `python_callable` is `<module>.<function>`. The function receives `op_kwargs` as keyword arguments, and
-the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`; a script from the
-archive runs with `/usr/local/airflow/dags` as its working directory, the guide says. Measured
-2026-10-11:
+the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`. The guide says a
+script from the archive runs with `/usr/local/airflow/dags` as its working directory; every form
+measured ran in the task's temporary folder instead, an inline command here on 2026-10-11 and a script
+called by its full path outside this lab on 2026-10-12. Measured 2026-10-11:
 
 - **A command that is a script's name** (`bash_command: reach_pypi.sh`) is rendered as a Jinja template
   from the archive into a temporary file, which the operator runs with `bash`; the script carries no
@@ -595,6 +600,10 @@ archive runs with `/usr/local/airflow/dags` as its working directory, the guide 
   the service renders it through Jinja too.
 - **A Bash task's `PYTHONPATH` carries `/usr/local/airflow/dags`**, so `python3 -m <package>` imports the
   archive's package from any folder.
+
+Outside this lab, on 2026-10-12, `python3 -m <package>` ran without a `cd`, and a script the archive
+stored executable ran by its path, `/usr/local/airflow/dags/<script>.sh`: the worker keeps each file's
+mode when it extracts the archive.
 
 The templates are `examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`,
 `operators/bash/demo-bash-operator.yaml` and, with no archive, `operators/bash/demo-bash-operator.probe.yaml`.
