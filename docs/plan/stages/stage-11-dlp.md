@@ -332,6 +332,14 @@ control at all. A threat model that lists a control nobody implemented is worse 
   as a `Sandbox` residual, it needs its own row: what is stored and where, that the content is not used to
   improve the service in SageMaker Studio but may be at the Free tier in a third-party IDE, and what a user
   may not paste. Closed, the row records the decision and the deny that keeps it closed.
+- **3.7 — [Claude] Write the Lambda row: no control keeps a function inside the perimeter.** Read
+  2026-10-12 for [Stage 17](stage-17-sandbox-machine-learning.md) decision 10: no SCP, boundary statement
+  or persona deny names `lambda:` in `Sandbox`, so a function created from the Bedrock IDE's *Function*
+  entry runs outside every VPC, with the internet a function has by default and nothing of D38's hub on
+  its path — no proxy, no DNS Firewall, no flow log. The row names the control that would close it, a deny
+  on `lambda:CreateFunction` and `lambda:UpdateFunctionConfiguration` unless `lambda:VpcIds` names a VPC
+  of the account, and whether it was written; until it is, Stage 17 does not create that entry (its
+  decision 10, Lesson 34).
 
 ### 4. GuardDuty's two paid features, decided against a real bill
 
