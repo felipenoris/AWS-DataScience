@@ -586,15 +586,15 @@ Measured (`docs/PRICING.md`), us-west-2:
    which Stage 12 then adopts; the alternative, EventBridge forwarding to Management's bus, puts a
    cross-account rule in the path of every alarm and the break-glass topic in the path of routine ones.
 6. **Where the image recipe lives** (1.0). `images/` is in this GitHub repository, every hand build took it
-   from there, and `./aws/devenv.py` reads it there; the GitLab `dev-env` repository Stage 7 step 3.6 creates
-   is empty. Recommended: **the recipe moves to GitLab `awsds/dev-env`** at pass 3, with `devenv.py` reading
+   from there, and `./aws/devenv.py` reads it there. GitLab's `awsds/dev-env` holds only
+   `images/build.gitlab-ci.yml`, as Stage 7 step 2.6 ran it: the pipeline clones this repository at the
+   commit a web trigger names (`RECIPE_SHA`), so the authorization is who can run a pipeline on that
+   project. Recommended: **the recipe moves to GitLab `awsds/dev-env`** at pass 3, with `devenv.py` reading
    a checkout of it by path: the protected tag is the steward's control only on the repository that holds
-   what it builds. The alternative is this repository as the source and GitLab's `dev-env` as its mirror (6.1's
-   dual push), which keeps one home and makes a GitHub write the real authorization. Stage 7 step 2.6 ran a
-   third shape: GitLab's `awsds/dev-env` holds only `images/build.gitlab-ci.yml`, which clones this
-   repository at the commit a web trigger names (`RECIPE_SHA`), so the authorization is who can run a
-   pipeline on that project. The brief names GitLab as the source-code control
-   ([`objectives.md`](../objectives.md)), which keeps the recommendation where it was.
+   what it builds, and the brief names GitLab as the source-code control
+   ([`objectives.md`](../objectives.md)). The alternative is this repository as the source and GitLab's
+   `dev-env` as its mirror (6.1's dual push), which keeps one home and makes a GitHub write the real
+   authorization.
 7. **Whether the dev-env hand half can shrink** (1.6). `dev-env.md` records two levers, both undecided:
    omitting `ImageVersionNumber` at the attach, so the domain follows the image's newest version and an apply
    alone changes what every new space starts (the review gate goes with it); and version aliases.
@@ -603,6 +603,11 @@ Measured (`docs/PRICING.md`), us-west-2:
 8. **Who owns a processing job's output mount** (2.2). Recommended: **the image keeps passwordless `sudo`
    and the job's command opens with 6i's `chown`**, the measured shape; running jobs as root would remove a
    step and widen every job's container to root for a mount's sake.
+9. **Where the D28 workflow lint lives** (5.6). The packaging and rendering tool is `awsds-workflows`,
+   which `app-etl`'s CI installs by URL at a pinned commit, and the lint reads the files that tool renders.
+   Recommended: **a `lint` command in `awsds-workflows`**, so one pin covers rendering, packaging and the
+   lint; the alternative is a script in this repository's `scripts/`, which `app-etl`'s CI would clone
+   from GitHub at a pinned commit, the way Stage 7's image pipeline clones the recipe.
 
 ## Verifications to answer while executing
 
