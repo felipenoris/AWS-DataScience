@@ -309,10 +309,16 @@ SLICES = [
         "11 interface endpoints (8.3) - no NAT",
         0.110,
     ),
-    # 14 since Stage 7 step 1.7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager`, which the GitLab
-    # host's bootstrap reads its leaf keys and gitlab-secrets.json through, and the runner its
-    # registration token.
-    Slice("production", "egress", EPHEMERAL, "14 interface endpoints (5.5, 7 1.7) - no NAT", 0.140),
+    # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
+    # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
+    # registration token, minus the SageMaker pair nothing in this VPC calls (decision 9).
+    Slice(
+        "production",
+        "egress",
+        EPHEMERAL,
+        "12 interface endpoints (5.5, 7 1.7, 7 dec 9) - no NAT",
+        0.120,
+    ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, written empty and egress_mode "B" from
     # birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so usd_per_hour is 0.0
     # and true rather than 0.0 and pending. It exists now because an [E] slice that arrives

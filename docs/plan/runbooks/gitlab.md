@@ -76,7 +76,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make status
    ```
 
-Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 14 at 0.010 USD/h each, the SageMaker pair and the data-plane three included (Stage 7 decision 9): a GitLab session carries them whether or not anything in the VPC calls them.
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 

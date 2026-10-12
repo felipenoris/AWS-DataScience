@@ -522,3 +522,10 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user] Decisions 2 and 4 taken as recommended, in chat**: ECR keeps basic scan-on-push, with enhanced
   scanning left to Stage 11 step 4 and the Julia/R residual accepted; no standing mirror between this
   repository and GitLab (step 7.1). Only decision 9 is open.
+- **[user] Decision 9 taken as recommended, in chat**: the SageMaker pair leaves `production/egress/`.
+  **[Claude]** The pair removed from the slice's extras; a read-only plan of the slice (down) reads `12 to
+  add`, and its plan-time `no_proxy_all_groups` 56 entries, sha256 `0f80372bf880bb16`, the four SageMaker
+  names (`api.sagemaker`, `runtime.sagemaker`, each in both spellings) the only difference from the 60.
+  `tooling/`'s literal re-copied; with `saml.auto.tfvars` copied from the worktree that wrote it, the
+  plan of `tooling/` reads `0 to add, 1 to change, 0 to destroy`, the S3 object alone, its eight
+  `no_proxy`/`NO_PROXY` lines and nothing else.
