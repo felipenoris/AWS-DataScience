@@ -46,10 +46,10 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-up
    ```
 
-   Until the runner's token is in its container (§K), the same without the runner, or a runner boots that cannot register and bills until `gitlab-down`:
+   Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
 
    ```bash
-   ./scripts/slices.py up --env production --only tooling,egress
+   make gitlab-up RUNNERS=0
    ```
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.

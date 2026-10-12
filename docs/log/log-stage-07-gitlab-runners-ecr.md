@@ -296,3 +296,30 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user] The data-scientist persona added to `awsds/data-scientists` as Developer**, in the UI, as the
   administrator. The session ends here; the next one starts at the remaining personas' memberships,
   Pages (4.2) and pass 3 (runbook §K).
+
+## 2026-10-12 — the third session: pass 3 prepared, the environment raised
+
+- **[Claude] The readings before pass 3**, 17:37 UTC, as the infrastructure user: the hub pair, GitLab,
+  `egress/`, `runners/` and `buildbox/` all down (`make status ENV=production`: 0.0000 USD/h); three
+  peer sessions on the laptop, all idle and none on Stage 7.
+- **[Claude] `production/runners/` reviewed before its first apply, three findings, fixed in
+  `0628be2`.** (1) The runbook's first pipeline ran `apk add aws-cli` inside `moby/buildkit:rootless`,
+  whose Dockerfile ends in `USER 1000:1000`, so the job could not install the client that minted its
+  registry login. The boot now fetches Amazon's ECR credential helper v0.12.0 through the proxy, checks
+  it against the SHA256 its release page publishes (`a22ab6d5…ded1a6`, a static build,
+  `CGO_ENABLED=0`), and the runner mounts it read-only into every job beside `ECR_REGISTRY`. (2) Runbook
+  §K created an instance runner. Any job reads the role's credentials through the metadata service (hop
+  limit 2), the role pushes to the three image repositories, and sign-up is open, so an instance runner
+  would let a self-registered account push an image; §K now creates a protected project runner of
+  `awsds/app-etl`, the stage's "protected refs, project locks". (3) The boot's GitLab check read
+  `/-/readiness`, which answers `404` outside the monitoring allowlist (this log, the second boot); it
+  reads the sign-in page, and the boot waits up to ten minutes for it before registering. The template
+  rendered with stub values and passed `bash -n`; `validate` and the hooks passed. The upstreams were read
+  from the laptop: the runner repository for Amazon Linux 2023 serves `gitlab-runner` up to 19.4.1, each
+  version requiring `gitlab-runner-helper-images` at the same version.
+- **[user] `git push`, `make hub-up`, then `./scripts/slices.py up --env production --only
+  tooling,egress`.** **[Claude]** Read back at 18:00 UTC: `awsds-prod-vpn` and `awsds-prod-proxy`
+  running (started 17:53:21 and 17:53:24 UTC), `awsds-prod-gitlab` running since 17:53:40 on
+  `10.30.52.94`, 14 interface endpoints `available`, the sign-in page `200` from the laptop through the
+  tunnel with the chain verified (`ssl_verify=0`); `awsds-prod-runner-token` holds no version. Decision 9
+  stays open: `egress/` came up with its 14.
