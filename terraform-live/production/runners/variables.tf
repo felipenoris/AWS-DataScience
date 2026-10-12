@@ -72,6 +72,23 @@ variable "root_volume_size" {
   }
 }
 
+variable "ecr_credential_helper" {
+  description = "Amazon's ECR credential helper, fetched by the boot through the proxy and mounted read-only into every job: the registry login a rootless build job cannot install for itself. Pinned by version and by the SHA256 its release page publishes (v0.12.0, 2026-02-27); a mismatch fails the boot. The upstream build is static (CGO_ENABLED=0), so it runs in Alpine and glibc images alike."
+  type = object({
+    version = string
+    sha256  = string
+  })
+  default = {
+    version = "0.12.0"
+    sha256  = "a22ab6d59dbac777b8fb31984709461da00a4c778b6ae14c8d3729e8d5ded1a6"
+  }
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{64}$", var.ecr_credential_helper.sha256))
+    error_message = "ecr_credential_helper.sha256 must be a 64-character lowercase hex digest."
+  }
+}
+
 variable "concurrent_jobs" {
   description = "How many jobs the runner manager runs at once. Two: a docs build beside an image build; a third would contend for the same four vCPUs."
   type        = number

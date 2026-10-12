@@ -19,6 +19,13 @@
 # user-data literal. Each session's new instance registers as a new runner manager under the same
 # token.
 #
+# How a job pushes: the role's credentials reach a job container through the metadata service (hop
+# limit 2, below), and ECR's credential helper turns them into the registry login. The boot installs
+# the helper at a pinned digest and the runner mounts it read-only into every job, because the build
+# image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own. Every job
+# also carries `ECR_REGISTRY`. The helper adds no reach: any job on this host can already read the
+# role's credentials, which is why the runner is a protected project runner (runbook K).
+#
 # Every layer of the runner is a proxy client (6.2), because none of them inherits it: the boot
 # script, the runner service, the docker daemon, the job containers and the build itself. The
 # bypass list is egress/'s generated `no_proxy` (data.tf), never written by hand.
@@ -36,6 +43,8 @@ locals {
     "arn:${data.aws_partition.current.partition}:ecr:${var.region}:${data.aws_caller_identity.current.account_id}:repository/${p}/*"
   ]
 
+  ecr_registry = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     proxy_url           = local.proxy_url
     no_proxy            = local.no_proxy
@@ -46,6 +55,9 @@ locals {
     runner_token_secret = data.terraform_remote_state.foundation.outputs.runner_token_secret_arn
     concurrent_jobs     = var.concurrent_jobs
     name_tag            = "awsds-${var.env}-runner"
+    ecr_registry        = local.ecr_registry
+    ecr_helper_version  = var.ecr_credential_helper.version
+    ecr_helper_sha256   = var.ecr_credential_helper.sha256
   })
 }
 
