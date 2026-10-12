@@ -127,6 +127,12 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   setting it**, rather than by reading the pattern back. **The recipe moves first** (decision 6): `images/`
   lives in this GitHub repository today, where every hand build took it from, and a protected tag on a
   repository that does not hold the recipe gates nothing.
+- **1.1 — Stage 7 left a working shape (2026-10-12)**: `images/build.gitlab-ci.yml`, carried by GitLab's
+  `awsds/dev-env` as its `.gitlab-ci.yml`, cloned this repository at a given commit, built `base` with the
+  distribution through the pull-through cache, built `dev-env` `FROM` it, pushed both as `default-v0.6.0` with
+  the runner's role through the ECR credential helper the runner mounts, and ran a smoke stage (Stage 7 step
+  2.6). It runs on a web trigger with `IMAGE_TAG` and `RECIPE_SHA`, so the steward's gate is who can run a
+  pipeline on `main` of a project the protected runner serves (Lesson 67), not yet a protected tag.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release

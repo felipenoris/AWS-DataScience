@@ -55,6 +55,12 @@ resource "aws_ecr_pull_through_cache_rule" "this" {
 # questions here (the argument that gives every repository this slice authors the CMK), and a CMK
 # in a creation template needs a custom role ECR assumes to create the repository - a second
 # principal for no confidentiality.
+#
+# No resource tags, for the same reason. Without a custom role ECR creates the repository as
+# AWSServiceRoleForECRTemplate, whose policy grants ecr:CreateRepository alone, so a template that
+# carries tags is refused ecr:TagResource and the first pull answers `not found` (CloudTrail,
+# 2026-10-12). The cached repositories are the one untagged ECR resource in the estate; the account
+# attributes their storage.
 resource "aws_ecr_repository_creation_template" "cache" {
   for_each = local.cache_upstreams
 
@@ -94,12 +100,4 @@ resource "aws_ecr_repository_creation_template" "cache" {
       },
     ]
   })
-
-  resource_tags = {
-    Project     = var.project
-    Environment = var.environment_tag
-    ManagedBy   = "terraform"
-    Owner       = var.owner
-    CostCenter  = "stage-07"
-  }
 }

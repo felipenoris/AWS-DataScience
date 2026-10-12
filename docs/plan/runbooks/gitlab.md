@@ -46,15 +46,15 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-up
    ```
 
-   Until the runner's token is in its container (§K), the same without the runner, or a runner boots that cannot register and bills until `gitlab-down`:
+   Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
 
    ```bash
-   ./scripts/slices.py up --env production --only tooling,egress
+   make gitlab-up RUNNERS=0
    ```
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears in **Admin area → CI/CD → Runners** within a minute of its own boot.
+5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
 
 **Down**, in the reverse order:
 
@@ -254,50 +254,146 @@ The backup file is fetched first from the backup bucket into `/var/opt/gitlab/ba
 
 ## K. The runner
 
-The runner is created in GitLab first (step 6.1): **Admin area → CI/CD → Runners → New instance runner**, no tags, run untagged jobs, description `awsds-prod-runner`. GitLab hands back an authentication token (`glrt-…`), which goes into its container once, by hand, as the infrastructure user; it never enters a file in this repository:
+The runner is a **protected project runner** of `awsds/app-etl`, never an instance runner (step 6.1). Any job on the host reads the instance role's credentials through the metadata service, and the role pushes to the three image repositories. An instance runner serves every project on the instance, including a self-registered account's while sign-up is open; a protected project runner serves only the protected branches and tags of the projects it is enabled in, so whoever can push an image is whoever can push a protected ref there.
 
-```bash
-aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: no tags, **Run untagged jobs** checked, description `awsds-prod-runner`, **Protected** checked. GitLab shows the authentication token (`glrt-…`) once.
+
+2. **Put the token into its container**, once, by hand, as the infrastructure user; it never enters a file in this repository. The command waits for a paste and echoes nothing:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`images/README.md`](../../../images/README.md)).
+
+Every `make gitlab-up` then boots a new instance that waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+
+**What a job can rely on**:
+
+- the proxy in both cases, `HTTP_PROXY`/`http_proxy`, `HTTPS_PROXY`/`https_proxy` and `NO_PROXY`/`no_proxy`; a build that pulls or installs anything passes them on as build arguments;
+- the CA root at `/etc/gitlab-runner/certs/ca.crt` (the helper installs it for the clone; a script copies it into its own store);
+- `ECR_REGISTRY`, this account's registry host;
+- `/usr/local/bin/docker-credential-ecr-login`, mounted read-only from the host: Amazon's ECR credential helper, pinned by digest in `runners/variables.tf`. A job writes `{"credHelpers":{"<ECR_REGISTRY>":"ecr-login"}}` into `~/.docker/config.json`, and every pull and push on that registry signs in as the instance role, whose credentials the helper reads from the metadata service two hops away. The build image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own.
+
+**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
+
+`Dockerfile`, the image: its base comes through the cache, its `RUN` through the proxy:
+
+```dockerfile
+ARG REGISTRY
+FROM ${REGISTRY}/ecr-public/docker/library/alpine:3.22
+RUN apk add --no-cache ca-certificates
 ```
 
-Every `make gitlab-up` then boots a new instance that reads the token, registers as a new runner manager under the same runner, and appears in the admin area within a minute. `make gitlab-down` destroys it; the stale manager row in GitLab clears itself. The runner's first-boot log is `/var/log/awsds-runner-boot.log`; `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+`ci/cache-probe.Dockerfile`, one image from each cache rule; it is built and discarded:
 
-**What a job can rely on**: the proxy in `HTTP_PROXY`/`http_proxy` and `NO_PROXY`/`no_proxy`, the CA root at `/etc/gitlab-runner/certs/ca.crt` inside the container (the helper installs it for the clone; a script copies it into its own store), and the instance role's credentials through the metadata service two hops away. A build that pulls or installs anything passes the proxy on as a build argument.
+```dockerfile
+ARG REGISTRY
+FROM ${REGISTRY}/k8s/pause:3.10 AS k8s
+FROM ${REGISTRY}/quay/prometheus/busybox:latest AS quay
+FROM ${REGISTRY}/ecr-public/docker/library/busybox:1.37 AS ecr
+FROM scratch
+COPY --from=k8s /pause /probe/k8s-pause
+COPY --from=quay /bin/busybox /probe/quay-busybox
+COPY --from=ecr /bin/busybox /probe/ecr-busybox
+```
 
-**The first pipeline** (step 6.4), a `.gitlab-ci.yml` on `app-etl` that builds and pushes an image with BuildKit rootless, no privileged mode, the registry login minted from the instance role. Stage 8 owns the three pipeline types; this is the shape that proves the runner:
+`.gitlab-ci.yml`:
 
 ```yaml
 stages: [build]
 
 variables:
-  AWS_REGION: us-west-2
   IMAGE_REPO: awsds-prod-ecr-app-etl
+  BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
 
-build-image:
-  stage: build
+.buildkit:
   image:
     name: moby/buildkit:rootless
     entrypoint: [""]
-  variables:
-    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
   before_script:
-    - apk add --no-cache aws-cli
-    - export ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
-    - export REGISTRY="$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com"
     - mkdir -p ~/.docker
-    - >
-      printf '{"auths":{"%s":{"auth":"%s"}}}' "$REGISTRY"
-      "$(printf 'AWS:%s' "$(aws ecr get-login-password --region "$AWS_REGION")" | base64 -w0)" > ~/.docker/config.json
+    - printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+
+build-image:
+  extends: .buildkit
+  stage: build
   script:
     - >
       buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=.
+      --opt build-arg:REGISTRY="$ECR_REGISTRY"
       --opt build-arg:http_proxy="$http_proxy" --opt build-arg:https_proxy="$https_proxy" --opt build-arg:no_proxy="$no_proxy"
-      --output type=image,name="$REGISTRY/$IMAGE_REPO:v0.1.0-$CI_COMMIT_SHORT_SHA",push=true
+      --output type=image,name="$ECR_REGISTRY/$IMAGE_REPO:v0.1.0-$CI_COMMIT_SHORT_SHA",push=true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+cache-probe:
+  extends: .buildkit
+  stage: build
+  script:
+    - >
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=ci
+      --opt filename=cache-probe.Dockerfile --opt build-arg:REGISTRY="$ECR_REGISTRY"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: [ci/cache-probe.Dockerfile]
+
+proxy-pair:
+  stage: build
+  image: public.ecr.aws/amazonlinux/amazonlinux:2023
+  script:
+    - curl -sS -o /dev/null -w 'through the proxy -> %{http_code}\n' --max-time 20 https://pypi.org/
+    - >
+      if env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY curl -sS -o /dev/null --max-time 20 https://pypi.org/;
+      then echo "FAIL: the internet answered with no proxy, so a route exists"; exit 1;
+      else echo "no proxy, no answer: the proxy is the only way out"; fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+```
+
+The readings, in order:
+
+1. `build-image` and `cache-probe` run on the push; the protected runner takes the first push's pipeline, since `main` is protected before that pipeline exists. `moby/buildkit:rootless` and the job images come from Docker Hub and ECR Public through the proxy (the plane is `open`); every `FROM` is a pull through a cache rule, which ECR answers by creating `<prefix>/<upstream path>` from the rule's creation template and importing every platform of the upstream index; the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. A `FROM` that reads `not found` while the runner's `GetAuthorizationToken` succeeds is ECR failing to create the cache's repository: CloudTrail names the refusal under `AWSServiceRoleForECRTemplate`, and a creation template that carries tags or a KMS key needs a creation role (`registry/cache.tf`).
+2. **Retry** `build-image`: the same commit builds the same tag, and ECR refuses the push: *"The image tag '…' already exists in the 'awsds-prod-ecr-app-etl' repository and cannot be overwritten because the tag is immutable."* That refusal is the deliverable's second half.
+3. Run `proxy-pair` by hand: `through the proxy -> 200`, then `curl: (28) Connection timed out` and `no proxy, no answer`.
+
+Measured 2026-10-12 (the stage log): `build-image` in about 8 s, the cache's first pull 1.3 s with the import, and all three readings as written here.
+
+**Pages** (step 4.2): a job carrying `pages: true` publishes its `public/` directory; GitLab adds `pages:deploy`, and the site lives at `$CI_PAGES_URL`, a unique domain under the wildcard (`https://app-etl-ffa1fa.awsds-pages.internal` for `app-etl`, shown under **Deploy → Pages**). The jobs added to the first pipeline, with `stages: [build, verify]`:
+
+```yaml
+pages:
+  stage: build
+  image: public.ecr.aws/docker/library/alpine:3.22
+  script:
+    - mkdir -p public
+    - >
+      printf '<!doctype html><title>app-etl</title><h1>app-etl</h1><p>Published by job %s on %s from commit %s.</p>\n'
+      "$CI_JOB_ID" "$CI_RUNNER_DESCRIPTION" "$CI_COMMIT_SHORT_SHA" > public/index.html
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+pages-readback:
+  stage: verify
+  image: public.ecr.aws/amazonlinux/amazonlinux:2023
+  needs: [pages]
+  script:
+    - echo "CI_PAGES_URL=$CI_PAGES_URL"
+    - sleep 30
+    - >
+      curl -sS -o /dev/null --cacert /etc/gitlab-runner/certs/ca.crt --max-time 20
+      -w 'pages: http=%{http_code} ssl_verify=%{ssl_verify_result} redirect=%{redirect_url}\n' "$CI_PAGES_URL/"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 ```
 
-`aws-cli` and `moby/buildkit:rootless` arrive through the proxy (the plane is `open`); the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. The tag is immutable: a second push of the same tag is refused, which is the deliverable's second half. If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
+Access control answers an unauthenticated read with `302` to `https://projects.awsds-pages.internal/auth`, so the read-back's proof is `ssl_verify=0`, not the status. A browser's first visit asks the user to authorize **GitLab Pages**, the OAuth application Omnibus registers at the first reconfigure (scope `api`; for an administrator GitLab warns that it can then act as one); each user authorizes it once.
+
+If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 
 ## A. SAML
 

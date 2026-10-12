@@ -12,6 +12,9 @@ CA_ROOT_PARAM="${ca_root_param}"
 TOKEN_SECRET="${runner_token_secret}"
 CONCURRENT="${concurrent_jobs}"
 NAME_TAG="${name_tag}"
+ECR_REGISTRY="${ecr_registry}"
+ECR_HELPER_VERSION="${ecr_helper_version}"
+ECR_HELPER_SHA256="${ecr_helper_sha256}"
 
 export http_proxy="$PROXY" https_proxy="$PROXY"
 export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
@@ -37,6 +40,12 @@ chmod 644 "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
 
 echo "--- packages: docker and git (S3 repositories, no proxy)"
 dnf -y -q install docker git jq
+
+echo "--- the ECR credential helper $ECR_HELPER_VERSION, mounted read-only into every job"
+curl -fsS --max-time 120 -o /usr/local/bin/docker-credential-ecr-login \
+  "https://amazon-ecr-credential-helper-releases.s3.us-east-2.amazonaws.com/$ECR_HELPER_VERSION/linux-amd64/docker-credential-ecr-login"
+echo "$ECR_HELPER_SHA256  /usr/local/bin/docker-credential-ecr-login" | sha256sum -c -
+chmod 755 /usr/local/bin/docker-credential-ecr-login
 
 echo "--- the runner package repository, proxied per repository"
 cat > /etc/yum.repos.d/runner_gitlab-runner.repo <<'REPOEOF'
@@ -81,6 +90,16 @@ systemctl daemon-reload
 systemctl enable --now docker
 usermod -aG docker gitlab-runner
 
+echo "--- waiting for GitLab: a started host answers two to three minutes after its start"
+code=""
+for _ in $(seq 1 60); do
+  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
+  [ "$code" = "200" ] && break
+  sleep 10
+done
+echo "    $GITLAB_URL/users/sign_in -> $code"
+[ "$code" = "200" ] || { echo "FATAL: GitLab did not answer in ten minutes - is awsds-prod-gitlab running?" >&2; exit 1; }
+
 echo "--- registering with the authentication token from Secrets Manager"
 INSTANCE_ID="$(curl -s -H "X-aws-ec2-metadata-token: $(curl -s -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)" http://169.254.169.254/latest/meta-data/instance-id)"
 TOKEN="$(aws secretsmanager get-secret-value --secret-id "$TOKEN_SECRET" --query SecretString --output text)"
@@ -94,7 +113,9 @@ gitlab-runner register \
   --docker-image "public.ecr.aws/docker/library/alpine:latest" \
   --docker-pull-policy if-not-present \
   --docker-volumes "/etc/gitlab-runner/certs/$GITLAB_HOST.crt:/etc/gitlab-runner/certs/ca.crt:ro" \
+  --docker-volumes "/usr/local/bin/docker-credential-ecr-login:/usr/local/bin/docker-credential-ecr-login:ro" \
   --docker-security-opt "seccomp=unconfined" \
+  --env "ECR_REGISTRY=$ECR_REGISTRY" \
   --env "HTTP_PROXY=$PROXY" \
   --env "HTTPS_PROXY=$PROXY" \
   --env "NO_PROXY=$NOPROXY" \
@@ -109,7 +130,7 @@ gitlab-runner verify 2>&1 | tail -n 3
 echo "--- egress check: an allowed name over https, then a PRIVATE destination over http"
 echo "    pypi.org over https (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || true)"
 echo "    10.31.0.1 over http, a PRIVATE address (must be 403): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" http://10.31.0.1/ || true)"
-echo "    $GITLAB_HOST direct (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --noproxy '*' "$GITLAB_URL/-/readiness" || true)"
+echo "    $GITLAB_HOST direct, the sign-in page (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
 
 cat > /etc/profile.d/awsds-runner.sh <<'BANNER'
 echo

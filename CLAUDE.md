@@ -337,20 +337,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **no** policy before 5b 3 and that account has no VPC (decision 6 stands, reading recorded). Stage 9 step 9
   owns `production/warehouse{,-compute}/` and the `governed` class; `INT-24` is unproven.
 - **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed
-  as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **5**
-  is **`default-v0.5.0`** (2026-10-10), frozen to its digest, attached by hand to the domain's
+  as a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **6**
+  is **`default-v0.6.0`** (2026-10-12, Stage 7 2.6), frozen to its digest, attached by hand to the domain's
   `DefaultUserSettings` — what a new space's picker reads, both app types. INT-01/INT-17 closed (image
   role by tag, project role by digest). **The app image config caps each env value at 256 chars** vs a
   `NO_PROXY` of ~2,300, so decision 8 put the six variables in the Dockerfile as `ENV`, a dated literal;
-  `./aws/devenv.py` reads the drift, **all green** since v0.5.0's registration. `default-v0.5.0`
-  (`dev-env` `sha256:8ec04e35…9dd6`, `base` `sha256:c7ad2c96…2181`, both ~213 MB under v0.4.0, the
-  push through the shared VPC's `ecr.dkr` endpoint) is SMD **`4.5.2-cpu`** pinned by digest; uv stays
+  `./aws/devenv.py` reads the drift, `DE-5` green on version 6. `default-v0.6.0`
+  (`dev-env` `sha256:43079013…5518`, `base` `sha256:94359041…1975`, built by the runner pipeline in ~16
+  min with the distribution through the ECR cache, the smoke test reading GitLab through the image's own
+  trust) is SMD **`4.5.2-cpu`** pinned by digest, the CA root in the OS store and OpenSSL, `requests`,
+  curl and Node pointed at it; uv stays
   the distribution's **0.12.17** (the old `0.12.5` ARG would have downgraded it past every guard; a
   downgrade is now refused), and the literal carries **every optional group's names** (70 entries,
   `aafa08da98a61f5c`), since `no_proxy` names only the last apply's groups; `devenv.py` compares it with
-  `no_proxy_all_groups` exactly. `redshift-connector`'s declaration (`11a790e`) is not in it, and needs
-  no rebuild: the lock already installs 2.1.16 transitively, so it rides the next recipe change, which
-  takes a minor. The house image's own Python sent `GetCredentials` out through the proxy as a public
+  `no_proxy_all_groups` exactly. `redshift-connector` is declared since v0.6.0. The house image's own Python sent `GetCredentials` out through the proxy as a public
   call (06:21Z) because v0.4.0's list lacked `redshift-serverless`. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18, read-only**: both SMUS components take a
   private door (the agent its endpoint, the Access Grants plugin the **S3 gateway endpoint** — the
   same id 6.1 (xix) wanted); the blueprint's manage-access role **is** an LF admin (OQ 24's other
@@ -460,7 +460,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   installed by URL from its `main` (user, 2026-10-12; the runbook's §T): `render.py`, `package-uv.sh` and
   `package-uv-job.py` are deleted, the example YAML carry the package's placeholder names, and
   `operators/build.sh` stays, since its archive vendors PyYAML, which `package-task` leaves out.
-- **Stage 7 in progress: pass 1 closed 2026-10-12, pass 2 nearly closed, pass 3 not started.** `production/pki/` (root to 2036, leaves to 2027-10-22, published as `/datascience/prod/pki/*-pem`; fingerprints in the stage log), `production/tooling/` (GitLab **CE v19.4.2** `[D]`, rank 42, host `awsds-prod-gitlab`, `gitlab.rb` as an S3 object the host fetches, `sudo awsds-gitlab-refresh` after an apply), `production/runners/` written (`[E]`, rank 57, unapplied until the runner token is in `awsds-prod-runner-token`), `egress/` 14 endpoints at v0.17.0, `registry/` 5.b (`app-etl`, three cache rules; `SC-12` red until 6.4's first pull). Decisions 1, 5-8 taken; **9 open** (the user's: `gitlab-up` raises all 14 SharedServices endpoints, the vestigial SageMaker pair included; recommended cut). Inside GitLab: the local administrator `felipenoris` (born `root`), the namespace `awsds/` with four persona subgroups, `app-etl` and `dev-env` (the latter with Stage 8 1.0's roles and the protected tag `*-v*`), SAML through the Identity Center application `GitLab` (certificate to 2031-10-12), the data-scientist persona signed in and a Developer in its subgroup; sign-up and Auto DevOps left on by the user; a self-created `GitLab Duo` bot. **Measured**: a reconfigure run from cloud-init deadlocks on Omnibus's `After=multi-user.target` (fixed in `gitlab.rb`); `/-/readiness` answers `404` to a probe by name (the monitoring allowlist, fixed with `--resolve`); first boot 8 min 44 s to `gitlab Reconfigured!`; a stop/start keeps the address; the `awsds` SSO token lives about an hour and does not refresh. **`saml.auto.tfvars` exists only in the worktree `verify-stage-7-a6b2e6`** (gitignored): copy it before any `tooling/` plan elsewhere, or the plan proposes removing the SAML block. **Owed**: the other personas' memberships, Pages (4.2), pass 3 (the token, `make gitlab-up`, 6.4's pipeline, 2.6's `default-v0.6.0`, 6.5's buildbox retirement), 8.x. `ENV=production` never touches the hub (refusal 6).
+- **Stage 7 in progress: passes 1-2 closed 2026-10-12, pass 3 nearly done, pass 4 not started.** Production holds `pki/` (root to 2036, leaves to 2027-10-22, `/datascience/prod/pki/*-pem`), `tooling/` (GitLab **CE v19.4.2** `[D]`, host `awsds-prod-gitlab`, `gitlab.rb` an S3 object, `sudo awsds-gitlab-refresh` after an apply), `runners/` (`[E]`, a **protected project runner** of `app-etl`, linked to `dev-env` and locked; jobs log in to ECR through Amazon's credential helper mounted from the host; `make gitlab-up RUNNERS=0` leaves it out), `egress/` (14 endpoints) and `registry/` 5.b (`app-etl`, three cache rules whose creation templates carry no tags). In GitLab: the local administrator `felipenoris`, `awsds/` with four persona subgroups, `app-etl` (the first pipeline; Pages at `app-etl-ffa1fa.awsds-pages.internal`) and `dev-env` (the protected tag `*-v*`; `images/build.gitlab-ci.yml` as its pipeline, which built `default-v0.6.0`, now Sandbox's image version 6); SAML through the Identity Center application `GitLab`; sign-up and Auto DevOps left on by the user. Decisions 1, 3, 5-8 taken; **9 open** (drop the SageMaker endpoint pair, recommended). **Measured**: cloud-init deadlocks a reconfigure on Omnibus's `After=multi-user.target` (fixed in `gitlab.rb`); `/-/readiness` answers `404` outside the monitoring allowlist; a first boot takes ~9 min to reconfigure; the `awsds` SSO token lives about an hour; the cache's first pull needs no route, and a pull imports every platform of an index. **`saml.auto.tfvars` exists only in the worktree `verify-stage-7-a6b2e6`** (gitignored): copy it before any `tooling/` plan elsewhere. **Owed**: INT-09's clone from a notebook on version 6, the other personas' memberships, 6.5's buildbox retirement, pass 4 (8.x). `ENV=production` never touches the hub (refusal 6).
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
@@ -614,6 +614,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     carries it.**
 66. **A control on a request's parameters binds whoever makes the request, never the role the request
     passes — and where the two are one principal, the measurement agrees with the wrong design.**
+67. **Whoever can make a machine run code holds the machine's role — a runner's scope is an IAM decision
+    made in GitLab's UI.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

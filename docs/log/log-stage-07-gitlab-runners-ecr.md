@@ -296,3 +296,204 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user] The data-scientist persona added to `awsds/data-scientists` as Developer**, in the UI, as the
   administrator. The session ends here; the next one starts at the remaining personas' memberships,
   Pages (4.2) and pass 3 (runbook §K).
+
+## 2026-10-12 — the third session: pass 3 prepared, the environment raised
+
+- **[Claude] The readings before pass 3**, 17:37 UTC, as the infrastructure user: the hub pair, GitLab,
+  `egress/`, `runners/` and `buildbox/` all down (`make status ENV=production`: 0.0000 USD/h); three
+  peer sessions on the laptop, all idle and none on Stage 7.
+- **[Claude] `production/runners/` reviewed before its first apply, three findings, fixed in
+  `0628be2`.** (1) The runbook's first pipeline ran `apk add aws-cli` inside `moby/buildkit:rootless`,
+  whose Dockerfile ends in `USER 1000:1000`, so the job could not install the client that minted its
+  registry login. The boot now fetches Amazon's ECR credential helper v0.12.0 through the proxy, checks
+  it against the SHA256 its release page publishes (`a22ab6d5…ded1a6`, a static build,
+  `CGO_ENABLED=0`), and the runner mounts it read-only into every job beside `ECR_REGISTRY`. (2) Runbook
+  §K created an instance runner. Any job reads the role's credentials through the metadata service (hop
+  limit 2), the role pushes to the three image repositories, and sign-up is open, so an instance runner
+  would let a self-registered account push an image; §K now creates a protected project runner of
+  `awsds/app-etl`, the stage's "protected refs, project locks". (3) The boot's GitLab check read
+  `/-/readiness`, which answers `404` outside the monitoring allowlist (this log, the second boot); it
+  reads the sign-in page, and the boot waits up to ten minutes for it before registering. The template
+  rendered with stub values and passed `bash -n`; `validate` and the hooks passed. The upstreams were read
+  from the laptop: the runner repository for Amazon Linux 2023 serves `gitlab-runner` up to 19.4.1, each
+  version requiring `gitlab-runner-helper-images` at the same version.
+- **[user] `git push`, `make hub-up`, then `./scripts/slices.py up --env production --only
+  tooling,egress`.** **[Claude]** Read back at 18:00 UTC: `awsds-prod-vpn` and `awsds-prod-proxy`
+  running (started 17:53:21 and 17:53:24 UTC), `awsds-prod-gitlab` running since 17:53:40 on
+  `10.30.52.94`, 14 interface endpoints `available`, the sign-in page `200` from the laptop through the
+  tunnel with the chain verified (`ssl_verify=0`); `awsds-prod-runner-token` holds no version. Decision 9
+  stays open: `egress/` came up with its 14.
+- **[user] Step 6.1's GitLab half and the token**: the project runner created on `awsds/app-etl`
+  (protected, untagged jobs, `awsds-prod-runner`) and its token put into `awsds-prod-runner-token`
+  (version `AWSCURRENT` at 18:12:31 UTC). A first `put-secret-value`, at 18:04:41 UTC, ran before the
+  runner existed and wrote whatever was typed at the silent prompt; that version is `AWSPREVIOUS`.
+- **[Claude] `production/runners/` planned `6 to add, 0 to change, 0 to destroy`** (the role, its two
+  inline policies, the SSM managed policy, the profile, the instance); the rendered bootstrap read in
+  the plan: the proxy, `egress/`'s 40-entry `no_proxy`, the helper's version and digest, the registry.
+  The three peer sessions told before the write. **Applied through `make gitlab-up AUTO=1`** (the
+  user's authorization), 18:15:45 to 18:16:55 UTC: GitLab `already running`, `egress/` `No changes`,
+  `runners/` `6 added`; the instance `i-002105d808682af49` on `10.30.32.132`.
+- **[Claude] The runner's first boot, read from the serial console: 1 min 42 s, registered.** Boot start
+  18:16:49 UTC; the helper passed its digest check; GitLab's sign-in page `200` on the first try;
+  `Runner registered successfully`, `Verifying runner... is valid` as
+  `awsds-prod-runner-i-002105d808682af49`; the egress check `pypi.org` `200` through the proxy,
+  `10.31.0.1` `403`, GitLab direct `200`; `first boot done` at 18:18:31 UTC, cloud-init `Up 106.84
+  seconds`. Verification viii's registration half: yes, from the Secrets Manager token on a fresh
+  instance.
+- **[user] `make gitlab-up RUNNERS=0` asked for**, to raise GitLab without the runner. **[Claude]**
+  Added (`edbc3ad`): `RUNNERS=0` narrows `gitlab-up` to `tooling,egress`, any value but `0` or `1` is
+  refused, and `gitlab-down` destroys the runner whatever the flag says.
+
+## 2026-10-12 — step 6.4, the first pipeline
+
+- **[user] The three files of runbook §K pushed to `awsds/app-etl`'s `main`** (commit `0817e161`).
+  Pipeline #1: `build-image` and `cache-probe` failed in 12 and 11 s. The runner took both jobs (the
+  protected runner served the first push's pipeline), so the branch was protected before the pipeline
+  was created.
+- **[Claude] Both logs read through the user's Chrome, at the user's request.** Everything before the
+  first `FROM` worked: runner 19.4.1, `moby/buildkit:rootless` pulled from Docker Hub through the proxy,
+  the clone with the CA root (`Updating CA certificates...`), BuildKit rootless up with no privileged mode,
+  and `[auth] sharing credentials for <the registry>`. Then every pull through the cache read `not found`:
+  `ecr-public/docker/library/alpine:3.22` in one job, the probe's three in the other.
+- **[Claude] The cause, from CloudTrail.** The runner role's two `GetAuthorizationToken` calls succeeded
+  (the credential helper works); its four `BatchGetImage` calls read `RepositoryNotFoundException`; and
+  ECR's four `CreateRepository` calls, made as
+  `AWSServiceRoleForECRTemplate/ECRPullThroughCacheWithTemplate`, were refused: *"is not authorized to
+  perform: ecr:TagResource"*. That service-linked role (created 2026-10-12T14:11:54Z by `registry/`'s 5.b
+  apply) carries `ECRTemplateServiceRolePolicy`, which grants `ecr:CreateRepository` and nothing else,
+  and the three creation templates carried the five tags. The repository creation templates page says it:
+  the creation role *"must be provided when using repository tags and/or KMS in the template, otherwise
+  the repository creation will fail"*. `cache.tf` had carried the KMS half of that sentence and not the
+  tags half.
+- **[user] Option (a) taken: the templates carry no tags**, recommended over a custom creation role
+  (a second principal for public bytes, `cache.tf`'s own argument against a CMK). **[Claude]
+  `production/registry/` applied 18:34 UTC: `0 added, 3 changed, 0 destroyed`**, the saved plan the
+  user approved, re-plan `No changes`; the three templates read back with no tags, `MUTABLE`, `AES256`
+  and no custom role.
+- **[Claude] Pipeline #2 started through the user's Chrome, at the user's request: both jobs passed.**
+  ECR created the four cache repositories at 18:34:57 UTC (`MUTABLE`, `AES256`, the templates' two
+  lifecycle rules, no tags) and filled them between 18:35:00 and 18:35:08 as
+  `AWSServiceRoleForECRPullThroughCache` (`InitiateLayerUpload` to `PutImage` in CloudTrail).
+  **Verification vii: yes.** The first pull through each of the three rules succeeded with no route to
+  the internet: the upstreams need no credential and ECR fetches them itself. **Verification viii: yes**,
+  on both halves: BuildKit rootless built and pushed with no privileged mode under `seccomp=unconfined`.
+  `build-image` took about 8 s: the `FROM` through the cache 1.3 s with the import, `apk add` through the
+  proxy (`dl-cdn.alpinelinux.org`), and the push of `awsds-prod-ecr-app-etl:v0.1.0-0817e161`
+  (`sha256:9a37b6929c23…`, 4.0 MB) at 18:34:59 UTC.
+- **[Claude] A pull through the cache imports every platform of a multi-architecture index**, as the
+  pull-through cache page says: `pause:3.10` stored five Linux images of 0.2 to 0.36 MB and two Windows
+  images of 270 and 308 MB; `alpine:3.22` and `busybox:1.37` seventeen entries each, attestation
+  manifests included. A large multi-architecture image is pulled by its platform digest when the other
+  platforms are not wanted.
+- **[Claude] The retry of `build-image` (job 7) was refused, the deliverable's second half:** *"failed to
+  push …/awsds-prod-ecr-app-etl:v0.1.0-0817e161: unknown: The image tag 'v0.1.0-0817e161' already exists
+  in the 'awsds-prod-ecr-app-etl' repository and cannot be overwritten because the tag is immutable."*
+  The rebuild had produced another manifest (`sha256:a580d4771ad5…`): the build is not byte-reproducible,
+  and the layers uploaded before the refusal came at the manifest.
+- **[Claude] `proxy-pair` (job 6), run by hand: `through the proxy -> 200`, then `curl: (28) Connection
+  timed out after 20001 milliseconds` with the proxy variables unset.** INT-21's job half; the access
+  log's half (the proxy naming the runner's requests) is unread and needs `./aws/proxy.py --on-host`,
+  which writes through `ssm:SendCommand`.
+- **[Claude] `./aws/supplychain.py`: all checks passed**, `SC-12` green on all three rules (2, 1 and 1
+  cached repositories) and `SC-10` the note of a runner running.
+- **[user] Decision 3 taken, in chat: the three credential-free cache rules stay**, the condition holding
+  (the first pull needed no route). **[user]** authorized `./aws/proxy.py --on-host` for INT-21's log half.
+  **[Claude] Not run:** the access log is exported to CloudWatch Logs (`/awsds/prod/proxy`, 365 days),
+  so the reading is a `filter-log-events` with no `ssm:SendCommand`. **INT-21's log half, read for
+  `10.30.32.132` between 18:16 and 18:40 UTC: every external request of the runner is named, all `200
+  TCP_TUNNEL`** - `storage.googleapis.com` 2 requests, 571 MB (the runner and helper-image packages
+  `packages.gitlab.com` redirects to, 14 requests), `production.cloudfront.docker.com` 8, 122.5 MB, with
+  `registry-1.docker.io` 16 and `auth.docker.io` 2 (`moby/buildkit:rootless`),
+  `d5l0dvt14r5h8.cloudfront.net` 2, 54.7 MB, with `public.ecr.aws` 7 (the job images from ECR Public),
+  the credential helper's bucket 1, 9.1 MB, `dl-cdn.alpinelinux.org` 2, 5.5 MB (the two builds' `apk
+  add`), `pypi.org` 2 - and the boot's `http://10.31.0.1/` `403 TCP_DENIED`. No ECR name and no
+  `us-west-2` S3 name appears: the pushes and the cache's pulls left by the endpoints and the gateway.
+
+## 2026-10-12 — step 4.2, Pages
+
+- **[user] A `pages` job and a `pages-readback` job pushed to `app-etl`'s `main`** (commit `b30af685`,
+  pipeline #3, at Claude's draft): `pages: true` on a job that writes `public/index.html`, then a job in
+  a later stage that reads `$CI_PAGES_URL` with `--cacert /etc/gitlab-runner/certs/ca.crt`.
+- **[Claude] Followed through the user's Chrome, at the user's request.** `build-image`, `pages` and
+  `pages:deploy` passed; `CI_PAGES_URL=https://app-etl-ffa1fa.awsds-pages.internal`, a unique domain
+  (GitLab's default for a new project), under the wildcard record and the wildcard leaf. **The runner's
+  read-back: `pages: http=302 ssl_verify=0`**, redirected to `https://projects.awsds-pages.internal/auth`:
+  the leaf validated against the CA root from the runner, and access control asked for a session.
+- **[Claude] The laptop's visit stopped at an OAuth consent**: *"GitLab Pages is requesting access to
+  your account"*, scope `api`, and for an administrator *"Authorizing GitLab Pages will let it act as an
+  administrator"*; the application is the one Omnibus registered at the first reconfigure. **[user]
+  Authorized it, as the administrator `felipenoris`.** The page then rendered in Chrome with no
+  certificate warning: *"app-etl - Published by job 10 on awsds-prod-runner from commit b30af685."*
+  From the laptop's shell: `http=302 ssl_verify=0` against the system store, the served certificate
+  `CN=*.awsds-pages.internal` issued by `CN=awsds internal root CA`, `notAfter` 2027-10-22. **Step 4.2
+  done: Pages answers on two of INT-19's surfaces, the laptop and the runner.** Each user who visits a
+  private project's site authorizes the same application once.
+
+## 2026-10-12 — step 2.6, `default-v0.6.0` built on the runner
+
+- **[Claude] The readings before the build.** The root has been in the recipe since pass 1
+  (`images/base/ca-certificates/awsds-root.crt`, `CA_ROOTS_EXPECTED=1`). `./aws/devenv.py` could not
+  compare the baked bypass list (`DE-2` fails while `sandbox/egress` is down, which leaves no outputs); a
+  read-only plan of that slice gave `no_proxy_all_groups` 70 entries, sha256 `aafa08da98a61f5c`, equal to
+  the Dockerfile's literal (`DE-1`) and to version 5's (`DE-5`): no edit owed.
+- **[user] Items 1 to 4 of Claude's proposal taken, in chat**: the image's trust beyond the OS store, the
+  build as a pipeline of the GitLab project `awsds/dev-env`, the distribution through the pull-through
+  cache, a smoke test inside the job.
+- **[Claude] `e885dcd`**: `base` section 5 sets `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`
+  and `NODE_EXTRA_CA_CERTS` to `/etc/ssl/certs/ca-certificates.crt` and asserts the root reached that
+  bundle; `images/smoke/Dockerfile` reads `https://gitlab.awsds.internal` with curl, git and both
+  Pythons; `images/build.gitlab-ci.yml` is the pipeline (the recipe cloned at `RECIPE_SHA`, `base` with
+  `SMD_IMAGE` pointed at the cache and the digest pin kept, `dev-env` `FROM` the pushed base, the smoke
+  build discarded). Pushed to GitHub, the commit served at 200.
+- **[user] The runner linked to `awsds/dev-env`** (GitLab 19.4's label for the action is "Link", not
+  "Enable") **and the file pushed as its `.gitlab-ci.yml`** (commit `63f3fe47`); the push created no
+  pipeline, as the rules require a web trigger. **[Claude]** Read through the user's Chrome: the runner
+  is assigned to `dev-env` and reads Protected, Lock to current projects and Run untagged jobs; the
+  project lets Developers and above set pipeline variables.
+- **[Claude] Pipeline #4 started through the user's Chrome, at the user's request**, on `main` with
+  `IMAGE_TAG=default-v0.6.0` and `RECIPE_SHA=e885dcd484458a9fbffb4d7f6fd9d4f43566c194`: job 13 on the
+  runner from 19:24:12 UTC.
+- **[Claude] Job 13 succeeded in about 16 minutes**, read through the user's Chrome and from ECR. The
+  distribution came through the cache: `ecr-public/sagemaker/sagemaker-distribution` held its one image
+  at 19:27:57 UTC, pulled by the digest pin, its 2.94 GB layer arriving at about 35 MB/s through the
+  endpoint (the buildbox took about 27 minutes through the proxy for the same order of bytes, 6d).
+  **Pushed**, digests from the job's metadata and from `describe-images`:
+
+  | Image | Digest | Size (ECR) | Pushed (UTC) |
+  |---|---|---|---|
+  | `awsds-prod-ecr-base:default-v0.6.0` | `sha256:94359041f65b8bfada3ec1603937dadd49055854c034910f20d8be4a53341975` | 3,745,648,934 | 19:29:13 |
+  | `awsds-prod-ecr-dev-env:default-v0.6.0` | `sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518` | 6,675,093,373 | 19:40:24 |
+
+  They replace `default-v0.5.0`'s `sha256:c7ad2c964335…` (3,745,881,983) and `sha256:8ec04e357792…`
+  (6,969,138,672); the new `dev-env` is 294 MB smaller compressed. **The smoke test passed, 19:40:25
+  UTC**, every client reading `https://gitlab.awsds.internal` through the image's own trust:
+  `curl (/usr/bin/curl): 200 ssl_verify=0`; `git (/usr/bin/git): fatal: could not read Username ...
+  terminal prompts disabled`, the authentication wall and not a certificate; `/opt/conda/bin/python
+  urllib 200`, `requests 200`; `/opt/awsds/venv/bin/python urllib 200`, `requests 200`. The seven
+  `FATAL` matches in the log are the guards' own command text. Basic scan-on-push started on the new
+  `dev-env` (`IN_PROGRESS` at the reading).
+- **[user] The registration authorized as one sequence, in chat** (runbook `dev-env.md` §B, steps 2, 3
+  and 5). **[Claude] The readings first**: one SageMaker domain, `d-p6gthxc82ckg`, with version 5
+  attached to both app types; no app running (`down-studio-apps.py sandbox --dry-run`: `no running
+  app`), so step 1 had nothing to delete; one space, `default-28f1b390-…`, on AWS's distribution by
+  alias `4.5`, so step 6 had nothing to repair. The first plan of `sandbox/dev-env/` read `1 to add, 1 to
+  change, 1 to destroy`: the change was the image role's read statement gaining
+  `awsds-prod-ecr-app-etl`, because `registry/`'s `ecr_repository_arns` output carries it since 5.b.
+  The statement now names `base` and `dev-env` by key, and the plan read `1 to add, 0 to change, 1 to
+  destroy`. The three peer sessions told before the writes.
+- **[Claude] Executed**: 19:47:50 UTC the detach (`update-domain` from the live block with both
+  `CustomImages` emptied; domain `InService`); 19:48:13 the apply of the saved plan, version 5
+  destroyed and **version 6 created** (`1 added, 0 changed, 1 destroyed`); version 6 `CREATED` with
+  `ContainerImage` `…/awsds-prod-ecr-dev-env@sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518`,
+  the pushed digest; 19:48:45 the re-attach, its block differing from the pre-detach read only in
+  `ImageVersionNumber` 5 -> 6 on both app types, and read back identical to what was sent. Re-plan `No
+  changes`. `./aws/devenv.py`: `DE-5` pass, *"version 6, sha256:43079013d424...: 70 names, sha256
+  aafa08da98a61f5c"*; `DE-2` fails because `sandbox/egress` is down, the known reading. **`default-v0.6.0`
+  is what a new space's picker offers** since 19:48:45 UTC. INT-09's clone from a notebook is owed.
+- **[user] The session ended**: the runner destroyed at 19:51:29 UTC, `awsds-prod-vpn` and
+  `awsds-prod-proxy` stopped at 19:51:52 and 19:51:55, `awsds-prod-gitlab` at 19:57:40 (the instances'
+  own transition records). **[Claude]** Read back at 20:10 UTC: no interface endpoint in Production or
+  Sandbox, no instance and no app running in Sandbox, `make status` `estimated burn: USD 0.0000/h` across
+  every environment, `./aws/egress.py` `0 check(s) FAILED` (its exit 1 is the persona and `ctadmin`
+  profiles, signed out). Owed for the next session: INT-09's clone from a notebook on version 6, step 6.5,
+  pass 4.

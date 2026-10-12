@@ -1082,7 +1082,11 @@ can be recognised without opening this file; the reasoning that makes each one u
     another (`peer_vpc_ids` consumed by a `zone_peer` local). The test: name each consumer and ask
     whether a row could ever be true for one and false for the other. If yes, the list is two lists
     whether or not it has diverged yet; *"a DNS association is not a path"* is the sentence that
-    made this one obvious.
+    made this one obvious. Second instance, 2026-10-12: `production/registry/`'s output
+    `ecr_repository_arns` fed both the build runner's push statement and Sandbox's SageMaker image
+    role. Stage 7 step 5.b added `awsds-prod-ecr-app-etl` for the runner, and the next plan of
+    `sandbox/dev-env/` proposed granting the image role read on it; the role now names its two
+    repositories by key.
 
 52. **A wait whose only exit is success waits forever once the thing it waits on is gone — and its
     silence is indistinguishable from patience.** Stage 6c step 4.8 polled two `until` loops for a
@@ -1210,7 +1214,10 @@ can be recognised without opening this file; the reasoning that makes each one u
     is a deny-list over an open default; the paraphrase dropped the shape and kept the word. Before
     implementing a step that restates a requirement, open the requirement. The tell is a step that
     explains why rather than only what: an explanation is a paraphrase, and a paraphrase of a
-    specification is a fork of it.
+    specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
+    creation role *"must be provided when using repository tags and/or KMS in the template"*;
+    `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1441,6 +1448,30 @@ taken.
 
 **What makes it expensive.** The mistaken control reads as stricter than the right one, since it sits on the
 role closest to the data, and nothing refuses: the job that should have been denied simply runs.
+
+## Lesson 67 — whoever can make a machine run code holds the machine's role
+
+**What happened.** Stage 7's runbook created the build runner as a GitLab **instance runner**. The runner's
+instance role pushes to the three image repositories, and any job on the host reads that role's
+credentials through the metadata service, at the hop limit a containerised push needs. With sign-up open,
+any account that could reach GitLab could register itself, create a project, run a job on the instance
+runner and push an image into `awsds-prod-ecr-dev-env`, around the protected tag `*-v*` that Stage 8's
+release gate rests on. Caught on 2026-10-12, before the runner existed: it became a **protected project
+runner** of `awsds/app-etl`, linked to `awsds/dev-env` and locked to those two projects.
+
+**Why it is a class rather than a slip.** A machine credential is held by every piece of code the machine
+will run, so its real principal set is decided by whatever schedules work onto the machine. For a runner
+that is GitLab: the runner's scope (instance, group, project), whether it is protected, who can push a
+protected ref in the projects it serves, and who can create projects there. None of those settings is IAM,
+and none appears in a policy, an access analysis or a plan. The same shape holds for Stage 8's deploy
+runner and its three deploy roles, for a SageMaker space and its project role, and for an MWAA worker.
+
+**The rule.** For every host that carries a role, write down who can make it run code, and treat that set
+as the role's principals. A gate in the scheduler (a protected tag, a protected branch) controls the role
+only if no unprotected path reaches the same host.
+
+**What makes it expensive.** The gate keeps working: the tag stays protected and its settings page reads
+correctly, while the credential it was meant to guard is reachable around it, and nothing refuses.
 
 ## What AWS does that its documentation does not say
 
