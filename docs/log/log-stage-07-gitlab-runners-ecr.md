@@ -282,3 +282,14 @@ Account ids are replaced by the account's name in angle brackets.*
   with an EBS volume and GitLab installed on it. **[Claude]** That is the shape, with the install done by
   the first boot and nothing by hand: runbook §P now carries it, the ten bootstrap steps in order, with
   the measured timings and the rebuild's two forms.
+- **[user] The SAML round-trip works** (verification iii): `sudo awsds-gitlab-refresh` run, then a sign-in
+  as the data-scientist persona through the **AWS Identity Center** button; GitLab created the account on
+  the first sign-in. The account belongs to no group.
+- **[Claude] Read from the persona's own session**, which replaced the administrator's in the same Chrome
+  profile (`/admin/users` answers `404` to it, so the membership edit is the administrator's): the
+  account's username is the e-mail's local part with the `+` dropped, the groups page reads *"You don't
+  have any groups yet"*. The shape that worked is the one the template sends: NameID
+  `urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress` from `Subject = ${user:email}` plus the
+  `email` attribute in `basic` format; no loop and no browser refusal reported. **Owed**: the user into
+  `awsds/data-scientists` as Developer (§I step 7's mirroring), which gives Developer on `dev-env` through
+  the share; the remaining personas as they first sign in.
