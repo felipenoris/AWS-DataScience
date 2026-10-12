@@ -360,6 +360,39 @@ The readings, in order:
 
 Measured 2026-10-12 (the stage log): `build-image` in about 8 s, the cache's first pull 1.3 s with the import, and all three readings as written here.
 
+**Pages** (step 4.2): a job carrying `pages: true` publishes its `public/` directory; GitLab adds `pages:deploy`, and the site lives at `$CI_PAGES_URL`, a unique domain under the wildcard (`https://app-etl-ffa1fa.awsds-pages.internal` for `app-etl`, shown under **Deploy → Pages**). The jobs added to the first pipeline, with `stages: [build, verify]`:
+
+```yaml
+pages:
+  stage: build
+  image: public.ecr.aws/docker/library/alpine:3.22
+  script:
+    - mkdir -p public
+    - >
+      printf '<!doctype html><title>app-etl</title><h1>app-etl</h1><p>Published by job %s on %s from commit %s.</p>\n'
+      "$CI_JOB_ID" "$CI_RUNNER_DESCRIPTION" "$CI_COMMIT_SHORT_SHA" > public/index.html
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+pages-readback:
+  stage: verify
+  image: public.ecr.aws/amazonlinux/amazonlinux:2023
+  needs: [pages]
+  script:
+    - echo "CI_PAGES_URL=$CI_PAGES_URL"
+    - sleep 30
+    - >
+      curl -sS -o /dev/null --cacert /etc/gitlab-runner/certs/ca.crt --max-time 20
+      -w 'pages: http=%{http_code} ssl_verify=%{ssl_verify_result} redirect=%{redirect_url}\n' "$CI_PAGES_URL/"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
+
+Access control answers an unauthenticated read with `302` to `https://projects.awsds-pages.internal/auth`, so the read-back's proof is `ssl_verify=0`, not the status. A browser's first visit asks the user to authorize **GitLab Pages**, the OAuth application Omnibus registers at the first reconfigure (scope `api`; for an administrator GitLab warns that it can then act as one); each user authorizes it once.
+
 If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 
 ## A. SAML

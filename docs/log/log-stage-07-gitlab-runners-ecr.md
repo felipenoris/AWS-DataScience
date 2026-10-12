@@ -408,3 +408,23 @@ Account ids are replaced by the account's name in angle brackets.*
   the credential helper's bucket 1, 9.1 MB, `dl-cdn.alpinelinux.org` 2, 5.5 MB (the two builds' `apk
   add`), `pypi.org` 2 - and the boot's `http://10.31.0.1/` `403 TCP_DENIED`. No ECR name and no
   `us-west-2` S3 name appears: the pushes and the cache's pulls left by the endpoints and the gateway.
+
+## 2026-10-12 — step 4.2, Pages
+
+- **[user] A `pages` job and a `pages-readback` job pushed to `app-etl`'s `main`** (commit `b30af685`,
+  pipeline #3, at Claude's draft): `pages: true` on a job that writes `public/index.html`, then a job in
+  a later stage that reads `$CI_PAGES_URL` with `--cacert /etc/gitlab-runner/certs/ca.crt`.
+- **[Claude] Followed through the user's Chrome, at the user's request.** `build-image`, `pages` and
+  `pages:deploy` passed; `CI_PAGES_URL=https://app-etl-ffa1fa.awsds-pages.internal`, a unique domain
+  (GitLab's default for a new project), under the wildcard record and the wildcard leaf. **The runner's
+  read-back: `pages: http=302 ssl_verify=0`**, redirected to `https://projects.awsds-pages.internal/auth`:
+  the leaf validated against the CA root from the runner, and access control asked for a session.
+- **[Claude] The laptop's visit stopped at an OAuth consent**: *"GitLab Pages is requesting access to
+  your account"*, scope `api`, and for an administrator *"Authorizing GitLab Pages will let it act as an
+  administrator"*; the application is the one Omnibus registered at the first reconfigure. **[user]
+  Authorized it, as the administrator `felipenoris`.** The page then rendered in Chrome with no
+  certificate warning: *"app-etl - Published by job 10 on awsds-prod-runner from commit b30af685."*
+  From the laptop's shell: `http=302 ssl_verify=0` against the system store, the served certificate
+  `CN=*.awsds-pages.internal` issued by `CN=awsds internal root CA`, `notAfter` 2027-10-22. **Step 4.2
+  done: Pages answers on two of INT-19's surfaces, the laptop and the runner.** Each user who visits a
+  private project's site authorizes the same application once.
