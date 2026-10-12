@@ -324,10 +324,14 @@ DATA_LAKE = ["data-governance"]
 #
 # It is not DATA_CONSUMERS. The two lists answer different questions: who reads the governed
 # lake, and who pulls images and packages. Stage 9 adds production to the first and must not add
-# it to the second (the registry lives there). `staging` is here and not in DATA_CONSUMERS: a
-# deployment target pulls images and packages like anything else, and stopped being a lake
-# consumer at Stage 6b step 2.4.
-REGISTRY_CONSUMERS = ["sandbox", "staging"]
+# it to the second (the registry lives there).
+#
+# Interactive accounts only, since Stage 7 decision 7 (the user, 2026-10-12): this map grants the
+# dev-env image and the package proxy, which a deployment target has no use for. Staging stood here
+# from 6b's rename until then, on a comment that called it deliberate without arguing it; it pulls
+# an APPLICATION image through Stage 8's own deploy grant, never through this map, which keeps the
+# two intents apart (Lesson 51). N Sandboxes, N = 1.
+REGISTRY_CONSUMERS = ["sandbox"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.

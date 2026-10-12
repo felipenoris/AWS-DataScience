@@ -74,9 +74,13 @@ variable "interactive_private_cidrs" {
 # endpoint, the wrong door, with no error - which is why the list is every name this VPC could
 # declare and not the ones its last apply built.
 variable "no_proxy" {
-  description = "The NO_PROXY value every GitLab component carries: this VPC's endpoint names in every spelling, S3 and DynamoDB in both spellings, the link-local pair, localhost, and the two internal zones as suffixes. A dated copy of production/egress's no_proxy_all_groups."
+  description = "The NO_PROXY value every GitLab component carries: this VPC's endpoint names in every spelling, S3 and DynamoDB in both spellings, the link-local pair, localhost, and the two internal zones as suffixes. Empty means main.tf's dated copy of production/egress's no_proxy_all_groups."
   type        = string
   nullable    = false
+
+  # Empty by default: the value is then main.tf's dated literal with the region filled in. Set it
+  # only to override that literal for one apply.
+  default = ""
 
   validation {
     condition     = !strcontains(var.no_proxy, "*") && !strcontains(var.no_proxy, "/") && !strcontains(var.no_proxy, ":")

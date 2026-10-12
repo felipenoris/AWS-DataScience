@@ -48,9 +48,9 @@
 #   - the secret container is awsds-prod-gitlab-secrets (step 1.1)
 #   - the CA root parameter is /datascience/prod/pki/ca-root-pem, the leaves' certificates are
 #     /datascience/prod/pki/leaf-gitlab-pem and leaf-pages-pem (step 2.3)
-#   - the GitLab host's bypass list is the `no_proxy` variable's default in
-#     terraform-live/production/tooling/variables.tf, a dated copy of production/egress's
-#     `no_proxy_all_groups` output (step 1.3; SC-11)
+#   - the GitLab host's bypass list is `no_proxy_literal_regionless` in
+#     terraform-live/production/tooling/main.tf, a dated copy of production/egress's
+#     `no_proxy_all_groups` output with REGION where the region goes (step 1.3; SC-11)
 #
 # What it cannot see, stated because an empty listing and a missing account look alike:
 #   - The behavioural proofs - the clone pair, the SAML round-trip, the restore rehearsal, the TLS
@@ -75,9 +75,11 @@ from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "supplychain.txt"
 
-# The producer account and the consumers (D14; D35 - the sandbox side is per unit).
+# The producer account and the consumers (D14; D35 - the sandbox side is per unit). Staging left the
+# map at Stage 7 decision 7 (2026-10-12): a deployment target pulls an application image through
+# Stage 8's deploy grant, and SC-7's read from it would now be the deny the map intends.
 PROD_PROFILE = "awsds-infra-prod"
-CONSUMER_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-staging")
+CONSUMER_PROFILES = ("awsds-infra-sandbox-1",)
 
 # The contracts (see header).
 GITLAB_NAME_TAG = "awsds-prod-gitlab"
@@ -92,12 +94,12 @@ LEAF_PARAMS = {
     "*.awsds-pages.internal": "/datascience/prod/pki/leaf-pages-pem",
 }
 # SC-11's two ends: the literal the GitLab host carries, and the output it was copied from.
-TOOLING_VARIABLES = "terraform-live/production/tooling/variables.tf"
+TOOLING_VARIABLES = "terraform-live/production/tooling/main.tf"
 EGRESS_STATE_KEY = "production/egress/terraform.tfstate"
 EGRESS_FULL_OUTPUT = "no_proxy_all_groups"
-NO_PROXY_DEFAULT_RE = re.compile(
-    r'variable\s+"no_proxy"\s*\{.*?default\s*=\s*"(?P<value>[^"]*)"', re.S
-)
+# The literal carries REGION where the region goes, because a .tf file may hold no region literal
+# (check-tf-conventions); the slice swaps var.region in and so does this reader.
+NO_PROXY_DEFAULT_RE = re.compile(r'no_proxy_literal_regionless\s*=\s*"(?P<value>[^"]*)"')
 # The zones GitLab and Pages are named in: the shared names sit on the apex, the one zone all five
 # VPCs resolve, and Pages keeps a sibling apex of its own for the cookie scope D36 gives.
 ZONES = ("awsds.internal.", "awsds-pages.internal.")
@@ -369,7 +371,7 @@ def main(argv: list) -> int:
     tooling_path = ctx.repo_root / TOOLING_VARIABLES
     if tooling_path.is_file():
         m = NO_PROXY_DEFAULT_RE.search(tooling_path.read_text(encoding="utf-8"))
-        tooling_literal = m.group("value") if m else ""
+        tooling_literal = m.group("value").replace("REGION", context.REGION) if m else ""
     egress_full = None
     egress_state_note = ""
     if prod_live:
@@ -801,7 +803,7 @@ def main(argv: list) -> int:
             (checks.fail if built else checks.note)(
                 "SC-11",
                 "the GitLab bypass list",
-                f"no `default` on variable no_proxy in {TOOLING_VARIABLES} - the literal is "
+                f"no `no_proxy_literal_regionless` in {TOOLING_VARIABLES} - the literal is "
                 "copied from production/egress's no_proxy_all_groups at step 1.7.",
             )
         elif egress_full is None:

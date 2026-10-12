@@ -39,6 +39,15 @@ locals {
   pages_host  = "awsds-pages.internal"
   proxy_url   = "http://proxy.awsds.internal:3128"
 
+  # The bypass list (1.3): copied 2026-10-12 from `terraform plan` on production/egress at
+  # vpc-egress-v0.17.0, 60 entries, sha256 f8bc1df99d224181 with the region filled in. The region is a
+  # placeholder here because a .tf file may carry no region literal (D1, check-tf-conventions),
+  # and `replace()` below puts var.region back; ./aws/supplychain.py SC-11 does the same before
+  # comparing this with egress's output. Refresh: plan egress, read `no_proxy_all_groups`, replace
+  # the string with the region swapped for REGION, apply tooling/, `sudo awsds-gitlab-refresh`.
+  no_proxy_literal_regionless = ".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.REGION.amazonaws.com,.dkr-ecr.REGION.on.aws,.dkr.ecr.REGION.amazonaws.com,.elasticmapreduce-services.REGION.amazonaws.com,.emrappui-prod.REGION.amazonaws.com,.emrappui.REGION.on.aws,.livy.emr-serverless-services.REGION.amazonaws.com,.s.emr-serverless-services.REGION.amazonaws.com,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.REGION.amazonaws.com,api.sagemaker.REGION.amazonaws.com,api.sagemaker.REGION.api.aws,athena.REGION.amazonaws.com,athena.REGION.api.aws,bedrock-agent-runtime.REGION.amazonaws.com,bedrock-agent.REGION.amazonaws.com,bedrock-runtime.REGION.amazonaws.com,bedrock.REGION.amazonaws.com,dashboard.emr-serverless.REGION.amazonaws.com,dkr-ecr.REGION.on.aws,dkr.ecr.REGION.amazonaws.com,dynamodb.dualstack.REGION.amazonaws.com,dynamodb.REGION.amazonaws.com,ec2messages.REGION.amazonaws.com,ecr.REGION.api.aws,elasticmapreduce-services.REGION.amazonaws.com,elasticmapreduce.REGION.amazonaws.com,elasticmapreduce.REGION.api.aws,emr-serverless.REGION.amazonaws.com,emrappui-prod.REGION.amazonaws.com,emrappui.REGION.on.aws,glue.REGION.amazonaws.com,glue.REGION.api.aws,kms.REGION.amazonaws.com,kms.REGION.api.aws,lakeformation.REGION.amazonaws.com,lakeformation.REGION.api.aws,livy.emr-serverless-services.REGION.amazonaws.com,localhost,logs.REGION.amazonaws.com,logs.REGION.api.aws,redshift-serverless.REGION.amazonaws.com,runtime.sagemaker.REGION.amazonaws.com,runtime.sagemaker.REGION.api.aws,s.emr-serverless-services.REGION.amazonaws.com,s3.dualstack.REGION.amazonaws.com,s3.REGION.amazonaws.com,secretsmanager.REGION.amazonaws.com,ssm.REGION.amazonaws.com,ssm.REGION.api.aws,ssmmessages.REGION.amazonaws.com,ssmmessages.REGION.api.aws,streaming-logs.REGION.amazonaws.com,streaming-logs.REGION.api.aws,sts.REGION.amazonaws.com,sts.REGION.api.aws"
+  no_proxy                    = var.no_proxy != "" ? var.no_proxy : replace(local.no_proxy_literal_regionless, "REGION", var.region)
+
   objects_bucket = data.terraform_remote_state.foundation.outputs.gitlab_objects_bucket
   backup_bucket  = data.terraform_remote_state.foundation.outputs.gitlab_backup_bucket
   gitlab_rb_key  = "config/gitlab.rb"
@@ -49,7 +58,7 @@ locals {
     gitlab_host             = local.gitlab_host
     pages_host              = local.pages_host
     proxy_url               = local.proxy_url
-    no_proxy                = var.no_proxy
+    no_proxy                = local.no_proxy
     region                  = var.region
     objects_bucket          = local.objects_bucket
     backup_bucket           = local.backup_bucket
@@ -61,7 +70,7 @@ locals {
 
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     proxy_url                 = local.proxy_url
-    no_proxy                  = var.no_proxy
+    no_proxy                  = local.no_proxy
     region                    = var.region
     objects_bucket            = local.objects_bucket
     gitlab_rb_key             = local.gitlab_rb_key
@@ -440,7 +449,9 @@ module "dlm_role" {
 }
 
 resource "aws_dlm_lifecycle_policy" "data" {
-  description        = "awsds-${var.env}-gitlab-data - daily snapshots of GitLab's data volume, ${var.snapshot_retain_count} kept (Stage 7 step 1.2)"
+  # DLM admits only letters, digits, spaces, underscores and hyphens in a description, and the
+  # plan refused the first wording for its apostrophe and parentheses (measured 2026-10-12).
+  description        = "awsds-${var.env}-gitlab-data - daily snapshots of the GitLab data volume - ${var.snapshot_retain_count} kept - Stage 7 step 1_2"
   execution_role_arn = module.dlm_role.role_arn
   state              = "ENABLED"
 
