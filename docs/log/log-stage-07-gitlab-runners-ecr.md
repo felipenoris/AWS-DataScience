@@ -396,3 +396,15 @@ Account ids are replaced by the account's name in angle brackets.*
   which writes through `ssm:SendCommand`.
 - **[Claude] `./aws/supplychain.py`: all checks passed**, `SC-12` green on all three rules (2, 1 and 1
   cached repositories) and `SC-10` the note of a runner running.
+- **[user] Decision 3 taken, in chat: the three credential-free cache rules stay**, the condition holding
+  (the first pull needed no route). **[user]** authorized `./aws/proxy.py --on-host` for INT-21's log half.
+  **[Claude] Not run:** the access log is exported to CloudWatch Logs (`/awsds/prod/proxy`, 365 days),
+  so the reading is a `filter-log-events` with no `ssm:SendCommand`. **INT-21's log half, read for
+  `10.30.32.132` between 18:16 and 18:40 UTC: every external request of the runner is named, all `200
+  TCP_TUNNEL`** - `storage.googleapis.com` 2 requests, 571 MB (the runner and helper-image packages
+  `packages.gitlab.com` redirects to, 14 requests), `production.cloudfront.docker.com` 8, 122.5 MB, with
+  `registry-1.docker.io` 16 and `auth.docker.io` 2 (`moby/buildkit:rootless`),
+  `d5l0dvt14r5h8.cloudfront.net` 2, 54.7 MB, with `public.ecr.aws` 7 (the job images from ECR Public),
+  the credential helper's bucket 1, 9.1 MB, `dl-cdn.alpinelinux.org` 2, 5.5 MB (the two builds' `apk
+  add`), `pypi.org` 2 - and the boot's `http://10.31.0.1/` `403 TCP_DENIED`. No ECR name and no
+  `us-west-2` S3 name appears: the pushes and the cache's pulls left by the endpoints and the gateway.
