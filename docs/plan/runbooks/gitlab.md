@@ -166,23 +166,37 @@ The leaves live 375 days and Terraform proposes their replacement inside the las
 aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text | openssl x509 -noout -fingerprint -sha256
 ```
 
-**Trusting the root on a laptop** (step 2.5, INT-19's first surface; §I step 2 is the occasion). Each client has its own store, and a browser's "Not secure" on `gitlab.awsds.internal` means the root is in none of them: `security find-certificate -c "awsds internal root CA" /Library/Keychains/System.keychain` prints nothing until the command below has run.
+**Trusting the root on a laptop** (step 2.5, INT-19's first surface; §I step 2 is the occasion). A browser's "Not secure" on `gitlab.awsds.internal`, `https` struck through, means the root is in no store the browser reads; the host's chain is not the suspect while step 4 passes with `--cacert`. Done on 2026-10-12 on the user's macOS laptop: Chrome stopped warning after steps 1-2.
 
-```bash
-aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
-```
+1. Fetch the root from its one source (the same bytes are tracked as `images/base/ca-certificates/awsds-root.crt`; the fingerprint command above is the check that the two agree):
 
-macOS, the system keychain (Safari, Chrome, `curl` on macOS):
+   ```bash
+   aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
+   ```
 
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$HOME/awsds-root.crt"
-```
+2. Put it in the store the browser reads, then quit and reopen the browser. macOS, the System keychain (Safari, Chrome, `curl`):
 
-`git`, which reads its own bundle:
+   ```bash
+   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$HOME/awsds-root.crt"
+   ```
 
-```bash
-git config --global http.https://gitlab.awsds.internal/.sslCAInfo "$HOME/awsds-root.crt"
-```
+   Firefox reads the keychain once `security.enterprise_roots.enabled` is `true` in `about:config`, or takes the file under **Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import**. Windows, an administrator prompt (Edge and Chrome read the store): `certutil -addstore -f Root awsds-root.crt`. Debian and Ubuntu: the file copied to `/usr/local/share/ca-certificates/awsds-root.crt`, then `sudo update-ca-certificates`; Fedora and Amazon Linux: copied to `/etc/pki/ca-trust/source/anchors/`, then `sudo update-ca-trust`, which is what the runner's bootstrap does.
+
+3. `git`, which reads its own bundle and not the keychain:
+
+   ```bash
+   git config --global http.https://gitlab.awsds.internal/.sslCAInfo "$HOME/awsds-root.crt"
+   ```
+
+4. Verify, with the tunnel up. The keychain holds one copy, and `curl` with the system store reads `200` and `ssl_verify=0` (before step 2 it reads `self signed certificate in certificate chain`):
+
+   ```bash
+   security find-certificate -c "awsds internal root CA" /Library/Keychains/System.keychain
+   ```
+
+   ```bash
+   curl -sS -o /dev/null -w 'http=%{http_code} ssl_verify=%{ssl_verify_result}\n' https://gitlab.awsds.internal/users/sign_in
+   ```
 
 Python's `requests` and `botocore` read `certifi`, not the keychain; for a session that must reach GitLab from Python on the laptop, `REQUESTS_CA_BUNDLE` pointing at a bundle that holds the root plus `certifi`'s, or `verify=` in the call. The `dev-env` image takes the root at build time (step 2.6); the runner at boot (step 6.1); GitLab itself in `/etc/gitlab/trusted-certs/` (step 1.3).
 

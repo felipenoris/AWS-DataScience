@@ -207,3 +207,9 @@ Account ids are replaced by the account's name in angle brackets.*
   approvals**: this is CE, and Stage 8's two gates take the protected-tag shape (3.3). The tab opened
   with no certificate interstitial because Chrome keeps the bypass for the session; the trust step
   stands as read above.
+- **[user] Two confirmations, in chat.** `sudo awsds-gitlab-refresh` ended in `gitlab Reconfigured!`
+  (verification xiii's host half: a `gitlab.rb` change reached the running host through decision 8's
+  path, with no replacement). The root was trusted on the laptop with runbook §C's two commands, and
+  the browser stopped marking `https://gitlab.awsds.internal` "Not secure" (verification x's laptop
+  surface). The runbook's §C is now the client procedure, numbered, with the verification at its end,
+  and the client runbook points at it.
