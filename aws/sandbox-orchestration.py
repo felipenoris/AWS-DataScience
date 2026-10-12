@@ -76,7 +76,7 @@ WORKFLOWS = {  # workflow name -> variant, which is also its prefix under DEMO_D
 }
 # Each processing workflow's code input under shared/, the entry point in it, and the PYTHONPATH
 # its definition sets: a source tree (src/) for the project with no dependencies, the folder
-# package-uv-job.py builds for the one with dependencies.
+# `awsds-workflows package-job` builds for the one with dependencies.
 CODE_DIRS = {
     "demo-devenv-job": (
         "awsds-demo-job/",

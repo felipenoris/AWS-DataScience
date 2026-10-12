@@ -38,6 +38,11 @@
 
 - etl-cookbook-tutorial: <https://github.com/felipenoris/etl-cookbook-tutorial>.
 
+- `awsds-workflows`: <https://github.com/felipenoris/awsds-workflows>. Renders a serverless workflow's
+  definition and packages its tasks' code; installed by git URL from `main`, never by name, and since
+  2026-10-12 the tool of `docs/plan/runbooks/serverless-workflows.md` (§T). Its documentation, in
+  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>.
+
 ## Organization and identity
 
 - AWS Control Tower: <https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html>.
