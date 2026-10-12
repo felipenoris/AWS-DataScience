@@ -234,3 +234,17 @@ Account ids are replaced by the account's name in angle brackets.*
   UTC) and still `10.30.52.94`, with `gitlab.awsds.internal` pointing at it; interface endpoints in the
   account: none; no runner; `awsds-prod-vpn` and `awsds-prod-proxy` `running`. Verification i's first
   half: the address survived the stop; the start answers the second.
+
+## 2026-10-12 — the second session: verification i, the namespace and the persona groups (3.4, 3.5)
+
+- **[user] `./scripts/slices.py up --env production --only tooling,egress`**, the pre-token form; the
+  environment came back, and a browser session was opened for Claude.
+- **[Claude] Verification i closed.** The host started at 15:59:24 UTC with the same `10.30.52.94`,
+  `gitlab.awsds.internal` and `*.awsds-pages.internal` unchanged, the 14 endpoints back, and the
+  sign-in page reading `200` from the laptop against the system store (16:03 UTC). A `[D]` stop/start
+  moves no address and repoints no record.
+- **[Claude] Steps 3.4 and 3.5 done through the user's browser session**, at the user's request: the
+  group **`awsds`** (ID 4, private) and, inside it, **`data-scientists`** (5), **`deployment-managers`**
+  (6), **`governance-managers`** (7) and **`dev-env-stewards`** (8), each private, each with the
+  administrator as its only member. The membership mirroring of the Identity Center groups is by hand
+  and the user's, after SAML (3.2) creates the users. 3.6's repositories are not created.
