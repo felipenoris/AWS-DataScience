@@ -327,10 +327,11 @@ terraform-live/
     │                     #     prod.internal and pages.internal zones were destroyed at
     │                     #     6c 2.6 (2026-09-07). Built in Stage 3, because Stage 7
     │                     #     (GitLab) depends on it (D14). Also GitLab's [P] anchors - the
-    │                     #     object-storage and backup buckets and the gitlab-secrets
-    │                     #     container (Stage 7 step 1.1): the restore path must survive
-    │                     #     tooling/'s destruction, the same argument that keeps both
-    │                     #     hub hosts' anchors in networking/ below. No public zone, no
+    │                     #     object-storage and backup buckets, the gitlab-secrets container
+    │                     #     and the runner-token container (Stage 7 step 1.1): an anchor
+    │                     #     must survive the destruction of tooling/ and runners/, the same
+    │                     #     argument that keeps both hub hosts' anchors in networking/
+    │                     #     below. No public zone, no
     │                     #     registered domain: those are Stage 13, and not the CA - see
     │                     #     pki/ below
     ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the
@@ -398,15 +399,14 @@ terraform-live/
     ├── warehouse-compute/# [E] the governed workgroup and its usage limit (D40, Stage 9 step 9,
     │                     #     rank 54). Same split and same reason as sandbox/'s: no pause exists
     ├── warehouse/        # [P] the governed half of the warehouse (D40, Stage 9 step 9, rank 53):
-    │                     #     namespace + workgroup awsds-prod-warehouse in VPC-Workloads'
-    │                     #     private tier - the two-AZ pair 6c built as the estate's one D9
-    │                     #     exception, so this account needs no new network work. Holds the
-    │                     #     `governed` database, written by awsds-prod-job-exec alone, and the
-    │                     #     namespace is REGISTERED to the Glue Data Catalog as a federated
-    │                     #     catalog (aws_glue_catalog's federated_catalog), which is what puts
-    │                     #     a warehouse schema under the same Lake Formation permissions as the
-    │                     #     lake. No project tag, no connection: D26 keeps deployment targets
-    │                     #     out of the domain, so 6h's three layers collapse to the GRANT alone
+    │                     #     the namespace awsds-prod-warehouse; its workgroup is
+    │                     #     warehouse-compute/'s, in VPC-Workloads' two private subnets, so
+    │                     #     this account needs no new network work. Holds the `governed`
+    │                     #     database, whose rows awsds-prod-job-exec writes, and reaches readers
+    │                     #     only through Lake Formation, by Stage 9 decision 5's shape: a
+    │                     #     federated catalog or a Lake Formation-managed datashare. No project
+    │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
+    │                     #     so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (13 since 6c 5.5) -

@@ -1414,6 +1414,34 @@ script's metadata is right for the script, and the image's setting is right for 
 lives in their combination, in the one environment none of the three was tried in, and the first person
 to meet it is the reader the document was written for.
 
+## Lesson 66 — a control on a request's parameters binds whoever makes the request, never the role the request passes
+
+**What happened.** Stage 9 step 3.5, written 2026-09-05, moved `DenySageMakerJobsOffVpc` and its siblings
+from the persona permission sets onto the job-execution roles, as a permissions boundary, so that "a job
+this role can run" would always carry a `VpcConfig`. Read against the executed stages on 2026-10-11, the
+measurements said otherwise. 6d's notebook task was refused with *"explicit deny in a permissions
+boundary"* naming the **calling** session's boundary, and 6i's processing job was accepted on the caller's
+policies. `sagemaker:VpcSubnets`, `sagemaker:NetworkIsolation` and the rest describe the `Create*Job`
+request, and IAM evaluates a request against the principal that sends it; the job's role is a parameter of
+that request, passed and never the sender. In Production the sender is a workflow's execution role or a
+deploy role, so a boundary on `awsds-prod-job-exec` would have bound nothing, and the failure would have
+been silent: the job runs, off the VPC.
+
+**Why it is a class rather than a slip.** Every API that launches work under another identity has this
+shape: `iam:PassRole` designs, a Glue job's role, an ECS task role, a Step Functions state machine's role.
+The control that limits *how* the work is launched sits on the launcher; the control on the passed role
+limits only what the work does once it runs. And the account where such a plan is first measured is often
+the one where the two identities coincide, as Sandbox's project role is both the caller and the job's role,
+so the measurement agrees with the wrong design.
+
+**The rule.** Put a control on a request's contents where the request is made: on every principal that can
+make it, or above all of them, in an SCP. Before reading a measurement as confirming such a control, name
+the caller and the passed role separately, and check whether they were the same principal when it was
+taken.
+
+**What makes it expensive.** The mistaken control reads as stricter than the right one, since it sits on the
+role closest to the data, and nothing refuses: the job that should have been denied simply runs.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
