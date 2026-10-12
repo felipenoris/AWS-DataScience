@@ -309,30 +309,41 @@ def read_account(cli: AwsCli, env: str, want_sql: bool, authored: dict | None) -
             g["logGroupName"]: g.get("retentionInDays") for g in json.loads(res.stdout)["logGroups"]
         }
 
-    res = cli.run(
-        "iam",
-        "list-attached-role-policies",
-        "--role-name",
-        f"{name}-exec",
-        "--query",
-        "AttachedPolicies[].PolicyName",
-        "--output",
-        "text",
-        tolerate="",
-    )
-    facts["exec_attached"] = res.text.split() if res.ok and res.text.strip() else []
-    res = cli.run(
-        "iam",
-        "list-role-policies",
-        "--role-name",
-        f"{name}-exec",
-        "--query",
-        "PolicyNames",
-        "--output",
-        "text",
-        tolerate="",
-    )
-    facts["exec_inline"] = res.text.split() if res.ok and res.text.strip() else []
+    # THE NAMESPACE ROLE is read only where the namespace exists: an account without one has no
+    # role either (Production's is Stage 9 step 9.2's), and WH-1b reads that as a note. Where the
+    # namespace exists, `NoSuchEntity` becomes `exec_role: missing`, which WH-1b fails: a missing
+    # role and a role holding no policy both answer two empty lists (Lesson 13). `None` means a
+    # read failed for another reason and is in the failed calls.
+    facts["exec_role"], facts["exec_attached"], facts["exec_inline"] = None, [], []
+    if name in facts["namespaces"]:
+        attached = cli.run(
+            "iam",
+            "list-attached-role-policies",
+            "--role-name",
+            f"{name}-exec",
+            "--query",
+            "AttachedPolicies[].PolicyName",
+            "--output",
+            "text",
+            tolerate="NoSuchEntity",
+        )
+        inline = cli.run(
+            "iam",
+            "list-role-policies",
+            "--role-name",
+            f"{name}-exec",
+            "--query",
+            "PolicyNames",
+            "--output",
+            "text",
+            tolerate="NoSuchEntity",
+        )
+        if attached.tolerated or inline.tolerated:
+            facts["exec_role"] = "missing"
+        elif attached.ok and inline.ok:
+            facts["exec_role"] = "found"
+            facts["exec_attached"] = attached.text.split()
+            facts["exec_inline"] = inline.text.split()
 
     # LAYER 2, ONE ROLE PER ADMITTED PROJECT. The role is SMUS's, not this repository's, so all
     # three readings can fail independently: the project can be deleted, the boundary can be
@@ -878,6 +889,20 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
     # ------------------------------------------- the namespace role reaches nothing (5b 2.4/D13)
     if ns is None:
         checks.note("WH-1b", f"{tag} the namespace role holds no policy", "no namespace")
+    elif facts["exec_role"] == "missing":
+        checks.fail(
+            "WH-1b",
+            f"{tag} the namespace role holds no policy",
+            f"{name}-exec does not exist, and the namespace names it as its default role - "
+            "an absent role holds no policy too, so this is drift from the warehouse slice "
+            "and not a pass",
+        )
+    elif facts["exec_role"] is None:
+        checks.note(
+            "WH-1b",
+            f"{tag} the namespace role holds no policy",
+            f"unread: a read of {name}-exec failed (see the failed calls)",
+        )
     elif facts["exec_attached"] or facts["exec_inline"]:
         checks.fail(
             "WH-1b",
