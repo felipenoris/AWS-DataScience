@@ -144,6 +144,41 @@ Every `make gitlab-up` then boots a new instance that reads the token, registers
 
 **What a job can rely on**: the proxy in `HTTP_PROXY`/`http_proxy` and `NO_PROXY`/`no_proxy`, the CA root at `/etc/gitlab-runner/certs/ca.crt` inside the container (the helper installs it for the clone; a script copies it into its own store), and the instance role's credentials through the metadata service two hops away. A build that pulls or installs anything passes the proxy on as a build argument.
 
+**The first pipeline** (step 6.4), a `.gitlab-ci.yml` on `app-etl` that builds and pushes an image with BuildKit rootless, no privileged mode, the registry login minted from the instance role. Stage 8 owns the three pipeline types; this is the shape that proves the runner:
+
+```yaml
+stages: [build]
+
+variables:
+  AWS_REGION: us-west-2
+  IMAGE_REPO: awsds-prod-ecr-app-etl
+
+build-image:
+  stage: build
+  image:
+    name: moby/buildkit:rootless
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  before_script:
+    - apk add --no-cache aws-cli
+    - export ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+    - export REGISTRY="$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com"
+    - mkdir -p ~/.docker
+    - >
+      printf '{"auths":{"%s":{"auth":"%s"}}}' "$REGISTRY"
+      "$(printf 'AWS:%s' "$(aws ecr get-login-password --region "$AWS_REGION")" | base64 -w0)" > ~/.docker/config.json
+  script:
+    - >
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=.
+      --opt build-arg:http_proxy="$http_proxy" --opt build-arg:https_proxy="$https_proxy" --opt build-arg:no_proxy="$no_proxy"
+      --output type=image,name="$REGISTRY/$IMAGE_REPO:v0.1.0-$CI_COMMIT_SHORT_SHA",push=true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
+
+`aws-cli` and `moby/buildkit:rootless` arrive through the proxy (the plane is `open`); the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. The tag is immutable: a second push of the same tag is refused, which is the deliverable's second half. If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
+
 ## A. SAML
 
 Step 3.1 creates the custom SAML 2.0 application in the Identity Center console (Identity, as the delegated administrator) and downloads its metadata. The two values GitLab needs are typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses:

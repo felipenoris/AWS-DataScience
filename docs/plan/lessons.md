@@ -1758,6 +1758,10 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 
 ### EC2
 
+- **A Data Lifecycle Manager policy description admits `[0-9A-Za-z _-]` and nothing else** (measured
+  2026-10-12, Stage 7 step 1.2): an apostrophe or a parenthesis fails the plan with `invalid value for
+  description`, naming the CLI reference rather than the character. The Terraform provider validates it
+  at plan time, which is the cheap place to meet it. Where: `terraform-live/production/tooling/main.tf`.
 - **`associate_public_ip_address` read-back fights an `aws_eip_association` forever.** With an
   Elastic IP attached, the refresh reports the attribute from the instance's current public address,
   so the next plan wants to destroy and recreate the instance on a ForceNew diff that nothing
