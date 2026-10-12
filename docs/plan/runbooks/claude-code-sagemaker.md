@@ -377,6 +377,7 @@ The model ids this estate has accepted, and the ones it would accept for the sco
 | current | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` | agreements accepted 2026-09-12; **refused for this account**, see below |
 | previous | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` | agreements accepted 2026-09-12; **invocable, and the scoped set since decision 14** |
 | either way | `anthropic.claude-haiku-4-5-20251001-v1:0` | agreement accepted 2026-09-12; invocable |
+| next (decision 17) | `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5` | **not accepted** (read 2026-10-11, `NOT_AVAILABLE`); accepting them is decision 17's step 2, and whether the gate below refuses them is unmeasured |
 
 **After-reading.** The status goes `NOT_AVAILABLE` → `PENDING` → `AVAILABLE`. It settled in seconds
 for one model and took minutes for another, so poll rather than assume:
@@ -406,7 +407,7 @@ Haiku 4.5 and Opus 4.5. The split follows the shape of the model id: **dated ids
 `claude-opus-4-6/4-7/4-8`, `claude-sonnet-4-6`, `claude-fable-5`, `claude-fable-5-1`) are not.** The
 gate is commercial, at the account, and **every readable instrument reports the model as available and
 authorized while the invocation refuses it** — Lesson 13 at account scale. The message is literal:
-the path forward is the sales contact it names, or the previous generation.
+the path forward is the sales contact it names, or the previous generation. The 5.5 ids have the clean shape too, and decision 15's `NotResource` refuses them before this gate is reached until the SCP names them, so measuring them is decision 17's step 3: the SCP first, then one M6 call per model.
 
 ### M5 — Exempt the invocation from the Region ceiling
 
@@ -1022,8 +1023,9 @@ instrument that answers the question "can this model be used here".** Everything
 compares what this repository **declares** — read out of the SCP, not out of a constant — against
 what AWS does: whether a profile still routes only where the condition names (`BS-3`), whether each
 scoped model still holds an agreement (`BS-5`), whether every enabled Region declares `none`
-(`BS-6`), and whether the SCP, the grant's `models` map and the image's pins still agree (`BS-7`).
-Two of those facts are AWS's rather than ours and move without any diff here.
+(`BS-6`), whether the SCP, the grant's `models` map and the image's pins still agree (`BS-7`), and
+whether the provider has moved a scoped model to `LEGACY` or past it (`BS-8`). The routing, the agreement
+and the lifecycle are AWS's rather than ours and move without any diff here.
 
 ```bash
 ./aws/bedrock-scope.py

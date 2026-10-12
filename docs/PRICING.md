@@ -569,6 +569,27 @@ per token. Measured 2026-09-12 from each model's agreement rate card, `USW2_Inpu
 `USW2_OutputTokenCount`. A session's bill moves by that difference only in proportion to how much of
 it runs on Sonnet rather than on the primary.
 
+**The 5.5 generation**, read 2026-10-11 from each model's agreement rate card and confirmed against
+the Pricing API (`AmazonBedrockFoundationModels`, `us-west-2`, the `us.` standard dimensions). Stage
+6e decision 17 moves the scoped set here; none of the three is proven by invocation yet
+(`AWS_STATE.md` `EXC-08`):
+
+| Model | Input | Output | Cache read | Cache write, 5 min |
+|---|---|---|---|---|
+| Claude Opus 5.5 — the primary, once the image pins it | 4.40 | 22.00 | 0.22 | 5.50 |
+| Claude Sonnet 5.5 — in the picker, once the image pins it | 2.20 | 11.00 | 0.11 | 2.75 |
+| Claude Haiku 5.5 — background work, once the image pins it | 0.11 | 0.55 | 0.011 | 0.1375 |
+
+**Every rate falls against the 4.5 set**: Opus by a fifth, Sonnet by a third, Haiku to a tenth. Cache
+read is 5% of input for Opus and Sonnet 5.5, where every 4.5 model publishes 10%, and cache reads were
+32% of the measured day below. **Haiku 5.5 alone publishes a long-context tier at five times its
+standard rate** (0.55 / 2.75 / 0.055 / 0.6875); neither source states the threshold, and
+`./aws/bedrock-usage.py` prices every token at the standard row, so a long-context session reads low.
+
+**Sonnet 4.5 is LEGACY since 2026-10-08.** Its public extended access starts 2027-01-08 at a price
+the provider sets and AWS announces, and it reaches end of life on 2027-04-08 (`get-foundation-model`,
+read 2026-10-11). The 3.30 / 16.50 above holds until the first of those dates.
+
 **Pinning a Haiku is a decision and not a detail**: without the pin, background work bills at the
 primary model's rate.
 

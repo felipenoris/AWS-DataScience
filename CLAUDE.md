@@ -369,7 +369,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
   dec 15's compensating deny. **Retention mode is per
   account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
-  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); **the endpoint pair is the optional group `bedrock-base` since 2026-10-09** (user; `vpc-egress-v0.16.0`, applied), so a session with the assistant is `GROUPS=bedrock-base`;
+  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. **Sonnet 4.5 is LEGACY since 2026-10-08** (extended access at a higher price 2027-01-08, EOL 2027-04-08; idle since 2026-09-12, so the 15-day rule may already have cut it), and **dec 17 (user, 2026-10-11) moves the set to 5.5**: SCP and grant carry both generations in code, **nothing applied**, the three agreements unaccepted and the gate unmeasured; `BS-8` reads the lifecycle. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); **the endpoint pair is the optional group `bedrock-base` since 2026-10-09** (user; `vpc-egress-v0.16.0`, applied), so a session with the assistant is `GROUPS=bedrock-base`;
   the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
   to three US regions (D1's exception).
 - **Stage 6f: step 1 is done, no access act has run.** `./aws/catalog.py` (`CT-1`..`CT-9`) is the
