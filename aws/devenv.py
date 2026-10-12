@@ -54,9 +54,9 @@
 # built from an older checkout, or registered from an older tag, passes it while the domain serves
 # something else. DE-5 reads the bytes SageMaker serves instead: the image version's ContainerImage is
 # a digest, the manifest behind that digest names a config blob, and the blob's `Env` is exactly what
-# the Dockerfile's ENV baked - no Docker, no buildbox, and none of the buildbox client's own
-# `noProxy` injected over the reading (buildbox.md, "Reading an image's own environment"). The blob
-# is checked against its own digest before it is believed.
+# the Dockerfile's ENV baked - no Docker, and no client's own `noProxy` injected over the reading (a
+# docker client with a `proxies` block injects its host's list into every container it starts,
+# outranking the image's ENV). The blob is checked against its own digest before it is believed.
 #
 # What it cannot see (Lesson 13), so a clean run is not a working space:
 #   - Which image a space is RUNNING. A space keeps its own copy of the version number and can name

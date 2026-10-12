@@ -1537,8 +1537,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    re-attach, and no gate sees it. Two readings make it visible instead — `./aws/devenv.py`
    (`DE-1`..`DE-4`) compares the literal with the account's current output and names each side's extra
    entries, and `/opt/awsds-proxy.txt` inside a space carries the digest of what was actually baked;
-   [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Owed: the rebuild.** `default-v0.1.1` predates this, so `image_tag` stays where
-   it is until a buildbox session pushes the next tag.
+   [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Rebuilt**: `default-v0.2.0` (2026-09-11) was the first image to carry the literal, and every release
+   since has ([`images/README.md`](../../../images/README.md) §*The releases*).
 9. **Whether Amazon Q Developer's Free tier is opened at all** (10.2). As written, it does not meet the
    persistence clause Stage 6e was built to satisfy: the content is stored in AWS's `us-east-1`, outside
    the estate, under no setting this estate can declare. Open it as a `Sandbox` residual with its own row in

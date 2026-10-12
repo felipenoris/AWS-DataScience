@@ -474,9 +474,8 @@ locals {
   # reachable from a notebook.
   #
   # The plane is a CIDR, not a host (Lesson 29), which is the sentence to re-read before adding
-  # anything to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC - the buildbox today, the
-  # GitLab runners when Stage 7 puts them there - and anything else that lands in it inherits
-  # `open` too. A host that should not have the open internet belongs in a VPC with its own plane.
+  # anything to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC - GitLab and the build runner
+  # since Stage 7 - and anything else that lands in it inherits `open` too. A host that should not have the open internet belongs in a VPC with its own plane.
   #
   # Empty, like the tunnel's: everything permitted, everything logged, and this list filled when
   # there is a written policy to fill it from. An entry here would be a name a build may not fetch,

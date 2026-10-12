@@ -30,7 +30,7 @@ closes the **resolver channel** only (ten names); the internet filter moved to t
 lists.
 
 The three `t3` rows read on 2026-08-21 came through a different door (`t3.xlarge`/`t3.2xlarge` in §8 and
-§3, for Stage 6's build host, `production/buildbox/` since 6c step 5.8): the `AmazonEC2` bulk offer file
+§3, for the image build host: Stage 6's buildbox, then Stage 7's build runner `production/runners/`): the `AmazonEC2` bulk offer file
 for one region is hundreds of megabytes, so those were read with **`aws pricing get-products`** — the
 Price List *Query* API, same catalogue, filtered server-side on `instanceType`/`location`/
 `operatingSystem=Linux`/`tenancy=Shared`/`preInstalledSw=NA`/`capacitystatus=Used`. It needs credentials
@@ -271,7 +271,7 @@ the real bill.
 | — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
-| Stage 6 build host `m8i.xlarge` (`production/buildbox/`, `[E]`) — **measured 2026-09-11**, the family the 02:50-03:15 UTC build moved it to: the build saturated four burstable vCPUs while the proxy sat at 2.70% | 0.3374 | **0.2117** | 1.59 |
+| The image build host `m8i.xlarge` (Stage 7's build runner `production/runners/`, `[E]`; the buildbox before it) — **measured 2026-09-11**, the family the 02:50-03:15 UTC build moved it to: the build saturated four burstable vCPUs while the proxy sat at 2.70% | 0.3374 | **0.2117** | 1.59 |
 | — `t3.xlarge`, the burstable it replaced | 0.2688 | 0.1664 | 1.62 |
 | Internal ALB | 0.034 + 0.011/LCU-h | 0.0225 + 0.008/LCU-h | 1.51 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.medium` | 0.081 | 0.050 | 1.62 |

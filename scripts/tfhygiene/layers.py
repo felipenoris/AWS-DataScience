@@ -205,32 +205,9 @@ RANKS = {
     # VPC-Workloads' own [E] endpoint slice (Stage 6c step 1.3a). 51 rather than 50 only so the
     # two Production egress slices have a defined order between them; both sit above `proxy`.
     "workloads-egress": 51,
-    # Stage 6 step 5.0's build host. Above `vpn` (40) and below `probes` (60):
-    #
-    #   vpn      a dependency, and a hard one. This slice's single route points at the
-    #            WireGuard host's ENI and the host must be running, or the route is a
-    #            blackhole rather than an error. `up` ascends rank, so the [D] hook starts the
-    #            tunnel first.
-    #   egress   a hard prerequisite since 6c step 5.8. The build host moved to
-    #            `production/buildbox/`, its default route is gone, and its shell is an
-    #            interface endpoint - `ssm`/`ssmmessages`/`ec2messages`, put in
-    #            VPC-SharedServices by step 5.5 one step ahead of it. Without `egress/` there
-    #            is no way into the host at all, so the ordering is load-bearing and 0.130
-    #            USD/h is a cost of a build session rather than a cost avoided.
-    #   proxy    is in a different account: the internet arrives as an explicit proxy over the
-    #            SharedServices <-> Networking peering. A rank cannot express a cross-account
-    #            dependency, which is why ./scripts/buildbox.py checks it - a rank is not a
-    #            control (Lesson 5).
-    #   probes   no longer conflicts. The exclusion existed because `sandbox/probes/`'s
-    #            perimeter probe measures the Sandbox isolated tier's absence of a default
-    #            route while this slice's mechanism was adding one there; this slice creates no
-    #            route anywhere now and is not in that account.
-    "buildbox": 55,
-    # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor. Above `egress` (50): it
-    # needs the SSM endpoints for its only door and reads `egress/`'s `no_proxy` output at apply
-    # time, which a destroyed slice fails by name. Above `buildbox` (55) only because the two
-    # coexist until 6.5 retires the buildbox, and a defined order between two [E] hosts in one VPC
-    # costs nothing.
+    # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor (the buildbox, rank 55,
+    # retired at 6.5). Above `egress` (50): it needs the SSM endpoints for its only door and reads
+    # `egress/`'s `no_proxy` output at apply time, which a destroyed slice fails by name.
     "runners": 57,
     "probes": 60,
 }
@@ -412,25 +389,6 @@ SLICES = [
         DORMANT,
         "Squid explicit proxy - the estate's only internet exit",
         0.0104,
-    ),
-    # Stage 6 step 5.0 - the amd64 build host, [E]. usd_per_hour is the m8i.xlarge row of
-    # docs/PRICING.md 8, measured us-west-2 (Lesson 6), and unlike the WireGuard row above it
-    # this figure does follow the tracked tfvars, because the default and the assignment agree
-    # by design (the slice's own instance_type.auto.tfvars says why). The 64 GiB gp3 is
-    # ~0.007/h on top and is not in this column: it is billed per GB-month and this slice is
-    # [E], so it exists only while the host does.
-    #
-    # 6c step 5.8 moved it to Production, account and tier both, at the same rate and in the
-    # same [E] layer. The host has two prerequisites it cannot express, `production/egress/` in
-    # its own account (the SSM endpoints that are its only door) and `production/proxy/` in the
-    # hub (the only way to the internet), so a build session costs this row plus 0.130 plus
-    # 0.0104.
-    Slice(
-        "production",
-        "buildbox",
-        EPHEMERAL,
-        "amd64 build host for the dev-env image (St.6 5.0)",
-        0.2117,
     ),
     # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer

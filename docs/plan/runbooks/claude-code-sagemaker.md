@@ -929,7 +929,7 @@ The chain is [`dev-env.md`](dev-env.md) §B, and its shape is:
 1. Edit `images/dev-env/claude-code/managed-settings.json` and commit. `pre-commit`'s `check-json`
    covers `images/**.json` and the Dockerfile re-parses the file during the build, so a trailing
    comma fails in review rather than in a space three weeks later.
-2. Build both images on the buildbox ([`buildbox.md`](buildbox.md)) and push under a **new**
+2. Build both images with the build runner's pipeline ([`images/README.md`](../../../images/README.md)) and push under a **new**
    `<flavour>-v<semver>` tag. The ECR repository is immutable-tagged: a rebuild is a new tag, never
    a re-push of an existing one.
 3. Bump `image_tag` in

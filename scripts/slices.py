@@ -156,8 +156,7 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
 #        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
 #   7.2  a spoke's `make up` must refuse while the PROXY is down, naming it. Left alone a stopped
 #        proxy is a blackhole rather than an error: the apply succeeds, and every symptom
-#        afterwards is a timeout that looks like a broken mirror or a broken package index. That
-#        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide. The
+#        afterwards is a timeout that looks like a broken mirror or a broken package index. The
 #        tunnel is reported beside it and never refuses: since D39 nothing a spoke applies, and
 #        no session it opens, needs the private network (6g decision due 2).
 HUB_ENV = "production"

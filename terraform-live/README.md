@@ -167,22 +167,15 @@ masquerade rules, which is what let an `[E]` `amd64` build host reach the intern
 anywhere: **the capability was `[D]` and the reach was `[E]`**, since a masquerade rule matches nothing
 until a route table sends traffic at it. D38 ended it — there is no default route anywhere in the estate,
 and the WireGuard host now lives in `VPC-Networking`, where **a route in another VPC cannot point at its
-ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host is
-[`production/buildbox/`](production/buildbox/README.md) and reaches the internet **as a client of the
-explicit proxy**, so `egress/` is a hard prerequisite of a build session (its SSM endpoints are the only
-door into the host) rather than a slice a build could avoid.
+ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host became `production/buildbox/`, **a
+client of the explicit proxy**, and retired into the build runner [`production/runners/`](production/runners/)
+at Stage 7 step 6.5 (2026-10-12). Either way `egress/` is a hard prerequisite of a build (its SSM
+endpoints are the only door into the host) rather than a slice a build could avoid.
 
-**`buildbox/` is raised by [`scripts/buildbox.py`](../scripts/buildbox.py), not by `make up` — by
-convention, not by refusal.** It is `[E]` with a row and no refusal in `layers.py`, so `make status` sees
-it, `make down ENV=production` destroys it, **and `make up ENV=production` applies it** with the account's
-other four `[E]` slices — `egress/`, `workloads-egress/`, `probes/`, `runners/` — at 0.2117/h for an `m8i.xlarge` a
-Sandbox session never needs. It retires into `runners/` at Stage 7 step 6.5. The script exists for the reverse case: a build needs `egress/` and this slice
-and neither of the other two, so it raises this one alone, checks the two prerequisites a rank cannot
-express, syncs the context, opens the shell and tears down.
-**Its two refusals** read the **`ssmmessages` endpoint** before applying — without it the apply
-succeeds and the host is unreachable, which looks exactly like a slow boot — and **start the proxy host**,
-because under design B there is no route to fail over to. Both are code in the helper rather than sentences
-here (Lesson 5).
+**`runners/` is raised by `make gitlab-up`**, with GitLab and `egress/` (`RUNNERS=0` leaves it out), and
+destroyed by `make gitlab-down`; `make up ENV=production` applies it too, with the account's other `[E]`
+slices. Its first boot waits for GitLab and registers from the token container
+([`docs/plan/runbooks/gitlab.md`](../docs/plan/runbooks/gitlab.md) §K).
 
 **The `[D]` slices are where the layer decides the folder rather than the topic.** The hub's durable
 things — the WireGuard Elastic IP (**transferred** from Sandbox at 6c step 4.3, so no client `.conf`

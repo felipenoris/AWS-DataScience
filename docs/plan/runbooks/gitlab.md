@@ -438,4 +438,4 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 
 ---
 
-*Runbooks: [buildbox](buildbox.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*
+*Runbooks: [dev-env](dev-env.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Images: [`images/README.md`](../../../images/README.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*

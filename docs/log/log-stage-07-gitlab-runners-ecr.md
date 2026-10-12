@@ -497,3 +497,25 @@ Account ids are replaced by the account's name in angle brackets.*
   every environment, `./aws/egress.py` `0 check(s) FAILED` (its exit 1 is the persona and `ctadmin`
   profiles, signed out). Owed for the next session: INT-09's clone from a notebook on version 6, step 6.5,
   pass 4.
+
+## 2026-10-12 — after the merge: two readings with the environment down, step 6.5
+
+- **[user] PR #119 merged** (squashed as `a3f698b`); the session continued on a new branch cut from it.
+- **[Claude] The clone pair's negative half, 20:32 UTC, the hub stopped**: from the laptop, `git
+  ls-remote https://gitlab.awsds.internal/awsds/app-etl.git` read `Could not resolve host:
+  gitlab.awsds.internal`, the name resolving only through the tunnel.
+- **[Claude] Verification xiv's second half, read with `make down ENV=production DRY=1`**, which runs
+  nothing: `vpn` and `proxy` are listed as *"refusal 6 - the hub is not stopped by ENV=production;
+  `make hub-down` is its target"*, by name, and the only `[D]` host the target would stop is
+  `awsds-prod-gitlab`.
+- **[Claude] Step 6.5, in the repository alone.** Read first: `production/buildbox/`'s state lists no
+  resource, and Production holds no security group, role, instance profile or instance named for the
+  buildbox. Deleted: the slice, its `layers.py` rank and slice row, `scripts/buildbox.py`, the runbook's
+  procedures, the size file's `.gitignore` exception and its `check-tfvars-shape.py` row, the
+  `NETWORK_SLICES` entry. The release ledger moved to `images/README.md` §*The releases*, with
+  `default-v0.6.0` added. Live references were repointed (`CLAUDE.md`'s routing row, both READMEs,
+  `NETWORK.md`, `PRICING.md`, `cost-model.md`, `conventions.md` §6, `SMUS.md`, five runbooks, the
+  Makefile's help, `aws/devenv.py`, two recipe comments); executed stages and logs keep theirs as
+  records. `docs/plan/runbooks/buildbox.md` stays as a pointer page, because two stage logs link to it
+  and `check-plan-refs.py` fails on a dead link. `make check` OK; `check-network-doc.py` clean. The empty
+  state object stays in the state bucket.

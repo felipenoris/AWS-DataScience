@@ -362,13 +362,6 @@ terraform-live/
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a,
     │                     #     populated by Stages 9 and 10 - empty today
-    ├── buildbox/         # [E] the amd64 build host for the dev-env image - moved here from
-    │                     #     sandbox/ at 6c step 5.8 (2026-09-06). VPC-SharedServices
-    │                     #     private tier, no route at all: the internet is the proxy, told
-    │                     #     in four places (runbooks/buildbox.md). egress/'s SSM endpoints
-    │                     #     are its only door, so egress/ is a prerequisite of a build.
-    │                     #     Driven by scripts/buildbox.py, never by make up; rank 55.
-    │                     #     Retires into the build runner at Stage 7 step 6
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,
     │                     #     not foundation/'s: foundation is opened to change a CIDR or
     │                     #     accept a peering, and every such edit would otherwise decrypt
@@ -425,7 +418,7 @@ terraform-live/
     ├── runners/          # [E] the build runner (D14), rank 57 - amd64 on the buildbox's
     │                     #     measured m8i.xlarge, registered at boot with the token in
     │                     #     foundation/'s container, pushing with its instance profile and
-    │                     #     holding no deploy permission; production/buildbox/ above retires
+    │                     #     holding no deploy permission; the buildbox (rank 55) retired
     │                     #     into it at Stage 7 step 6.5
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a

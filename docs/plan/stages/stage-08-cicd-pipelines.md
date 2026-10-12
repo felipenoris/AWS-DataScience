@@ -137,8 +137,9 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release
   tag from colliding in a repository where **a tag is spent on first landing**, and makes a pipeline-built
-  image distinguishable from the six hand builds (`default-v0.1.0` to `default-v0.5.0`, ledger in
-  [`buildbox.md`](../runbooks/buildbox.md) §P until Stage 7 step 6.5 moves it), which carry no suffix. **The
+  image distinguishable from the six hand builds (`default-v0.1.0` to `default-v0.5.0`) and Stage 7's
+  web-triggered `default-v0.6.0`, which carry no suffix (ledger: [`images/README.md`](../../../images/README.md)
+  §*The releases*). **The
   flavour stays in front**, so the registry's lifecycle rule (untagged after 14 days, the 30 newest tagged
   kept across flavours) can be split per flavour with a plain `tagPrefixList` when a second one exists. The
   recipe's requirements, as the hand builds left them: the SMUS BYOI specification and the activity-monitor

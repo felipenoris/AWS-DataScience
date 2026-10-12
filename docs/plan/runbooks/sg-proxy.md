@@ -175,8 +175,8 @@ The decisions in it:
 - **`http.noProxy` is not optional.** `http.proxySupport` defaults to `override`, which patches the
   extension host's HTTP stack, so an extension's AWS SDK calls would leave by the proxy instead of the
   VPC endpoint: bytes paid for that the gateway endpoint carries free, and arrival without
-  `aws:SourceVpce`, which is a deny wherever a policy conditions on it. The buildbox carries the same
-  hazard one layer down.
+  `aws:SourceVpce`, which is a deny wherever a policy conditions on it. A docker client's `proxies`
+  block carries the same hazard one layer down.
 - **The list is generated, and the syntax is not the environment's.** Its source is `terraform output
   -raw no_proxy_all_groups` on `sandbox/egress` — the value at the top of this file — never a
   transcription. The array above is a snapshot of the 50-entry `no_proxy` of 2026-09-09, from an apply

@@ -51,10 +51,6 @@ SIZES = [
     Path("terraform-live/sandbox/vpn/instance_type.auto.tfvars"),
     Path("terraform-live/production/vpn/instance_type.auto.tfvars"),
 ]
-# The build host's copy of the same file (Stage 6 step 5.0): same keys, same mechanism, same
-# name. This host is [E], so its disk is not a standing commitment, and the slice's own copy
-# says so.
-BUILDBOX_SIZE = Path("terraform-live/production/buildbox/instance_type.auto.tfvars")
 
 # path -> the top-level keys that tracked tfvars may assign. Growing this table is the
 # deliberate act that tracking a new tfvars requires: the .gitignore asks for "an explicit
@@ -70,7 +66,6 @@ TRACKED_SHAPES: dict[str, set[str]] = {
     # Why the file is still called instance_type.auto.tfvars is answered by the file's own
     # header: renaming it costs the .gitignore negation and every path written about it.
     **{str(z): {"instance_type", "root_volume_size"} for z in SIZES},
-    str(BUILDBOX_SIZE): {"instance_type", "root_volume_size"},
 }
 
 # The attributes an entry of the roster may carry.
