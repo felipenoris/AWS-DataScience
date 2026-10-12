@@ -166,9 +166,10 @@ unreviewed. The lock is also what makes two builds of one commit the same enviro
 sets, it is on no search path, and the base image sets `UV_PYTHON_DOWNLOADS=never`. A uv project that
 asks for 3.13 therefore names it: `UV_PYTHON=$AWSDS_PYTHON_ENV/bin/python uv sync`. Read from this
 recipe and reproduced on 2026-10-11 in a simulation of a space's interpreters, where the space itself
-answered `which python` with `/opt/conda/bin/python`; `package-uv-job.py` names it on its own. A later
-image version that exported `UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to
-every uv command.
+answered `which python` with `/opt/conda/bin/python`. `awsds-workflows package-job` takes it the same
+way, from `UV_PYTHON` in its environment
+([`serverless-workflows.md`](../docs/plan/runbooks/serverless-workflows.md) §J1). A later image version
+that exported `UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to every uv command.
 
 **For two of those rows the merge request review is the only control there is.** Measured 2026-08-22,
 when Stage 6a step 5.0 pushed the first images: ECR's scan read `base` and `dev-env` to identical

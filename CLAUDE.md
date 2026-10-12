@@ -266,7 +266,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
 | Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
-| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
+| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §T the `awsds-workflows` tool, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
 | A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
 | A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
 | Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
@@ -454,7 +454,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   was destroyed 2026-10-12 and is recoverable from `c0baddd` (CloudTrail Lake takes no new customers).
   A job imports a vendored extension module from its code input (`package-uv-job.py`). 6i's log groups
   sit under `EXC-10`. A processing input is a prefix read at each run with no version to pin, so Stage 10
-  decision 7 owns where a promoted job's dependencies come from (recommended: its image).
+  decision 7 owns where a promoted job's dependencies come from (recommended: its image). **The workflow
+  tooling is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) since 2026-10-12**,
+  installed by URL from its `main` (user, 2026-10-12; the runbook's §T): `render.py`, `package-uv.sh` and
+  `package-uv-job.py` are deleted, the example YAML carry the package's placeholder names, and
+  `operators/build.sh` stays, since its archive vendors PyYAML, which `package-task` leaves out.
 - **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
   the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
   laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6

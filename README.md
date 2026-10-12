@@ -83,7 +83,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   workflows run in a Sandbox project, one with no dependency and one whose dependencies the house image
   lacks, the operator files of the worker variants, the processing job's
   configuration, and each workflow's definition after each pass. Every account-scoped value is a
-  placeholder, which its `render.py` fills on screen from read-only calls.
+  placeholder, which [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) `render` fills on
+  screen from read-only calls ([`serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md) §T).
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.

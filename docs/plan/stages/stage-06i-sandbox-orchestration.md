@@ -580,6 +580,8 @@ identity a worker task's calls carry.
 - **What a run costs** (3.3, 3.4), read from the durations rather than predicted.
 - **The runbook** [`serverless-workflows.md`](../runbooks/serverless-workflows.md), written 2026-10-11 at the
   user's request: the editor and its import, the grant, the processing task, the code archive, the readings.
+  Since 2026-10-12 its tool is `awsds-workflows` (its §T), which replaced `render.py`, `package-uv.sh` and
+  `package-uv-job.py`; the steps above name the scripts they ran.
 
 ## Validation
 
