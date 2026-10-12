@@ -86,9 +86,9 @@ variable "models" {
   description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. Every one is inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
   type        = map(string)
 
-  # TWO GENERATIONS WHILE THE SET MOVES FROM 4.5 TO 5.5 (Stage 6e decision 17). The image pins the
-  # 4.5 three (`default-v0.5.0`), so they stay until the release pinning 5.5 is the domain's default;
-  # removing them first would refuse every running space at the first prompt. Sonnet 4.5 is LEGACY
+  # TWO GENERATIONS WHILE THE SET MOVES FROM 4.5 TO 5.5 (Stage 6e decision 17). The running image
+  # pins the 4.5 three, so they stay until a release pinning 5.5 is the domain's default; removing
+  # them first would refuse every running space at the first prompt. Sonnet 4.5 is LEGACY
   # since 2026-10-08 and reaches end of life 2027-04-08. The 5.5 three route to the same us-east-1,
   # us-east-2, us-west-2 (read 2026-10-11) and are NOT YET PROVEN BY INVOCATION: their ids have the
   # shape EXC-08 found refused for this account with every reading green, and only a call answers.
