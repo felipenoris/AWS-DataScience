@@ -529,3 +529,8 @@ Account ids are replaced by the account's name in angle brackets.*
   `tooling/`'s literal re-copied; with `saml.auto.tfvars` copied from the worktree that wrote it, the
   plan of `tooling/` reads `0 to add, 1 to change, 0 to destroy`, the S3 object alone, its eight
   `no_proxy`/`NO_PROXY` lines and nothing else.
+- **[Claude] `production/tooling/` applied 21:26 UTC, at the user's authorization: `0 added, 1 changed, 0
+  destroyed`**, the reviewed plan, re-plan `No changes`. The object read back from
+  `s3://awsds-prod-gitlab-objects/config/gitlab.rb`: a `no_proxy` of 56 entries, no `sagemaker` name, the
+  SAML block present. GitLab is stopped and runs the previous file until `sudo awsds-gitlab-refresh` at
+  the next session; `egress/` builds its 12 at the next `make gitlab-up`.
