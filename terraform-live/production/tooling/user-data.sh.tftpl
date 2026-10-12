@@ -1,0 +1,196 @@
+#!/bin/bash
+set -euo pipefail
+exec > >(tee /var/log/awsds-gitlab-boot.log) 2>&1
+echo "=== awsds gitlab first boot: $(date -Is) ==="
+
+PROXY="${proxy_url}"
+NOPROXY="${no_proxy}"
+REGION="${region}"
+OBJECTS_BUCKET="${objects_bucket}"
+GITLAB_RB_KEY="${gitlab_rb_key}"
+GITLAB_HOST="${gitlab_host}"
+PAGES_HOST="${pages_host}"
+CA_ROOT_PARAM="${ca_root_param}"
+LEAF_GITLAB_PARAM="${leaf_gitlab_param}"
+LEAF_PAGES_PARAM="${leaf_pages_param}"
+LEAF_GITLAB_SECRET="${leaf_gitlab_secret_arn}"
+LEAF_PAGES_SECRET="${leaf_pages_secret_arn}"
+GITLAB_SECRETS_ARN="${gitlab_secrets_secret_arn}"
+DATA_MOUNT="/var/opt/gitlab"
+
+export http_proxy="$PROXY" https_proxy="$PROXY"
+export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
+export no_proxy="$NOPROXY" NO_PROXY="$NOPROXY"
+export AWS_DEFAULT_REGION="$REGION"
+
+echo "--- proxy: /etc/environment"
+cat >> /etc/environment <<ENVEOF
+http_proxy=$PROXY
+https_proxy=$PROXY
+HTTP_PROXY=$PROXY
+HTTPS_PROXY=$PROXY
+no_proxy=$NOPROXY
+NO_PROXY=$NOPROXY
+ENVEOF
+
+echo "--- the data volume"
+ROOT_DISK="$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" | head -n1)"
+DATA_DEV=""
+for _ in $(seq 1 60); do
+  for dev in $(lsblk -dn -o NAME,TYPE | awk '$2=="disk"{print $1}'); do
+    [ "$dev" = "$ROOT_DISK" ] && continue
+    if [ -z "$(lsblk -n -o NAME "/dev/$dev" | tail -n +2)" ]; then DATA_DEV="/dev/$dev"; break; fi
+  done
+  [ -n "$DATA_DEV" ] && break
+  sleep 5
+done
+[ -n "$DATA_DEV" ] || { echo "FATAL: no data volume attached after 300 s" >&2; exit 1; }
+echo "    data device: $DATA_DEV"
+if ! blkid "$DATA_DEV" >/dev/null 2>&1; then
+  echo "    no filesystem - formatting (first boot of this volume)"
+  mkfs.xfs -q "$DATA_DEV"
+else
+  echo "    filesystem present - a volume with GitLab data on it; nothing is formatted"
+fi
+DATA_UUID="$(blkid -s UUID -o value "$DATA_DEV")"
+mkdir -p "$DATA_MOUNT"
+grep -q "UUID=$DATA_UUID" /etc/fstab || echo "UUID=$DATA_UUID $DATA_MOUNT xfs defaults,nofail 0 2" >> /etc/fstab
+mount "$DATA_MOUNT"
+echo "    mounted: $(findmnt -no SOURCE,FSTYPE,SIZE "$DATA_MOUNT")"
+
+echo "--- packages: jq (S3 repositories, no proxy)"
+dnf -y -q install jq
+
+echo "--- the GitLab package repository, proxied per repository"
+cat > /etc/yum.repos.d/gitlab_gitlab-ce.repo <<'REPOEOF'
+[gitlab_gitlab-ce]
+name=gitlab_gitlab-ce
+baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/$basearch
+repo_gpgcheck=1
+gpgcheck=1
+enabled=1
+gpgkey=https://packages.gitlab.com/gpgkey/gpg.key
+       https://packages.gitlab.com/gpgkey/gitlab/3D645A26AB9FBD22.pub.gpg
+       https://packages.gitlab.com/gpgkey/gitlab/CB947AD886C8E8FD.pub.gpg
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+REPOEOF
+echo "proxy=$PROXY" >> /etc/yum.repos.d/gitlab_gitlab-ce.repo
+
+echo "--- installing gitlab-ce (no automatic reconfigure)"
+mkdir -p /etc/gitlab
+touch /etc/gitlab/skip-auto-reconfigure
+dnf -y -q install gitlab-ce
+rpm -q gitlab-ce
+
+fetch_config() {
+  echo "--- fetching gitlab.rb, the certificates and the keys"
+  aws s3 cp "s3://$OBJECTS_BUCKET/$GITLAB_RB_KEY" /etc/gitlab/gitlab.rb --only-show-errors
+  chmod 600 /etc/gitlab/gitlab.rb
+  mkdir -p /etc/gitlab/ssl /etc/gitlab/trusted-certs
+  chmod 755 /etc/gitlab/ssl
+  aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text > /etc/gitlab/trusted-certs/awsds-root.crt
+  aws ssm get-parameter --name "$LEAF_GITLAB_PARAM" --query Parameter.Value --output text > "/etc/gitlab/ssl/$GITLAB_HOST.crt"
+  cat /etc/gitlab/trusted-certs/awsds-root.crt >> "/etc/gitlab/ssl/$GITLAB_HOST.crt"
+  aws ssm get-parameter --name "$LEAF_PAGES_PARAM" --query Parameter.Value --output text > "/etc/gitlab/ssl/$PAGES_HOST.crt"
+  cat /etc/gitlab/trusted-certs/awsds-root.crt >> "/etc/gitlab/ssl/$PAGES_HOST.crt"
+  umask 077
+  aws secretsmanager get-secret-value --secret-id "$LEAF_GITLAB_SECRET" --query SecretString --output text > "/etc/gitlab/ssl/$GITLAB_HOST.key"
+  aws secretsmanager get-secret-value --secret-id "$LEAF_PAGES_SECRET" --query SecretString --output text > "/etc/gitlab/ssl/$PAGES_HOST.key"
+  umask 022
+  chmod 644 /etc/gitlab/ssl/*.crt /etc/gitlab/trusted-certs/*.crt
+  chmod 600 /etc/gitlab/ssl/*.key
+  cp /etc/gitlab/trusted-certs/awsds-root.crt /etc/pki/ca-trust/source/anchors/awsds-root.crt
+  update-ca-trust
+}
+fetch_config
+
+echo "--- gitlab-secrets.json: restore, or generate and push"
+RESTORED=0
+if aws secretsmanager get-secret-value --secret-id "$GITLAB_SECRETS_ARN" --query SecretString --output text > /etc/gitlab/gitlab-secrets.json.restored 2>/run/awsds-secrets.err && [ -s /etc/gitlab/gitlab-secrets.json.restored ]; then
+  mv /etc/gitlab/gitlab-secrets.json.restored /etc/gitlab/gitlab-secrets.json
+  chmod 600 /etc/gitlab/gitlab-secrets.json
+  RESTORED=1
+  echo "    restored from Secrets Manager"
+else
+  rm -f /etc/gitlab/gitlab-secrets.json.restored
+  echo "    no value in the container ($(head -c 200 /run/awsds-secrets.err | tr '\n' ' ')) - reconfigure generates one"
+fi
+
+echo "--- gitlab-ctl reconfigure (first run)"
+gitlab-ctl reconfigure
+
+if [ "$RESTORED" = "0" ]; then
+  echo "--- pushing the generated gitlab-secrets.json into its container"
+  aws secretsmanager put-secret-value --secret-id "$GITLAB_SECRETS_ARN" --secret-string "file:///etc/gitlab/gitlab-secrets.json" --query VersionId --output text
+fi
+
+echo "--- the refresh helper (decision 8)"
+cat > /usr/local/sbin/awsds-gitlab-refresh <<HELPEOF
+#!/bin/bash
+set -euo pipefail
+export http_proxy="$PROXY" https_proxy="$PROXY" HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
+export no_proxy="$NOPROXY" NO_PROXY="$NOPROXY" AWS_DEFAULT_REGION="$REGION"
+echo "awsds-gitlab-refresh: fetching gitlab.rb, certificates and keys, then reconfigure"
+aws s3 cp "s3://$OBJECTS_BUCKET/$GITLAB_RB_KEY" /etc/gitlab/gitlab.rb --only-show-errors
+chmod 600 /etc/gitlab/gitlab.rb
+aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text > /etc/gitlab/trusted-certs/awsds-root.crt
+aws ssm get-parameter --name "$LEAF_GITLAB_PARAM" --query Parameter.Value --output text > "/etc/gitlab/ssl/$GITLAB_HOST.crt"
+cat /etc/gitlab/trusted-certs/awsds-root.crt >> "/etc/gitlab/ssl/$GITLAB_HOST.crt"
+aws ssm get-parameter --name "$LEAF_PAGES_PARAM" --query Parameter.Value --output text > "/etc/gitlab/ssl/$PAGES_HOST.crt"
+cat /etc/gitlab/trusted-certs/awsds-root.crt >> "/etc/gitlab/ssl/$PAGES_HOST.crt"
+umask 077
+aws secretsmanager get-secret-value --secret-id "$LEAF_GITLAB_SECRET" --query SecretString --output text > "/etc/gitlab/ssl/$GITLAB_HOST.key"
+aws secretsmanager get-secret-value --secret-id "$LEAF_PAGES_SECRET" --query SecretString --output text > "/etc/gitlab/ssl/$PAGES_HOST.key"
+umask 022
+chmod 644 /etc/gitlab/ssl/*.crt /etc/gitlab/trusted-certs/*.crt
+chmod 600 /etc/gitlab/ssl/*.key
+gitlab-ctl reconfigure
+HELPEOF
+chmod 755 /usr/local/sbin/awsds-gitlab-refresh
+
+echo "--- the daily backup timer (step 8.2)"
+cat > /etc/systemd/system/awsds-gitlab-backup.service <<'UNITEOF'
+[Unit]
+Description=gitlab-backup create, uploaded to the backup bucket
+After=gitlab-runsvdir.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/environment
+ExecStart=/opt/gitlab/bin/gitlab-backup create CRON=1 STRATEGY=copy
+UNITEOF
+cat > /etc/systemd/system/awsds-gitlab-backup.timer <<'TIMEREOF'
+[Unit]
+Description=daily GitLab backup while the host runs
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+TIMEREOF
+systemctl daemon-reload
+systemctl enable --now awsds-gitlab-backup.timer
+
+cat > /etc/profile.d/awsds-gitlab.sh <<'BANNER'
+echo
+echo "  awsds gitlab - GitLab CE, [D]: stopped between sessions, never destroyed."
+echo "  configuration:  s3://<objects bucket>/config/gitlab.rb, fetched by awsds-gitlab-refresh"
+echo "  a change:       edit the template in terraform-live/production/tooling/, apply, then"
+echo "                  sudo awsds-gitlab-refresh   (fetch + gitlab-ctl reconfigure)"
+echo "  first-boot log: /var/log/awsds-gitlab-boot.log      backups: awsds-gitlab-backup.timer"
+echo "  root password:  /etc/gitlab/initial_root_password (self-deletes after 24 h)"
+echo
+BANNER
+
+echo "--- readiness"
+for _ in $(seq 1 60); do
+  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "https://$GITLAB_HOST/-/readiness" || true)"
+  [ "$code" = "200" ] && break
+  sleep 5
+done
+echo "    https://$GITLAB_HOST/-/readiness -> $code"
+echo "=== awsds gitlab first boot done: $(date -Is) ==="

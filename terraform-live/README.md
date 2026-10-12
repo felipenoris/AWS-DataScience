@@ -152,6 +152,15 @@ re-plans as a *replacement*, and a routine bring-up is no place to rebuild the o
 reads a `[D]` row's **power state from EC2**, not its state file, or a stopped host would report a burn
 forever.
 
+**GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
+(rank 42) holds the `t4g.large`, its 50 GiB data volume and the two internal records, and is applied by
+hand like the hub hosts. Its session is **`make gitlab-up` / `make gitlab-down`** — `--only
+tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the build runner applied,
+and the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
+same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the proxy would
+blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's name, and
+`layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
+
 **The WireGuard host was also a NAT instance for the isolated tier, from Stage 6 step 5.0 until 6c step
 5.8.** `wireguard-v0.4.0`'s `vpc_nat_cidrs` input turned source/destination checking **off** and added
 masquerade rules, which is what let an `[E]` `amd64` build host reach the internet with no NAT gateway
@@ -259,7 +268,27 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   fight the blueprint.
 - **`production/registry/` `[P]`** — written under Stage 7 step 5 and applied a stage early, because Stage 6
   step 5.0 has nowhere to push the first `dev-env` image otherwise: the `base`/`dev-env` ECR pair,
-  CodeArtifact, the slice's own key, and the consumer policies built from the D35 map.
+  CodeArtifact, the slice's own key, and the consumer policies built from the D35 map. **5.b** (Stage 7,
+  2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
+  `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
+  blocks the cache's own update, and AES256 for a public upstream's bytes.
+- **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
+  (`gitlab.awsds.internal`, `*.awsds-pages.internal`) in the `tls` provider's state, under the account's
+  **second** state key; the certificates published as three SSM parameters under `/datascience/prod/pki/`
+  and three S3 objects under the GitLab objects bucket's `pki/` prefix; the leaf keys in two Secrets
+  Manager secrets only the GitLab host's role and `InfrastructureAccess` may read. Never destroyed
+  (`layers.NEVER_DESTROY`); the root's private key is never an output.
+- **`production/tooling/` `[D]` — GitLab CE** (Stage 7 step 1): the host, its data volume and daily DLM
+  snapshots, the two records, both security groups, the host's role, and `config/gitlab.rb` rendered into
+  the objects bucket - the configuration travels outside the user data (decision 8), which is held with
+  `ignore_changes`, so an edit is an apply plus `sudo awsds-gitlab-refresh` on the host and never a
+  replacement. The bypass list is a dated literal (step 1.3), since a `[D]` slice cannot read a destroyed
+  `egress/`'s output. Anchors in `production/foundation/`: the two buckets, their key, the
+  `gitlab-secrets.json` and runner-token containers.
+- **`production/runners/` `[E]` — the build runner** (Stage 7 step 6, the buildbox's successor): one
+  `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
+  to the three image repositories with its own instance profile and pulling through the cache - and no
+  deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
   AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
   per app type, and the role SageMaker assumes to read that repository across the account boundary. It is

@@ -1,0 +1,101 @@
+external_url "https://${gitlab_host}"
+
+letsencrypt['enable'] = false
+nginx['ssl_certificate'] = "/etc/gitlab/ssl/${gitlab_host}.crt"
+nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${gitlab_host}.key"
+
+gitlab_rails['env'] = {
+  "http_proxy" => "${proxy_url}",
+  "https_proxy" => "${proxy_url}",
+  "no_proxy" => "${no_proxy}",
+  "HTTP_PROXY" => "${proxy_url}",
+  "HTTPS_PROXY" => "${proxy_url}",
+  "NO_PROXY" => "${no_proxy}"
+}
+gitaly['env'] = {
+  "http_proxy" => "${proxy_url}",
+  "https_proxy" => "${proxy_url}",
+  "no_proxy" => "${no_proxy}",
+  "HTTP_PROXY" => "${proxy_url}",
+  "HTTPS_PROXY" => "${proxy_url}",
+  "NO_PROXY" => "${no_proxy}"
+}
+gitlab_workhorse['env'] = {
+  "http_proxy" => "${proxy_url}",
+  "https_proxy" => "${proxy_url}",
+  "no_proxy" => "${no_proxy}",
+  "HTTP_PROXY" => "${proxy_url}",
+  "HTTPS_PROXY" => "${proxy_url}",
+  "NO_PROXY" => "${no_proxy}"
+}
+gitlab_pages['env'] = {
+  "http_proxy" => "${proxy_url}",
+  "https_proxy" => "${proxy_url}",
+  "no_proxy" => "${no_proxy}",
+  "HTTP_PROXY" => "${proxy_url}",
+  "HTTPS_PROXY" => "${proxy_url}",
+  "NO_PROXY" => "${no_proxy}"
+}
+
+gitlab_rails['object_store']['enabled'] = true
+gitlab_rails['object_store']['proxy_download'] = true
+gitlab_rails['object_store']['connection'] = {
+  'provider' => 'AWS',
+  'region' => '${region}',
+  'use_iam_profile' => true
+}
+gitlab_rails['object_store']['objects']['artifacts']['bucket'] = '${objects_bucket}/artifacts'
+gitlab_rails['object_store']['objects']['external_diffs']['bucket'] = '${objects_bucket}/external-diffs'
+gitlab_rails['object_store']['objects']['lfs']['bucket'] = '${objects_bucket}/lfs'
+gitlab_rails['object_store']['objects']['uploads']['bucket'] = '${objects_bucket}/uploads'
+gitlab_rails['object_store']['objects']['packages']['bucket'] = '${objects_bucket}/packages'
+gitlab_rails['object_store']['objects']['dependency_proxy']['bucket'] = '${objects_bucket}/dependency-proxy'
+gitlab_rails['object_store']['objects']['terraform_state']['bucket'] = '${objects_bucket}/terraform-state'
+gitlab_rails['object_store']['objects']['ci_secure_files']['bucket'] = '${objects_bucket}/ci-secure-files'
+gitlab_rails['object_store']['objects']['pages']['bucket'] = '${objects_bucket}/pages'
+
+gitlab_rails['backup_upload_connection'] = {
+  'provider' => 'AWS',
+  'region' => '${region}',
+  'use_iam_profile' => true
+}
+gitlab_rails['backup_upload_remote_directory'] = '${backup_bucket}'
+gitlab_rails['backup_keep_time'] = 604800
+
+registry['enable'] = false
+gitlab_rails['registry_enabled'] = false
+gitlab_rails['packages_enabled'] = false
+gitlab_rails['dependency_proxy_enabled'] = false
+
+pages_external_url "https://${pages_host}"
+gitlab_pages['enable'] = true
+pages_nginx['enable'] = true
+pages_nginx['ssl_certificate'] = "/etc/gitlab/ssl/${pages_host}.crt"
+pages_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${pages_host}.key"
+gitlab_pages['access_control'] = true
+
+puma['worker_processes'] = 2
+sidekiq['concurrency'] = 10
+prometheus_monitoring['enable'] = false
+gitlab_rails['time_zone'] = 'UTC'
+%{ if saml_enabled ~}
+
+gitlab_rails['omniauth_enabled'] = true
+gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
+gitlab_rails['omniauth_block_auto_created_users'] = false
+gitlab_rails['omniauth_auto_link_saml_user'] = true
+gitlab_rails['omniauth_providers'] = [
+  {
+    name: "saml",
+    label: "AWS Identity Center",
+    args: {
+      assertion_consumer_service_url: "https://${gitlab_host}/users/auth/saml/callback",
+      idp_cert: "${saml_idp_cert}",
+      idp_sso_target_url: "${saml_idp_sso_target_url}",
+      issuer: "https://${gitlab_host}",
+      name_identifier_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+      attribute_statements: { email: ['email'] }
+    }
+  }
+]
+%{ endif ~}

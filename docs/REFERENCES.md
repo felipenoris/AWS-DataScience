@@ -1119,6 +1119,35 @@
     requirement for credentialed ones, the immutability trap (an immutable tag blocks the cache
     update) and the first-pull internet-route requirement (Stage 7 step 5.2):
     <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
+    repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
+    creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from
+    updating images using the same tag"*:
+    <https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-creation-templates.html>.
+  - *The GitLab package repositories for Amazon Linux 2023* (read 2026-10-12, Stage 7 steps 1.5 and 6.2):
+    the `.repo` files the install scripts download, `baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/$basearch`
+    and `.../runner/gitlab-runner/amazon/2023/$basearch`, with their three GPG keys each. Both hosts write
+    the file themselves and add a per-repository `proxy=` line, because `dnf.conf`'s global proxy would send
+    the AL2023 repositories, which come through the S3 gateway, at the proxy (6c 5.8):
+    <https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/amazon/2023/config_file.repo> and
+    <https://packages.gitlab.com/install/repositories/runner/gitlab-runner/amazon/2023/config_file.repo>.
+  - *GitLab Runner with a self-signed or private CA* (read 2026-10-12, Stage 7 step 6.1): the runner reads
+    `/etc/gitlab-runner/certs/<gitlab host>.crt` on its own, passes it to the helper as
+    `CI_SERVER_TLS_CA_FILE` for the clone and the artifacts, and a job's own scripts see it only through a
+    volume mapped to `/etc/gitlab-runner/certs/ca.crt`:
+    <https://docs.gitlab.com/runner/configuration/tls-self-signed/>.
+  - *GitLab Runner advanced configuration* (read 2026-10-12): `[[runners]] environment` as `KEY=VALUE`
+    strings, `tls-ca-file`, and `[runners.docker]` `security_opt`, `volumes`, `pull_policy`, `privileged`:
+    <https://docs.gitlab.com/runner/configuration/advanced-configuration/>.
+  - *Building images with BuildKit in GitLab CI* (read 2026-10-12, Stage 7 step 6.3): the rootless image
+    `moby/buildkit:rootless` with `entrypoint: [""]`, `BUILDKITD_FLAGS: --oci-worker-no-process-sandbox`,
+    `buildctl-daemonless.sh build ... --output type=image,name=...,push=true`, a hand-written
+    `~/.docker/config.json` for the registry, and the warning that a non-privileged docker executor needs
+    the syscalls BuildKit uses (`security_opt`, or rootless Buildah) — the page names no `seccomp=unconfined`
+    and warns against it: <https://docs.gitlab.com/ci/docker/using_buildkit/>.
+  - *AWS Price List Query API* (`aws pricing get-products`, read 2026-10-12 for the EBS snapshot rate): the
+    filtered read of the same catalogue the bulk offer files publish, served from `us-east-1`:
+    <https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/using-price-list-query-api.html>.
   - *ECR scanning types* — basic (free, OS-only, scan-on-push, findings via
     `DescribeImageScanFindings`) versus enhanced (Amazon Inspector, OS + language packages, continuous,
     metered) — Stage 7 decision 2: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
