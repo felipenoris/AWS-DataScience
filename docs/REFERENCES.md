@@ -1062,6 +1062,13 @@
   supported set is enumerated on the page:
   <https://docs.aws.amazon.com/codeartifact/latest/ug/external-connection.html>.
 
+- AWS CodeArtifact, the S3 gateway endpoint a client in a VPC needs (read 2026-10-11, Stage 7 step 5.3):
+  package assets download from an AWS-owned `assets-<AWS account>-<region>` bucket through the S3 gateway
+  endpoint, so its policy has to admit that bucket, and *"an Amazon S3 endpoint is not needed when using
+  Python or Swift package formats"* — `crates` needs it, `pypi` does not. `describe-domain` returns the
+  domain's `s3BucketArn`:
+  <https://docs.aws.amazon.com/codeartifact/latest/ug/create-s3-gateway-endpoint.html>.
+
 - AWS CodeArtifact (package proxy for egress design B; check the supported formats page for Cargo, and note that Julia and CRAN are not covered): <https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html>.
 
 - Julia `PkgServer.jl` (self-hosted Julia package server, the D5(B) fallback for Julia): <https://github.com/JuliaPackaging/PkgServer.jl>.

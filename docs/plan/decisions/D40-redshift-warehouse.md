@@ -42,9 +42,9 @@ its readings stopped being assumptions on 2026-09-20:
   implementation matter"* — which is what makes the two-account split below **admissible** rather than a
   deviation to be argued.
 - *"The controls do not change — Redshift is one more execution environment"*, not a new class of reader. That
-  narrows `INT-24` to a single mechanism (a Lake Formation cross-account share of the federated catalog, read
-  by Athena) and rules out both alternatives it listed, each of which would have been a second control path
-  over governed data.
+  narrows `INT-24` to the mechanisms Lake Formation governs, a federated catalog read by Athena or a Lake
+  Formation-managed datashare (Stage 9 decision 5), and rules out the cross-account connection, which would
+  have been a second control path over governed data.
 
 D12's argument was a **per-query RPU minimum on top of Athena's bill**, and it is correct: at
 **USD 0.36/RPU-hour** in `us-west-2`, four RPUs bill **USD 1.44 for every hour a query is running**

@@ -606,6 +606,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 64. **A comment inside a rendered template is a host replacement in waiting.**
 65. **A repository-wide pin is a claim about the machine it was written on, and every script inside it
     carries it.**
+66. **A control on a request's parameters binds whoever makes the request, never the role the request
+    passes — and where the two are one principal, the measurement agrees with the wrong design.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
