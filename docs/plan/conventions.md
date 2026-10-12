@@ -661,7 +661,8 @@ subscription decisions — which is state in rule 2's sense and settles the laye
 
 **[D] Dormant — kept, but powered off between sessions.** Stateful services where a rebuild is riskier
 than the idle cost: the WireGuard host and the Squid proxy — D38's two hub hosts, in `production/` since
-Stage 6c (2026-09-06) — and, from Stage 7, the GitLab EC2 instance and its EBS volume. `make down` stops
+Stage 6c (2026-09-06) — and, since Stage 7 (2026-10-12), the GitLab host and its data volume
+(`production/tooling/`, started and stopped by `make gitlab-up`/`gitlab-down`). `make down` stops
 them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
 2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
 is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated
