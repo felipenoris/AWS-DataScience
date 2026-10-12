@@ -67,8 +67,7 @@ terraform-modules/*/.terraform.lock.hcl
 # the generated terraform.auto.tfvars sitting beside it, which holds the region and the CIDR.
 !terraform-live/sandbox/vpn/instance_type.auto.tfvars
 # The same pattern in the second account (6c step 4.7, 2026-09-06): the tunnel moves to the hub,
-# so its size file and its roster move with it. (The build host's size file was an exception here
-# until Stage 7 step 6.5 retired the host, 2026-10-12.)
+# so its size file and its roster move with it.
 # The roster is here rather than left to `git add -f` for exactly the reason the first exception
 # was written down - an arrangement carried only in somebody's shell says nothing to whoever
 # creates the file the next time this pattern is copied, and this IS that next time.

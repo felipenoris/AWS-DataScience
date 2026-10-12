@@ -95,8 +95,8 @@ layer. `UV_NO_CACHE=1` inside that `RUN` is the fix and a later `rm -rf` is not 
 committed the moment the layer closes. With it the image is **22.7 GB** on disk, against 28.1 GB
 without; the ECR figure is the compressed one and is roughly a third of that.
 
-**A change to `base` rebuilds `dev-env` from its first layer.** The runner's 64 GiB root held one build of
-both images on 2026-10-12; the runner is `[E]`, so every session starts with an empty disk.
+**A change to `base` rebuilds `dev-env` from its first layer.** A build of both on the runner's 64 GiB root
+succeeded on 2026-10-12, its disk use not read; the runner is `[E]`, so every session starts with an empty disk.
 
 Neither `Dockerfile` builds anything from source: Julia is a prebuilt tarball, `rustup` fetches prebuilt
 binaries, the R environment is conda-forge binaries. That is why the build is short. The one compilation

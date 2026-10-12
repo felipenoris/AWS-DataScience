@@ -482,7 +482,7 @@ and to the immutable tags.
   now has a host that can do it.
 - **6.5 — Done 2026-10-12, in the repository alone**: the slice's state held no resource and AWS no
   security group, role, instance profile or instance of it (read that evening), so nothing was destroyed.
-  Deleted: the slice, its `layers.py` row (rank 55) and slice entry, `scripts/buildbox.py`, the runbook's
+  Deleted: the slice, its `layers.py` row (rank 55) and slice entry, its `backend.py` `NETWORK_SLICES` entry, `scripts/buildbox.py`, the runbook's
   procedures (the page stays as a pointer, since two stage logs link to it and a log entry is never
   rewritten), the tracked size file's `.gitignore` exception and its `check-tfvars-shape.py` row. The ledger moved to
   [`images/README.md`](../../../images/README.md) §*The releases*, with `default-v0.6.0` added; every live

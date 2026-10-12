@@ -24,6 +24,6 @@ output "instance_role_arn" {
 }
 
 output "primary_network_interface_id" {
-  description = "What a route points at. No slice reads it since the build host that routed through this interface was retired (Stage 7 step 6.5); removing it is an apply of this [D] slice for no gain. It is the instance's ENI rather than its id because that is what aws_route accepts - and it is read rather than pasted because the instance is [D] and replaceable: a shape change or a user-data change mints a new interface, and a pasted id would leave a route that blackholes silently instead of a plan that moves."
+  description = "What a route points at; no slice reads it today. It is the instance's ENI rather than its id because that is what aws_route accepts - and it is read rather than pasted because the instance is [D] and replaceable: a shape change or a user-data change mints a new interface, and a pasted id would leave a route that blackholes silently instead of a plan that moves."
   value       = module.wireguard.primary_network_interface_id
 }
