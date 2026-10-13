@@ -1160,6 +1160,8 @@
   <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-management-event-list.html>. The
   AWS provider's `aws_cloudwatch_event_rule` takes the state in its `state` argument:
   <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/cloudwatch_event_rule.html.markdown>.
+  Its price page (read 2026-10-12): *"AWS management events are ingested by the event bus for free"*, so
+  the misuse rules cost nothing to receive what they match: <https://aws.amazon.com/eventbridge/pricing/>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
