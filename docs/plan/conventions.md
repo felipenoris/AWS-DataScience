@@ -638,6 +638,14 @@ home, and the `orchestration/` slices pin both objects (step 2.4). `glue/` holds
 application's Glue jobs run: the release job copies them under the release's prefix, and the jobs the
 application slice declares name them there (Stage 10 decision 12).
 
+The directories follow D28's line between content and activation. `src/` is the code, built into the
+application image and run as a SageMaker job, and `glue/` the code of a step that reads or writes
+governed data. `workflow/` is the activation: the definition that starts that code on a schedule or on
+demand, with `workflow/code/` holding the orchestration code its Python and Bash tasks run on the worker,
+never a data path. `terraform/` is structure, applied by the pipeline at deploy time with no workflow. A
+notebook's logic graduates as code in `src/` plus a task in `workflow/workflow.yaml` that calls it; the
+notebook itself does not graduate (6d decision due 14).
+
 ---
 
 ### 5.1 Operating model: the `[P]`, `[D]` and `[E]` layers (D11)
