@@ -397,3 +397,60 @@ Account ids are replaced by the account's name in angle brackets.*
   the slice was initialised again (`init -backend-config=backend.hcl`, read-only).
 - **[Claude] `git push` was refused by Claude Code's permission classifier** ("Out-of-Place
   Publication"), so the branch's commits wait for the user's push.
+
+## 2026-10-13 — pass 2's `[P]` half, applied
+
+- **[user] In chat**: signed in as the infrastructure user, pushed the branch, authorized the three applies
+  of pass 2's `[P]` half (`production/foundation/`, `production/registry/`, `sandbox/data/`) and the
+  removal of this worktree's copy of `saml.auto.tfvars`.
+- **[Claude] The copy removed**: `terraform-live/production/tooling/saml.auto.tfvars`, matched by
+  `.gitignore`'s `*.tfvars` and byte-identical (`cmp`) to the project folder's `secrets/saml.auto.tfvars`,
+  which a `tooling/` plan reads through `-var-file`.
+- **[Claude] PR #125 opened** against `main` from `claude/unruffled-taussig-429adc`.
+- **[Claude] Before the applies**: the three peer sessions on this machine, all idle (the Sonnet 4.5
+  deprecation migration, the Control Tower default VPC review, the Redshift Serverless Terraform upgrade),
+  were told what the applies change. `aws sts get-caller-identity` on `awsds-infra-prod` and
+  `awsds-infra-sandbox-1` read the infrastructure user through `InfrastructureAccess`, in Production and
+  in Sandbox.
+- **[Claude] The saved plans, read before applying** (Recipe A, each plan file outside the repository),
+  with the read-only plans' counts:
+  - `production/foundation/`, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`:
+    `awsds-prod-runner-test-token` and its policy `DenyValueReadExceptTestRunnerAndInfrastructure`, which
+    denies `secretsmanager:GetSecretValue` to every principal but `awsds-prod-runner-test` and
+    `InfrastructureAccess`;
+  - `production/registry/`: `AllowConsumerAccountsToPull` on `awsds-prod-ecr-app-etl`, one principal, the
+    Sandbox account's root, with `BatchCheckLayerAvailability`, `BatchGetImage`,
+    `GetDownloadUrlForLayer` and `DescribeImages`;
+  - `sandbox/data/`: the data key's policy keeps its statements and gains `AllowApplicationJobRolesViaS3`
+    alone; `awsds-sandbox-outputs` is encrypted under the data key with a bucket key, its policy the
+    module's `DenyInsecureTransport`, its lifecycle a 30-day expiry, noncurrent versions at 90 days and
+    incomplete uploads at 7.
+- **[Claude] The applies** (UTC), each from its saved plan:
+  - `production/foundation/` 13:07:08Z-13:07:21Z, `2 added, 0 changed, 0 destroyed`;
+  - `production/registry/` 13:07:34Z-13:07:43Z, `1 added`;
+  - `sandbox/data/` 13:07:55Z-13:09:10Z, `6 added, 1 changed`, 58 s of it the bucket's lifecycle
+    configuration.
+
+  Each re-plan read `No changes` (`-detailed-exitcode` 0).
+- **[Claude] The instruments, 0 FAILED each**:
+  - `./aws/cicd.py`: `CI-5` passes the repository policy, which admits Sandbox, and Sandbox's read, and
+    notes Staging's refused (step 3.0); `CI-9` notes the test runner absent;
+  - `./aws/supplychain.py`: `SC-7`'s Sandbox reads answer;
+  - `./aws/s3-persistence.py awsds-infra-sandbox-1`: 4 buckets, `awsds-sandbox-outputs` passing `SP-1` to
+    `SP-6` and `SP-8`;
+  - `./aws/datalake.py` and `./aws/dlp.py`: notes only.
+
+  The multi-profile scripts exit 1 because seven profiles on other SSO sessions hold no token
+  (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`, `awsds-governance`, `awsds-scientist`), which each
+  script's section 10 lists.
+- **[Claude] `CI-5` and `SC-7` printed a capped count as a count.** "1 image(s) visible" came from
+  `describe-images --max-results 1`, while Sandbox's `describe-images` on `awsds-prod-ecr-app-etl` lists
+  two, Stage 7's `v0.1.0-0817e161` and `v0.1.0-b30af685`. Both checks now print `ok (asked for 1 image,
+  1 returned)`; the verdict was right.
+- **[Claude] A reading left as it is**: `awsds-sandbox-outputs` carries `CostCenter=stage-05`,
+  `sandbox/data/`'s default tag, where the token container carries `stage-08` from its own `tags`.
+  `s3-bucket-v0.3.0` takes no tags, so the bucket cannot carry its stage without a module input or a
+  second provider.
+- **Owed**: GitLab's half (`awsds/ci-gates`, its tag and commit; the test runner's registration and its
+  token; `app-etl`'s roles, protected tag and push), then `production/runners/` and `sandbox/app/app-etl/`
+  in a GitLab session, the first release and verification (xviii).
