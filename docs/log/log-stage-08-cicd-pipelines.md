@@ -344,3 +344,13 @@ Account ids are replaced by the account's name in angle brackets.*
   told (the fourth had ended), both applied from saved plans, `Modifications complete after 1s` and each
   re-plan `No changes`; `list-targets-by-rule` reads 8 input paths and the template on both rules. The
   message itself is unread until the rule fires.
+
+## 2026-10-13 — pass 2, written with the environment down
+
+- **[user] Four answers in chat, each the recommended option**: the shared gates live in a GitLab project
+  of their own, included with `include:project` and pinned by commit (decision 10); a third runner,
+  unprotected and holding no AWS credential, serves the unprotected branches (decision 11); the
+  application's Terraform lives in `terraform-live/` (decision 12); and `alerts.auto.tfvars` and
+  `saml.auto.tfvars` stay in the project folder's `secrets/`, where the user copied them, read by every
+  plan of `production/foundation/`, `staging/foundation/` and `production/tooling/` through `-var-file`.
+  No worktree receives a copy, since Claude copies nothing from `secrets/`.
