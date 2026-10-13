@@ -56,6 +56,7 @@ so no stage requires reading another stage's log.
 | Stage 14 — Per-business-unit Sandbox vending | — | *no entries yet* |
 | Stage 15 — GuardDuty org-wide | — | *no entries yet* |
 | Stage 16 — The sandbox lake | [log-stage-16-sandbox-lake.md](log-stage-16-sandbox-lake.md) | 2026-08-26, the whole stage in four sittings: the three applies and the Lake Formation admin-seat finding (`v0.4.0` → `v0.5.0`); the contrast pair and the laptop test; the project wiring (the connection form, the CloudTrail both-doors reading, the notebook readings, the auto-vend plugin); the revoke exercise (`SL-4`'s defect, the ≤19 s vend-door window, the bearer residual). |
+| Stage 17 — Machine learning in a Sandbox project | — | *no entries yet* |
 
 ## How an entry gets written
 
