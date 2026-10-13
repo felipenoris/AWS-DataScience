@@ -333,6 +333,12 @@ DATA_LAKE = ["data-governance"]
 # two intents apart (Lesson 51). N Sandboxes, N = 1.
 REGISTRY_CONSUMERS = ["sandbox"]
 
+# The accounts that pull an APPLICATION image (`awsds-prod-ecr-app-*`): Stage 8's app-consumer entry,
+# authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
+# (Lesson 51). Sandbox runs the image by hand while the application is engineered (step 2.4); Staging
+# joins at step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
+APP_REGISTRY_CONSUMERS = ["sandbox"]
+
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.
 # Consumed by each member's dev-env/ slice (Stage 6d step 2.1), which reads the repository URL the
@@ -800,11 +806,25 @@ def tfvars_values(account: str, slice_name: str) -> dict:
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in REGISTRY_HOME
         }
 
-    # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4).
+    # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4), and the application
+    # images' own (Stage 8 step 2.4).
     if account == "production" and slice_name == "registry":
         values["consumers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
             for acct in REGISTRY_CONSUMERS
+        }
+        values["app_consumers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in APP_REGISTRY_CONSUMERS
+        }
+
+    # Stage 8 step 2.4 - an application slice reads its account's foundation/ and data/ states (the
+    # subnets, the VPC, the data key, the outputs bucket) and the registry's (the repository its job
+    # pulls), so it takes the folder and the registry map, as dev-env/ does.
+    if slice_name.startswith("app/"):
+        values["account_folder"] = account
+        values["registry"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in REGISTRY_HOME
         }
 
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
@@ -963,6 +983,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["consumers"].items()
         )
         out += f"consumers = {{\n{rows}}}\n"
+    if "app_consumers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["app_consumers"].items()
+        )
+        out += f"app_consumers = {{\n{rows}}}\n"
     if "registry" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'

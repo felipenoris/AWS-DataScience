@@ -104,6 +104,7 @@ module's arithmetic:
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
+| `sandbox/app/app-etl/` | `[E]` | the application's processing-job **security group** (Stage 8 step 2.4). The ENIs are the jobs', in the two private subnets, for a job's life; the slice declares no route, and the image is pulled by the service outside the VPC (6i) |
 
 ---
 
@@ -281,6 +282,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-gitlab` `[D]` | TCP/443 from **three sources and nothing else** (Stage 7 step 1.2): the WireGuard host's group `awsds-prod-vpn` — a same-account, cross-VPC group reference over the peering, since the host masquerades every tunnel packet not bound for the proxy and a laptop arrives as its address; the Interactive **private tiers** by CIDR (`10.20.0.0/18`, `10.20.64.0/18` today, generated from the allocation table), where a SMUS project's app ENI is the source of the INT-09 clone; and the runners' group. No port 22, no port 80 |
 | `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` to all three runners |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
+| `awsds-sandbox-app-etl-job` `[E]` | no ingress; egress TCP/443 to the **S3 gateway endpoint's prefix list** (a job's outputs) and to the **VPC's own range** (the interface endpoints its logs take). A job runs with networking off, so these are the platform's paths, never the code's |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
 
 **The second world-open rule closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is destroyed,

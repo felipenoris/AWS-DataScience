@@ -322,7 +322,10 @@ list whose rows are **measurements, not intentions**.
 
 1. **Which account?** → the top-level folder. The account is the only hard boundary AWS offers
    ([`README.md`](../README.md), "Account segregation"), so it is the first cut.
-2. **Which slice?** → the sub-folder. A slice is one Terraform state and one `apply`. The seam between two
+2. **Which slice?** → the sub-folder, or for an application one folder further down,
+   `<account>/app/<app>/` (Stage 8 decision 12): `layers.slice_dirs_on_disk` is the one reader of that
+   shape, so `make check`, the lock check and the network-doc check see such a slice, and `make up` never
+   applies one (refusal 7). A slice is one Terraform state and one `apply`. The seam between two
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
    because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and

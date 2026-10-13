@@ -26,6 +26,9 @@ docs/PRICING.md 3 with the row named - prices are measured, never reasoned (Less
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+
+from . import backend
 
 PERSISTENT = "P"
 DORMANT = "D"
@@ -209,6 +212,11 @@ RANKS = {
     # retired at 6.5). Above `egress` (50): it needs the SSM endpoints for its only door and reads
     # `egress/`'s `no_proxy` output at apply time, which a destroyed slice fails by name.
     "runners": 57,
+    # Stage 8 step 2.4 - an application slice, one folder further down (conventions 6:
+    # terraform-live/<env>/app/<app>/), [E] in every account. Above `egress` (50), so `down` destroys
+    # the application before the endpoints its jobs log through; Stage 10's `orchestration` ranks
+    # above it, so `down` removes a workflow before the application the workflow starts.
+    "app/app-etl": 58,
     "probes": 60,
 }
 
@@ -524,6 +532,15 @@ SLICES = [
         PERSISTENT,
         "the Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
     ),
+    # Stage 8 step 2.4 - the application, run by hand in Sandbox while it is engineered (decision 12):
+    # its processing jobs' role and security group. Nothing in it meters by the hour; a job meters per
+    # run, ml.t3.medium at 0.050 USD/h (docs/PRICING.md), and the run is the request's, not the slice's.
+    Slice(
+        "sandbox",
+        "app/app-etl",
+        EPHEMERAL,
+        "app-etl's processing-job role and security group (St.8 2.4)",
+    ),
     # Stage 5b pass 1 - the compute half, and the whole point of the split.
     #
     # usd_per_hour IS THE WORST CASE, NOT THE RATE, and it was 0.0 until 2026-09-20 cost 9.48 USD to
@@ -594,6 +611,16 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # Refusal 5 is enforced in is_refused() below rather than as a set, because it is a property of
 # the layer and not of a named slice.
 #
+# Refusal 6 is the hub's and lives in slices.py (Stage 7 step 1.6): ENV=production leaves the hub
+# pair to hub-up and hub-down.
+#
+# Refusal 7 - Stage 8 step 2.4. `up` never applies an application or orchestration slice: its applier
+# is the pipeline, which passes the release it promotes, or in Sandbox the engineer by hand. A `make
+# up` for an unrelated session would deploy the recorded release outside both, and an orchestration
+# slice's schedule would start firing. `down` destroys both normally (Stage 10 step 1.4 relies on it).
+APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
+APPLICATION_PARENT = "app"
+#
 # A [D] slice is refused by both targets, and the power state is handled by the dormant hook
 # instead. Without the refusal a [D] row falls into the same list as the [E] ones, the one
 # `down` runs `terraform destroy` over, and `make down ENV=sandbox` destroys the tunnel
@@ -606,6 +633,41 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # SSM-resolved AMI, and a moved AL2023 release replaces the instance (Stage 4 step 1.1), a
 # silent rebuild of the VPN host on a routine start. Creating and changing a [D] slice is a
 # deliberate `terraform apply`, read first.
+
+
+def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
+    """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
+
+    A pipeline profile is a deploy role's (backend.DEPLOY_ROLES; the deploy runner names each profile
+    after its role). In an Interactive account it applies nothing but that account's dev-env/ under
+    its own dev-env deploy role, the one flow where the supply chain writes where people work (step
+    1.6, INT-18): CI never applies into Sandbox (D21's surviving objection). The roles' state access
+    refuses the same writes in IAM; this says so before anything runs.
+    """
+    if profile not in backend.DEPLOY_ROLES.values() or account not in backend.SMUS_MEMBERS:
+        return None
+    if slice_name == "dev-env" and profile == backend.DEPLOY_ROLES.get(account):
+        return None
+    return (
+        f"refusal 8: the pipeline profile {profile} applies no {account}/ slice but dev-env/ under "
+        "its own dev-env deploy role - CI never applies into the account people work in (Stage 8 "
+        "step 2.4)"
+    )
+
+
+# A slice folder sits under its account folder, or one level further down under one of these parents
+# (conventions 6). Every reader of the tree discovers slices here, so `make check`, the lock check and
+# the network-doc check see a nested slice alike.
+NESTED_SLICE_PARENTS = (APPLICATION_PARENT,)
+
+
+def slice_dirs_on_disk(live: Path) -> dict:
+    """(account, slice name) -> the folder, for every slice folder under `live` holding a .tf file."""
+    found = {(p.parent.parent.name, p.parent.name): p.parent for p in live.glob("*/*/*.tf")}
+    for parent in NESTED_SLICE_PARENTS:
+        for p in live.glob(f"*/{parent}/*/*.tf"):
+            found[(p.parents[2].name, f"{parent}/{p.parent.name}")] = p.parent
+    return found
 
 
 def all_slices() -> list:
@@ -631,6 +693,13 @@ def is_refused(sl: Slice, action: str) -> str | None:
         return f"refusal 4: {sl.name}/ is unreachable from up and down - it holds its own state"
     if action == "down" and (sl.account, sl.name) in NEVER_DESTROY:
         return "refusal 3: D36 - production/pki/ is excluded from every down path"
+    if action == "up" and (
+        sl.name.startswith(f"{APPLICATION_PARENT}/") or sl.name in APPLIED_BY_THEIR_OWN_HAND
+    ):
+        return (
+            "refusal 7: up never applies an application or orchestration slice - the pipeline, or "
+            "in Sandbox the engineer by hand, applies it with the release it runs (Stage 8 step 2.4)"
+        )
     if sl.layer == PERSISTENT:
         return "refusal 1: [P] slices are never touched by up or down (D11)"
     if sl.layer == DORMANT:

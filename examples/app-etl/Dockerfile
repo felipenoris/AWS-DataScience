@@ -30,6 +30,10 @@ RUN set -eu; \
     cd /; rm -rf /tmp/app-etl
 ENV PATH="${APP_ETL_VENV}/bin:${PATH}"
 
+# The synthetic sample, read by a job that has no input of its own: Sandbox's engineering run (step 2.4)
+# writes Sandbox data from it without a person writing an object under the account's data key (D31).
+COPY samples/ /opt/app-etl/samples/
+
 LABEL org.opencontainers.image.title="app-etl" \
       org.opencontainers.image.description="Every CSV in a directory becomes a Parquet table and a JSON summary" \
       org.opencontainers.image.base.name="awsds-prod-ecr-base:default-v0.6.0"

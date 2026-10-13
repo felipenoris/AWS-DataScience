@@ -38,8 +38,8 @@ SHELL := /bin/bash
 # make takes an unknown variable in silence, and every flag here is upper case: `auto=1` applies with
 # no -auto-approve and `runners=0` raises the runner anyway (both seen 2026-10-12). The lower-case
 # spellings of the flags are refused before any target runs.
-ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(runners)),)
-$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, RUNNERS; a lower-case one would be ignored)
+ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
+$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
 endif
 .PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
@@ -86,8 +86,12 @@ help:
 	@printf '    ENV=x       up and down: one account folder from the list at the end. Never\n'
 	@printf '                optional - `make down` with no ENV fails, it never means all\n'
 	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply (see GROUPS)\n'
+	@printf '    ONLY=a,b    up and down - these slices of ENV and no other (Stage 8 step 4.4)\n'
+	@printf '    PROFILE=p   up and down - every command runs as profile p instead of the\n'
+	@printf '                account default: the deploy runner names its deploy role. A deploy\n'
+	@printf '                role applies no sandbox slice (refusal 8, Stage 8 step 2.4)\n'
 	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the runners\n'
-	@printf '                (0.2305 USD/h); gitlab-down destroys them regardless\n'
+	@printf '                (0.2493 USD/h); gitlab-down destroys them regardless\n'
 	@printf '\n'
 	@printf '\033[1mLAYERS\033[0m - what [P], [D] and [E] mean, and what each target does to a slice\n'
 	@printf 'wearing one (D11; the definitions and the reasoning: docs/plan/conventions.md 5.1)\n'
@@ -207,19 +211,22 @@ slices:
 # input rather than a slice-lifecycle concept: slices.py passes the whole environment through to
 # every `terraform` it runs. Unset means empty (the variable's own `[]`), the zero-cost case. The
 # expansion is printed before the apply so the operator sees the JSON list Terraform receives.
+#
+# ONLY and PROFILE are Stage 8 step 4.4's, for the deploy runner (step 3.1): ONLY narrows ENV to the
+# slices named, PROFILE replaces the account's default profile, and both pass through to slices.py.
 up:
 	@$(MAKE) --no-print-directory guard-env TARGET=up
 	@if [ -n "$(GROUPS)" ]; then \
 	  groups="[$$(printf '%s' '$(GROUPS)' | sed 's/[^,][^,]*/"&"/g')]"; \
 	  printf '\033[1moptional endpoint groups\033[0m: %s\n' "$$groups"; \
-	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	else \
-	  ./scripts/slices.py up --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	  ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	fi
 
 down:
 	@$(MAKE) --no-print-directory guard-env TARGET=down
-	@./scripts/slices.py down --env $(ENV) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+	@./scripts/slices.py down --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
 # The hub (6c step 7.1): D38 gives the estate one way into the private network (the WireGuard host)
 # and one way out (the Squid proxy), both [D] hosts in Production. Every other account's session
@@ -240,7 +247,7 @@ hub-down:
 #
 # RUNNERS=0 leaves the runners out: a session that runs no pipeline, or one before a runner's
 # token is in its container (runbook K). Any other value but 1 is refused, so a typo never raises
-# 0.2305 USD/h of hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+# 0.2493 USD/h of hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
 comma := ,
 
 gitlab-up:

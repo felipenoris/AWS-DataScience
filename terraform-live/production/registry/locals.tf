@@ -21,6 +21,17 @@ locals {
     "arn:${data.aws_partition.current.partition}:iam::${id}:root"
   ]
 
+  # The application images' pullers (Stage 8 step 2.4), resolved through the same aliased identity
+  # reads: a key of var.app_consumers with no alias here fails the plan on the index, naming the key.
+  account_id_by_folder = {
+    sandbox = data.aws_caller_identity.sandbox.account_id
+  }
+
+  app_consumer_account_arns = [
+    for folder in sort(keys(var.app_consumers)) :
+    "arn:${data.aws_partition.current.partition}:iam::${local.account_id_by_folder[folder]}:root"
+  ]
+
   registry_key_alias = "awsds-${var.env}-registry"
 
   # The repository-level read document, written once and attached to both repositories so the two
