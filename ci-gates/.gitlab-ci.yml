@@ -1,0 +1,35 @@
+# The gates project's own pipeline: the gates it serves, run on itself, and one check of the baselines'
+# shape. A malformed line fails closed anyway, since its key matches no finding and the real finding then
+# reads as new; this job says which line before the next scan does.
+include:
+  - local: /gates.gitlab-ci.yml
+  - local: /baselines.gitlab-ci.yml
+
+stages: [test]
+
+baselines-shape:
+  extends: [.gates-uv, .gates-baselines]
+  stage: test
+  script:
+    - |
+      python3 - <<'PY'
+      import os
+      import re
+      import sys
+
+      key = re.compile(r"^[A-Z][A-Z0-9]*-[0-9A-Za-z.:-]+\|[a-z0-9][a-z0-9.+_-]*$")
+      bad = 0
+      for var in ("GATES_BASELINE_SAGEMAKER_DISTRIBUTION", "GATES_BASELINE_DEPLOY"):
+          entries = [line.split("#")[0].strip() for line in os.environ[var].splitlines()]
+          entries = [e for e in entries if e]
+          for e in entries:
+              if not key.match(e):
+                  print(f"{var}: not a <finding>|<package> key: {e!r}")
+                  bad += 1
+          dupes = sorted({e for e in entries if entries.count(e) > 1})
+          for e in dupes:
+              print(f"{var}: listed twice: {e}")
+          bad += len(dupes)
+          print(f"{var}: {len(entries)} key(s)")
+      sys.exit(1 if bad else 0)
+      PY

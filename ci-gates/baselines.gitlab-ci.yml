@@ -1,0 +1,164 @@
+# baselines.gitlab-ci.yml - the CRITICAL and HIGH findings each image lineage carries with a person's
+# acceptance (Stage 8 decision 1). The scan gate in gates.gitlab-ci.yml blocks on a CRITICAL or HIGH finding
+# whose key is absent from its lineage's list; a pipeline includes this file beside that one, at the same
+# commit, so a rule and the findings it admits move together.
+#
+# A line is `<finding>|<package>`, the key the gate compares. What follows `#` is for the reader: the
+# severity and the package version the scan read, which a rebuild may move without changing the key. A
+# finding enters a list by name, in a reviewed commit that says who accepted it; a finding a later release
+# no longer carries is printed by the gate as no longer found, and leaves the list in the next commit.
+
+.gates-baselines:
+  variables:
+    # The SageMaker Distribution lineage: awsds-prod-ecr-base, -dev-env and every application repository,
+    # since each application image is FROM base. Seeded from default-v0.6.0 (SageMaker Distribution
+    # 4.5.2-cpu), the release the steward last approved, registered as Sandbox's image version 6 at Stage 7
+    # step 2.6: scanned 2026-10-12, CRITICAL 0 and HIGH 130, identical in base and dev-env. 121 of the 130
+    # are linux-libc-dev, the kernel headers the distribution's build-essential pulls in; a container runs
+    # its host's kernel, never these.
+    GATES_BASELINE_SAGEMAKER_DISTRIBUTION: |
+      CVE-2026-66046|expat           # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-76641|expat           # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-76957|expat           # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-66046|libexpat1       # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-76641|libexpat1       # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-76957|libexpat1       # HIGH 2.6.1-2ubuntu0.5
+      CVE-2026-84782|libssl3t64      # HIGH 3.0.13-0ubuntu3.15
+      CVE-2026-31663|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-43116|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-43303|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-46203|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-46320|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-46321|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-46322|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52908|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52910|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52917|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52923|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52927|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52929|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52934|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52935|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52942|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52943|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-52947|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53132|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53133|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53136|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53137|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53138|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53143|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53146|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53147|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53148|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53149|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53156|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53160|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53161|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53182|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53183|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53184|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53185|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53194|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53195|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53198|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53199|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53202|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53205|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53209|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53217|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53223|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53229|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53230|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53232|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53239|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53242|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53253|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53254|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53255|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53256|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53262|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53264|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53265|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53266|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53267|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53268|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53270|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53273|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53275|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53329|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53356|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-53358|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63867|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63869|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63870|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63875|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63881|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63883|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63884|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63889|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63893|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63906|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63909|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63913|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63914|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63915|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63916|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63917|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63919|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63920|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63921|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63925|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63926|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63927|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63930|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63942|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63944|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63945|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63946|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63947|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63952|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63954|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63968|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63971|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63974|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63975|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63976|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63980|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-63985|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64001|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64002|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64003|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64004|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64005|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64009|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64010|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64011|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64026|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64093|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64095|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64099|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64123|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64222|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64237|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64239|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64242|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64243|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-64524|linux-libc-dev  # HIGH 6.8.0-142.142
+      CVE-2026-84782|openssl         # HIGH 3.0.13-0ubuntu3.15
+      CVE-2026-96512|sudo            # HIGH 1.9.15p5-3ubuntu5.24.04.3
+    # The deploy image's lineage: awsds-prod-ecr-deploy, on python:3.14-slim (Debian 13). Seeded from
+    # v0.1.0, scanned 2026-10-13: CRITICAL 2 and HIGH 8. The two CRITICALs are Debian 13's curl, with no
+    # fixed package (the tracker reads <no-dsa>), and git links libcurl; the user accepted them by name on
+    # 2026-10-13. A rebuild is owed once Debian 13 ships the fix.
+    GATES_BASELINE_DEPLOY: |
+      CVE-2026-8286|curl           # HIGH 8.14.1-2+deb13u5
+      CVE-2026-8924|curl           # CRITICAL 8.14.1-2+deb13u5
+      CVE-2026-8927|curl           # CRITICAL 8.14.1-2+deb13u5
+      CVE-2026-107161|cyrus-sasl2  # HIGH 2.1.28+dfsg1-9
+      CVE-2026-77214|expat         # HIGH 2.8.3-1~deb13u1
+      CVE-2026-93990|expat         # HIGH 2.8.3-1~deb13u1
+      CVE-2026-19499|glibc         # HIGH 2.41-12+deb13u4
+      CVE-2026-5435|glibc          # HIGH 2.41-12+deb13u4
+      CVE-2026-24882|gnupg2        # HIGH 2.4.7-21+deb13u1
+      CVE-2026-85091|zlib          # HIGH 1.3.dfsg+really1.3.1-1
