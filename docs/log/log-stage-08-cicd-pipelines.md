@@ -354,3 +354,11 @@ Account ids are replaced by the account's name in angle brackets.*
   `saml.auto.tfvars` stay in the project folder's `secrets/`, where the user copied them, read by every
   plan of `production/foundation/`, `staging/foundation/` and `production/tooling/` through `-var-file`.
   No worktree receives a copy, since Claude copies nothing from `secrets/`.
+- **[Claude] The refusals step 2.4 writes are 7 and 8, not 6 and 7.** Stage 7 step 1.6 gave number 6 to the
+  hub pair `ENV=production` leaves alone (`scripts/slices.py`), after this stage's text was written, so
+  "numbered after the existing five" names a number already taken. The stage file, the plan core and the
+  stage index now say 7 (`make up` never applies an `app/` or `orchestration/` slice) and 8 (no pipeline
+  profile applies a `sandbox/` slice but `sandbox/dev-env/`).
+- **[Claude] Read before writing pass 2, with the environment down**: no runner serves an unprotected ref
+  (both are protected, verification iii), which decision 11 answers; and step 5.6's sentence that class
+  (2b) "joins D28's list in the same commit" went stale when PR #124 merged D28's classes (2b) and (2c).

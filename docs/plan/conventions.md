@@ -625,10 +625,6 @@ app-etl/
 │   └── test_sql.py
 ├── .gitlab-ci.yml
 ├── Dockerfile # builds the application Docker container for deployment
-├── terraform/ # uses predefined Terraform modules hosted at `terraform-modules`
-│   ├── main.tf
-│   ├── variables.tf
-│   └── envs/
 ├── workflow/
 │   ├── workflow.yaml # the MWAA Serverless definition (dag-factory YAML), checked by the D28 lint
 │   └── code/         # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
@@ -638,8 +634,9 @@ app-etl/
 ```
 
 The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>. The
-application's own `terraform/` directory is the *source* of a slice; what is applied is the
-`terraform-live/<env>/app/app-etl/` slice above, which is `[E]` in every environment. `workflow/` is
+application's Terraform is not in its repository: each environment's slice is
+`terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
+release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflow/` is
 where a definition authored in a Sandbox project lands when it graduates (Stage 10 step 2.2); the release
 job copies it, and the code package built from `workflow/code/` when there is one, to the definitions
 home, and the `orchestration/` slices pin both objects (step 2.4). `glue/` holds the scripts the
@@ -650,9 +647,9 @@ The directories follow D28's line between content and activation. `src/` is the 
 application image and run as a SageMaker job, and `glue/` the code of a step that reads or writes
 governed data. `workflow/` is the activation: the definition that starts that code on a schedule or on
 demand, with `workflow/code/` holding the orchestration code its Python and Bash tasks run on the worker,
-never a data path. `terraform/` is structure, applied by the pipeline at deploy time with no workflow. A
-notebook's logic graduates as code in `src/` plus a task in `workflow/workflow.yaml` that calls it; the
-notebook itself does not graduate (6d decision due 14).
+never a data path. The application's slice is structure, applied by the pipeline at deploy time with no
+workflow. A notebook's logic graduates as code in `src/` plus a task in `workflow/workflow.yaml` that calls
+it; the notebook itself does not graduate (6d decision due 14).
 
 ---
 
