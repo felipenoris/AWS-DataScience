@@ -441,8 +441,9 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   - **The scope is the whole estate, not this object.** The refusal is on the **project role** under the
     **project boundary**, and every Sandbox project gets both from the same blueprint: this is **every
     SMUS workflow whose task is a notebook execution, in every project here**, reproducible by
-    re-authoring in the portal. **Other task types**: a query book or a visual ETL task is unmeasured
-    and may never reach `CreateTrainingJob`; a portal-authored `S3CopyObjectOperator` task finished
+    re-authoring in the portal. **Other task types**: a query book or a visual ETL task is unmeasured,
+    and the documentation read 2026-10-13 schedules both as a training job ([`docs/SMUS.md`](../../SMUS.md),
+    the workflow surface); a portal-authored `S3CopyObjectOperator` task finished
     `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10, read 2026-10-10 in the log's sixteenth
     sitting). Everything else on the surface works: authoring, versioning,
     triggering, logging, the workers' network and the identity (4.1, 4.4, 4.6). One act fails, the
@@ -1585,7 +1586,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     not offer. **(c)** Record the loss. **Recommended: (b)**: the boundary stays intact, and Stage 10
     authors its own DAGs anyway. The refusal belongs to this operator, not to the surface: a
     portal-authored `S3CopyObjectOperator` task finished `SUCCESS` as the same role (`simple-s3-copy`,
-    2026-09-10). Query-book and Visual ETL tasks are unmeasured and may never reach `CreateTrainingJob`.
+    2026-09-10). Query-book and Visual ETL tasks are unmeasured; the documentation read 2026-10-13
+    schedules both as a training job ([`docs/SMUS.md`](../../SMUS.md), the workflow surface).
     **Taken 2026-10-10 (the user): (b).** The boundary stays as it is, and *Workflows → notebook task* is
     a portal feature this estate does not offer. Workflows orchestrate with operators this repository
     controls, and the implementation explores `PythonOperator` and `BashOperator`, whose code travels as
