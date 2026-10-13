@@ -316,3 +316,13 @@ Account ids are replaced by the account's name in angle brackets.*
   ARN (`ResourceName`), every page, and excuses the two test sessions by name and minute (05:08Z): 11
   records, `CI-8` `8 event(s), every caller is the deploy runner` plus a note for the 3 test records, `CI-3`
   every trust naming the runner alone, 0 FAILED.
+- **[user] Both alert emails received**, and Production's pasted in chat. Its body is the whole EventBridge
+  event: `"detail-type":"AWS API Call via CloudTrail"`, `"source":"aws.sts"`, `"eventName":"AssumeRole"`,
+  `"requestParameters":{"roleArn":"arn:aws:iam::<Production>:role/awsds-deploy-prod","roleSessionName":"xvi-misuse-same-account"}`,
+  the caller `assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure user>`,
+  `"eventTime":"2026-10-13T05:08:32Z"`, `"readOnly":true`. Account ids, the address and the credentials
+  are redacted here.
+- **[Claude] What the email carries**: `responseElements.credentials`, the new session's `accessKeyId` and
+  `sessionToken`, expiring 06:08:32Z. CloudTrail writes no secret access key, so the pair cannot sign a
+  request; still, every alert puts a session token in a mailbox. An input transformer on the rule's
+  target would send the caller, the role, the time and the source address alone. Not written.

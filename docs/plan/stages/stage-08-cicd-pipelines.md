@@ -465,7 +465,9 @@ the approval, and 4.6's alarm.
   15 s to the infrastructure user's Production `InfrastructureAccess` role and restored: the assumption of
   `awsds-deploy-prod` fired Production's rule and the one of `awsds-deploy-staging` from Production fired
   Staging's, one message on each alerts topic, so the role's account delivers a cross-account record to
-  its bus. The refused attempts are recorded in the caller's account only, with `requestParameters` null:
+  its bus, and both emails reached the subscriber. Each email is the whole CloudTrail record, the new
+  session's access key id and session token included (no secret key); an input transformer would trim it.
+  The refused attempts are recorded in the caller's account only, with `requestParameters` null:
   neither rule nor `CI-8` can see them, and the trail's `errorCode` and `errorMessage` can. `CI-8`
   excuses the two test sessions by name and minute.
 
@@ -706,7 +708,7 @@ Record every answer, including the ones that come out fine.
 | xiii | Does every gate job carry the proxy variables, and does a job with them removed fail rather than hang? | 5.2 |
 | xiv | Does the workflow lint reject each of its rule violations, one deliberate example each? | 5.6 |
 | xv | With the proxy stopped, does 3.1's own check fail the job in seconds, given that `make up`'s hub check is waived on this path? | 3.1 |
-| xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? **Yes to both, read 2026-10-13**: the infrastructure user's assumptions fired `awsds-prod-deploy-misuse` (same account) and `awsds-staging-deploy-misuse` (from Production), one alerts message each; a refused one is recorded in the caller's account only, with `requestParameters` null and the role named in `errorMessage` | 4.6 |
+| xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? **Yes to both, read 2026-10-13**: the infrastructure user's assumptions fired `awsds-prod-deploy-misuse` (same account) and `awsds-staging-deploy-misuse` (from Production), one alerts message each, both emails received by the user; a refused one is recorded in the caller's account only, with `requestParameters` null and the role named in `errorMessage` | 4.6 |
 | xvii | Does the first pipeline-built `dev-env` keep `./aws/devenv.py` green: `DE-3` on the recipe before the tag, `DE-5` on the registered bytes after? | 1.1, 1.6 |
 | xviii | Does the application image write to a processing output mount as uid 1000, with networking off? | 2.2 |
 
