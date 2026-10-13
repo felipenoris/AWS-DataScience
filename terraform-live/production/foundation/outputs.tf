@@ -109,3 +109,30 @@ output "runner_token_secret_arn" {
   description = "The runner authentication token's container - the user copies the token in once the runner exists in GitLab (6.1)."
   value       = aws_secretsmanager_secret.runner_token.arn
 }
+
+# Stage 8 step 4 - the deploy runner's anchors, read by production/runners/ through
+# terraform_remote_state, and the alerts topic later stages adopt (decision 5).
+output "deploy_runner_role_arn" {
+  description = "The deploy runner's role, awsds-<env>-runner-deploy - the one principal every deploy role trusts."
+  value       = module.deploy_runner_role.role_arn
+}
+
+output "deploy_role_arns" {
+  description = "Every deploy role the runner's role may assume, keyed by the account folder it lives in - what production/runners/ renders the deploy runner's AWS profiles from."
+  value       = local.deploy_role_arn_by_account
+}
+
+output "deploy_runner_instance_profile_name" {
+  description = "The deploy runner's instance profile - the machine credential production/runners/ attaches (principle 2)."
+  value       = aws_iam_instance_profile.deploy_runner.name
+}
+
+output "deploy_runner_token_secret_arn" {
+  description = "The container of the deploy runner's authentication token (Stage 8 step 4.5)."
+  value       = aws_secretsmanager_secret.deploy_runner_token.arn
+}
+
+output "alerts_topic_arn" {
+  description = "awsds-<env>-alerts - the misuse rule's target, adopted by Stage 9, Stage 10 and Stage 12 (Stage 8 decision 5)."
+  value       = aws_sns_topic.alerts.arn
+}

@@ -446,14 +446,15 @@ SLICES = [
         0.0672,
     ),
     # Stage 7 step 6.1 - the build runner, [E], and the buildbox's successor on the same measured
-    # shape (m8i.xlarge, docs/PRICING.md 8). Destroyed by `make gitlab-down` and by `make down
-    # ENV=production`; a forgotten one is this stage's likeliest leak, at 0.2117/h.
+    # shape (m8i.xlarge 0.2117/h, docs/PRICING.md 8); Stage 8 step 4.3 adds the deploy runner
+    # (t3a.small 0.0188/h) once deploy_image_digest is set. Destroyed by `make gitlab-down` and by
+    # `make down ENV=production`; a forgotten pair is this stage's likeliest leak, at 0.2305/h.
     Slice(
         "production",
         "runners",
         EPHEMERAL,
-        "the build runner, m8i.xlarge + 64 GiB (Stage 7 step 6.1)",
-        0.2117,
+        "the build runner (m8i.xlarge) and the deploy runner (t3a.small) (St.7 6.1, St.8 4.3)",
+        0.2305,
     ),
     # Stage 6 pass 0 - Stage 7 step 5.a, applied one stage early because Stage 6 step 5.0
     # pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK (key-month,

@@ -89,6 +89,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.
+- `.github/workflows/offline-gates.yml` — the CI (Stage 8 step 6.2): on every pull request, every
+  pre-commit hook over every file and `make check`, on a GitHub-hosted runner with the pinned tool
+  versions, no AWS credential and no `terraform plan`.
 - `aws/AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
 - `aws/` — read-only scripts that photograph what is actually deployed, one text snapshot per script under
   the untracked `aws/output/`. `aws/INDEX.md` says which script writes which file and which section of it
@@ -127,8 +130,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
   standalone — and `make clean` returns a clone to its just-cloned state: it removes `aws/output/`,
-  `.venv/` and the caches, by name, and never touches `secrets/`. There is no CI yet — GitLab is Stage 7 —
-  and Stage 8 adds a third caller rather than a rewrite. It also carries **D11's lifecycle** since Stage 2
+  `.venv/` and the caches, by name, and never touches `secrets/`. The third caller is the CI,
+  [`.github/workflows/offline-gates.yml`](.github/workflows/offline-gates.yml) (Stage 8 step 6.2), which runs
+  every hook and `make check` on each pull request with no AWS credential. It also carries **D11's lifecycle** since Stage 2
   step 8: `make slices` prints which slice is `[P]`, `[D]` or `[E]`; `make up ENV=<account-folder>` applies
   the ephemeral ones and starts the dormant ones; `make down ENV=…` reverses it; `make status` says what is
   up and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices

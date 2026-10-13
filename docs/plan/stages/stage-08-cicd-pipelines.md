@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 6 and 7 (refusal 5 is the `[D]` one, since Stage 4). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in the first scan), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
-| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.5.0`, version 5, or `default-v0.6.0` if Stage 7 step 2.6 lands first. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 6 and 7 (refusal 5 is the `[D]` one, since Stage 4). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
+| **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
 
@@ -28,9 +28,10 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 
 | Where | What | Layer |
 |---|---|---|
-| `production/foundation/` (amended) | `awsds-deploy-prod` (INT-08) + the deploy-role misuse alarm | `[P]` |
-| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08) + the same alarm | `[P]` |
+| `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5) | `[P]` |
+| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts` | `[P]` |
 | `sandbox/foundation/` (amended, one per unit) | the dev-env deploy role (INT-18), one per target | `[P]` |
+| `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`) | one deploy role: its trust, its ceiling, its state access and its misuse rule, one document for every account the deploy runner reaches | — |
 | `production/registry/` (amended) | the **app-repository** pull grant for Staging (INT-07), an authored entry of its own beside `REGISTRY_CONSUMERS` (Stage 7 step 5.4 decides whether Staging stays in that map), and `awsds-prod-ecr-deploy`, the deploy jobs' image (3.1, 4.3) | `[P]` |
 | `production/runners/` (amended) | the **deploy runner** — protected, project-locked, its role only assumes the three deploy roles | `[E]` |
 | `sandbox/app/app-etl/` (new), `staging/`, `production/` idem | the application slices — **Sandbox applied by hand** (2.4), the other two by the pipeline (step 3). **CI never applies an application into Sandbox**, which is the answer to D21's surviving objection | `[E]` |
@@ -86,6 +87,19 @@ change. The sequence to work in is **six passes**:
 | **3** | 1 | the dev-env chain, ending in the INT-18 image version and the steward's domain writes | passes 1-2 |
 | **4** | 3 | the promotion chain: tag → Staging → Production | passes 1-2 (**6b**, not a vend) |
 | **5** | 6 | the infrastructure repository's own pipeline; validation | pass 0 (7.1's answer) |
+
+**Pass 0, read 2026-10-12 with the environment down.** The edition: CE v19.4.2 shows neither protected
+environments nor deployment approvals (Stage 7 3.3, its verification iv), so both gates take the
+protected-tag shape (verification i). The registration mechanism ran end to end at Stage 7 step 2.6:
+`default-v0.6.0` became Sandbox's version 6 in `dev-env.md` §B's order, with no space stranded. The mirror:
+none standing (Stage 7 decision 4), and this repository stays on GitHub. The scans, read with
+`DescribeImageScanFindings`: `base` and `dev-env` at `default-v0.5.0` and `default-v0.6.0` all read
+**CRITICAL 0, HIGH 130, MEDIUM 88, LOW 4, UNDEFINED 45**, against CRITICAL 30, HIGH 430 and MEDIUM 514 for
+6a's `default-v0.1.0`, and each scan completed between 1 min 42 s and 7 min 22 s after its push.
+`DescribeImages` carries no scan field for any image in either repository, as its reference warns for
+AWS-native basic scanning, so a reader of that call sees images that were never scanned. The distribution's own digest has no scan: the cache repositories are
+created with scan on push off. `./aws/cicd.py` reads 0 FAILED and 9 notes, each an absence a step of this
+stage fills.
 
 **On ordering:** this stage builds the promotion *machinery* — the chain, the gates, the deploy roles. The
 Staging and Production *data platforms* are Stage 9's, so until then the chain is exercised with an
@@ -170,9 +184,10 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   residual is **accepted with a named control** — the Dev Env Steward's review of a version-pinned manifest —
   and both the acceptance and its price live in [`institutional-delta.md`](../institutional-delta.md)'s row
   *"Vulnerability scanning of what the notebook image actually contains"*. **Do not close it by enabling
-  enhanced scanning**: Inspector's ECR language list has no Julia and no R (Stage 7 decision 2). No scan of
-  `default-v0.2.0` to `v0.5.0` is recorded; pass 0 reads `default-v0.5.0`'s, which is the baseline decision
-  1 compares against.
+  enhanced scanning**: Inspector's ECR language list has no Julia and no R (Stage 7 decision 2). Pass 0 measured
+  two constraints on the gate: the `dev-env` scan of `default-v0.6.0` completed 7 min 22 s after its push,
+  past the waiter's 300 s (it exits 255 after 60 checks), so the gate polls under a bound of its own; and the
+  counts come from `DescribeImageScanFindings`, since `DescribeImages` carries no scan field here.
 - **1.5 — [user] Run the release gate**: a **blocking manual job** — `when: manual` under `rules:`, so
   `allow_failure` defaults false and the pipeline stops — with the package manifests, the scan report and
   the smoke output in its artifacts. A byte diff is not evidence here: a rebuild of an unchanged recipe moved
@@ -180,7 +195,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   assigned to `dev-env-stewards`. CE reality, per 3.3's answer: the manual job is a deliberate pause and the
   *authorization* is 1.0's protected tag — who could start this pipeline at all.
 - **1.6 — [pipeline + user] Register the approved version (INT-17, INT-18)**: the job assumes each target's
-  `awsds-deploy-devenv-sandbox-<unit>` role (4.2) and applies that account's `sandbox/dev-env/` slice with the
+  `awsds-deploy-devenv-<unit>` role (4.2) and applies that account's `sandbox/dev-env/` slice with the
   approved tag as its input (`CreateImageVersion` resolves it to the digest), targets enumerated from the
   D35 map. **The pipeline's half ends there.** The domain writes that make the version selectable are the
   steward's, by hand, in `dev-env.md` §B's order, because they cannot be made from another account and each
@@ -191,7 +206,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   `DefaultResourceSpec`, because a space keeps the version number it was created with and a bump strands it
   (`EXC-09`). `./aws/devenv.py` `DE-3` reads the recipe before, `DE-5` the registered bytes after. The writes
   repeat in **every project's domain**, since each project has its own. **The first pipeline run replaces**
-  `default-v0.5.0` (version 5), or `default-v0.6.0` if Stage 7 step 2.6 has landed. Record the changeover in
+  `default-v0.6.0` (version 6). Record the changeover in
   the log. Whether the hand half can shrink is decision 7.
 - **1.7 — [user] Measure the release loop once**: time one change the image must carry — MR → tag → chain
   → gate → version → the domain writes — and write the number into `docs/plan/architecture.md` §4.3 as the
@@ -330,6 +345,32 @@ a compromised runner — the Staging leg does cross one, so a compromise now has
 tests and the gate; the rest is compensated inside the account by the scoped roles, the plan attached to
 the approval, and 4.6's alarm.
 
+- **4.1, 4.2, 4.6 and 4.3's anchors — Written 2026-10-12, not applied.** One module,
+  `terraform-modules/deploy-role/` (`deploy-role-v0.1.0`), builds each deploy role: a trust admitting the
+  runner's role alone, `sts:AssumeRole` only; the ceiling `awsds-<env>-deploy-boundary`, `Allow *` with the
+  denies under it (no change to a deploy identity or a ceiling; in Staging and Production no role created
+  or changed unless it carries `awsds-<env>-app-boundary`, the name the first application slice gives its
+  ceiling; in Sandbox no role but the image role, and none of the domain writes); read and write on its
+  slices' state; and the misuse rule in the state that receives `AssumeRole`. Three callers:
+  `production/foundation/deploy-anchors.tf` (the runner's role, instance profile and token container,
+  `awsds-deploy-prod`, `awsds-prod-alerts`), `staging/foundation/deploy-role.tf` (`awsds-deploy-staging`
+  with the egress half, `awsds-staging-alerts`) and `sandbox/foundation/deploy-role.tf`
+  (`awsds-deploy-devenv-sandbox` with the dev-env half). `DEPLOY_ROLES` in `backend.py` generates the
+  names and the accounts all three read. Two halves wait for the passes that use them: the application
+  grants (2.4, 3.0) and the dev-env slice's read of `production/registry/`'s state (pass 3). Each topic's
+  subscriber comes from an untracked `alerts.auto.tfvars` the user writes, and a check block says on every
+  plan when it is missing. `production/foundation/` applies first: IAM refuses a trust policy naming a
+  role that does not exist.
+- **4.1, 4.2, 4.6 and 4.3's anchors — Applied 2026-10-12 by Claude, authorized by the user**, Production
+  first: `production/foundation/` 16 added, `staging/foundation/` 9 added, `sandbox/foundation/` 4 added,
+  and each re-plan `No changes`. `./aws/cicd.py`: `CI-2`, `CI-3`, `CI-4` and `CI-7` pass, 0 FAILED, `CI-1`
+  noting the absent runner. The policy simulator, given the Region and the organization id as context,
+  read each role's edges: the Staging role writes `staging/egress/` state and creates an endpoint in its
+  VPC, may not write `staging/foundation/` state nor create a resolver rule, and its ceiling denies
+  `iam:CreateRole`; the Sandbox role creates an image version and passes the image role to SageMaker,
+  while its ceiling denies passing any other role and `sagemaker:UpdateDomain`; the runner's role
+  assumes `awsds-deploy-staging` and nothing outside the list. Both email subscriptions wait for their
+  confirmation link.
 - **4.1 — [Claude] Write the two promotion deploy roles** (INT-08): `awsds-deploy-staging` (in
   `staging/foundation/`, lands at 3.0) and `awsds-deploy-prod` (in `production/foundation/`). Trust policy:
   **exactly the deploy runner's role ARN** — an enumerated principal, never a wildcard account
@@ -343,8 +384,8 @@ the approval, and 4.6's alarm.
   definition and code and the `PassRole` of its execution role. What no amendment can add: the root SCP's
   `DenyRedshiftCostGuardTamperingExceptInfrastructure` exempts only `InfrastructureAccess`, so
   `awsds-deploy-prod` can neither update nor destroy `production/warehouse-compute/`.
-- **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-sandbox-<unit>`, one per
-  map entry, in each unit's `foundation/`; **`awsds-deploy-devenv-dev` is not written** — it died with the
+- **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-<unit>`, one per
+  `DEPLOY_ROLES` row, in each unit's `foundation/` (`awsds-deploy-devenv-sandbox` for unit 1); **`awsds-deploy-devenv-dev` is not written** — it died with the
   second Interactive account (6b). Scope, read from what `sandbox/dev-env/` actually holds: its state prefix;
   the SageMaker image and image-version calls on the named image; the image role and its inline policy, which
   the slice owns with no permissions boundary, by exact ARN; and the cross-account read of
@@ -352,6 +393,12 @@ the approval, and 4.6's alarm.
   `UpdateDomain`, `DeleteApp` and `UpdateSpace` on the blueprint's domain stay out of it, which is why 1.6's
   hand half exists. **Never a general deploy role reused**: this is the one flow where the supply chain writes
   *into* the accounts where people work.
+- **4.3 — Read 2026-10-12, before writing it: the runner's role is `[P]` while the runner is `[E]`.** A
+  trust policy that names a role stores the role's unique id, and a role destroyed and re-created under
+  the same name gets a new one, so every deploy role would stop trusting the next session's runner (the
+  IAM reference, *Principal*, "IAM role principals"). The build runner's role lives with its host
+  because no trust policy names it; the deploy runner's role, instance profile and token container are
+  anchors in `production/foundation/`, the instance alone in `production/runners/`.
 - **4.3 — [Claude] Amend `production/runners/` with the deploy runner**: Name tag
   **`awsds-prod-runner-deploy`** (a contract with `./aws/cicd.py`; Stage 7's `awsds-prod-runner*` glob
   still matches), `[E]`, registered **Protected** (runs only jobs on protected branches/tags — a Free-tier
@@ -361,6 +408,14 @@ the approval, and 4.6's alarm.
   repository of its own, `awsds-prod-ecr-deploy`, the CA root parameter — and nothing else; no push, no
   direct deploy permissions. Jobs inside containers reach the instance profile
   because the **declarative policy already defaults IMDSv2 hop limit 2** org-wide (verification (ii)).
+- **4.3 — Applied 2026-10-13 by Claude, authorized by the user.** The deploy image is
+  `awsds-prod-ecr-deploy:v0.1.0` (`sha256:1b1a5830…a53a`), built on the build runner by the GitLab project
+  `awsds/deploy-image`, which holds only that pipeline (`images/README.md`); its two CRITICALs, Debian 13's
+  curl with no fixed package, were accepted by the user by name as its baseline (decision 1).
+  `production/runners/` 1 added, re-plan `No changes`. The first boot (3 min 31 s) assumed all three deploy
+  roles with the instance's credentials, registered under GitLab runner #3 (protected, locked, tag
+  `awsds-deploy`, no untagged jobs) and pulled the image by digest; `cicd.py` `CI-1` passes, 0 FAILED. The
+  boot proves the host's path to the roles; verification (ii), a job container's, waits for a job.
 - **4.4 — [Claude] Write the runner's AWS config and the `make` overrides**: profiles `awsds-deploy-*`
   declared as `role_arn` + `credential_source = Ec2InstanceMetadata` in the runner's `~/.aws/config`
   (rendered from the same map) — the named-profile discipline holds and **nothing is ever exported into a
@@ -372,6 +427,14 @@ the approval, and 4.6's alarm.
   token `glrt-…`, Stage 7's flow), mark it **Protected**, lock it to the projects, and store the token where
   Stage 7 step 6.1 stores the build runner's: a Secrets Manager secret the user data reads at boot, never a
   git-ignored file (a worktree has none) and never a user-data literal.
+- **4.5 — Done 2026-10-13.** The user created the runner in GitLab as runner #3 and put its token into
+  `awsds-prod-runner-deploy-token`; Claude applied `production/runners/` (the 4.2 amendment was applied
+  with the anchors, 2026-10-12). A first creation, runner #2, never contacted GitLab and was deleted the same day.
+- **4.6 — Read 2026-10-12, before writing it: the rule's state decides whether it fires.** EventBridge
+  classes STS `AssumeRole` as a read-only management event, and a rule in the default `ENABLED` state
+  matches every event except those, so it would never fire and would read as enabled. The rule takes
+  `state = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"`, which the AWS provider's `state` argument
+  accepts, and `./aws/cicd.py` `CI-7` fails a plain `ENABLED`, which it used to pass.
 - **4.6 — [Claude] Write the misuse alarm — the D14 compensation**: in Staging and Production, an
   EventBridge rule on the CloudTrail `AssumeRole` event for that account's deploy role where the caller is
   **not** the deploy runner's role, to the target decision 5 settles. Rule names
@@ -381,6 +444,37 @@ the approval, and 4.6's alarm.
   read from the trail by `errorCode`. The builder itself is out of scope by construction (Lesson 18):
   `awsds-infra-*` can always apply directly, and what watches *that* is CloudTrail plus this stage's rule
   that production changes arrive by pipeline.
+- **4.6 — Read 2026-10-13: a deploy role's own account records a cross-account caller with no ARN.**
+  CloudTrail writes the runner's assumptions of `awsds-deploy-staging` into Staging as `userIdentity.type`
+  `AWSAccount`, with no `arn` and a `principalId` of `<runner role unique id>:<session name>`. The rule's
+  pattern reads `userIdentity.arn`, and no `MatchedEvents` datapoint exists for either rule over the eight
+  assumptions of that morning, so `awsds-staging-deploy-misuse` cannot tell the runner from any other caller
+  outside Staging: it sees a Staging principal only. Whether Staging's bus receives the cross-account copy at
+  all is unread; verification (xvi) is the positive test. Proposed for the module's next version: match
+  `userIdentity.principalId` with `anything-but` prefix `<runner role unique id>:`, which both record shapes
+  carry, the id read from Production through the aliased provider, and (xvi) run from each side of the
+  account boundary. `./aws/cicd.py` `CI-8` already attributes such a record by that id.
+- **4.6 — Applied 2026-10-13 by Claude, authorized by the user: `deploy-role-v0.2.0`.** The rule matches
+  `userIdentity.principalId` with `anything-but` prefix `<runner role unique id>:`, the id each caller reads
+  from IAM (Staging through the `deploy_runner` alias). `production/foundation/` and `staging/foundation/`
+  1 changed each, re-plans `No changes`; `sandbox/foundation/` carries no rule and plans `No changes` on the
+  new tag. EventBridge's `TestEventPattern` on the deployed patterns: the runner's real records match
+  neither rule, a role from another account matches Staging's, a role of the account matches both.
+  `CI-7` fails a pattern that exempts the runner by anything but its role's unique id.
+- **4.6 — Verified 2026-10-13 (xvi), authorized by the user.** Each deploy role's trust was widened for
+  15 s to the infrastructure user's Production `InfrastructureAccess` role and restored: the assumption of
+  `awsds-deploy-prod` fired Production's rule and the one of `awsds-deploy-staging` from Production fired
+  Staging's, one message on each alerts topic, so the role's account delivers a cross-account record to
+  its bus, and both emails reached the subscriber. Each email is the whole CloudTrail record, the new
+  session's access key id and session token included (no secret key); an input transformer would trim it.
+  The refused attempts are recorded in the caller's account only, with `requestParameters` null:
+  neither rule nor `CI-8` can see them, and the trail's `errorCode` and `errorMessage` can. `CI-8`
+  excuses the two test sessions by name and minute.
+- **4.6 — Applied 2026-10-13 by Claude, authorized by the user: `deploy-role-v0.3.0`.** The rule's target
+  carries an input transformer: one line each for the rule, the time, the role, the caller's principal id,
+  type and account, the session name, the source address and the event id, and no credential. No field
+  the caller writes freely goes in, since EventBridge does not escape an extracted value. Production and
+  Staging 1 changed each, re-plans `No changes`; the message is unread until the rule next fires.
 
 ### 5. Security gates — written once, included by every pipeline (Lesson 12)
 
@@ -469,6 +563,12 @@ institutional answer.
   laptop** (a second push URL on `origin` — the same manual-path shape as INT-13), refreshed in the same
   sitting as any change the pipelines consume; each deploy job **prints the mirror's commit SHA** into its
   log so a stale mirror is visible in the evidence, not discovered by drift.
+- **6.2 — Written 2026-10-12**: [`offline-gates.yml`](../../../.github/workflows/offline-gates.yml), on
+  every pull request and by hand, with the pinned tool versions, every action pinned by commit, the module
+  sources read over HTTPS, and every folder initialised one at a time before the hooks run, because the
+  plugin cache is not safe for concurrent writes; an init that rewrites a committed lock file fails the job.
+  The validate hook now runs three folders at a time: its default, one per CPU less one, failed five module
+  folders with "Failed to load plugin schemas" in each of two `--all-files` runs on the 11-core laptop.
 - **6.2 — [Claude] Write the GitHub Actions workflow**: on pull requests, `pre-commit run --all-files`
   (`fmt`, `validate -backend=false`, `tflint`, `checkov`, `ruff` and the repository's own hooks) and
   `make check` (the scripts: layers, the 9.2 wildcard check, `check-index.py`, the plan references, the
@@ -479,6 +579,9 @@ institutional answer.
   url."https://github.com/".insteadOf "git@github.com:"`, since every module source is an SSH URL and the
   repository is public. **`validate` is not a plan**: a module change can pass it while a caller's plan fails,
   so the gate says so in its own output rather than reading as a check of every slice (Lesson 54).
+- **6.3 — Done 2026-10-12, by Claude with the user's go-ahead**: PR #123's run `38314108044` passed in
+  7 min 50 s, and a deliberate `terraform fmt` violation failed run `38328376553` at `terraform_fmt`,
+  naming `terraform-live/staging/foundation/variables.tf`; the violation was reverted in the next commit.
 - **6.3 — [user] Enable it and prove it**: a pull request shows the gates; a deliberate `fmt` violation
   fails.
 
@@ -516,8 +619,7 @@ behavioural proofs are the stage's own (Lesson 20):
    event rows may change).
 2. Run `./aws/egress.py` §6 after every pipeline session — zero burn everywhere, and **no NAT gateway in
    any account**; a Staging endpoint set left up by a half-failed promotion is this stage's likeliest leak
-   (3.4's `after_script` is the control, this the instrument). Its report still prints Staging as unvended
-   ("no profile"), a line written before 6b, which this stage corrects.
+   (3.4's `after_script` is the control, this the instrument).
 3. Prove 3.8's by-hand parity once.
 4. Read every denial by its wording, never its exit code (standing rule since 1c).
 
@@ -539,41 +641,56 @@ Measured (`docs/PRICING.md`), us-west-2:
 `docs/log/log-stage-08-cicd-pipelines.md` (Lesson 16), with a recommendation stated.
 
 1. **The blocking rule for the two scanners** (1.4, 5.2, 5.5). Every image inherits the SageMaker
-   Distribution's findings (CRITICAL 30 and HIGH 430 in 6a's first scan, identical in both images), so a
-   plain "CRITICAL blocks" blocks the first run and every run after it. Recommended: **block on a CRITICAL
-   finding absent from the pinned upstream digest's own scan** (a baseline file committed beside the gate,
-   read from pass 0's scan of `default-v0.5.0`), warn on HIGH, and for `pip-audit` block on a known
-   vulnerability with a fixed version available; tightened against real findings rather than set maximally
-   strict and then overridden ad hoc.
+   Distribution's findings, identical in `base` and `dev-env`: 6a's first scan read CRITICAL 30 and HIGH
+   430, and pass 0 read `default-v0.5.0` and `default-v0.6.0` (SageMaker Distribution 4.5.2) at CRITICAL 0
+   and HIGH 130. The distribution's own digest has no scan to compare against (the cache repositories scan
+   nothing on push). Recommended: **block on a CRITICAL or HIGH finding absent from a baseline file
+   committed beside the gate**, the findings of the release the steward last approved, starting from
+   `default-v0.6.0`'s, which holds no CRITICAL, so every CRITICAL blocks until someone writes it into the
+   baseline by name; warn on the rest; for `pip-audit`, block on a known vulnerability with a fixed version
+   available. Tightened against real findings rather than set maximally strict and then overridden ad hoc. **Taken by the user 2026-10-12, as recommended.**
 2. **The infrastructure-repository mirror for the deploy jobs** (6.1) — recommended: **dual-push from the
    laptop**, no standing mirror machinery; revisit only if staleness actually bites (the printed SHA is
-   the instrument).
+   the instrument). **Taken by the user 2026-10-12, as recommended.**
 3. **The infrastructure pipeline's credentials** (6.2) — recommended: **none** — offline gates only;
    GitHub OIDC is possible (the RCP excludes `AssumeRoleWithWebIdentity`) and declined while `plan`/`apply`
-   are deliberate by-hand acts under the runbook.
-4. **Deploy runner size** (4.3) — recommended: **`t4g.small`** (0.0168/h measured) — its jobs are
-   `terraform` and tests, not image builds, which stay on the build runner; the deploy image is therefore
-   built for `arm64`, and the lint's offline import runs on the `amd64` build runner.
+   are deliberate by-hand acts under the runbook. **Taken by the user 2026-10-12, as recommended.**
+4. **Deploy runner size** (4.3). Its jobs are `terraform` and tests, not image builds, which stay on
+   the build runner. A `t4g.small` (0.0168/h) needs an `arm64` deploy image, and the build runner is
+   `amd64` with rootless BuildKit and its user data registers no emulator, so a `RUN` step in an `arm64`
+   stage has nothing to execute it; an `amd64` runner takes the image the build runner already builds,
+   at `t3a.small` 0.0188/h or `t3.small` 0.0208/h (measured 2026-10-12). Recommended: **`t3a.small`**,
+   +0.0020/h over `t4g.small` while up, against an emulator on the build host or an image assembled with
+   no `RUN` in its target stage. The lint's offline import runs on the build runner either way. **Taken by the user 2026-10-12, as recommended.**
 5. **The alarm target** (4.6; Stage 9 6.2 and Stage 10 3.1/5.3 consume it). The "Stage 1b SNS pattern" is
    one topic, `awsds-org-break-glass-alerts`, in the Management account, and no member account has a topic
    (`sandbox/warehouse/alarms.tf` says so and defers it to Stage 12). Recommended: **one topic per
    deployment-target account, `awsds-<env>-alerts`, created here and subscribed to the operator's address**,
    which Stage 12 then adopts; the alternative, EventBridge forwarding to Management's bus, puts a
-   cross-account rule in the path of every alarm and the break-glass topic in the path of routine ones.
+   cross-account rule in the path of every alarm and the break-glass topic in the path of routine ones. **Taken by the user 2026-10-12, as recommended.**
 6. **Where the image recipe lives** (1.0). `images/` is in this GitHub repository, every hand build took it
-   from there, and `./aws/devenv.py` reads it there; the GitLab `dev-env` repository Stage 7 step 3.6 creates
-   is empty. Recommended: **the recipe moves to GitLab `awsds/dev-env`** at pass 3, with `devenv.py` reading
+   from there, and `./aws/devenv.py` reads it there. GitLab's `awsds/dev-env` holds only
+   `images/build.gitlab-ci.yml`, as Stage 7 step 2.6 ran it: the pipeline clones this repository at the
+   commit a web trigger names (`RECIPE_SHA`), so the authorization is who can run a pipeline on that
+   project. Recommended: **the recipe moves to GitLab `awsds/dev-env`** at pass 3, with `devenv.py` reading
    a checkout of it by path: the protected tag is the steward's control only on the repository that holds
-   what it builds. The alternative is this repository as the source and GitLab's `dev-env` as its mirror (6.1's
-   dual push), which keeps one home and makes a GitHub write the real authorization.
+   what it builds, and the brief names GitLab as the source-code control
+   ([`objectives.md`](../objectives.md)). The alternative is this repository as the source and GitLab's
+   `dev-env` as its mirror (6.1's dual push), which keeps one home and makes a GitHub write the real
+   authorization. **Taken by the user 2026-10-12, as recommended.**
 7. **Whether the dev-env hand half can shrink** (1.6). `dev-env.md` records two levers, both undecided:
    omitting `ImageVersionNumber` at the attach, so the domain follows the image's newest version and an apply
    alone changes what every new space starts (the review gate goes with it); and version aliases.
    Recommended: **neither yet**: the hand writes are the review gate, and a release is rare enough to pay for
-   it; re-read when a second project domain makes the sweep a multiple.
+   it; re-read when a second project domain makes the sweep a multiple. **Taken by the user 2026-10-12, as recommended.**
 8. **Who owns a processing job's output mount** (2.2). Recommended: **the image keeps passwordless `sudo`
    and the job's command opens with 6i's `chown`**, the measured shape; running jobs as root would remove a
-   step and widen every job's container to root for a mount's sake.
+   step and widen every job's container to root for a mount's sake. **Taken by the user 2026-10-12, as recommended.**
+9. **Where the D28 workflow lint lives** (5.6). The packaging and rendering tool is `awsds-workflows`,
+   which `app-etl`'s CI installs by URL at a pinned commit, and the lint reads the files that tool renders.
+   Recommended: **a `lint` command in `awsds-workflows`**, so one pin covers rendering, packaging and the
+   lint; the alternative is a script in this repository's `scripts/`, which `app-etl`'s CI would clone
+   from GitHub at a pinned commit, the way Stage 7's image pipeline clones the recipe. **Taken by the user 2026-10-12, as recommended.**
 
 ## Verifications to answer while executing
 
@@ -581,9 +698,9 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? | pass 0 |
-| ii | Does a job container on the deploy runner obtain instance-profile credentials — the declarative hop-limit-2 default reaching a real launch? | 4.3 |
-| iii | Does a job on a non-protected ref fail to schedule onto the protected runner? | 4.5 |
+| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); the second half is answered when 1.5 and 3.5 are written | pass 0 |
+| ii | Does a job container on the deploy runner obtain instance-profile credentials — the declarative hop-limit-2 default reaching a real launch? **Yes, read 2026-10-13**: `awsds/app-etl`'s job #15 printed the instance role through the metadata service and each of the three deploy roles assumed through its profile | 4.3 |
+| iii | Does a job on a non-protected ref fail to schedule onto the protected runner? **Yes, read 2026-10-13**: job #16, the same job on the unprotected branch `deploy-runner-probe`, sat `pending` with no runner for 314 s under GitLab's stuck notice, runner #3 `online` | 4.5 |
 | iv | Does the scan gate read the push's scan (wait → findings), and is a re-scan inside 24 h refused rather than silently absorbed? | 1.4 |
 | v | Does Staging pull the application image from the Production ECR (INT-07), and as which principal — the job's own role through the service, as 6i measured in Sandbox? | 3.2 |
 | vi | Do CloudTrail's `AssumeRole` events name the two roles distinguishably across one full promotion (INT-08)? | 3.6 |
@@ -596,7 +713,7 @@ Record every answer, including the ones that come out fine.
 | xiii | Does every gate job carry the proxy variables, and does a job with them removed fail rather than hang? | 5.2 |
 | xiv | Does the workflow lint reject each of its rule violations, one deliberate example each? | 5.6 |
 | xv | With the proxy stopped, does 3.1's own check fail the job in seconds, given that `make up`'s hub check is waived on this path? | 3.1 |
-| xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? | 4.6 |
+| xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? **Yes to both, read 2026-10-13**: the infrastructure user's assumptions fired `awsds-prod-deploy-misuse` (same account) and `awsds-staging-deploy-misuse` (from Production), one alerts message each, both emails received by the user; a refused one is recorded in the caller's account only, with `requestParameters` null and the role named in `errorMessage` | 4.6 |
 | xvii | Does the first pipeline-built `dev-env` keep `./aws/devenv.py` green: `DE-3` on the recipe before the tag, `DE-5` on the registered bytes after? | 1.1, 1.6 |
 | xviii | Does the application image write to a processing output mount as uid 1000, with networking off? | 2.2 |
 

@@ -112,3 +112,28 @@ variable "cost_center" {
   type        = string
   default     = "stage-07"
 }
+
+# Stage 8 step 4.3 - the deploy runner. It exists only once its job image is pinned here: the digest
+# awsds/deploy-image's pipeline printed, committed, so the approved image is a reviewed line in this
+# repository and never only a fact inside an [E] host (Lesson 4).
+variable "deploy_image_digest" {
+  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.1.0: built 2026-10-13 from de2dc08, on python:3.14-slim (Debian 13) at sha256:a2b82f3c...9170 through the cache."
+  type        = string
+  default     = "sha256:1b1a583030cc7b963c2bd9ffdaf57af215aa6dd76e3599139bc8cf06dc38a53a"
+
+  validation {
+    condition     = var.deploy_image_digest == null || can(regex("^sha256:[0-9a-f]{64}$", var.deploy_image_digest))
+    error_message = "deploy_image_digest must be sha256: followed by 64 lowercase hex characters, or null."
+  }
+}
+
+variable "deploy_runner_instance_type" {
+  description = "The deploy runner's size (Stage 8 decision 4): t3a.small, 2 GiB, 0.0188 USD/h (docs/PRICING.md 8). x86_64, the deploy image's architecture; its jobs run terraform and tests, never an image build."
+  type        = string
+  default     = "t3a.small"
+
+  validation {
+    condition     = contains(["t3a.small", "t3.small", "t3a.medium"], var.deploy_runner_instance_type)
+    error_message = "deploy_runner_instance_type must be an x86_64 burstable type: t3a.small, t3.small or t3a.medium."
+  }
+}

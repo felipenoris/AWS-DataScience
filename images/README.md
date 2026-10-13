@@ -1,6 +1,6 @@
 # `images/` — the container images and how they are built
 
-This directory holds the build code for the two images the estate runs on. Nothing here is applied by
+This directory holds the build code for the images the estate runs on. Nothing here is applied by
 Terraform: `terraform-live/production/registry/` owns the ECR repositories these push into, and this
 directory owns what goes in them.
 
@@ -8,6 +8,7 @@ directory owns what goes in them.
 |---|---|---|
 | [`base/`](base/Dockerfile) | `awsds-prod-ecr-base` | The **common ancestor**. Every application image is `FROM base:<pinned tag>`, and so is `dev-env` — D17's *"promote only the code"* holds by construction |
 | [`dev-env/`](dev-env/Dockerfile) | `awsds-prod-ecr-dev-env` | The **SMUS custom image (BYOI)** — the runtime every notebook and Unified Studio project app runs on, plus the Julia, R and Rust that CodeArtifact cannot deliver |
+| [`deploy/`](deploy/Dockerfile) | `awsds-prod-ecr-deploy` | The **deploy image**: what the deploy runner's jobs run in (Stage 8 steps 3.1 and 4.3) — make, uv, Python 3.14, Terraform 1.15.8, git and the AWS CLI, every download pinned. Built by the GitLab project `awsds/deploy-image`, below, and run by digest |
 
 ## Who builds them
 
@@ -46,6 +47,25 @@ The GitLab project `awsds/dev-env` carries [`build.gitlab-ci.yml`](build.gitlab-
 The push is the runner role's, through the credential helper the runner mounts into every job; the
 repositories are tag-immutable, so a failure after the base push is retried with `SKIP_BASE=1` on the same
 tag. Making the version selectable is [`dev-env.md`](../docs/plan/runbooks/dev-env.md) §B.
+
+## The deploy image
+
+The GitLab project `awsds/deploy-image` holds one file, [`deploy/build.gitlab-ci.yml`](deploy/build.gitlab-ci.yml)
+as its `.gitlab-ci.yml`, and nothing else; only the infrastructure owner is a member, because whoever builds
+this image chooses what runs with the deploy roles' credentials. The build runner serves it (assigned in the
+admin area, the runner staying locked).
+
+1. **Build → Pipelines → Run pipeline** on `main`, with `IMAGE_TAG` (`v<semver>`) and `RECIPE_SHA` (a commit of
+   this repository that GitHub serves). The pipeline runs only from that form: its rule admits the `web`
+   source alone, so a pipeline started through the API creates no job.
+2. The job clones this repository at `RECIPE_SHA`, builds [`deploy/`](deploy/Dockerfile) with its base
+   through the pull-through cache, pushes `awsds-prod-ecr-deploy:<IMAGE_TAG>` and prints the digest.
+3. The digest becomes `deploy_image_digest` in `terraform-live/production/runners/variables.tf`, committed:
+   the deploy runner exists only once it is set, and runs that digest and no other image.
+
+| Tag | Built | Digest | Scan |
+|---|---|---|---|
+| `v0.1.0` | 2026-10-13, pipeline #5 from `de2dc08`, 68 s | `sha256:1b1a5830…a53a`, 208,935,352 bytes, on `python:3.14-slim` (Debian 13) `sha256:a2b82f3c…9170` | CRITICAL 2, HIGH 8, MEDIUM 10, LOW 4. Both CRITICALs are Debian's `curl` (CVE-2026-8924, CVE-2026-8927), `<no-dsa>` with no fixed package for Debian 13, and git links libcurl; accepted by name by the user 2026-10-13 as this image's baseline (Stage 8 decision 1), rebuilt once Debian 13 ships the fix |
 
 ## Before a build
 

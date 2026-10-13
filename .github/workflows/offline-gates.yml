@@ -1,0 +1,116 @@
+# The infrastructure repository's offline gates (Stage 8 step 6.2): every pre-commit hook over every
+# file, then `make check`. No AWS credential and no `terraform plan` (Stage 8 decision 3): `validate`
+# reads each folder with `-backend=false`, so a module change can pass here while a caller's plan
+# fails (Lesson 54). Plan and apply stay by hand under docs/plan/runbooks/terraform-changes.md.
+#
+# The tool versions are the ones CLAUDE.md pins for the laptop. Every action is pinned by commit, with
+# the release it was read from beside it.
+
+name: offline gates
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-gates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: pre-commit and make check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TERRAFORM_VERSION: 1.15.8
+      TFLINT_VERSION: v0.64.0
+      UV_VERSION: 0.12.13
+      PRE_COMMIT_VERSION: 4.6.2
+      CHECKOV_VERSION: 3.3.11
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - uses: terraform-linters/setup-tflint@1cf010d3c7aef302051ccdb68c14c5dc2efa34ef # v6.3.1
+        with:
+          tflint_version: ${{ env.TFLINT_VERSION }}
+
+      # checkov and pre-commit run on the Python the laptop's `uv tool` copies run on.
+      - name: Install pre-commit and checkov
+        run: |
+          uv tool install --python 3.14 "pre-commit==${PRE_COMMIT_VERSION}"
+          uv tool install --python 3.14 "checkov==${CHECKOV_VERSION}"
+          uv tool dir --bin >> "$GITHUB_PATH"
+
+      # Every module source is an scp-style SSH URL, which Terraform rewrites to ssh:// before it calls
+      # git. The repository is public, so both spellings are read over HTTPS with no key.
+      - name: Read the module sources over HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+
+      - name: Point Terraform at a plugin cache
+        run: |
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
+          echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            ~/.tflint.d/plugins
+            ~/.cache/pre-commit
+          key: offline-gates-${{ runner.os }}-${{ hashFiles('**/.terraform.lock.hcl', '.tflint.hcl', '.pre-commit-config.yaml') }}
+          restore-keys: offline-gates-${{ runner.os }}-
+
+      - name: Download the tflint rulesets
+        run: tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # The plugin cache is not safe for concurrent writes, and the validate hook runs three inits at
+      # once, so every folder is initialised here first, one at a time. An init that writes to a
+      # committed lock file means the lock lacks this platform's checksum, which is a failure: left in
+      # place, it would hand check-provider-locks a corrected file.
+      - name: Fill the plugin cache, one folder at a time
+        run: |
+          mapfile -t dirs < <(git ls-files '*.tf' | xargs -n1 dirname | sort -u)
+          for d in "${dirs[@]}"; do
+            echo "::group::$d"
+            terraform -chdir="$d" init -backend=false -input=false -no-color
+            echo "::endgroup::"
+          done
+          git diff --exit-code -- '*.terraform.lock.hcl'
+
+      - name: Every pre-commit hook over every file
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: make check
+        run: make check
+
+      - name: Name what the gates do not cover
+        if: always()
+        run: |
+          {
+            echo "### What these gates do not cover"
+            echo
+            echo "No AWS credential and no plan ran. \`terraform validate\` reads each folder with"
+            echo "\`-backend=false\`, so a module change can pass here while a caller's plan fails"
+            echo "(Lesson 54). Plan and apply stay by hand: docs/plan/runbooks/terraform-changes.md."
+            echo "\`make check-ou\` needs an SSO session and does not run here."
+          } >> "$GITHUB_STEP_SUMMARY"

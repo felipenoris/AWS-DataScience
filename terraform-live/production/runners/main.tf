@@ -99,8 +99,8 @@ module "role" {
           Action   = "ecr:GetAuthorizationToken"
           Resource = "*"
         },
-        # Push and pull on the three repositories this estate builds. `DescribeImageScanFindings`
-        # is what Stage 8's gate reads after a push.
+        # Push and pull on every image repository this estate builds, the deploy image's among them.
+        # `DescribeImageScanFindings` is what Stage 8's gate reads after a push.
         {
           Sid    = "PushAndPullTheImageRepositories"
           Effect = "Allow"

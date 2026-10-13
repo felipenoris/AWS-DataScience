@@ -1,8 +1,8 @@
-# Runbook — Changing infrastructure by hand (Terraform, no CI/CD yet)
+# Runbook — Changing infrastructure by hand (Terraform)
 
 | | |
 |---|---|
-| **Scope** | Every by-hand change under `terraform-live/` and `terraform-modules/`, until Stage 8 hands this job to a pipeline |
+| **Scope** | Every by-hand change under `terraform-live/` and `terraform-modules/`. The CI ([`offline-gates.yml`](../../../.github/workflows/offline-gates.yml), Stage 8 step 6.2) runs the offline gates on each pull request and holds no AWS credential, so every `plan` and `apply` is still this runbook's |
 | **Operator** | The **infrastructure user**, through `InfrastructureAccess` — one `awsds-infra-*` profile per account (§1) |
 | **The one rule** | Modules are consumed **by git tag, from GitHub**. A module change and its callers are therefore **two commits, with the tags pushed — and confirmed on origin — in between** (§3) — in the wrong order, the commit hook blocks you with `invalid ref` |
 | **First applied** | Stage 3 passes 1-2 (2026-08-16) — the [stage log](../../log/log-stage-03-networking.md) is the worked example |

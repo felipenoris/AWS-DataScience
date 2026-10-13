@@ -39,9 +39,15 @@ repos:
       # -backend=false because a slice's backend is partial configuration + a gitignored
       # backend.hcl (2.5), and because validate must not need AWS credentials: a check that
       # only runs for someone holding a session is not a repository check.
+      #
+      # Three folders at a time. The hook's default is one per CPU less one: on an 11-core,
+      # 18 GB laptop, `--all-files` ran ten at once and five module folders failed with
+      # "Failed to load plugin schemas" in each of two runs (2026-10-12, AWS provider 6.68.0);
+      # three at a time passed in 27 s with a warm plugin cache.
       - id: terraform_validate
         args:
           - --tf-init-args=-backend=false
+          - --hook-config=--parallelism-limit=3
 
       - id: terraform_tflint
         args:
@@ -75,8 +81,8 @@ repos:
 
       # ---------------------------------------------------------------- step 9's own checks
       # THE SAME SCRIPTS `make check` CALLS, and that is the point: a commit gate and a target
-      # that disagree are two rules. Stage 8 step 6 adds a third caller - .gitlab-ci.yml - and
-      # it is a line, not a rewrite. Step 9.3 is deliberately absent: it needs an SSO session,
+      # that disagree are two rules. The third caller is .github/workflows/offline-gates.yml
+      # (Stage 8 step 6.2), which runs `pre-commit run --all-files` and `make check`. Step 9.3 is deliberately absent: it needs an SSO session,
       # and a commit gate that demands one is a gate nobody can run offline (`make check-ou`).
       - id: check-tf-conventions
         name: no region literals, indexed AZs or account-level BPA (9.1)

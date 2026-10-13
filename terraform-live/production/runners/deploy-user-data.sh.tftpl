@@ -1,0 +1,169 @@
+#!/bin/bash
+set -euo pipefail
+exec > >(tee /var/log/awsds-runner-boot.log) 2>&1
+echo "=== awsds deploy runner first boot: $(date -Is) ==="
+
+PROXY="${proxy_url}"
+NOPROXY="${no_proxy}"
+REGION="${region}"
+GITLAB_URL="${gitlab_url}"
+GITLAB_HOST="${gitlab_host}"
+CA_ROOT_PARAM="${ca_root_param}"
+TOKEN_SECRET="${runner_token_secret}"
+CONCURRENT="${concurrent_jobs}"
+NAME_TAG="${name_tag}"
+ECR_REGISTRY="${ecr_registry}"
+ECR_HELPER_VERSION="${ecr_helper_version}"
+ECR_HELPER_SHA256="${ecr_helper_sha256}"
+DEPLOY_IMAGE="${deploy_image}"
+
+export http_proxy="$PROXY" https_proxy="$PROXY"
+export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
+export no_proxy="$NOPROXY" NO_PROXY="$NOPROXY"
+export AWS_DEFAULT_REGION="$REGION"
+
+echo "--- proxy (1/4): /etc/environment"
+cat >> /etc/environment <<ENVEOF
+http_proxy=$PROXY
+https_proxy=$PROXY
+HTTP_PROXY=$PROXY
+HTTPS_PROXY=$PROXY
+no_proxy=$NOPROXY
+NO_PROXY=$NOPROXY
+ENVEOF
+
+echo "--- the CA root, from its one source"
+aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text > /etc/pki/ca-trust/source/anchors/awsds-root.crt
+update-ca-trust
+mkdir -p /etc/gitlab-runner/certs
+cp /etc/pki/ca-trust/source/anchors/awsds-root.crt "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
+chmod 644 "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
+
+echo "--- packages: docker and git (S3 repositories, no proxy)"
+dnf -y -q install docker git jq
+
+# The runner pulls its job image from this registry, so the helper serves the runner itself, not a job:
+# root's Docker configuration and DOCKER_AUTH_CONFIG below both name it for the registry host.
+echo "--- the ECR credential helper $ECR_HELPER_VERSION, for the runner's pull of the deploy image"
+curl -fsS --max-time 120 -o /usr/local/bin/docker-credential-ecr-login \
+  "https://amazon-ecr-credential-helper-releases.s3.us-east-2.amazonaws.com/$ECR_HELPER_VERSION/linux-amd64/docker-credential-ecr-login"
+echo "$ECR_HELPER_SHA256  /usr/local/bin/docker-credential-ecr-login" | sha256sum -c -
+chmod 755 /usr/local/bin/docker-credential-ecr-login
+mkdir -p /root/.docker
+printf '{"credHelpers":{"%s":"ecr-login"}}\n' "$ECR_REGISTRY" > /root/.docker/config.json
+
+echo "--- the runner package repository, proxied per repository"
+cat > /etc/yum.repos.d/runner_gitlab-runner.repo <<'REPOEOF'
+[runner_gitlab-runner]
+name=runner_gitlab-runner
+baseurl=https://packages.gitlab.com/runner/gitlab-runner/amazon/2023/$basearch
+repo_gpgcheck=1
+gpgcheck=1
+enabled=1
+gpgkey=https://packages.gitlab.com/gpgkey/gpg.key
+       https://packages.gitlab.com/gpgkey/runner/49F16C5CC3A0F81F.pub.gpg
+       https://packages.gitlab.com/gpgkey/runner/4C80FB51394521E9.pub.gpg
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+REPOEOF
+echo "proxy=$PROXY" >> /etc/yum.repos.d/runner_gitlab-runner.repo
+dnf -y -q install gitlab-runner
+gitlab-runner --version | head -n1
+
+echo "--- proxy (2/4): the docker daemon"
+mkdir -p /etc/systemd/system/docker.service.d
+cat > /etc/systemd/system/docker.service.d/http-proxy.conf <<DOCKEREOF
+[Service]
+Environment="HTTP_PROXY=$PROXY"
+Environment="HTTPS_PROXY=$PROXY"
+Environment="NO_PROXY=$NOPROXY"
+DOCKEREOF
+
+echo "--- proxy (3/4): the runner service"
+mkdir -p /etc/systemd/system/gitlab-runner.service.d
+cat > /etc/systemd/system/gitlab-runner.service.d/http-proxy.conf <<RUNNEREOF
+[Service]
+Environment="HTTP_PROXY=$PROXY"
+Environment="HTTPS_PROXY=$PROXY"
+Environment="NO_PROXY=$NOPROXY"
+Environment="http_proxy=$PROXY"
+Environment="https_proxy=$PROXY"
+Environment="no_proxy=$NOPROXY"
+RUNNEREOF
+systemctl daemon-reload
+systemctl enable --now docker
+usermod -aG docker gitlab-runner
+
+# Every profile is a deploy role assumed with this instance's credentials (role_arn plus
+# credential_source): nothing secret is written, and a job names the role it acts as.
+echo "--- the deploy profiles, mounted read-only into every job"
+mkdir -p /etc/awsds
+cat > /etc/awsds/aws-config <<'AWSEOF'
+${aws_config}
+AWSEOF
+chmod 644 /etc/awsds/aws-config
+grep '^\[profile' /etc/awsds/aws-config
+
+echo "--- the deploy roles, each assumed once with this instance's credentials"
+for p in $(sed -n 's/^\[profile \(.*\)\]$/\1/p' /etc/awsds/aws-config); do
+  echo "    $p: $(AWS_CONFIG_FILE=/etc/awsds/aws-config aws sts get-caller-identity --profile "$p" --query Arn --output text 2>&1 | sed -E 's/[0-9]{12}/<account>/g')"
+done
+
+echo "--- waiting for GitLab: a started host answers two to three minutes after its start"
+code=""
+for _ in $(seq 1 60); do
+  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
+  [ "$code" = "200" ] && break
+  sleep 10
+done
+echo "    $GITLAB_URL/users/sign_in -> $code"
+[ "$code" = "200" ] || { echo "FATAL: GitLab did not answer in ten minutes - is awsds-prod-gitlab running?" >&2; exit 1; }
+
+echo "--- registering with the authentication token from Secrets Manager"
+INSTANCE_ID="$(curl -s -H "X-aws-ec2-metadata-token: $(curl -s -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)" http://169.254.169.254/latest/meta-data/instance-id)"
+TOKEN="$(aws secretsmanager get-secret-value --secret-id "$TOKEN_SECRET" --query SecretString --output text)"
+[ -n "$TOKEN" ] || { echo "FATAL: the deploy runner token container is empty - create the runner in GitLab and put-secret-value first (Stage 8 step 4.5)" >&2; exit 1; }
+gitlab-runner register \
+  --non-interactive \
+  --url "$GITLAB_URL" \
+  --token "$TOKEN" \
+  --name "$NAME_TAG-$INSTANCE_ID" \
+  --executor docker \
+  --docker-image "$DEPLOY_IMAGE" \
+  --docker-pull-policy if-not-present \
+  --docker-allowed-images "$ECR_REGISTRY/awsds-prod-ecr-deploy*" \
+  --docker-allowed-services "$ECR_REGISTRY/awsds-prod-ecr-deploy*" \
+  --docker-volumes "/etc/gitlab-runner/certs/$GITLAB_HOST.crt:/etc/gitlab-runner/certs/ca.crt:ro" \
+  --docker-volumes "/etc/awsds/aws-config:/etc/awsds/aws-config:ro" \
+  --env "DOCKER_AUTH_CONFIG={\"credHelpers\":{\"$ECR_REGISTRY\":\"ecr-login\"}}" \
+  --env "AWS_CONFIG_FILE=/etc/awsds/aws-config" \
+  --env "AWS_REGION=$REGION" \
+  --env "AWS_DEFAULT_REGION=$REGION" \
+  --env "HTTP_PROXY=$PROXY" \
+  --env "HTTPS_PROXY=$PROXY" \
+  --env "NO_PROXY=$NOPROXY" \
+  --env "http_proxy=$PROXY" \
+  --env "https_proxy=$PROXY" \
+  --env "no_proxy=$NOPROXY"
+unset TOKEN
+sed -i "s/^concurrent = .*/concurrent = $CONCURRENT/" /etc/gitlab-runner/config.toml
+systemctl restart gitlab-runner
+gitlab-runner verify 2>&1 | tail -n 3
+
+echo "--- proxy (4/4) and the job image: an allowed name over https, a PRIVATE destination over http"
+echo "    pypi.org over https (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || true)"
+echo "    10.31.0.1 over http, a PRIVATE address (must be 403): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" http://10.31.0.1/ || true)"
+echo "    $GITLAB_HOST direct, the sign-in page (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
+echo "    the job image, pulled through the helper: $(docker pull -q "$DEPLOY_IMAGE" 2>&1 | tail -n1 || true)"
+
+cat > /etc/profile.d/awsds-runner.sh <<'BANNER'
+echo
+echo "  awsds deploy runner - [E], destroyed by make gitlab-down. Protected, tag awsds-deploy only."
+echo "  Its jobs run the deploy image by digest and act through the profiles in /etc/awsds/aws-config,"
+echo "  each a deploy role assumed with this instance's credentials."
+echo "  first-boot log: /var/log/awsds-runner-boot.log     config: /etc/gitlab-runner/config.toml"
+echo
+BANNER
+
+echo "=== awsds deploy runner first boot done: $(date -Is) ==="

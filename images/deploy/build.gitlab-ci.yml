@@ -1,0 +1,40 @@
+# The GitLab project awsds/deploy-image carries this file as its .gitlab-ci.yml, and holds nothing else
+# (images/README.md).
+#
+# It builds the deploy image on the build runner and pushes it to awsds-prod-ecr-deploy (Stage 8 steps
+# 3.1 and 4.3). The recipe is cloned from the GitHub repository at RECIPE_SHA. Run from Build ->
+# Pipelines -> Run pipeline on main with IMAGE_TAG and RECIPE_SHA set; the project lets only a
+# maintainer pass them. The digest the job prints is what terraform-live/production/runners/ pins.
+stages: [build]
+
+variables:
+  BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  RECIPE_REPO: https://github.com/felipenoris/AWS-DataScience.git
+
+build-deploy-image:
+  stage: build
+  image:
+    name: moby/buildkit:rootless
+    entrypoint: [""]
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $IMAGE_TAG && $RECIPE_SHA
+  before_script:
+    - mkdir -p ~/.docker
+    - printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+    - git clone --quiet "$RECIPE_REPO" recipe
+    - git -C recipe checkout --quiet --detach "$RECIPE_SHA"
+    - git -C recipe log -1 --format='recipe %H %cI %s'
+  script:
+    - |
+      set -eu
+      proxy_args="--opt build-arg:http_proxy=$http_proxy --opt build-arg:https_proxy=$https_proxy --opt build-arg:HTTP_PROXY=$HTTP_PROXY --opt build-arg:HTTPS_PROXY=$HTTPS_PROXY --opt build-arg:no_proxy=$no_proxy --opt build-arg:NO_PROXY=$NO_PROXY"
+      echo "== deploy: $ECR_REGISTRY/awsds-prod-ecr-deploy:$IMAGE_TAG, its base through the cache"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 \
+        --local context=recipe/images/deploy --local dockerfile=recipe/images/deploy \
+        --opt build-arg:REGISTRY="$ECR_REGISTRY" \
+        $proxy_args --opt label:org.opencontainers.image.revision="$RECIPE_SHA" \
+        --output type=image,name="$ECR_REGISTRY/awsds-prod-ecr-deploy:$IMAGE_TAG",push=true \
+        --metadata-file deploy.json
+      echo "== pushed"
+      echo "deploy.json: $(grep -o '"containerimage.digest": *"[^"]*"' deploy.json)"

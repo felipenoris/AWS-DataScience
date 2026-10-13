@@ -534,3 +534,11 @@ Account ids are replaced by the account's name in angle brackets.*
   `s3://awsds-prod-gitlab-objects/config/gitlab.rb`: a `no_proxy` of 56 entries, no `sagemaker` name, the
   SAML block present. GitLab is stopped and runs the previous file until `sudo awsds-gitlab-refresh` at
   the next session; `egress/` builds its 12 at the next `make gitlab-up`.
+
+## 2026-10-12 — decision 9 reaches the host
+
+- **[user] `sudo awsds-gitlab-refresh` on `awsds-prod-gitlab`**, in a Session Manager shell, ended
+  `gitlab Reconfigured!`: the host serves the 56-entry `no_proxy` the S3 object has held since the
+  21:26 UTC apply. The shell's first command form failed in the project folder, where
+  `production/tooling/` was never initialised, so `terraform output` returned nothing and `start-session`
+  got an empty target; the runbook now finds the host by its Name tag.

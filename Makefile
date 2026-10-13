@@ -1,7 +1,8 @@
 # The checks (Stage 2 step 9) and the D11 lifecycle targets.
 #
-# There is no CI until Stage 7 (GitLab) and Stage 8 (.gitlab-ci.yml). `pre-commit` and `make check`
-# call the same scripts in scripts/, so the pipeline will add a caller, not a rewrite.
+# `pre-commit` and `make check` call the same scripts in scripts/, and the CI runs both on every pull
+# request (.github/workflows/offline-gates.yml, Stage 8 step 6.2), so the pipeline is a caller, not a
+# rewrite.
 #
 # Every script is Python run through uv: its shebang `#!/usr/bin/env -S uv run --quiet` resolves the
 # project in pyproject.toml and the interpreter in .python-version. uv on PATH is the one prerequisite;
@@ -33,6 +34,13 @@
 # platforms in every committed lock file).
 
 SHELL := /bin/bash
+
+# make takes an unknown variable in silence, and every flag here is upper case: `auto=1` applies with
+# no -auto-approve and `runners=0` raises the runner anyway (both seen 2026-10-12). The lower-case
+# spellings of the flags are refused before any target runs.
+ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(runners)),)
+$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, RUNNERS; a lower-case one would be ignored)
+endif
 .PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
 help:
@@ -68,7 +76,7 @@ help:
 	@printf '              the security groups are [P] anchors and survive the stop\n'
 	@printf '  gitlab-up   START GitLab and APPLY production/egress and production/runners - a\n'
 	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6)\n'
-	@printf '  gitlab-down DESTROY the runner and the SharedServices endpoints, STOP GitLab; the\n'
+	@printf '  gitlab-down DESTROY the runners and the SharedServices endpoints, STOP GitLab; the\n'
 	@printf '              hub keeps running for every other session\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
@@ -78,8 +86,8 @@ help:
 	@printf '    ENV=x       up and down: one account folder from the list at the end. Never\n'
 	@printf '                optional - `make down` with no ENV fails, it never means all\n'
 	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply (see GROUPS)\n'
-	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the build runner\n'
-	@printf '                (0.2117 USD/h); gitlab-down destroys the runner regardless\n'
+	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the runners\n'
+	@printf '                (0.2305 USD/h); gitlab-down destroys them regardless\n'
 	@printf '\n'
 	@printf '\033[1mLAYERS\033[0m - what [P], [D] and [E] mean, and what each target does to a slice\n'
 	@printf 'wearing one (D11; the definitions and the reasoning: docs/plan/conventions.md 5.1)\n'
@@ -227,19 +235,19 @@ hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
 # GitLab's session (Stage 7 step 1.6): the [D] host started, VPC-SharedServices' endpoints and the
-# build runner applied, and the hub left to `hub-up`. `make up ENV=production` would do the same
+# runners applied, and the hub left to `hub-up`. `make up ENV=production` would do the same
 # and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
 #
-# RUNNERS=0 leaves the runner out: a session that runs no pipeline, or one before the runner's
+# RUNNERS=0 leaves the runners out: a session that runs no pipeline, or one before a runner's
 # token is in its container (runbook K). Any other value but 1 is refused, so a typo never raises
-# a 0.2117 USD/h host unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+# 0.2305 USD/h of hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
 comma := ,
 
 gitlab-up:
 	@case "$(RUNNERS)" in ""|0|1) ;; *) printf 'RUNNERS must be 0 or 1 (unset means 1), not "%s"\n' "$(RUNNERS)"; exit 2;; esac
 	@./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# The reverse order is the script's: the runner and the endpoints are destroyed, then GitLab is
+# The reverse order is the script's: the runners and the endpoints are destroyed, then GitLab is
 # stopped. Nothing here touches the hub, so every other session's proxy and tunnel stay up.
 # RUNNERS is ignored: destroying an absent runner is a no-op, and a forgotten one is this stage's
 # likeliest leak.

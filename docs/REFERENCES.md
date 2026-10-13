@@ -197,17 +197,27 @@
   `removed { from = <address>  lifecycle { destroy = false } }`, which removes the resource from state
   and leaves it alone: <https://developer.hashicorp.com/terraform/language/block/removed>.
 
-- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, not measured). The apply page
+- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, measured 2026-10-12). The apply page
   says the flag also prevents the approval prompt, so a run without `-auto-approve` fails:
   <https://developer.hashicorp.com/terraform/cli/commands/apply>. The 1.15.8 source says otherwise. An
   S3-backend apply runs in the local backend, which asks for approval whenever `-auto-approve` is
   absent and the plan has changes, and reads stdin without consulting the flag; the flag gates only the
   prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` (and
-  `scripts/buildbox.py` until the buildbox retired) pass the flag on every apply and destroy on this reading:
+  `scripts/buildbox.py` until the buildbox retired) pass the flag on every apply and destroy on this reading.
+  Measured on a local `terraform_data` resource: `apply -input=false` with no `-auto-approve` printed
+  *"Only 'yes' will be accepted to approve"* and, given no answer, *"error asking for approval: EOF"*,
+  applying nothing; so the source is right and a `make` target run without `AUTO=1` asks for a yes:
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_apply.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_local.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/ui_input.go>.
+
+- The provider plugin cache (read 2026-10-12, for Stage 8 step 6.2): *"The plugin cache directory is not
+  guaranteed to be concurrency safe. The provider installer's behavior in environments with multiple
+  `terraform init` calls is undefined."* By default a cached package is used only if it matches a
+  checksum in the lock file, so a module folder, which commits none, downloads its providers. The CI
+  fills the cache one folder at a time on this reading:
+  <https://developer.hashicorp.com/terraform/cli/config/config-file>.
 
 ## Networking and access
 
@@ -1139,6 +1149,52 @@
   <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
 
 - Amazon ECR image scanning: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
+
+- `aws ecr describe-images` (read 2026-10-12, Stage 8 pass 0): *"The new version of Amazon ECR Basic
+  Scanning doesn't use the ImageDetail$imageScanFindingsSummary and ImageDetail$imageScanStatus
+  attributes from the API response to return scan results. Use the DescribeImageScanFindings API
+  instead."* Measured the same day, the response carried neither attribute for 14 scanned images:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/describe-images.html>. Its waiter polls every
+  5 s and exits 255 after 60 checks, shorter than the 442 s one `dev-env` scan took:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/wait/image-scan-complete.html>.
+
+- The GitHub Actions the offline gates use (Stage 8 step 6.2, read 2026-10-12: each release's date and
+  commit from the GitHub API, each `action.yml`'s inputs at that commit):
+  <https://github.com/actions/checkout> (v7.0.1), <https://github.com/actions/cache> (v6.1.0),
+  <https://github.com/astral-sh/setup-uv> (v10.2.0), <https://github.com/hashicorp/setup-terraform>
+  (v4.0.1), <https://github.com/terraform-linters/setup-tflint> (v6.3.1).
+
+- IAM role principals in a trust policy (read 2026-10-12, for Stage 8 step 4.3): *"If your `Principal`
+  element in a role trust policy contains an ARN that points to a specific IAM role, then that ARN
+  transforms to the role's unique principal ID when you save the policy"*, and a role deleted and
+  re-created *"has a new principal ID that does not match the ID stored in the trust policy"*. The deploy
+  runner's role is `[P]` on this reading:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html>.
+
+- EventBridge and read-only management events (read 2026-10-12, for Stage 8 step 4.6): a rule in state
+  `ENABLED` matches every event *"except for read-only AWS management events delivered through
+  CloudTrail"*; `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS` matches those too, and the page's own
+  example is a rule for STS `AssumeRole`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail-management.html>.
+  The list of read-only events not named `Describe`, `Get` or `List` carries STS `AssumeRole`,
+  `AssumeRoleWithSAML` and `AssumeRoleWithWebIdentity`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-management-event-list.html>. The
+  AWS provider's `aws_cloudwatch_event_rule` takes the state in its `state` argument:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/cloudwatch_event_rule.html.markdown>.
+  Its price page (read 2026-10-12): *"AWS management events are ingested by the event bus for free"*, so
+  the misuse rules cost nothing to receive what they match: <https://aws.amazon.com/eventbridge/pricing/>.
+- CloudTrail's record of a cross-account `AssumeRole` in the role's own account (read 2026-10-13, for Stage 8
+  step 4.6): *"CloudTrail logs AssumeRole calls in the role-owning account (the account being accessed)"*,
+  with `userIdentity` of type `AWSAccount`, the caller's `principalId` and `accountId`, and no `arn`; the
+  post is dated 2016-11-16:
+  <https://aws.amazon.com/blogs/security/aws-cloudtrail-now-tracks-cross-account-activity-to-its-origin/>.
+  EventBridge's comparison operators (read 2026-10-13): `anything-but` *"matches anything except what's
+  specified in the rule"*, and only `exists` speaks of an absent field:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html>.
+  EventBridge's input transformation (read 2026-10-13, for the misuse alert's message): a variable whose
+  path the event lacks is dropped from the output, extracted values are not escaped, and a multi-line
+  string template is one quoted string per line:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 

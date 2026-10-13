@@ -46,6 +46,10 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-up
    ```
 
+   Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
+   `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
+   applied that checkout's `egress/` and runner.
+
    Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
 
    ```bash
@@ -81,13 +85,13 @@ Stopped, GitLab bills its two volumes and its snapshots; running, `make status` 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
 ```bash
-aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)" --latest --output text
+aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)" --latest --output text
 ```
 
-**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`:
+**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`. The host is found by its Name tag, which works from any folder; `terraform output` answers only in a folder where `production/tooling/` was initialised, and elsewhere hands the command an empty target (2026-10-12):
 
 ```bash
-aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
 ```
 
 ## P. The installation
@@ -141,7 +145,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
 3. **Read the initial password** in the shell; the file self-deletes 24 hours after the boot:
 
    ```bash
-   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
    ```
 
    ```bash
@@ -395,6 +399,31 @@ Access control answers an unauthenticated read with `302` to `https://projects.a
 
 If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 
+### The deploy runner
+
+The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
+
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-deploy`, **Run untagged jobs** unchecked, description `awsds-prod-runner-deploy`, **Protected** checked, maximum job timeout `3600`.
+2. **Put the token into its container**, as for the build runner:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-deploy-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `awsds/dev-env`** and **Lock to current projects**, as step 3 above.
+
+A runner created twice leaves the first one in GitLab with no manager; it is deleted from **Admin → CI/CD → Runners** once the instance has registered under the current token.
+
+**What a deploy job can rely on**:
+
+- the deploy image, `awsds-prod-ecr-deploy@<deploy_image_digest>`, as the default image; an `image:` keyword naming anything outside `awsds-prod-ecr-deploy` is refused by the runner's `allowed_images`, and the runner pulls through the ECR credential helper as the instance role;
+- `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
+- `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
+
+**The probe** (Stage 8 verifications ii and iii): `awsds/app-etl`'s `.gitlab-ci.yml` carries `deploy-runner-probe`, tag `awsds-deploy`, created only in a pipeline that sets `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the five jobs of the first pipeline above each open their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe runs alone. On `main` it prints the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stays `pending` under GitLab's stuck notice, which is the protection working, and is cancelled by hand.
+
+The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
+
 ## A. SAML
 
 Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) stays as the break-glass. The order:
@@ -434,7 +463,7 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 |---|---|
 | `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
-| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten runner is 0.2117 USD/h |
+| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy runner 0.0188 |
 
 ---
 
