@@ -49,10 +49,11 @@ locals {
     staging = data.aws_caller_identity.deploy_staging.account_id
     sandbox = data.aws_caller_identity.deploy_sandbox.account_id
   }
-  deploy_role_arns = concat(
-    [module.deploy_role.role_arn],
-    [for k, t in var.deploy_targets : "arn:${data.aws_partition.current.partition}:iam::${local.deploy_target_account_ids[k]}:role/${t.role}"],
+  deploy_role_arn_by_account = merge(
+    { (var.account_folder) = module.deploy_role.role_arn },
+    { for k, t in var.deploy_targets : k => "arn:${data.aws_partition.current.partition}:iam::${local.deploy_target_account_ids[k]}:role/${t.role}" },
   )
+  deploy_role_arns = values(local.deploy_role_arn_by_account)
 }
 
 # ------------------------------------------------------------------- the runner's role (4.3)

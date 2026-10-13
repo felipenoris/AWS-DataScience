@@ -117,6 +117,11 @@ output "deploy_runner_role_arn" {
   value       = module.deploy_runner_role.role_arn
 }
 
+output "deploy_role_arns" {
+  description = "Every deploy role the runner's role may assume, keyed by the account folder it lives in - what production/runners/ renders the deploy runner's AWS profiles from."
+  value       = local.deploy_role_arn_by_account
+}
+
 output "deploy_runner_instance_profile_name" {
   description = "The deploy runner's instance profile - the machine credential production/runners/ attaches (principle 2)."
   value       = aws_iam_instance_profile.deploy_runner.name
