@@ -159,6 +159,9 @@ terraform-live/
 │   │                     #     entitlement plane references by name, so it lives in a [P]
 │   │                     #     slice: a missing one fails provisioning of the permission
 │   │                     #     set in this account (2026-08-23, persona-vending.tf).
+│   │                     #     And awsds-deploy-devenv-sandbox (Stage 8 step 4.2, the
+│   │                     #     deploy-role module): the one role the supply chain writes
+│   │                     #     into this account with, ending at the image version.
 │   │                     #     The Stage 4 VPN anchors and sandbox.internal left at 6c step
 │   │                     #     6.5 (2026-09-08): the Elastic IP forgotten (it is
 │   │                     #     production/networking/'s [P] allocation), the group, the
@@ -303,7 +306,9 @@ terraform-live/
 │   │                     #     development/foundation/ with its VPC and its [P] gateway
 │   │                     #     endpoint ids intact (the INT-05 anchors). Peering requester
 │   │                     #     to VPC-Networking only (D20 amended at 6c): the proxy is
-│   │                     #     this account's whole internet, and there is no default route
+│   │                     #     this account's whole internet, and there is no default route.
+│   │                     #     And awsds-deploy-staging with awsds-staging-alerts (Stage 8
+│   │                     #     step 4.1, decision 5), the deploy-role module
 │   ├── probes/           # [E] migrated; re-aimed at the proxy path and the peering
 │   ├── data/             # [P] S3 + Glue catalog mirroring production's schema, sampled or
 │   │                     #     synthetic data only, under alias/awsds-staging-data - a new
@@ -331,7 +336,10 @@ terraform-live/
     │                     #     and the runner-token container (Stage 7 step 1.1): an anchor
     │                     #     must survive the destruction of tooling/ and runners/, the same
     │                     #     argument that keeps both hub hosts' anchors in networking/
-    │                     #     below. No public zone, no
+    │                     #     below. Also the deploy runner's anchors - its role, instance
+    │                     #     profile and token container (Stage 8 step 4.3: a trust policy
+    │                     #     keeps a role's unique id, so the role outlives the [E] host) -
+    │                     #     awsds-deploy-prod and awsds-prod-alerts. No public zone, no
     │                     #     registered domain: those are Stage 13, and not the CA - see
     │                     #     pki/ below
     ├── networking/       # [P] VPC-Networking (10.31.0.0/16, created at 6c - D38): the

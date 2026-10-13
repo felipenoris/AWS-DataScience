@@ -445,6 +445,26 @@ PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
 # The next account to leave re-opens the same window between its 1.2 and its 2.1.
 PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)
 
+# ------------------------------------------------- Stage 8 step 4: the deploy credential layer
+#
+# The deploy runner lives in the registry's account (D14), and its role is the one principal every
+# deploy role trusts (INT-08, INT-18). The rows are the deploy roles, keyed by the account folder
+# each lives in; the names are contracts with ./aws/cicd.py. Two emissions, both to foundation/: the
+# runner's home gets every other row with its profile, so the runner role's AssumeRole list is
+# built from account ids its aliased providers resolve (aws/INDEX.md rule 1 keeps ids out of
+# tracked files), and every row's own foundation/ gets its role's name and, outside the home, the
+# home's profile, from which its trust names the runner's role.
+#
+# A vended Sandbox unit adds a row (D35) and an alias in production/foundation/deploy-anchors.tf,
+# since Terraform cannot for_each a provider. Development has no row: 6b made it Staging, which
+# registers no image.
+DEPLOY_RUNNER_HOME = ["production"]
+DEPLOY_ROLES = {
+    "staging": "awsds-deploy-staging",
+    "production": "awsds-deploy-prod",
+    "sandbox": "awsds-deploy-devenv-sandbox",
+}
+
 # Subnets anchor on zone ids, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -833,6 +853,23 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     if slice_name == "foundation" and account in PERSONA_VENDING_ACCOUNTS:
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
+    # Stage 8 step 4 - the deploy credential layer, both ends (the table above carries the
+    # argument). The home builds the runner's role and lists every other target; each target
+    # builds its own deploy role, whose trust names the home's runner role.
+    if slice_name == "foundation" and account in DEPLOY_ROLES:
+        values["deploy_role_name"] = DEPLOY_ROLES[account]
+        if account in DEPLOY_RUNNER_HOME:
+            values["deploy_targets"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "role": role}
+                for acct, role in DEPLOY_ROLES.items()
+                if acct not in DEPLOY_RUNNER_HOME
+            }
+        else:
+            values["deploy_runner"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                for acct in DEPLOY_RUNNER_HOME
+            }
+
     if account == "identity" and slice_name == "sso":
         # Stage 5a pass 4c put two cross-account reads here. The `data_consumers` map (each
         # consumer's workgroup + derived-bucket ARNs) left on 2026-08-26 with the derived zone
@@ -970,6 +1007,20 @@ def render_tfvars(account: str, slice_name: str) -> str:
         out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
     if "identity_profile" in v:
         out += f'identity_profile = "{v["identity_profile"]}"\n'
+    if "deploy_role_name" in v:
+        out += f'deploy_role_name = "{v["deploy_role_name"]}"\n'
+    if "deploy_targets" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", role = "{p["role"]}" }}\n'
+            for acct, p in v["deploy_targets"].items()
+        )
+        out += f"deploy_targets = {{\n{rows}}}\n"
+    if "deploy_runner" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["deploy_runner"].items()
+        )
+        out += f"deploy_runner = {{\n{rows}}}\n"
     return out
 
 

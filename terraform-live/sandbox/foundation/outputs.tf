@@ -71,3 +71,9 @@ output "sandbox_awsds_internal_zone_id" {
   description = "sandbox.awsds.internal - associated with this VPC and with VPC-Networking (INT-22)."
   value       = aws_route53_zone.sandbox_awsds_internal.zone_id
 }
+
+# Stage 8 step 4.2 - the dev-env registration's deploy role (INT-18).
+output "deploy_role_arn" {
+  description = "awsds-deploy-devenv-sandbox - assumed only by the deploy runner's role; applies sandbox/dev-env/."
+  value       = module.deploy_role.role_arn
+}
