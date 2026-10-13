@@ -88,3 +88,17 @@ Account ids are replaced by the account's name in angle brackets.*
   `AssumeRole` among the read-only management events, which a rule receives only in state
   `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; `./aws/cicd.py` `CI-7` passed a plain `ENABLED`, the
   state that never fires, and now fails it.
+- **[Claude] Pass 1's `[P]` half written, not applied.** The module `terraform-modules/deploy-role/`, tagged
+  `deploy-role-v0.1.0` on its own commit and pushed before any caller named it (Recipe B), and three
+  callers: `production/foundation/deploy-anchors.tf`, `staging/foundation/deploy-role.tf` and
+  `sandbox/foundation/deploy-role.tf`. `DEPLOY_ROLES` and `DEPLOY_RUNNER_HOME` in `backend.py` generate
+  `deploy_role_name`, `deploy_targets` and `deploy_runner` for the three. Offline: `terraform validate` and
+  `tflint` clean on the module and the three slices; checkov failed `CKV_AWS_111` and `CKV_AWS_356` on the
+  Staging egress grant until the Resolver statement was scoped to this account's ARNs, and the two writes
+  that take no ARN of the account (`route53:AssociateVPCWithHostedZone`, the CloudWatch Logs delivery
+  calls) carry a skip with the reason. A probe on the AWS provider 6.60.0 the three slices lock refused
+  `state = "ENABLED_WITH_NONSENSE"` and listed `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS` as valid.
+- **[Claude] The plans wait on a login.** The `awsds` SSO token expired mid-sitting: `aws sts
+  get-caller-identity` still answered on `awsds-infra-prod` from the CLI's cached role credentials while
+  Terraform's init failed with `refresh cached SSO token failed ... InvalidGrantException`, and every
+  profile without cached credentials failed with `Token has expired and refresh failed`.
