@@ -799,7 +799,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
       which **already happens**: an orphaned project prefix carries a complete `.git` tree, put there
       from inside the notebook by no mechanism this plan designed (Stage 6 step 2.4's reading). The
       choice is between a designed door and an undesigned one that is already open.
-    - **Which of D28's six classes a project can produce at all.** Application code and a workflow
+    - **Which of D28's classes a project can produce at all.** Application code and a workflow
       definition, yes. **A model version, not without deciding who registers it** — D28 item 6 gives
       registration and approval to the *pipeline*, so a model trained interactively has no stated path
       into the Production registry except a pipeline that re-trains it, and nothing has ever said which

@@ -31,7 +31,7 @@ Studio's *Workflows* tool **is** MWAA (open question 15), so the workflow a data
 | `production/workloads/` + `staging/foundation/` (amended) | `vpc-v0.4.0`: the S3 gateway endpoint's policy admits `mwaa-serverless-code-files-*`, the service bucket a worker reads a task's `Code` from. `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage 3 | `[P]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
 | `identity/sso/` (amended) | `airflow-serverless:` reads for the persona that diagnoses a run (decision 11): no set holds any today, so 3.2's diagnosis has no reader | `[P]` |
-| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML, `workflow/workflow.yaml`), the code package its Python and Bash tasks run (D28 class 2b, built from `workflow/code/` when there are such tasks) and the terraform that instantiates them; **the D28 promotion lint** in Stage 8's shared gates file. An ASL port exists only if step 4's ladder reaches design B | — |
+| `app-etl` repository (GitLab) | the workflow definition (dag-factory YAML, `workflow/workflow.yaml`), the code package its Python and Bash tasks run (D28 class 2b, built from `workflow/code/` when there are such tasks), the scripts its Glue steps run (D28 class 2c, from `glue/`) and the terraform that instantiates them; **the D28 promotion lint** in Stage 8's shared gates file. An ASL port exists only if step 4's ladder reaches design B | — |
 | Domain portal (console, recorded) | the serverless-Workflows surface of a Sandbox project, as 6i used it (the `engineering` project profile left at 6b); the **OnDemand Workflows blueprint stays off** (it provisions a fee-bearing MWAA environment) | — |
 | `scripts/` | `layers.py`: `RANKS["orchestration"]` + the `[E]` row; `backend.py`: the slice row | — |
 
@@ -216,7 +216,11 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
 - **1.3 — [Claude] Write the execution role**: trust `airflow-serverless.amazonaws.com`
   (`sts:AssumeRole`; add `aws:SourceAccount` — the docs sample omits it, so if creation fails naming
   trust, drop the condition and record it). Permissions, enumerated:
-  - Glue: `glue:StartJobRun`/`GetJobRun`/`GetJobRuns`/`BatchStopJobRun` on the named jobs.
+  - Glue: `glue:GetJob`, `StartJobRun`, `GetJobRun`, `GetJobRuns` and `BatchStopJobRun` on the named jobs.
+    `GlueJobOperator` calls `GetJob` before every start and counts only `EntityNotFoundException` as
+    absent, so without it the task fails before the job starts (the Amazon provider 9.32.0 the worker
+    carries, read 2026-10-13, unmeasured). On an absent job it calls `CreateJob`, which this role does not
+    hold, so a name the application slice did not declare fails closed rather than creating a job.
   - SageMaker, from 6i's processing operator: `sagemaker:CreateProcessingJob` and `StopProcessingJob`;
     `DescribeProcessingJob` on a name that does not exist yet, since the operator checks first and counts
     only a `ValidationException` as absent, with no parameter to turn it off; `sagemaker:AddTags`, because a
@@ -281,8 +285,10 @@ definition authored in the portal names project-scoped values by design, and gra
   Sandbox run can test is the workflow's shape, not its jobs: every task runs as the project role, against
   the project's `shared/` storage and the house image, the lake share there is read-only, and the Stage 9
   producer and pickup Glue jobs exist in Production alone, so **Staging is the first real run**. No task is a
-  portal *Notebook task*: 6d decision due 14 took (b). The code a task runs itself uses `PythonOperator`,
-  `BashOperator` or a SageMaker processing job, the three shapes 6i measured on Sandbox's private shape.
+  portal *Notebook task*: 6d decision due 14 took (b). Nor is a Visual ETL flow or a query book scheduled
+  from the portal: the documentation runs both scheduling routes as the same notebook execution
+  ([`docs/SMUS.md`](../../SMUS.md), the workflow surface). The code a task runs itself uses
+  `PythonOperator`, `BashOperator` or a SageMaker processing job, the three shapes 6i measured on Sandbox's private shape.
   The portal's authoring rules (an import into an empty workflow, an import that cannot replace a saved one,
   the pre-filled operator-files location to empty when no file is uploaded) are
   [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §A.
@@ -297,8 +303,10 @@ definition authored in the portal names project-scoped values by design, and gra
   (no `dag_run`, and `ts_nodash` reads midnight on a manual run); and a templated list arrives as a string
   (6i decision 4's hand-over). A DAG that leans on any of these behaves differently here than in an
   ordinary Airflow, which is a fact to record about the service, not a defect to chase. Python callables
-  graduate as modules in `workflow/code/`. A Python or Bash task runs on a 1 vCPU / 3 GiB x86_64 worker
-  (vendor page) on Python 3.12, against a pre-installed Airflow 3.0.6 and Amazon provider 9.32.0 that win
+  graduate as modules in `workflow/code/`. A Visual ETL flow graduates as the script its editor
+  generates, into `glue/` as a Glue job of the application (D28 class 2c), its project connections turned
+  into job arguments; the `.vetl` and its portal schedule stay in the project. A Python or Bash task runs
+  on a 1 vCPU / 3 GiB x86_64 worker (vendor page) on Python 3.12, against a pre-installed Airflow 3.0.6 and Amazon provider 9.32.0 that win
   over any bundled version (6i measured the worker's PyYAML beating the archive's copy), so heavy work
   belongs in Glue or SageMaker. If authoring ever produces Python, AWS's
   `python-to-yaml-dag-converter-mwaa-serverless` converts it (AWS-provider operators only, no dynamic task
@@ -309,8 +317,12 @@ definition authored in the portal names project-scoped values by design, and gra
   hard-codes a `start_date` (rewritten at deploy time), uses an operator outside MWAA Serverless's
   supported list (the Amazon-provider operators, plus `PythonOperator` and `BashOperator`, which AWS
   added on 2026-08-17 by the guide's document history, the day after this stage's 2026-08-16 reading),
-  exceeds the **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`. **The code package
-  is what carries the no-internet constraint now**: with no internet path in the worker subnets (1.2), a
+  exceeds the **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`. **This stage needs
+  one rule 5.6 does not list yet, for class 2c**: reading the application slice rather than the
+  definition, it refuses a Glue job whose script, or a file its arguments name, lies outside the release's
+  own prefix (decision 12), and it applies rule (a)'s project-scoped patterns to the scripts in `glue/`,
+  where a Visual ETL flow's connection names surface. **The code package is what carries the no-internet
+  constraint now**: with no internet path in the worker subnets (1.2), a
   Python task's dependencies must be vendored into its package for Linux x86_64 and Python 3.12, so CI
   builds the package and imports every `python_callable` from it with networking off, which turns a
   runtime import failure into a CI failure. **[user]** Prove it once with a deliberately portal-scoped
@@ -331,7 +343,9 @@ definition authored in the portal names project-scoped values by design, and gra
   records the returned S3 `VersionId` — the value 1.1 pins, so a definition edit without a deploy
   cannot reach the workflow (`CreateWorkflow` snapshots anyway; the pin makes the intent explicit). When
   the workflow has Python or Bash tasks, the code package built from `workflow/code/` goes beside it and
-  its `VersionId` is recorded the same way. How one definition serves two accounts is decision 6.
+  its `VersionId` is recorded the same way. The scripts in `glue/` go to `workflows/app-etl/<tag>/glue/`,
+  where the application slice's Glue jobs name them; Glue reads them at every run and pins no version, so
+  what keeps them from changing is decision 12. How one definition serves two accounts is decision 6.
 
 ### 3. Schedule, retry, alerting (D28 item 5)
 
@@ -602,6 +616,19 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     design that is not built: the person who approves a promotion is the one who reads why its run failed.
     Open question 2's second part, which still names a comparison and a step 3.3 diagnosis, is answered by
     this.
+12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
+    `ScriptLocation`, and every file its arguments name, from S3 when each run starts and pins no version,
+    so a job runs whatever the key holds then: decision 7's problem, on the path that writes governed
+    data. Its dependencies travel the same way, as wheels beside the script, since a PyPI name needs a
+    route no job subnet has. Under the definitions home the problem has a second half:
+    `awsds-prod-job-exec` holds read and write on `awsds-prod-outputs` (Stage 9 3.1), so the role that runs
+    a script could rewrite it. Recommended: **the scripts under the release's own prefix,
+    `workflows/<app>/<tag>/glue/`, with a statement in `production/data/`'s bucket policy denying
+    `PutObject` and `DeleteObject` on `workflows/*` to every principal but the role the release job runs
+    as**, and 2.3's Glue rule refusing a script outside the release's prefix. The same statement serves
+    decision 7's alternative and keeps every definition and code package out of reach of the roles that
+    run them. The alternative is a release bucket written by the deploy role alone: the same separation, at
+    the cost of a second bucket and its key policy. Staging's copy follows decision 6.
 
 ## Verifications to answer while executing
 
@@ -628,6 +655,8 @@ Record every answer, including the ones that come out fine.
 | xvii | Does the deploy role's save read the definition and the code package in its own session, and does a run need the execution role to read them again? | 1.3, 1.5 |
 | xviii | Does a `Create*Job` from the execution role without one of the five settings fail, naming the policy Stage 9 decision 9 chose? | 1.3 |
 | xix | What does the domain's `list-lineage-events` hold after a Sandbox workflow run, read twice with a delay between? | 3.3 |
+| xx | Does a `GlueJobOperator` task start a job the application slice declared, with `GetJob` in the execution role's grant, and does an undeclared name fail on `CreateJob` rather than create a job? | 1.3 |
+| xxi | Under decision 12's statement, is a write to `workflows/` refused to `awsds-prod-job-exec` by the bucket policy's explicit deny, while the release job's copy lands? | 2.4 |
 
 ## Risks
 

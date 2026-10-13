@@ -527,6 +527,14 @@ workflow a person authored in the portal on 2026-08-27.
   controls, `PythonOperator` and `BashOperator` among them. Other operators do run: a portal-authored
   `S3CopyObjectOperator` task finished `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10).
   Query-book and Visual ETL tasks are unmeasured.
+- **A Visual ETL flow is documented to run as a notebook**, and a query book's editor schedule too
+  (read 2026-10-13; unmeasured). A flow is the file `<name>.vetl` in the project's repository, under
+  `src/dataflows/`, authored on Glue interactive sessions. The editor's schedule is an EventBridge
+  Scheduler schedule whose target is `CreateTrainingJob`, and the documented workflow route is a DAG whose
+  `NOTEBOOK_PATH` names the `.vetl`; MWAA Serverless lists `SageMakerNotebookOperator` as its only Unified
+  Studio artifact executor. A scheduled flow is therefore expected to meet the boundary a notebook task
+  meets. What reaches a deployment target is the generated script, as a Glue job of the application (D28
+  class (2c), Stage 10 step 2.2).
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 

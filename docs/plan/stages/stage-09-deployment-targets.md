@@ -882,7 +882,8 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
    first** (9.5a): the recommendation rests on a documentation sentence, and whether that cluster is created
    in this account at all is what decides it.
 6. **What a governed database is in D28's terms, and who creates its tables** (9.3, 9.4) — recommended: the
-   **DDL and the load job in the repository**, carried as ordinary application code, the pipeline the only
+   **DDL and the load job in the repository**, carried as ordinary application code (a load job Glue runs
+   is D28's class 2c, its script under the release's prefix by Stage 10 decision 12), the pipeline the only
    runner of the DDL, and the deployer's database user the only creator, with `ALTER DEFAULT PRIVILEGES FOR
    USER` granting the job role's rights through a role. A schema outside the repository leaves Staging's
    mirror with no source (decision 3's argument, one store later). The alternative, DDL run as the job role,
