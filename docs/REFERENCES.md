@@ -197,13 +197,16 @@
   `removed { from = <address>  lifecycle { destroy = false } }`, which removes the resource from state
   and leaves it alone: <https://developer.hashicorp.com/terraform/language/block/removed>.
 
-- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, not measured). The apply page
+- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, measured 2026-10-12). The apply page
   says the flag also prevents the approval prompt, so a run without `-auto-approve` fails:
   <https://developer.hashicorp.com/terraform/cli/commands/apply>. The 1.15.8 source says otherwise. An
   S3-backend apply runs in the local backend, which asks for approval whenever `-auto-approve` is
   absent and the plan has changes, and reads stdin without consulting the flag; the flag gates only the
   prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` (and
-  `scripts/buildbox.py` until the buildbox retired) pass the flag on every apply and destroy on this reading:
+  `scripts/buildbox.py` until the buildbox retired) pass the flag on every apply and destroy on this reading.
+  Measured on a local `terraform_data` resource: `apply -input=false` with no `-auto-approve` printed
+  *"Only 'yes' will be accepted to approve"* and, given no answer, *"error asking for approval: EOF"*,
+  applying nothing; so the source is right and a `make` target run without `AUTO=1` asks for a yes:
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_apply.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_local.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
