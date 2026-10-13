@@ -21,12 +21,6 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
 
   state_bucket_arn = "arn:${local.partition}:s3:::awsds-${var.env}-tfstate"
-
-  # The runner's sessions, as CloudTrail names the caller: assumed-role/<role name>/<session>. Read
-  # off the role's ARN, which carries no path here.
-  runner_account_id         = split(":", var.runner_role_arn)[4]
-  runner_role_name          = reverse(split("/", var.runner_role_arn))[0]
-  runner_session_arn_prefix = "arn:${local.partition}:sts::${local.runner_account_id}:assumed-role/${local.runner_role_name}/"
 }
 
 # ------------------------------------------------------------------------------- the ceiling
@@ -214,7 +208,10 @@ data "aws_iam_policy_document" "state" {
 
 # ------------------------------------------------------------------- the misuse alarm (4.6)
 #
-# An AssumeRole of this role by anyone but the runner's role, to the account's alerts topic.
+# An AssumeRole of this role by anyone but the runner's role, to the account's alerts topic. The caller
+# is matched by its principal id, `<role unique id>:<session name>`: the role's own account records a
+# caller from another account as type AWSAccount with no ARN, and both record shapes carry the principal
+# id (read 2026-10-13 in Staging, and tested with EventBridge's TestEventPattern on both shapes).
 # EventBridge classes STS AssumeRole as a read-only management event, and a rule in the default
 # ENABLED state matches every event except those: only the state below makes the rule fire. It sees a
 # successful assumption only, since a refused one records no roleArn; that one is read from the trail
@@ -233,7 +230,7 @@ resource "aws_cloudwatch_event_rule" "misuse" {
       eventSource       = ["sts.amazonaws.com"]
       eventName         = ["AssumeRole"]
       requestParameters = { roleArn = [{ "equals-ignore-case" = module.role.role_arn }] }
-      userIdentity      = { arn = [{ "anything-but" = { prefix = local.runner_session_arn_prefix } }] }
+      userIdentity      = { principalId = [{ "anything-but" = { prefix = "${var.runner_role_id}:" } }] }
     }
   })
 

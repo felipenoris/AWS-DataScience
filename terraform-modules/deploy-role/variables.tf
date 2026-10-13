@@ -32,6 +32,22 @@ variable "runner_role_arn" {
   }
 }
 
+variable "runner_role_id" {
+  description = "The deploy runner's role unique id (AROA...), read by the caller from IAM. The misuse rule names the runner's sessions by it, because the deploy role's own account records a caller from another account by its principal id alone (Stage 8 step 4.6). Required when misuse_alarm is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.runner_role_id == null || can(regex("^AROA[A-Z0-9]+$", var.runner_role_id))
+    error_message = "runner_role_id is a role's unique id: AROA followed by upper-case letters and digits."
+  }
+
+  validation {
+    condition     = !var.misuse_alarm || var.runner_role_id != null
+    error_message = "misuse_alarm needs runner_role_id: the rule tells the runner's sessions from any other caller by it."
+  }
+}
+
 variable "state_prefixes" {
   description = "The state-key prefixes of the slices this role applies, each ending in '/' (e.g. \"staging/egress/\"). Read, write and delete under each - the lock file sits beside the state."
   type        = list(string)
