@@ -546,7 +546,7 @@ def main(argv: list) -> int:
             if res.tolerated:
                 ecr_read = "(denied or no repository)"
             elif res.ok:
-                ecr_read = f"ok ({res.stdout.strip()} image(s) visible)"
+                ecr_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
             else:
                 ecr_read = "(call failed)"
             res = cli.run(

@@ -471,7 +471,7 @@ def main(argv: list) -> int:
         if res.tolerated:
             sandbox_read = "(denied or no repository)"
         elif res.ok:
-            sandbox_read = f"ok ({res.stdout.strip()} image(s) visible)"
+            sandbox_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
         else:
             sandbox_read = "(call failed)"
     if "awsds-infra-staging" in live and prod_account:
@@ -495,7 +495,7 @@ def main(argv: list) -> int:
         if res.tolerated:
             staging_read = "(denied or no repository)"
         elif res.ok:
-            staging_read = f"ok ({res.stdout.strip()} image(s) visible)"
+            staging_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
         else:
             staging_read = "(call failed)"
         # Whether the promotion chain has reached Staging: an application slice there holds state
