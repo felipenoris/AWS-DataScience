@@ -23,16 +23,18 @@
 #   awsds-prod-runner-token     the container for the runner's authentication token (`glrt-...`),
 #                               minted in GitLab's UI once the instance exists (6.1) and read by
 #                               every [E] runner at boot. No value resource, for the same reason.
+#   awsds-prod-runner-test-token  the same for the test runner, the unprotected runner whose jobs
+#                               hold no AWS identity (Stage 8 decision 11).
 #   alias/awsds-prod-gitlab     the CMK under both buckets and the data volume. Its own key rather
 #                               than the registry's, for D14's option-preservation reason: if the
 #                               supply chain ever moves to a Shared Services account, GitLab leaves
 #                               with its buckets and its key, and the registry with its own.
 #
-# The two secrets carry a resource policy denying GetSecretValue to every principal but the one
-# role that consumes each and InfrastructureAccess - the shape production/networking/'s host-key
+# The secrets carry a resource policy denying GetSecretValue to every principal but the one role
+# that consumes each and InfrastructureAccess - the shape production/networking/'s host-key
 # container settled (6c step 4.1). The role names are a contract with tooling/ and runners/, whose
-# iam-role modules name them `awsds-<env>-gitlab` and `awsds-<env>-runner`: a [P] slice cannot read
-# a [D] or [E] slice's outputs, so the name is the seam.
+# iam-role modules name them `awsds-<env>-gitlab`, `awsds-<env>-runner` and `awsds-<env>-runner-test`:
+# a [P] slice cannot read a [D] or [E] slice's outputs, so the name is the seam.
 #
 # CostCenter: the two module-built buckets and the key take this slice's default_tags
 # (`stage-03`), since neither module takes a tag map; the secrets, declared here, say `stage-07`.
@@ -144,6 +146,47 @@ resource "aws_secretsmanager_secret_policy" "runner_token" {
           StringNotLike = {
             "aws:PrincipalArn" = [
               "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-runner",
+              local.infrastructure_access_arn_pattern,
+            ]
+          }
+        }
+      }
+    ]
+  })
+}
+
+# The test runner's token (Stage 8 decision 11). Its role lives with its host in runners/, as the build
+# runner's does: no trust policy names it, so nothing keeps its unique id.
+resource "aws_secretsmanager_secret" "test_runner_token" {
+  # checkov:skip=CKV2_AWS_57:no rotation - the token is minted in GitLab's UI (Stage 8 decision 11) and replaced there, never by a Lambda that GitLab does not know about
+  # checkov:skip=CKV_AWS_149:the aws/secretsmanager managed key, deliberately - the containment is the resource policy below
+  name        = "awsds-${var.env}-runner-test-token"
+  description = "The test runner's authentication token (glrt-...), copied in by the user once the runner exists in GitLab (Stage 8 decision 11) and read by every [E] test runner at boot. Never written by Terraform."
+
+  recovery_window_in_days = 30
+
+  tags = {
+    Name       = "awsds-${var.env}-runner-test-token"
+    CostCenter = "stage-08"
+  }
+}
+
+resource "aws_secretsmanager_secret_policy" "test_runner_token" {
+  secret_arn = aws_secretsmanager_secret.test_runner_token.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "DenyValueReadExceptTestRunnerAndInfrastructure"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "secretsmanager:GetSecretValue"
+        Resource  = "*"
+        Condition = {
+          StringNotLike = {
+            "aws:PrincipalArn" = [
+              "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-runner-test",
               local.infrastructure_access_arn_pattern,
             ]
           }

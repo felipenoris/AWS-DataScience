@@ -18,6 +18,7 @@
 | `awsds-prod-gitlab-secrets` (`gitlab-secrets.json`), `awsds-prod-runner-token` | `production/foundation/`, containers only | `[P]` |
 | the root CA, the two leaves, their keys in `awsds-prod-tls-gitlab` / `awsds-prod-tls-pages`, the certificates in `/datascience/prod/pki/*-pem` and `s3://awsds-prod-gitlab-objects/pki/` | `production/pki/` | `[P]`, never destroyed |
 | the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/` |
+| the deploy runner `awsds-prod-runner-deploy` and the test runner `awsds-prod-runner-test`, two `t3a.small` | the same | `[E]` `production/runners/`; their token containers in `production/foundation/` |
 | the `secretsmanager` endpoint beside 6c's thirteen | `production/egress/` | `[E]` |
 
 Everything reaches the internet through `proxy.awsds.internal:3128` and nothing else: there is no default route in the VPC (D38). Everything reaches AWS through the VPC's endpoints and the S3 gateway, which is what the bypass list says.
@@ -424,6 +425,23 @@ A runner created twice leaves the first one in GitLab with no manager; it is del
 
 The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
 
+### The test runner
+
+The test runner (Stage 8 decision 11) is the one runner that serves an **unprotected** branch: a project runner of `awsds/app-etl`, linked to `awsds/dev-env` and `awsds/ci-gates` and locked, with the tag `awsds-test` and no untagged jobs. Whoever can push a branch can run code on it, so its jobs get nothing: the instance's metadata hop limit is 1, a token's response dies at the docker bridge, and a job container reads no AWS identity. The host's role holds Session Manager, its token and the CA root, read by the boot. Its jobs pull public images through the proxy.
+
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-test`, **Run untagged jobs** unchecked, description `awsds-prod-runner-test`, **Protected** unchecked, maximum job timeout `3600`.
+2. **Put the token into its container**, as for the build runner:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-test-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `awsds/dev-env` and `awsds/ci-gates`** and **Lock to current projects**, as step 3 above.
+
+**What a test job can rely on**: the proxy variables in both cases and the CA root at `/etc/gitlab-runner/certs/ca.crt`; no `ECR_REGISTRY`, no credential helper and no AWS identity. The shared gates name its tag (§G).
+
+The first boot reads the control it exists for, from a container: `no token from a container: the jobs hold no AWS identity` in `/var/log/awsds-runner-boot.log` (§U's console command with the Name `awsds-prod-runner-test`), then registers as `awsds-prod-runner-test-<instance id>`. `./aws/cicd.py` `CI-9` reads the hop limit and the role back.
+
 ## A. SAML
 
 Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) stays as the break-glass. The order:
@@ -463,7 +481,7 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 |---|---|
 | `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
-| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy runner 0.0188 |
+| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy and test runners 0.0188 each |
 
 ---
 

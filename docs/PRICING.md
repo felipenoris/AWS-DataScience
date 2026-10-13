@@ -686,7 +686,7 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | Access Analyzer custom policy checks (per API request) | 0.002 | 0.002 | **1.00** |
 | **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
 | Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
-| **Secrets Manager** secret (USD/secret-mo). **Four at Stage 7** (2026-10-12): `gitlab-secrets.json` and the runner token (step 1.1), the two leaf keys (2.4) — 1.60/month on the floor; the VPN host key was the first (6c 4.1); Stage 8 step 4.3 adds the deploy runner's token container (2026-10-12) | 0.40 | 0.40 | **1.00** |
+| **Secrets Manager** secret (USD/secret-mo). **Four at Stage 7** (2026-10-12): `gitlab-secrets.json` and the runner token (step 1.1), the two leaf keys (2.4) — 1.60/month on the floor; the VPN host key was the first (6c 4.1); Stage 8 step 4.3 adds the deploy runner's token container (2026-10-12), and decision 11 the test runner's | 0.40 | 0.40 | **1.00** |
 | Secrets Manager API calls (per 10k) | 0.05 | 0.05 | **1.00** |
 | **CloudWatch** logs ingested, Standard class (USD/GB) | 0.90 | 0.50 | 1.80 |
 | CloudWatch logs, Infrequent Access class (USD/GB) | 0.45 | — | |
@@ -815,7 +815,7 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
 | EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
-| EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0302 | 0.0188 | 1.61 |
+| EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
