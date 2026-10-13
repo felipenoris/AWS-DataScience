@@ -255,3 +255,29 @@ Account ids are replaced by the account's name in angle brackets.*
   `MatchedEvents`, `TriggeredRules`, `Invocations` or `FailedInvocations` on `awsds-staging-deploy-misuse`
   and `awsds-prod-deploy-misuse`, and none for `NumberOfMessagesPublished` on either alerts topic. Staging's
   rule reads `userIdentity.arn`, which a cross-account record does not carry.
+
+## 2026-10-13 — the misuse rule names the runner by its role id (`deploy-role-v0.2.0`)
+
+- **[user] The fix authorized in chat**, after the cross-account finding: a new module version and the
+  applies of `production/foundation/` and `staging/foundation/`.
+- **[Claude] Both patterns tested with EventBridge's `TestEventPattern`** (`aws events
+  test-event-pattern`), against the runner's real records and three variants with another caller. The
+  deployed pattern, exempting the runner by `userIdentity.arn`: Staging's real record `False`, another
+  account's role in it `False`, a Staging role `True`; Production's real record `False`, another
+  Production role `True`. The proposed one, by `userIdentity.principalId` `anything-but` prefix
+  `<runner role unique id>:`: the same, except another account's role in Staging `True`. An absent field
+  does not match `anything-but`.
+- **[Claude] `deploy-role-v0.2.0`**, tagged on `1acf7b0` and read back from origin: the rule matches
+  `userIdentity.principalId`, and a new input `runner_role_id` is required when `misuse_alarm` is true.
+  The callers read the id from IAM (`data "aws_iam_role"`, in Staging through the `deploy_runner` alias);
+  all three pin `v0.2.0` (`29733fc`). Plans, against the local module and again against the tag: Production
+  and Staging `0 to add, 1 to change, 0 to destroy`, the rule's `event_pattern` alone; Sandbox, which
+  carries no rule, `No changes`.
+- **[Claude] The four sessions on this machine told before the applies**, then both applied from saved
+  plans: `module.deploy_role.aws_cloudwatch_event_rule.misuse[0]: Modifications complete after 1s` in
+  each, `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`, each re-plan `No changes`.
+  `TestEventPattern` on the deployed patterns now reads the proposed column above.
+- **[Claude] `./aws/cicd.py` `CI-7`** now also reads each rule's pattern and fails one that exempts the
+  runner by ARN, or by anything but the runner role's unique id: both rules `pass`, `CI-8` `8 event(s),
+  every caller is the deploy runner`, 0 FAILED. Still unread: whether Staging's bus receives a
+  cross-account record at all, which verification (xvi) answers.

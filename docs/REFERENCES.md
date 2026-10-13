@@ -1165,6 +1165,14 @@
   <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/cloudwatch_event_rule.html.markdown>.
   Its price page (read 2026-10-12): *"AWS management events are ingested by the event bus for free"*, so
   the misuse rules cost nothing to receive what they match: <https://aws.amazon.com/eventbridge/pricing/>.
+- CloudTrail's record of a cross-account `AssumeRole` in the role's own account (read 2026-10-13, for Stage 8
+  step 4.6): *"CloudTrail logs AssumeRole calls in the role-owning account (the account being accessed)"*,
+  with `userIdentity` of type `AWSAccount`, the caller's `principalId` and `accountId`, and no `arn`; the
+  post is dated 2016-11-16:
+  <https://aws.amazon.com/blogs/security/aws-cloudtrail-now-tracks-cross-account-activity-to-its-origin/>.
+  EventBridge's comparison operators (read 2026-10-13): `anything-but` *"matches anything except what's
+  specified in the rule"*, and only `exists` speaks of an absent field:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 

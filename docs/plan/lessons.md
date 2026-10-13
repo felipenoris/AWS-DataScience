@@ -1764,6 +1764,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   account as `HIDDEN_DUE_TO_SECURITY_REASONS`. The announcement names S3 and never says "gateway".
   Where: `log-stage-06i`'s 4.2a reading.
 
+- **A role's own account records a caller from another account with no ARN, and an absent field fails
+  EventBridge's `anything-but`** (measured 2026-10-13, Stage 8 step 4.6). Staging's copy of the deploy
+  runner's `AssumeRole` reads `userIdentity.type` `AWSAccount`, a `principalId` of `<role unique
+  id>:<session name>`, the caller's `accountId` and a `sharedEventID`, and no `arn`. `TestEventPattern`
+  answered `false` for a pattern exempting the runner by `userIdentity.arn` on that record with another
+  account's role in it, so the rule could never fire on a caller from outside. The operators page says
+  `anything-but` matches *"anything except what's specified"* and speaks of absence only under `exists`.
+  Whether the role's account delivers that copy to its event bus is unread. Where: `log-stage-08`'s
+  2026-10-13 entries, `deploy-role-v0.2.0`.
+
 ### SageMaker processing jobs
 
 - **A processing job reads `Completed` minutes after it ends, and the operator bills the wait**

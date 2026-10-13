@@ -31,8 +31,9 @@
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
 #     awsds-deploy-devenv-sandbox (step 4.2, INT-18)
-#   - the misuse-alarm rules carry "deploy-misuse" in their name and the state
-#     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS (step 4.6)
+#   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
+#     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
+#     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
 #   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
 #
@@ -79,6 +80,23 @@ STAGING_STATE_BUCKET = "awsds-staging-tfstate"
 STAGING_APP_STATE_PREFIX = "staging/app/"
 DEVENV_IMAGE_SUBSTR = "dev-env"
 LOOKUP_MAX = 50  # CloudTrail lookup page - 90 days of AssumeRole is small at lab scale
+
+
+def misuse_caller_field(pattern_text: str, runner_role_id: str) -> str:
+    """Which caller field a misuse rule's pattern exempts the runner by: "principalId" when it is the
+    runner role's unique id, "arn" for the ARN pattern a cross-account record defeats, else "other"."""
+    try:
+        pattern = json.loads(pattern_text or "{}")
+    except ValueError:
+        return "other"
+    ident = (pattern.get("detail") or {}).get("userIdentity") or {}
+    for cond in ident.get("principalId") or []:
+        if (
+            isinstance(cond, dict)
+            and (cond.get("anything-but") or {}).get("prefix") == f"{runner_role_id}:"
+        ):
+            return "principalId"
+    return "arn" if "arn" in ident else "other"
 
 
 def main(argv: list) -> int:
@@ -266,7 +284,7 @@ def main(argv: list) -> int:
     built = roles_found > 0 or bool(runner_rows)
 
     # ------------------------------------------- the misuse-alarm rules (step 4.6, D14)
-    rule_rows: list = []  # (profile, rule, state)
+    rule_rows: list = []  # (profile, rule, state, event pattern)
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
@@ -275,14 +293,16 @@ def main(argv: list) -> int:
             "events",
             "list-rules",
             "--query",
-            "Rules[].[Name,State]",
+            "Rules[].[Name,State,EventPattern]",
             "--output",
             "json",
             log=False,
         )
-        for rname, state in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+        for rname, state, pattern in (
+            json.loads(res.stdout or "[]") if res.ok and res.stdout else []
+        ):
             if MISUSE_RULE_SUBSTR in str(rname):
-                rule_rows.append((p, str(rname), str(state)))
+                rule_rows.append((p, str(rname), str(state), str(pattern or "")))
 
     # ------------------- the app-repository grant and the Staging read (INT-07's halves)
     app_policy_state = "(not measured)"
@@ -594,9 +614,11 @@ def main(argv: list) -> int:
             "Stage 8 step 1.6.",
         )
 
-    # CI-7: the misuse-alarm rules exist in both promotion accounts and receive AssumeRole (4.6).
-    # EventBridge classes STS AssumeRole as a read-only management event, and a rule in plain
-    # ENABLED state matches every event except those, so it is a rule that never fires.
+    # CI-7: the misuse-alarm rules exist in both promotion accounts, receive AssumeRole, and exempt
+    # the runner by its role's unique id (4.6). EventBridge classes STS AssumeRole as a read-only
+    # management event, and a rule in plain ENABLED state matches every event except those, so it is
+    # a rule that never fires. A pattern on userIdentity.arn cannot see a caller from another account,
+    # which the deploy role's own account records by its principal id alone.
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
@@ -609,9 +631,32 @@ def main(argv: list) -> int:
                 + ("step 4.6's compensation is absent." if built else "expected before 4.6."),
             )
         else:
-            for _p, rname, state in mine:
-                if state == MISUSE_RULE_STATE:
-                    checks.ok("CI-7", f"rule {rname} ({p})", state)
+            for _p, rname, state, pattern in mine:
+                field = misuse_caller_field(pattern, runner_role_id) if runner_role_id else ""
+                if state == MISUSE_RULE_STATE and field == "principalId":
+                    checks.ok(
+                        "CI-7", f"rule {rname} ({p})", f"{state}, the runner exempt by role id"
+                    )
+                elif state == MISUSE_RULE_STATE and not field:
+                    checks.note(
+                        "CI-7",
+                        f"rule {rname} ({p})",
+                        f"{state}; the pattern is unread without the runner role's id.",
+                    )
+                elif state == MISUSE_RULE_STATE and field == "arn":
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "it exempts the runner by userIdentity.arn, which this account does not record "
+                        "for a caller from another account; deploy-role-v0.2.0 reads the principal id.",
+                    )
+                elif state == MISUSE_RULE_STATE:
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "its pattern does not exempt the runner role's unique id: the runner would "
+                        "fire it, or another caller would not.",
+                    )
                 elif state == "ENABLED":
                     checks.fail(
                         "CI-7",
@@ -783,7 +828,7 @@ What the checks are, and where each comes from:
   CI-4  the runner role assumes ONLY the enumerated awsds-deploy-* ARNs (4.3)
   CI-5  the app-repository grant, and the read from Staging (3.0, INT-07)
   CI-6  the dev-env container image agrees across Interactive accounts (1.6, D17)
-  CI-7  the *deploy-misuse* rules exist and receive read-only management events (4.6)
+  CI-7  the *deploy-misuse* rules receive read-only management events and exempt the runner by role id (4.6)
   CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)""")
 
         # ==============================================================================
