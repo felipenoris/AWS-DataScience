@@ -158,3 +158,44 @@ Account ids are replaced by the account's name in angle brackets.*
   (`m8i.xlarge`) was created from #118's user data, without the ECR credential helper or `ECR_REGISTRY`.
   Planned from this branch's code: `egress/` `0 to add, 0 to change, 2 to destroy`
   (`sagemaker.api`, `sagemaker.runtime`); `runners/` `aws_instance.runner must be replaced`.
+
+## 2026-10-13 — the deploy image and the deploy runner's anchors in GitLab
+
+- **[Claude, through the user's Chrome, at the user's request] GitLab project `awsds/deploy-image`**:
+  private, empty, one member (the local administrator, Owner, inherited from `awsds`); the build runner
+  (#1) assigned to it in the admin area, staying Protected, locked and untagged; the minimum role to pass
+  pipeline variables raised from Developer to Maintainer, read back after a reload.
+- **[user] The deploy runner in GitLab**: a protected project runner of `awsds/app-etl`, tag
+  `awsds-deploy`, no untagged jobs, locked, maximum job timeout 3600 s, assigned to `awsds/dev-env`.
+  Two such runners exist, #2 (created about 02:42 UTC, no timeout) and #3 (about 03:20 UTC); the token
+  container `awsds-prod-runner-deploy-token` holds two versions, `AWSPREVIOUS` put 02:44:11 UTC and
+  `AWSCURRENT` 03:20:58 UTC, so #3 is the current token by the times. #2 is to be deleted once the
+  instance registers.
+- **[Claude] Applies, authorized by the user**: `production/registry/` 2 added (`awsds-prod-ecr-deploy`,
+  `IMMUTABLE`, scan on push, KMS, and its lifecycle policy), `production/foundation/` outputs only
+  (`deploy_role_arns`), `production/runners/` 0 added, 1 changed (the build runner's push statement gains
+  the new repository; read before the build, since the role's list is fixed at that slice's apply). Each
+  re-plan `No changes`.
+- **[Claude] `.gitlab-ci.yml` committed to `awsds/deploy-image`** through the GitLab API in the browser
+  session (status 201), read back and equal to `images/deploy/build.gitlab-ci.yml` by SHA-256; `main`
+  protected for Maintainers; no pipeline started by the commit.
+- **[Claude] Pipeline #5 run from the Run pipeline form** (`IMAGE_TAG=v0.1.0`,
+  `RECIPE_SHA=de2dc08c9cade13a6279e7c70199b2ac31b38e76`, source `web`): job 14 on `awsds-prod-runner`,
+  **success in 68 s**. The base `python:3.14-slim` came through the cache at index
+  `sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170` (Debian 13);
+  `terraform.zip: OK`, `Terraform v1.15.8`; `uv.tar.gz: OK`, `uv 0.12.13`; `gpg: Good signature from
+  "AWS CLI Team <the team's address>"`, `aws-cli/2.37.12`. Pushed `awsds-prod-ecr-deploy:v0.1.0`,
+  `sha256:1b1a583030cc7b963c2bd9ffdaf57af215aa6dd76e3599139bc8cf06dc38a53a`, 208,935,352 bytes.
+- **[Claude] Its scan**, `COMPLETE`: CRITICAL 2, HIGH 8, MEDIUM 10, LOW 4, by source package `curl` (2
+  CRITICAL, CVE-2026-8924 and CVE-2026-8927, 1 HIGH), `glibc` (2 HIGH), `expat` (2 HIGH), `gnupg2`,
+  `cyrus-sasl2` and `zlib` (1 HIGH each). Debian's tracker reads trixie `8.14.1-2+deb13u5 vulnerable`,
+  `<no-dsa> (Minor issue)`, fixed only in forky and sid: no fixed package exists for this base, and git,
+  which the jobs need, links libcurl.
+- **[user] Accepted `v0.1.0`** with its two CRITICALs named, CVE-2026-8924 and CVE-2026-8927, as the
+  deploy image's baseline (decision 1); a rebuild is owed once Debian 13 ships a fixed curl. **Authorized
+  the `production/runners` apply** that creates the deploy runner, as the infrastructure user, account
+  Production, permission set `InfrastructureAccess`.
+- **[Claude] `deploy_image_digest` pinned** to `sha256:1b1a5830…a53a` in `production/runners/variables.tf`.
+  Planned before the apply: `Plan: 1 to add, 0 to change, 0 to destroy`, `aws_instance.deploy_runner[0]`
+  (`t3a.small`, instance profile `awsds-prod-runner-deploy`), the rendered configuration holding the
+  profiles `awsds-deploy-prod`, `awsds-deploy-devenv-sandbox` and `awsds-deploy-staging`.
