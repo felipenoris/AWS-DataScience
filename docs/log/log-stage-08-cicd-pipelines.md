@@ -326,3 +326,21 @@ Account ids are replaced by the account's name in angle brackets.*
   `sessionToken`, expiring 06:08:32Z. CloudTrail writes no secret access key, so the pair cannot sign a
   request; still, every alert puts a session token in a mailbox. An input transformer on the rule's
   target would send the caller, the role, the time and the source address alone. Not written.
+
+## 2026-10-13 — the misuse alert without its credentials (`deploy-role-v0.3.0`)
+
+- **[user] The input transformer authorized in chat**, after asking whether a token in the email is
+  dangerous. Claude's answer: the record carries no secret access key, so the pair cannot sign a request,
+  and that session had expired at 06:08:32Z; the email is a copy of account ids and identifiers in a
+  mailbox, outside AWS.
+- **[Claude] The transformer, from EventBridge's input transformation page**: a path missing from the
+  event drops its variable rather than failing the target; an extracted value is not escaped, so no field
+  the caller writes freely goes in (the `userAgent` stays out); a multi-line string is one quoted string
+  per line. The message: the rule's name, the time, the role, the caller's `principalId`, type and
+  account, the session name, the source address and the event id.
+- **[Claude] `deploy-role-v0.3.0`**, tagged on `52b1c3b` and read back from origin; the three callers on it
+  (`49c25a8`). Plans against the local module and against the tag: Production and Staging `0 to add, 1 to
+  change, 0 to destroy`, the alert target alone; Sandbox `No changes`. The three sessions on this machine
+  told (the fourth had ended), both applied from saved plans, `Modifications complete after 1s` and each
+  re-plan `No changes`; `list-targets-by-rule` reads 8 input paths and the template on both rules. The
+  message itself is unread until the rule fires.

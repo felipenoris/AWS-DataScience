@@ -1173,6 +1173,10 @@
   EventBridge's comparison operators (read 2026-10-13): `anything-but` *"matches anything except what's
   specified in the rule"*, and only `exists` speaks of an absent field:
   <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html>.
+  EventBridge's input transformation (read 2026-10-13, for the misuse alert's message): a variable whose
+  path the event lacks is dropped from the output, extracted values are not escaped, and a multi-line
+  string template is one quoted string per line:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 

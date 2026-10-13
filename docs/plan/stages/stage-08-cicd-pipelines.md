@@ -470,6 +470,11 @@ the approval, and 4.6's alarm.
   The refused attempts are recorded in the caller's account only, with `requestParameters` null:
   neither rule nor `CI-8` can see them, and the trail's `errorCode` and `errorMessage` can. `CI-8`
   excuses the two test sessions by name and minute.
+- **4.6 — Applied 2026-10-13 by Claude, authorized by the user: `deploy-role-v0.3.0`.** The rule's target
+  carries an input transformer: one line each for the rule, the time, the role, the caller's principal id,
+  type and account, the session name, the source address and the event id, and no credential. No field
+  the caller writes freely goes in, since EventBridge does not escape an extracted value. Production and
+  Staging 1 changed each, re-plans `No changes`; the message is unread until the rule next fires.
 
 ### 5. Security gates — written once, included by every pipeline (Lesson 12)
 
