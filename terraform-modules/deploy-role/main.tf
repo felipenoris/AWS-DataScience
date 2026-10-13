@@ -239,10 +239,39 @@ resource "aws_cloudwatch_event_rule" "misuse" {
   }
 }
 
+# The message names the event and leaves its record in CloudTrail: the whole event would carry the new
+# session's access key id and session token into a mailbox. Every path below exists in both record
+# shapes (userIdentity.arn does not, cross-account), and none is free text the caller chooses, because
+# EventBridge does not escape an extracted value and a quote in one (a userAgent) would break the
+# message. A multi-line string template is one quoted string per line.
 resource "aws_cloudwatch_event_target" "misuse" {
   count = var.misuse_alarm ? 1 : 0
 
   rule      = aws_cloudwatch_event_rule.misuse[0].name
   target_id = "alerts-topic"
   arn       = var.alerts_topic_arn
+
+  input_transformer {
+    input_paths = {
+      time           = "$.detail.eventTime"
+      role           = "$.detail.requestParameters.roleArn"
+      session        = "$.detail.requestParameters.roleSessionName"
+      principal      = "$.detail.userIdentity.principalId"
+      caller_type    = "$.detail.userIdentity.type"
+      caller_account = "$.detail.userIdentity.accountId"
+      source         = "$.detail.sourceIPAddress"
+      event_id       = "$.detail.eventID"
+    }
+    input_template = chomp(<<-EOT
+      "<aws.events.rule-name>: a deploy role was assumed by a caller other than the deploy runner's role."
+      "When: <time>"
+      "Role: <role>"
+      "Caller: <principal> (type <caller_type>, account <caller_account>)"
+      "Session name: <session>"
+      "Source address: <source>"
+      "CloudTrail event id: <event_id>"
+      "The full record stays in CloudTrail; this message carries no credential."
+    EOT
+    )
+  }
 }
