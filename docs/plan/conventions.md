@@ -616,24 +616,25 @@ The template for an application written by a data scientist and intended for dep
 
 ```
 app-etl/
-├── src/
-│   ├── main.py
-│   ├── pipeline/
-│   └── sql/
+├── src/app_etl/
+│   ├── pipeline.py   # the transformation
+│   └── __main__.py   # the command a processing job runs
 ├── tests/
-│   ├── test_pipeline.py
-│   └── test_sql.py
-├── .gitlab-ci.yml
-├── Dockerfile # builds the application Docker container for deployment
+│   └── test_pipeline.py
+├── samples/          # synthetic input: the image's smoke test and a Sandbox job read it
+├── .gitlab-ci.yml    # the pipeline, with the shared gates of awsds/ci-gates
+├── Dockerfile        # the application image, FROM base by digest, and the job image
 ├── workflow/
 │   ├── workflow.yaml # the MWAA Serverless definition (dag-factory YAML), checked by the D28 lint
 │   └── code/         # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
 ├── glue/             # one script per Glue job, a Visual ETL flow's generated script among them (D28 class 2c)
-├── pyproject.toml
+├── pyproject.toml    # and uv.lock
 └── README.md
 ```
 
-The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>. The
+The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
+`awsds/app-etl` at Stage 8 step 2.2; `workflow/` and `glue/` join it at Stage 10. The development stack is
+similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
 application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
 release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflow/` is

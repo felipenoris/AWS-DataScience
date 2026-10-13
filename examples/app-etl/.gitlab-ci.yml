@@ -1,0 +1,112 @@
+# app-etl's pipeline (Stage 8 step 2.2), the application build pipeline the objectives name.
+#
+#   every push            the tests, ruff and the gates (Secret Detection on branches, pip-audit)
+#   the default branch    and the docs, published to Pages
+#   a tag v<semver>       and the image: FROM base by digest, smoke-tested with networking off, pushed
+#                         to awsds-prod-ecr-app-etl as v<semver>-<short sha>, then the scan gate
+#
+# Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
+# test runner, whose jobs hold no AWS identity. The image job and the scan gate are untagged, so only the
+# build runner takes them, a protected runner that serves protected refs alone; the tag v* is protected,
+# created by Maintainers only (step 2.1), which in CE is the whole of the release gate.
+
+include:
+  - project: awsds/ci-gates
+    ref: <ci-gates commit>          # gates-v0.1.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify]
+
+variables:
+  GATES_UV_PROJECTS: "."
+  IMAGE_REPO: awsds-prod-ecr-app-etl
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+test:
+  extends: .gates-uv
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run ruff check
+    - uv run ruff format --check
+    - uv run pytest
+
+pages:
+  extends: .gates-uv
+  stage: build
+  script:
+    - uv sync --locked
+    - uv run pdoc app_etl --output-directory public
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# BuildKit rootless, as Stage 7's pipelines run it: v0.34.0, the release `rootless` named on 2026-10-12,
+# by digest. Two builds share the job's cache: `smoke` first, which builds `app` and runs the job's command
+# on it, then `app` itself, pushed. The digest goes to the scan gate as a dotenv report.
+image:
+  stage: build
+  image:
+    name: moby/buildkit:v0.34.0-rootless@sha256:65eca3c01cd1180c8f64565c4e3c5983af5145818b0e6fa863385d099eb73855
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      mkdir -p ~/.docker
+      printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+      proxy_args="--opt build-arg:http_proxy=$http_proxy --opt build-arg:https_proxy=$https_proxy --opt build-arg:HTTP_PROXY=$HTTP_PROXY --opt build-arg:HTTPS_PROXY=$HTTPS_PROXY --opt build-arg:no_proxy=$no_proxy --opt build-arg:NO_PROXY=$NO_PROXY"
+      ref="$ECR_REGISTRY/$IMAGE_REPO:$CI_COMMIT_TAG-$CI_COMMIT_SHORT_SHA"
+      echo "== smoke: the job's command as the image's user, networking off, the output owned by root"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=smoke --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args
+      echo "== push: $ref"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=app --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args \
+        --opt label:org.opencontainers.image.revision="$CI_COMMIT_SHA" \
+        --opt label:org.opencontainers.image.version="$CI_COMMIT_TAG" \
+        --output type=image,name="$ref",push=true --metadata-file image.json
+      digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' image.json | grep -o 'sha256:[0-9a-f]*')"
+      echo "SCAN_DIGEST=$digest" > image.env
+      echo "== pushed $ref@$digest"
+  artifacts:
+    reports:
+      dotenv: image.env
+
+scan-gate:
+  extends: .gates-ecr-scan
+  stage: verify
+  needs: [image]
+  variables:
+    SCAN_REPOSITORY: awsds-prod-ecr-app-etl
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+
+# Verification (xiii), run by hand: the pip-audit gate with the proxy variables removed. No route leaves
+# VPC-SharedServices but the proxy, so the job must fail, and the time it takes says whether it failed or
+# hung until the bound.
+gate-without-proxy:
+  extends: .gates-uv
+  stage: verify
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  allow_failure: true
+  script:
+    - |
+      set -u
+      start=$(date +%s)
+      rc=0
+      env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy timeout 300 \
+        uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
+      echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
+      [ "$rc" -ne 0 ]

@@ -1,0 +1,44 @@
+# app-etl - the first application, and the template conventions §6 describes (Stage 8 step 2).
+#
+# Python 3.12 because the image runs it on base's interpreter, the SageMaker Distribution's CPython 3.12,
+# and the test runner's jobs use the same minor version. pyarrow is the one runtime dependency, and its
+# extension module is why the image installs a wheel built for linux/amd64 rather than any wheel that
+# resolves. The development tools stay in the dev group, which the image and the pip-audit gate leave
+# out (`--no-dev`).
+
+[project]
+name = "app-etl"
+version = "0.1.0"
+description = "Every CSV in a directory becomes a Parquet table and a JSON summary"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pyarrow>=21"]
+
+[project.scripts]
+app-etl = "app_etl.__main__:main"
+
+[dependency-groups]
+dev = ["pdoc>=15", "pytest>=8", "ruff>=0.12"]
+
+# The resolver sees nothing published after this instant, so a release reaches the image no sooner than two
+# weeks after it appears: the delay the infrastructure repository gives an action it pins. Moved forward
+# deliberately, with `uv lock --upgrade` in the same commit.
+[tool.uv]
+exclude-newer = "2026-09-29T00:00:00Z"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_etl"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
