@@ -825,6 +825,24 @@
   `AmazonS3` (`2026-10-12T17:53:18Z`)
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
 
+- **Visual ETL in an Identity Center domain** (read 2026-10-13; documentation, nothing measured): a flow
+  is authored on AWS Glue interactive sessions, Glue 4.0, 5.0 or 5.1
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/visual-etl.html>; the editor
+  shows the code it generates and can convert the flow to a notebook
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/visual-etl-identity-center-domains.html>;
+  *Save to project* shares the job with the project's members, and its compute runs in
+  `project.spark.fineGrained` or `project.spark.compatibility` mode
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/identity-center-getting-started-visual-etl.html>.
+  A saved flow is the file `<name>.vetl` in the project's repository, under `src/dataflows/` by default,
+  and two routes schedule it: the editor's schedule, which needs scheduling enabled in the Tooling
+  blueprint's parameters, and a workflow DAG whose `NOTEBOOK_PATH` names the `.vetl`, "the dataflow's
+  notebook file"
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/identity-center-schedule-visual-etl.html>.
+  The editor's schedule is an EventBridge Scheduler schedule whose target is `CreateTrainingJob`, the
+  training job running the flow, and a project role under a permissions boundary needs an explicit allow
+  for `GetScheduleGroup` (AWS Big Data Blog, 2025-04-30)
+  <https://aws.amazon.com/blogs/big-data/unified-scheduling-for-visual-etl-flows-and-query-books-in-amazon-sagemaker-unified-studio/>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
@@ -1368,7 +1386,8 @@
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 
 - Stage 10's documentation pass (read 2026-08-16):
-  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
+  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>. **Re-read 2026-10-13**: `SageMakerNotebookOperator` "provides artifact execution functionality" for Unified Studio workflows, and `GlueJobOperator` "creates an AWS Glue job".
+  - *The Amazon provider at 9.32.0, the version the worker pre-installs* (read 2026-10-13): `GlueJobOperator` runs `GlueJobHook.initialize_job`, which calls `get_job` on the named job before `start_job_run`, and `create_job` when the job is absent (`update_config` defaults to false); `has_job` treats only `EntityNotFoundException` as absent: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>. `SageMakerNotebookOperator` describes itself as Jupyter notebook artifact execution for Unified Studio workflows, and its hook calls the `sagemaker_studio` SDK's `execution_client.start_execution`: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker_unified_studio.py> and <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker_unified_studio.py>.
   - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
@@ -1398,6 +1417,8 @@
 - `terraform-aws-sagemaker-unified-studio` - the official aws-ia module for provisioning SageMaker Unified Studio (domain + IAM via the aws provider, project profiles/blueprints/projects via awscc) (D26): <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio>.
 
 - Announcement of Terraform support for SageMaker Unified Studio (2026-07): <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-terraform/>.
+
+- The SageMaker Unified Studio CI/CD CLI, `aws-smus-cicd-cli` (read 2026-10-13): a `manifest.yaml` names an application (`applicationName`), its content (`storage`, `git`, `workflows`, `quicksight`) and its stages, each stage one SMUS project whose `{proj.connection...}` placeholders resolve at deploy time; `bundle` packages an immutable artifact, `deploy` writes it to a stage and `test` validates it; Identity Center domains need extra one-time setup: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Announced 2026-04-23: <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-smus-ci-cd-cli/>.
 
 - Upgrading Amazon DataZone domains to SageMaker unified domains - the `domainVersion` V1/V2 distinction: <https://docs.aws.amazon.com/datazone/latest/userguide/upgrade-domain.html>.
 
