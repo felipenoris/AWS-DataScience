@@ -230,7 +230,7 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   `default-` on every application tag would be a word that never varies. **Application images are
   `v<semver>-<short-sha>`.** If an application ever does gain a runtime variant, it gets the flavour
   segment and this pattern moves with it.
-- **2.2 — Written 2026-10-13, not pushed**: [`examples/app-etl/`](../../../examples/app-etl/README.md), the
+- **2.2 — Written 2026-10-13, not yet in GitLab**: [`examples/app-etl/`](../../../examples/app-etl/README.md), the
   content `awsds/app-etl` receives in place of Stage 7's first pipeline: a uv project on CPython 3.12,
   base's interpreter, whose command turns every CSV in a directory into a Parquet table and a JSON summary,
   pyarrow its one runtime dependency, resolved with `exclude-newer` two weeks back. The `Dockerfile` builds
@@ -541,7 +541,7 @@ its analyzer is not available to this CE instance — the dependency gate is **`
 ordinary job; **Secret Detection is Free** (a template include); the ECR gate (1.4) covers **OS packages
 only** — `pip-audit` covers the Python dependencies, and the two compose rather than substitute.
 
-- **5.1-5.4 — Written 2026-10-13, not pushed** (decision 10): [`ci-gates/`](../../../ci-gates/README.md),
+- **5.1-5.4 — Written 2026-10-13, not yet in GitLab** (decision 10): [`ci-gates/`](../../../ci-gates/README.md),
   the content of the GitLab project `awsds/ci-gates`. `gates.gitlab-ci.yml` carries GitLab's Secret
   Detection template with its analyzer by digest (`7.39.0`) on every branch and a gate job that fails on
   any finding the template's job reports and never fails on; `pip-audit 2.10.1` over the runtime set each

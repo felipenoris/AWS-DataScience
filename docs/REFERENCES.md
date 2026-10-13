@@ -1195,6 +1195,32 @@
   path the event lacks is dropped from the output, extracted values are not escaped, and a multi-line
   string template is one quoted string per line:
   <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html>.
+- The pins and behaviours Stage 8 pass 2 read (2026-10-13, for steps 2.2 and 5.1-5.4):
+  - GitLab v19.4.2's Secret Detection template: `secret_detection` extends `.secret-analyzer`, which sets
+    `allow_failure: true`, and runs in a branch pipeline when `CI_COMMIT_BRANCH` is set; its analyzer is
+    `secrets:$SECRETS_ANALYZER_VERSION`, `"7"` by default:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/templates/Jobs/Secret-Detection.gitlab-ci.yml>.
+    The analyzer's registry: `7` and `7.40.0` are one image created 2026-10-10, `7.39.0` was created
+    2026-09-10: <https://registry.gitlab.com/v2/security-products/secrets/tags/list>.
+  - `pip-audit` 2.10.1, uploaded 2026-06-10: <https://pypi.org/pypi/pip-audit/json>. Its README at that
+    tag: `--disable-pip` *"can only be used with hashed requirements files or if the `--no-deps` flag has
+    been provided"*, the vulnerability service defaults to `pypi` (`osv` the alternative), exit code 1
+    means a vulnerability was found, and each JSON `vulns` entry carries `fix_versions`:
+    <https://raw.githubusercontent.com/pypa/pip-audit/v2.10.1/README.md>.
+  - The SageMaker Distribution's v4.5 template appends `ALL ALL=(ALL) NOPASSWD: ALL` to `/etc/sudoers`,
+    the passwordless sudo a job's `sudo -n chown` relies on (decision 8):
+    <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/template/v4/v4.5/Dockerfile>.
+  - uv's images: `0.12.17-python3.12-bookworm-slim` answers `MANIFEST_UNKNOWN`, and the `0.12.17` Python
+    3.12 tags are alpine, trixie and dhi, so the gates run `0.12.17-python3.12-trixie-slim`:
+    <https://ghcr.io/v2/astral-sh/uv/tags/list>.
+  - The AWS CLI image the scan gate runs, `2.37.12`, by its digest:
+    <https://public.ecr.aws/v2/aws-cli/aws-cli/manifests/2.37.12>.
+  - BuildKit's rootless tags: `rootless` and `v0.34.0-rootless` are one digest, pushed 2026-10-07:
+    <https://hub.docker.com/v2/repositories/moby/buildkit/tags?page_size=50&name=rootless&ordering=last_updated>.
+  - PyPI's upload dates for `app-etl`'s newest dependencies: pyarrow 26.0.0 and ruff 0.17.0 on 2026-10-09,
+    iniconfig 2.3.1 on 2026-10-06, which `exclude-newer = "2026-09-29T00:00:00Z"` keeps out of the lock
+    (it holds 25.0.1, 0.16.9 and 2.3.0): <https://pypi.org/pypi/pyarrow/26.0.0/json>, the same path for
+    each package.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
