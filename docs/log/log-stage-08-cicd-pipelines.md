@@ -199,3 +199,22 @@ Account ids are replaced by the account's name in angle brackets.*
   Planned before the apply: `Plan: 1 to add, 0 to change, 0 to destroy`, `aws_instance.deploy_runner[0]`
   (`t3a.small`, instance profile `awsds-prod-runner-deploy`), the rendered configuration holding the
   profiles `awsds-deploy-prod`, `awsds-deploy-devenv-sandbox` and `awsds-deploy-staging`.
+
+## 2026-10-13 — the deploy runner, applied and registered
+
+- **[Claude] `production/runners/` applied**: `Apply complete! Resources: 1 added, 0 changed, 0
+  destroyed.`, `aws_instance.deploy_runner[0]` created in 16 s: `i-0836b280406db0cd3` on `10.30.27.146`,
+  launched 03:59:28 UTC, `t3a.small`, instance profile `awsds-prod-runner-deploy`, hop limit 2. The re-plan
+  `No changes`. `./aws/cicd.py`: `CI-1` passes on the instance, 0 FAILED.
+- **[Claude] Its first boot, read through the serial console**: 03:59:46 to 04:03:17 UTC, 3 min 31 s.
+  `docker-25.0.16`, `git-2.50.1`, the ECR credential helper `0.12.0` `OK` against its pinned sha256,
+  `gitlab-runner-19.4.1`. Each profile assumed once with the instance's credentials:
+  `assumed-role/awsds-deploy-prod/…`, `assumed-role/awsds-deploy-devenv-sandbox/…` and
+  `assumed-role/awsds-deploy-staging/…`, the last two in Sandbox and Staging. GitLab's sign-in page `200`,
+  `Verifying runner... is valid`, registered as `awsds-prod-runner-deploy-i-0836b280406db0cd3`; through
+  the proxy `pypi.org` `200` and `10.31.0.1` `403`, GitLab direct `200`; the job image pulled through the
+  helper as `awsds-prod-ecr-deploy@sha256:1b1a5830…a53a`.
+- **[Claude] GitLab's API, read in the browser session**: runner #3 `online`, access level
+  `ref_protected`, locked, `run_untagged` false, tag `awsds-deploy`, maximum timeout 3600, projects
+  `awsds/app-etl` and `awsds/dev-env`, one manager (`19.4.1`) contacted 04:03:02 UTC. Runner #2
+  `never_contacted`, with the same projects and tag: the orphan.

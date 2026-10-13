@@ -399,6 +399,29 @@ Access control answers an unauthenticated read with `302` to `https://projects.a
 
 If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 
+### The deploy runner
+
+The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
+
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-deploy`, **Run untagged jobs** unchecked, description `awsds-prod-runner-deploy`, **Protected** checked, maximum job timeout `3600`.
+2. **Put the token into its container**, as for the build runner:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-deploy-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `awsds/dev-env`** and **Lock to current projects**, as step 3 above.
+
+A runner created twice leaves the first one in GitLab with no manager; it is deleted from **Admin → CI/CD → Runners** once the instance has registered under the current token.
+
+**What a deploy job can rely on**:
+
+- the deploy image, `awsds-prod-ecr-deploy@<deploy_image_digest>`, as the default image; an `image:` keyword naming anything outside `awsds-prod-ecr-deploy` is refused by the runner's `allowed_images`, and the runner pulls through the ECR credential helper as the instance role;
+- `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
+- `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
+
+The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
+
 ## A. SAML
 
 Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) stays as the break-glass. The order:
@@ -438,7 +461,7 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 |---|---|
 | `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
-| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten runner is 0.2117 USD/h |
+| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy runner 0.0188 |
 
 ---
 
