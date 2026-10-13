@@ -46,6 +46,10 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-up
    ```
 
+   Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
+   `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
+   applied that checkout's `egress/` and runner.
+
    Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
 
    ```bash

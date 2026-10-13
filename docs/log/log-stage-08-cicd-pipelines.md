@@ -146,3 +146,15 @@ Account ids are replaced by the account's name in angle brackets.*
 
 - **[Claude] Both alerts subscriptions read `PendingConfirmation`** (`aws sns list-subscriptions-by-topic`):
   each waits for the link AWS mailed.
+
+## 2026-10-12 — the environment up, from a stale checkout
+
+- **[user] `make hub-up`, then `make gitlab-up RUNNERS=0 AUTO=1`**, from the project folder, whose `main`
+  stood at `52d526f` (#118), four merges behind `origin/main`.
+- **[Claude] What that checkout did**, read afterwards: its Makefile predates `RUNNERS`, and make takes an
+  unknown variable in silence, so `make -n` there expands to `--only tooling,egress,runners` where this
+  branch expands to `--only tooling,egress`. GitLab, `[D]`, was only started; `production/egress/` was
+  applied with #118's list, the SageMaker pair included; and the build runner `awsds-prod-runner`
+  (`m8i.xlarge`) was created from #118's user data, without the ECR credential helper or `ECR_REGISTRY`.
+  Planned from this branch's code: `egress/` `0 to add, 0 to change, 2 to destroy`
+  (`sagemaker.api`, `sagemaker.runtime`); `runners/` `aws_instance.runner must be replaced`.

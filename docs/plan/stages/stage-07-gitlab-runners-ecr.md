@@ -671,8 +671,8 @@ awkward, and it would land in `production/egress/`.
    them private. Nothing in any stage invokes an inference endpoint from this VPC, so `sagemaker.runtime` has no
    future caller here. **Taken by the user 2026-10-12, as recommended**: the pair left `production/egress/`'s
    extras (the plan reads `12 to add`), `no_proxy_all_groups` fell to 56 entries (sha256 `0f80372bf880bb16`, the
-   four SageMaker names gone) and `tooling/`'s literal was re-copied; the running host takes it at its next
-   `sudo awsds-gitlab-refresh`.
+   four SageMaker names gone) and `tooling/`'s literal was re-copied; the running host took it on 2026-10-12,
+   the user's `sudo awsds-gitlab-refresh` ending `gitlab Reconfigured!`.
 
 ## Verifications to answer while executing
 
