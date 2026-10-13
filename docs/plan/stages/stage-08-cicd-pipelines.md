@@ -366,6 +366,12 @@ the approval, and 4.6's alarm.
   `UpdateDomain`, `DeleteApp` and `UpdateSpace` on the blueprint's domain stay out of it, which is why 1.6's
   hand half exists. **Never a general deploy role reused**: this is the one flow where the supply chain writes
   *into* the accounts where people work.
+- **4.3 — Read 2026-10-12, before writing it: the runner's role is `[P]` while the runner is `[E]`.** A
+  trust policy that names a role stores the role's unique id, and a role destroyed and re-created under
+  the same name gets a new one, so every deploy role would stop trusting the next session's runner (the
+  IAM reference, *Principal*, "IAM role principals"). The build runner's role lives with its host
+  because no trust policy names it; the deploy runner's role, instance profile and token container are
+  anchors in `production/foundation/`, the instance alone in `production/runners/`.
 - **4.3 — [Claude] Amend `production/runners/` with the deploy runner**: Name tag
   **`awsds-prod-runner-deploy`** (a contract with `./aws/cicd.py`; Stage 7's `awsds-prod-runner*` glob
   still matches), `[E]`, registered **Protected** (runs only jobs on protected branches/tags — a Free-tier
@@ -386,6 +392,11 @@ the approval, and 4.6's alarm.
   token `glrt-…`, Stage 7's flow), mark it **Protected**, lock it to the projects, and store the token where
   Stage 7 step 6.1 stores the build runner's: a Secrets Manager secret the user data reads at boot, never a
   git-ignored file (a worktree has none) and never a user-data literal.
+- **4.6 — Read 2026-10-12, before writing it: the rule's state decides whether it fires.** EventBridge
+  classes STS `AssumeRole` as a read-only management event, and a rule in the default `ENABLED` state
+  matches every event except those, so it would never fire and would read as enabled. The rule takes
+  `state = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"`, which the AWS provider's `state` argument
+  accepts, and `./aws/cicd.py` `CI-7` fails a plain `ENABLED`, which it used to pass.
 - **4.6 — [Claude] Write the misuse alarm — the D14 compensation**: in Staging and Production, an
   EventBridge rule on the CloudTrail `AssumeRole` event for that account's deploy role where the caller is
   **not** the deploy runner's role, to the target decision 5 settles. Rule names
@@ -499,6 +510,9 @@ institutional answer.
   url."https://github.com/".insteadOf "git@github.com:"`, since every module source is an SSH URL and the
   repository is public. **`validate` is not a plan**: a module change can pass it while a caller's plan fails,
   so the gate says so in its own output rather than reading as a check of every slice (Lesson 54).
+- **6.3 — Done 2026-10-12, by Claude with the user's go-ahead**: PR #123's run `38314108044` passed in
+  7 min 50 s, and a deliberate `terraform fmt` violation failed run `38328376553` at `terraform_fmt`,
+  naming `terraform-live/staging/foundation/variables.tf`; the violation was reverted in the next commit.
 - **6.3 — [user] Enable it and prove it**: a pull request shows the gates; a deliberate `fmt` violation
   fails.
 

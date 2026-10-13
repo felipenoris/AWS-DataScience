@@ -31,7 +31,8 @@
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
 #     awsds-deploy-devenv-sandbox (step 4.2, INT-18)
-#   - the misuse-alarm rules carry "deploy-misuse" in their name (step 4.6)
+#   - the misuse-alarm rules carry "deploy-misuse" in their name and the state
+#     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS (step 4.6)
 #   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
 #
@@ -71,6 +72,7 @@ PROMOTION_PROFILES = ("awsds-infra-staging", "awsds-infra-prod")
 RUNNER_NAME = "awsds-prod-runner-deploy"
 APP_REPO = "awsds-prod-ecr-app-etl"
 MISUSE_RULE_SUBSTR = "deploy-misuse"
+MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 DEVENV_IMAGE_SUBSTR = "dev-env"
 LOOKUP_MAX = 50  # CloudTrail lookup page - 90 days of AssumeRole is small at lab scale
 
@@ -550,7 +552,9 @@ def main(argv: list) -> int:
             "Stage 8 step 1.6.",
         )
 
-    # CI-7: the misuse-alarm rules exist and are enabled in both promotion accounts (4.6).
+    # CI-7: the misuse-alarm rules exist in both promotion accounts and receive AssumeRole (4.6).
+    # EventBridge classes STS AssumeRole as a read-only management event, and a rule in plain
+    # ENABLED state matches every event except those, so it is a rule that never fires.
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
@@ -564,10 +568,17 @@ def main(argv: list) -> int:
             )
         else:
             for _p, rname, state in mine:
-                if state != "ENABLED":
-                    checks.fail("CI-7", f"rule {rname}", f"state {state} - not watching.")
+                if state == MISUSE_RULE_STATE:
+                    checks.ok("CI-7", f"rule {rname} ({p})", state)
+                elif state == "ENABLED":
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "state ENABLED - it receives no AssumeRole, which EventBridge classes "
+                        f"as a read-only management event; {MISUSE_RULE_STATE} does.",
+                    )
                 else:
-                    checks.ok("CI-7", f"rule {rname} ({p})", "ENABLED")
+                    checks.fail("CI-7", f"rule {rname}", f"state {state} - not watching.")
 
     # CI-8: every recorded AssumeRole of a deploy role was made by the deploy runner. A
     # different caller is exactly what 4.6 alarms on - visible here too, after the fact.
@@ -728,7 +739,7 @@ What the checks are, and where each comes from:
   CI-4  the runner role assumes ONLY the enumerated awsds-deploy-* ARNs (4.3)
   CI-5  the app-repository grant, and the read from Staging (3.0, INT-07)
   CI-6  the dev-env container image agrees across Interactive accounts (1.6, D17)
-  CI-7  the *deploy-misuse* rules exist and are ENABLED (4.6)
+  CI-7  the *deploy-misuse* rules exist and receive read-only management events (4.6)
   CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)""")
 
         # ==============================================================================

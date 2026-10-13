@@ -76,3 +76,15 @@ Account ids are replaced by the account's name in angle brackets.*
   `awsds-<env>-alerts` topic per deployment-target account (5); the recipe moves to GitLab
   `awsds/dev-env` at pass 3 (6); the dev-env hand half stays (7); the image keeps passwordless `sudo` (8);
   the D28 lint is a command of `awsds-workflows` (9).
+- **[Claude] Step 6.3 proven, with the user's go-ahead.** PR #123 went `CONFLICTING` when Stage 17's
+  merge reached `main`, and a conflicting pull request runs no `pull_request` workflow: the violation
+  commit got no run until the branch was synced (one conflict, `CLAUDE.md`'s Current position, both bullets
+  kept). The merge commit carrying the violation failed run `38328376553` at the step "Every pre-commit
+  hook over every file": `terraform_fmt`, "files were modified by this hook", `variables.tf`, with the diff
+  printed. The violation was reverted in the next commit.
+- **[Claude] Two readings that change pass 1 before it is written**, from AWS's documentation on
+  2026-10-12. IAM stores a role named in a trust policy as its unique id, so a deleted and re-created role is
+  not trusted again: the deploy runner's role is `[P]` while its host is `[E]`. EventBridge lists STS
+  `AssumeRole` among the read-only management events, which a rule receives only in state
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; `./aws/cicd.py` `CI-7` passed a plain `ENABLED`, the
+  state that never fires, and now fails it.

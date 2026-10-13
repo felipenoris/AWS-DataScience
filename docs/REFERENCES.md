@@ -1143,6 +1143,24 @@
   <https://github.com/astral-sh/setup-uv> (v10.2.0), <https://github.com/hashicorp/setup-terraform>
   (v4.0.1), <https://github.com/terraform-linters/setup-tflint> (v6.3.1).
 
+- IAM role principals in a trust policy (read 2026-10-12, for Stage 8 step 4.3): *"If your `Principal`
+  element in a role trust policy contains an ARN that points to a specific IAM role, then that ARN
+  transforms to the role's unique principal ID when you save the policy"*, and a role deleted and
+  re-created *"has a new principal ID that does not match the ID stored in the trust policy"*. The deploy
+  runner's role is `[P]` on this reading:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html>.
+
+- EventBridge and read-only management events (read 2026-10-12, for Stage 8 step 4.6): a rule in state
+  `ENABLED` matches every event *"except for read-only AWS management events delivered through
+  CloudTrail"*; `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS` matches those too, and the page's own
+  example is a rule for STS `AssumeRole`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail-management.html>.
+  The list of read-only events not named `Describe`, `Get` or `List` carries STS `AssumeRole`,
+  `AssumeRoleWithSAML` and `AssumeRoleWithWebIdentity`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-management-event-list.html>. The
+  AWS provider's `aws_cloudwatch_event_rule` takes the state in its `state` argument:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/cloudwatch_event_rule.html.markdown>.
+
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
 - Amazon Inspector, supported operating systems and programming languages (read 2026-08-22, for the
