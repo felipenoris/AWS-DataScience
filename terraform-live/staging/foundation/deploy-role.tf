@@ -19,8 +19,15 @@ data "aws_caller_identity" "deploy_runner" {
   provider = aws.deploy_runner
 }
 
+# The runner role's unique id: the misuse rule names the runner's sessions by it (4.6).
+data "aws_iam_role" "deploy_runner" {
+  provider = aws.deploy_runner
+  name     = local.deploy_runner_role_name
+}
+
 locals {
-  deploy_runner_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.deploy_runner.account_id}:role/awsds-${one([for k, v in var.deploy_runner : v.env])}-runner-deploy"
+  deploy_runner_role_name = "awsds-${one([for k, v in var.deploy_runner : v.env])}-runner-deploy"
+  deploy_runner_role_arn  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.deploy_runner.account_id}:role/${local.deploy_runner_role_name}"
 
   deploy_anchor_tags = {
     CostCenter = "stage-08"
@@ -31,12 +38,13 @@ locals {
 
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.2.0"
 
   name            = var.deploy_role_name
   description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; applies staging/egress/ and staging/app/* slices"
   env             = var.env
   runner_role_arn = local.deploy_runner_role_arn
+  runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = ["staging/egress/", "staging/app/"]
   state_read_keys = ["staging/foundation/terraform.tfstate"]
 

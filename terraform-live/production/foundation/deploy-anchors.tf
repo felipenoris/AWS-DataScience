@@ -141,6 +141,11 @@ module "deploy_runner_role" {
   }
 }
 
+# The runner role's unique id: the misuse rule names the runner's sessions by it (4.6).
+data "aws_iam_role" "deploy_runner" {
+  name = module.deploy_runner_role.role_name
+}
+
 resource "aws_iam_instance_profile" "deploy_runner" {
   name = local.deploy_runner_name
   role = module.deploy_runner_role.role_name
@@ -195,12 +200,13 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 # first application slice (steps 2.4 and 3.0); until then it holds its state access and nothing else.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.1.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.2.0"
 
   name            = var.deploy_role_name
   description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* slices"
   env             = var.env
   runner_role_arn = module.deploy_runner_role.role_arn
+  runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = ["${var.account_folder}/app/"]
 
   application_boundary_name = "awsds-${var.env}-app-boundary"
