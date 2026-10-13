@@ -218,3 +218,14 @@ Account ids are replaced by the account's name in angle brackets.*
   `ref_protected`, locked, `run_untagged` false, tag `awsds-deploy`, maximum timeout 3600, projects
   `awsds/app-etl` and `awsds/dev-env`, one manager (`19.4.1`) contacted 04:03:02 UTC. Runner #2
   `never_contacted`, with the same projects and tag: the orphan.
+- **[Claude, through the user's Chrome, authorized by the user] Runner #2 deleted** through GitLab's API in
+  the browser session, after reading it back as `never_contacted` with the description
+  `awsds-prod-runner-deploy`. `/runners/2` then answers `404`; the instance's runners are #1
+  `awsds-prod-runner` and #3 `awsds-prod-runner-deploy`, both `online`.
+- **[Claude] The probe for verifications (ii) and (iii), prepared and not committed**: a job
+  `deploy-runner-probe` for `awsds/app-etl`'s `.gitlab-ci.yml` (tag `awsds-deploy`, rule
+  `$DEPLOY_RUNNER_PROBE`), and `- if: $DEPLOY_RUNNER_PROBE` / `when: never` ahead of each of the five
+  existing jobs' rule, so a probe pipeline holds the probe alone. GitLab's CI lint (`dry_run` on `main`,
+  `include_jobs`) reads it `valid`, and its simulated push pipeline on `main` holds the same five jobs as
+  the current file's. Claude Code's permission classifier refused the commit through the browser ("Modify
+  Shared Resources"), so the user commits it.

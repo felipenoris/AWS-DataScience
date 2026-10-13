@@ -429,7 +429,7 @@ the approval, and 4.6's alarm.
   git-ignored file (a worktree has none) and never a user-data literal.
 - **4.5 — Done 2026-10-13.** The user created the runner in GitLab as runner #3 and put its token into
   `awsds-prod-runner-deploy-token`; Claude applied `production/runners/` (the 4.2 amendment was applied
-  with the anchors, 2026-10-12). A first creation, runner #2, never contacted GitLab and is to be deleted.
+  with the anchors, 2026-10-12). A first creation, runner #2, never contacted GitLab and was deleted the same day.
 - **4.6 — Read 2026-10-12, before writing it: the rule's state decides whether it fires.** EventBridge
   classes STS `AssumeRole` as a read-only management event, and a rule in the default `ENABLED` state
   matches every event except those, so it would never fire and would read as enabled. The rule takes
