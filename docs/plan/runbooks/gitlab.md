@@ -81,13 +81,13 @@ Stopped, GitLab bills its two volumes and its snapshots; running, `make status` 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
 ```bash
-aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)" --latest --output text
+aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)" --latest --output text
 ```
 
-**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`:
+**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`. The host is found by its Name tag, which works from any folder; `terraform output` answers only in a folder where `production/tooling/` was initialised, and elsewhere hands the command an empty target (2026-10-12):
 
 ```bash
-aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
 ```
 
 ## P. The installation
@@ -141,7 +141,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
 3. **Read the initial password** in the shell; the file self-deletes 24 hours after the boot:
 
    ```bash
-   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
    ```
 
    ```bash
