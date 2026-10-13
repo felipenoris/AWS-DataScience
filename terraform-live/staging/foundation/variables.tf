@@ -6,7 +6,7 @@
 
 variable "region" {
   description = "AWS region for this slice. No default: see the note above."
-  type        = string
+  type = string
   nullable    = false
 }
 
