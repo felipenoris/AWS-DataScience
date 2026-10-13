@@ -73,6 +73,10 @@ RUNNER_NAME = "awsds-prod-runner-deploy"
 APP_REPO = "awsds-prod-ecr-app-etl"
 MISUSE_RULE_SUBSTR = "deploy-misuse"
 MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
+# Where the promotion chain's Staging leg keeps its application slices' state (step 3.2): the
+# discriminator of CI-5, whose grant belongs to step 3.0 and not to the deploy roles.
+STAGING_STATE_BUCKET = "awsds-staging-tfstate"
+STAGING_APP_STATE_PREFIX = "staging/app/"
 DEVENV_IMAGE_SUBSTR = "dev-env"
 LOOKUP_MAX = 50  # CloudTrail lookup page - 90 days of AssumeRole is small at lab scale
 
@@ -280,6 +284,7 @@ def main(argv: list) -> int:
     app_policy_state = "(not measured)"
     app_repo_exists = False
     staging_read = "(no staging profile)"
+    staging_app_deployed = False
     if prod_live:
         cli = cli_for(PROD_PROFILE)
         res = cli.run(
@@ -337,6 +342,25 @@ def main(argv: list) -> int:
             staging_read = f"ok ({res.stdout.strip()} image(s) visible)"
         else:
             staging_read = "(call failed)"
+        # Whether the promotion chain has reached Staging: an application slice there holds state
+        # (step 3.2). The grant is step 3.0's, so its absence before then is the expected reading.
+        res = cli.run(
+            "s3api",
+            "list-objects-v2",
+            "--bucket",
+            STAGING_STATE_BUCKET,
+            "--prefix",
+            STAGING_APP_STATE_PREFIX,
+            "--max-items",
+            "1",
+            "--query",
+            "length(Contents || `[]`)",
+            "--output",
+            "text",
+            log=False,
+        )
+        if res.ok and res.stdout.strip().isdigit():
+            staging_app_deployed = int(res.stdout.strip()) > 0
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
     image_rows: list = []  # (profile, image name, latest version, container image tail)
@@ -504,20 +528,25 @@ def main(argv: list) -> int:
         if app_policy_state.startswith("present"):
             checks.ok("CI-5", f"policy on {APP_REPO}", app_policy_state)
         elif app_repo_exists:
-            (checks.fail if built else checks.note)(
+            (checks.fail if staging_app_deployed else checks.note)(
                 "CI-5",
                 f"policy on {APP_REPO}",
-                "repository exists with no policy - Staging cannot pull (step 3.0).",
+                "repository exists with no policy - Staging cannot pull (step 3.0)"
+                + (
+                    ", and an application slice already holds state in Staging."
+                    if staging_app_deployed
+                    else "; expected before the promotion chain reaches Staging."
+                ),
             )
         else:
             checks.note("CI-5", f"repository {APP_REPO}", "absent - Stage 7 step 5.1 creates it.")
-    # The read is refused until 3.0 writes the grant, so a refusal with no policy and nothing of
-    # Stage 8 built is the expected reading (Lesson 50); with a policy present it is a failure.
+    # The read is refused until 3.0 writes the grant, so a refusal with no policy before the chain
+    # reaches Staging is the expected reading (Lesson 50); with a policy present it is a failure.
     if staging_read.startswith("ok"):
         checks.ok("CI-5", "the Staging cross-account read", staging_read)
     elif "awsds-infra-staging" in live and app_repo_exists:
         granted = app_policy_state.startswith("present")
-        (checks.fail if granted or built else checks.note)(
+        (checks.fail if granted or staging_app_deployed else checks.note)(
             "CI-5",
             "the Staging cross-account read",
             f"{staging_read} - "
@@ -679,8 +708,8 @@ never a compliant one.
             rep.line("No deploy-role home was measured.")
         rep.text("""
 The trust contract (4.1-4.2): exactly the deploy runner's role, sts:AssumeRole
-only, never a wildcard account. Staging's row is absent until the vend; the
-sandbox row is per business unit and grows with the D35 map.""")
+only, never a wildcard account. The sandbox row is per business unit and grows
+with the D35 map.""")
 
         # ==============================================================================
         rep.h1("4. The misuse-alarm rules (step 4.6)")

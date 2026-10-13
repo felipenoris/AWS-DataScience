@@ -102,3 +102,47 @@ Account ids are replaced by the account's name in angle brackets.*
   get-caller-identity` still answered on `awsds-infra-prod` from the CLI's cached role credentials while
   Terraform's init failed with `refresh cached SSO token failed ... InvalidGrantException`, and every
   profile without cached credentials failed with `Token has expired and refresh failed`.
+- **[user] The alerts address and the applies, in chat**: the user asked for `alert_email` to be written
+  into the untracked `alerts.auto.tfvars` of `production/foundation/` and `staging/foundation/` (both
+  matched by `*.tfvars` in `.gitignore`), and authorized the three applies.
+- **[Claude] The three sessions on this machine were told before the first write**: Sonnet 4.5
+  deprecation, Control Tower default VPC review, Redshift Serverless upgrade, all idle.
+- **[Claude] Pass 1's `[P]` half applied, as the infrastructure user (`InfrastructureAccess`)**, from saved
+  plans re-taken with the address set: `production/foundation/` **16 added** (the plan's 15 and the email
+  subscription), then `staging/foundation/` **9 added**, then `sandbox/foundation/` **4 added**; nothing
+  changed or destroyed. Staging's trust policy named the Production role created about a minute earlier
+  and IAM accepted it. Each re-plan read `No changes` (`-detailed-exitcode` 0).
+- **[Claude] `./aws/cicd.py awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`**: `CI-2` passes for
+  the three roles (`awsds-staging-deploy-boundary`, `awsds-prod-deploy-boundary`,
+  `awsds-sandbox-deploy-boundary`), `CI-3` (every principal names `awsds-prod-runner-deploy`,
+  `sts:AssumeRole` only), `CI-4` (one inline statement, all `awsds-deploy-*`) and `CI-7` (both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`); `CI-1` notes the absent runner. The first run read 2
+  FAILED: `CI-5` turned red because the deploy roles now exist, the discriminator it had, while its grant
+  is step 3.0's. It now reads whether an application slice holds state under `staging/app/` in
+  `awsds-staging-tfstate`: **0 FAILED, 4 notes**. The app repository already holds `v0.1.0-b30af685` and
+  `v0.1.0-0817e161`, Stage 7's first-pipeline images, so "a release image exists" would have been the
+  wrong discriminator.
+- **[Claude] `aws iam simulate-principal-policy` on the new roles.** Without context every action read
+  `explicitDeny` with `AllowedByOrganizations: False`: the SCPs' Region and `aws:ResourceOrgID` conditions
+  evaluate against keys the simulator does not invent. With `aws:RequestedRegion = us-west-2` and the
+  organization id as context entries:
+
+  | Role | Action and resource | Decision |
+  |---|---|---|
+  | `awsds-deploy-staging` | `s3:PutObject`, `s3:DeleteObject` on `staging/egress/terraform.tfstate` | allowed |
+  | `awsds-deploy-staging` | `s3:PutObject` on `staging/foundation/terraform.tfstate` | implicitDeny |
+  | `awsds-deploy-staging` | `s3:GetObject` on `staging/foundation/terraform.tfstate` | allowed |
+  | `awsds-deploy-staging` | `ec2:CreateVpcEndpoint` on its VPC | allowed |
+  | `awsds-deploy-staging` | `route53resolver:CreateResolverRule` | implicitDeny |
+  | `awsds-deploy-staging` | `iam:CreateRole` | explicitDeny, by the ceiling |
+  | `awsds-deploy-devenv-sandbox` | `sagemaker:CreateImageVersion` on `awsds-sandbox-dev-env` | allowed |
+  | `awsds-deploy-devenv-sandbox` | `iam:PassRole` of the image role to SageMaker, `iam:PutRolePolicy` on it | allowed |
+  | `awsds-deploy-devenv-sandbox` | `iam:PassRole` of any other role | explicitDeny, by the ceiling |
+  | `awsds-deploy-devenv-sandbox` | `sagemaker:UpdateDomain` | explicitDeny, by the ceiling |
+  | `awsds-deploy-devenv-sandbox` | `s3:PutObject` on `sandbox/dev-env/` state / `sandbox/foundation/` state | allowed / implicitDeny |
+  | `awsds-deploy-prod` | `s3:PutObject` on `production/app/` state / `production/foundation/` state | allowed / implicitDeny |
+  | `awsds-deploy-prod` | `iam:CreateRole` | explicitDeny |
+  | `awsds-prod-runner-deploy` | `sts:AssumeRole` of `awsds-deploy-staging` / of a role outside the list | allowed / implicitDeny |
+
+- **[Claude] Both alerts subscriptions read `PendingConfirmation`** (`aws sns list-subscriptions-by-topic`):
+  each waits for the link AWS mailed.
