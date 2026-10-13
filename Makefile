@@ -34,6 +34,13 @@
 # platforms in every committed lock file).
 
 SHELL := /bin/bash
+
+# make takes an unknown variable in silence, and every flag here is upper case: `auto=1` applies with
+# no -auto-approve and `runners=0` raises the runner anyway (both seen 2026-10-12). The lower-case
+# spellings of the flags are refused before any target runs.
+ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(runners)),)
+$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, RUNNERS; a lower-case one would be ignored)
+endif
 .PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
 help:
