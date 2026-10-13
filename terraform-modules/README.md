@@ -60,7 +60,7 @@ document is `sagemaker-prereqs`'s own tag, and a change to the denies is a new t
 
 Stage 8's `deploy-role` nests the same way: it calls `iam-role` by `../iam-role`, so its own tag pins the
 role's shape. It holds one deploy role's design, its trust, its ceiling, its state access and its misuse
-rule, which the three accounts the deploy runner reaches must not spell differently, because
+rule, which the accounts the deploy runner reaches must not spell differently, because
 `./aws/cicd.py` reads them as one contract.
 
 Skip a rung and `terraform init` stops at `invalid ref: "<tag>"` — the message

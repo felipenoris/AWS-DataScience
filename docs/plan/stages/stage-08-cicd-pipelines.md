@@ -31,7 +31,7 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 | `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5) | `[P]` |
 | `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts` | `[P]` |
 | `sandbox/foundation/` (amended, one per unit) | the dev-env deploy role (INT-18), one per target | `[P]` |
-| `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`) | one deploy role: its trust, its ceiling, its state access and its misuse rule, one document for the three accounts | — |
+| `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`) | one deploy role: its trust, its ceiling, its state access and its misuse rule, one document for every account the deploy runner reaches | — |
 | `production/registry/` (amended) | the **app-repository** pull grant for Staging (INT-07), an authored entry of its own beside `REGISTRY_CONSUMERS` (Stage 7 step 5.4 decides whether Staging stays in that map), and `awsds-prod-ecr-deploy`, the deploy jobs' image (3.1, 4.3) | `[P]` |
 | `production/runners/` (amended) | the **deploy runner** — protected, project-locked, its role only assumes the three deploy roles | `[E]` |
 | `sandbox/app/app-etl/` (new), `staging/`, `production/` idem | the application slices — **Sandbox applied by hand** (2.4), the other two by the pipeline (step 3). **CI never applies an application into Sandbox**, which is the answer to D21's surviving objection | `[E]` |
