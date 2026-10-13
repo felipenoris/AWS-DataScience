@@ -129,6 +129,7 @@ def main(argv: list) -> int:
 
     # -------------- the runner's role: inline statements, and what AssumeRole may reach
     runner_role_found = False
+    runner_role_id = ""
     runner_inline: list = []  # (policy name, actions, resources) for sts statements
     runner_attached: list = []
     runner_bad_resources: list = []
@@ -140,13 +141,16 @@ def main(argv: list) -> int:
             "--role-name",
             RUNNER_NAME,
             "--query",
-            "Role.RoleName",
+            "Role.RoleId",
             "--output",
             "text",
             log=False,
             tolerate="NoSuchEntity",
         )
         runner_role_found = bool(res.ok and not res.tolerated)
+        # The role's unique id, which a trust policy stores, is the only name the role's own
+        # account records for a cross-account caller (CI-8).
+        runner_role_id = (res.stdout or "").strip() if runner_role_found else ""
         if runner_role_found:
             res = cli.run(
                 "iam",
@@ -437,12 +441,21 @@ def main(argv: list) -> int:
             role_arn = str(((ev.get("requestParameters") or {}).get("roleArn")) or "")
             if "/awsds-deploy-" not in role_arn:
                 continue
-            caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
+            # The deploy role's own account records a cross-account caller as type AWSAccount,
+            # with no `arn` and a principalId of "<role unique id>:<session name>".
+            ident = ev.get("userIdentity") or {}
+            caller_arn = str(ident.get("arn") or "")
+            principal_id = str(ident.get("principalId") or "")
+            if caller_arn:
+                caller, shown = caller_arn, caller_arn.rsplit("/", 1)[-1]
+                by_runner = RUNNER_NAME in caller_arn
+            else:
+                caller = principal_id or "(unknown)"
+                shown = f"{principal_id.split(':', 1)[-1]} (by role id)"
+                by_runner = bool(runner_role_id) and principal_id.startswith(f"{runner_role_id}:")
             when = str(ev.get("eventTime") or "-")
-            event_rows.append(
-                (p, when, role_arn.rsplit("/", 1)[-1], caller.rsplit("/", 1)[-1][:40])
-            )
-            if RUNNER_NAME not in caller:
+            event_rows.append((p, when, role_arn.rsplit("/", 1)[-1], shown[:40]))
+            if not by_runner:
                 event_bad.append((p, caller))
 
     # -------------------------------------------------------------------------- the checks
@@ -752,7 +765,9 @@ last. One row lagging after a 1.6 run is the registration failing quietly.""")
         rep.text("""
 This is the record INT-08's two-name design exists for: which role ran which
 leg, answerable per event. Every caller should be the deploy runner; anything
-else is what 4.6's alarm fires on, and CI-8 fails on it here.""")
+else is what 4.6's alarm fires on, and CI-8 fails on it here. In a deploy role's
+own account a cross-account call carries no caller ARN: "(by role id)" marks a
+caller read from the principal id, the runner role's unique id and the session.""")
 
         # ==============================================================================
         rep.h1("8. CHECKS")

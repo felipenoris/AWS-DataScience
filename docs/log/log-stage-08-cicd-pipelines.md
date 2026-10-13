@@ -229,3 +229,29 @@ Account ids are replaced by the account's name in angle brackets.*
   `include_jobs`) reads it `valid`, and its simulated push pipeline on `main` holds the same five jobs as
   the current file's. Claude Code's permission classifier refused the commit through the browser ("Modify
   Shared Resources"), so the user commits it.
+
+## 2026-10-13 — verifications (ii) and (iii), and the cross-account caller
+
+- **[user] The probe committed and run**: the `.gitlab-ci.yml` Claude prepared, committed on `awsds/app-etl`'s
+  `main` at 04:21:22 UTC with `[skip ci]` (push pipeline #6 `skipped`); pipeline #7 run on `main` from the
+  Run pipeline form with `DEPLOY_RUNNER_PROBE=1`; the branch `deploy-runner-probe` created from `main`
+  (push pipeline #8 `skipped`) and pipeline #9 run on it the same way.
+- **[Claude] Verification (ii), read from job #15's log**: pipeline #7 held `deploy-runner-probe` alone,
+  queued 0.3 s and `Job succeeded` in 14.3 s on `awsds-prod-runner-deploy-i-0836b280406db0cd3`, in
+  `awsds-prod-ecr-deploy@sha256:1b1a5830…a53a`. The container printed `instance ->
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-0836b280406db0cd3`, then
+  `assumed-role/awsds-deploy-prod/…`, `assumed-role/awsds-deploy-staging/…` and
+  `assumed-role/awsds-deploy-devenv-sandbox/…`.
+- **[Claude] Verification (iii), read from job #16**: on the unprotected branch, `pending` with no runner,
+  314 s queued at 04:28:13 UTC, under GitLab's notice "This job is stuck because of one of the following
+  problems. There are no active runners online, no runners for the protected branch, or no runners that
+  match all of the job's tags: awsds-deploy". Runner #3 was `online` throughout and listed job #15 alone.
+- **[Claude] `./aws/cicd.py`: `CI-8` failed** on Staging's two records of the runner's assumptions, caller
+  `(unknown)`. The raw records (`cloudtrail lookup-events` in Staging): `userIdentity.type` `AWSAccount`, no
+  `arn`, `principalId` `<role unique id>:i-0836b280406db0cd3`, the caller's account as `accountId`, a
+  `sharedEventID`. The instrument now reads the runner role's unique id (`iam get-role`) and attributes such
+  a record by it: `CI-8` `8 event(s), every caller is the deploy runner`, 0 FAILED.
+- **[Claude] The misuse rules' metrics**, 2026-10-12 20:00 to 2026-10-13 05:00 UTC: no datapoint for
+  `MatchedEvents`, `TriggeredRules`, `Invocations` or `FailedInvocations` on `awsds-staging-deploy-misuse`
+  and `awsds-prod-deploy-misuse`, and none for `NumberOfMessagesPublished` on either alerts topic. Staging's
+  rule reads `userIdentity.arn`, which a cross-account record does not carry.

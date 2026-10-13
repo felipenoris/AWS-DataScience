@@ -420,6 +420,8 @@ A runner created twice leaves the first one in GitLab with no manager; it is del
 - `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
 - `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
 
+**The probe** (Stage 8 verifications ii and iii): `awsds/app-etl`'s `.gitlab-ci.yml` carries `deploy-runner-probe`, tag `awsds-deploy`, created only in a pipeline that sets `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the five jobs of the first pipeline above each open their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe runs alone. On `main` it prints the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stays `pending` under GitLab's stuck notice, which is the protection working, and is cancelled by hand.
+
 The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
 
 ## A. SAML
