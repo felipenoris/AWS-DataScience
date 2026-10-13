@@ -280,7 +280,7 @@ Every `make gitlab-up` then boots a new instance that waits up to ten minutes fo
 - `ECR_REGISTRY`, this account's registry host;
 - `/usr/local/bin/docker-credential-ecr-login`, mounted read-only from the host: Amazon's ECR credential helper, pinned by digest in `runners/variables.tf`. A job writes `{"credHelpers":{"<ECR_REGISTRY>":"ecr-login"}}` into `~/.docker/config.json`, and every pull and push on that registry signs in as the instance role, whose credentials the helper reads from the metadata service two hops away. The build image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own.
 
-**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
+**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`, and Stage 8 step 2.2 replaces them with the application template, [`examples/app-etl/`](../../../examples/app-etl/README.md), whose pipeline includes §G's gates; what follows is the first pipeline's record. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
 
 `Dockerfile`, the image: its base comes through the cache, its `RUN` through the proxy:
 
@@ -441,6 +441,47 @@ The test runner (Stage 8 decision 11) is the one runner that serves an **unprote
 **What a test job can rely on**: the proxy variables in both cases and the CA root at `/etc/gitlab-runner/certs/ca.crt`; no `ECR_REGISTRY`, no credential helper and no AWS identity. The shared gates name its tag (§G).
 
 The first boot reads the control it exists for, from a container: `no token from a container: the jobs hold no AWS identity` in `/var/log/awsds-runner-boot.log` (§U's console command with the Name `awsds-prod-runner-test`), then registers as `awsds-prod-runner-test-<instance id>`. `./aws/cicd.py` `CI-9` reads the hop limit and the role back.
+
+## G. The gates project
+
+`awsds/ci-gates` holds the security gates every pipeline includes (Stage 8 step 5, decision 10); its content is [`ci-gates/`](../../../ci-gates/README.md) in this repository, reviewed here and pushed there. A pipeline includes it at a commit, so a change to a gate or a baseline reaches a pipeline only when that pipeline's `ref` moves.
+
+1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `ci-gates`, visibility **Private**, no README.
+2. **Members**: **Manage → Members → Invite a group**: `awsds/data-scientists`, `awsds/deployment-managers`, `awsds/dev-env-stewards` and `awsds/governance-managers` as **Reporter**. `include:project` resolves with the permissions of whoever starts the pipeline, so a persona that cannot read this project cannot run a pipeline that includes it. Only Maintainers change it.
+3. **Protection**: **Settings → Repository → Protected branches**: `main`, allowed to push and merge **Maintainers**; **Protected tags**: `gates-v*`, allowed to create **Maintainers**.
+4. **Push the files**, from a clone on the laptop with the tunnel up and git trusting the root (§C step 3):
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/ci-gates.git "$HOME/tmp/ci-gates"
+   ```
+
+   ```bash
+   cp ci-gates/README.md ci-gates/gates.gitlab-ci.yml ci-gates/baselines.gitlab-ci.yml ci-gates/.gitlab-ci.yml "$HOME/tmp/ci-gates/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" add -A
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" commit -m "gates-v0.1.0: the gates and the decision 1 baselines"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" push origin main
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" tag gates-v0.1.0 && git -C "$HOME/tmp/ci-gates" push origin gates-v0.1.0
+   ```
+
+5. **Read the commit back** and write it into each consumer's `include:` `ref`, the tag in the comment beside it; the push's own pipeline runs the gates on the project itself and the baselines' shape check, on the test runner (§K, which links the runner to this project):
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" rev-parse HEAD
+   ```
+
+A finding enters a baseline the same way: a commit to this project whose message names who accepted it and why, a new `gates-v*` tag, and each consumer's `ref` moved in a commit of its own (`ci-gates/README.md`).
 
 ## A. SAML
 

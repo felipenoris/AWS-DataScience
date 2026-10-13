@@ -86,6 +86,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   configuration, and each workflow's definition after each pass. Every account-scoped value is a
   placeholder, which [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) `render` fills on
   screen from read-only calls ([`serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md) §T).
+  `app-etl/` is [Stage 8](docs/plan/stages/stage-08-cicd-pipelines.md) step 2.2's: the application
+  template's first content, pushed to GitLab's `awsds/app-etl`, which holds it since.
+- `ci-gates/` — the security gates every GitLab pipeline includes (Stage 8 step 5, decision 10):
+  Secret Detection, `pip-audit`, `checkov` and the ECR scan gate, with the baselines of accepted findings
+  beside them. Reviewed here, pushed to the GitLab project `awsds/ci-gates`, included at a commit.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.

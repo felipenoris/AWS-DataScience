@@ -362,3 +362,38 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] Read before writing pass 2, with the environment down**: no runner serves an unprotected ref
   (both are protected, verification iii), which decision 11 answers; and step 5.6's sentence that class
   (2b) "joins D28's list in the same commit" went stale when PR #124 merged D28's classes (2b) and (2c).
+- **[Claude] The scans the baselines are seeded from**, as the infrastructure user on Production
+  (`awsds-infra-prod`), `aws ecr describe-image-scan-findings`, every status `COMPLETE`: `base` and
+  `dev-env` at `default-v0.6.0` carry the same 130 HIGH keys, `<finding>|<package>`, 121 of them
+  `linux-libc-dev`, the rest `expat`/`libexpat1` (6), `openssl`/`libssl3t64` (2) and `sudo`; the deploy
+  image `v0.1.0` carries CVE-2026-8924 and CVE-2026-8927 (`curl`, CRITICAL) and 8 HIGH; Stage 7's
+  `app-etl:v0.1.0-b30af685` (alpine) carries one HIGH, `CVE-2026-85091|zlib`.
+- **[Claude] What the pins were read from, 2026-10-13**: the SageMaker Distribution 4.5.2's resolved
+  environment pins `python-3.12.14`; its v4.5 template writes `ALL ALL=(ALL) NOPASSWD: ALL` into
+  `/etc/sudoers`; GitLab v19.4.2's `Jobs/Secret-Detection.gitlab-ci.yml` sets `allow_failure: true` and runs
+  on `CI_COMMIT_BRANCH`; the analyzer `secrets:7` and `7.40.0` are one image built 2026-10-10, `7.39.0`
+  was built 2026-09-10; `pip-audit` 2.10.1 was published 2026-06-10; `moby/buildkit:rootless` and
+  `v0.34.0-rootless` are one digest, published 2026-10-07; uv's images moved from bookworm to trixie, so
+  the gates use `0.12.17-python3.12-trixie-slim`.
+- **[Claude] The gates exercised offline.** The scan gate's script, run against the scans above with a
+  stand-in `aws`: the two seeds pass, Stage 7's alpine image under the `app-etl` repository fails on its
+  zlib HIGH, a deploy baseline missing CVE-2026-8927 fails, and a refused call, a `FAILED` scan and an
+  unknown repository fail. The pip-audit script, on the laptop against OSV: `app-etl` passes (1 package,
+  pyarrow), a project pinning `requests==2.19.0` fails (38 vulnerabilities with a fixed version), a project
+  with no lock fails at the export (`uv` exit 2). pip-audit warns that `--require-hashes` with the OSV
+  service checks the hashes' presence and not their validity; the image build's `uv sync --locked` is
+  what verifies them.
+- **[Claude] Plans, read-only, as the infrastructure user**: `production/foundation/` with
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`, `2 to add, 0 to change, 0 to destroy` (the test
+  runner's token container and its policy); `production/registry/`, `1 to add` (Sandbox's pull on
+  `awsds-prod-ecr-app-etl`); `sandbox/data/`, `6 to add, 1 to change` (the outputs bucket, and the key's
+  one new statement). `production/runners/` and `sandbox/app/app-etl/` plan only once `production/egress/`
+  is up and `sandbox/data/` is applied, the outputs their remote states read.
+- **[Claude] `./aws/cicd.py awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`**: 0 FAILED; `CI-5`
+  notes the repository with no policy and both cross-account reads refused, `CI-9` the absent test
+  runner.
+- **[Claude] A commit hook found this worktree's `production/foundation/.terraform` older than pass 1**:
+  `terraform_validate` failed with "Module not installed" on `deploy_runner_role` and `deploy_role` until
+  the slice was initialised again (`init -backend-config=backend.hcl`, read-only).
+- **[Claude] `git push` was refused by Claude Code's permission classifier** ("Out-of-Place
+  Publication"), so the branch's commits wait for the user's push.

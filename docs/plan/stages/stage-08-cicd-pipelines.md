@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is written, not applied or pushed (2026-10-13)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
 | **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
@@ -230,6 +230,20 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   `default-` on every application tag would be a word that never varies. **Application images are
   `v<semver>-<short-sha>`.** If an application ever does gain a runtime variant, it gets the flavour
   segment and this pattern moves with it.
+- **2.2 — Written 2026-10-13, not pushed**: [`examples/app-etl/`](../../../examples/app-etl/README.md), the
+  content `awsds/app-etl` receives in place of Stage 7's first pipeline: a uv project on CPython 3.12,
+  base's interpreter, whose command turns every CSV in a directory into a Parquet table and a JSON summary,
+  pyarrow its one runtime dependency, resolved with `exclude-newer` two weeks back. The `Dockerfile` builds
+  `FROM awsds-prod-ecr-base@sha256:94359041…1975` (`default-v0.6.0`), the project in a virtual environment
+  of its own on `/opt/conda/bin/python3.12`, the sample under `/opt/app-etl/samples/`; its `smoke` target
+  runs the job's command as the image's user, `RUN --network=none`, on an output directory owned by root
+  with mode 755, opening with the job's `sudo -n chown` (decision 8): the SageMaker Distribution writes
+  `ALL ALL=(ALL) NOPASSWD: ALL` into `/etc/sudoers` (its v4.5 template, read 2026-10-13), so base and every
+  image `FROM` it keep passwordless sudo. The `.gitlab-ci.yml` includes `awsds/ci-gates` at a commit the
+  push fills in; tests, ruff and the gates run on the test runner on every push, Pages on `main`, and on a
+  tag `v<semver>` BuildKit `v0.34.0-rootless` by digest builds `smoke`, then pushes `app` as
+  `v<semver>-<short sha>` and hands the digest to the scan gate as a dotenv report; a manual job measures
+  verification (xiii). Offline: ruff clean, 7 tests pass.
 - **2.2 — [Claude] Write `.gitlab-ci.yml`**: on every branch — `uv sync`, `ruff`, `pytest`, plus step 5's
   gates, on the test runner, which holds no AWS identity (decision 11); on the default branch — docs built
   and published to **Pages** (Stage 7 step 4); on the protected tag — the image built with BuildKit
@@ -252,6 +266,39 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   — a named placeholder, not a job this stage builds.
 - **2.3 — [user] Run it**: a branch push runs tests only; the tag lands the image and the docs serve at
   `https://app-etl.awsds-pages.internal` — two pipeline deliverables in one push.
+- **2.4 — Written 2026-10-13, not applied**, under decision 12. `sandbox/app/app-etl/` (`[E]`, rank 58)
+  holds the processing jobs' role `awsds-sandbox-app-etl-job` and its security group, no ingress and HTTPS
+  to the S3 gateway endpoint's prefix list and to the VPC's range; its output `processing_job_request` is
+  the whole `CreateProcessingJob` request but its name, with Stage 9 3.5's settings (`VpcConfig`, network
+  isolation, inter-container encryption, the volume key) and 6i's command, null until `release.tf` names a
+  release. Two `[P]` halves elsewhere: `production/registry/` grants Sandbox the pull on
+  `awsds-prod-ecr-app-etl` (`APP_REGISTRY_CONSUMERS`, apart from `REGISTRY_CONSUMERS`, Lesson 51; plan `1 to
+  add`), and `sandbox/data/` gains `awsds-sandbox-outputs`, where an application run by hand writes, 30-day
+  expiry, under the data key, and the key statement `AllowApplicationJobRolesViaS3`: the root, the S3
+  `kms:ViaService` pin and an `aws:PrincipalArn` match on `awsds-<env>-app-*-job`, since a key policy
+  naming the `[E]` role would keep a unique id the next session's role does not carry (plan `6 to add, 1 to
+  change`). It is D31's fourth reader, of the third's shape. The role carries no ceiling: its applier is
+  the infrastructure user, and `awsds-<env>-app-boundary` bounds what a deploy role may create, so it
+  lands in Staging and Production at 3.0. The job reads the image's own sample: the infrastructure user
+  holds no cryptographic action on the data key (D31), so no person writes an input under it.
+  Refusals 7 and 8 are in `layers.py`, read by `slices.py` (8 when `--profile` names a deploy role), and
+  `slice_dirs_on_disk` makes `make check`, the lock check and the network-doc check see a slice under
+  `app/`. With `DRY=1`: `make up ENV=sandbox` refuses `app/app-etl` by 7, `make down ENV=sandbox` destroys it
+  between `probes` and `warehouse-compute`, and a deploy-role `PROFILE` meets 8 on every Sandbox slice.
+  The run, once the slices are applied and `release.tf` names the first release: `make up ENV=sandbox`
+  for the endpoints its logs take, then as the infrastructure user in Sandbox (`awsds-infra-sandbox-1`):
+
+  ```bash
+  terraform -chdir=terraform-live/sandbox/app/app-etl output -raw processing_job_request > "$HOME/tmp/app-etl-job.json"
+  ```
+
+  ```bash
+  aws sagemaker create-processing-job --profile awsds-infra-sandbox-1 --region us-west-2 --processing-job-name "app-etl-$(date -u +%Y%m%dT%H%M%S)" --cli-input-json "file://$HOME/tmp/app-etl-job.json"
+  ```
+
+  The reading is the job's status, its log in `/aws/sagemaker/ProcessingJobs` (versions, counts, file
+  names) and the keys under `s3://awsds-sandbox-outputs/app-etl/<tag>/`; listing needs no decrypt, and the
+  content stays the job role's to read (verification xviii).
 - **2.4 — [Claude] Write `sandbox/app/app-etl/` and the machinery rows**, then **[Claude⚡] apply as
   `awsds-infra-sandbox-1`**: the application running against Sandbox's own data, applied **by hand** while
   it is being engineered, outside the SMUS project and its role, under the infrastructure user. **The
@@ -416,6 +463,11 @@ the approval, and 4.6's alarm.
   roles with the instance's credentials, registered under GitLab runner #3 (protected, locked, tag
   `awsds-deploy`, no untagged jobs) and pulled the image by digest; `cicd.py` `CI-1` passes, 0 FAILED. The
   boot proves the host's path to the roles; verification (ii), a job container's, waits for a job.
+- **4.4 — `make`'s half written 2026-10-13, with refusal 8**: `make up`/`down` take `ONLY=` and `PROFILE=`,
+  passed to `slices.py --only` and `--profile`; every command of the run, the `[D]` hook's included, runs
+  as the profile named, and a deploy role's profile meets refusal 8 in an Interactive account. With
+  `DRY=1`, `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging` prints `staging/egress/`'s init
+  and apply as `awsds-deploy-staging` and nothing else. The runner's AWS config was 4.3's.
 - **4.4 — [Claude] Write the runner's AWS config and the `make` overrides**: profiles `awsds-deploy-*`
   declared as `role_arn` + `credential_source = Ec2InstanceMetadata` in the runner's `~/.aws/config`
   (rendered from the same map) — the named-profile discipline holds and **nothing is ever exported into a
@@ -485,6 +537,21 @@ its analyzer is not available to this CE instance — the dependency gate is **`
 ordinary job; **Secret Detection is Free** (a template include); the ECR gate (1.4) covers **OS packages
 only** — `pip-audit` covers the Python dependencies, and the two compose rather than substitute.
 
+- **5.1-5.4 — Written 2026-10-13, not pushed** (decision 10): [`ci-gates/`](../../../ci-gates/README.md),
+  the content of the GitLab project `awsds/ci-gates`. `gates.gitlab-ci.yml` carries GitLab's Secret
+  Detection template with its analyzer by digest (`7.39.0`) on every branch and a gate job that fails on
+  any finding the template's job reports and never fails on; `pip-audit 2.10.1` over the runtime set each
+  uv lock pins, exported with `--locked` in one step and audited from the hashed export in the next,
+  blocking on a vulnerability with a fixed version; `checkov 3.3.11` over the Terraform directories a
+  pipeline names; and `.gates-ecr-scan`, which waits for the push's own basic scan under a 900 s bound and
+  blocks on a CRITICAL or HIGH finding absent from the lineage's baseline, chosen by the repository the
+  image was pushed to. `baselines.gitlab-ci.yml` seeds the SageMaker Distribution lineage from
+  `default-v0.6.0` (HIGH 130, 121 of them `linux-libc-dev`) and the deploy lineage from `v0.1.0` (the two
+  curl CRITICALs the user accepted by name, HIGH 8). Offline, with a stand-in `aws` serving the real scans:
+  both seeds pass; Stage 7's alpine image in `app-etl` fails on `CVE-2026-85091|zlib`; a baseline missing
+  `CVE-2026-8927` fails; a refused call, a `FAILED` scan and an unknown repository fail. The pip-audit
+  script passed `app-etl`, blocked a project pinning `requests==2.19.0` (38 vulnerabilities with a fixed
+  version) and failed at the export on a project with no lock: verification (x)'s two halves, offline.
 - **5.1 — [Claude] Write the `checkov` job** for every Terraform directory a pipeline touches (the
   repository's own tool since Stage 0), blocking on its failures.
 - **5.2 — [Claude] Write the `pip-audit` job**: `uv export --format requirements-txt -o requirements.txt`,
