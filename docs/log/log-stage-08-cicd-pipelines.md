@@ -66,3 +66,13 @@ Account ids are replaced by the account's name in angle brackets.*
   v10.2.0, `hashicorp/setup-terraform` v4.0.1, `terraform-linters/setup-tflint` v6.3.1.
 - **[Claude] `aws/egress.py`** no longer says Staging is unvended; its profile is `awsds-infra-staging`
   since 6b.
+- **[Claude] The workflow's first complete run, on PR #123**: run `38314108044` (`pull_request`), job
+  `pre-commit and make check`, **success in 7 min 50 s**. The run before it was cancelled by the
+  workflow's concurrency group when the PR's second commit arrived. Step 6.3's first half: a pull request
+  shows the gates.
+- **[user] Decisions 1 to 9 taken as recommended, in chat**: the scanners block a CRITICAL or HIGH
+  finding absent from a committed baseline (1); a dual push from the laptop mirrors this repository (2);
+  the infrastructure pipeline holds no credential (3); the deploy runner is a `t3a.small` (4); one
+  `awsds-<env>-alerts` topic per deployment-target account (5); the recipe moves to GitLab
+  `awsds/dev-env` at pass 3 (6); the dev-env hand half stays (7); the image keeps passwordless `sudo` (8);
+  the D28 lint is a command of `awsds-workflows` (9).

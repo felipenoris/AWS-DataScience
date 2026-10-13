@@ -565,26 +565,26 @@ Measured (`docs/PRICING.md`), us-west-2:
    committed beside the gate**, the findings of the release the steward last approved, starting from
    `default-v0.6.0`'s, which holds no CRITICAL, so every CRITICAL blocks until someone writes it into the
    baseline by name; warn on the rest; for `pip-audit`, block on a known vulnerability with a fixed version
-   available. Tightened against real findings rather than set maximally strict and then overridden ad hoc.
+   available. Tightened against real findings rather than set maximally strict and then overridden ad hoc. **Taken by the user 2026-10-12, as recommended.**
 2. **The infrastructure-repository mirror for the deploy jobs** (6.1) — recommended: **dual-push from the
    laptop**, no standing mirror machinery; revisit only if staleness actually bites (the printed SHA is
-   the instrument).
+   the instrument). **Taken by the user 2026-10-12, as recommended.**
 3. **The infrastructure pipeline's credentials** (6.2) — recommended: **none** — offline gates only;
    GitHub OIDC is possible (the RCP excludes `AssumeRoleWithWebIdentity`) and declined while `plan`/`apply`
-   are deliberate by-hand acts under the runbook.
+   are deliberate by-hand acts under the runbook. **Taken by the user 2026-10-12, as recommended.**
 4. **Deploy runner size** (4.3). Its jobs are `terraform` and tests, not image builds, which stay on
    the build runner. A `t4g.small` (0.0168/h) needs an `arm64` deploy image, and the build runner is
    `amd64` with rootless BuildKit and its user data registers no emulator, so a `RUN` step in an `arm64`
    stage has nothing to execute it; an `amd64` runner takes the image the build runner already builds,
    at `t3a.small` 0.0188/h or `t3.small` 0.0208/h (measured 2026-10-12). Recommended: **`t3a.small`**,
    +0.0020/h over `t4g.small` while up, against an emulator on the build host or an image assembled with
-   no `RUN` in its target stage. The lint's offline import runs on the build runner either way.
+   no `RUN` in its target stage. The lint's offline import runs on the build runner either way. **Taken by the user 2026-10-12, as recommended.**
 5. **The alarm target** (4.6; Stage 9 6.2 and Stage 10 3.1/5.3 consume it). The "Stage 1b SNS pattern" is
    one topic, `awsds-org-break-glass-alerts`, in the Management account, and no member account has a topic
    (`sandbox/warehouse/alarms.tf` says so and defers it to Stage 12). Recommended: **one topic per
    deployment-target account, `awsds-<env>-alerts`, created here and subscribed to the operator's address**,
    which Stage 12 then adopts; the alternative, EventBridge forwarding to Management's bus, puts a
-   cross-account rule in the path of every alarm and the break-glass topic in the path of routine ones.
+   cross-account rule in the path of every alarm and the break-glass topic in the path of routine ones. **Taken by the user 2026-10-12, as recommended.**
 6. **Where the image recipe lives** (1.0). `images/` is in this GitHub repository, every hand build took it
    from there, and `./aws/devenv.py` reads it there. GitLab's `awsds/dev-env` holds only
    `images/build.gitlab-ci.yml`, as Stage 7 step 2.6 ran it: the pipeline clones this repository at the
@@ -594,20 +594,20 @@ Measured (`docs/PRICING.md`), us-west-2:
    what it builds, and the brief names GitLab as the source-code control
    ([`objectives.md`](../objectives.md)). The alternative is this repository as the source and GitLab's
    `dev-env` as its mirror (6.1's dual push), which keeps one home and makes a GitHub write the real
-   authorization.
+   authorization. **Taken by the user 2026-10-12, as recommended.**
 7. **Whether the dev-env hand half can shrink** (1.6). `dev-env.md` records two levers, both undecided:
    omitting `ImageVersionNumber` at the attach, so the domain follows the image's newest version and an apply
    alone changes what every new space starts (the review gate goes with it); and version aliases.
    Recommended: **neither yet**: the hand writes are the review gate, and a release is rare enough to pay for
-   it; re-read when a second project domain makes the sweep a multiple.
+   it; re-read when a second project domain makes the sweep a multiple. **Taken by the user 2026-10-12, as recommended.**
 8. **Who owns a processing job's output mount** (2.2). Recommended: **the image keeps passwordless `sudo`
    and the job's command opens with 6i's `chown`**, the measured shape; running jobs as root would remove a
-   step and widen every job's container to root for a mount's sake.
+   step and widen every job's container to root for a mount's sake. **Taken by the user 2026-10-12, as recommended.**
 9. **Where the D28 workflow lint lives** (5.6). The packaging and rendering tool is `awsds-workflows`,
    which `app-etl`'s CI installs by URL at a pinned commit, and the lint reads the files that tool renders.
    Recommended: **a `lint` command in `awsds-workflows`**, so one pin covers rendering, packaging and the
    lint; the alternative is a script in this repository's `scripts/`, which `app-etl`'s CI would clone
-   from GitHub at a pinned commit, the way Stage 7's image pipeline clones the recipe.
+   from GitHub at a pinned commit, the way Stage 7's image pipeline clones the recipe. **Taken by the user 2026-10-12, as recommended.**
 
 ## Verifications to answer while executing
 
