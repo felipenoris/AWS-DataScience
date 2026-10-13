@@ -281,3 +281,38 @@ Account ids are replaced by the account's name in angle brackets.*
   runner by ARN, or by anything but the runner role's unique id: both rules `pass`, `CI-8` `8 event(s),
   every caller is the deploy runner`, 0 FAILED. Still unread: whether Staging's bus receives a
   cross-account record at all, which verification (xvi) answers.
+
+## 2026-10-13 — verification (xvi): the misuse rules fire, from both sides of the account boundary
+
+- **[user] The positive test authorized in chat** ("autorizo"), after Claude described it: each deploy
+  role's trust opened for under a minute to the infrastructure user's Production `InfrastructureAccess`
+  role, one assumption each, the saved trust restored. Claude Code's permission classifier had refused
+  writing the test script ("Permission Grant") until then.
+- **[Claude] The refused half first, nothing changed**: at 04:56:22Z the infrastructure user's Production
+  session asked for `awsds-deploy-prod` and for `awsds-deploy-staging`, and both answered `AccessDenied`
+  (`... is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-deploy-prod`,
+  and the same for `<Staging>`'s role). Production's CloudTrail recorded both (04:56:23Z, 04:56:24Z) with
+  `errorCode` `AccessDenied` and `requestParameters` null, so no `roleArn` and no session name: the role
+  refused is named in `errorMessage` alone. Staging recorded nothing of the refused cross-account attempt
+  over the next 11 minutes.
+- **[Claude] The four sessions on this machine told, then the positive half**:
+  `awsds-deploy-prod`'s trust widened 05:08:18Z, assumed as `xvi-misuse-same-account` 05:08:32Z, restored
+  05:08:33Z; `awsds-deploy-staging`'s widened 05:08:34Z, assumed from Production as
+  `xvi-misuse-cross-account` 05:08:47Z, restored 05:08:49Z. Each restored trust read back equal to the
+  saved one, and `production/foundation/` and `staging/foundation/` both plan `No changes`.
+- **[Claude] Both rules fired at 05:08Z**: `MatchedEvents` 1, `TriggeredRules` 1, `Invocations` 1 and no
+  `FailedInvocations` on `awsds-prod-deploy-misuse` and on `awsds-staging-deploy-misuse`, and
+  `NumberOfMessagesPublished` 1 on each alerts topic. Staging's event bus receives the cross-account record,
+  and `deploy-role-v0.2.0`'s pattern matches it, where `v0.1.0`'s would not have (`TestEventPattern`,
+  above).
+- **[Claude] The three test assumptions in CloudTrail**: Production recorded `xvi-misuse-same-account`
+  (05:08:32Z) and its copy of `xvi-misuse-cross-account` (05:08:48Z, with a `sharedEventID`), each with the
+  caller's `arn`; Staging recorded `xvi-misuse-cross-account` (05:08:48Z) as `userIdentity.type`
+  `AssumedRole` with no `arn`, where the runner's own records there read `AWSAccount`. The caller's ARN is
+  absent from the role's account either way, and the principal id is present.
+- **[Claude] `./aws/cicd.py` `CI-8` read one page**: it looked up `EventName=AssumeRole` with
+  `--max-results 50`, and Production's AssumeRole events of every kind had pushed the runner's 04:02:58Z
+  assumption of `awsds-deploy-prod` off that page within an hour. It now looks each deploy role up by its
+  ARN (`ResourceName`), every page, and excuses the two test sessions by name and minute (05:08Z): 11
+  records, `CI-8` `8 event(s), every caller is the deploy runner` plus a note for the 3 test records, `CI-3`
+  every trust naming the runner alone, 0 FAILED.

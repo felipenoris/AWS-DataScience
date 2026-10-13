@@ -79,7 +79,11 @@ MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 STAGING_STATE_BUCKET = "awsds-staging-tfstate"
 STAGING_APP_STATE_PREFIX = "staging/app/"
 DEVENV_IMAGE_SUBSTR = "dev-env"
-LOOKUP_MAX = 50  # CloudTrail lookup page - 90 days of AssumeRole is small at lab scale
+# Stage 8 verification (xvi): the infrastructure user's deliberate assumptions of two deploy roles,
+# each trust widened for 15 s and restored (2026-10-13). CloudTrail keeps them for 90 days; the session
+# names and the minute they ran in excuse these and no later event.
+XVI_TEST_SESSIONS = ("xvi-misuse-same-account", "xvi-misuse-cross-account")
+XVI_TEST_WINDOW = ("2026-10-13T05:08:00Z", "2026-10-13T05:09:00Z")
 
 
 def misuse_caller_field(pattern_text: str, runner_role_id: str) -> str:
@@ -233,6 +237,7 @@ def main(argv: list) -> int:
     role_rows: list = []  # (profile, role, state, boundary tail, trust summary)
     trust_bad: list = []  # (role, principal or action that breaks the contract)
     roles_found = 0
+    deploy_role_arns: list = []  # what section 7 asks CloudTrail about, by resource
     for p, role in ROLE_BY_PROFILE.items():
         if p not in live:
             continue
@@ -244,7 +249,7 @@ def main(argv: list) -> int:
             "--role-name",
             role,
             "--query",
-            "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument]",
+            "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument,Arn]",
             "--output",
             "json",
             log=False,
@@ -256,8 +261,9 @@ def main(argv: list) -> int:
         if not (res.ok and res.stdout):
             role_rows.append((p, role, "(read failed)", "-", "-"))
             continue
-        boundary, trust = json.loads(res.stdout)
+        boundary, trust, found_arn = json.loads(res.stdout)
         roles_found += 1
+        deploy_role_arns.append(str(found_arn))
         btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
         principals: list = []
         stmts = (trust or {}).get("Statement", [])
@@ -435,48 +441,63 @@ def main(argv: list) -> int:
     # --------------- who assumed a deploy role - CloudTrail's 90-day lookup (INT-08)
     event_rows: list = []  # (profile, time, role tail, caller tail)
     event_bad: list = []  # (profile, caller) for a non-runner caller
+    event_tests: list = []  # (profile, session) for verification (xvi)'s deliberate assumptions
+    # Looked up by each deploy role's ARN, every page: an account's AssumeRole events of all kinds
+    # outrun one page of 50 within hours. A refused assumption names no resource and is not here.
+    raw_events: list = []  # (profile, CloudTrail record as text)
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
         cli = cli_for(p)
         note(f"measuring {p} (AssumeRole events) ...")
-        res = cli.run(
-            "cloudtrail",
-            "lookup-events",
-            "--lookup-attributes",
-            "AttributeKey=EventName,AttributeValue=AssumeRole",
-            "--max-results",
-            str(LOOKUP_MAX),
-            "--query",
-            "Events[].CloudTrailEvent",
-            "--output",
-            "json",
-            log=False,
+        for arn in deploy_role_arns:
+            res = cli.run(
+                "cloudtrail",
+                "lookup-events",
+                "--lookup-attributes",
+                f"AttributeKey=ResourceName,AttributeValue={arn}",
+                "--query",
+                "Events[?EventName=='AssumeRole'].CloudTrailEvent",
+                "--output",
+                "json",
+                log=False,
+            )
+            raw_events += [(p, r) for r in (json.loads(res.stdout or "[]") if res.ok else [])]
+    for p, raw in raw_events:
+        try:
+            ev = json.loads(raw)
+        except (TypeError, ValueError):
+            continue
+        role_arn = str(((ev.get("requestParameters") or {}).get("roleArn")) or "")
+        if "/awsds-deploy-" not in role_arn:
+            continue
+        # The deploy role's own account records a cross-account caller with no `arn`, whatever its
+        # type (AWSAccount for the runner, AssumedRole for an SSO session, 2026-10-13), and a
+        # principalId of "<role unique id>:<session name>".
+        ident = ev.get("userIdentity") or {}
+        caller_arn = str(ident.get("arn") or "")
+        principal_id = str(ident.get("principalId") or "")
+        if caller_arn:
+            caller, shown = caller_arn, caller_arn.rsplit("/", 1)[-1]
+            by_runner = RUNNER_NAME in caller_arn
+        else:
+            caller = principal_id or "(unknown)"
+            shown = f"{principal_id.split(':', 1)[-1]} (by role id)"
+            by_runner = bool(runner_role_id) and principal_id.startswith(f"{runner_role_id}:")
+        when = str(ev.get("eventTime") or "-")
+        session = str(((ev.get("requestParameters") or {}).get("roleSessionName")) or "")
+        is_test = (
+            not by_runner
+            and session in XVI_TEST_SESSIONS
+            and XVI_TEST_WINDOW[0] <= when <= XVI_TEST_WINDOW[1]
         )
-        for raw in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
-            try:
-                ev = json.loads(raw)
-            except (TypeError, ValueError):
-                continue
-            role_arn = str(((ev.get("requestParameters") or {}).get("roleArn")) or "")
-            if "/awsds-deploy-" not in role_arn:
-                continue
-            # The deploy role's own account records a cross-account caller as type AWSAccount,
-            # with no `arn` and a principalId of "<role unique id>:<session name>".
-            ident = ev.get("userIdentity") or {}
-            caller_arn = str(ident.get("arn") or "")
-            principal_id = str(ident.get("principalId") or "")
-            if caller_arn:
-                caller, shown = caller_arn, caller_arn.rsplit("/", 1)[-1]
-                by_runner = RUNNER_NAME in caller_arn
-            else:
-                caller = principal_id or "(unknown)"
-                shown = f"{principal_id.split(':', 1)[-1]} (by role id)"
-                by_runner = bool(runner_role_id) and principal_id.startswith(f"{runner_role_id}:")
-            when = str(ev.get("eventTime") or "-")
-            event_rows.append((p, when, role_arn.rsplit("/", 1)[-1], shown[:40]))
-            if not by_runner:
-                event_bad.append((p, caller))
+        if is_test:
+            shown = f"{session} (xvi)"
+            event_tests.append((p, session))
+        event_rows.append((p, when, role_arn.rsplit("/", 1)[-1], shown[:40]))
+        if not by_runner and not is_test:
+            event_bad.append((p, caller))
+    event_rows.sort(key=lambda r: (r[0], r[1]), reverse=True)
 
     # -------------------------------------------------------------------------- the checks
 
@@ -680,7 +701,14 @@ def main(argv: list) -> int:
         checks.ok(
             "CI-8",
             "deploy-role assumptions",
-            f"{len(event_rows)} event(s), every caller is the deploy runner",
+            f"{len(event_rows) - len(event_tests)} event(s), every caller is the deploy runner",
+        )
+    if event_tests:
+        checks.note(
+            "CI-8",
+            "verification (xvi)",
+            f"{len(event_tests)} deliberate assumption(s) of 2026-10-13, excused by session name "
+            "and minute.",
         )
 
     # ---------------------------------------------------------------------- the report

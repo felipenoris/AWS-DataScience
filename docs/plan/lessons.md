@@ -1767,11 +1767,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **A role's own account records a caller from another account with no ARN, and an absent field fails
   EventBridge's `anything-but`** (measured 2026-10-13, Stage 8 step 4.6). Staging's copy of the deploy
   runner's `AssumeRole` reads `userIdentity.type` `AWSAccount`, a `principalId` of `<role unique
-  id>:<session name>`, the caller's `accountId` and a `sharedEventID`, and no `arn`. `TestEventPattern`
+  id>:<session name>`, the caller's `accountId` and a `sharedEventID`, and no `arn`; an SSO session's reads
+  `AssumedRole`, still with no `arn`. `TestEventPattern`
   answered `false` for a pattern exempting the runner by `userIdentity.arn` on that record with another
   account's role in it, so the rule could never fire on a caller from outside. The operators page says
   `anything-but` matches *"anything except what's specified"* and speaks of absence only under `exists`.
-  Whether the role's account delivers that copy to its event bus is unread. Where: `log-stage-08`'s
+  The role's account does deliver that copy to its event bus: a misuse from Production fired Staging's
+  rule (verification xvi). A refused cross-account `AssumeRole` is recorded in the caller's account only,
+  with `requestParameters` null and the role named in `errorMessage` alone. Where: `log-stage-08`'s
   2026-10-13 entries, `deploy-role-v0.2.0`.
 
 ### SageMaker processing jobs
