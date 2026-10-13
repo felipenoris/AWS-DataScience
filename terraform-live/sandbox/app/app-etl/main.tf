@@ -100,6 +100,22 @@ data "aws_iam_policy_document" "job" {
     resources = [local.data_key_arn]
   }
 
+  # The job's volume is encrypted under the same key through a grant the service creates; the key
+  # delegates its administrative actions, CreateGrant among them, to IAM, and the grant may only be
+  # one AWS makes for its own resource.
+  statement {
+    sid       = "LetTheServiceEncryptTheVolume"
+    effect    = "Allow"
+    actions   = ["kms:CreateGrant", "kms:DescribeKey"]
+    resources = [local.data_key_arn]
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+  }
+
   statement {
     sid    = "LogToTheProcessingJobsGroup"
     effect = "Allow"
