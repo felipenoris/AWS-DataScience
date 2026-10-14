@@ -134,6 +134,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `check-gitlab-ci.py` reads every tracked `*.gitlab-ci.yml` with its includes: a job named after a
   GitLab CI global keyword fails, and so does a `needs:` or `dependencies:` entry naming no job of its
   pipeline, mistakes GitLab otherwise reports only when it creates the pipeline, behind the VPN.
+  `check-sg-descriptions.py` reads every security group and rule description in the Terraform trees: a
+  character outside the set EC2 accepts fails it, a mistake `validate` catches only on inline rules and
+  EC2 otherwise reports at apply, after the resources ahead of it exist.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
