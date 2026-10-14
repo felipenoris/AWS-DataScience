@@ -1,0 +1,14 @@
+{
+  "awsds/deploy-image": {
+    "branch": "main",
+    "commit": "98a3dc7eb9a85ae210c9f2aeb2d9ad2135caf0d1",
+    "committed": "2026-10-14T20:38:26-03:00",
+    "subject": "The deploy image's recipe, moved from AWS-DataScience's images/deploy/ at e45e1e3a (Stage 8 decision 16)"
+  },
+  "awsds/dev-env": {
+    "branch": "main",
+    "commit": "f44f19e3adec85c6aac5323b5e35d494bb887d84",
+    "committed": "2026-10-14T20:37:57-03:00",
+    "subject": "The recipe, moved from AWS-DataScience's images/ at e45e1e3a, with the release chain (Stage 8 decision 16)"
+  }
+}

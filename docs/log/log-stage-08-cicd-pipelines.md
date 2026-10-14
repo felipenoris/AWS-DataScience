@@ -767,3 +767,28 @@ Account ids are replaced by the account's name in angle brackets.*
   denied; `s3:PutObject` on the registry's key explicitly denied. Without the context every S3 action read
   `explicitDeny` from the organization's policies, the simulator lacking the Region the S3 ARN does not
   carry.
+
+## 2026-10-14 — the GitLab session: gates-v0.3.0 and the two seeds
+
+- **[user]** Ran `make hub-up` and `make gitlab-up` from this worktree; published `gates-v0.3.0` on
+  `awsds/ci-gates` (`gitlab.md` §G step 4, the four `ci-gates/` files of this branch); pushed the two seeds
+  (`gitlab.md` §M), `awsds/dev-env` `main` at `f44f19e3` and `awsds/deploy-image` `main` at `98a3dc7e`.
+- **[Claude] The runners**: `./aws/cicd.py` 0 FAILED, `CI-1` the deploy runner `t3a.small` running, `CI-9`
+  the test runner with hop limit 1. The deploy runner's first boot, read with `get-console-output`, lists
+  four profiles and assumed each: the three deploy roles, and `awsds-prod-runner-deploy` as
+  `assumed-role/awsds-prod-runner-deploy/<instance id>`, the instance's own role (decision 14's profile
+  through the AWS CLI; Terraform's read of it is unexercised).
+- **[Claude] `gates-v0.3.0`**, read through the user's Chrome session: the tag at
+  `2cc067490b603f6767802035faed624d5213e3ab`, `main` at the same commit; pipelines #5 (`main`) and #6 (the
+  tag) green on the test runner, `baselines-shape` reading `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: 8 key(s)`.
+- **[Claude] GitLab's CI Lint** (`POST /projects/:id/ci/lint`, which creates nothing) on the two pipeline
+  files as GitHub served them at `e45e1e3a`: both valid, no error or warning; a dry run of `awsds/dev-env`'s
+  `main` lists `secret_detection`, `secret-detection-gate`, `pip-audit` and `recipe-checks`.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py --dry-run` read both projects' last commits as the files
+  the copy holds, 13 and 5; the run wrote `gitlab/mirror.json` alone.
+- **[Claude] `awsds/dev-env` pipeline #2**, on the seed: `recipe-checks` passed in 5 s (`NO_PROXY_LIST: 70
+  entries`, the settings parsing, 7 env keys), `secret_detection` and its gate passed, and `pip-audit`
+  failed in 87 s with "452 package(s) audited, 73 vulnerability(ies) with a fixed version" on the test
+  runner: the uv export the gate's 3.12 image could not run at 3.13 ran at 3.12 (decision 13), and the
+  count is the laptop's with the markers removed. `awsds/deploy-image` created no pipeline, its rule
+  admitting the web form alone.
