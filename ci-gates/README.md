@@ -53,7 +53,7 @@ pip-audit's accepted lists follow the same rule, chosen by the project's path, w
 
 | List | Project | Seeded from |
 |---|---|---|
-| `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` | `awsds/dev-env`, its `dev-env/python/uv.lock` | the lock a targeted `uv lock --upgrade-package` left on 2026-10-14: 8 findings whose fixed version another package of the environment forbids (fsspec, setuptools, sqlparse) |
+| `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` | `awsds/dev-env`, its `dev-env/python/uv.lock` | the lock a targeted `uv lock --upgrade-package` left on 2026-10-14: 8 findings whose fixed version another package of the environment forbids (fsspec, setuptools, sqlparse), accepted by name by the user as the Dev Env Steward |
 
 **A finding enters a list by name**, in a reviewed commit whose message says who accepted it and why; for
 the SageMaker Distribution lineage that is the Dev Env Steward approving the release that carries it

@@ -168,7 +168,7 @@
     # (dev-env/python/uv.lock), chosen by the project's path and never by the pipeline (decision 15).
     # Each has a fixed version the environment cannot reach, because another of its packages requires the
     # old one, named after the `;`. Read 2026-10-14 from the lock a targeted `uv lock --upgrade-package`
-    # leaves; proposed for the Dev Env Steward's acceptance.
+    # leaves, and accepted by name the same day by the user, as the Dev Env Steward.
     GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: |
       CVE-2026-104851|fsspec         # 2025.3.0, fixed in 2026.6.0; autogluon-multimodal 1.6.1 requires fsspec[http]<=2025.3
       PYSEC-2026-3447|setuptools     # 81.0.0, fixed in 83.0.0; autogluon-core 1.6.1 requires setuptools<82

@@ -745,3 +745,25 @@ Account ids are replaced by the account's name in angle brackets.*
   passes on the copy and fails a trailing comma in the managed settings.
 - **Owed**: the steward's acceptance of the 8 findings; the applies of `production/foundation/` and
   `sandbox/dev-env/`; the GitLab session of runbook `gitlab.md` §M, with the pipeline linted in GitLab first.
+
+## 2026-10-14 — the steward's acceptance, and decision 14 applied
+
+- **[user] In chat**: accepted by name, as the Dev Env Steward, the 8 findings of
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`; authorized the applies of `production/foundation/` and
+  `sandbox/dev-env/`.
+- **[Claude] Before the writes**: the two peer sessions on this machine, both idle, were told;
+  `get-caller-identity` read the infrastructure user through `InfrastructureAccess` in Production and in
+  Sandbox.
+- **[Claude] `production/foundation/`** from its saved plan, 21:52:52Z-21:53:04Z: `1 added, 1 changed, 0
+  destroyed`, the runner role's description and its inline policy `registry-state`; the re-plan, with the
+  alerts tfvars, read `No changes`.
+- **[Claude] `sandbox/dev-env/`** from its saved plan, 21:53:30Z-21:53:40Z: `0 added, 1 changed, 0
+  destroyed`, the image's description; the re-plan read `No changes`, and `describe-image` reads `CREATED`
+  with the new description.
+- **[Claude] The policy simulator** on `awsds-prod-runner-deploy`, given `aws:RequestedRegion` and
+  `aws:PrincipalOrgID` as context: `s3:GetObject` on `production/registry/terraform.tfstate` allowed and on
+  `production/foundation/terraform.tfstate` implicitly denied; `s3:ListBucket` allowed with the registry's
+  key as prefix and denied with `production/`; `kms:Decrypt` on the state key allowed and `kms:Encrypt`
+  denied; `s3:PutObject` on the registry's key explicitly denied. Without the context every S3 action read
+  `explicitDeny` from the organization's policies, the simulator lacking the Region the S3 ARN does not
+  carry.

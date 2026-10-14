@@ -161,7 +161,12 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   profile (decision 14), with no guard (decision 17). `sandbox/dev-env/` accepts the `-<short sha>` suffix.
   The include stays at `gates-v0.2.0` until the release's merge request moves it to `gates-v0.3.0`, which
   carries decision 15's accepted list; `scripts/devenv-register.py --dry-run` prints both paths' commands, and
-  every pipeline file parses.
+  every pipeline file parses. **Decision 14 applied 2026-10-14 by Claude, authorized by the user**:
+  `production/foundation/` 1 added, 1 changed (the runner role's `registry-state` and its description),
+  `sandbox/dev-env/` 1 changed (the image's description), each re-plan `No changes`. The policy simulator,
+  given the Region and the organization as context, reads the runner role's `s3:GetObject` and
+  `s3:ListBucket` allowed on the registry's key alone, `kms:Decrypt` on the state key, and `s3:PutObject`
+  denied; the runner's profile is unexercised until a `make gitlab-up` from this branch.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release
@@ -870,7 +875,9 @@ Measured (`docs/PRICING.md`), us-west-2:
     the steward's acceptance, the ECR baseline's discipline; in the same `gates-v0.3.0`, **the gate fails
     when it audits fewer packages than the export pins**, since it audited 0 of 452 on the laptop and passed;
     and the first release, `default-v0.7.0`, carries the targeted upgrade as a data scientist's merge
-    request. **Taken by the user 2026-10-14, as recommended.**
+    request. **Taken by the user 2026-10-14, as recommended**, and the 8 accepted by name the same day by the
+    user as the Dev Env Steward: `CVE-2026-104851|fsspec`, `PYSEC-2026-3447|setuptools` and six of `sqlparse`,
+    held by `autogluon-multimodal` 1.6.1, `autogluon-core` 1.6.1 and `amazon-sagemaker-sql-magic` 0.1.3.
 16. **Where the image recipes live, and the copy this repository keeps** (1.0, decision 6). Recommended: a
     clone of `awsds/dev-env` in a gitignored folder of the project folder, read by `devenv.py` and
     `bedrock-scope.py`. **Taken by the user 2026-10-14, wider than recommended: everything under `images/`
