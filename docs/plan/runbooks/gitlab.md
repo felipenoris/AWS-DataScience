@@ -444,7 +444,7 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
 
 4. **Merge it into `main`** through a merge request. `main`'s pipeline adds `pages`, published at `$CI_PAGES_URL` (**Deploy → Pages**).
 
-5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner:
+5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner:
 
    ```bash
    git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull
@@ -454,7 +454,7 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
    git -C "$HOME/tmp/app-etl" tag v0.1.0 && git -C "$HOME/tmp/app-etl" push origin v0.1.0
    ```
 
-   The `image` job's last line, `== pushed <reference>@sha256:…`, carries the digest that `terraform-live/sandbox/app/app-etl/release.tf` records (Stage 8 step 2.4).
+   The `build-image` job's last line, `== pushed <reference>@sha256:…`, carries the digest that `terraform-live/sandbox/app/app-etl/release.tf` records (Stage 8 step 2.4).
 
 ### The deploy runner
 

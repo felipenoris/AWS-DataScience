@@ -6,7 +6,7 @@
 #                         to awsds-prod-ecr-app-etl as v<semver>-<short sha>, then the scan gate
 #
 # Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
-# test runner, whose jobs hold no AWS identity. The image job and the scan gate are untagged, so only the
+# test runner, whose jobs hold no AWS identity. build-image and the scan gate are untagged, so only the
 # build runner takes them, a protected runner that serves protected refs alone; the tag v* is protected,
 # created by Maintainers only (step 2.1), which in CE is the whole of the release gate.
 
@@ -49,8 +49,9 @@ pages:
 
 # BuildKit rootless, as Stage 7's pipelines run it: v0.34.0, the release `rootless` named on 2026-10-12,
 # by digest. Two builds share the job's cache: `smoke` first, which builds `app` and runs the job's command
-# on it, then `app` itself, pushed. The digest goes to the scan gate as a dotenv report.
-image:
+# on it, then `app` itself, pushed. The digest goes to the scan gate as a dotenv report. The job is not
+# named `image`: at the top level that is the global keyword, and GitLab refuses the file.
+build-image:
   stage: build
   image:
     name: moby/buildkit:v0.34.0-rootless@sha256:65eca3c01cd1180c8f64565c4e3c5983af5145818b0e6fa863385d099eb73855
@@ -85,7 +86,7 @@ image:
 scan-gate:
   extends: .gates-ecr-scan
   stage: verify
-  needs: [image]
+  needs: [build-image]
   variables:
     SCAN_REPOSITORY: awsds-prod-ecr-app-etl
   rules:
