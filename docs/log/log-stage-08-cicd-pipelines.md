@@ -569,3 +569,55 @@ Account ids are replaced by the account's name in angle brackets.*
   reads the merged JSON with `jq` and is not affected.
 - **Owed**: the user's decision on the `linux-libc-dev` findings (decision 1), a release whose gate passes,
   then the Sandbox sitting.
+
+## 2026-10-14 — the ECR scan made informative, and the first Sandbox run of `app-etl`
+
+- **[user] In chat**: amended decision 1, so that the scan findings inform the operator in the CI/CD log
+  and block no deployment; pushed `gates-v0.2.0`; authorized the Sandbox sitting, running `make up` and
+  `make down` themselves and leaving the rest to Claude; ran `make up ENV=sandbox ONLY=egress` from this
+  worktree; moved `awsds/app-etl`'s `main` to `gates-v0.2.0`; left the environment up.
+- **[Claude] The informative gate**: `.gates-ecr-scan` carries `allow_failure: true` and prints `WARN` over
+  the findings absent from the baseline. The script, run offline against `v0.1.0`'s real scan, listed the
+  593 findings and exited 1; GitLab's CI Lint read the template valid, a job extending it
+  `allow_failure=true`. `pip-audit`, Secret Detection and `checkov` still block.
+- **[Claude] Read back in GitLab**: `gates-v0.2.0` at `a335f37f2e8c85bcde31d378fac478899c355515`, protected,
+  its four files with `ci-gates/`'s blob hashes, pipelines #16 (`main`) and #17 (the tag) green on the test
+  runner; `awsds/app-etl`'s `main` at `62189229`, the `ref` line and one README line changed, pipeline #18
+  green (`secret_detection` 10 s, `secret-detection-gate` 8 s, `pip-audit` 17 s, `test` 12 s, `pages` 14 s).
+- **[Claude] Before the writes**: the two peer sessions on this machine, both idle, were told;
+  `get-caller-identity` read the infrastructure user through `InfrastructureAccess` in Sandbox and in
+  Production.
+- **[Claude] `sandbox/data/`** from its saved plan, 17:43:59Z-17:44:15Z: `0 added, 1 changed, 0
+  destroyed`; the re-plan read `No changes`, and `awsds-sandbox-outputs` reads `CostCenter=stage-08`.
+- **[Claude] `sandbox/app/app-etl/`**, with `release.tf` naming `v0.1.0` and
+  `sha256:33f76dec8bf7b7be760db1daf575c388172e49862381f66f8032b534bce5280d`. The first apply,
+  17:44:50Z-17:45:01Z, created `awsds-sandbox-app-etl-job` and stopped: EC2 refused `CreateSecurityGroup`
+  with `InvalidParameterValue`, a description taking `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` alone, and the
+  group's and both rules' descriptions carried an apostrophe the plan had not checked. Reworded in
+  `65b06c4`, re-planned `4 to add`, applied 17:46:20Z-17:46:34Z; the re-plan read `No changes`.
+- **[Claude] The endpoints**, after the user's `make up`: the 18 interface and 2 gateway endpoints of
+  Sandbox read `available`.
+- **[Claude] The job `app-etl-20261014T175359`**, created with `create-processing-job` from the slice's
+  `processing_job_request` (`ml.t3.medium`, network isolation, inter-container encryption, the data key on
+  the volume and the output, 900 s): created 17:54:01Z, processing 17:54:53Z-17:59:32Z, `Completed`
+  18:01:33Z. Its interface sat in `awsds-sandbox-private-usw2-az1` (`us-west-2b`) under the job's security
+  group. Its log, at 17:59:13Z:
+
+  ```
+  app-etl 0.1.0, python 3.12.14 at /opt/app-etl/venv/bin/python
+  pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 10 rows -> trades.parquet
+  1 file(s) processed
+  ```
+
+  The keys, at 17:59:27Z: `app-etl/v0.1.0/trades.parquet` 1,780 bytes and `trades.summary.json` 407 bytes,
+  SSE-KMS under `alias/awsds-sandbox-data` with a bucket key, expiring 2026-11-14. Listed and headed, never
+  read.
+- **[Claude] Verification (xviii)**: yes. Pipeline #15's smoke stage, networking off, printed `uid 1000,
+  output owned 0:0 755` and wrote the Parquet after `sudo -n chown`; the job ran the same command on the
+  same image under network isolation, and its two outputs arrived.
+- **[user] The environment left up**: Production's hub, GitLab and runners (`make status`: 0.4521 USD/h)
+  and Sandbox's `egress` (0.18 USD/h) and `app/app-etl`.
+- **Owed**: `make down ENV=sandbox` from a checkout carrying `app/app-etl` (until this branch merges, this
+  worktree), then `make gitlab-down` and `make hub-down`; verification (iv)'s re-scan half; (x) with a pinned
+  vulnerability in GitLab.
