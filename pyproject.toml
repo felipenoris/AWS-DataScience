@@ -10,7 +10,9 @@
 # means checking what CloudShell ships first.
 #
 # Zero runtime dependencies: the standard library plus the aws CLI as a subprocess, which keeps the
-# CloudShell fallback a one-liner and `uv sync` instant. ruff is a dev tool, not a dependency.
+# CloudShell fallback a one-liner and `uv sync` instant. ruff and PyYAML are dev tools, not
+# dependencies: PyYAML parses the GitLab CI files for scripts/check-gitlab-ci.py, which runs on the
+# laptop and in CI, never in CloudShell. `uv run` installs the dev group by default.
 
 [project]
 name = "awsds-tools"
@@ -21,6 +23,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pyyaml>=6",
     "ruff>=0.12",
 ]
 

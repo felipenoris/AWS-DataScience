@@ -2141,8 +2141,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `>`, so the ASCII arrow `->` that reads naturally in a rule description is refused while `to`
   passes. The wording differs by object (`Invalid security group description` against `Invalid rule
   description`) and both arrive **at apply**, after every other resource in the plan has been
-  created and with `validate`, `fmt` and `tflint` all green — the apply is the only validator.
-  Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3.
+  created and with `validate`, `fmt` and `tflint` all green. `validate` holds the set only on an
+  inline `ingress`/`egress` block and on `aws_security_group_rule` (hashicorp/aws 6.68.0, measured
+  2026-10-14); `./scripts/check-sg-descriptions.py` holds every description's literal text to it,
+  in `make check` and the commit gate. Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3,
+  `log-stage-08` 2.4.
 
 - **The Redshift Data API does not cancel a statement when its client stops polling, and
   `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A

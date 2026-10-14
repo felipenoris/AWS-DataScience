@@ -673,6 +673,16 @@ institutional answer.
   naming `terraform-live/staging/foundation/variables.tf`; the violation was reverted in the next commit.
 - **6.3 — [user] Enable it and prove it**: a pull request shows the gates; a deliberate `fmt` violation
   fails.
+- **6.4 — Done 2026-10-14, by Claude**: the offline gates read the GitLab CI files, after GitLab refused
+  `awsds/app-etl`'s pipeline #12 for a job named `image` ([the log](../../log/log-stage-08-cicd-pipelines.md),
+  2026-10-14). [`check-gitlab-ci.py`](../../../scripts/check-gitlab-ci.py), in `make check` and
+  pre-commit, fails a job named after a global keyword, and a `needs:`, `dependencies:` or `rules:needs`
+  entry naming no job of its pipeline. `awsds/ci-gates` is read from `ci-gates/` at the same commit, not
+  at the include's `ref`; a template, remote or component include is listed as not read. GitLab
+  v19.4.2's source reserves eight of the ten keywords: a top-level `default` or `workflow` holding
+  `script`, `run`, `trigger` or `needs` becomes a job and the keyword is lost, and the check refuses it
+  all the same. Over the tree: 6 files, 4 pipelines, 3 names resolved, `OK`; pipeline #12's file
+  (`1e92dee`) fails both checks.
 
 ---
 

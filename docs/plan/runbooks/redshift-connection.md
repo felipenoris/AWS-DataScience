@@ -118,7 +118,8 @@ connect but sees nothing"* as the expected state for a while — which is the am
    the IAM policy and its attachment, the **access role** the portal's form demands, and the `5439`
    ingress rule, so they cannot drift apart. `[P]` is never touched by `make up`, so this apply is by
    hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
-   permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
+   permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`. `validate` does not check this resource;
+   `make check` and the commit gate do, through `scripts/check-sg-descriptions.py`.
 3a. **Tell the project's notebooks to chain through the access role**, which is what makes the
    schema work from a space (measured 2026-10-10, §V step 4). Redshift grants to database users and
    never to an IAM role, and the space's session carries a **per-person** `RedshiftDbUser` that SMUS

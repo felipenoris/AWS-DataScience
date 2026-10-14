@@ -19,6 +19,10 @@
   dependency of the uv project; `pre-commit` runs it through `uv run`, so the gate binds to the locked
   version rather than to whatever is on PATH.
 
+- PyYAML: <https://pypi.org/project/PyYAML/>. Parses the GitLab CI files for
+  `scripts/check-gitlab-ci.py`, a dev-only dependency like `ruff`, locked at 6.0.3 on 2026-10-14. Its safe
+  loader refuses an unknown tag, so GitLab's `!reference` gets a constructor of its own.
+
 - `pre-commit`: <https://pre-commit.com/>. The hook collection the repository configures is
   `antonbabenko/pre-commit-terraform`: <https://github.com/antonbabenko/pre-commit-terraform>. The
   `terraform_validate` argument is `--tf-init-args=`, not `--init-args=` (Stage 2 step 6.4).
@@ -1221,6 +1225,27 @@
     iniconfig 2.3.1 on 2026-10-06, which `exclude-newer = "2026-09-29T00:00:00Z"` keeps out of the lock
     (it holds 25.0.1, 0.16.9 and 2.3.0): <https://pypi.org/pypi/pyarrow/26.0.0/json>, the same path for
     each package.
+- The GitLab CI rules `scripts/check-gitlab-ci.py` encodes (read 2026-10-14, after pipeline #12 of
+  `awsds/app-etl`; Stage 8 step 6.4):
+  - The YAML reference: the global keywords are `default`, `include`, `stages`, `variables` and
+    `workflow`, with `image`, `services`, `cache`, `before_script` and `after_script` deprecated at the
+    top level; the job keywords; an `include:local` path is relative to the project root; a missing need
+    without `optional` fails the pipeline; `pages` as a job name is deprecated:
+    <https://docs.gitlab.com/ci/yaml/>.
+  - Includes: nested includes merge first, a later include wins over an earlier one and the including
+    file over both; `configs/*.yml` matches one folder and `configs/**.yml` its subfolders too; a file
+    included twice takes effect where it was last included: <https://docs.gitlab.com/ci/yaml/includes/>.
+  - `Entry::Root` at v19.4.2: `ALLOWED_KEYS` holds the ten global keywords and eight carry `reserved:
+    true`; `filter_jobs!` takes any other top-level key as a job, and `default` or `workflow` too when
+    its mapping matches a job type, which `Entry::Job` decides by `script` or `run` and `Entry::Bridge` by
+    `trigger` or `needs`:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/root.rb>,
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/job.rb>,
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/bridge.rb>.
+  - The YAML processor at v19.4.2: an undefined need or dependency raises `<job> job: undefined need:
+    <name>`, an `optional` need returns before that check, each `rules:` entry's `needs` is validated
+    the same way, and a duplicated need and a need in a later stage are refused separately:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/yaml_processor.rb>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
