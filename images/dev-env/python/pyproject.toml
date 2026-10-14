@@ -12,9 +12,9 @@
 # PYTHONPATH pointing at /opt/conda/lib/python3.12/site-packages - imports fine until two trees hold
 # the same package: the distribution's pandas is compiled against the distribution's numpy, and with
 # ours first on the path it loads ours and fails as `numpy.dtype size changed` or as a segfault, in a
-# notebook, at runtime. Pinning this environment to the distribution's exact Python version makes the
-# extension modules loadable and does not fix that; it only gives up the independent version, at
-# which point the distribution's own interpreter would do the same job with correct precedence.
+# notebook, at runtime. Running this environment on the distribution's Python minor, as it does since
+# 2026-10-14, makes the extension modules loadable and does not fix that: two copies of numpy on one
+# path still meet.
 #
 # So the two environments do not share, and the price is paid in disk: whatever is listed below
 # exists twice in the image. The lever on that price is this list, not the mechanism - `uv sync`
@@ -34,12 +34,15 @@
 # A dependency added without re-locking is not installed: the build runs `uv sync --frozen`, which
 # refuses a lock that does not match this file rather than resolving something nobody reviewed.
 #
-# THE PYTHON VERSION IS 3.13, AND THE LIBRARIES CHOSE IT. Resolved 2026-09-10 against CPython 3.14
-# first: torch, torchvision, keras, xgboost, mlflow, ray, langchain, autogluon, fastapi and the data
-# stack all had wheels, and **TensorFlow had none past `cp313`** (2.21.0 publishes cp310-cp313 and
-# stops). The user's decision the same day was to keep the framework and move the interpreter, so
-# `requires-python` is `>=3.13` and the Dockerfile's PYTHON_VERSION matches it. Raising it again is
-# the same edit in reverse, and TensorFlow is the row to check first.
+# THE PYTHON VERSION IS 3.12, THE DISTRIBUTION'S. One minor across every environment the estate runs
+# Python code in (the user's decision, 2026-10-14, Stage 8 decision 13): the distribution's /opt/conda,
+# this environment, an application image built FROM base, the MWAA Serverless worker and the shared
+# gates' image. The shared pip-audit gate exports this lock only because of it - `uv export` needs an
+# interpreter `requires-python` admits, and the gate's image carries 3.12 with downloads off - and a
+# module built here imports on a worker. The ceiling is TensorFlow: 2.21.0 publishes cp310-cp313 and
+# nothing past it (resolved against CPython 3.14 on 2026-09-10), and this environment ran 3.13 from
+# default-v0.2.0 to default-v0.6.0. Moving it is `requires-python` here, PYTHON_VERSION in the
+# Dockerfile and `uv lock`, and TensorFlow is the row to check first.
 #
 # WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - the JupyterLab extensions, the
 # Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor extensions -
@@ -66,7 +69,7 @@
 name = "awsds-dev-env"
 version = "0.1.0"
 description = "The Python environment behind the dev-env image's own Jupyter kernel."
-requires-python = ">=3.13"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
     # The kernel. Without it there is no "Python (awsds)" entry in the Launcher.

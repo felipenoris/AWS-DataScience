@@ -84,7 +84,7 @@ USER root
 # both live in the same layer - 5.4 GB of cache beside a 5.2 GB environment, in a layer of 10.7 GB.
 # A later `rm -rf` would return nothing, since the bytes are already committed to this layer; the
 # cache has to never be written. The build is a single resolve, so nothing is lost by it.
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 ARG UV_DEFAULT_INDEX=""
 
 ENV AWSDS_PYTHON_ENV=/opt/awsds/venv \

@@ -216,7 +216,8 @@ is the one the environment will have. A denied name is a decision to take, not a
   (`aws-glue-sessions` → `notebook`; the SMUS sessions package → `sparkmagic` → `notebook`): files on
   disk that nothing starts, since the server a space runs is the base environment's. Three measurements came out of writing it, all from `uv lock` on the laptop rather
   than from a build: **TensorFlow has no wheel past `cp313`**, which is what set the interpreter —
-  the user kept the framework and moved the Python to **3.13** rather than the newest; the default
+  the user kept the framework and moved the Python to **3.13** rather than the newest (and to the
+  distribution's **3.12** on 2026-10-14, Stage 8 decision 13, from `default-v0.7.0`); the default
   PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
   PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the dependency is
   `xgboost-cpu` — which is the same choice the distribution makes (`py-xgboost-cpu` in its own

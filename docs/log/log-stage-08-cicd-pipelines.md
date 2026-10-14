@@ -631,3 +631,50 @@ Account ids are replaced by the account's name in angle brackets.*
   `NoSuchEntity`; no security group of that name, no `awsds-prod-runner*` instance and no Sandbox interface
   endpoint remain. The two outputs under `app-etl/v0.1.0/` stay in the `[P]` bucket until their 30-day
   expiry.
+
+## 2026-10-14 — pass 3 read, and the house environment on Python 3.12
+
+- **[Claude] Before the pass**: the Stage 8 pass 2 session on this machine was asked whether it still held a
+  Stage 8 edit, slice, log entry or state lock, and answered that it held none, its worktree removed and the
+  estate down.
+- **[Claude] Read in Sandbox** as the infrastructure user (`InfrastructureAccess`), read-only:
+  `awsds-sandbox-dev-env` version 6 `CREATED`, `BaseImage` `awsds-prod-ecr-dev-env:default-v0.6.0`,
+  `ContainerImage` `…@sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518`; the one
+  project domain attaches version 6 to both app types; no app is running; its one space names no image
+  version, so a bump strands nothing.
+- **[Claude] pip-audit 2.10.1 on the house environment's lock**, offline on the laptop, run as the gate runs
+  it: 452 pins exported, **0 audited**, "No known vulnerabilities found", exit 0. Every line of the export
+  carries `platform_machine == 'x86_64' and sys_platform == 'linux'`, which pip-audit evaluates against the
+  interpreter running it and skips. With the markers removed: 452 audited, **73 vulnerabilities with a
+  fixed version in 14 packages**: fsspec, jupyterlab, mako, multidict, notebook, oauthlib, pyjwt,
+  setuptools, sqlparse, torch, tornado, urllib3, virtualenv, werkzeug.
+- **[Claude] A targeted re-lock, in a scratch copy and not committed**: `uv lock --upgrade-package` for the
+  14 and torchvision resolved and moved 13 (jupyterlab 4.6.4, mako 1.4.3, multidict 6.9.1, notebook 7.6.3,
+  oauthlib 4.0.0, pyjwt 2.15.1, python-discovery 1.6.2, torch 2.13.0+cpu, torchvision 0.28.0+cpu, tornado
+  6.5.10, urllib3 2.8.0, virtualenv 21.14.7, werkzeug 3.1.9). Three stayed, carrying 8 of the findings:
+  fsspec 2025.3.0 (required by autogluon-multimodal, datasets, evaluate, huggingface-hub, lightning, ray
+  and others), setuptools 81.0.0 (autogluon-core, tensorflow, tensorboard, torch, spacy and others) and
+  sqlparse 0.5.0 (amazon-sagemaker-sql-magic 0.1.3, mlflow-skinny 3.16.0,
+  sagemaker-studio-dataengineering-sessions 1.3.25).
+- **[Claude] The gate's export of that lock**: the gate's image is CPython 3.12 with
+  `UV_PYTHON_DOWNLOADS=never`, and the project asked `>=3.13`. With no compatible interpreter visible and
+  downloads off, `uv export --locked` exits 2: "No interpreter found for Python >=3.13 in managed
+  installations or search path"; with `--python 3.12` it refuses the interpreter against
+  `requires-python`. `--frozen`, which the runbook's §J1 export uses, needs no interpreter (2026-10-12).
+- **[user] In chat**: downgrade, every Python environment on 3.12 (decision 13).
+- **[Claude] The change**, in `images/dev-env/`: `requires-python = ">=3.12,<3.13"` and
+  `PYTHON_VERSION=3.12`. `uv lock` resolved 453 packages, **every one at the version it had**; the lock's
+  `requires-python` reads `==3.12.*` and its resolution markers collapse to the platform alone. Read from
+  the lock's wheel names: 444 packages publish a `cp312` Linux x86_64 wheel and 8 are built from source in
+  the image (amazon-sagemaker-sql-magic, antlr4-python3-runtime, gssapi, krb5, nvidia-ml-py3, pyhive,
+  sagemaker-kernel-wrapper, seqeval), against 9 under `cp313`, where statsforecast 2.0.1 publishes no
+  wheel. Under the gate's conditions, only CPython 3.12 visible and downloads off, the export exits 0 with
+  452 pins; pip-audit on it, markers removed, reads the same 73 findings in the same 14 packages.
+- **[Claude] 6i's `awsds-demo-deps`** on 3.12: `.python-version` 3.12, `requires-python = ">=3.12,<3.13"`,
+  re-locked at msgspec 0.22.0, petl 1.7.29 and pyarrow 24.0.0, each with a `cp312` manylinux x86_64 wheel;
+  its 8 tests pass on CPython 3.12.13, and `awsds-demo-job`'s 6 on the repository's Python. The folder 6i
+  copied to `shared/jobs/` stays `cp313`, matching the `default-v0.5.0` its workflows run, so `SO-7`'s
+  suffix is unchanged.
+- **Not built**: no image carries 3.12 until `default-v0.7.0`. **Owed**: the user's answer on decisions 14
+  to 17 (the registry state read, the accepted findings, the recipe's checkout, the register job's guards)
+  and the mirror's mechanics, then the rest of pass 3.

@@ -111,9 +111,10 @@ and steps 4 and 5 measure it:
 - **The credentials** are the project role's, and the network is the private tier with no proxy and no
   internet. A worker task can therefore do the whole job itself, reading, writing and deleting through the S3
   gateway endpoint.
-- **The interpreters differ.** The house image's own environment, `/opt/awsds/venv`, is Python **3.13**, so a
-  dependency installed there as is will not import on the worker. A worker package's dependencies are built
-  for `cp312` and `manylinux2014_x86_64`, the vendor's recipe.
+- **The interpreters differ.** The house image's own environment, `/opt/awsds/venv`, is Python **3.13** up to
+  `default-v0.6.0`, so a dependency installed there as is will not import on the worker; from `default-v0.7.0`
+  it is the worker's 3.12 (Stage 8 decision 13). A worker package's dependencies are built for `cp312` and
+  `manylinux2014_x86_64`, the vendor's recipe.
 
 **A worker task that moves data is a Sandbox-only shape.** In Stage 10 the execution role holds no data
 permission (its step 1.3), so these variants measure the operators; they are not a pattern Stage 10 adopts.
@@ -634,7 +635,8 @@ with the recommendation stated (Lesson 16).
    (`get-workflow`'s `WorkflowDefinition`, the YAML *View code* shows) and committed with the same
    placeholders.
 2. **Which interpreter the job runs** (3.1). Recommended: **the house environment, `/opt/awsds/venv/bin/python`**
-   (Python 3.13, the *Python (awsds dev-env)* kernel), the one this repository curates. The alternative is the
+   (Python 3.13 up to `default-v0.6.0` and 3.12 from `default-v0.7.0`, the *Python (awsds dev-env)* kernel),
+   the one this repository curates. The alternative is the
    distribution's `/opt/conda/bin/python` (3.12, its default `python3` kernel). Either is named by absolute
    path. **Taken 2026-10-10 (the user): the house environment.** The worker variants of steps 4 and 5 run on
    the worker's own Python 3.12 regardless, so their packages are still built for `cp312`.
@@ -740,7 +742,8 @@ with the recommendation stated (Lesson 16).
   CLI object, and a portal edit afterwards would sever it (Lesson 60).
 - **A pre-installed package wins silently.** The worker imports its boto3 1.43.1 whatever the package
   bundles, so code written against the house image's newer boto3 can fail only on the worker.
-- **A package built in the house environment does not import on the worker**: 3.13 against 3.12. The build
+- **A package built in the house environment does not import on the worker**: 3.13 against 3.12 up to
+  `default-v0.6.0`; from `default-v0.7.0` the minor is the same and the platform tag still decides. The build
   flags of 4.1 are the guard.
 - **A peer's endpoint groups.** A bare `make up ENV=sandbox` removes the optional groups a peer session raised
   (for example `GROUPS=redshift` for 6h). The session is raised with the union of the groups in use, after

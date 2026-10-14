@@ -193,15 +193,18 @@ runs `uv sync --frozen`, which refuses a lock that disagrees with the project ra
 something nobody reviewed — so a package added without re-locking fails the build instead of arriving
 unreviewed. The lock is also what makes two builds of one commit the same environment.
 
-**In a space, uv finds the distribution's Python only.** This environment's CPython 3.13 lives under
+**In a space, uv finds the distribution's Python only.** This environment's CPython lives under
 `/opt/awsds/python`, installed by a `uv python install` whose `UV_PYTHON_INSTALL_DIR` only the build step
 sets, it is on no search path, and the base image sets `UV_PYTHON_DOWNLOADS=never`. A uv project that
-asks for 3.13 therefore names it: `UV_PYTHON=$AWSDS_PYTHON_ENV/bin/python uv sync`. Read from this
-recipe and reproduced on 2026-10-11 in a simulation of a space's interpreters, where the space itself
-answered `which python` with `/opt/conda/bin/python`. `awsds-workflows package-job` takes it the same
-way, from `UV_PYTHON` in its environment
-([`serverless-workflows.md`](../docs/plan/runbooks/serverless-workflows.md) §J1). A later image version
-that exported `UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to every uv command.
+wants this environment's interpreter therefore names it: `UV_PYTHON=$AWSDS_PYTHON_ENV/bin/python uv sync`.
+Read from this recipe and reproduced on 2026-10-11 in a simulation of a space's interpreters, where the
+space itself answered `which python` with `/opt/conda/bin/python`. `awsds-workflows package-job` takes it
+the same way, from `UV_PYTHON` in its environment
+([`serverless-workflows.md`](../docs/plan/runbooks/serverless-workflows.md) §J1). Up to `default-v0.6.0`
+this environment is 3.13 against the distribution's 3.12, so a project asking for 3.13 finds nothing
+unless it names it; the recipe carries 3.12 since 2026-10-14 (Stage 8 decision 13), the distribution's
+minor, and the first image built from it is `default-v0.7.0`. A later image version that exported
+`UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to every uv command.
 
 **For two of those rows the merge request review is the only control there is.** Measured 2026-08-22,
 when Stage 6a step 5.0 pushed the first images: ECR's scan read `base` and `dev-env` to identical
