@@ -175,10 +175,12 @@ data "aws_iam_policy_document" "job" {
   }
 }
 
+# EC2 takes a group or rule description in a-zA-Z0-9 and . _-:/()#,@[]+=&;{}!$* alone, and refuses the
+# apostrophe at apply, never at plan.
 resource "aws_security_group" "job" {
   # checkov:skip=CKV2_AWS_5:attached by the processing jobs this slice's request starts, which Terraform does not create
   name        = local.job_name
-  description = "app-etl processing jobs in Sandbox (Stage 8 step 2.4): no ingress; HTTPS to S3 and to the VPC's interface endpoints"
+  description = "app-etl processing jobs in Sandbox (Stage 8 step 2.4): no ingress; HTTPS to S3 and to the interface endpoints of the VPC"
   vpc_id      = data.terraform_remote_state.foundation.outputs.vpc_id
 
   tags = {
@@ -188,7 +190,7 @@ resource "aws_security_group" "job" {
 
 resource "aws_vpc_security_group_egress_rule" "s3" {
   security_group_id = aws_security_group.job.id
-  description       = "S3 through the gateway endpoint - the job's outputs"
+  description       = "S3 through the gateway endpoint - the outputs of the job"
   ip_protocol       = "tcp"
   from_port         = 443
   to_port           = 443
@@ -197,7 +199,7 @@ resource "aws_vpc_security_group_egress_rule" "s3" {
 
 resource "aws_vpc_security_group_egress_rule" "endpoints" {
   security_group_id = aws_security_group.job.id
-  description       = "the VPC's interface endpoints - the job's logs"
+  description       = "the interface endpoints of the VPC - the logs of the job"
   ip_protocol       = "tcp"
   from_port         = 443
   to_port           = 443
