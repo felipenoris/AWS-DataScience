@@ -369,7 +369,8 @@ instance — is a promotion path that bypasses the approval gate, and is therefo
 The split is not free, and the plan accepts the cost:
 
 - one AWS Config recorder per governed account — every account except Management, so this cost grows with
-  the account count;
+  the account count and with each `make up`/`make down` cycle of an account's endpoints
+  (`docs/plan/cost-model.md`);
 - a duplicated network layer per account — interface VPC endpoints are the largest hourly line item in this
   project, and they exist on every side of the boundary;
 - cross-account integrations that each have to be *proven* rather than assumed: Studio pulling a custom image
