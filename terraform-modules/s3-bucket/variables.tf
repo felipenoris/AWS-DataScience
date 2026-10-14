@@ -22,6 +22,13 @@ variable "additional_policy_statements" {
   default     = []
 }
 
+variable "tags" {
+  description = "Tags on the bucket, the module's one taggable resource, over the provider's default_tags. Its use is CostCenter: a bucket that a later stage adds to a slice names that stage (conventions, the mandatory tags), as a resource declared in the slice does through its own tags."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+}
+
 variable "expiration_days" {
   description = "Days after which a current object version expires - null (the default) writes no such rule, which is every bucket that holds data somebody expects to find again. A number is a deliberate statement that this bucket's contents are disposable: the derived zone sets it so the shadow lake does not silently become permanent (D19 practice iii, Stage 5a step 9.2), and `./aws/datalake.py` DL-9 fails a *-derived bucket that carries no Expiration rule. Distinct from noncurrent_version_expiration_days above, which only reaches versions a write has already superseded."
   type        = number
