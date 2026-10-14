@@ -246,7 +246,7 @@ the measurement, and Stage 12 step 5 re-reads it after Stages 2-3 rather than ac
 state. `recordingFrequency: DAILY` is not the cheaper mode at this change rate (priced in §4): USD 0.012
 per item-day against USD 0.003 per change puts the break-even at four changes per resource per day.
 
-The second Config reading from the bill, 2026-10-14: **USD 10.88 in September** across the six accounts with
+The second Config reading from the bill, 2026-10-14: **USD 10.88 in September** across the accounts with
 a CLI profile (Cost Explorer read from each, `USW2-ConfigurationItemRecorded` the only usage type): Sandbox
 7.27, Production 3.13, Staging 0.33, Data Governance 0.11, Identity 0.02, Policy Canary 0.02. Log Archive
 and Audit hold no profile and are unread. Every recorder is `aws-controltower-BaselineConfigRecorder`,
