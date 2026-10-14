@@ -37,7 +37,8 @@
 # a [P] slice cannot read a [D] or [E] slice's outputs, so the name is the seam.
 #
 # CostCenter: the two module-built buckets and the key take this slice's default_tags
-# (`stage-03`), since neither module takes a tag map; the secrets, declared here, say `stage-07`.
+# (`stage-03`), since neither module version pinned here takes a tag map (`s3-bucket-v0.4.0` does);
+# the secrets, declared here, say `stage-07`.
 
 locals {
   gitlab_anchor_tags = {

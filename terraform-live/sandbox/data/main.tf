@@ -161,12 +161,14 @@ module "consumer_data" {
 # counterpart of production/data/'s output buckets (Stage 9). [P], since the module's buckets are, and
 # disposable by declaration: an output is the result of an engineering run, reproducible from the
 # application's release, so every object expires after 30 days. Under the data key; the application
-# job roles reach it through the statement above.
+# job roles reach it through the statement above. CostCenter names Stage 8, over this slice's
+# default_tags, which name Stage 5.
 module "outputs_bucket" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v0.4.0"
 
   bucket_name     = "awsds-${var.env}-outputs"
   kms_key_arn     = module.consumer_data.data_key_arn
   expiration_days = 30
+  tags            = { CostCenter = "stage-08" }
 }
