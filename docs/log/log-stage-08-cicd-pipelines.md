@@ -476,3 +476,43 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] `gitlab.md` §K, "The application template"**: the push that replaces `awsds/app-etl`'s files
   with `examples/app-etl/`, written before it runs.
 - **Owed**: the previous entry's list, and `sandbox/data/`'s tag apply.
+
+## 2026-10-14 — `awsds/ci-gates` and the test runner in GitLab
+
+- **[user] In GitLab, as `felipenoris`**: created `awsds/ci-gates` (`gitlab.md` §G steps 1-3) and the
+  test runner in `awsds/app-etl` (§K), put its token into `awsds-prod-runner-test-token`, linked it to
+  `awsds/dev-env` and `awsds/ci-gates` and locked it; gave `awsds/app-etl` its two persona groups and the
+  protected tag `v*` (step 2.1); pushed `ci-gates/` and the tag `gates-v0.1.0`, whose commit is
+  `9ae8f1b437a6fdbc2c7498e0c446d62d627abaad`. The clone of the empty project came on `main`, with git
+  2.54 and `init.defaultBranch` unset.
+- **[Claude] Read back** through GitLab's API in the user's browser session, GET only:
+  - `awsds/ci-gates`: private, default branch `main`, the four persona groups at access level 20
+    (Reporter), `main` pushed and merged by Maintainers with no force push, `gates-v*` created by
+    Maintainers; the tag's four files carry the blob hashes `git hash-object` gives for `ci-gates/`;
+  - `awsds/app-etl`: `awsds/data-scientists` at 30 (Developer), `awsds/deployment-managers` at 40
+    (Maintainer), `v*` created by Maintainers;
+  - runner #4, `awsds-prod-runner-test`: tag `awsds-test`, `run_untagged` false, `not_protected`, timeout
+    3600, projects `app-etl`, `ci-gates` and `dev-env`. It read `locked` false, and true after the user
+    locked it.
+
+  `describe-secret` on the token container: one `AWSCURRENT` version, changed 16:06:49Z; the value was not
+  read.
+- **[Claude] The include `ref`** in `examples/app-etl/.gitlab-ci.yml` is that commit (`1e92dee`).
+- **[user] `make gitlab-up`**, from this worktree, since the test runner is only on this branch.
+- **[Claude] The readings**:
+  - the three runner instances started 16:22:36Z-16:22:44Z, IMDSv2 required on each: the test runner a
+    `t3a.small` with hop limit 1, the build runner an `m8i.xlarge` and the deploy runner a `t3a.small`, both
+    with hop limit 2;
+  - `make status ENV=production`: `runners` `UP` with 12 resources, an estimated burn of 0.4521 USD/h;
+  - the test runner's first boot, 16:23:00Z-16:26:30Z on its serial console: `no token from a container:
+    the jobs hold no AWS identity`, GitLab's sign-in page `200`, then `pypi.org` `200`, `10.31.0.1` `403`
+    and GitLab direct `200`;
+  - GitLab: runners #1, #3 and #4 online and locked, #4 contacted 16:27:02Z by a manager at `v19.4.1`;
+  - `./aws/cicd.py`: 0 FAILED, `CI-9` passing on the instance (running, IMDSv2 required, hop limit 1) and
+    on the role (its token, the CA root and Session Manager, nothing else); the exit is 1 from the
+    untokened profiles of section 10;
+  - `awsds/ci-gates`' pipelines, both `success` on `awsds-prod-runner-test`: #10 on `main`
+    (`baselines-shape` 20 s, `secret_detection` 22 s, `secret-detection-gate` 7 s) and #11 on
+    `gates-v0.1.0` (`baselines-shape` 6 s).
+- **Owed**: the application template's push (`gitlab.md` §K) with verifications (iv), (x) and (xiii), then
+  the Sandbox sitting: `release.tf`, `sandbox/app/app-etl/`, `sandbox/data/`'s tag and verification (xviii).

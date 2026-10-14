@@ -782,7 +782,9 @@ Measured (`docs/PRICING.md`), us-west-2:
     role. Recommended: **a third runner, `awsds-prod-runner-test`**, `[E]` beside the other two, unprotected,
     tag `awsds-test` with no untagged jobs, its metadata hop limit 1 so that a job container obtains no AWS
     identity: `t3a.small` at 0.0188 USD/h while GitLab is up, and 0.40 USD a month for its token container.
-    **Taken by the user 2026-10-13, as recommended.**
+    **Taken by the user 2026-10-13, as recommended.** Built 2026-10-14: runner #4 registered at the end of
+    a first boot of 3 min 30 s, which read `no token from a container: the jobs hold no AWS identity`;
+    `CI-9` passes, and `awsds/ci-gates`' first two pipelines ran on it.
 12. **Where the application's Terraform lives** (2.4, 3.2, 3.7). Conventions §6 had the application
     repository's `terraform/` as the source of each slice, a module sourced from GitLab at a tag: the offline
     gates cannot reach a VPN-only GitLab and would skip every application slice, an `init` on the laptop needs
