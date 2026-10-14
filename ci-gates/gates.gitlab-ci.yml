@@ -1,0 +1,255 @@
+# gates.gitlab-ci.yml - the security gates every pipeline includes (Stage 8 step 5, decision 10).
+#
+# The GitLab project awsds/ci-gates holds this file and baselines.gitlab-ci.yml, and a pipeline takes both
+# at one commit (README.md):
+#
+#   include:
+#     - project: awsds/ci-gates
+#       ref: <commit>                  # gates-v<semver>
+#       file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+#
+# What an including pipeline gets, each job on its own rule (decision 1):
+#
+#   secret_detection        every branch pipeline: GitLab's Secret Detection template (Free), its analyzer
+#   secret-detection-gate   pinned by digest; the template's job never fails on a finding, so the gate
+#                           reads its report and fails on any (5.3).
+#   pip-audit               every pipeline that names its uv projects in GATES_UV_PROJECTS: the runtime
+#                           set each lock pins, exported and audited in two steps (Lesson 46); a
+#                           vulnerability with a fixed version blocks, one without is printed (5.2).
+#   checkov                 every pipeline that names Terraform directories in GATES_CHECKOV_DIRS; a failed
+#                           check blocks (5.1).
+#   .gates-ecr-scan         a template for the job after an image push: it waits for the push's own basic
+#                           scan and never starts one (one scan per image per 24 h), then lists each
+#                           CRITICAL or HIGH finding absent from the lineage's baseline (1.4, 5.4). It is
+#                           informative: the job may fail and the pipeline goes on, so the operator reads
+#                           its log before a deployment.
+#
+# The first four run on the test runner (tag awsds-test), whose jobs hold no AWS identity (decision 11).
+# The scan gate is untagged, so it runs on the build runner, whose role reads the scan; a pipeline gives it
+# `needs:` on the push job, a stage, the protected-tag rule and SCAN_REPOSITORY. The pipeline declares a
+# `test` stage.
+#
+# Every image is pinned by digest, its tag beside it for a reader.
+
+include:
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+
+# The test runner's toolbox: CPython 3.12, the interpreter the SageMaker Distribution 4.5.2 carries, and uv
+# 0.12.17, the distribution's own. Read 2026-10-13 from ghcr.io.
+.gates-uv:
+  image: ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3
+  tags: [awsds-test]
+  variables:
+    UV_PYTHON_DOWNLOADS: "never"
+    UV_NO_CACHE: "1"
+
+# ------------------------------------------------------------------------------------------- 5.3
+#
+# The template's own job, three keys replaced: the analyzer by digest (7.39.0, built 2026-09-10, where the
+# template names the moving major tag 7), the test runner, and rules that run it on every branch pipeline
+# with no variable that turns it off.
+secret_detection:
+  image: registry.gitlab.com/security-products/secrets:7.39.0@sha256:d20bb95a2f453c28455811959edfc37192fc98db4e68b6ee98013752bc7b8077
+  tags: [awsds-test]
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+secret-detection-gate:
+  extends: .gates-uv
+  stage: test
+  needs: [secret_detection]
+  rules:
+    - if: $CI_COMMIT_BRANCH
+  script:
+    - |
+      set -eu
+      if [ ! -s gl-secret-detection-report.json ]; then
+        echo "FAIL: secret_detection left no report - the scan did not run"
+        exit 1
+      fi
+      python3 - gl-secret-detection-report.json <<'PY'
+      import json
+      import sys
+
+      report = json.load(open(sys.argv[1]))
+      found = report.get("vulnerabilities") or []
+      for v in found:
+          loc = v.get("location") or {}
+          print(f"  {v.get('severity', '?')}  {v.get('name') or v.get('description', '?')}"
+                f"  {loc.get('file', '?')}:{loc.get('start_line', '?')}")
+      print(f"{len(found)} secret(s) found in the scanned commits")
+      if found:
+          print("FAIL: remove the secret from the history and rotate it; a false positive is excluded by"
+                " path in the project's SECRET_DETECTION_EXCLUDED_PATHS, in a reviewed commit")
+      sys.exit(1 if found else 0)
+      PY
+
+# ------------------------------------------------------------------------------------------- 5.2
+#
+# The export reads the lock with --locked, so a lock that disagrees with pyproject.toml fails here rather
+# than auditing something nobody resolved. --no-dev: the gate audits what the image carries. The export
+# carries hashes, which is what lets pip-audit audit the pins without pip resolving or installing anything.
+# pip-audit exits 1 both on a finding and on an error, so the report file tells the two apart.
+pip-audit:
+  extends: .gates-uv
+  stage: test
+  variables:
+    PIP_AUDIT_VERSION: "2.10.1"
+  rules:
+    - if: $GATES_UV_PROJECTS
+  script:
+    - |
+      set -eu
+      status=0
+      n=0
+      for project in $GATES_UV_PROJECTS; do
+        n=$((n + 1))
+        req="pip-audit-$n.txt"
+        report="pip-audit-$n.json"
+        echo "== $project: the runtime set its lock pins -> $req"
+        uv export --project "$project" --locked --no-dev --no-emit-project --format requirements-txt --output-file "$req" --quiet
+        echo "   $(grep -c '==' "$req") pinned package(s), audited against OSV"
+        rc=0
+        uvx --from "pip-audit==$PIP_AUDIT_VERSION" pip-audit --requirement "$req" --disable-pip --require-hashes \
+          --vulnerability-service osv --format json --output "$report" --progress-spinner off || rc=$?
+        if [ ! -s "$report" ]; then
+          echo "FAIL: pip-audit wrote no report (exit $rc) - the audit did not run"
+          exit 1
+        fi
+        python3 - "$report" <<'PY' || status=1
+      import json
+      import sys
+
+      data = json.load(open(sys.argv[1]))
+      deps = data.get("dependencies", []) if isinstance(data, dict) else data
+      blocking = 0
+      for d in deps:
+          if d.get("skip_reason"):
+              print(f"   skip   {d['name']}: {d['skip_reason']}")
+          for v in d.get("vulns", []):
+              fixes = ", ".join(v.get("fix_versions") or [])
+              aliases = ", ".join(v.get("aliases") or [])
+              mark = "BLOCK" if fixes else "warn "
+              print(f"   {mark}  {d['name']} {d.get('version', '?')}  {v['id']} ({aliases})  "
+                    + (f"fixed in {fixes}" if fixes else "no fixed version"))
+              blocking += bool(fixes)
+      print(f"   {len(deps)} package(s) audited, {blocking} vulnerability(ies) with a fixed version")
+      sys.exit(1 if blocking else 0)
+      PY
+      done
+      exit "$status"
+  artifacts:
+    when: always
+    paths: [pip-audit-*.txt, pip-audit-*.json]
+    expire_in: 30 days
+
+# ------------------------------------------------------------------------------------------- 5.1
+#
+# The repository's own checkov and its own flags (.pre-commit-config.yaml in the infrastructure
+# repository): Terraform only, failures only, one line each.
+checkov:
+  extends: .gates-uv
+  stage: test
+  variables:
+    CHECKOV_VERSION: "3.3.11"
+  rules:
+    - if: $GATES_CHECKOV_DIRS
+  script:
+    - |
+      set -eu
+      set --
+      for dir in $GATES_CHECKOV_DIRS; do set -- "$@" --directory "$dir"; done
+      uvx --from "checkov==$CHECKOV_VERSION" checkov --quiet --compact --framework terraform "$@"
+
+# ---------------------------------------------------------------------------------------- 1.4, 5.4
+#
+# The push's own scan, read with DescribeImageScanFindings: DescribeImages carries no scan field under
+# basic scanning (pass 0). ECR's waiter gives up after 300 s and dev-env's scan of default-v0.6.0 took
+# 442 s, so the gate polls under a bound of its own. A scan that has not started yet answers
+# ScanNotFoundException, which is waited on; any other error, and any terminal status but COMPLETE, fails.
+#
+# The baseline is chosen by the repository the image was pushed to, never by the pipeline: the lineage an
+# image inherits its findings from. The region comes from ECR_REGISTRY, which the runner sets.
+.gates-ecr-scan:
+  extends: .gates-baselines
+  # Decision 1, as the user amended it on 2026-10-14: the scan informs and never blocks a deployment. Any
+  # failure is allowed, a finding outside the baseline and a scan that could not be read alike, and the
+  # job's log says which.
+  allow_failure: true
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
+    entrypoint: [""]
+  variables:
+    SCAN_WAIT_SECONDS: "900"
+  script:
+    - |
+      set -eu
+      : "${SCAN_REPOSITORY:?the job names the repository its image was pushed to}"
+      : "${SCAN_DIGEST:?the push job hands the digest over in a dotenv report}"
+      case "$SCAN_REPOSITORY" in
+        awsds-*-ecr-base|awsds-*-ecr-dev-env|awsds-*-ecr-app-*)
+          lineage=sagemaker-distribution; baseline="$GATES_BASELINE_SAGEMAKER_DISTRIBUTION" ;;
+        awsds-*-ecr-deploy)
+          lineage=deploy; baseline="$GATES_BASELINE_DEPLOY" ;;
+        *)
+          echo "FAIL: baselines.gitlab-ci.yml has no lineage for $SCAN_REPOSITORY"; exit 1 ;;
+      esac
+      region="$(printf '%s' "$ECR_REGISTRY" | cut -d. -f4)"
+      mkdir -p scan-gate
+      echo "== $SCAN_REPOSITORY@$SCAN_DIGEST: the push's scan, in $region, against the $lineage baseline"
+      deadline=$(( $(date +%s) + SCAN_WAIT_SECONDS ))
+      while :; do
+        status=""
+        if aws ecr describe-image-scan-findings --region "$region" --repository-name "$SCAN_REPOSITORY" \
+             --image-id "imageDigest=$SCAN_DIGEST" --output json > scan-gate/findings.json 2> scan-gate/error.txt; then
+          status="$(jq -r '.imageScanStatus.status' scan-gate/findings.json)"
+        elif grep -q 'ScanNotFoundException' scan-gate/error.txt; then
+          status=NOT_STARTED
+        else
+          cat scan-gate/error.txt
+          exit 1
+        fi
+        case "$status" in
+          COMPLETE) break ;;
+          NOT_STARTED|PENDING|IN_PROGRESS|ACTIVE) ;;
+          *)
+            echo "FAIL: the scan ended $status: $(jq -r '.imageScanStatus.description // ""' scan-gate/findings.json)"
+            exit 1 ;;
+        esac
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+          echo "FAIL: no COMPLETE scan after $SCAN_WAIT_SECONDS s; the last status read was $status"
+          exit 1
+        fi
+        echo "   $(date -u +%H:%M:%SZ) $status"
+        sleep 15
+      done
+      jq -r '.imageScanFindings.findingSeverityCounts // {} | to_entries[] | "   \(.key) \(.value)"' scan-gate/findings.json
+      jq -r '.imageScanFindings.findings[]? | select(.severity == "CRITICAL" or .severity == "HIGH")
+             | "\(.name)|\([.attributes[]? | select(.key == "package_name") | .value][0] // "?")"' \
+        scan-gate/findings.json | sort -u > scan-gate/found.txt
+      printf '%s\n' "$baseline" | sed -e 's/#.*//' -e 's/[[:space:]]//g' -e '/^$/d' | sort -u > scan-gate/baseline.txt
+      comm -23 scan-gate/found.txt scan-gate/baseline.txt > scan-gate/new.txt
+      comm -13 scan-gate/found.txt scan-gate/baseline.txt > scan-gate/gone.txt
+      echo "== CRITICAL and HIGH: $(( $(wc -l < scan-gate/found.txt) )) found, $(( $(wc -l < scan-gate/baseline.txt) )) in the baseline"
+      if [ -s scan-gate/gone.txt ]; then
+        echo "   $(( $(wc -l < scan-gate/gone.txt) )) in the baseline and no longer found (scan-gate/gone.txt):" \
+          "$(head -n 5 scan-gate/gone.txt | tr '\n' ' ')"
+      fi
+      if [ -s scan-gate/new.txt ]; then
+        echo "WARN: $(( $(wc -l < scan-gate/new.txt) )) CRITICAL or HIGH finding(s) absent from the baseline, for the operator to read:"
+        while IFS='|' read -r name pkg; do
+          jq -r --arg n "$name" --arg p "$pkg" '.imageScanFindings.findings[]
+            | select(.name == $n and ([.attributes[]? | select(.key == "package_name") | .value][0]) == $p)
+            | "   \(.severity) \(.name) \($p) \([.attributes[]? | select(.key == "package_version") | .value][0] // "?") \(.uri // "")"' \
+            scan-gate/findings.json
+        done < scan-gate/new.txt
+        echo "   The job fails and the pipeline goes on (decision 1). An accepted finding enters the baseline by"
+        echo "   name, in a reviewed commit to awsds/ci-gates, and leaves this list."
+        exit 1
+      fi
+      echo "== passed: every CRITICAL and HIGH finding is in the $lineage baseline"
+  artifacts:
+    when: always
+    paths: [scan-gate/]
+    expire_in: 30 days

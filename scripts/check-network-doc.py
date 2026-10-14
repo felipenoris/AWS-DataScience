@@ -35,7 +35,7 @@ import re
 import sys
 from pathlib import Path
 
-from tfhygiene import backend
+from tfhygiene import backend, layers
 
 DOC = Path("docs/NETWORK.md")
 VPC_MODULE = Path("terraform-modules/vpc/main.tf")
@@ -120,8 +120,7 @@ def subnets_of(vpc_cidr: str, cuts: dict) -> dict:
 def network_bearing_slices() -> dict:
     """`account/slice` -> why it counts as network-bearing, for every slice on disk."""
     found = {}
-    for slice_dir in sorted(p for p in LIVE.glob("*/*") if p.is_dir()):
-        account, name = slice_dir.parent.name, slice_dir.name
+    for (account, name), slice_dir in sorted(layers.slice_dirs_on_disk(LIVE).items()):
         why = []
         if name in backend.NETWORK_SLICES:
             why.append(f"a `{name}` slice (backend.NETWORK_SLICES)")

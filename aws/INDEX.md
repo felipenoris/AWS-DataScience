@@ -618,9 +618,10 @@ there.
 | Do the four deploy roles exist, each with a **permissions boundary**? | 3, decided by `CI-2` — Staging's row appears only after the vend |
 | Does every trust policy admit **only the deploy runner**, only `sts:AssumeRole`? | 3, decided by `CI-3` (INT-08/INT-18's contract) |
 | Are the `*deploy-misuse*` alarm rules present and ENABLED (step 4.6)? | 4, decided by `CI-7` |
-| Can Staging pull the application image — is the 3.0 grant in place (INT-07)? | 5, decided by `CI-5` — policy from Production, a real read from Staging |
+| Can Sandbox (step 2.4) and Staging (3.0, INT-07) read the application repository? | 5, decided by `CI-5` — which accounts the policy names, and a real read from each |
 | Is the same dev-env base image registered in every Interactive account (D17)? | 6, decided by `CI-6` — one lagging row is a 1.6 registration that failed quietly |
 | Who assumed a deploy role, and was it ever not the runner (INT-08)? | 7, decided by `CI-8` — the after-the-fact twin of 4.6's alarm |
+| Does the test runner give a job any AWS identity (decision 11)? | 2, decided by `CI-9` — its metadata hop limit must read 1, its role nothing beyond its boot reads |
 | Did a registration survive a blueprint reconciliation (INT-17)? | a **diff of two runs** — one run cannot answer it |
 | Which accounts is nobody measuring? | 9 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
 

@@ -344,3 +344,290 @@ Account ids are replaced by the account's name in angle brackets.*
   told (the fourth had ended), both applied from saved plans, `Modifications complete after 1s` and each
   re-plan `No changes`; `list-targets-by-rule` reads 8 input paths and the template on both rules. The
   message itself is unread until the rule fires.
+
+## 2026-10-13 — pass 2, written with the environment down
+
+- **[user] Four answers in chat, each the recommended option**: the shared gates live in a GitLab project
+  of their own, included with `include:project` and pinned by commit (decision 10); a third runner,
+  unprotected and holding no AWS credential, serves the unprotected branches (decision 11); the
+  application's Terraform lives in `terraform-live/` (decision 12); and `alerts.auto.tfvars` and
+  `saml.auto.tfvars` stay in the project folder's `secrets/`, where the user copied them, read by every
+  plan of `production/foundation/`, `staging/foundation/` and `production/tooling/` through `-var-file`.
+  No worktree receives a copy, since Claude copies nothing from `secrets/`.
+- **[Claude] The refusals step 2.4 writes are 7 and 8, not 6 and 7.** Stage 7 step 1.6 gave number 6 to the
+  hub pair `ENV=production` leaves alone (`scripts/slices.py`), after this stage's text was written, so
+  "numbered after the existing five" names a number already taken. The stage file, the plan core and the
+  stage index now say 7 (`make up` never applies an `app/` or `orchestration/` slice) and 8 (no pipeline
+  profile applies a `sandbox/` slice but `sandbox/dev-env/`).
+- **[Claude] Read before writing pass 2, with the environment down**: no runner serves an unprotected ref
+  (both are protected, verification iii), which decision 11 answers; and step 5.6's sentence that class
+  (2b) "joins D28's list in the same commit" went stale when PR #124 merged D28's classes (2b) and (2c).
+- **[Claude] The scans the baselines are seeded from**, as the infrastructure user on Production
+  (`awsds-infra-prod`), `aws ecr describe-image-scan-findings`, every status `COMPLETE`: `base` and
+  `dev-env` at `default-v0.6.0` carry the same 130 HIGH keys, `<finding>|<package>`, 121 of them
+  `linux-libc-dev`, the rest `expat`/`libexpat1` (6), `openssl`/`libssl3t64` (2) and `sudo`; the deploy
+  image `v0.1.0` carries CVE-2026-8924 and CVE-2026-8927 (`curl`, CRITICAL) and 8 HIGH; Stage 7's
+  `app-etl:v0.1.0-b30af685` (alpine) carries one HIGH, `CVE-2026-85091|zlib`.
+- **[Claude] What the pins were read from, 2026-10-13**: the SageMaker Distribution 4.5.2's resolved
+  environment pins `python-3.12.14`; its v4.5 template writes `ALL ALL=(ALL) NOPASSWD: ALL` into
+  `/etc/sudoers`; GitLab v19.4.2's `Jobs/Secret-Detection.gitlab-ci.yml` sets `allow_failure: true` and runs
+  on `CI_COMMIT_BRANCH`; the analyzer `secrets:7` and `7.40.0` are one image built 2026-10-10, `7.39.0`
+  was built 2026-09-10; `pip-audit` 2.10.1 was published 2026-06-10; `moby/buildkit:rootless` and
+  `v0.34.0-rootless` are one digest, published 2026-10-07; uv's images moved from bookworm to trixie, so
+  the gates use `0.12.17-python3.12-trixie-slim`.
+- **[Claude] The gates exercised offline.** The scan gate's script, run against the scans above with a
+  stand-in `aws`: the two seeds pass, Stage 7's alpine image under the `app-etl` repository fails on its
+  zlib HIGH, a deploy baseline missing CVE-2026-8927 fails, and a refused call, a `FAILED` scan and an
+  unknown repository fail. The pip-audit script, on the laptop against OSV: `app-etl` passes (1 package,
+  pyarrow), a project pinning `requests==2.19.0` fails (38 vulnerabilities with a fixed version), a project
+  with no lock fails at the export (`uv` exit 2). pip-audit warns that `--require-hashes` with the OSV
+  service checks the hashes' presence and not their validity; the image build's `uv sync --locked` is
+  what verifies them.
+- **[Claude] Plans, read-only, as the infrastructure user**: `production/foundation/` with
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`, `2 to add, 0 to change, 0 to destroy` (the test
+  runner's token container and its policy); `production/registry/`, `1 to add` (Sandbox's pull on
+  `awsds-prod-ecr-app-etl`); `sandbox/data/`, `6 to add, 1 to change` (the outputs bucket, and the key's
+  one new statement). `production/runners/` and `sandbox/app/app-etl/` plan only once `production/egress/`
+  is up and `sandbox/data/` is applied, the outputs their remote states read.
+- **[Claude] `./aws/cicd.py awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`**: 0 FAILED; `CI-5`
+  notes the repository with no policy and both cross-account reads refused, `CI-9` the absent test
+  runner.
+- **[Claude] A commit hook found this worktree's `production/foundation/.terraform` older than pass 1**:
+  `terraform_validate` failed with "Module not installed" on `deploy_runner_role` and `deploy_role` until
+  the slice was initialised again (`init -backend-config=backend.hcl`, read-only).
+- **[Claude] `git push` was refused by Claude Code's permission classifier** ("Out-of-Place
+  Publication"), so the branch's commits wait for the user's push.
+
+## 2026-10-13 — pass 2's `[P]` half, applied
+
+- **[user] In chat**: signed in as the infrastructure user, pushed the branch, authorized the three applies
+  of pass 2's `[P]` half (`production/foundation/`, `production/registry/`, `sandbox/data/`) and the
+  removal of this worktree's copy of `saml.auto.tfvars`.
+- **[Claude] The copy removed**: `terraform-live/production/tooling/saml.auto.tfvars`, matched by
+  `.gitignore`'s `*.tfvars` and byte-identical (`cmp`) to the project folder's `secrets/saml.auto.tfvars`,
+  which a `tooling/` plan reads through `-var-file`.
+- **[Claude] PR #125 opened** against `main` from `claude/unruffled-taussig-429adc`.
+- **[Claude] Before the applies**: the three peer sessions on this machine, all idle (the Sonnet 4.5
+  deprecation migration, the Control Tower default VPC review, the Redshift Serverless Terraform upgrade),
+  were told what the applies change. `aws sts get-caller-identity` on `awsds-infra-prod` and
+  `awsds-infra-sandbox-1` read the infrastructure user through `InfrastructureAccess`, in Production and
+  in Sandbox.
+- **[Claude] The saved plans, read before applying** (Recipe A, each plan file outside the repository),
+  with the read-only plans' counts:
+  - `production/foundation/`, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`:
+    `awsds-prod-runner-test-token` and its policy `DenyValueReadExceptTestRunnerAndInfrastructure`, which
+    denies `secretsmanager:GetSecretValue` to every principal but `awsds-prod-runner-test` and
+    `InfrastructureAccess`;
+  - `production/registry/`: `AllowConsumerAccountsToPull` on `awsds-prod-ecr-app-etl`, one principal, the
+    Sandbox account's root, with `BatchCheckLayerAvailability`, `BatchGetImage`,
+    `GetDownloadUrlForLayer` and `DescribeImages`;
+  - `sandbox/data/`: the data key's policy keeps its statements and gains `AllowApplicationJobRolesViaS3`
+    alone; `awsds-sandbox-outputs` is encrypted under the data key with a bucket key, its policy the
+    module's `DenyInsecureTransport`, its lifecycle a 30-day expiry, noncurrent versions at 90 days and
+    incomplete uploads at 7.
+- **[Claude] The applies** (UTC), each from its saved plan:
+  - `production/foundation/` 13:07:08Z-13:07:21Z, `2 added, 0 changed, 0 destroyed`;
+  - `production/registry/` 13:07:34Z-13:07:43Z, `1 added`;
+  - `sandbox/data/` 13:07:55Z-13:09:10Z, `6 added, 1 changed`, 58 s of it the bucket's lifecycle
+    configuration.
+
+  Each re-plan read `No changes` (`-detailed-exitcode` 0).
+- **[Claude] The instruments, 0 FAILED each**:
+  - `./aws/cicd.py`: `CI-5` passes the repository policy, which admits Sandbox, and Sandbox's read, and
+    notes Staging's refused (step 3.0); `CI-9` notes the test runner absent;
+  - `./aws/supplychain.py`: `SC-7`'s Sandbox reads answer;
+  - `./aws/s3-persistence.py awsds-infra-sandbox-1`: 4 buckets, `awsds-sandbox-outputs` passing `SP-1` to
+    `SP-6` and `SP-8`;
+  - `./aws/datalake.py` and `./aws/dlp.py`: notes only.
+
+  The multi-profile scripts exit 1 because seven profiles on other SSO sessions hold no token
+  (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`, `awsds-governance`, `awsds-scientist`), which each
+  script's section 10 lists.
+- **[Claude] `CI-5` and `SC-7` printed a capped count as a count.** "1 image(s) visible" came from
+  `describe-images --max-results 1`, while Sandbox's `describe-images` on `awsds-prod-ecr-app-etl` lists
+  two, Stage 7's `v0.1.0-0817e161` and `v0.1.0-b30af685`. Both checks now print `ok (asked for 1 image,
+  1 returned)`; the verdict was right.
+- **[Claude] A reading left as it is**: `awsds-sandbox-outputs` carries `CostCenter=stage-05`,
+  `sandbox/data/`'s default tag, where the token container carries `stage-08` from its own `tags`.
+  `s3-bucket-v0.3.0` takes no tags, so the bucket cannot carry its stage without a module input or a
+  second provider.
+- **Owed**: GitLab's half (`awsds/ci-gates`, its tag and commit; the test runner's registration and its
+  token; `app-etl`'s roles, protected tag and push), then `production/runners/` and `sandbox/app/app-etl/`
+  in a GitLab session, the first release and verification (xviii).
+
+## 2026-10-14 — the GitLab session opens, and `s3-bucket-v0.4.0`
+
+- **[user] In chat**: signed in as the infrastructure user, ran `make hub-up` and
+  `make gitlab-up RUNNERS=0`, and approved `s3-bucket-v0.4.0` for `awsds-sandbox-outputs`'s `CostCenter`,
+  its apply in the Sandbox sitting.
+- **[Claude] What is up**: `make status ENV=production` read `vpn` and `proxy` `UP` (0.0052 and
+  0.0104 USD/h), `tooling` `UP` (0.0672), `egress` `UP` with 12 resources (0.1200) and `runners` down,
+  an estimated burn of 0.2028 USD/h. The one peer session on this machine, idle, was told.
+- **[Claude] `s3-bucket-v0.4.0`, by Recipe B**: the module gains a `tags` input on its bucket, in commit
+  `6b23d60` alone. `git ls-remote` read `v0.1.0` to `v0.3.0` on origin before the tag, and
+  `s3-bucket-v0.4.0` at `6b23d601…` after the push. The caller commit `3a7e805` moves `sandbox/data/`'s
+  `outputs_bucket` to it with `CostCenter = "stage-08"`; the hook refused its first attempt with
+  `Module source has changed`, since the slice's `.terraform/` still recorded `v0.3.0`, and the slice's
+  own init cleared it (`terraform-changes.md` §7).
+- **[Claude] The plan of `sandbox/data/`**, read-only as `awsds-infra-sandbox-1`, against the local module
+  and again against the pushed tag: `0 to add, 1 to change, 0 to destroy`, the bucket's `tags_all`
+  `CostCenter` from `stage-05` to `stage-08`, the other four tags unchanged. The plan file is saved outside
+  the repository.
+- **[Claude] `gitlab.md` §K, "The application template"**: the push that replaces `awsds/app-etl`'s files
+  with `examples/app-etl/`, written before it runs.
+- **Owed**: the previous entry's list, and `sandbox/data/`'s tag apply.
+
+## 2026-10-14 — `awsds/ci-gates` and the test runner in GitLab
+
+- **[user] In GitLab, as `felipenoris`**: created `awsds/ci-gates` (`gitlab.md` §G steps 1-3) and the
+  test runner in `awsds/app-etl` (§K), put its token into `awsds-prod-runner-test-token`, linked it to
+  `awsds/dev-env` and `awsds/ci-gates` and locked it; gave `awsds/app-etl` its two persona groups and the
+  protected tag `v*` (step 2.1); pushed `ci-gates/` and the tag `gates-v0.1.0`, whose commit is
+  `9ae8f1b437a6fdbc2c7498e0c446d62d627abaad`. The clone of the empty project came on `main`, with git
+  2.54 and `init.defaultBranch` unset.
+- **[Claude] Read back** through GitLab's API in the user's browser session, GET only:
+  - `awsds/ci-gates`: private, default branch `main`, the four persona groups at access level 20
+    (Reporter), `main` pushed and merged by Maintainers with no force push, `gates-v*` created by
+    Maintainers; the tag's four files carry the blob hashes `git hash-object` gives for `ci-gates/`;
+  - `awsds/app-etl`: `awsds/data-scientists` at 30 (Developer), `awsds/deployment-managers` at 40
+    (Maintainer), `v*` created by Maintainers;
+  - runner #4, `awsds-prod-runner-test`: tag `awsds-test`, `run_untagged` false, `not_protected`, timeout
+    3600, projects `app-etl`, `ci-gates` and `dev-env`. It read `locked` false, and true after the user
+    locked it.
+
+  `describe-secret` on the token container: one `AWSCURRENT` version, changed 16:06:49Z; the value was not
+  read.
+- **[Claude] The include `ref`** in `examples/app-etl/.gitlab-ci.yml` is that commit (`1e92dee`).
+- **[user] `make gitlab-up`**, from this worktree, since the test runner is only on this branch.
+- **[Claude] The readings**:
+  - the three runner instances started 16:22:36Z-16:22:44Z, IMDSv2 required on each: the test runner a
+    `t3a.small` with hop limit 1, the build runner an `m8i.xlarge` and the deploy runner a `t3a.small`, both
+    with hop limit 2;
+  - `make status ENV=production`: `runners` `UP` with 12 resources, an estimated burn of 0.4521 USD/h;
+  - the test runner's first boot, 16:23:00Z-16:26:30Z on its serial console: `no token from a container:
+    the jobs hold no AWS identity`, GitLab's sign-in page `200`, then `pypi.org` `200`, `10.31.0.1` `403`
+    and GitLab direct `200`;
+  - GitLab: runners #1, #3 and #4 online and locked, #4 contacted 16:27:02Z by a manager at `v19.4.1`;
+  - `./aws/cicd.py`: 0 FAILED, `CI-9` passing on the instance (running, IMDSv2 required, hop limit 1) and
+    on the role (its token, the CA root and Session Manager, nothing else); the exit is 1 from the
+    untokened profiles of section 10;
+  - `awsds/ci-gates`' pipelines, both `success` on `awsds-prod-runner-test`: #10 on `main`
+    (`baselines-shape` 20 s, `secret_detection` 22 s, `secret-detection-gate` 7 s) and #11 on
+    `gates-v0.1.0` (`baselines-shape` 6 s).
+- **Owed**: the application template's push (`gitlab.md` §K) with verifications (iv), (x) and (xiii), then
+  the Sandbox sitting: `release.tf`, `sandbox/app/app-etl/`, `sandbox/data/`'s tag and verification (xviii).
+
+## 2026-10-14 — the application template on a branch, and verification (xiii)
+
+- **[user] The template pushed** to `awsds/app-etl` on the branch `application-template` (`gitlab.md` §K,
+  "The application template", steps 1-3), commit `e976b204`.
+- **[Claude] Pipeline #12 refused at creation**, read on its page: `yaml invalid`, 0 jobs, "Unable to run
+  pipeline", "image name should be a string". The template named a job `image`, which at the top level of a
+  `.gitlab-ci.yml` is the global keyword, and the offline gates parse no GitLab CI. The job is `build-image`
+  since `bf6d69e`, with `scan-gate`'s `needs`, the template's README and the runbook. GitLab's CI Lint,
+  called in the user's browser session (`POST /projects/:id/ci/lint`, which creates nothing), read the
+  renamed file valid with no error or warning, statically and as dry runs: 5 jobs on `application-template`,
+  6 on `main` with `pages`.
+- **[user] The fix pushed** as a second commit, `4e751eda`; `gate-without-proxy` run by hand.
+- **[Claude] Pipeline #13**, every job on `awsds-prod-runner-test`, read through GitLab's API:
+  - `secret_detection` 10 s and `secret-detection-gate` 8 s: 0 secrets in the scanned commits;
+  - `pip-audit` 15 s: 1 pinned package (the runtime set is pyarrow), 1 audited, 0 vulnerabilities with a
+    fixed version;
+  - `test` 12 s: ruff `All checks passed!`, 5 files already formatted, 7 tests passed in 0.45 s;
+  - `gate-without-proxy` 51 s, `success`: with the proxy variables removed, `uvx` failed with
+    `Request failed after 3 retries in 44.5s`, `client error (Connect)`, `operation timed out`, exit 2 after
+    45 s, under the job's 300 s bound.
+
+  Verification (xiii) is answered yes on both halves.
+- **Owed**: the merge into `main` (Pages) and the tag `v0.1.0` (`build-image`, `scan-gate`, verification
+  (iv)), then the Sandbox sitting.
+
+## 2026-10-14 — the first release `v0.1.0`, blocked by the scan gate
+
+- **[user]** Merged `application-template` into `main` (pipeline #14) and tagged `v0.1.0` on `d7e093a9`
+  (pipeline #15).
+- **[Claude] Pipeline #14**, on `main`, every job `success` on the test runner: `secret_detection` 9 s,
+  `secret-detection-gate` 8 s, `pip-audit` 17 s, `test` 12 s, `pages` 13 s, with `gate-without-proxy` left
+  manual. The Pages deployment of 16:45:06Z is at `https://app-etl-ffa1fa.awsds-pages.internal`, which
+  served pdoc's `app_etl` page in the user's browser.
+- **[Claude] Pipeline #15**, on `v0.1.0`: `test` 12 s and `pip-audit` 16 s on the test runner, then
+  `build-image` 217 s on `awsds-prod-runner`, its BuildKit pulling base from ECR in about 45 s. The push,
+  `v0.1.0-d7e093a9` at 16:49:28Z: `sha256:33f76dec8bf7b7be760db1daf575c388172e49862381f66f8032b534bce5280d`,
+  3,796,518,899 bytes.
+- **[Claude] The push's basic scan** completed at 16:55:12Z, 5 min 44 s after the push, its vulnerability
+  source dated the same instant: CRITICAL 113, HIGH 610, MEDIUM 154, LOW 4, UNDEFINED 436, in 1,317 findings.
+  Every CRITICAL and 601 of the HIGH are `linux-libc-dev` 6.8.0-142.142. The image's package and version set
+  equals `base` `default-v0.6.0`'s scan of 2026-10-12 (CRITICAL 0, HIGH 130), so the difference is two days
+  of the vulnerability source, not the build.
+- **[Claude] `scan-gate` failed after 368 s**, as decision 1 writes it: "CRITICAL and HIGH: 723 found, 130 in
+  the baseline" and "FAIL: 593 CRITICAL or HIGH finding(s) absent from the baseline", 113 CRITICAL and 480
+  HIGH, every one `linux-libc-dev`. The 130 baseline entries were all found again. Verification (iv)'s first
+  half is answered; its re-scan half is not exercised.
+- **[Claude] A wait loop of my own never exited**: `describe-image-scan-findings --query
+  imageScanStatus.status --output text` on 1,317 findings paginates, and the CLI prints the field once per
+  page, `COMPLETE` and then `None` for every later page, so the output never equalled `COMPLETE`. The gate
+  reads the merged JSON with `jq` and is not affected.
+- **Owed**: the user's decision on the `linux-libc-dev` findings (decision 1), a release whose gate passes,
+  then the Sandbox sitting.
+
+## 2026-10-14 — the ECR scan made informative, and the first Sandbox run of `app-etl`
+
+- **[user] In chat**: amended decision 1, so that the scan findings inform the operator in the CI/CD log
+  and block no deployment; pushed `gates-v0.2.0`; authorized the Sandbox sitting, running `make up` and
+  `make down` themselves and leaving the rest to Claude; ran `make up ENV=sandbox ONLY=egress` from this
+  worktree; moved `awsds/app-etl`'s `main` to `gates-v0.2.0`; left the environment up.
+- **[Claude] The informative gate**: `.gates-ecr-scan` carries `allow_failure: true` and prints `WARN` over
+  the findings absent from the baseline. The script, run offline against `v0.1.0`'s real scan, listed the
+  593 findings and exited 1; GitLab's CI Lint read the template valid, a job extending it
+  `allow_failure=true`. `pip-audit`, Secret Detection and `checkov` still block.
+- **[Claude] Read back in GitLab**: `gates-v0.2.0` at `a335f37f2e8c85bcde31d378fac478899c355515`, protected,
+  its four files with `ci-gates/`'s blob hashes, pipelines #16 (`main`) and #17 (the tag) green on the test
+  runner; `awsds/app-etl`'s `main` at `62189229`, the `ref` line and one README line changed, pipeline #18
+  green (`secret_detection` 10 s, `secret-detection-gate` 8 s, `pip-audit` 17 s, `test` 12 s, `pages` 14 s).
+- **[Claude] Before the writes**: the two peer sessions on this machine, both idle, were told;
+  `get-caller-identity` read the infrastructure user through `InfrastructureAccess` in Sandbox and in
+  Production.
+- **[Claude] `sandbox/data/`** from its saved plan, 17:43:59Z-17:44:15Z: `0 added, 1 changed, 0
+  destroyed`; the re-plan read `No changes`, and `awsds-sandbox-outputs` reads `CostCenter=stage-08`.
+- **[Claude] `sandbox/app/app-etl/`**, with `release.tf` naming `v0.1.0` and
+  `sha256:33f76dec8bf7b7be760db1daf575c388172e49862381f66f8032b534bce5280d`. The first apply,
+  17:44:50Z-17:45:01Z, created `awsds-sandbox-app-etl-job` and stopped: EC2 refused `CreateSecurityGroup`
+  with `InvalidParameterValue`, a description taking `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` alone, and the
+  group's and both rules' descriptions carried an apostrophe the plan had not checked. Reworded in
+  `65b06c4`, re-planned `4 to add`, applied 17:46:20Z-17:46:34Z; the re-plan read `No changes`.
+- **[Claude] The endpoints**, after the user's `make up`: the 18 interface and 2 gateway endpoints of
+  Sandbox read `available`.
+- **[Claude] The job `app-etl-20261014T175359`**, created with `create-processing-job` from the slice's
+  `processing_job_request` (`ml.t3.medium`, network isolation, inter-container encryption, the data key on
+  the volume and the output, 900 s): created 17:54:01Z, processing 17:54:53Z-17:59:32Z, `Completed`
+  18:01:33Z. Its interface sat in `awsds-sandbox-private-usw2-az1` (`us-west-2b`) under the job's security
+  group. Its log, at 17:59:13Z:
+
+  ```
+  app-etl 0.1.0, python 3.12.14 at /opt/app-etl/venv/bin/python
+  pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 10 rows -> trades.parquet
+  1 file(s) processed
+  ```
+
+  The keys, at 17:59:27Z: `app-etl/v0.1.0/trades.parquet` 1,780 bytes and `trades.summary.json` 407 bytes,
+  SSE-KMS under `alias/awsds-sandbox-data` with a bucket key, expiring 2026-11-14. Listed and headed, never
+  read.
+- **[Claude] Verification (xviii)**: yes. Pipeline #15's smoke stage, networking off, printed `uid 1000,
+  output owned 0:0 755` and wrote the Parquet after `sudo -n chown`; the job ran the same command on the
+  same image under network isolation, and its two outputs arrived.
+- **[user] The environment left up**: Production's hub, GitLab and runners (`make status`: 0.4521 USD/h)
+  and Sandbox's `egress` (0.18 USD/h) and `app/app-etl`.
+- **Owed**: `make down ENV=sandbox` from a checkout carrying `app/app-etl` (until this branch merges, this
+  worktree), then `make gitlab-down` and `make hub-down`; verification (iv)'s re-scan half; (x) with a pinned
+  vulnerability in GitLab.
+
+## 2026-10-14 — the environment down
+
+- **[user]** Ran `make down ENV=sandbox` from this worktree, then `make gitlab-down` and `make hub-down`.
+- **[Claude] Read back**: `make status` reads 0.0000 USD/h in Sandbox (`egress`, `warehouse-compute`,
+  `app/app-etl` and `probes` with no resource) and in Production (`vpn`, `proxy` and `tooling` stopped,
+  `egress` and `runners` with no resource). `get-role` on `awsds-sandbox-app-etl-job` answers
+  `NoSuchEntity`; no security group of that name, no `awsds-prod-runner*` instance and no Sandbox interface
+  endpoint remain. The two outputs under `app-etl/v0.1.0/` stay in the `[P]` bucket until their 30-day
+  expiry.

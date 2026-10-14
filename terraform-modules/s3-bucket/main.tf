@@ -15,6 +15,7 @@ resource "aws_s3_bucket" "this" {
   # checkov:skip=CKV_AWS_144:replication would copy data out of the one governed Region
   # checkov:skip=CKV2_AWS_62:no consumer for event notifications exists before Stage 12
   bucket = var.bucket_name
+  tags   = var.tags
 
   force_destroy = false
 

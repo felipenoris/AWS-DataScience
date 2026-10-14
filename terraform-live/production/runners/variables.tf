@@ -137,3 +137,14 @@ variable "deploy_runner_instance_type" {
     error_message = "deploy_runner_instance_type must be an x86_64 burstable type: t3a.small, t3.small or t3a.medium."
   }
 }
+
+variable "test_runner_instance_type" {
+  description = "The test runner's size (Stage 8 decision 11): t3a.small, 2 GiB, 0.0188 USD/h (docs/PRICING.md 8), two jobs at a time. x86_64, so a test runs on the architecture the application image does."
+  type        = string
+  default     = "t3a.small"
+
+  validation {
+    condition     = contains(["t3a.small", "t3.small", "t3a.medium"], var.test_runner_instance_type)
+    error_message = "test_runner_instance_type must be an x86_64 burstable type: t3a.small, t3.small or t3a.medium."
+  }
+}

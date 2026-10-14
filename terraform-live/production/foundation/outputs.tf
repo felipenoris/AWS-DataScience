@@ -110,6 +110,11 @@ output "runner_token_secret_arn" {
   value       = aws_secretsmanager_secret.runner_token.arn
 }
 
+output "test_runner_token_secret_arn" {
+  description = "The test runner's authentication token container (Stage 8 decision 11) - the user copies the token in once the runner exists in GitLab."
+  value       = aws_secretsmanager_secret.test_runner_token.arn
+}
+
 # Stage 8 step 4 - the deploy runner's anchors, read by production/runners/ through
 # terraform_remote_state, and the alerts topic later stages adopt (decision 5).
 output "deploy_runner_role_arn" {
