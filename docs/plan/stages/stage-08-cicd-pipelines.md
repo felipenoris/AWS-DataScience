@@ -239,8 +239,8 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   runs the job's command as the image's user, `RUN --network=none`, on an output directory owned by root
   with mode 755, opening with the job's `sudo -n chown` (decision 8): the SageMaker Distribution writes
   `ALL ALL=(ALL) NOPASSWD: ALL` into `/etc/sudoers` (its v4.5 template, read 2026-10-13), so base and every
-  image `FROM` it keep passwordless sudo. The `.gitlab-ci.yml` includes `awsds/ci-gates` at a commit the
-  push fills in; tests, ruff and the gates run on the test runner on every push, Pages on `main`, and on a
+  image `FROM` it keep passwordless sudo. The `.gitlab-ci.yml` includes `awsds/ci-gates` at `gates-v0.1.0`'s
+  commit, `9ae8f1b4…`, pushed 2026-10-14; tests, ruff and the gates run on the test runner on every push, Pages on `main`, and on a
   tag `v<semver>` BuildKit `v0.34.0-rootless` by digest builds `smoke`, then pushes `app` as
   `v<semver>-<short sha>` and hands the digest to the scan gate as a dotenv report; a manual job measures
   verification (xiii). Offline: ruff clean, 7 tests pass.
@@ -541,8 +541,10 @@ its analyzer is not available to this CE instance — the dependency gate is **`
 ordinary job; **Secret Detection is Free** (a template include); the ECR gate (1.4) covers **OS packages
 only** — `pip-audit` covers the Python dependencies, and the two compose rather than substitute.
 
-- **5.1-5.4 — Written 2026-10-13, not yet in GitLab** (decision 10): [`ci-gates/`](../../../ci-gates/README.md),
-  the content of the GitLab project `awsds/ci-gates`. `gates.gitlab-ci.yml` carries GitLab's Secret
+- **5.1-5.4 — Written 2026-10-13, in GitLab as `gates-v0.1.0` since 2026-10-14** (decision 10): [`ci-gates/`](../../../ci-gates/README.md),
+  the content of the GitLab project `awsds/ci-gates`. The project is private, the four persona groups
+  read it as Reporter, `main` and `gates-v*` are Maintainers-only, and the tag's commit `9ae8f1b4…`
+  carries the four files with this repository's blob hashes. `gates.gitlab-ci.yml` carries GitLab's Secret
   Detection template with its analyzer by digest (`7.39.0`) on every branch and a gate job that fails on
   any finding the template's job reports and never fails on; `pip-audit 2.10.1` over the runtime set each
   uv lock pins, exported with `--locked` in one step and audited from the hashed export in the next,
