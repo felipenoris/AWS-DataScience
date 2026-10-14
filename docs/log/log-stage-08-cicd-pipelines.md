@@ -792,3 +792,14 @@ Account ids are replaced by the account's name in angle brackets.*
   runner: the uv export the gate's 3.12 image could not run at 3.13 ran at 3.12 (decision 13), and the
   count is the laptop's with the markers removed. `awsds/deploy-image` created no pipeline, its rule
   admitting the web form alone.
+- **[user] Stage 8 step 1.0's owed reading**: as the data-scientist persona, a Developer, tried to create
+  the tag `default-v0.0.0` on `awsds/dev-env`, and GitLab refused it. **[Claude]** Read through the user's
+  Chrome session: the project holds no tag, and its one protected tag is `*-v*`, created by Maintainers.
+- **[user] The release's merge request**, as the local administrator: `awsds/dev-env` !1 from the branch
+  `lock-past-the-findings` (`e9daa79d`), the targeted `uv lock --upgrade-package` and the `include` moved to
+  `gates-v0.3.0`'s commit `2cc06749`. **[Claude]** Its diff: `dev-env/python/uv.lock` +41/-40 lines and the
+  one `ref` line of `.gitlab-ci.yml`. Pipeline #3 green on the test runner: `recipe-checks` 6 s,
+  `secret_detection` 10 s and its gate 6 s, and `pip-audit` 89 s reading "8 accepted finding(s)" and "452 of
+  452 pinned package(s) audited, 0 blocking vulnerability(ies)". With pipeline #2's 73 on the seed, that is
+  verification (x) on a real lock: the gate stops the vulnerable set and admits the upgraded one with the
+  steward's list.
