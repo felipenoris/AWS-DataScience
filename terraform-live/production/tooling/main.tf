@@ -121,8 +121,8 @@ data "aws_subnet" "private" {
 #                                on the runner's group every session.
 #
 # No port 22: Session Manager is the shell, and the one SSH surface this design admits anywhere is
-# none. No port 80: the records carry https:// and nothing redirects. A rule description refuses
-# `'` and `>`, and only at apply (Stage 3).
+# none. No port 80: the records carry https:// and nothing redirects. EC2 refuses `'` and `>` in a
+# description (Stage 3, Stage 6h); scripts/check-sg-descriptions.py refuses both before a plan.
 resource "aws_security_group" "gitlab" {
   # checkov:skip=CKV_AWS_382:egress is unrestricted by design - this tier has no default route, the internet is the explicit proxy, and its 3128-only group plus the absent route are the bound (the buildbox's argument, 6c 5.8)
   name        = "awsds-${var.env}-gitlab"
