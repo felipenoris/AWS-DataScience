@@ -9,7 +9,11 @@ variable "release" {
     tag    = string
     digest = string
   })
-  default = null
+  # v0.1.0, pushed by awsds/app-etl's pipeline #15 as v0.1.0-d7e093a9 (2026-10-14).
+  default = {
+    tag    = "v0.1.0"
+    digest = "sha256:33f76dec8bf7b7be760db1daf575c388172e49862381f66f8032b534bce5280d"
+  }
 
   validation {
     condition     = var.release == null || can(regex("^v[0-9]+\\.[0-9]+\\.[0-9]+$", var.release.tag))
