@@ -516,3 +516,28 @@ Account ids are replaced by the account's name in angle brackets.*
     `gates-v0.1.0` (`baselines-shape` 6 s).
 - **Owed**: the application template's push (`gitlab.md` §K) with verifications (iv), (x) and (xiii), then
   the Sandbox sitting: `release.tf`, `sandbox/app/app-etl/`, `sandbox/data/`'s tag and verification (xviii).
+
+## 2026-10-14 — the application template on a branch, and verification (xiii)
+
+- **[user] The template pushed** to `awsds/app-etl` on the branch `application-template` (`gitlab.md` §K,
+  "The application template", steps 1-3), commit `e976b204`.
+- **[Claude] Pipeline #12 refused at creation**, read on its page: `yaml invalid`, 0 jobs, "Unable to run
+  pipeline", "image name should be a string". The template named a job `image`, which at the top level of a
+  `.gitlab-ci.yml` is the global keyword, and the offline gates parse no GitLab CI. The job is `build-image`
+  since `bf6d69e`, with `scan-gate`'s `needs`, the template's README and the runbook. GitLab's CI Lint,
+  called in the user's browser session (`POST /projects/:id/ci/lint`, which creates nothing), read the
+  renamed file valid with no error or warning, statically and as dry runs: 5 jobs on `application-template`,
+  6 on `main` with `pages`.
+- **[user] The fix pushed** as a second commit, `4e751eda`; `gate-without-proxy` run by hand.
+- **[Claude] Pipeline #13**, every job on `awsds-prod-runner-test`, read through GitLab's API:
+  - `secret_detection` 10 s and `secret-detection-gate` 8 s: 0 secrets in the scanned commits;
+  - `pip-audit` 15 s: 1 pinned package (the runtime set is pyarrow), 1 audited, 0 vulnerabilities with a
+    fixed version;
+  - `test` 12 s: ruff `All checks passed!`, 5 files already formatted, 7 tests passed in 0.45 s;
+  - `gate-without-proxy` 51 s, `success`: with the proxy variables removed, `uvx` failed with
+    `Request failed after 3 retries in 44.5s`, `client error (Connect)`, `operation timed out`, exit 2 after
+    45 s, under the job's 300 s bound.
+
+  Verification (xiii) is answered yes on both halves.
+- **Owed**: the merge into `main` (Pages) and the tag `v0.1.0` (`build-image`, `scan-gate`, verification
+  (iv)), then the Sandbox sitting.
