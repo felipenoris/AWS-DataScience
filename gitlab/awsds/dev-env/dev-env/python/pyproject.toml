@@ -29,7 +29,7 @@
 # HOW TO CHANGE THE PACKAGE SET, and it is two steps, never one:
 #
 #   1. edit `dependencies` below
-#   2. `uv lock --directory images/dev-env/python` and commit BOTH files
+#   2. `uv lock --directory dev-env/python` and commit BOTH files
 #
 # A dependency added without re-locking is not installed: the build runs `uv sync --frozen`, which
 # refuses a lock that does not match this file rather than resolving something nobody reviewed.

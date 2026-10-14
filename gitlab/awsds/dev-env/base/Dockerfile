@@ -29,8 +29,8 @@
 # are AWS's metadata directories, /var/log/studio is the reserved logging directory, and the
 # EBS volume of a space mounts at /home/sagemaker-user - the mount path cannot be changed.
 #
-# Build (amd64 - the distribution publishes no arm64 tag; see images/README.md):
-#   docker buildx build --platform linux/amd64 -t awsds/base:local images/base
+# Build (amd64 - the distribution publishes no arm64 tag; see README.md), from the project root:
+#   docker buildx build --platform linux/amd64 -t awsds/base:local base
 
 # ------------------------------------------------------------------- the pin, by digest
 #
@@ -108,7 +108,7 @@ RUN set -eu; \
       echo "FATAL: no activity-monitor extension in this base image." >&2; \
       echo "  Stage 6 step 8's idle shutdown reads activity through it; without it an app" >&2; \
       echo "  bills until someone notices. Either the base moved, or the pin is wrong." >&2; \
-      echo "  Do NOT pip-install it as a workaround before reading images/README.md." >&2; \
+      echo "  Do NOT pip-install it as a workaround before reading README.md." >&2; \
       exit 1; \
     fi; \
     rm -f /tmp/awsds-activity-monitor.txt
@@ -307,7 +307,7 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
 # Read back with `docker inspect`, and by the Stage 8 pipeline that replaces this hand build.
 LABEL org.opencontainers.image.title="awsds-base" \
       org.opencontainers.image.description="The common ancestor image - SageMaker Distribution plus this project's shared layer (D17)." \
-      org.opencontainers.image.source="https://github.com/felipenoris/AWS-DataScience" \
+      org.opencontainers.image.source="https://gitlab.awsds.internal/awsds/dev-env" \
       org.opencontainers.image.base.name="${SMD_IMAGE}:${SMD_TAG}" \
       org.opencontainers.image.base.digest="${SMD_DIGEST}" \
       org.awsds.stage="6.5.0" \

@@ -1003,13 +1003,13 @@ Editor** space started on this image (2026-09-10) from the `DefaultUserSettings`
 1,514 characters (52 entries, 2026-09-12), so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4
 both assumed does not exist. 6d
 decision 8 (2026-09-10) puts the six variables in the **image** instead — `ENV` in
-`images/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
+`gitlab/awsds/dev-env/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
 estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and a
 re-attach.
 
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
-activity-monitor extension idle shutdown reads — is [`images/README.md`](../images/README.md)'s and
+activity-monitor extension idle shutdown reads — is [`gitlab/awsds/dev-env/README.md`](../gitlab/awsds/dev-env/README.md)'s and
 Stage 6 step 5.0's, and is not repeated here. This section owns the **naming**: Stage 8 step 1's
 pipeline inherits whatever convention the first push wrote, and both repositories are
 **tag-immutable**, so a tag is spent the first time it lands.
@@ -1072,7 +1072,7 @@ are selected"* — an **AND** where a list reads like an OR.
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
 and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
 PKI root, took both to the next free minor, `default-v0.6.0` (2026-10-12). The tags spent so far, with their
-dates, digests and what each changed, are [`images/README.md`](../images/README.md) §*The releases*.
+dates, digests and what each changed, are [`gitlab/awsds/dev-env/README.md`](../gitlab/awsds/dev-env/README.md) §*The releases*.
 
 **When a flavour graduates from a tag to its own repository.** The trigger is reaching for a knob that
 exists **per repository and not per tag**: a different set of accounts allowed to pull (the repository

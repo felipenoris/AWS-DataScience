@@ -1079,7 +1079,8 @@ repositories** — `awsds-prod-ecr-base` and `awsds-prod-ecr-dev-env` do not exi
 > with the source parameterised and empty, so Stage 7 fills a blank rather than editing a build.
 > **Revision trigger:** the first internal-TLS surface this stage has to reach.
 
-**The build code is [`images/`](../../../images/README.md)**, written 2026-08-21 — `base/` and
+**The build code was written 2026-08-21 under `images/`**, the GitLab project `awsds/dev-env`'s since
+2026-10-14 ([its copy](../../../gitlab/awsds/dev-env/README.md)) — `base/` and
 `dev-env/`, their package manifests as plain text files, and a README carrying the seam. What was left of
 this step — the `docker build` and the push — **ran 2026-08-22 in one buildbox session** (the pass
 table's 5.0 row and the owed table's 5.0 row carry the record; `default-v0.1.0` in both repositories).
@@ -1098,7 +1099,7 @@ the space's EBS volume mounts at `/home/sagemaker-user` on a path that cannot be
 **The activity-monitor extension is asserted, not installed**: the base is documented to carry it, and
 re-installing it would paper over a base that stopped shipping it. The
 failure would then surface as an app billing all night (`US-7`/`US-10`), which is the expensive place to
-find out. `images/base/Dockerfile` fails the build instead.
+find out. `gitlab/awsds/dev-env/base/Dockerfile` fails the build instead.
 
 **The build does not happen on the laptop** (measured 2026-08-21): the distribution publishes **no
 `arm64` tag at all** — only `-cpu`/`-gpu`, both `linux/amd64` — SMUS spaces run on x86, and the laptop
@@ -1121,7 +1122,7 @@ statement and nothing grants a push to anyone, because a same-account push needs
 and granting the near half of a permission the far half denies would produce a role that reads as if it
 could publish. **The whole procedure, with the token relay that carries `awsds-infra-prod`'s identity to
 a host that holds none of its permissions, was the buildbox runbook's §P**, retired with the host at Stage 7
-step 6.5; the release ledger it held is [`images/README.md`](../../../images/README.md) §*The releases*.
+step 6.5; the release ledger it held is [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases*.
 
 Two readings from the same sitting, both of which remove a reason to redesign the path. **No preventive
 control requires the push to cross the tunnel** — a `grep` over all ten organization policy documents

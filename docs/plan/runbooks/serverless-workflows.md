@@ -110,7 +110,7 @@ which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
   account;
 - **a space**: not run there yet, its installation included. The script `package-job` replaced built a
   job folder in a space (Stage 6i step 3.6). uv in a house-image space finds the distribution's
-  interpreter only ([`images/README.md`](../../../images/README.md)), so a project is packaged for the
+  interpreter only ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), so a project is packaged for the
   house environment with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set: 3.13 up to `default-v0.6.0`,
   3.12 from `default-v0.7.0`. `package-uv-job.py` set it on its own; the package passes on what the
   environment sets, which its documentation measured in a simulated space.
@@ -310,7 +310,7 @@ the code input; nothing is installed at run time. Three things differ from a Pyt
   extension module cannot be imported from a zip on `sys.path`.
 - **The precedence is the worker's reversed.** `PYTHONPATH` comes before the house environment's
   site-packages, so a package in both would shadow the image's copy, the failure
-  `images/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
+  `gitlab/awsds/dev-env/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
   lacks, and the project's versions must equal the image's for everything they share.
 
 `awsds-workflows package-job` (§T) applies the three to a project uv manages, against a file that lists
@@ -325,10 +325,11 @@ runs there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the packag
    - Its `requires-python` admits the image's Python: 3.12 from `default-v0.7.0`, 3.13 up to `default-v0.6.0`.
    - Its own code is pure Python, and it runs as `python -m my_package` (a `__main__.py`).
 2. **Export the house environment, then check the project against it and build the folder**, from the
-   commit that built the image the job names:
+   recipe at the commit that built the image the job names: this repository's copy when
+   `gitlab/mirror.json` names that commit, a clone of the GitLab project `awsds/dev-env` at it otherwise:
 
    ```bash
-   uv export --frozen --no-dev --no-emit-project --no-hashes --directory images/dev-env/python > /tmp/house-env.txt
+   uv export --frozen --no-dev --no-emit-project --no-hashes --directory gitlab/awsds/dev-env/dev-env/python > /tmp/house-env.txt
    ```
 
    ```bash
@@ -336,9 +337,9 @@ runs there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the packag
    ```
 
    The lock is the house environment: the image installs it with `uv sync --frozen`
-   ([`images/README.md`](../../../images/README.md)). The export reads the lock and needs no
+   ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)). The export reads the lock and needs no
    interpreter: it ran with downloads off and none to find (2026-10-12). `--python` is the
-   `ARG PYTHON_VERSION` of `images/dev-env/Dockerfile` at that commit, 3.12 from `default-v0.7.0` and 3.13
+   `ARG PYTHON_VERSION` of `gitlab/awsds/dev-env/dev-env/Dockerfile` at that commit, 3.12 from `default-v0.7.0` and 3.13
    up to `default-v0.6.0`; `package-uv-job.py` read it on its own. The output folder must not exist yet. `--platform` defaults to `x86_64-manylinux_2_28`: the house
    environment holds `onnxruntime` 1.30.0, which publishes no wheel older than `manylinux_2_28`, so the
    image's glibc is at least 2.28 and `manylinux2014` cannot describe it (measured 2026-10-11).

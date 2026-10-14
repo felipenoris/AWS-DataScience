@@ -7,8 +7,8 @@ this runbook's procedures are gone; this page stays so that the stage logs which
 
 | What this runbook held | Where it is now |
 |---|---|
-| Building the images, and what to check before a build | [`images/README.md`](../../../images/README.md), the build runner's pipeline |
-| The release ledger (§P): every tag, its date, what it changed, its sizes | [`images/README.md`](../../../images/README.md) §*The releases* |
+| Building the images, and what to check before a build | [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md), the build runner's pipeline |
+| The release ledger (§P): every tag, its date, what it changed, its sizes | [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases* |
 | The build host's network and its proxy layers | the build runner, [`gitlab.md`](gitlab.md) §K and [`docs/NETWORK.md`](../../NETWORK.md) |
 | The push and its identity | the runner's role through the ECR credential helper ([`gitlab.md`](gitlab.md) §K) |
 

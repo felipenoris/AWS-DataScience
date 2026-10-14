@@ -138,9 +138,10 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   of the CE authorization, the gate would be open to every **Developer** — i.e. to `data-scientists` — while
   still reading as protected in the settings page. The failure is invisible from inside GitLab: an
   unprotected tag is created successfully. **Verify by attempting a tag creation as a Developer after
-  setting it**, rather than by reading the pattern back. **The recipe moves first** (decision 6): `images/`
-  lives in this GitHub repository today, where every hand build took it from, and a protected tag on a
-  repository that does not hold the recipe gates nothing.
+  setting it**, rather than by reading the pattern back. **The recipe moves first** (decisions 6 and 16): `images/`
+  leaves this GitHub repository for the GitLab projects `awsds/dev-env` and `awsds/deploy-image`, whose
+  copies this repository keeps under `gitlab/`, since a protected tag on a repository that does not hold
+  the recipe gates nothing.
 - **1.1 — Stage 7 left a working shape (2026-10-12)**: `images/build.gitlab-ci.yml`, carried by GitLab's
   `awsds/dev-env` as its `.gitlab-ci.yml`, cloned this repository at a given commit, built `base` with the
   distribution through the pull-through cache, built `dev-env` `FROM` it, pushed both as `default-v0.6.0` with
@@ -152,7 +153,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release
   tag from colliding in a repository where **a tag is spent on first landing**, and makes a pipeline-built
   image distinguishable from the six hand builds (`default-v0.1.0` to `default-v0.5.0`) and Stage 7's
-  web-triggered `default-v0.6.0`, which carry no suffix (ledger: [`images/README.md`](../../../images/README.md)
+  web-triggered `default-v0.6.0`, which carry no suffix (ledger: [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)
   §*The releases*). **The
   flavour stays in front**, so the registry's lifecycle rule (untagged after 14 days, the 30 newest tagged
   kept across flavours) can be split per flavour with a plain `tagPrefixList` when a second one exists. The
@@ -474,7 +475,8 @@ the approval, and 4.6's alarm.
   because the **declarative policy already defaults IMDSv2 hop limit 2** org-wide (verification (ii)).
 - **4.3 — Applied 2026-10-13 by Claude, authorized by the user.** The deploy image is
   `awsds-prod-ecr-deploy:v0.1.0` (`sha256:1b1a5830…a53a`), built on the build runner by the GitLab project
-  `awsds/deploy-image`, which holds only that pipeline (`images/README.md`); its two CRITICALs, Debian 13's
+  `awsds/deploy-image`, which then held only that pipeline (its copy:
+  [`gitlab/awsds/deploy-image/README.md`](../../../gitlab/awsds/deploy-image/README.md)); its two CRITICALs, Debian 13's
   curl with no fixed package, were accepted by the user by name as its baseline (decision 1).
   `production/runners/` 1 added, re-plan `No changes`. The first boot (3 min 31 s) assumed all three deploy
   roles with the instance's credentials, registered under GitLab runner #3 (protected, locked, tag
@@ -826,6 +828,41 @@ Measured (`docs/PRICING.md`), us-west-2:
     export then passes under the gate's conditions. 6i's `awsds-demo-deps` moved with it. The first image
     carrying it is `default-v0.7.0`; `default-v0.6.0`, and the `default-v0.5.0` that 6i's kept workflows
     run, stay 3.13. This repository's own tooling stays on 3.14, the version `CLAUDE.md` pins.
+14. **How a pipeline job reads `production/registry/`'s state** (1.6; 3.2's Staging slice). `sandbox/dev-env/`
+    reads it for the repository URL and ARNs through `awsds-infra-prod`, the infrastructure user's SSO
+    session, which the runner does not have. Recommended: **the deploy runner's own role reads that one
+    object** (`s3:GetObject` on its key, `kms:Decrypt` on Production's state key) through a profile named
+    after the role that carries the instance's credentials, and `gen-tfvars.py --pipeline` emits that profile
+    for the registry read. Rejected: the read as `awsds-deploy-prod`, which puts Production's deploy role
+    into every Sandbox and Staging leg's CloudTrail (INT-08); a cross-account grant on Production's state
+    bucket and key per target, which widens the estate's most sensitive bucket policy. **Taken by the user
+    2026-10-14, as recommended.**
+15. **The pip-audit findings the house environment cannot shed** (5.2). Its lock carries 73 vulnerabilities
+    with a fixed version in 14 packages; a targeted `uv lock --upgrade-package` moves 13 packages and clears
+    65, and 8 stay because other packages of the environment require the old versions (fsspec 2025.3.0,
+    setuptools 81.0.0, sqlparse 0.5.0). Recommended: **an accepted list per GitLab project** in
+    `baselines.gitlab-ci.yml`, `<id>|<package>`, chosen by `CI_PROJECT_PATH` so a gated pipeline cannot edit
+    its own list, each entry naming the package that holds it and entered by name in a commit that carries
+    the steward's acceptance, the ECR baseline's discipline; in the same `gates-v0.3.0`, **the gate fails
+    when it audits fewer packages than the export pins**, since it audited 0 of 452 on the laptop and passed;
+    and the first release, `default-v0.7.0`, carries the targeted upgrade as a data scientist's merge
+    request. **Taken by the user 2026-10-14, as recommended.**
+16. **Where the image recipes live, and the copy this repository keeps** (1.0, decision 6). Recommended: a
+    clone of `awsds/dev-env` in a gitignored folder of the project folder, read by `devenv.py` and
+    `bedrock-scope.py`. **Taken by the user 2026-10-14, wider than recommended: everything under `images/`
+    moves to the private GitLab, which becomes its source of truth**, the house image's recipe to
+    `awsds/dev-env` and the deploy image's to `awsds/deploy-image`. This repository keeps a tracked copy of
+    each project's last commit under `gitlab/`, written by `scripts/gitlab-mirror.py`, and
+    `scripts/check-gitlab-mirror.py` reads the copy's NO_PROXY literal and Bedrock pins against the estate. A
+    change it asks for is made in GitLab by the user, then copied back; an edit under `gitlab/` is a proposal
+    until GitLab holds it and the copy reads equal.
+17. **The register job's guards** (1.6). The apply destroys the version the domain attaches before it creates
+    the next one, AWS refuses neither, and the failure arrives at the next attach (`dev-env.md` §B).
+    Recommended: the registration refuses while any domain's `CustomImages` names the image, and refuses a
+    plan that changes anything but the image version; after the apply it compares `ContainerImage` with the
+    pushed digest and lists the spaces the bump strands, for four read actions on the dev-env deploy role.
+    **Taken by the user 2026-10-14: no guard, the steward's discipline in §B's order is the control**; the
+    guards wait in [issue #129](https://github.com/felipenoris/AWS-DataScience/issues/129).
 
 ## Verifications to answer while executing
 

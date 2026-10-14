@@ -4,7 +4,7 @@
 # resolves - the build runner. A certificate error fails the build; an HTTP status does not, since
 # none of these clients signs in.
 #
-#   buildctl build --local context=images/smoke --local dockerfile=images/smoke --no-cache \
+#   buildctl build --local context=smoke --local dockerfile=smoke --no-cache \
 #     --opt build-arg:DEV_ENV=<registry>/awsds-prod-ecr-dev-env:<tag>
 ARG DEV_ENV
 FROM ${DEV_ENV}

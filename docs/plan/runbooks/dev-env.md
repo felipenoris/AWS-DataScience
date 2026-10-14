@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version bump when a steward approves a new build, and the detach. The build and the push are [`images/README.md`](../../../images/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
+| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version bump when a steward approves a new build, and the detach. The build and the push are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
 | **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
-| **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `images/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
+| **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `gitlab/awsds/dev-env/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
 | **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and revised 2026-09-11 from the bump it describes. Exercised: §C in full on `default-v0.1.1`, §B on `default-v0.2.0`, again on `v0.4.0` (2026-09-12) and on `v0.5.0` (2026-10-10, no app running and no space to repair), §X step 1, §V. §B step 6 was found missing on the second run and has been exercised only through the portal; its CLI route is written and not run. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10 and 2026-09-11 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
@@ -43,7 +43,7 @@ either. Steps 1-2 are read-and-check; 3-6 are the work; 7 is the proof.
 
 | Prerequisite | How to check it | If it is missing |
 |---|---|---|
-| The image, built and pushed under a `<flavour>-v<semver>` tag | `aws ecr describe-images --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` | [`images/README.md`](../../../images/README.md) — the build runner's pipeline, about 16 minutes (2026-10-12) |
+| The image, built and pushed under a `<flavour>-v<semver>` tag | `aws ecr describe-images --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` | [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) — the build runner's pipeline, about 16 minutes (2026-10-12) |
 | The repository's pull grant naming this account | `aws ecr get-repository-policy --repository-name awsds-prod-ecr-dev-env --profile awsds-infra-prod` — the `AllowConsumerAccountsToPull` statement | add the account to `REGISTRY_CONSUMERS` (`scripts/tfhygiene/backend.py`) and apply `production/registry/` |
 | `ecr.api` and `ecr.dkr` endpoints in the account's VPC | they are in `vpc-egress`'s `core_services`, so `make up ENV=<env>` is enough | there is no NAT anywhere (D38): without them a space cannot pull at all |
 | The SMUS domain for the project, and the account association | `./aws/studio.py` | [Stage 6a](../stages/stage-06a-unified-studio.md); an image cannot be attached to a domain that does not exist |
@@ -52,7 +52,7 @@ either. Steps 1-2 are read-and-check; 3-6 are the work; 7 is the proof.
 
 Not repeated here: the ancestor (`public.ecr.aws/sagemaker/sagemaker-distribution` ≥ `2.6-cpu`), the
 absent `ENTRYPOINT`, AWS's three owned paths, and the `jupyterlab/default` base URL with its health check
-on 8888 are [`images/README.md`](../../../images/README.md)'s *Before editing either file* and the vendor's
+on 8888 are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s *Before editing either file* and the vendor's
 BYOI specifications. An image that fails them registers happily and fails when a space starts, which is
 the expensive place to find out.
 
@@ -255,7 +255,7 @@ mechanism can:
 | `ContainerEnvironmentVariables` on the app image configuration | each value caps at 256 characters (`ContainerConfig`: 25 entries, 256 per key and per value) against a `NO_PROXY` of about 1,500 — `CreateAppImageConfig` refuses it outright, measured at step 2.2 |
 | A lifecycle configuration | it fits — a 16 KB script — but there is no `UpdateStudioLifecycleConfig`, and the API says deleting one needs *"no running apps using the Lifecycle Configuration"* and its removal *"from UserSettings in all Domains and UserProfiles"*: every list change becomes detach, replace, re-attach, in a console the CLI cannot stand in for |
 
-So [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) §7 sets the six as `ENV`, plus the
+So [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile) §7 sets the six as `ENV`, plus the
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
@@ -281,12 +281,14 @@ shaped by one VPC's endpoint list**. A change to that list — including one nob
 `sandbox/egress` went 28 → 50 entries on a module bump — makes every existing image stale, and the
 repair is the whole chain:
 
-1. `make up ENV=<env>`, read the new value (`terraform output -raw no_proxy_all_groups`, whatever
-   `GROUPS=` the apply named) and put it in `images/dev-env/Dockerfile` §7, with its date. The value
+1. `./scripts/check-gitlab-mirror.py` (`--plan` with the session down) reads the new value, the output
+   `no_proxy_all_groups` whatever `GROUPS=` the apply named, against the recipe's copy and writes the
+   line `dev-env/Dockerfile` §7 must carry; put it in the GitLab project `awsds/dev-env`, with its date,
+   and copy the project back with `./scripts/gitlab-mirror.py`. The value
    depends on no resource, so with the session down a `terraform plan` on the slice prints it under
    *Changes to Outputs*, as the authoring plan of `vpc-egress-v0.17.0` printed it before the output
    existed (2026-10-10).
-2. A build on the runner ([`images/README.md`](../../../images/README.md)): `base` if it moved, then `dev-env`, and a
+2. A build on the runner ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)): `base` if it moved, then `dev-env`, and a
    push under a **new tag** — the repositories are tag-immutable.
 3. `image_tag` in [`terraform-live/sandbox/dev-env/variables.tf`](../../../terraform-live/sandbox/dev-env/variables.tf), then apply — a version replace (§B).
 4. Re-attach: the domain's `CustomImages` names a version number (§C6).
@@ -475,7 +477,7 @@ Step 1 ran on 2026-09-11, as the detach half of §B's bump; steps 2 and 3 are un
    ```
 2. `terraform apply -destroy` on the slice, or delete the resources from the code and apply.
 3. The ECR image is not this slice's to remove: the repository's lifecycle policy expires it, and
-   `images/README.md` owns that rule.
+   `gitlab/awsds/dev-env/README.md` owns that rule.
 
 ## V. Reading it back, and what each instrument proves
 

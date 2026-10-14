@@ -31,10 +31,22 @@ _QUOTED_SPAN = re.compile(r'"[^"]*"')
 # `.terraform/modules/` and `.claude/worktrees/`, which is enough noise to make the target unread.
 _PRUNED_DIRS = frozenset({".git", ".claude", ".terraform", ".venv", "node_modules"})
 
+# gitlab/<group>/<project>/ is a copy of a GitLab project (gitlab/README.md, Stage 8 decision 16): its
+# markdown is GitLab's, with links written for GitLab, and a broken one is fixed there. The folder's own
+# README is this repository's and is read.
+_MIRROR_ROOT = "gitlab"
+
+
+def _authored(path: Path, root: Path) -> bool:
+    parts = path.relative_to(root).parts
+    if not _PRUNED_DIRS.isdisjoint(parts):
+        return False
+    return not (len(parts) > 3 and parts[0] == _MIRROR_ROOT)
+
 
 def iter_md_files(root: Path) -> Iterator[Path]:
     """Every ``*.md`` under ``root`` this repository authored, sorted for stable output."""
-    return iter(sorted(p for p in root.rglob("*.md") if _PRUNED_DIRS.isdisjoint(p.parts)))
+    return iter(sorted(p for p in root.rglob("*.md") if _authored(p, root)))
 
 
 def relative_links(path: Path) -> Iterator[tuple[Path, str]]:

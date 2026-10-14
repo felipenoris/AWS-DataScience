@@ -11,21 +11,26 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # gitlab/ holds copies of GitLab projects (gitlab/README.md): a fixer that edits one makes it
+      # differ from the commit it copies, so the fixers skip the folder and the checks still read it.
       - id: end-of-file-fixer
+        exclude: ^gitlab/[^/]+/[^/]+/
       - id: trailing-whitespace
+        exclude: ^gitlab/[^/]+/[^/]+/
       - id: check-merge-conflict
       # The image's managed-settings.json reaches /etc/claude-code/ by COPY, and Claude Code
       # IGNORES AN UNPARSEABLE ONE SILENTLY: every key in it stops applying and the session runs
-      # on the client's own defaults, against api.anthropic.com. A trailing comma has to fail
-      # here, in review, rather than in a space three weeks later (Stage 6e step 5.2).
+      # on the client's own defaults, against api.anthropic.com. A trailing comma that reached the
+      # copy of the recipe fails here (Stage 6e step 5.2); scripts/check-gitlab-mirror.py GM-6 reads
+      # the same file.
       - id: check-json
-        files: ^images/.*\.json$
+        files: ^gitlab/.*\.json$
       - id: check-added-large-files
-        # The one file over 500 KB that belongs in git: images/dev-env/python/uv.lock, ~900 KB of
-        # resolved hashes for 363 packages. It is the reproducibility of the image's Python
-        # environment - the thing `uv sync --frozen` refuses to build without - so it is admitted by
-        # name rather than by raising the limit for everything.
-        exclude: ^images/dev-env/python/uv\.lock$
+        # The one file over 500 KB that belongs in git: the house environment's uv.lock, ~900 KB of
+        # resolved hashes for 453 packages, in the copy of awsds/dev-env. It is the reproducibility of
+        # the image's Python environment - the thing `uv sync --frozen` refuses to build without - so
+        # it is admitted by name rather than by raising the limit for everything.
+        exclude: ^gitlab/awsds/dev-env/dev-env/python/uv\.lock$
       # D36 puts the internal CA's root private key inside a Terraform state file. State is
       # gitignored (6.2), but this is the cheap second net for a key that arrives some other
       # way - a scratch .pem, a copied output, a paste into a .tf.
@@ -72,12 +77,14 @@ repos:
         entry: uv run --quiet ruff check
         language: system
         types: [python]
+        exclude: ^gitlab/[^/]+/[^/]+/
 
       - id: ruff-format
         name: ruff (format check)
         entry: uv run --quiet ruff format --check
         language: system
         types: [python]
+        exclude: ^gitlab/[^/]+/[^/]+/
 
       # ---------------------------------------------------------------- step 9's own checks
       # THE SAME SCRIPTS `make check` CALLS, and that is the point: a commit gate and a target

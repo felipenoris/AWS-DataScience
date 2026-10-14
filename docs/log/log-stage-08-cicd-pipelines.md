@@ -678,3 +678,40 @@ Account ids are replaced by the account's name in angle brackets.*
 - **Not built**: no image carries 3.12 until `default-v0.7.0`. **Owed**: the user's answer on decisions 14
   to 17 (the registry state read, the accepted findings, the recipe's checkout, the register job's guards)
   and the mirror's mechanics, then the rest of pass 3.
+
+## 2026-10-14 — decisions 14 to 17, and the image recipes move to GitLab
+
+- **[user] In chat**: decisions 14 and 15 as recommended. Decision 16 wider than recommended: everything
+  under `images/` is controlled in the private GitLab, its source of truth, with a copy of each project's
+  last commit kept here under `gitlab/` by a script, a second script checking the copy's `NO_PROXY` and
+  Bedrock parameters, and any change pushed to GitLab by the user. Decision 17: no guard, the steward's
+  discipline, with the guards in a GitHub issue.
+- **[Claude] Issue [#129](https://github.com/felipenoris/AWS-DataScience/issues/129)** opened: the four
+  guards, the four read actions they cost, and when to revisit.
+- **[Claude] The seed**: `images/` moved by `git mv` into `gitlab/awsds/dev-env/` (`base/`, `dev-env/`,
+  `smoke/`, the pipeline as `.gitlab-ci.yml`, `README.md`) and `gitlab/awsds/deploy-image/` (`Dockerfile`,
+  `aws-cli-team.asc`, the pipeline, a new `README.md` and a `.dockerignore`). Both pipelines build their own
+  project's commit, BuildKit `v0.34.0-rootless` by digest; the recipe's comments and OCI `source` labels name
+  the GitLab projects, and its links to this repository are absolute. GitLab holds none of it yet.
+- **[Claude] `scripts/gitlab-mirror.py`**, against a GitLab of `file://` repositories: a first copy (3 files
+  each, an executable bit kept); a second run reporting the copy unchanged; a commit that edited, added,
+  deleted and dropped an executable bit, reported 1 added, 1 removed, 2 changed; an uncommitted edit under
+  the copy refused with exit 2 and listed by `--dry-run`; a committed edit replaced by GitLab's content; an
+  unknown project exit 2; a bad URL exit 1.
+- **[Claude] `scripts/check-gitlab-mirror.py`** on the seed, as the infrastructure user in Sandbox. From the
+  state, `GM-3` fails: `sandbox/egress` is down and its state holds no outputs. With `--plan`, in 43 s, every
+  check passes and `GM-1` notes the copy was never copied from GitLab: 70 names, sha256
+  `aafa08da98a61f5c` on both sides, the proxy URL, the settings parsing, Bedrock in `us-west-2`, 3 pins each
+  in the SCP and the grant. With the copy broken on purpose (one Bedrock name removed and an unknown one
+  added, the Haiku pin moved to an unscoped profile, `AWS_REGION` set to `us-east-1`), `GM-4`, `GM-7` and
+  `GM-8` fail, the repairs name the two GitLab files, and `aws/output/gitlab-mirror-no-proxy.txt` carries the
+  line; the copy was restored.
+- **[Claude] The instruments read the copy**, through `aws/awslib/devenvrecipe.py` and
+  `awslib.bedrockscope`: `./aws/devenv.py` `DE-1` 70 entries, sha256 `aafa08da98a61f5c`, `DE-5` version 6
+  baking the same list, `DE-2` failing on the slice being down; `./aws/bedrock-scope.py` 7 pass.
+- **[Claude] The repository around the copy**: pre-commit's fixers and ruff skip `gitlab/<group>/<project>/`
+  while `check-json` and the key and identifier checks read it; the link checker skips the copies' markdown;
+  the references to `images/` point at the copy, records of a date kept as written; `make check` OK.
+- **Owed**: a GitLab session in which the user pushes each folder's content to its project and the copy is
+  refreshed from GitLab; then pass 3's chain (decisions 14 and 15 in code, the release pipeline, the
+  registration job).

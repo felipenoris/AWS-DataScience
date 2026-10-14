@@ -199,7 +199,7 @@ aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /data
 
 **Trusting the root on a laptop** (step 2.5, INT-19's first surface; §I step 2 is the occasion). A browser's "Not secure" on `gitlab.awsds.internal`, `https` struck through, means the root is in no store the browser reads; the host's chain is not the suspect while step 4 passes with `--cacert`. Done on 2026-10-12 on the user's macOS laptop: Chrome stopped warning after steps 1-2.
 
-1. Fetch the root from its one source (the same bytes are tracked as `images/base/ca-certificates/awsds-root.crt`; the fingerprint command above is the check that the two agree):
+1. Fetch the root from its one source (the same bytes are tracked as `gitlab/awsds/dev-env/base/ca-certificates/awsds-root.crt`; the fingerprint command above is the check that the two agree):
 
    ```bash
    aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
@@ -269,7 +269,7 @@ The runner is a **protected project runner** of `awsds/app-etl`, never an instan
    aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
    ```
 
-3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`images/README.md`](../../../images/README.md)).
+3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)).
 
 Every `make gitlab-up` then boots a new instance that waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
 
@@ -582,4 +582,4 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 
 ---
 
-*Runbooks: [dev-env](dev-env.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Images: [`images/README.md`](../../../images/README.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*
+*Runbooks: [dev-env](dev-env.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Images: [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*

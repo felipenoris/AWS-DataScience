@@ -4,7 +4,7 @@
 > **Who this is for.** Everything below is the by-hand path, and it is what a space on the **stock
 > image** — or on `default-v0.1.1` and earlier — needs. `default-v0.2.0` (2026-09-11) is the first
 > `dev-env` that carries the environment itself. 6d decision 8 puts the six
-> variables in the house image itself (`ENV` in `images/dev-env/Dockerfile`, the bypass list a dated
+> variables in the house image itself (`ENV` in `gitlab/awsds/dev-env/dev-env/Dockerfile`, the bypass list a dated
 > literal there), together with `/etc/apt/apt.conf.d/01proxy` and a sudoers
 > `env_keep`, so on a space running that image none of the exports below is needed and `sudo apt` works
 > unqualified. The image that carries it is the one whose `/opt/awsds-proxy.txt` matches the current
@@ -86,7 +86,7 @@ Three things decide whether that line measures the network at all:
 image build's channel, and a solver run inside a space would move the SageMaker Distribution's own pins.
 The compiled half of CRAN is refused by arithmetic rather than by policy — CRAN serves source packages,
 so anything with C or Fortran needs a toolchain the image does not carry;
-[`images/dev-env/r/conda-packages.txt`](../../../images/dev-env/r/conda-packages.txt) stays the delivery
+[`gitlab/awsds/dev-env/dev-env/r/conda-packages.txt`](../../../gitlab/awsds/dev-env/dev-env/r/conda-packages.txt) stays the delivery
 path for those.
 
 **A refusal here reads misleadingly.** R reports `cannot open URL '…/src/contrib/PACKAGES'` and then

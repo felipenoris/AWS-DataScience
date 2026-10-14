@@ -249,7 +249,7 @@ workgroup, and that is a decision with a written argument, not a map entry.
 
 **For a data scientist in a space.** `import redshift_connector, boto3` works in a new notebook on the
 `Python (awsds dev-env)` kernel with nothing installed: both are declared in
-`images/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
+`gitlab/awsds/dev-env/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
 `amazon-sagemaker-sql-execution`; it is named there now so a resolution change cannot remove it
 silently.
 
@@ -423,7 +423,7 @@ without that endpoint there is no door to the API and no fallback — step 3 fai
 which reads like a network fault and is a missing endpoint.
 
 **`redshift_connector` is already importable in the image** (measured 2026-10-10). It is not in
-`images/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
+`gitlab/awsds/dev-env/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
 `sagemaker-studio-dataengineering-sessions` or `aws-glue-sessions`. The script's install step is
 therefore a no-op in practice and stays only as the fallback. A transitive driver is a dependency
 nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by name, plus
@@ -554,7 +554,7 @@ except OSError as exc:
 # summary at the end is the verdict.
 #
 # redshift_connector is importable in the image: the lock installs it through
-# amazon-sagemaker-sql-execution (measured 2026-10-10), and images/dev-env/python/pyproject.toml
+# amazon-sagemaker-sql-execution (measured 2026-10-10), and gitlab/awsds/dev-env/dev-env/python/pyproject.toml
 # names it since. The install below is the fallback for a kernel without it, normally a no-op.
 driver = None
 try:

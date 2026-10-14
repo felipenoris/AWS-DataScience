@@ -103,7 +103,7 @@ set **InfrastructureAccess**). These are the stage's starting facts; nothing bel
   `bedrock:`. A boundary grants nothing, so step 3 is still a real question.
 - **0.8 — `bedrock-runtime.us-west-2.amazonaws.com` is already reachable from a space, by the wrong
   door.** The compute plane's allow-list opens with `.amazonaws.com`, so the name is permitted through
-  Squid; the image's `NO_PROXY` literal (50 entries on this date, `images/dev-env/Dockerfile`) carries
+  Squid; the image's `NO_PROXY` literal (50 entries on this date, `gitlab/awsds/dev-env/dev-env/Dockerfile`) carries
   no Bedrock name, and the proxy sits in `VPC-Networking` where no Sandbox endpoint answers. A call
   made before 4.3
   would therefore succeed as a **public** call carrying neither `aws:SourceVpc` nor `aws:SourceVpce` —
@@ -515,12 +515,12 @@ belongs in the image — and Claude Code has a file made for it.
   7,182,175,890 bytes), the Julia cache removed net of `rust-src` added. It carries four changes
   against `default-v0.2.0`, all of them in the repository — the fourth, no Julia precompilation cache,
   is not this stage's:
-  - **the managed settings file** (5.2), as `images/dev-env/claude-code/managed-settings.json`
+  - **the managed settings file** (5.2), as `gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`
     `COPY`d to `/etc/claude-code/`. A side file rather than a heredoc: this Dockerfile carries no
     `# syntax=` directive, so a shell heredoc inside a line-continued `RUN` does not work, and a
     side file is reviewable as JSON. **An unparseable managed-settings.json is ignored silently** —
     every key stops applying and the session runs on the client's own defaults against
-    `api.anthropic.com` — so `pre-commit`'s `check-json` now covers `images/**.json` and the image
+    `api.anthropic.com` — so `pre-commit`'s `check-json` now covers `gitlab/**.json` and the image
     re-parses it at build time;
   - **`rust-src`**, already in the rustup profile since 2026-09-11;
   - **the `NO_PROXY_LIST`**, which is what blocked the build until 4.3. Step 4 made the two Bedrock
