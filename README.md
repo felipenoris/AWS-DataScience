@@ -131,6 +131,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   tracked, the roster assigns nothing but public halves, and a `host-key.auto.tfvars` fails by name.
   `check-identifiers.py` is the ninth, and it fails on a different kind of mistake: a real AWS account id
   or a personal e-mail address reaching git, which is undone by rewriting history rather than by an edit.
+  `check-gitlab-ci.py` reads every tracked `*.gitlab-ci.yml` with its includes: a job named after a
+  GitLab CI global keyword fails, and so does a `needs:` or `dependencies:` entry naming no job of its
+  pipeline, mistakes GitLab otherwise reports only when it creates the pipeline, behind the VPN.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
@@ -156,7 +159,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   scripts that exist *only* for CloudShell — `aws/cloudshell/management-quotas.sh` and
   `aws/cloudshell/audit-iam-analyser.sh`, the readings of the accounts no profile reaches — stay shell:
   standalone single files, needing no environment, writing `aws/output/cloudshell/`. `ruff` (dev-only)
-  lints and formats the tree through `pre-commit`. A fresh clone needs no setup step: the first script
+  lints and formats the tree through `pre-commit`, and PyYAML (dev-only) parses the GitLab CI files for
+  `check-gitlab-ci.py`. A fresh clone needs no setup step: the first script
   invocation bootstraps everything — `uv run` fetches the pinned interpreter if it is absent, creates
   `.venv/` and installs the packages — so `uv sync` only does the same thing ahead of time.
 
