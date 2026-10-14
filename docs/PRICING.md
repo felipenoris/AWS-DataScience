@@ -285,6 +285,7 @@ the real bill.
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
 | — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
 | AWS Config per Sandbox `[E]` cycle — **not hourly**: one `make up` + `make down` of `sandbox/egress` records 120-290 items, whatever the time between, 63-90% of them the endpoints, their ENIs, and the subnets, VPC and security groups those ENIs relate to (eight cycles measured 2026-09-14..10-12, §2) | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | **1.00** |
+| AWS Config per GitLab cycle — **not hourly**: one `make gitlab-up` + `make gitlab-down` with the runners and a hub start/stop recorded 70 items on 2026-10-14, 35 up and 35 down (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Production). The endpoints' ENIs were absent from both halves at 21:17 UTC; in the previous cycle 17 of them landed 2-3 h after the destroy. The 2026-10-13 billing day carried 125 items (0.375) for a session whose applies removed two endpoints, replaced a runner and added one. Without the runners about 40 items, read from the per-type split (the GitLab session below) | 0.21-0.38 per cycle | **0.21-0.38 per cycle** | **1.00** |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | The image build host `m8i.xlarge` (Stage 7's build runner `production/runners/`, `[E]`; the buildbox before it) — **measured 2026-09-11**, the family the 02:50-03:15 UTC build moved it to: the build saturated four burstable vCPUs while the proxy sat at 2.70% | 0.3374 | **0.2117** | 1.59 |
@@ -322,6 +323,63 @@ full-stack hour, only its NAT.
 
 `docs/plan/cost-model.md` quotes NAT at USD 0.050/h in `us-west-2`; the measured gateway rate is **0.045**,
 plus 0.005 for its public IPv4.
+
+### The GitLab session, by category
+
+A GitLab session runs from `make gitlab-up` to `make gitlab-down` ([runbook](plan/runbooks/gitlab.md) §U):
+the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' three hosts applied. Read
+2026-10-14 from the slices, from `describe-*` in Production and from Production's Cost Explorer for
+2026-10-11..10-14, whose effective rates (cost ÷ quantity) equal this section's table: `t4g.large` 0.0672,
+`m8i.xlarge` 0.2117, `t3a.small` 0.0188, endpoint-hour 0.010, gp3 0.08/GB-mo, snapshot 0.05/GB-mo, secret
+0.40/mo, public IPv4 0.005/h, configuration item 0.003. A monthly charge is shown per hour at 730 h, and each
+cell is rounded from the exact rate, so a subtotal can differ from the sum of its rounded cells by 0.0001.
+As built there is no ALB and no NAT, so the full-stack hour above does not describe it.
+
+| Category | Item | Layer | `us-west-2` USD/h |
+|---|---|---|---|
+| VPC endpoints | 12 interface endpoints in one AZ: `vpc-egress`'s core 8 and `ssm`, `ssmmessages`, `ec2messages`, `secretsmanager` | `[E]` | 0.1200 |
+| | the S3 and DynamoDB gateway endpoints | `[P]` | 0 |
+| Compute | GitLab, `t4g.large` | `[D]` | 0.0672 |
+| | the build runner, `m8i.xlarge` | `[E]` | 0.2117 |
+| | the deploy and test runners, `t3a.small` each | `[E]` | 0.0376 |
+| Storage | GitLab's volumes, 12 + 50 GiB gp3, billed stopped or running | `[D]` | 0.0068 |
+| | the runners' root volumes, 64 + 30 + 30 GiB gp3 | `[E]` | 0.0136 |
+| | the DLM snapshots (~1 GB, from 0.025 GB-mo billed on 2026-10-13) and GitLab's two buckets (1.4 MB) | `[D]`, `[P]` | 0.0001 |
+| Other services | Secrets Manager: `gitlab-secrets`, the three runner tokens, the two TLS leaf keys | `[P]` | 0.0033 |
+| | KMS `alias/awsds-prod-gitlab` | `[P]` | 0.0014 |
+| | the private zone `awsds-pages.internal` | `[P]` | 0.0007 |
+| | the CloudWatch alarm (inside the free ten), DLM, Session Manager, same-AZ peering (`DataTransfer-AZ-*` 9.20 GB each way on 2026-10-12, billed 0) | | 0 |
+
+| Category | With runners | `RUNNERS=0` | Stopped |
+|---|---|---|---|
+| VPC endpoints | 0.1200 | 0.1200 | 0 |
+| Compute | 0.3165 | 0.0672 | 0 |
+| Storage | 0.0205 | 0.0069 | 0.0069 |
+| Other services | 0.0053 | 0.0053 | 0.0053 |
+| **Total** | **0.4623** | **0.1994** | **0.0122** (8.91/month) |
+
+Billed beside the hour:
+
+- **Endpoint processing**, 0.01 USD/GB: 2.86 GB on 2026-10-12, the day of the first image build (0.029),
+  and 0.21 GB on 2026-10-13.
+- **AWS Config**, per cycle rather than per hour: the GitLab row of the table above, 0.21-0.38.
+- **The hub**, when no other session holds it: 0.0206/h, the `t3.nano` 0.0052, the `t3.micro` 0.0104 and
+  the proxy's public IPv4 0.005. The proxy sets `associate_public_ip_address`, billed while the host runs:
+  `PublicIPv4:InUseAddress` read twice the hosts' running hours on 2026-10-12. The VPN's Elastic IP bills
+  0.005/h stopped or running, a floor line.
+- **CPU credits**: neither slice sets `credit_specification`, so `t4g.large` and the `t3a.small` pair
+  launch `unlimited`. A load above baseline bills 0.04 USD/vCPU-h on `t4g` and 0.05 on `t3a` (Price List
+  Query API, `USW2-CPUCredits:*`, offer 2026-10-12); no `CPUCredits` usage type was billed 2026-10-11..10-14.
+
+ECR storage is not in the table: it is `production/registry/`'s and exists with or without GitLab (0.96 GB-mo
+billed on 2026-10-11, ~30 GB at 0.10, ~3.00/month).
+
+Readings of the table:
+
+- The build runner is 46% of a session with runners; `RUNNERS=0` takes the hour to 0.1994.
+- Without the runners the endpoints are 60% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
+  serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
+- Always on, the session would bill 337.48/month with runners and 145.56 without, both above D12's 50.
 
 ---
 
