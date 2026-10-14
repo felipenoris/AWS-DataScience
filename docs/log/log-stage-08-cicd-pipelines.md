@@ -621,3 +621,13 @@ Account ids are replaced by the account's name in angle brackets.*
 - **Owed**: `make down ENV=sandbox` from a checkout carrying `app/app-etl` (until this branch merges, this
   worktree), then `make gitlab-down` and `make hub-down`; verification (iv)'s re-scan half; (x) with a pinned
   vulnerability in GitLab.
+
+## 2026-10-14 — the environment down
+
+- **[user]** Ran `make down ENV=sandbox` from this worktree, then `make gitlab-down` and `make hub-down`.
+- **[Claude] Read back**: `make status` reads 0.0000 USD/h in Sandbox (`egress`, `warehouse-compute`,
+  `app/app-etl` and `probes` with no resource) and in Production (`vpn`, `proxy` and `tooling` stopped,
+  `egress` and `runners` with no resource). `get-role` on `awsds-sandbox-app-etl-job` answers
+  `NoSuchEntity`; no security group of that name, no `awsds-prod-runner*` instance and no Sandbox interface
+  endpoint remain. The two outputs under `app-etl/v0.1.0/` stay in the `[P]` bucket until their 30-day
+  expiry.
