@@ -491,7 +491,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
   21. From Stage 5a: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
   Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
-  left alone. **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock billing per use with no
+  left alone (it bills per `[E]` cycle, USD 0.36-0.87 per Sandbox up/down, 10.88 in 2026-09; Stage 12
+  step 6 revisits). **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock billing per use with no
   ceiling.
 
 Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a

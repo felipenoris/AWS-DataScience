@@ -112,7 +112,9 @@ that is up so often it may as well be `[D]`.
 **Action:** re-read Stage 1d step 10's decision with a bill. **Why:** the recorder was left alone on an
 estimate of ~USD 0.5/month, and Management was deliberately left unrecorded. **Explanation:** a Config
 conformance pack on top of the Control Tower guardrails is the natural next step **only if** the recorder's
-real cost supports it.
+real cost supports it. The first bill reading, 2026-10-14 (`docs/PRICING.md` §2), is USD 10.88 for
+September, almost all of it `[E]` cycles at USD 0.36-0.87 per Sandbox `make up` + `make down`: the EC2/ENI
+churn Stage 1d decision 4 named as its revision signal.
 
 - **6.1 — [Claude] Read the recorder's actual line** from the invoice.
 - **6.2 — [Claude reads, user decides] Add conformance packs, or record why not.**
