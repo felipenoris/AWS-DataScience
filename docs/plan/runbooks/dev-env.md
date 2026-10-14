@@ -450,7 +450,16 @@ is what step 1 arranged.
 would then follow the image's latest version, so an apply alone would change what every new space starts.
 
 Stage 8 step 1's pipeline takes this slice over (INT-18). It inherits this order, and the two domain
-writes are what it cannot do from another account — which is why INT-18 stops at the apply.
+writes are what it cannot do from another account — which is why INT-18 stops at the apply. In the
+release chain of the GitLab project `awsds/dev-env`, steps 1 and 2 come before the steward runs its
+`release-gate`, step 3 is its `register` job, which prints step 4's reading, and steps 5 and 6 come after
+it. Nothing in the chain checks the order (Stage 8 decision 17, the guards waiting in
+[issue #129](https://github.com/felipenoris/AWS-DataScience/issues/129)). By hand, step 3 is the same
+script with the laptop's profiles:
+
+```bash
+./scripts/devenv-register.py --tag <tag>
+```
 
 ## X. Detaching and removing
 

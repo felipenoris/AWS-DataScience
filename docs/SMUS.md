@@ -1038,7 +1038,10 @@ So the repository already answers *what the image is*. Putting that word back in
 
 #### The tag rule
 
-**`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.**
+**`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.** That is the
+release, the protected tag on the GitLab project `awsds/dev-env`; the images its pipeline pushes carry
+`-<short sha>` after it, the commit built, so two builds of one release never meet in a tag-immutable
+repository (Stage 8 step 1.1). The hand builds, `default-v0.1.0` to `default-v0.6.0`, carry none.
 
 The **flavour** is the axis this estate branches on, decided by the user on 2026-08-22 while choosing
 the first tag: a project wanting **GPUs**, one wanting **Spark** libraries, and one wanting neither

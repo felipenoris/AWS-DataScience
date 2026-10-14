@@ -539,6 +539,77 @@ The first boot reads the control it exists for, from a container: `no token from
 
 A finding enters a baseline the same way: a commit to this project whose message names who accepted it and why, a new `gates-v*` tag, and each consumer's `ref` moved in a commit of its own (`ci-gates/README.md`).
 
+## M. The image projects, and the infrastructure mirror
+
+Two copies, in opposite directions. The image recipes live in GitLab since Stage 8 decision 16, `awsds/dev-env` and `awsds/deploy-image`, and this repository keeps a copy of each under `gitlab/` ([`gitlab/README.md`](../../../gitlab/README.md)). The infrastructure repository lives on GitHub, and `awsds/infrastructure` is the copy the dev-env pipeline's registration job clones (decision 2).
+
+### The copies under `gitlab/`
+
+1. **A change** is a merge request on the GitLab project. After the merge, from a checkout of this repository with the tunnel up, `--dry-run` first lists what the copy gains and loses:
+
+   ```bash
+   ./scripts/gitlab-mirror.py --dry-run
+   ```
+
+   ```bash
+   ./scripts/gitlab-mirror.py
+   ```
+
+   Then commit the copy and `gitlab/mirror.json`. `./scripts/check-gitlab-mirror.py` reads the house recipe's `NO_PROXY` and Bedrock settings against the estate, and names the change to make in GitLab when they differ.
+2. **A pipeline file is linted before it is pushed**: the project's **Build → Pipeline editor → Validate**, which creates nothing.
+3. **The seed**, once: what GitLab did not hold yet was the copy itself, pushed from a clone as the local administrator, from a checkout of this repository carrying it:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/dev-env.git "$HOME/tmp/dev-env"
+   ```
+
+   ```bash
+   rsync -a --delete --exclude .git gitlab/awsds/dev-env/ "$HOME/tmp/dev-env/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/dev-env" add -A && git -C "$HOME/tmp/dev-env" commit -m "The recipe, moved from AWS-DataScience's images/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/dev-env" push origin main
+   ```
+
+   The same for `awsds/deploy-image`, from `gitlab/awsds/deploy-image/`. `./scripts/gitlab-mirror.py` then reads both back unchanged and writes `gitlab/mirror.json`. The seed's first `main` pipeline on `awsds/dev-env` fails at `pip-audit`, on the lock's 73 findings with a fixed version: the gate working, until the release's merge request.
+
+### The infrastructure mirror
+
+1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
+2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job clones with its job token, which carries the permissions of whoever ran the release gate. `awsds/deployment-managers` joins at pass 4.
+3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`.
+4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
+
+   ```bash
+   git remote add gitlab https://gitlab.awsds.internal/awsds/infrastructure.git
+   ```
+
+5. **The push**, `main` alone, in the same sitting as any merge the pipelines consume:
+
+   ```bash
+   git push gitlab main
+   ```
+
+   The registration job prints the commit it cloned, so a stale mirror shows in its log.
+
+### Stage 8 pass 3's session, in order
+
+1. `make hub-up`, then `make gitlab-up` from a checkout carrying `production/runners/`' runner profile (decision 14): this worktree until PR #131 merges.
+2. `gates-v0.3.0`: §G step 4 with this repository's four `ci-gates/` files, then the tag, and read its commit back.
+3. The seeds of `awsds/dev-env` and `awsds/deploy-image` (above), then `./scripts/gitlab-mirror.py`.
+4. Stage 8 step 1.0's owed reading: as the data-scientist persona, a Developer, create the tag `default-v0.0.0` on `awsds/dev-env`; GitLab must refuse it.
+5. The release's merge request, as the data-scientist persona, on a branch of `awsds/dev-env`: the lock moved past every finding it can leave, and the `include` moved to `gates-v0.3.0`'s commit. Its pipeline's `pip-audit` reads 8 accepted findings and none blocking.
+
+   ```bash
+   uv lock --directory dev-env/python --upgrade-package fsspec --upgrade-package jupyterlab --upgrade-package mako --upgrade-package multidict --upgrade-package notebook --upgrade-package oauthlib --upgrade-package pyjwt --upgrade-package setuptools --upgrade-package sqlparse --upgrade-package torch --upgrade-package torchvision --upgrade-package tornado --upgrade-package urllib3 --upgrade-package virtualenv --upgrade-package werkzeug
+   ```
+
+6. The mirror (above), once PR #131 has merged, since the registration job runs `scripts/devenv-register.py` from it. Then the steward merges the merge request and tags the release; [`dev-env.md`](dev-env.md) §B is the order around its gate.
+
 ## A. SAML
 
 Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) stays as the break-glass. The order:

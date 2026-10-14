@@ -19,7 +19,8 @@ baselines-shape:
 
       key = re.compile(r"^[A-Z][A-Z0-9]*-[0-9A-Za-z.:-]+\|[a-z0-9][a-z0-9.+_-]*$")
       bad = 0
-      for var in ("GATES_BASELINE_SAGEMAKER_DISTRIBUTION", "GATES_BASELINE_DEPLOY"):
+      for var in ("GATES_BASELINE_SAGEMAKER_DISTRIBUTION", "GATES_BASELINE_DEPLOY",
+                  "GATES_PIP_AUDIT_ACCEPTED_DEV_ENV"):
           entries = [line.split("#")[0].strip() for line in os.environ[var].splitlines()]
           entries = [e for e in entries if e]
           for e in entries:

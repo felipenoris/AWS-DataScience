@@ -1,7 +1,9 @@
-# baselines.gitlab-ci.yml - the CRITICAL and HIGH findings each image lineage carries with a person's
-# acceptance (Stage 8 decision 1). The scan gate in gates.gitlab-ci.yml lists each CRITICAL or HIGH finding
-# whose key is absent from its lineage's list, for the operator, and blocks nothing; a pipeline includes this
-# file beside that one, at the same commit, so a rule and the findings it admits move together.
+# baselines.gitlab-ci.yml - the findings each image lineage and each uv project carries with a person's
+# acceptance. The scan gate in gates.gitlab-ci.yml lists each CRITICAL or HIGH finding whose key is absent
+# from its lineage's list, for the operator, and blocks nothing (Stage 8 decision 1); the pip-audit gate
+# blocks on a vulnerability with a fixed version unless the project's list names it (decision 15). A
+# pipeline includes this file beside that one, at the same commit, so a rule and the findings it admits
+# move together.
 #
 # A line is `<finding>|<package>`, the key the gate compares. What follows `#` is for the reader: the
 # severity and the package version the scan read, which a rebuild may move without changing the key. A
@@ -162,3 +164,17 @@
       CVE-2026-5435|glibc          # HIGH 2.41-12+deb13u4
       CVE-2026-24882|gnupg2        # HIGH 2.4.7-21+deb13u1
       CVE-2026-85091|zlib          # HIGH 1.3.dfsg+really1.3.1-1
+    # pip-audit's accepted findings for the GitLab project awsds/dev-env, its own Python environment
+    # (dev-env/python/uv.lock), chosen by the project's path and never by the pipeline (decision 15).
+    # Each has a fixed version the environment cannot reach, because another of its packages requires the
+    # old one, named after the `;`. Read 2026-10-14 from the lock a targeted `uv lock --upgrade-package`
+    # leaves; proposed for the Dev Env Steward's acceptance.
+    GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: |
+      CVE-2026-104851|fsspec         # 2025.3.0, fixed in 2026.6.0; autogluon-multimodal 1.6.1 requires fsspec[http]<=2025.3
+      PYSEC-2026-3447|setuptools     # 81.0.0, fixed in 83.0.0; autogluon-core 1.6.1 requires setuptools<82
+      GHSA-27jp-wm6q-gp25|sqlparse   # 0.5.0, fixed in 0.5.4; amazon-sagemaker-sql-magic 0.1.3 requires sqlparse==0.5.0
+      PYSEC-2026-3696|sqlparse       # 0.5.0, fixed in 0.6.0; the same requirement
+      PYSEC-2026-3697|sqlparse       # 0.5.0, fixed in 0.6.0; the same requirement
+      PYSEC-2026-3698|sqlparse       # 0.5.0, fixed in 0.6.0; the same requirement
+      PYSEC-2026-3699|sqlparse       # 0.5.0, fixed in 0.6.0; the same requirement
+      PYSEC-2026-3923|sqlparse       # 0.5.0, fixed in 0.6.0; the same requirement

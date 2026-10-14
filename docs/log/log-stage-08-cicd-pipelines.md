@@ -715,3 +715,33 @@ Account ids are replaced by the account's name in angle brackets.*
 - **Owed**: a GitLab session in which the user pushes each folder's content to its project and the copy is
   refreshed from GitLab; then pass 3's chain (decisions 14 and 15 in code, the release pipeline, the
   registration job).
+
+## 2026-10-14 — pass 3's chain, written with the environment down
+
+- **[user] In chat**: the rest of pass 3 before the GitLab session.
+- **[Claude] Decision 14 in code**: the runner role's inline policy `registry-state` in `production/foundation/`
+  (`s3:ListBucket` on the key's prefix, `s3:GetObject` on `production/registry/terraform.tfstate`,
+  `kms:Decrypt` on the account's state key); the runner's own profile in `production/runners/`' AWS
+  configuration; `./scripts/gen-tfvars.py --pipeline` writes `awsds-prod-runner-deploy` for the registry
+  read, where the laptop's file names `awsds-infra-prod`. Read-only plans as the infrastructure user:
+  `production/foundation/` `1 to add, 1 to change` (the inline policy, the role's description), planned with
+  the alerts tfvars; `sandbox/dev-env/` `0 to add, 1 to change` (the image's description), the default tag
+  passing the new validation.
+- **[Claude] `scripts/devenv-register.py`**: dry runs in both modes print the generators, `init` with
+  `-lockfile=readonly`, a plan with `-var=image_tag=`, the apply of the saved plan and the version read
+  back; a tag without the rule's shape exits 2.
+- **[Claude] The targeted upgrade on the 3.12 lock**, in a scratch copy: 453 packages resolved, the same 13
+  moved as on the 3.13 lock, and the same 8 findings left. Their holders, read from PyPI's metadata:
+  `amazon-sagemaker-sql-magic` 0.1.3 requires `sqlparse==0.5.0`, `autogluon-multimodal` 1.6.1
+  `fsspec[http]<=2025.3`, `autogluon-core` 1.6.1 `setuptools<82`.
+- **[Claude] `gates-v0.3.0`**, in `ci-gates/`: the pip-audit job with the accepted list chosen by
+  `CI_PROJECT_PATH` and the audit-count guard, and `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` with the 8, proposed for
+  the steward. Exercised offline: the whole job on the laptop read 0 of 452 audited and failed, exit 1; its
+  summary on the 3.12 lock read 59 blocking lines and 14 accepted, exit 1; on the upgraded lock 0 blocking,
+  exit 0; with 460 pins against 452 audited it failed.
+- **[Claude] The release chain**, in the copy's `.gitlab-ci.yml`: `recipe-checks`, `build-images` (with the
+  smoke build), `scan-base`, `scan-dev-env`, `release-gate`, `register`; the smoke Dockerfile's `check` and
+  `manifests` stages; `dev-env/Dockerfile`'s `ARG BASE_REF`. Every pipeline file parses; `recipe-checks`
+  passes on the copy and fails a trailing comma in the managed settings.
+- **Owed**: the steward's acceptance of the 8 findings; the applies of `production/foundation/` and
+  `sandbox/dev-env/`; the GitLab session of runbook `gitlab.md` §M, with the pipeline linted in GitLab first.

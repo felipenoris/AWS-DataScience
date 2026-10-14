@@ -36,8 +36,15 @@ data "aws_caller_identity" "deploy_sandbox" {
   provider = aws.deploy_sandbox
 }
 
+# The account's state key, which delegates to IAM: the runner role's read of the registry's state
+# decrypts with it (decision 14).
+data "aws_kms_alias" "tfstate" {
+  name = "alias/awsds-${var.env}-tfstate"
+}
+
 locals {
   deploy_runner_name = "awsds-${var.env}-runner-deploy"
+  registry_state_key = "${var.account_folder}/registry/terraform.tfstate"
 
   deploy_anchor_tags = {
     CostCenter = "stage-08"
@@ -62,7 +69,7 @@ module "deploy_runner_role" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
 
   name        = local.deploy_runner_name
-  description = "GitLab deploy runner - assumes the deploy roles; reads its token, the CA root and the deploy image, and nothing else (Stage 8 step 4.3)"
+  description = "GitLab deploy runner - assumes the deploy roles; reads its token, the CA root, the deploy image and the registry's state, and nothing else (Stage 8 step 4.3, decision 14)"
 
   # A service role only the infrastructure user authors, as the build runner's is (Lesson 18).
   permissions_boundary = null
@@ -111,6 +118,36 @@ module "deploy_runner_role" {
           Effect   = "Allow"
           Action   = "ssm:GetParameter"
           Resource = "arn:${data.aws_partition.current.partition}:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/datascience/${var.env}/pki/ca-root-pem"
+        },
+      ]
+    })
+
+    # Decision 14: a deploy job reads production/registry/'s state (the repository URLs and ARNs a
+    # dev-env or application slice names) through the runner's own profile, since no other account's
+    # deploy role can read this account's state bucket. One object, read only.
+    "registry-state" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid      = "ListTheRegistryState"
+          Effect   = "Allow"
+          Action   = "s3:ListBucket"
+          Resource = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-tfstate"
+          Condition = {
+            StringEquals = { "s3:prefix" = local.registry_state_key }
+          }
+        },
+        {
+          Sid      = "ReadTheRegistryState"
+          Effect   = "Allow"
+          Action   = "s3:GetObject"
+          Resource = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-tfstate/${local.registry_state_key}"
+        },
+        {
+          Sid      = "DecryptTheRegistryState"
+          Effect   = "Allow"
+          Action   = "kms:Decrypt"
+          Resource = data.aws_kms_alias.tfstate.target_key_arn
         },
       ]
     })

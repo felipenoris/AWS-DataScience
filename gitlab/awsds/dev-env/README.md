@@ -32,23 +32,38 @@ made to prove it moved nothing else.
 2026-10-12 by the build runner's pipeline (below), is the first image that carries it — see
 [`base/ca-certificates/README.md`](base/ca-certificates/README.md).
 
-## Building them on the build runner
+## Releasing
 
-Since Stage 7 step 2.6 the images are built by a pipeline on the build runner
-(`terraform-live/production/runners/`, [`gitlab.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/gitlab.md) §K), not by hand.
-[`.gitlab-ci.yml`](.gitlab-ci.yml) builds this project's own commit.
+[`.gitlab-ci.yml`](.gitlab-ci.yml) is the release chain of AWS-DataScience's
+[Stage 8](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/stages/stage-08-cicd-pipelines.md) step 1. Every push runs the gates on the test
+runner, whose jobs hold no AWS identity: Secret Detection on a branch, `pip-audit` over `dev-env/python`,
+and `recipe-checks` (the `NO_PROXY` literal's shape, the managed settings parsing). A merge request is how
+a change arrives; Developers, the data scientists, open it, and Maintainers, the stewards, merge it.
 
-1. With `make gitlab-up` done and the runner linked to this project (§K step 3), **Build → Pipelines →
-   Run pipeline** on `main`, with `IMAGE_TAG` (the tag to spend, AWS-DataScience's `docs/SMUS.md`).
-2. The job builds `base` with the distribution pulled through the pull-through cache (`SMD_IMAGE`
-   overridden, the digest pin kept), pushes it, builds `dev-env` `FROM` it and pushes it, then builds
-   [`smoke/`](smoke/Dockerfile) `FROM` the new `dev-env` and discards it: curl, git and both Pythons read
-   `https://gitlab.awsds.internal` through the image's own trust configuration. Both digests close the job's
-   log; record them in the stage log.
+A release is a tag `<flavour>-v<semver>` on `main`, which only a Maintainer can create (the protected tag
+`*-v*`, the release's authorization in GitLab CE). On it:
 
-The push is the runner role's, through the credential helper the runner mounts into every job; the
-repositories are tag-immutable, so a failure after the base push is retried with `SKIP_BASE=1` on the same
-tag. Making the version selectable is [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md) §B.
+| Stage | Job | What it does | Runner |
+|---|---|---|---|
+| build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the key imports, and the manifests | build |
+| verify | `scan-base`, `scan-dev-env` | each push's own scan against the lineage's baseline in `awsds/ci-gates`; informative, a red one stops nothing | build |
+| release | `release-gate` | the steward's gate, a manual job the chain waits on; running it is the approval, and it keeps the evidence | test |
+| register | `register` | on the deploy runner: clones the infrastructure repository's mirror and applies every target's `dev-env/` slice with the new tag, which becomes a new SageMaker image version | deploy |
+
+The order around the gate is the steward's, in [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md) §B, and
+nothing in the chain checks it (decision 17):
+
+1. Read the evidence: `build-images`' `manifests/` (the package sets of both Pythons, R and Julia, the
+   runtimes, the proxy list's digest, the imports) and both scans.
+2. Delete the domain's apps and detach the image (§B steps 1 and 2).
+3. Run `release-gate`; `register` follows and prints the version it registered and its `ContainerImage`.
+4. Re-attach the image on the new version and sweep the spaces (§B steps 5 and 6).
+5. Record the release: the tag in AWS-DataScience's `terraform-live/sandbox/dev-env/variables.tf` and a row
+   below.
+
+A tag is spent on first landing. When `base` landed and `dev-env` did not, run the pipeline again on the
+same tag with `SKIP_BASE=1`: `dev-env` then names the base by its tag, the same bytes in a tag-immutable
+repository, and `scan-base` fails for want of a digest, which stops nothing.
 
 ## Before a build
 

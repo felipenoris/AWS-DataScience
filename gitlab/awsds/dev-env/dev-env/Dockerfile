@@ -27,14 +27,15 @@
 # Build (after base, amd64), from the project root:
 #   docker buildx build --platform linux/amd64 -t awsds/dev-env:local dev-env
 
-ARG BASE_IMAGE=awsds/base
-ARG BASE_TAG=local
-FROM ${BASE_IMAGE}:${BASE_TAG}
+# The base, by reference. The release pipeline names it by digest, the base it pushed a moment
+# earlier (AWS-DataScience's Stage 8 step 1.1), so the provenance records the bytes and not a name;
+# a local build names the tag it built.
+ARG BASE_REF=awsds/base:local
+FROM ${BASE_REF}
 
-# Re-declared for the same reason base/Dockerfile re-declares its three: an ARG stated
-# before FROM does not survive it, and both are read back in section 5.
-ARG BASE_IMAGE
-ARG BASE_TAG
+# Re-declared for the same reason base/Dockerfile re-declares its three: an ARG stated before FROM
+# does not survive it, and it is read back in section 5.
+ARG BASE_REF
 
 # ------------------------------------------------------------------------------- the pins
 #
@@ -265,7 +266,7 @@ RUN set -eu; \
 # The three runtimes are read back here so that a build log carries them, and so that Stage 8
 # step 1.2's smoke test has an in-image equivalent to assert against.
 RUN set -eu; \
-    { echo "base image      : ${BASE_IMAGE}:${BASE_TAG}"; \
+    { echo "base image      : ${BASE_REF}"; \
       echo "python (base)   : $(python --version 2>&1)"; \
       echo "python (awsds)  : $(${AWSDS_PYTHON_ENV}/bin/python --version 2>&1) at ${AWSDS_PYTHON_ENV}"; \
       echo "uv              : $(uv --version)"; \

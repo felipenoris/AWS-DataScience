@@ -6,24 +6,35 @@
 # GitLab's half makes it the deploy runner: a protected project runner of awsds/app-etl and
 # awsds/dev-env, tag `awsds-deploy`, no untagged jobs (runbook K). This half: its jobs run the deploy
 # image by digest and no other image, and every job carries an AWS configuration whose profiles are the
-# deploy roles, each assumed with the instance's credentials two hops away (hop limit 2). No credential
-# is written down, and nothing is exported into a job's shell (Lesson 25).
+# deploy roles, each assumed with the instance's credentials two hops away (hop limit 2), and the
+# runner's own role. No credential is written down, and nothing is exported into a job's shell
+# (Lesson 25).
 
 locals {
   deploy_runner_name = "awsds-${var.env}-runner-deploy"
   deploy_image       = var.deploy_image_digest == null ? null : "${data.terraform_remote_state.registry.outputs.ecr_deploy_repository_url}@${var.deploy_image_digest}"
 
-  # One profile per deploy role, named after it.
-  deploy_aws_config = join("\n", [
-    for arn in values(data.terraform_remote_state.foundation.outputs.deploy_role_arns) : join("\n", [
-      "[profile ${reverse(split("/", arn))[0]}]",
-      "role_arn = ${arn}",
+  # One profile per deploy role, named after it, and the runner's own, named after its role: the
+  # instance's credentials with no role to assume, for the registry's state its role reads (Stage 8
+  # decision 14, the profile `gen-tfvars.py --pipeline` writes).
+  deploy_aws_config = join("\n", concat(
+    [
+      for arn in values(data.terraform_remote_state.foundation.outputs.deploy_role_arns) : join("\n", [
+        "[profile ${reverse(split("/", arn))[0]}]",
+        "role_arn = ${arn}",
+        "credential_source = Ec2InstanceMetadata",
+        "region = ${var.region}",
+        "sts_regional_endpoints = regional",
+        "",
+      ])
+    ],
+    [join("\n", [
+      "[profile ${local.deploy_runner_name}]",
       "credential_source = Ec2InstanceMetadata",
       "region = ${var.region}",
-      "sts_regional_endpoints = regional",
       "",
-    ])
-  ])
+    ])],
+  ))
 }
 
 resource "aws_instance" "deploy_runner" {
