@@ -215,7 +215,7 @@ full recompute to Stage 12 step 5. The levers: fewer keys; rotation disabled on 
 because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a policy edit
 that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
-| AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 → **billed ~0.5** | 2.50-5.00 |
+| AWS Config, every governed account (**Management is the one not recorded — confirmed 2026-08-14**, verification (xiii)) | 0.003 USD/item | 0.003 USD/item | 2.50-5.00 | 2.50-5.00 → billed ~0.5 (2026-08) → **billed 10.88 (2026-09)**, nearly all of it `[E]` cycles, priced per cycle in §3 |
 | Route 53 **private** hosted zones (**5 at N=1 since 6c** — the `awsds.internal` apex, its `sandbox.`/`staging.`/`prod.` children and `awsds-pages.internal`; **6 today**, `sandbox.internal` standing until 6c step 6.5; `prod.internal`/`pages.internal` destroyed 2026-09-07. Before 6c: 3) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | **3.00 today, 2.50 steady** | idem |
 | Route 53 **public** hosted zone (D15 phase 2 — **Stage 13 only**) | 0.50 USD/zone-mo (global) | 0.50 USD/zone-mo | 0 → 0.50 | 0 → 0.50 |
 | Public domain registration (D15 phase 2 — **Stage 13 only**) | registrar, region-independent | idem | 0 → ~1.00 | 0 → ~1.00 |
@@ -246,6 +246,21 @@ the measurement, and Stage 12 step 5 re-reads it after Stages 2-3 rather than ac
 state. `recordingFrequency: DAILY` is not the cheaper mode at this change rate (priced in §4): USD 0.012
 per item-day against USD 0.003 per change puts the break-even at four changes per resource per day.
 
+The second Config reading from the bill, 2026-10-14: **USD 10.88 in September** across the accounts with
+a CLI profile (Cost Explorer read from each, `USW2-ConfigurationItemRecorded` the only usage type): Sandbox
+7.27, Production 3.13, Staging 0.33, Data Governance 0.11, Identity 0.02, Policy Canary 0.02. Log Archive
+and Audit hold no profile and are unread. Every recorder is `aws-controltower-BaselineConfigRecorder`,
+`CONTINUOUS`, all supported types, no exclusion. The churn the first reading anticipated is the `[E]` layer:
+Sandbox recorded 1,816 items from 2026-09-14 to 10-13 (CloudWatch `AWS/Config`
+`ConfigurationItemsRecorded` by `ResourceType`), **1,487 of them inside the eight `sandbox/egress` cycles**
+that CloudTrail's `CreateVpcEndpoint`/`DeleteVpcEndpoints` bound, and a day without a session records 0-4.
+Five types are 71% of the window: `AWS::EC2::NetworkInterface` 510, `AWS::EC2::VPCEndpoint` 331,
+`AWS::EC2::SecurityGroup` 176, `AWS::EC2::Subnet` 157, `AWS::EC2::VPC` 123, with
+`AWS::Config::ResourceCompliance` 279 beside them. A VPC that never changes records 123 items because each
+ENI created or deleted changes the relationship list of its VPC, subnet and security group. Production's
+742 items in the same window follow the same shape (`ResourceCompliance` 172, ENI 148, endpoint 138,
+instance 76). The per-cycle figure is §3's.
+
 Two corrections on 2026-08-08. The "Staging, Development, Data Governance at rest" row double-counted a
 Config recorder and a KMS key for those accounts — the Config row already covers every governed account —
 so ~USD 3 came out. The KMS row predated D20-D22: there is one customer-managed key per Terraform-managed
@@ -269,6 +284,7 @@ the real bill.
 | — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). B's own premise requires it; `VpcOnly` does not (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
 | — Staging **11** / `VPC-SharedServices` **13** / `VPC-Workloads` **0** (6c step 5.5 counts; the third is a written refusal, not an omission) | 0.231 / 0.273 / 0 | **0.110 / 0.130 / 0** | 2.10 |
+| AWS Config per Sandbox `[E]` cycle — **not hourly**: one `make up` + `make down` of `sandbox/egress` records 120-290 items, whatever the time between, 63-90% of them the endpoints, their ENIs, and the subnets, VPC and security groups those ENIs relate to (eight cycles measured 2026-09-14..10-12, §2) | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | **1.00** |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
 | The image build host `m8i.xlarge` (Stage 7's build runner `production/runners/`, `[E]`; the buildbox before it) — **measured 2026-09-11**, the family the 02:50-03:15 UTC build moved it to: the build saturated four burstable vCPUs while the proxy sat at 2.70% | 0.3374 | **0.2117** | 1.59 |
@@ -288,7 +304,8 @@ the real bill.
 
 **Typical Sandbox hour, as built** (6c, 2026-09-07, `us-west-2`): 18 endpoints 0.180 + one `ml.t3.medium`
 app 0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, with no per-GB NAT charge —
-an EC2 proxy bills nothing per gigabyte. The comparison 6c closed, kept as the record — typical Sandbox
+an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a four-hour session
+pays about 1.00 in hours and 0.36-0.87 in Config, and two short sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
 hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
 **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
 (`datazone`, Stage 6 step 4.2) from 2026-08-21; design A came back down on 2026-08-25 when it was removed,
@@ -937,8 +954,8 @@ an `AWS::Config::ResourceCompliance` item from day one.
 
 ## 11. What this file does not price
 
-Anything whose volume is unknown until the environment runs: Config configuration items during a heavy
-`terraform apply`, CloudTrail data events under a Spark job, GuardDuty log volume, Macie GB inspected,
+Anything whose volume is unknown until the environment runs: Config configuration items during a large
+`[P]` build-out (an `[E]` cycle is priced in §3), CloudTrail data events under a Spark job, GuardDuty log volume, Macie GB inspected,
 Athena TB scanned, inter-AZ traffic driven by the AZ-mapping question in
 `docs/plan/open-questions.md` item 3, and the domain registration itself (registrar price, per TLD). Stage 12
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
