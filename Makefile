@@ -30,8 +30,9 @@
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
 # copied), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc,
 # check-plan-refs (the plan's relative links, stable IDs and the two size budgets),
-# check-identifiers (no account id or e-mail in a tracked file) and check-provider-locks (6.3: three
-# platforms in every committed lock file).
+# check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
+# platforms in every committed lock file) and check-sg-descriptions (no security group or rule
+# description EC2 refuses at apply).
 
 SHELL := /bin/bash
 
@@ -52,7 +53,7 @@ help:
 	@printf '  check       Stage 2 step 9, offline - what a commit must pass: conventions,\n'
 	@printf '              wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the\n'
 	@printf '              policy index, the network doc, the plan references, account ids\n'
-	@printf '              and e-mails, provider locks\n'
+	@printf '              and e-mails, provider locks, security group descriptions\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
@@ -176,7 +177,8 @@ check:
 	         "./scripts/check-network-doc.py" \
 	         "./scripts/check-plan-refs.py" \
 	         "./scripts/check-identifiers.py" \
-	         "./scripts/check-provider-locks.py"; do \
+	         "./scripts/check-provider-locks.py" \
+	         "./scripts/check-sg-descriptions.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
 	done; \

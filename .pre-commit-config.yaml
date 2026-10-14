@@ -179,6 +179,18 @@ repos:
         pass_filenames: false
         files: (\.terraform\.lock\.hcl|versions\.tf)$
 
+      # 2026-10-14 - EC2 takes a group or rule description from one character set, and `validate`
+      # holds only the inline blocks and aws_security_group_rule to it. A refused description on
+      # the group itself or on an aws_vpc_security_group_*_rule fails at apply, after the resources
+      # ahead of it exist: sandbox/app/app-etl/'s first apply stopped there on an apostrophe. The
+      # hook fires on the script and its HCL reader too, so a change to either runs before it lands.
+      - id: check-sg-descriptions
+        name: security group and rule descriptions EC2 accepts
+        entry: ./scripts/check-sg-descriptions.py
+        language: system
+        pass_filenames: false
+        files: (\.tf|scripts/check-sg-descriptions\.py|scripts/tfhygiene/hcl\.py)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov
