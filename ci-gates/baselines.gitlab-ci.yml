@@ -1,7 +1,7 @@
 # baselines.gitlab-ci.yml - the CRITICAL and HIGH findings each image lineage carries with a person's
-# acceptance (Stage 8 decision 1). The scan gate in gates.gitlab-ci.yml blocks on a CRITICAL or HIGH finding
-# whose key is absent from its lineage's list; a pipeline includes this file beside that one, at the same
-# commit, so a rule and the findings it admits move together.
+# acceptance (Stage 8 decision 1). The scan gate in gates.gitlab-ci.yml lists each CRITICAL or HIGH finding
+# whose key is absent from its lineage's list, for the operator, and blocks nothing; a pipeline includes this
+# file beside that one, at the same commit, so a rule and the findings it admits move together.
 #
 # A line is `<finding>|<package>`, the key the gate compares. What follows `#` is for the reader: the
 # severity and the package version the scan read, which a rebuild may move without changing the key. A

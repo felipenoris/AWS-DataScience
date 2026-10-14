@@ -42,7 +42,7 @@ serves the documentation the default branch publishes to Pages.
 |---|---|---|
 | any branch | `test` (`uv sync --locked`, ruff, pytest), `secret_detection` and its gate, `pip-audit` | the test runner, no AWS identity |
 | `main` | the same, and `pages` | the test runner |
-| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate` | the test runner, then the build runner |
+| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on | the test runner, then the build runner |
 
 A release is a tag `v<major>.<minor>.<patch>` on `main`, which only a Maintainer can create: the tag is
 protected, and that protection is the release gate. ECR's tags are immutable, so a second pipeline for

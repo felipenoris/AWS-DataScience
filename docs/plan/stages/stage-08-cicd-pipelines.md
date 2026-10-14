@@ -175,7 +175,8 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   Scan-on-push fires on arrival; **nothing consumes the digest yet** — selectability is created only in
   1.6, which is what the approval gates.
 - **1.4 — [Claude] Write the scan gate**: `aws ecr wait image-scan-complete` (a bounded waiter, 5 s × 60,
-  with a `FAILED` acceptor), then `describe-image-scan-findings`, **blocking on decision 1's rule**. It
+  with a `FAILED` acceptor), then `describe-image-scan-findings`, **reporting on decision 1's rule**,
+  informative since its amendment (2026-10-14). It
   **reads the push's own scan and never triggers another** — basic scanning allows one scan per image per
   24 h — and it covers **OS packages only**; the language-package half is step 5's `pip-audit`. **The two
   compose to OS + Python and no further**: 6a's first `base` and `dev-env` scanned to **identical**
@@ -534,9 +535,10 @@ the approval, and 4.6's alarm.
 
 ### 5. Security gates — written once, included by every pipeline (Lesson 12)
 
-**Action:** the blocking gates, one file included by the three pipelines from the GitLab project
+**Action:** the gates, one file included by the three pipelines from the GitLab project
 `awsds/ci-gates` (decision 10). **Why:** a gate that only warns is documentation, not a gate — each finding
-class gets a named tool and a named blocking rule, and the tier of every tool was checked (Lesson 12). **Explanation:** GitLab **Dependency Scanning is Ultimate** and
+class gets a named tool and a named blocking rule, and the tier of every tool was checked (Lesson 12). The
+ECR scan gate is the exception the user chose: it informs since decision 1's amendment (2026-10-14). **Explanation:** GitLab **Dependency Scanning is Ultimate** and
 its analyzer is not available to this CE instance — the dependency gate is **`pip-audit`** (PyPA) in an
 ordinary job; **Secret Detection is Free** (a template include); the ECR gate (1.4) covers **OS packages
 only** — `pip-audit` covers the Python dependencies, and the two compose rather than substitute.
@@ -550,8 +552,9 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   uv lock pins, exported with `--locked` in one step and audited from the hashed export in the next,
   blocking on a vulnerability with a fixed version; `checkov 3.3.11` over the Terraform directories a
   pipeline names; and `.gates-ecr-scan`, which waits for the push's own basic scan under a 900 s bound and
-  blocks on a CRITICAL or HIGH finding absent from the lineage's baseline, chosen by the repository the
-  image was pushed to. `baselines.gitlab-ci.yml` seeds the SageMaker Distribution lineage from
+  lists each CRITICAL or HIGH finding absent from the lineage's baseline, chosen by the repository the
+  image was pushed to; since `gates-v0.2.0` the job may fail without stopping the pipeline (decision 1, as
+  amended). `baselines.gitlab-ci.yml` seeds the SageMaker Distribution lineage from
   `default-v0.6.0` (HIGH 130, 121 of them `linux-libc-dev`) and the deploy lineage from `v0.1.0` (the two
   curl CRITICALs the user accepted by name, HIGH 8). Offline, with a stand-in `aws` serving the real scans:
   both seeds pass; Stage 7's alpine image in `app-etl` fails on `CVE-2026-85091|zlib`; a baseline missing
@@ -568,7 +571,7 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   findings as artifacts; the richer dashboards are Ultimate and are not pretended.
 - **5.4 — [Claude] Extract 1.4's ECR scan gate as the shared job** both image pipelines include.
 - **5.5 — [user] Decide and record the blocking rule** — decision 1, written into the gate file and the
-  log, not left to each pipeline's author.
+  log, not left to each pipeline's author. Amended 2026-10-14: the ECR scan informs.
 - **5.6 — [Claude] Write the D28 workflow lint**, with the rules [6d](stage-06d-unified-studio-remainder.md)
   step 4 and [6i](stage-06i-sandbox-orchestration.md) supply. It refuses a workflow definition that:
   - **(a) carries a project-scoped reference** — a connection, a path or an id that exists only in the
@@ -723,6 +726,10 @@ Measured (`docs/PRICING.md`), us-west-2:
    `default-v0.6.0`'s, which holds no CRITICAL, so every CRITICAL blocks until someone writes it into the
    baseline by name; warn on the rest; for `pip-audit`, block on a known vulnerability with a fixed version
    available. Tightened against real findings rather than set maximally strict and then overridden ad hoc. **Taken by the user 2026-10-12, as recommended.**
+   **Amended by the user 2026-10-14: the ECR scan gate informs and blocks no deployment**; the operator
+   reads its findings in the job's log. The first application release met 593 `linux-libc-dev` findings
+   past the baseline, from two days of the vulnerability source on an unchanged package set. `pip-audit`,
+   Secret Detection and `checkov` still block.
 2. **The infrastructure-repository mirror for the deploy jobs** (6.1) — recommended: **dual-push from the
    laptop**, no standing mirror machinery; revisit only if staleness actually bites (the printed SHA is
    the instrument). **Taken by the user 2026-10-12, as recommended.**
@@ -839,7 +846,8 @@ Record every answer, including the ones that come out fine.
 - **A blueprint reconciliation may undo the attachment** (INT-17's open half) — verification (vii)'s
   diff is the instrument; the fallback chain is INT-17's row.
 - **The scan gate meets debt it did not create**: the inherited CVEs make a severity-only rule either
-  block everything or pass everything (decision 1).
+  block everything or pass everything (decision 1). Measured 2026-10-14: two days of the vulnerability
+  source put 593 `linux-libc-dev` findings past the baseline, and the user made the gate informative.
 - **A stale infrastructure mirror deploys yesterday's slice** — the printed SHA (6.1) makes it visible in
   the pipeline evidence; the dual-push sits in the same sitting as the change.
 - **A stopped proxy reads as a hang on the pipeline path**: the hub check is waived from the runner, so

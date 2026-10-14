@@ -8,7 +8,7 @@
 #       ref: <commit>                  # gates-v<semver>
 #       file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
 #
-# What an including pipeline gets, each job blocking on its own rule (decision 1):
+# What an including pipeline gets, each job on its own rule (decision 1):
 #
 #   secret_detection        every branch pipeline: GitLab's Secret Detection template (Free), its analyzer
 #   secret-detection-gate   pinned by digest; the template's job never fails on a finding, so the gate
@@ -19,8 +19,10 @@
 #   checkov                 every pipeline that names Terraform directories in GATES_CHECKOV_DIRS; a failed
 #                           check blocks (5.1).
 #   .gates-ecr-scan         a template for the job after an image push: it waits for the push's own basic
-#                           scan and never starts one (one scan per image per 24 h), then blocks on a
-#                           CRITICAL or HIGH finding absent from the lineage's baseline (1.4, 5.4).
+#                           scan and never starts one (one scan per image per 24 h), then lists each
+#                           CRITICAL or HIGH finding absent from the lineage's baseline (1.4, 5.4). It is
+#                           informative: the job may fail and the pipeline goes on, so the operator reads
+#                           its log before a deployment.
 #
 # The first four run on the test runner (tag awsds-test), whose jobs hold no AWS identity (decision 11).
 # The scan gate is untagged, so it runs on the build runner, whose role reads the scan; a pipeline gives it
@@ -171,6 +173,10 @@ checkov:
 # image inherits its findings from. The region comes from ECR_REGISTRY, which the runner sets.
 .gates-ecr-scan:
   extends: .gates-baselines
+  # Decision 1, as the user amended it on 2026-10-14: the scan informs and never blocks a deployment. Any
+  # failure is allowed, a finding outside the baseline and a scan that could not be read alike, and the
+  # job's log says which.
+  allow_failure: true
   image:
     name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
     entrypoint: [""]
@@ -231,14 +237,15 @@ checkov:
           "$(head -n 5 scan-gate/gone.txt | tr '\n' ' ')"
       fi
       if [ -s scan-gate/new.txt ]; then
-        echo "FAIL: $(( $(wc -l < scan-gate/new.txt) )) CRITICAL or HIGH finding(s) absent from the baseline:"
+        echo "WARN: $(( $(wc -l < scan-gate/new.txt) )) CRITICAL or HIGH finding(s) absent from the baseline, for the operator to read:"
         while IFS='|' read -r name pkg; do
           jq -r --arg n "$name" --arg p "$pkg" '.imageScanFindings.findings[]
             | select(.name == $n and ([.attributes[]? | select(.key == "package_name") | .value][0]) == $p)
             | "   \(.severity) \(.name) \($p) \([.attributes[]? | select(.key == "package_version") | .value][0] // "?") \(.uri // "")"' \
             scan-gate/findings.json
         done < scan-gate/new.txt
-        echo "   A finding enters the baseline by name, in a reviewed commit to awsds/ci-gates (decision 1)."
+        echo "   The job fails and the pipeline goes on (decision 1). An accepted finding enters the baseline by"
+        echo "   name, in a reviewed commit to awsds/ci-gates, and leaves this list."
         exit 1
       fi
       echo "== passed: every CRITICAL and HIGH finding is in the $lineage baseline"

@@ -444,7 +444,7 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
 
 4. **Merge it into `main`** through a merge request. `main`'s pipeline adds `pages`, published at `$CI_PAGES_URL` (**Deploy → Pages**).
 
-5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner:
+5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner; the scan gate informs, so its failure leaves the pipeline going (Stage 8 decision 1):
 
    ```bash
    git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull
