@@ -454,3 +454,25 @@ Account ids are replaced by the account's name in angle brackets.*
 - **Owed**: GitLab's half (`awsds/ci-gates`, its tag and commit; the test runner's registration and its
   token; `app-etl`'s roles, protected tag and push), then `production/runners/` and `sandbox/app/app-etl/`
   in a GitLab session, the first release and verification (xviii).
+
+## 2026-10-14 — the GitLab session opens, and `s3-bucket-v0.4.0`
+
+- **[user] In chat**: signed in as the infrastructure user, ran `make hub-up` and
+  `make gitlab-up RUNNERS=0`, and approved `s3-bucket-v0.4.0` for `awsds-sandbox-outputs`'s `CostCenter`,
+  its apply in the Sandbox sitting.
+- **[Claude] What is up**: `make status ENV=production` read `vpn` and `proxy` `UP` (0.0052 and
+  0.0104 USD/h), `tooling` `UP` (0.0672), `egress` `UP` with 12 resources (0.1200) and `runners` down,
+  an estimated burn of 0.2028 USD/h. The one peer session on this machine, idle, was told.
+- **[Claude] `s3-bucket-v0.4.0`, by Recipe B**: the module gains a `tags` input on its bucket, in commit
+  `6b23d60` alone. `git ls-remote` read `v0.1.0` to `v0.3.0` on origin before the tag, and
+  `s3-bucket-v0.4.0` at `6b23d601…` after the push. The caller commit `3a7e805` moves `sandbox/data/`'s
+  `outputs_bucket` to it with `CostCenter = "stage-08"`; the hook refused its first attempt with
+  `Module source has changed`, since the slice's `.terraform/` still recorded `v0.3.0`, and the slice's
+  own init cleared it (`terraform-changes.md` §7).
+- **[Claude] The plan of `sandbox/data/`**, read-only as `awsds-infra-sandbox-1`, against the local module
+  and again against the pushed tag: `0 to add, 1 to change, 0 to destroy`, the bucket's `tags_all`
+  `CostCenter` from `stage-05` to `stage-08`, the other four tags unchanged. The plan file is saved outside
+  the repository.
+- **[Claude] `gitlab.md` §K, "The application template"**: the push that replaces `awsds/app-etl`'s files
+  with `examples/app-etl/`, written before it runs.
+- **Owed**: the previous entry's list, and `sandbox/data/`'s tag apply.
