@@ -240,8 +240,8 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   runs the job's command as the image's user, `RUN --network=none`, on an output directory owned by root
   with mode 755, opening with the job's `sudo -n chown` (decision 8): the SageMaker Distribution writes
   `ALL ALL=(ALL) NOPASSWD: ALL` into `/etc/sudoers` (its v4.5 template, read 2026-10-13), so base and every
-  image `FROM` it keep passwordless sudo. The `.gitlab-ci.yml` includes `awsds/ci-gates` at `gates-v0.1.0`'s
-  commit, `9ae8f1b4…`, pushed 2026-10-14; tests, ruff and the gates run on the test runner on every push, Pages on `main`, and on a
+  image `FROM` it keep passwordless sudo. The `.gitlab-ci.yml` includes `awsds/ci-gates` at `gates-v0.2.0`'s
+  commit, `a335f37f…`, pushed 2026-10-14 after `gates-v0.1.0` (`9ae8f1b4…`) built the first release; tests, ruff and the gates run on the test runner on every push, Pages on `main`, and on a
   tag `v<semver>` BuildKit `v0.34.0-rootless` by digest builds `smoke`, then pushes `app` as
   `v<semver>-<short sha>` and hands the digest to the scan gate as a dotenv report; a manual job measures
   verification (xiii). Offline: ruff clean, 7 tests pass.
