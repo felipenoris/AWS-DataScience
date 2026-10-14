@@ -541,3 +541,31 @@ Account ids are replaced by the account's name in angle brackets.*
   Verification (xiii) is answered yes on both halves.
 - **Owed**: the merge into `main` (Pages) and the tag `v0.1.0` (`build-image`, `scan-gate`, verification
   (iv)), then the Sandbox sitting.
+
+## 2026-10-14 — the first release `v0.1.0`, blocked by the scan gate
+
+- **[user]** Merged `application-template` into `main` (pipeline #14) and tagged `v0.1.0` on `d7e093a9`
+  (pipeline #15).
+- **[Claude] Pipeline #14**, on `main`, every job `success` on the test runner: `secret_detection` 9 s,
+  `secret-detection-gate` 8 s, `pip-audit` 17 s, `test` 12 s, `pages` 13 s, with `gate-without-proxy` left
+  manual. The Pages deployment of 16:45:06Z is at `https://app-etl-ffa1fa.awsds-pages.internal`, which
+  served pdoc's `app_etl` page in the user's browser.
+- **[Claude] Pipeline #15**, on `v0.1.0`: `test` 12 s and `pip-audit` 16 s on the test runner, then
+  `build-image` 217 s on `awsds-prod-runner`, its BuildKit pulling base from ECR in about 45 s. The push,
+  `v0.1.0-d7e093a9` at 16:49:28Z: `sha256:33f76dec8bf7b7be760db1daf575c388172e49862381f66f8032b534bce5280d`,
+  3,796,518,899 bytes.
+- **[Claude] The push's basic scan** completed at 16:55:12Z, 5 min 44 s after the push, its vulnerability
+  source dated the same instant: CRITICAL 113, HIGH 610, MEDIUM 154, LOW 4, UNDEFINED 436, in 1,317 findings.
+  Every CRITICAL and 601 of the HIGH are `linux-libc-dev` 6.8.0-142.142. The image's package and version set
+  equals `base` `default-v0.6.0`'s scan of 2026-10-12 (CRITICAL 0, HIGH 130), so the difference is two days
+  of the vulnerability source, not the build.
+- **[Claude] `scan-gate` failed after 368 s**, as decision 1 writes it: "CRITICAL and HIGH: 723 found, 130 in
+  the baseline" and "FAIL: 593 CRITICAL or HIGH finding(s) absent from the baseline", 113 CRITICAL and 480
+  HIGH, every one `linux-libc-dev`. The 130 baseline entries were all found again. Verification (iv)'s first
+  half is answered; its re-scan half is not exercised.
+- **[Claude] A wait loop of my own never exited**: `describe-image-scan-findings --query
+  imageScanStatus.status --output text` on 1,317 findings paginates, and the CLI prints the field once per
+  page, `COMPLETE` and then `None` for every later page, so the output never equalled `COMPLETE`. The gate
+  reads the merged JSON with `jq` and is not affected.
+- **Owed**: the user's decision on the `linux-libc-dev` findings (decision 1), a release whose gate passes,
+  then the Sandbox sitting.
