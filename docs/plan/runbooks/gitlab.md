@@ -280,7 +280,7 @@ Every `make gitlab-up` then boots a new instance that waits up to ten minutes fo
 - `ECR_REGISTRY`, this account's registry host;
 - `/usr/local/bin/docker-credential-ecr-login`, mounted read-only from the host: Amazon's ECR credential helper, pinned by digest in `runners/variables.tf`. A job writes `{"credHelpers":{"<ECR_REGISTRY>":"ecr-login"}}` into `~/.docker/config.json`, and every pull and push on that registry signs in as the instance role, whose credentials the helper reads from the metadata service two hops away. The build image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own.
 
-**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`, and Stage 8 step 2.2 replaces them with the application template, [`examples/app-etl/`](../../../examples/app-etl/README.md), whose pipeline includes §G's gates; what follows is the first pipeline's record. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
+**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`, and Stage 8 step 2.2 replaces them with the application template, [`examples/app-etl/`](../../../examples/app-etl/README.md), whose pipeline includes §G's gates (the procedure: "The application template" below); what follows is the first pipeline's record. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
 
 `Dockerfile`, the image: its base comes through the cache, its `RUN` through the proxy:
 
@@ -400,6 +400,62 @@ Access control answers an unauthenticated read with `302` to `https://projects.a
 
 If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
 
+### The application template
+
+Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples/app-etl/`](../../../examples/app-etl/README.md). Three things come first: `awsds/ci-gates` tagged (§G), its commit in the template's `include:` `ref`, and the test runner registered (below). The commands run on the laptop with the tunnel up and git trusting the root (§C step 3), from a checkout of this repository that carries that `ref`.
+
+1. **Clone the project and branch off `main`**:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/app-etl.git "$HOME/tmp/app-etl"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" switch -c application-template
+   ```
+
+2. **Swap the files**: the project's tracked files go and the template's tracked files arrive, so nothing untracked comes along (`.venv/`, an `out/`). The archive is written to a file and then extracted, in two steps, so a failed `git archive` cannot hand `tar` an empty input:
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" rm -q -r .
+   ```
+
+   ```bash
+   git archive --format=tar -o "$HOME/tmp/app-etl-template.tar" HEAD:examples/app-etl
+   ```
+
+   ```bash
+   tar -x -f "$HOME/tmp/app-etl-template.tar" -C "$HOME/tmp/app-etl"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" add -A
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" commit -m "The application template, in place of the first pipeline (Stage 8 step 2.2)"
+   ```
+
+3. **Push the branch**. Its pipeline runs `test`, `secret_detection` with its gate and `pip-audit`, all on the test runner, and offers the manual `gate-without-proxy` (verification xiii):
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" push -u origin application-template
+   ```
+
+4. **Merge it into `main`** through a merge request. `main`'s pipeline adds `pages`, published at `$CI_PAGES_URL` (**Deploy → Pages**).
+
+5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner:
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" tag v0.1.0 && git -C "$HOME/tmp/app-etl" push origin v0.1.0
+   ```
+
+   The `image` job's last line, `== pushed <reference>@sha256:…`, carries the digest that `terraform-live/sandbox/app/app-etl/release.tf` records (Stage 8 step 2.4).
+
 ### The deploy runner
 
 The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
@@ -421,7 +477,7 @@ A runner created twice leaves the first one in GitLab with no manager; it is del
 - `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
 - `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
 
-**The probe** (Stage 8 verifications ii and iii): `awsds/app-etl`'s `.gitlab-ci.yml` carries `deploy-runner-probe`, tag `awsds-deploy`, created only in a pipeline that sets `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the five jobs of the first pipeline above each open their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe runs alone. On `main` it prints the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stays `pending` under GitLab's stuck notice, which is the protection working, and is cancelled by hand.
+**The probe** (Stage 8 verifications ii and iii, answered 2026-10-13) was `deploy-runner-probe`, a job of the first pipeline's `.gitlab-ci.yml`, tag `awsds-deploy`, created only in a pipeline that set `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the first pipeline's five jobs each opened their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe ran alone. On `main` it printed the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stayed `pending` under GitLab's stuck notice, which is the protection working, and was cancelled by hand. It leaves `main` with the first pipeline's files (the application template above), and `awsds/app-etl`'s history keeps it.
 
 The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
 
@@ -449,7 +505,7 @@ The first boot reads the control it exists for, from a container: `no token from
 1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `ci-gates`, visibility **Private**, no README.
 2. **Members**: **Manage → Members → Invite a group**: `awsds/data-scientists`, `awsds/deployment-managers`, `awsds/dev-env-stewards` and `awsds/governance-managers` as **Reporter**. `include:project` resolves with the permissions of whoever starts the pipeline, so a persona that cannot read this project cannot run a pipeline that includes it. Only Maintainers change it.
 3. **Protection**: **Settings → Repository → Protected branches**: `main`, allowed to push and merge **Maintainers**; **Protected tags**: `gates-v*`, allowed to create **Maintainers**.
-4. **Push the files**, from a clone on the laptop with the tunnel up and git trusting the root (§C step 3):
+4. **Push the files**, from a clone on the laptop with the tunnel up and git trusting the root (§C step 3); the `cp` runs from a checkout of this repository that carries `ci-gates/`:
 
    ```bash
    git clone https://gitlab.awsds.internal/awsds/ci-gates.git "$HOME/tmp/ci-gates"
