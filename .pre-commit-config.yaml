@@ -179,6 +179,16 @@ repos:
         pass_filenames: false
         files: (\.terraform\.lock\.hcl|versions\.tf)$
 
+      # GitLab refuses a pipeline at creation when a job is named after a global keyword or a
+      # `needs:` names a job the pipeline lacks, and its CI Lint answers only through the VPN. Every
+      # YAML file triggers it, since a `local:` include may carry any name.
+      - id: check-gitlab-ci
+        name: no GitLab CI job named after a global keyword, no need on a missing job
+        entry: ./scripts/check-gitlab-ci.py
+        language: system
+        pass_filenames: false
+        files: (\.ya?ml|scripts/check-gitlab-ci\.py)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov
