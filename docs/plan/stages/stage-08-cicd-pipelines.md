@@ -367,6 +367,16 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   - **refusal 8: no pipeline profile applies a `sandbox/` slice**, with one exemption written into the rule:
     `sandbox/dev-env/` under the dev-env deploy role, the one flow where the supply chain writes into Sandbox
     (1.6, INT-18).
+- **2.5 — [Claude] Make `app-etl` a SageMaker application** (D41, 2026-10-15; not written yet, after the
+  lab measurement D41 records): the repository gains `manifest.yaml` and `workflows/app-etl.yaml` in
+  the CI/CD CLI's notation, the four tasks of D41's scope (a Glue job with a Python Spark transform, a
+  processing task on the application image with the code as the job's input, a light Python task, an
+  S3 operator task writing the result), and `.gitlab-ci.yml` gains, after `build-image`, a job that runs
+  `aws-smus-cicd-cli deploy --targets test --skip-validation --no-events` (the bootstrap `workflow.create`
+  and `workflow.run` with `wait`, the application's own test) and, on the tag, `bundle`, the artifact
+  step 3 promotes. The identity that job runs as is decision 19. `processing_job_request` stays the
+  diagnostic it is; the image is built from the lock alone (`uv sync --locked --no-install-project`) and
+  `smoke` mounts the code, the shape Stage 10 decision 7's taking fixes.
 
 ### 3. Promotion pipeline — tag → Staging → Production (D20, D21, INT-07, INT-08)
 
@@ -409,7 +419,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
 - **3.3 — [pipeline] Run the integration tests against Staging** — the deployed artifact against a real
   catalog, real IAM and a real network, which is what justifies the account. **The tests are API calls from
   the runner or jobs inside Staging**: no network path leads from `VPC-SharedServices` into Staging
-  (deployment is an API act, D38), and Staging's proxy plane refuses everything.
+  (deployment is an API act, D38), and Staging's proxy plane refuses everything. The application's own run
+  was tested earlier, in the `test` project by the CLI's `workflow.run` (2.5), before the tag; what Staging
+  tests is the deployed artifact against a real account.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1`, in
   `after_script`/always so a failed run cannot leave the endpoints burning. 6c removed the NAT gateway,
   but an endpoint set left up is still a bill.
@@ -481,7 +493,9 @@ the approval, and 4.6's alarm.
   resources under it (Stage 10), which is where the boundary's shape gets its real test. **Two later stages
   amend this policy, and say so here so the promise exists at both ends (Lesson 34)**: Stage 9 step 9.4 adds
   the Redshift Data API grant the DDL needs, and Stage 10 step 1.5 the saver's reads of a workflow's
-  definition and code and the `PassRole` of its execution role. What no amendment can add: the root SCP's
+  definition and code and the `PassRole` of its execution role, with the chain layer's `states:`,
+  `scheduler:` and `events:` actions and the `PassRole` of the two chain roles (D41). What no amendment
+  can add: the root SCP's
   `DenyRedshiftCostGuardTamperingExceptInfrastructure` exempts only `InfrastructureAccess`, so
   `awsds-deploy-prod` can neither update nor destroy `production/warehouse-compute/`.
 - **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-<unit>`, one per
@@ -668,10 +682,17 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   ([Stage 6i](stage-06i-sandbox-orchestration.md) verification xvi), so rule (d) cannot cover it; Stage 10
   decision 7 recommends the job's image instead, which rule (e) then covers.
 - **5.7 — [Claude] Record what the SMUS CI/CD CLI is**: `aws-smus-cicd-cli` deploys **only into existing
-  SMUS projects**, and a Workload account has none. It is therefore an **exporter on the Sandbox side** —
-  `bundle` may produce the artifact this pipeline promotes — and **this stage's pipeline stays the
-  deployer** (D26/D28). Using it as the promotion path would mean associating deployment targets to the
-  domain and carving `datazone:*` out of the `Workloads` SCP, which is the isolation 6b just bought.
+  SMUS projects**, and a Workload account has none. It is therefore **the deployer between the Sandbox
+  projects and the bundle's maker** (D41, 2026-10-15): `deploy` puts an application from its repository
+  into the `dev` project and the `test` project (the content synced into the project's S3, the workflow
+  born by the bootstrap action `workflow.create` with the project role, `manual_only`, six tags), `run`
+  and `workflow.run` test it there, and `bundle` produces the artifact this pipeline promotes — and
+  **this stage's pipeline stays the deployer in Staging and Production** (D26/D28). Measured in the lab on
+  2026-10-15: the first deploy into the `dev` project, with `--skip-validation`, since the CLI's
+  pre-deployment validation simulates the role's policies without context keys and reads every
+  conditioned SCP as a denial, and `--no-events`. Using it as the promotion path would mean associating
+  deployment targets to the domain and carving `datazone:*` out of the `Workloads` SCP, which is the
+  isolation 6b just bought.
 
 ### 6. The infrastructure repository's own pipeline (conventions §6, Stage 7 step 7)
 
@@ -956,6 +977,17 @@ Measured (`docs/PRICING.md`), us-west-2:
     which keeps four couplings to this repository (the deploy role, `backend.py`'s targets, the two
     generators, refusal 8) and hands the image role's policy to the stewards' merge requests (Lesson 11).
     **Taken by the user 2026-10-15, as recommended.**
+19. **Which identity runs the CI/CD CLI in the pipeline** (2.5). The CLI calls `datazone` (the project's
+    connections), S3 on the project's storage and `airflow-serverless` (`CreateWorkflow`,
+    `StartWorkflowRun`, the reads) in the Sandbox account, and the lab ran it as `InfrastructureAccess`
+    from the laptop (2026-10-15); no pipeline identity reaches Sandbox today but the dev-env deploy role
+    (refusal 8). Recommended: **a deploy role for the CLI in Sandbox**, `awsds-deploy-sandbox-test` (the
+    name is fixed with the decision), trusted by the deploy runner's role alone, confined to the `test`
+    project's storage prefix and to `airflow-serverless` on that project's workflows under the project
+    boundary, written into refusal 8's exemption as the second flow where the supply chain writes into
+    Sandbox after 1.6's. The alternative: the laptop runs `deploy --targets test` and `bundle` by hand
+    before the tag, which keeps the pipeline out of Sandbox and the person in the loop. Either is measured
+    first on the `test` project, with CloudTrail naming the calls, before the job is written.
 
 ## Verifications to answer while executing
 

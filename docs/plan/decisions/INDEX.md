@@ -1,6 +1,6 @@
 # Decisions — index
 
-D1-D40, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both
+D1-D41, all settled — **D30 settled as a revert** and **D21 superseded by its own larger branch**, both
 keeping their files. Read this table first; open a decision file only when you need its
 reasoning, its consequences or its revision trigger.
 
@@ -12,7 +12,7 @@ reasoning, its consequences or its revision trigger.
 | [D4](D04-vpn-wireguard.md) | VPN technology | Self-managed WireGuard on the smallest burstable instance, layer `[D]`; Client VPN documented as the managed alternative. Amended 2026-08-20: **amd64 `t3.nano`**, not the `t4g.nano` decided. | S4 |
 | [D5](D05-sagemaker-egress.md) | SageMaker internet restriction mechanism | Two egress designs for the SageMaker **compute** (re-scoped 2026-08-25: never the client's machine), behind a switch and compared: (A) NAT plus a small allowlist, (B) internet fully blocked — either way behind the institution's single egress + HTTP/HTTPS proxy. | S3, S6, S8, S11 |
 | [D6](D06-dlp-approach.md) | DLP approach | DLP is four problems with four native controls on top of the data perimeter, IAM Access Analyzer checks the others instead of adding to them — and since 2026-08-25 the egress-control leg is two planes: D5 on the compute, and on the client an identity granted only on institution laptops carrying endpoint DLP (D39), with the proxied egress while a laptop is on the monitored VPN profile. | S1b, S11, S12 |
-| [D7](D07-orchestration.md) | Workflow orchestration in production | One orchestrator, MWAA Serverless (amended 2026-09-05 from *build both and compare*); (B) EventBridge Scheduler + Step Functions is INT-14's terminal fallback, documented and not built, and Stage 10 adds an SCP deny for provisioned MWAA. | S10 |
+| [D7](D07-orchestration.md) | Workflow orchestration in production | One orchestrator runs the tasks, MWAA Serverless (amended 2026-09-05 from *build both and compare*); (B) EventBridge Scheduler + Step Functions is the layer above it that schedules and chains the workflows since D41 (2026-10-15), no longer INT-14's fallback, and Stage 10 adds an SCP deny for provisioned MWAA. | S10 |
 | [D8](D08-gitlab-hosting.md) | GitLab hosting | GitLab CE self-managed on EC2 in Production, layer `[D]` — stopped between sessions, not destroyed. | S7, S8 |
 | [D9](D09-az-count.md) | Number of AZs | Two AZs for free subnet plumbing, one AZ for metered interface endpoints. | S3 |
 | [D10](D10-identity-center-delegation.md) | Identity Center administration | Identity Center administration delegated to a dedicated Identity account, so Terraform never holds Management credentials. | S1b, S2 |
@@ -33,7 +33,7 @@ reasoning, its consequences or its revision trigger.
 | [D25](D25-drop-box-consumer.md) | Who consumes the ingestion drop-box | The Production job role consumes the ingestion drop-box, and the `Data` OU SCP is tightened to deny Glue jobs. | S1a, S1b, S5a, S9 |
 | [D26](D26-unified-studio.md) | The development experience: SageMaker Unified Studio, and where its… | One SageMaker unified domain (DataZone V2) in Data Governance, associated to Sandbox and Development; a registry, never a runtime. | S1a, S4, S5a, S6, S7 |
 | [D27](D27-catalog-maintenance.md) | Catalog-maintenance compute in the Data OU: crawlers and optimizers | Crawlers and table optimizers may run in Data Governance under a named catalog-maintenance exception; never on Iceberg tables. | S1a, S5a |
-| [D28](D28-workflow-contract.md) | The production workflow contract: what must exist for a scientist-a… | What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. | S6, S9, S10 |
+| [D28](D28-workflow-contract.md) | The production workflow contract: what must exist for a scientist-a… | What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A chain's state machine and schedule start the workflows (D41). | S6, S9, S10 |
 | [D29](D29-policy-canary.md) | Where a Service Control Policy is tested before it reaches anything… | A tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test` — because an empty OU tests nothing. | S1a, S1b |
 | [D30](D30-scp-recovery.md) | The SCP recovery principal — a named role exempt from every custom … | **Reverted.** No standing SCP exemption: the Management root (D16) is the only recovery path. The SCPs stay in code regardless. | — |
 | [D31](D31-approver-read.md) | What a release approver may read | A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`; the who-may-read key policy lives on the project CMK since 2026-08-26 (D19 revised). | S1b, S5a |
@@ -46,6 +46,7 @@ reasoning, its consequences or its revision trigger.
 | [D38](D38-single-egress-hub.md) | The single egress hub — where it lives, what reaches it, where the client plane resolves | Peering shares an **address, never a path**, so the estate's one egress is an **explicit proxy** in `VPC-Networking` (Production) and every spoke loses its default route; **zero NAT gateways**, two `[D]` hosts, and the VPN client resolves through a VPC that holds no compute-plane endpoint — which is Lessons 40-43's structural repair. Closes open question 23. | S6c, S7, S8, S10, S11, S13, S14 |
 | [D39](D39-access-by-identity.md) | Access to AWS by identity, and the VPN for the private network | A person reaches the console, the APIs and the SageMaker Unified Studio portal from any network with an Identity Center session, granted only on an institution-monitored laptop; the VPN is required only for private addresses and names. The persona deny is deleted, the lake admits the laptop's drop-box write by principal, both client profiles stay. Closes open question 17 and INT-16's deviation. | S4, S6c, S6d, S6g, S9, S11, S15 |
 | [D40](D40-redshift-warehouse.md) | A Redshift Serverless warehouse beside the lake, built by hand and never by blueprint | The estate gets a warehouse at the documented floor of **4 base RPUs**, with two classes on two accounts — a **`governed`** database in Production written by the job role, and a **`sandbox`** database in Sandbox whose themed **schemas** (what the brief calls bases) project roles write, per schema × project and shareable between projects. The `RedshiftServerless` and `LakehouseCatalog` **blueprints stay disabled**: what D26 and D12 refused was a warehouse any project member could provision in one click, sized by the service and capped by nothing. Priced at **0.36 USD/RPU-hour** — 1.44 per query-hour, 0.00 at rest — which makes a usage limit with `breach_action = deactivate` part of the build. One namespace for both classes was declined on two readings: a namespace is not a boundary between its databases, and JupyterLab needs the warehouse in the project's own VPC. | S5b, S6h, S9, S11, S12 |
+| [D41](D41-sagemaker-application.md) | The SageMaker application as the deployable unit: the CI/CD CLI between Sandbox projects, the pipeline from its bundle, and the scheduler layer above the workflows | An application is a repository holding `manifest.yaml`, its workflows in the CI/CD CLI's notation and its code. The CLI deploys it from the repository into the `dev` project and the `test` project and makes the bundle; the pipeline deploys the bundle to Staging and Production, where **one Step Functions state machine per chain** starts the workflows and **one EventBridge Scheduler schedule** starts the machine, the shape of `terraform-reference/`'s `modules/orchestration/`. The application image carries the dependencies alone and the code is the job's input in every stage; the application slice owns the Glue job; the result is written by an S3 operator task. Measured in the lab on 2026-10-15: the first CLI deploy into a project. Amends D7, D26 and D28 in place. | S8, S10 |
 
 ---
 
@@ -55,7 +56,10 @@ superseded and D38 written. **D38 amended again on 2026-09-08** (§6): the build
 allow-list — the restriction belongs to the compute, and a build host's control is the reviewed Dockerfile.
 **D39 amends D5, D6, D15, D18, D20 and D38 in place**: a person reaches AWS by identity, and the VPN
 reaches the private network. **D40 (2026-09-19) revises D12 and D26 in place** on one point only — a
-warehouse may exist, and the blueprints that would provision one per project may not.
+warehouse may exist, and the blueprints that would provision one per project may not. **D41
+(2026-10-15) amends D7, D26 and D28 in place**: design B is the layer above the workflows, built; the
+CI/CD CLI deploys between the Sandbox projects and makes the bundle; a chain's machine and schedule
+join the artifact classes.
 A decision is normally revisited only through its own *revision trigger*;
 when one is revisited — for whatever reason — edit its file in place and add a line to
 [`docs/plan/history.md`](../history.md). **A reverted decision keeps its file and its number**, because the
