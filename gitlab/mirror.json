@@ -7,8 +7,8 @@
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "bb13918b02207645d2bfd58fbbf3e1a3b66b362b",
-    "committed": "2026-10-15T03:52:01Z",
-    "subject": "Merge branch 'the-releases-v0.7' into 'main'"
+    "commit": "8e78ab533a2be71eddedcc20f9586067074be852",
+    "committed": "2026-10-15T06:24:47Z",
+    "subject": "Merge branch 'decision-18-versions' into 'main'"
   }
 }
