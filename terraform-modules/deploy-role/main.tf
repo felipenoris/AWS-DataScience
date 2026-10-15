@@ -21,6 +21,10 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
 
   state_bucket_arn = "arn:${local.partition}:s3:::awsds-${var.env}-tfstate"
+
+  # A role that applies no slice reads no state and gets no state policy: Sandbox's since Stage 8
+  # decision 18, whose jobs create and delete image versions through the API.
+  reads_state = length(var.state_prefixes) + length(var.state_read_keys) > 0
 }
 
 # ------------------------------------------------------------------------------- the ceiling
@@ -158,7 +162,7 @@ module "role" {
   })
 
   inline_policies = merge(
-    { "state" = data.aws_iam_policy_document.state.json },
+    { for name, json in { "state" = one(data.aws_iam_policy_document.state[*].json) } : name => json if json != null },
     var.inline_policies,
   )
 }
@@ -167,6 +171,8 @@ module "role" {
 # (the S3 backend's lock file sits beside the state object), read-only on the keys it only reads
 # through terraform_remote_state, and the account's state key, which delegates to IAM.
 data "aws_iam_policy_document" "state" {
+  count = local.reads_state ? 1 : 0
+
   statement {
     sid       = "ListTheStatePrefixes"
     effect    = "Allow"
@@ -180,11 +186,15 @@ data "aws_iam_policy_document" "state" {
     }
   }
 
-  statement {
-    sid       = "ReadAndWriteTheStateItApplies"
-    effect    = "Allow"
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = [for p in var.state_prefixes : "${local.state_bucket_arn}/${p}*"]
+  dynamic "statement" {
+    for_each = length(var.state_prefixes) > 0 ? [1] : []
+
+    content {
+      sid       = "ReadAndWriteTheStateItApplies"
+      effect    = "Allow"
+      actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+      resources = [for p in var.state_prefixes : "${local.state_bucket_arn}/${p}*"]
+    }
   }
 
   dynamic "statement" {
