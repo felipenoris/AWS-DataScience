@@ -1117,3 +1117,10 @@ the registry's state read through `awsds-infra-prod`; each act authorized by the
   both lists set from the slice's `custom_images` output. `InService` 2 s later, read back identical, and
   against the block read before it the only change is `ImageVersionNumber: 7` gone from both entries; the
   default space's app, running, untouched. The house image is attached with no version number.
+- **[Claude] A2b**, authorized separately: the saved plan applied at 06:17:00Z, `0 added, 1 changed, 0
+  destroyed`, `dev-env-versions` with `sagemaker:ListDomains` and `DescribeDomain` on `domain/*`; re-plan
+  `No changes`. The policy simulator, given the Region as context, reads the role's edges:
+  `CreateImageVersion` on `awsds-sandbox-dev-env`, `DeleteImageVersion` on its versions, `ListImages`,
+  `ListSpaces`, `ListDomains`, `DescribeSpace` and `DescribeDomain` allowed; `CreateImageVersion` on another
+  image, `DeleteImage` and `s3:GetObject` on `sandbox/dev-env/`'s state an implicit deny; `UpdateDomain`,
+  `UpdateSpace`, `iam:PassRole` and `iam:PutRolePolicy` on the image role an explicit deny, the ceiling's.
