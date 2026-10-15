@@ -326,8 +326,8 @@ def main(argv: list) -> int:
             )
 
     # ------------------------------------------------------- what the registered image carries
-    # The latest version is the one read: the slice's version is force-new on `base_image`, so an
-    # apply destroys the previous one and there is never a second to choose between.
+    # The newest version is the one read: the picker offers it first, and the older ones are earlier
+    # releases' bytes, kept until the release pipeline's retire job deletes them (Stage 8 decision 18).
     image_name = f"awsds-{env_token}-dev-env"
     served: dict = {}
     served_version = None

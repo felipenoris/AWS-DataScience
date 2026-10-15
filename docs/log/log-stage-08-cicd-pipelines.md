@@ -1094,3 +1094,26 @@ authorized by the user in chat per write; account ids masked as `<acct>` while r
   number, a release is the pipeline's `create-image-version`, and the retirement deletes every version past
   the newest 10 that no space names. Implemented in the same pull request, each apply and the domain write
   authorized per occurrence.
+
+## 2026-10-15 — decisions 7 and 18 applied
+
+Pull request #134, as the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`),
+the registry's state read through `awsds-infra-prod`; each act authorized by the user in chat.
+
+- **[Claude] `deploy-role-v0.4.0`**, Recipe B: the module alone in commit `454ca7e`, tagged and pushed,
+  `git ls-remote` reading the tag at that commit. `state_prefixes` may be empty, and a role with no prefix
+  and no read key gets no state policy.
+- **[Claude] A1**: `sandbox/dev-env/`'s saved plan applied at 06:11:51Z, `Apply complete! Resources: 0 added,
+  0 changed, 0 destroyed.`, with `aws_sagemaker_image_version.dev_env` no longer managed (`destroy =
+  false`); re-plan `No changes`, the state listing the image, the two configurations and the image role
+  only. Version 7 still `CREATED` at `@sha256:3b6d706a…84a4`.
+- **[Claude] A2**: `sandbox/foundation/`'s saved plan applied at 06:12:32Z, `1 added, 2 changed, 2
+  destroyed`: the inline policies `state` and `apply-dev-env` destroyed, the ceiling and the role's
+  description updated, `dev-env-versions` created; `list-role-policies` reads `dev-env-versions` alone.
+  **The re-plan read `0 to add, 1 to change`**: the saved plan predates the commit that added
+  `sagemaker:ListDomains` and `DescribeDomain` on `domain/*` to `dev-env-versions` for the retire job's
+  domain read, so that change waits for its own authorization, saved as a plan.
+- **[Claude] D1**: `update-domain` on the project's domain at 06:14:04Z, the live `DefaultUserSettings` with
+  both lists set from the slice's `custom_images` output. `InService` 2 s later, read back identical, and
+  against the block read before it the only change is `ImageVersionNumber: 7` gone from both entries; the
+  default space's app, running, untouched. The house image is attached with no version number.
