@@ -944,3 +944,21 @@ Account ids are replaced by the account's name in angle brackets.*
   min (gates 1.5, build 16, scans 6, registration 1) and the steward's gate waited 11 min 12 s, the
   deploy runner's replacement inside it. The re-attach followed 11 min 31 s later. The first release took 3 h
   23 min from merge request !1 (23:44:01Z) to the first space's pull, three first-run defects included.
+
+## 2026-10-15 — `default-v0.7.0` and `default-v0.7.1` in the release ledger, and the copy
+
+- **[Claude] Read before the merge request**: `awsds/dev-env`'s `main` at `c268de48`, no merge request
+  past !2, and the copy holding that commit's 13 files (`./scripts/gitlab-mirror.py --dry-run`).
+  `aws ecr describe-images` as the infrastructure user on Production (`awsds-infra-prod`) read the four
+  images the proposed rows name at the digests, sizes and push times of pipelines #24 and #28 above.
+  `./scripts/check-gitlab-mirror.py --plan` passed `GM-1` to `GM-8` on that copy. The mirror
+  `awsds/infrastructure` read `b7d37ff`, one commit behind `origin/main`'s `ffa23d7`.
+- **[Claude] The rows** the release session proposed, after `default-v0.6.0`'s in README.md's "The
+  releases": commit `69a1333` on the branch `the-releases-v0.7` of a clone, not pushed.
+- **[user]** Pushed the branch, opened merge request !3 and merged it as the steward at 03:52:01Z:
+  `main` at `bb13918b`.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py --dry-run`, then `./scripts/gitlab-mirror.py`:
+  `awsds/dev-env` 1 changed, `README.md`, byte for byte `69a1333`'s; `awsds/deploy-image` unchanged at
+  `98a3dc7e`. `./scripts/check-gitlab-mirror.py --plan` passed `GM-1` to `GM-8`, `GM-1` naming
+  `bb13918b` and `GM-4` reading 70 names, sha256 `aafa08da98a61f5c`, on both sides. `awsds/infrastructure`
+  then read `ffa23d7`, `origin/main`'s commit.
