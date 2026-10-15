@@ -423,10 +423,11 @@ ran in the lab on 2026-10-15 (D41).
   kept from overwrite by decision 12's statement and checked by rule (h). No CI job builds 6i's folder
   for an application: what the code needs beyond itself is in the image, whose interpreter runs it.
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: in each leg the release job downloads
-  the tag's bundle (2.2) from where Stage 8 decision 20 stores it, checks its SHA256, before it reads a
-  file of it, against the value Stage 8 step 2.5's third job passed down the pipeline, never against
-  GitLab's record of the file, and rebuilds nothing; step 3.7 commits that value for a later re-apply. It
-  renders `workflows/app-etl.yaml` for its account (decision 6) and copies the rendered copy to
+  the tag's bundle (2.2) from `awsds-prod-releases` with the deploy runner's own role (Stage 8 decision
+  20), checks its SHA256, before it reads a file of it, against the value Stage 8 step 2.5's third job
+  passed down the pipeline, never against the release's notes or anything the bucket keeps beside the file,
+  and rebuilds nothing; step 3.7 commits that value for a later re-apply. It renders
+  `workflows/app-etl.yaml` for its account (decision 6) and copies the rendered copy to
   **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`** in Production (decision 1 — the
   bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1), or to the same key of
   Staging's bucket (decision 17), and records the returned S3 `VersionId` — the value 1.1 pins, so a

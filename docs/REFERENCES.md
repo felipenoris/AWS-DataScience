@@ -1334,6 +1334,14 @@
   registry and links them to the release, and in a job `CI_JOB_TOKEN` signs it in when
   `GLAB_ENABLE_CI_AUTOLOGIN=true`: <https://docs.gitlab.com/cli/release/create/>.
 
+- Amazon S3 conditional writes enforced by a bucket policy (read 2026-10-15, Stage 8 decision 20's
+  optional deny). The condition keys `s3:if-none-match` and `s3:if-match` enforce conditional writes
+  in a general purpose bucket; the enforcement covers `PutObject` and `CompleteMultipartUpload`, the
+  multipart calls that take no conditional header are exempted through `s3:ObjectCreationOperation`,
+  and a `CopyObject` into the bucket then fails, *"with a `403 Access Denied` error"* without the
+  header and *"with a `501 Not Implemented` response"* with it:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes-enforce.html>.
+
 - AWS CodeArtifact external connections (read 2026-09-05; what makes design B work for packages): the
   service fetches from the public repository, so a client with no internet still resolves a package
   that has never been cached. Each repository can have only one external connection, which is why
