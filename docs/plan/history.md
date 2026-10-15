@@ -727,9 +727,9 @@ one module tag.
   alone and the code is the job's input (Stage 10 decision 7, taken as the alternative); that the
   application slice owns the Glue job; and that an S3 operator task writes the result. The first CLI
   deploy into a project ran in the lab the same day, with `--skip-validation`. D7, D26 and D28 are amended
-  in place; Stage 10 gains steps 3.4-3.7, decisions 13-16 and verifications xxii-xxvi, Stage 8 step 2.5
-  and decision 19; INT-14's terminal rung is the `CreateWorkflow` call from the release job, design B
-  having left the ladder.
+  in place; Stage 10 gains steps 3.4-3.7, decisions 13-16 (taken the same day) and verifications
+  xxii-xxvi, Stage 8 step 2.5 and decision 19; INT-14's terminal rung is the `CreateWorkflow` call
+  from the release job, design B having left the ladder.
 
 ---
 

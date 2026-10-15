@@ -69,7 +69,8 @@ The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC
    creates per stage the state machines and the schedules. The dependencies between workflows
    follow: inside a chain the order is the machine's; between chains, or on an event, an inbox
    prefix in S3 and an EventBridge rule that starts the machine. Stage 10 steps 3.4 to 3.7 build
-   it; what it still asks the user is Stage 10 decisions 13 to 16.
+   it; its four choices, Stage 10 decisions 13 to 16, the user took the same day at 16:28 UTC, as
+   recommended.
 6. **The lab first.** The CLI was measured with `houseprice-etl` between the two Sandbox projects
    before the examples and `app-etl` change shape (below).
 7. **The task's image.** The application image carries the dependencies alone, built from the lock,
@@ -183,8 +184,8 @@ there. Sandbox gets no machine and no schedule: `sandbox/workflows/` (rank 56) s
   the CLI, the pipeline deploying the bundle), adds steps 3.4 to 3.7 (the chain layer's base, a
   chain, the dependencies between workflows, the chain's failure rule), turns step 4.2 into the API
   rung, reads 6.1's proof from the schedule and the machine's history, takes decision 7 as the
-  alternative, keeps decision 11's `states:` and `scheduler:` reads, and asks decisions 13 to 16 and
-  verifications xxii to xxvi.
+  alternative, keeps decision 11's `states:` and `scheduler:` reads, takes decisions 13 to 16 as
+  recommended (the user, 16:28 UTC) and adds verifications xxii to xxvi.
 - **`conventions.md`** names the chain layer in the `orchestration/` comment and puts
   `manifest.yaml`, `workflows/` and `code/` in the application layout; **open question 26**'s
   mechanism half is answered; **INT-14**'s fallback column names the API rung; **`SMUS.md`** records

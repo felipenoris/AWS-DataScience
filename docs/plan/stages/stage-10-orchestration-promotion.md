@@ -32,7 +32,7 @@ and the pipeline deploys its bundle here (D41).
 | `production/workloads-egress/` (amended) + `staging/egress/` (amended) | the worker endpoints, filled into `vpc-egress`'s reserved `mwaa` group (1.2): the documented private-routing set (`logs`, `monitoring`, `kms`) against what 6i's workers used, beside the job-facing set Stage 9 3.3a and 4.3a already give both VPCs. Single-AZ (decision 3) | `[E]` |
 | `production/workloads/` + `staging/foundation/` (amended) | `vpc-v0.4.0`: the S3 gateway endpoint's policy admits `mwaa-serverless-code-files-*`, the service bucket a worker reads a task's `Code` from. `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage 3 | `[P]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
-| `production/data/` (amended) | `awsds-prod-outputs` publishes `Object Created` to EventBridge when decision 16 takes the bridge, the signal that starts a chain on an inbox write (3.6) | `[P]` |
+| `production/data/` (amended) | `awsds-prod-outputs` publishes `Object Created` to EventBridge for the bridge decision 16 took, the signal that starts a chain on an inbox write (3.6) | `[P]` |
 | `identity/sso/` (amended) | `airflow-serverless:` reads for the persona that diagnoses a run (decision 11), beside the `states:` and `scheduler:` reads it holds, which read the chain layer: no set holds an `airflow-serverless:` read today, so 3.2's diagnosis has no reader | `[P]` |
 | `app-etl` repository (GitLab) | the SageMaker application (D41): `manifest.yaml`, the workflow definition in the CI/CD CLI's notation (`workflows/app-etl.yaml`), the code package its Python and Bash tasks run (D28 class 2b, built from `code/` when there are such tasks), the scripts its Glue steps run (D28 class 2c, from `glue/`); its Terraform is `terraform-live/<env>/app/app-etl/` (Stage 8 decision 12), and **the D28 promotion lint** is a command of `awsds-workflows` (Stage 8 decision 9) the pipeline runs on the rendered file. No ASL lives here: a chain's definition is the `orchestration/` slice's (decision 14) | — |
 | Domain portal (console, recorded) | the serverless-Workflows surface of a Sandbox project, as 6i used it (the `engineering` project profile left at 6b); the **OnDemand Workflows blueprint stays off** (it provisions a fee-bearing MWAA environment) | — |
@@ -414,8 +414,8 @@ workflows in order. **Why:** a scheduled run in production is how this stage mea
 **Explanation:** a standalone workflow's cron lives **in the YAML** (EventBridge Scheduler underneath;
 `TriggerMode` pauses it; only one workflow version holds the active schedule), so it is promoted with the
 definition rather than configured beside it; a chain's cron lives in the Scheduler schedule that starts
-its state machine (3.5), in the slice, and decision 13 says whether any production workflow keeps the
-first form. The service has no dependency between workflows: a workflow starts by its cron, by a call or
+its state machine (3.5), in the slice, and no production workflow keeps the first form (decision 13,
+taken). The service has no dependency between workflows: a workflow starts by its cron, by a call or
 by nothing, `outlets` are ignored, and the worker reaches no API, so what orders the workflows is the
 state machine (3.5) and what carries data between them is a contract on S3 (3.6).
 
@@ -496,7 +496,7 @@ state machine (3.5) and what carries data between them is a contract on S3 (3.6)
   the marker is missing, so a chain never reads a partial output. Between chains, or when an event starts
   a chain: the inbox `s3://awsds-prod-outputs/inbox/<app>/`, outside the `workflows/*` prefix decision 12
   locks, where the producing workflow's `S3CreateObjectOperator` writes a marker and the consuming
-  workflow's `S3KeySensor` reads it and empties it under decision 10; and the bridge decision 16 takes,
+  workflow's `S3KeySensor` reads it and empties it under decision 10; and the bridge decision 16 took,
   `aws_s3_bucket_notification` with `eventbridge = true` on `awsds-prod-outputs` (whether the bucket
   publishes today is unread) and the rule `awsds-<env>-inbox-<app>` on `aws.s3` `Object Created` under
   `inbox/<app>/`, whose target is the consuming chain's state machine through a role trusted by
@@ -777,19 +777,21 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     Scheduler schedule, the pause is the schedule's `state`, the date is an `OverrideParameters` the
     machine passes, and one mechanism answers 3.2's diagnosis and 6.1's proof. The alternative keeps the
     YAML's `schedule` for a standalone workflow and the chain for the others, two mechanisms to read and
-    to pause.
+    to pause. **Taken by the user 2026-10-15, as recommended**: every production workflow starts from a
+    chain, and the copy rendered for Staging and Production carries no `schedule` (2.3 refuses one).
 14. **Where a chain's definition lives** (3.5). Recommended:
     **`terraform-live/<env>/orchestration/chains/<chain>.asl.json`** with its cron in the slice's `chains`
     variable, since a chain names several applications' workflows and belongs to none of them; the
     alternative, an ASL file in the application repository, serves the chain of one and nothing larger.
+    **Taken by the user 2026-10-15, as recommended.**
 15. **The chain layer's base slice** (3.4). Recommended: **the same `[E]` `orchestration/` slice**, since
     the group, the log group and the two roles meter nothing and are recreated with the workflows; the
     alternative is a `[P]` `<env>/orchestration-base/` so the log group outlives a session, at the cost
-    of a rank and a backend row.
+    of a rank and a backend row. **Taken by the user 2026-10-15, as recommended.**
 16. **The bridge from an inbox write to a chain** (3.6). Recommended: **an EventBridge rule whose target is
     the consuming chain's state machine**, with the bucket's notification to EventBridge turned on; the
     alternative, a Lambda that calls `StartWorkflowRun`, needs a network of its own in `VPC-Workloads` and
-    a role, for the same call the machine makes.
+    a role, for the same call the machine makes. **Taken by the user 2026-10-15, as recommended.**
 
 ## Verifications to answer while executing
 
