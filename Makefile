@@ -32,8 +32,8 @@
 # check-plan-refs (the plan's relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
-# keyword, no `needs:` naming a job its pipeline lacks) and check-sg-descriptions (no security group
-# or rule description EC2 refuses at apply).
+# keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses) and
+# check-sg-descriptions (no security group or rule description EC2 refuses at apply).
 
 SHELL := /bin/bash
 
