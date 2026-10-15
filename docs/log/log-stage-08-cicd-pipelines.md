@@ -1266,3 +1266,7 @@ Every reading below as the infrastructure user, `InfrastructureAccess`: on Sandb
   `.gitlab-ci.yml` (the include at `gates-v0.4.0`) and `README.md` (the row), and `gitlab/mirror.json` at
   `1372b471`. `./scripts/check-gitlab-mirror.py --plan` passes `GM-1` to `GM-8` on it, `GM-4` 70 names and
   sha256 `aafa08da98a61f5c` on both sides.
+- **[user]** `make gitlab-down` and `make hub-down` from the project folder. **[Claude] Read** at
+  17:15:39Z: the three runners terminated, GitLab and the WireGuard host stopped, the proxy stopping, no
+  interface endpoint left in Production; `make status` at about 17:18Z read every host stopped, every
+  `[E]` slice down and an estimated burn of USD 0.0000/h.
