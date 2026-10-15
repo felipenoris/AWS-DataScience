@@ -22,7 +22,7 @@
 resource "aws_sagemaker_image" "dev_env" {
   image_name   = "awsds-${var.env}-dev-env"
   display_name = "AWS-DataScience dev-env"
-  description  = "The house image: the SageMaker Distribution ancestor plus this project's Python, Julia, R and Rust layer (images/dev-env/Dockerfile)."
+  description  = "The house image: the SageMaker Distribution ancestor plus this project's Python, Julia, R and Rust layer (dev-env/Dockerfile of the GitLab project awsds/dev-env)."
   role_arn     = module.image_role.role_arn
 
   tags = {
@@ -55,7 +55,7 @@ resource "aws_sagemaker_image_version" "dev_env" {
 #
 # No file_system_config in either: the defaults are already this image's shape - uid 1000, gid 100,
 # and the space's EBS volume mounted at /home/sagemaker-user, a path the platform owns and that
-# images/README.md forbids moving.
+# gitlab/awsds/dev-env/README.md forbids moving.
 #
 # The environment this configuration cannot carry, measured 2026-09-10 at this slice's first apply.
 # 6c step 5.6's six proxy variables were written here as ContainerEnvironmentVariables, which is
@@ -74,10 +74,10 @@ resource "aws_sagemaker_image_version" "dev_env" {
 #
 # So these configurations bind an app type to the image and carry no environment. The delivery was
 # decided by the user on 2026-09-10 (6d decision 8): the six variables are ENV in
-# images/dev-env/Dockerfile, the bypass list a dated literal there with the command that refreshes it
-# beside it. What that costs - the image is shaped by one VPC's endpoint list, and a change to it is a
-# rebuild, a tag, a version and a re-attach - is docs/plan/runbooks/dev-env.md E, which also carries
-# the staleness reading.
+# gitlab/awsds/dev-env/dev-env/Dockerfile, the bypass list a dated literal there with the command
+# that refreshes it beside it. What that costs - the image is shaped by one VPC's endpoint list, and
+# a change to it is a rebuild, a tag, a version and a re-attach - is docs/plan/runbooks/dev-env.md
+# E, which also carries the staleness reading.
 
 resource "aws_sagemaker_app_image_config" "jupyterlab" {
   app_image_config_name = "awsds-${var.env}-dev-env-jupyterlab"

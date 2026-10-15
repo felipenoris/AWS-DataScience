@@ -1,12 +1,12 @@
-# The deploy image (Stage 8 steps 3.1 and 4.3): what the deploy runner's jobs run in. It carries what
-# this repository's lifecycle calls and nothing else - make, uv and the Python .python-version names,
-# Terraform at the version the slices pin, git and the AWS CLI - built for amd64, the deploy runner's
-# architecture (decision 4).
+# The deploy image (AWS-DataScience's Stage 8 steps 3.1 and 4.3): what the deploy runner's jobs run in.
+# It carries what that repository's lifecycle calls and nothing else - make, uv and the Python its
+# .python-version names, Terraform at the version its slices pin, git and the AWS CLI - built for amd64,
+# the deploy runner's architecture (decision 4).
 #
 # Every download is pinned: Terraform and uv by the SHA-256 their publishers list, the AWS CLI by the
-# AWS CLI team's signature, checked against a key whose fingerprint is pinned below. Built by the
-# GitLab project awsds/deploy-image (build.gitlab-ci.yml beside this file) on the build runner, and
-# run by the deploy runner by digest, so a later push to the repository changes nothing it runs.
+# AWS CLI team's signature, checked against a key whose fingerprint is pinned below. Built by this
+# project's .gitlab-ci.yml on the build runner, and run by the deploy runner by digest, so a later push
+# to the repository changes nothing it runs.
 
 ARG REGISTRY
 FROM ${REGISTRY}/ecr-public/docker/library/python:3.14-slim
@@ -61,5 +61,5 @@ RUN git config --system url."https://github.com/".insteadOf "git@github.com:" \
 ENV UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=/usr/local/bin/python3.14
 
-LABEL org.opencontainers.image.source="https://github.com/felipenoris/AWS-DataScience" \
+LABEL org.opencontainers.image.source="https://gitlab.awsds.internal/awsds/deploy-image" \
       org.opencontainers.image.title="awsds deploy image"

@@ -732,7 +732,7 @@ change; §U is the other half.
 | the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), the `bedrock-base` group of `vpc-egress-v0.16.0` | applied as always-on 2026-09-12, step 4.2; an optional group since 2026-10-09 |
 | the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
 | the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
-| the client's configuration | [`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.4.0`, image version 4, 2026-09-12 — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
+| the client's configuration | [`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.4.0`, image version 4, 2026-09-12 — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
 
 ### The private path
 
@@ -751,7 +751,7 @@ internet, and the call still works — with no `aws:SourceVpce` on the far side,
 perimeter is lost silently. The generated list is `terraform output -raw no_proxy` on
 `sandbox/egress`, and it names the Bedrock pair only in an apply with `GROUPS=bedrock-base` (51
 entries under `GROUPS=redshift`, 2026-10-10); what a process inside a space reads is the dated
-literal in [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile) (6d decision 8), a copy
+literal in [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile) (6d decision 8), a copy
 of the slice's `no_proxy_all_groups`, which names the pair whatever `GROUPS=` names (70 entries,
 2026-10-10). [`./aws/devenv.py`](../../../aws/devenv.py) compares the literal with that output,
 exactly.
@@ -874,7 +874,7 @@ cannot live in a home directory. Unlike the proxy variables, it is not constrain
 configuration's 256-character cap per environment value: it is a file, not an env entry.
 
 The source is
-[`images/dev-env/claude-code/managed-settings.json`](../../../images/dev-env/claude-code/managed-settings.json),
+[`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json),
 copied by the Dockerfile to that path and `chmod 0444`. It is the whole file:
 
 ```json
@@ -926,10 +926,12 @@ selects it nor needs to — and dropping it from the pins would put session titl
 a running space holds the layer it started from, and a space's home directory cannot override it.
 The chain is [`dev-env.md`](dev-env.md) §B, and its shape is:
 
-1. Edit `images/dev-env/claude-code/managed-settings.json` and commit. `pre-commit`'s `check-json`
-   covers `images/**.json` and the Dockerfile re-parses the file during the build, so a trailing
-   comma fails in review rather than in a space three weeks later.
-2. Build both images with the build runner's pipeline ([`images/README.md`](../../../images/README.md)) and push under a **new**
+1. Edit `dev-env/claude-code/managed-settings.json` in the GitLab project `awsds/dev-env`, by a merge
+   request, then copy it back with `./scripts/gitlab-mirror.py`. `./scripts/check-gitlab-mirror.py`
+   reads the copy (`GM-6` that it parses, `GM-7` and `GM-8` its Bedrock settings against the SCP and the
+   grant), `pre-commit`'s `check-json` parses it in this repository and the Dockerfile re-parses it
+   during the build, so a trailing comma fails before it reaches a space.
+2. Build both images with the build runner's pipeline ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)) and push under a **new**
    `<flavour>-v<semver>` tag. The ECR repository is immutable-tagged: a rebuild is a new tag, never
    a re-push of an existing one.
 3. Bump `image_tag` in

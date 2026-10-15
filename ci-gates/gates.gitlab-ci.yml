@@ -91,8 +91,15 @@ secret-detection-gate:
 # than auditing something nobody resolved. --no-dev: the gate audits what the image carries. The export
 # carries hashes, which is what lets pip-audit audit the pins without pip resolving or installing anything.
 # pip-audit exits 1 both on a finding and on an error, so the report file tells the two apart.
+#
+# Two rules since gates-v0.3.0 (decision 15). A finding with a fixed version blocks unless the project's
+# accepted list names its `<id>|<package>`; the list is baselines.gitlab-ci.yml's, chosen by
+# CI_PROJECT_PATH, which GitLab sets and the gated pipeline cannot. And the gate fails when it audits fewer
+# packages than the export pins: pip-audit skips a requirement whose environment marker the running
+# interpreter does not match, so a lock resolved for another platform audits nothing and reads clean
+# (0 of 452 on a macOS laptop, 2026-10-14).
 pip-audit:
-  extends: .gates-uv
+  extends: [.gates-uv, .gates-baselines]
   stage: test
   variables:
     PIP_AUDIT_VERSION: "2.10.1"
@@ -103,13 +110,20 @@ pip-audit:
       set -eu
       status=0
       n=0
+      case "$CI_PROJECT_PATH" in
+        awsds/dev-env) accepted="${GATES_PIP_AUDIT_ACCEPTED_DEV_ENV:-}" ;;
+        *) accepted="" ;;
+      esac
+      printf '%s\n' "$accepted" | sed -e 's/#.*//' -e 's/[[:space:]]//g' -e '/^$/d' | sort -u > pip-audit-accepted.txt
+      echo "== $CI_PROJECT_PATH: $(wc -l < pip-audit-accepted.txt | tr -d ' ') accepted finding(s)"
       for project in $GATES_UV_PROJECTS; do
         n=$((n + 1))
         req="pip-audit-$n.txt"
         report="pip-audit-$n.json"
         echo "== $project: the runtime set its lock pins -> $req"
         uv export --project "$project" --locked --no-dev --no-emit-project --format requirements-txt --output-file "$req" --quiet
-        echo "   $(grep -c '==' "$req") pinned package(s), audited against OSV"
+        pinned="$(grep -c '==' "$req")"
+        echo "   $pinned pinned package(s), audited against OSV"
         rc=0
         uvx --from "pip-audit==$PIP_AUDIT_VERSION" pip-audit --requirement "$req" --disable-pip --require-hashes \
           --vulnerability-service osv --format json --output "$report" --progress-spinner off || rc=$?
@@ -117,24 +131,40 @@ pip-audit:
           echo "FAIL: pip-audit wrote no report (exit $rc) - the audit did not run"
           exit 1
         fi
-        python3 - "$report" <<'PY' || status=1
+        python3 - "$report" "$pinned" pip-audit-accepted.txt <<'PY' || status=1
       import json
       import sys
 
       data = json.load(open(sys.argv[1]))
+      pinned = int(sys.argv[2])
+      accepted = {line.strip() for line in open(sys.argv[3]) if line.strip()}
       deps = data.get("dependencies", []) if isinstance(data, dict) else data
       blocking = 0
+      seen = set()
       for d in deps:
           if d.get("skip_reason"):
               print(f"   skip   {d['name']}: {d['skip_reason']}")
           for v in d.get("vulns", []):
               fixes = ", ".join(v.get("fix_versions") or [])
               aliases = ", ".join(v.get("aliases") or [])
-              mark = "BLOCK" if fixes else "warn "
+              key = f"{v['id']}|{d['name'].lower()}"
+              seen.add(key)
+              if not fixes:
+                  mark = "warn "
+              elif key in accepted:
+                  mark = "accpt"
+              else:
+                  mark = "BLOCK"
+                  blocking += 1
               print(f"   {mark}  {d['name']} {d.get('version', '?')}  {v['id']} ({aliases})  "
                     + (f"fixed in {fixes}" if fixes else "no fixed version"))
-              blocking += bool(fixes)
-      print(f"   {len(deps)} package(s) audited, {blocking} vulnerability(ies) with a fixed version")
+      print(f"   {len(deps)} of {pinned} pinned package(s) audited, {blocking} blocking vulnerability(ies)")
+      if len(deps) < pinned:
+          print(f"   FAIL: {pinned - len(deps)} pinned package(s) not audited - an environment marker the "
+                "interpreter does not match skipped them")
+          sys.exit(1)
+      for key in sorted(accepted - seen):
+          print(f"   gone   {key}: accepted and no longer found - it leaves the list in the next commit")
       sys.exit(1 if blocking else 0)
       PY
       done

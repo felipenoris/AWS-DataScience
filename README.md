@@ -66,13 +66,15 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5a's. `wireguard` has called `iam-role` by
   tag since Stage 4, and `consumer-data` is the first module a *slice pair* applies twice. The current
   roster is `terraform-modules/README.md`'s.
-- `images/` — the build code for the two container images the estate runs on: `base/`, the common
-  ancestor every application image and the notebook image descend from (D17), and `dev-env/`, the
-  SageMaker Unified Studio custom image (BYOI) carrying the Julia, R and Rust that CodeArtifact cannot
-  deliver. Not infrastructure code — `terraform-live/production/registry/` owns the ECR repositories, this
-  owns what goes in them. Built by hand exactly once, at Stage 6 step 5.0, and replaced by Stage 8's
-  pipeline building the same files from a GitLab repository the data scientist writes to. `images/README.md`
-  carries that seam and the three constraints that shape both files.
+- `gitlab/` — copies of the GitLab projects whose source of truth is the private GitLab (Stage 8
+  decision 16). `awsds/dev-env` is the build code for the two container images the estate runs on:
+  `base/`, the common ancestor every application image and the notebook image descend from (D17), and
+  `dev-env/`, the SageMaker Unified Studio custom image (BYOI) carrying the Julia, R and Rust that
+  CodeArtifact cannot deliver; `awsds/deploy-image` is the image the deploy runner's jobs run in. Not
+  infrastructure code — `terraform-live/production/registry/` owns the ECR repositories, these own what
+  goes in them. `scripts/gitlab-mirror.py` writes each copy from its project's last commit, and
+  `scripts/check-gitlab-mirror.py` reads the recipe's `NO_PROXY` literal and Bedrock settings against
+  the estate; `gitlab/README.md` is the procedure.
 - `s3-read-write/` — an independent Python library (`uv`, boto3 the only runtime dependency): a data
   scientist's laptop, from any network, reading, writing and listing the S3 storage of its SMUS project by
   **vending the project role** through S3 Access Grants — the surface SMUS itself provisions (merged

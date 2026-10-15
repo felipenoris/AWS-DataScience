@@ -631,3 +631,188 @@ Account ids are replaced by the account's name in angle brackets.*
   `NoSuchEntity`; no security group of that name, no `awsds-prod-runner*` instance and no Sandbox interface
   endpoint remain. The two outputs under `app-etl/v0.1.0/` stay in the `[P]` bucket until their 30-day
   expiry.
+
+## 2026-10-14 — pass 3 read, and the house environment on Python 3.12
+
+- **[Claude] Before the pass**: the Stage 8 pass 2 session on this machine was asked whether it still held a
+  Stage 8 edit, slice, log entry or state lock, and answered that it held none, its worktree removed and the
+  estate down.
+- **[Claude] Read in Sandbox** as the infrastructure user (`InfrastructureAccess`), read-only:
+  `awsds-sandbox-dev-env` version 6 `CREATED`, `BaseImage` `awsds-prod-ecr-dev-env:default-v0.6.0`,
+  `ContainerImage` `…@sha256:43079013d424374161bc4025444623bfe31cc933bbde3637a51a05cb28bc5518`; the one
+  project domain attaches version 6 to both app types; no app is running; its one space names no image
+  version, so a bump strands nothing.
+- **[Claude] pip-audit 2.10.1 on the house environment's lock**, offline on the laptop, run as the gate runs
+  it: 452 pins exported, **0 audited**, "No known vulnerabilities found", exit 0. Every line of the export
+  carries `platform_machine == 'x86_64' and sys_platform == 'linux'`, which pip-audit evaluates against the
+  interpreter running it and skips. With the markers removed: 452 audited, **73 vulnerabilities with a
+  fixed version in 14 packages**: fsspec, jupyterlab, mako, multidict, notebook, oauthlib, pyjwt,
+  setuptools, sqlparse, torch, tornado, urllib3, virtualenv, werkzeug.
+- **[Claude] A targeted re-lock, in a scratch copy and not committed**: `uv lock --upgrade-package` for the
+  14 and torchvision resolved and moved 13 (jupyterlab 4.6.4, mako 1.4.3, multidict 6.9.1, notebook 7.6.3,
+  oauthlib 4.0.0, pyjwt 2.15.1, python-discovery 1.6.2, torch 2.13.0+cpu, torchvision 0.28.0+cpu, tornado
+  6.5.10, urllib3 2.8.0, virtualenv 21.14.7, werkzeug 3.1.9). Three stayed, carrying 8 of the findings:
+  fsspec 2025.3.0 (required by autogluon-multimodal, datasets, evaluate, huggingface-hub, lightning, ray
+  and others), setuptools 81.0.0 (autogluon-core, tensorflow, tensorboard, torch, spacy and others) and
+  sqlparse 0.5.0 (amazon-sagemaker-sql-magic 0.1.3, mlflow-skinny 3.16.0,
+  sagemaker-studio-dataengineering-sessions 1.3.25).
+- **[Claude] The gate's export of that lock**: the gate's image is CPython 3.12 with
+  `UV_PYTHON_DOWNLOADS=never`, and the project asked `>=3.13`. With no compatible interpreter visible and
+  downloads off, `uv export --locked` exits 2: "No interpreter found for Python >=3.13 in managed
+  installations or search path"; with `--python 3.12` it refuses the interpreter against
+  `requires-python`. `--frozen`, which the runbook's §J1 export uses, needs no interpreter (2026-10-12).
+- **[user] In chat**: downgrade, every Python environment on 3.12 (decision 13).
+- **[Claude] The change**, in `images/dev-env/`: `requires-python = ">=3.12,<3.13"` and
+  `PYTHON_VERSION=3.12`. `uv lock` resolved 453 packages, **every one at the version it had**; the lock's
+  `requires-python` reads `==3.12.*` and its resolution markers collapse to the platform alone. Read from
+  the lock's wheel names: 444 packages publish a `cp312` Linux x86_64 wheel and 8 are built from source in
+  the image (amazon-sagemaker-sql-magic, antlr4-python3-runtime, gssapi, krb5, nvidia-ml-py3, pyhive,
+  sagemaker-kernel-wrapper, seqeval), against 9 under `cp313`, where statsforecast 2.0.1 publishes no
+  wheel. Under the gate's conditions, only CPython 3.12 visible and downloads off, the export exits 0 with
+  452 pins; pip-audit on it, markers removed, reads the same 73 findings in the same 14 packages.
+- **[Claude] 6i's `awsds-demo-deps`** on 3.12: `.python-version` 3.12, `requires-python = ">=3.12,<3.13"`,
+  re-locked at msgspec 0.22.0, petl 1.7.29 and pyarrow 24.0.0, each with a `cp312` manylinux x86_64 wheel;
+  its 8 tests pass on CPython 3.12.13, and `awsds-demo-job`'s 6 on the repository's Python. The folder 6i
+  copied to `shared/jobs/` stays `cp313`, matching the `default-v0.5.0` its workflows run, so `SO-7`'s
+  suffix is unchanged.
+- **Not built**: no image carries 3.12 until `default-v0.7.0`. **Owed**: the user's answer on decisions 14
+  to 17 (the registry state read, the accepted findings, the recipe's checkout, the register job's guards)
+  and the mirror's mechanics, then the rest of pass 3.
+
+## 2026-10-14 — decisions 14 to 17, and the image recipes move to GitLab
+
+- **[user] In chat**: decisions 14 and 15 as recommended. Decision 16 wider than recommended: everything
+  under `images/` is controlled in the private GitLab, its source of truth, with a copy of each project's
+  last commit kept here under `gitlab/` by a script, a second script checking the copy's `NO_PROXY` and
+  Bedrock parameters, and any change pushed to GitLab by the user. Decision 17: no guard, the steward's
+  discipline, with the guards in a GitHub issue.
+- **[Claude] Issue [#129](https://github.com/felipenoris/AWS-DataScience/issues/129)** opened: the four
+  guards, the four read actions they cost, and when to revisit.
+- **[Claude] The seed**: `images/` moved by `git mv` into `gitlab/awsds/dev-env/` (`base/`, `dev-env/`,
+  `smoke/`, the pipeline as `.gitlab-ci.yml`, `README.md`) and `gitlab/awsds/deploy-image/` (`Dockerfile`,
+  `aws-cli-team.asc`, the pipeline, a new `README.md` and a `.dockerignore`). Both pipelines build their own
+  project's commit, BuildKit `v0.34.0-rootless` by digest; the recipe's comments and OCI `source` labels name
+  the GitLab projects, and its links to this repository are absolute. GitLab holds none of it yet.
+- **[Claude] `scripts/gitlab-mirror.py`**, against a GitLab of `file://` repositories: a first copy (3 files
+  each, an executable bit kept); a second run reporting the copy unchanged; a commit that edited, added,
+  deleted and dropped an executable bit, reported 1 added, 1 removed, 2 changed; an uncommitted edit under
+  the copy refused with exit 2 and listed by `--dry-run`; a committed edit replaced by GitLab's content; an
+  unknown project exit 2; a bad URL exit 1.
+- **[Claude] `scripts/check-gitlab-mirror.py`** on the seed, as the infrastructure user in Sandbox. From the
+  state, `GM-3` fails: `sandbox/egress` is down and its state holds no outputs. With `--plan`, in 43 s, every
+  check passes and `GM-1` notes the copy was never copied from GitLab: 70 names, sha256
+  `aafa08da98a61f5c` on both sides, the proxy URL, the settings parsing, Bedrock in `us-west-2`, 3 pins each
+  in the SCP and the grant. With the copy broken on purpose (one Bedrock name removed and an unknown one
+  added, the Haiku pin moved to an unscoped profile, `AWS_REGION` set to `us-east-1`), `GM-4`, `GM-7` and
+  `GM-8` fail, the repairs name the two GitLab files, and `aws/output/gitlab-mirror-no-proxy.txt` carries the
+  line; the copy was restored.
+- **[Claude] The instruments read the copy**, through `aws/awslib/devenvrecipe.py` and
+  `awslib.bedrockscope`: `./aws/devenv.py` `DE-1` 70 entries, sha256 `aafa08da98a61f5c`, `DE-5` version 6
+  baking the same list, `DE-2` failing on the slice being down; `./aws/bedrock-scope.py` 7 pass.
+- **[Claude] The repository around the copy**: pre-commit's fixers and ruff skip `gitlab/<group>/<project>/`
+  while `check-json` and the key and identifier checks read it; the link checker skips the copies' markdown;
+  the references to `images/` point at the copy, records of a date kept as written; `make check` OK.
+- **Owed**: a GitLab session in which the user pushes each folder's content to its project and the copy is
+  refreshed from GitLab; then pass 3's chain (decisions 14 and 15 in code, the release pipeline, the
+  registration job).
+
+## 2026-10-14 — pass 3's chain, written with the environment down
+
+- **[user] In chat**: the rest of pass 3 before the GitLab session.
+- **[Claude] Decision 14 in code**: the runner role's inline policy `registry-state` in `production/foundation/`
+  (`s3:ListBucket` on the key's prefix, `s3:GetObject` on `production/registry/terraform.tfstate`,
+  `kms:Decrypt` on the account's state key); the runner's own profile in `production/runners/`' AWS
+  configuration; `./scripts/gen-tfvars.py --pipeline` writes `awsds-prod-runner-deploy` for the registry
+  read, where the laptop's file names `awsds-infra-prod`. Read-only plans as the infrastructure user:
+  `production/foundation/` `1 to add, 1 to change` (the inline policy, the role's description), planned with
+  the alerts tfvars; `sandbox/dev-env/` `0 to add, 1 to change` (the image's description), the default tag
+  passing the new validation.
+- **[Claude] `scripts/devenv-register.py`**: dry runs in both modes print the generators, `init` with
+  `-lockfile=readonly`, a plan with `-var=image_tag=`, the apply of the saved plan and the version read
+  back; a tag without the rule's shape exits 2.
+- **[Claude] The targeted upgrade on the 3.12 lock**, in a scratch copy: 453 packages resolved, the same 13
+  moved as on the 3.13 lock, and the same 8 findings left. Their holders, read from PyPI's metadata:
+  `amazon-sagemaker-sql-magic` 0.1.3 requires `sqlparse==0.5.0`, `autogluon-multimodal` 1.6.1
+  `fsspec[http]<=2025.3`, `autogluon-core` 1.6.1 `setuptools<82`.
+- **[Claude] `gates-v0.3.0`**, in `ci-gates/`: the pip-audit job with the accepted list chosen by
+  `CI_PROJECT_PATH` and the audit-count guard, and `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` with the 8, proposed for
+  the steward. Exercised offline: the whole job on the laptop read 0 of 452 audited and failed, exit 1; its
+  summary on the 3.12 lock read 59 blocking lines and 14 accepted, exit 1; on the upgraded lock 0 blocking,
+  exit 0; with 460 pins against 452 audited it failed.
+- **[Claude] The release chain**, in the copy's `.gitlab-ci.yml`: `recipe-checks`, `build-images` (with the
+  smoke build), `scan-base`, `scan-dev-env`, `release-gate`, `register`; the smoke Dockerfile's `check` and
+  `manifests` stages; `dev-env/Dockerfile`'s `ARG BASE_REF`. Every pipeline file parses; `recipe-checks`
+  passes on the copy and fails a trailing comma in the managed settings.
+- **Owed**: the steward's acceptance of the 8 findings; the applies of `production/foundation/` and
+  `sandbox/dev-env/`; the GitLab session of runbook `gitlab.md` §M, with the pipeline linted in GitLab first.
+
+## 2026-10-14 — the steward's acceptance, and decision 14 applied
+
+- **[user] In chat**: accepted by name, as the Dev Env Steward, the 8 findings of
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`; authorized the applies of `production/foundation/` and
+  `sandbox/dev-env/`.
+- **[Claude] Before the writes**: the two peer sessions on this machine, both idle, were told;
+  `get-caller-identity` read the infrastructure user through `InfrastructureAccess` in Production and in
+  Sandbox.
+- **[Claude] `production/foundation/`** from its saved plan, 21:52:52Z-21:53:04Z: `1 added, 1 changed, 0
+  destroyed`, the runner role's description and its inline policy `registry-state`; the re-plan, with the
+  alerts tfvars, read `No changes`.
+- **[Claude] `sandbox/dev-env/`** from its saved plan, 21:53:30Z-21:53:40Z: `0 added, 1 changed, 0
+  destroyed`, the image's description; the re-plan read `No changes`, and `describe-image` reads `CREATED`
+  with the new description.
+- **[Claude] The policy simulator** on `awsds-prod-runner-deploy`, given `aws:RequestedRegion` and
+  `aws:PrincipalOrgID` as context: `s3:GetObject` on `production/registry/terraform.tfstate` allowed and on
+  `production/foundation/terraform.tfstate` implicitly denied; `s3:ListBucket` allowed with the registry's
+  key as prefix and denied with `production/`; `kms:Decrypt` on the state key allowed and `kms:Encrypt`
+  denied; `s3:PutObject` on the registry's key explicitly denied. Without the context every S3 action read
+  `explicitDeny` from the organization's policies, the simulator lacking the Region the S3 ARN does not
+  carry.
+
+## 2026-10-14 — the GitLab session: gates-v0.3.0 and the two seeds
+
+- **[user]** Ran `make hub-up` and `make gitlab-up` from this worktree; published `gates-v0.3.0` on
+  `awsds/ci-gates` (`gitlab.md` §G step 4, the four `ci-gates/` files of this branch); pushed the two seeds
+  (`gitlab.md` §M), `awsds/dev-env` `main` at `f44f19e3` and `awsds/deploy-image` `main` at `98a3dc7e`.
+- **[Claude] The runners**: `./aws/cicd.py` 0 FAILED, `CI-1` the deploy runner `t3a.small` running, `CI-9`
+  the test runner with hop limit 1. The deploy runner's first boot, read with `get-console-output`, lists
+  four profiles and assumed each: the three deploy roles, and `awsds-prod-runner-deploy` as
+  `assumed-role/awsds-prod-runner-deploy/<instance id>`, the instance's own role (decision 14's profile
+  through the AWS CLI; Terraform's read of it is unexercised).
+- **[Claude] `gates-v0.3.0`**, read through the user's Chrome session: the tag at
+  `2cc067490b603f6767802035faed624d5213e3ab`, `main` at the same commit; pipelines #5 (`main`) and #6 (the
+  tag) green on the test runner, `baselines-shape` reading `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: 8 key(s)`.
+- **[Claude] GitLab's CI Lint** (`POST /projects/:id/ci/lint`, which creates nothing) on the two pipeline
+  files as GitHub served them at `e45e1e3a`: both valid, no error or warning; a dry run of `awsds/dev-env`'s
+  `main` lists `secret_detection`, `secret-detection-gate`, `pip-audit` and `recipe-checks`.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py --dry-run` read both projects' last commits as the files
+  the copy holds, 13 and 5; the run wrote `gitlab/mirror.json` alone.
+- **[Claude] `awsds/dev-env` pipeline #2**, on the seed: `recipe-checks` passed in 5 s (`NO_PROXY_LIST: 70
+  entries`, the settings parsing, 7 env keys), `secret_detection` and its gate passed, and `pip-audit`
+  failed in 87 s with "452 package(s) audited, 73 vulnerability(ies) with a fixed version" on the test
+  runner: the uv export the gate's 3.12 image could not run at 3.13 ran at 3.12 (decision 13), and the
+  count is the laptop's with the markers removed. `awsds/deploy-image` created no pipeline, its rule
+  admitting the web form alone.
+- **[user] Stage 8 step 1.0's owed reading**: as the data-scientist persona, a Developer, tried to create
+  the tag `default-v0.0.0` on `awsds/dev-env`, and GitLab refused it. **[Claude]** Read through the user's
+  Chrome session: the project holds no tag, and its one protected tag is `*-v*`, created by Maintainers.
+- **[user] The release's merge request**, as the local administrator: `awsds/dev-env` !1 from the branch
+  `lock-past-the-findings` (`e9daa79d`), the targeted `uv lock --upgrade-package` and the `include` moved to
+  `gates-v0.3.0`'s commit `2cc06749`. **[Claude]** Its diff: `dev-env/python/uv.lock` +41/-40 lines and the
+  one `ref` line of `.gitlab-ci.yml`. Pipeline #3 green on the test runner: `recipe-checks` 6 s,
+  `secret_detection` 10 s and its gate 6 s, and `pip-audit` 89 s reading "8 accepted finding(s)" and "452 of
+  452 pinned package(s) audited, 0 blocking vulnerability(ies)". With pipeline #2's 73 on the seed, that is
+  verification (x) on a real lock: the gate stops the vulnerable set and admits the upgraded one with the
+  steward's list.
+- **[user]** Merged `awsds/dev-env` !1 as the steward, at 00:11:36Z on 2026-10-15 (UTC), merge commit
+  `69ad278e`.
+- **[Claude] `main` pipeline #4** on `69ad278e`, green on the test runner: `pip-audit` 89 s, "8 accepted
+  finding(s)" and "452 of 452 pinned package(s) audited, 0 blocking vulnerability(ies)", `recipe-checks`,
+  `secret_detection` and its gate.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/dev-env` read 2 changed (`.gitlab-ci.yml`'s
+  `ref` line and `dev-env/python/uv.lock`), 0 added, 0 removed; the merged lock is byte for byte the one
+  audited offline, with the same 8 source builds and 444 packages carrying a `cp312` Linux x86_64 wheel.
+  `./scripts/check-gitlab-mirror.py --plan` passes all eight checks: `GM-1` the copy at `69ad278e`, `GM-4`
+  70 names, sha256 `aafa08da98a61f5c` on both sides, `GM-8` 3 pins each scoped and granted.
+- **Owed, after PR #131 merges**: the mirror `awsds/infrastructure` and `git push gitlab main` (`gitlab.md`
+  §M), then the tag `default-v0.7.0` and the release in `dev-env.md` §B's order. The hub, GitLab and the
+  three runners are left up.

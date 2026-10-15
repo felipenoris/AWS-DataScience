@@ -109,10 +109,11 @@ which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
 - **the laptop**: the readings below ran there on 2026-10-12. uv reaches PyPI, and `--profile` reads the
   account;
 - **a space**: not run there yet, its installation included. The script `package-job` replaced built a
-  job folder in a space (Stage 6i step 3.6). uv in a house-image space finds no CPython 3.13
-  ([`images/README.md`](../../../images/README.md)), so a project that asks for it is packaged with
-  `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set. `package-uv-job.py` set it on its own; the package
-  passes on what the environment sets, which its documentation measured in a simulated space.
+  job folder in a space (Stage 6i step 3.6). uv in a house-image space finds the distribution's
+  interpreter only ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), so a project is packaged for the
+  house environment with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set: 3.13 up to `default-v0.6.0`,
+  3.12 from `default-v0.7.0`. `package-uv-job.py` set it on its own; the package passes on what the
+  environment sets, which its documentation measured in a simulated space.
 
 **This lab's values** are read as the infrastructure user (`felipenoris+infrastructure_user@…`), profile
 `awsds-infra-sandbox-1`, account `Sandbox Account 1`, permission set `InfrastructureAccess`, with STS,
@@ -295,49 +296,51 @@ Environment:
 - `exec` hands the job the interpreter's exit code;
 - the interpreter is named by absolute path, because a `ContainerEntrypoint` replaces the image's entry
   point and its `PATH`;
-- `/opt/awsds/venv/bin/python` is the house environment (Python 3.13); `/opt/conda/bin/python` is the
-  distribution's (3.12).
+- `/opt/awsds/venv/bin/python` is the house environment (Python 3.13 up to `default-v0.6.0`, 3.12 from
+  `default-v0.7.0`); `/opt/conda/bin/python` is the distribution's (3.12).
 
 ### J1 — A project with dependencies: `awsds-workflows package-job`
 
 The job has no network, so a project's dependencies either come with the house environment or travel in
 the code input; nothing is installed at run time. Three things differ from a Python task's archive (§C):
 
-- **The interpreter is the house environment's**, CPython 3.13 on Linux x86_64 today, not the worker's.
+- **The interpreter is the house environment's**, not the worker's: CPython on Linux x86_64 at the image's
+  `ARG PYTHON_VERSION`, 3.13 up to `default-v0.6.0` and 3.12 from `default-v0.7.0`.
 - **The code input is a folder, not an archive.** A `ProcessingInput` downloads an S3 prefix, and an
   extension module cannot be imported from a zip on `sys.path`.
 - **The precedence is the worker's reversed.** `PYTHONPATH` comes before the house environment's
   site-packages, so a package in both would shadow the image's copy, the failure
-  `images/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
+  `gitlab/awsds/dev-env/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
   lacks, and the project's versions must equal the image's for everything they share.
 
 `awsds-workflows package-job` (§T) applies the three to a project uv manages, against a file that lists
 the image's environment. Run it from a clone of this repository, for the house environment's lock: on
 the laptop, carrying the folder to `shared/` afterwards, or in a space, where the project's storage
-(`~/shared/`) is at hand. In a house-image space uv finds no CPython 3.13 of its own, since the image
-sets `UV_PYTHON_DOWNLOADS=never` and puts the house interpreter on no search path, so `package-job` runs
-there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has not run in a space yet.
+(`~/shared/`) is at hand. In a house-image space uv finds only the distribution's interpreter, since the
+image sets `UV_PYTHON_DOWNLOADS=never` and puts the house interpreter on no search path, so `package-job`
+runs there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has not run in a space yet.
 
 1. **Prepare the project.**
    - It has a `pyproject.toml` and a current `uv.lock`.
-   - Its `requires-python` admits the image's Python, 3.13 today.
+   - Its `requires-python` admits the image's Python: 3.12 from `default-v0.7.0`, 3.13 up to `default-v0.6.0`.
    - Its own code is pure Python, and it runs as `python -m my_package` (a `__main__.py`).
 2. **Export the house environment, then check the project against it and build the folder**, from the
-   commit that built the image the job names:
+   recipe at the commit that built the image the job names: this repository's copy when
+   `gitlab/mirror.json` names that commit, a clone of the GitLab project `awsds/dev-env` at it otherwise:
 
    ```bash
-   uv export --frozen --no-dev --no-emit-project --no-hashes --directory images/dev-env/python > /tmp/house-env.txt
+   uv export --frozen --no-dev --no-emit-project --no-hashes --directory gitlab/awsds/dev-env/dev-env/python > /tmp/house-env.txt
    ```
 
    ```bash
-   awsds-workflows package-job ~/src/my-project /tmp/my-job --environment /tmp/house-env.txt --python 3.13
+   awsds-workflows package-job ~/src/my-project /tmp/my-job --environment /tmp/house-env.txt --python 3.12
    ```
 
    The lock is the house environment: the image installs it with `uv sync --frozen`
-   ([`images/README.md`](../../../images/README.md)). The export reads the lock and needs no
+   ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)). The export reads the lock and needs no
    interpreter: it ran with downloads off and none to find (2026-10-12). `--python` is the
-   `ARG PYTHON_VERSION` of `images/dev-env/Dockerfile`, 3.13 today, which `package-uv-job.py` read on its
-   own. The output folder must not exist yet. `--platform` defaults to `x86_64-manylinux_2_28`: the house
+   `ARG PYTHON_VERSION` of `gitlab/awsds/dev-env/dev-env/Dockerfile` at that commit, 3.12 from `default-v0.7.0` and 3.13
+   up to `default-v0.6.0`; `package-uv-job.py` read it on its own. The output folder must not exist yet. `--platform` defaults to `x86_64-manylinux_2_28`: the house
    environment holds `onnxruntime` 1.30.0, which publishes no wheel older than `manylinux_2_28`, so the
    image's glibc is at least 2.28 and `manylinux2014` cannot describe it (measured 2026-10-11).
 3. **If it reports a disagreement**, paste the block it prints into the project's `pyproject.toml`, run
@@ -355,7 +358,7 @@ there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has
    the project's local tests on the versions the job imports. A lower bound
    of the project above an image version fails that lock, and then the dependency belongs in the image (a
    new image version, through [`dev-env.md`](dev-env.md)), not in the job.
-   `awsds-workflows job-constraints --environment /tmp/house-env.txt --python 3.13` prints every image
+   `awsds-workflows job-constraints --environment /tmp/house-env.txt --python 3.12` prints every image
    version in requirements form, for `uv pip compile -c` or `uv add -c`.
 4. **Read what it printed**: the folder and its size, what comes from the image (`da imagem`), what the
    folder carries (`na pasta`), and the top level (`raiz`), which is the project and the vendored
@@ -403,7 +406,7 @@ uv's own messages arrive in English, after `uv ... falhou:`.
 | `o lock do projeto e o ambiente da imagem discordam` | a shared package at another version | step 3 |
 | `não é Python puro` | the project has extension modules | build its wheel on the target platform, in a pipeline (Stage 8) |
 | `no wheels with a matching platform tag` | a vendored dependency publishes no wheel for the target | another version or another package, or the image |
-| `No interpreter found for Python 3.13` (or `>=3.13`) | uv found no CPython 3.13 for the project's lock check and build | in a house-image space, `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"`; a space on another image has no `AWSDS_PYTHON_ENV`, so a house-image space or the laptop |
+| `No interpreter found for Python <version>` | uv found no interpreter at the house environment's version for the project's lock check and build | in a house-image space, `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"`; a space on another image has no `AWSDS_PYTHON_ENV`, so a house-image space or the laptop |
 
 **Measured 2026-10-11** with `package-uv-job.py`, on a throwaway uv project depending on `petl`,
 `requests`, `boto3` and `pyyaml`: its fresh lock disagreed with the image on `boto3`, `botocore`,
@@ -462,7 +465,8 @@ in a Python task and a Bash task outside this lab
   worker extracts the archive to `/usr/local/airflow/dags`, which is on `sys.path`, so a module at the
   root imports by its name.
 - **Third-party packages built for the worker**: CPython 3.12 on Linux x86_64 today. A package installed
-  for your laptop or for the house environment (Python 3.13) does not import there.
+  for your laptop does not import there, nor one built for the house environment of `default-v0.6.0` or
+  earlier (Python 3.13).
 - **No package the worker already has**: Airflow, the Amazon provider, boto3 and botocore, dag-factory,
   PyYAML, lz4 and the AWS encryption SDK family. In a Python task the pre-installed package wins over the
   archive's copy (measured 2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2). A Bash
@@ -536,7 +540,7 @@ documentation lists every one
 | `acima do limite de 250000000 bytes do worker` | the archive is too big | `--omit` more, or drop dependencies |
 | `já está na raiz do .zip` | the entry module or an `--include` file has the name of a package or of another file at the root | rename the file |
 | `unrecognized arguments` | an option sits between the paths | put it after the archive |
-| `No interpreter found for Python <version>` | uv finds no interpreter the project accepts and may not download one, as in a space | `UV_PYTHON` naming one: in a house-image space `/opt/conda/bin/python` is 3.12 and `$AWSDS_PYTHON_ENV/bin/python` 3.13 |
+| `No interpreter found for Python <version>` | uv finds no interpreter the project accepts and may not download one, as in a space | `UV_PYTHON` naming one: in a house-image space `/opt/conda/bin/python` is 3.12, and `$AWSDS_PYTHON_ENV/bin/python` is 3.12 from `default-v0.7.0` and 3.13 up to `default-v0.6.0` |
 
 **What it does**, each step one rule of C1:
 

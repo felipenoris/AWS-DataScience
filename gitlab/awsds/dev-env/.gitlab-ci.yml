@@ -1,0 +1,241 @@
+# The pipeline of the GitLab project awsds/dev-env: the house image's release chain (AWS-DataScience's
+# Stage 8 step 1; README.md, "Releasing").
+#
+#   every push              the gates on the test runner: Secret Detection on a branch, pip-audit over
+#                           dev-env/python, and the recipe's own checks
+#   a tag <flavour>-v<semver>
+#     build                 base, then dev-env FROM it by digest, both pushed as <tag>-<short sha>, then
+#                           the smoke build FROM the pushed dev-env, its manifests the gate's evidence
+#     verify                each image's push scan, informative (decision 1)
+#     release               the steward's gate: a manual job that blocks the chain
+#     register              the deploy runner applies every target's dev-env/ slice with the new tag
+#
+# Which runner takes which job (decision 11): the gates carry tag awsds-test, the test runner, whose jobs
+# hold no AWS identity; build-images and the scans are untagged, so only the build runner takes them, a
+# protected runner serving protected refs alone; register carries tag awsds-deploy, the deploy runner. The
+# release tag `*-v*` is protected and created by Maintainers only, the dev-env-stewards, which in CE is the
+# whole of the release's authorization (Stage 7 step 3.3); the manual job is the pause where the steward
+# reads the evidence, after the domain's apps are deleted and the image detached (dev-env.md §B).
+
+include:
+  - project: awsds/ci-gates
+    ref: 2cc067490b603f6767802035faed624d5213e3ab # gates-v0.3.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify, release, register]
+
+variables:
+  GATES_UV_PROJECTS: "dev-env/python"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+.release:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[a-z0-9]+-v\d+\.\d+\.\d+$/
+
+# BuildKit rootless by digest, the release app-etl's pipeline pins (v0.34.0, read 2026-10-12).
+.buildkit:
+  image:
+    name: moby/buildkit:v0.34.0-rootless@sha256:65eca3c01cd1180c8f64565c4e3c5983af5145818b0e6fa863385d099eb73855
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+
+# ------------------------------------------------------------------------------------------- test
+#
+# What the shared gates do not read: the NO_PROXY literal is one ARG on one line with no whitespace in an
+# entry, and the managed settings parse and hold the session on Bedrock. Whether the literal is the
+# account's list is AWS-DataScience's scripts/check-gitlab-mirror.py, on its copy of this project.
+recipe-checks:
+  extends: .gates-uv
+  stage: test
+  script:
+    - |
+      python3 - <<'PY'
+      import json
+      import re
+      import sys
+
+      bad = []
+      dockerfile = open("dev-env/Dockerfile", encoding="utf-8").read()
+      found = re.findall(r'^ARG NO_PROXY_LIST="([^"]*)"\s*$', dockerfile, re.M)
+      if len(found) != 1:
+          bad.append(f'dev-env/Dockerfile: {len(found)} ARG NO_PROXY_LIST="..." line(s), where one is the rule')
+      else:
+          names = [n for n in found[0].split(",") if n]
+          spaced = [n for n in names if n.strip() != n or " " in n]
+          if spaced:
+              bad.append(f"dev-env/Dockerfile: NO_PROXY_LIST entries with whitespace: {spaced[:3]}")
+          print(f"NO_PROXY_LIST: {len(names)} entries")
+      try:
+          settings = json.load(open("dev-env/claude-code/managed-settings.json", encoding="utf-8"))
+          env = settings.get("env", {})
+          if env.get("CLAUDE_CODE_USE_BEDROCK") != "1":
+              bad.append('managed-settings.json: env.CLAUDE_CODE_USE_BEDROCK is not "1"')
+          print(f"managed-settings.json: parses, {len(env)} env key(s)")
+      except json.JSONDecodeError as exc:
+          bad.append(f"managed-settings.json does not parse ({exc}): Claude Code would ignore it silently")
+      for line in bad:
+          print(f"FAIL: {line}")
+      sys.exit(1 if bad else 0)
+      PY
+
+# ------------------------------------------------------------------------------------------ build
+#
+# The two images under one tag, <release tag>-<short sha>: a tag is spent on first landing, and the commit
+# keeps two builds of one release tag apart. dev-env names base by the digest just pushed. SKIP_BASE=1, set
+# when the pipeline is run again by hand on the same tag after the base landed and dev-env did not, takes
+# the base by its tag instead, which names the same bytes in a tag-immutable repository. The smoke build
+# runs in this job because its BuildKit cache already holds the image; its manifests are the gate's
+# evidence, and the three digests reach the later jobs as a dotenv report.
+build-images:
+  extends: [.release, .buildkit]
+  stage: build
+  timeout: 2h
+  script:
+    - |
+      set -eu
+      mkdir -p ~/.docker
+      printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+      tag="$CI_COMMIT_TAG-$CI_COMMIT_SHORT_SHA"
+      proxy_args="--opt build-arg:http_proxy=$http_proxy --opt build-arg:https_proxy=$https_proxy --opt build-arg:HTTP_PROXY=$HTTP_PROXY --opt build-arg:HTTPS_PROXY=$HTTPS_PROXY --opt build-arg:no_proxy=$no_proxy --opt build-arg:NO_PROXY=$NO_PROXY"
+      labels="--opt label:org.opencontainers.image.revision=$CI_COMMIT_SHA --opt label:org.opencontainers.image.version=$tag"
+      digest_of() { grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' "$1" | grep -o 'sha256:[0-9a-f]*'; }
+      echo "recipe $CI_COMMIT_SHA $CI_COMMIT_TIMESTAMP $CI_COMMIT_TITLE"
+      if [ "${SKIP_BASE:-0}" = "1" ]; then
+        echo "== base: skipped (SKIP_BASE=1), awsds-prod-ecr-base:$tag landed in an earlier run"
+        base_ref="$ECR_REGISTRY/awsds-prod-ecr-base:$tag"
+        base_digest=""
+      else
+        echo "== base: $ECR_REGISTRY/awsds-prod-ecr-base:$tag, the distribution through the cache"
+        buildctl-daemonless.sh build --frontend dockerfile.v0 \
+          --local context=base --local dockerfile=base \
+          --opt build-arg:SMD_IMAGE="$ECR_REGISTRY/ecr-public/sagemaker/sagemaker-distribution" \
+          $proxy_args $labels \
+          --output type=image,name="$ECR_REGISTRY/awsds-prod-ecr-base:$tag",push=true \
+          --metadata-file base.json
+        base_digest="$(digest_of base.json)"
+        base_ref="$ECR_REGISTRY/awsds-prod-ecr-base@$base_digest"
+      fi
+      echo "== dev-env: $ECR_REGISTRY/awsds-prod-ecr-dev-env:$tag, FROM $base_ref"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 \
+        --local context=dev-env --local dockerfile=dev-env \
+        --opt build-arg:BASE_REF="$base_ref" \
+        $proxy_args $labels \
+        --output type=image,name="$ECR_REGISTRY/awsds-prod-ecr-dev-env:$tag",push=true \
+        --metadata-file dev-env.json
+      dev_env_digest="$(digest_of dev-env.json)"
+      { echo "IMAGE_TAG=$tag"; echo "BASE_DIGEST=$base_digest"; echo "DEV_ENV_DIGEST=$dev_env_digest"; } > images.env
+      cat images.env
+      echo "== smoke: FROM awsds-prod-ecr-dev-env@$dev_env_digest - trust, runtimes, imports, manifests"
+      arg() { sed -n "s/^ARG $1=//p" dev-env/Dockerfile | head -n 1; }
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --no-cache \
+        --local context=smoke --local dockerfile=smoke \
+        --opt build-arg:DEV_ENV="$ECR_REGISTRY/awsds-prod-ecr-dev-env@$dev_env_digest" \
+        --opt build-arg:PYTHON_VERSION="$(arg PYTHON_VERSION)" \
+        --opt build-arg:JULIA_VERSION="$(arg JULIA_VERSION)" \
+        --opt build-arg:RUST_TOOLCHAIN="$(arg RUST_TOOLCHAIN)" \
+        $proxy_args --opt target=manifests --output type=local,dest=manifests
+      ls -l manifests
+  artifacts:
+    reports:
+      dotenv: images.env
+    paths: [manifests/]
+    expire_in: 1 year
+
+# ----------------------------------------------------------------------------------------- verify
+#
+# Each push's own basic scan against the SageMaker Distribution lineage's baseline, informative since
+# decision 1's amendment. Each job keeps its folder under its own name, so the gate can carry both.
+scan-base:
+  extends: [.release, .gates-ecr-scan]
+  stage: verify
+  needs: [build-images]
+  variables:
+    SCAN_REPOSITORY: awsds-prod-ecr-base
+  before_script:
+    - export SCAN_DIGEST="$BASE_DIGEST"
+  after_script:
+    - mv scan-gate scan-base || true
+  artifacts:
+    when: always
+    paths: [scan-base/]
+    expire_in: 1 year
+
+scan-dev-env:
+  extends: [.release, .gates-ecr-scan]
+  stage: verify
+  needs: [build-images]
+  variables:
+    SCAN_REPOSITORY: awsds-prod-ecr-dev-env
+  before_script:
+    - export SCAN_DIGEST="$DEV_ENV_DIGEST"
+  after_script:
+    - mv scan-gate scan-dev-env || true
+  artifacts:
+    when: always
+    paths: [scan-dev-env/]
+    expire_in: 1 year
+
+# ---------------------------------------------------------------------------------------- release
+#
+# The steward's gate (step 1.5): a manual job under `rules:`, so `allow_failure` is false and the chain
+# stops here until it is run. The evidence is the earlier jobs' artifacts, read before running it: the
+# manifests (the package sets, the runtimes, the proxy list's digest, the imports) and both scans; a byte
+# diff of the image is no evidence, since a rebuild of an unchanged recipe moves it. Running it is the
+# approval, recorded by GitLab with who ran it, and the job keeps the evidence with the release.
+release-gate:
+  extends: .gates-uv
+  stage: release
+  needs: [build-images, scan-base, scan-dev-env]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[a-z0-9]+-v\d+\.\d+\.\d+$/
+      when: manual
+  script:
+    - |
+      set -eu
+      echo "released by $GITLAB_USER_LOGIN: $IMAGE_TAG"
+      echo "  base    ${BASE_DIGEST:-(an earlier run's, SKIP_BASE=1)}"
+      echo "  dev-env $DEV_ENV_DIGEST"
+      echo "the registration follows; the domain's apps are deleted and the image detached by now (dev-env.md §B steps 1-2)"
+  artifacts:
+    paths: [manifests/, scan-base/, scan-dev-env/]
+    expire_in: never
+
+# --------------------------------------------------------------------------------------- register
+#
+# Step 1.6, on the deploy runner, in the deploy image (the runner's default, by digest). It clones the
+# infrastructure repository's GitLab mirror and runs its scripts/devenv-register.py, which applies every
+# target's dev-env/ slice as that target's deploy role and prints the version it registered. No guard
+# (decision 17): what the steward does before the gate and after this job is dev-env.md §B.
+register:
+  extends: .release
+  stage: register
+  needs:
+    - job: build-images
+    - job: release-gate
+      artifacts: false
+  tags: [awsds-deploy]
+  resource_group: dev-env-registration
+  timeout: 30m
+  variables:
+    GIT_STRATEGY: none
+    INFRA_MIRROR: gitlab.awsds.internal/awsds/infrastructure.git
+  script:
+    - |
+      set -eu
+      # The runner reaches AWS through the proxy for every service its VPC has no endpoint for, and
+      # make up's hub check does not run here (step 3.1), so a stopped proxy is named in seconds.
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://sagemaker.us-west-2.amazonaws.com/ || true)"
+      if [ "$code" = "000" ]; then
+        echo "FATAL: no answer through the proxy in 20 s - is the hub up (make hub-up)?"
+        exit 1
+      fi
+      echo "proxy answers ($code)"
+      git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 \
+        "https://gitlab-ci-token:${CI_JOB_TOKEN}@${INFRA_MIRROR}" infra
+      cd infra
+      ./scripts/devenv-register.py --pipeline --tag "$IMAGE_TAG" --digest "$DEV_ENV_DIGEST"

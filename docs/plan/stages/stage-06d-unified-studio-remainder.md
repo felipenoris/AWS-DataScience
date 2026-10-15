@@ -190,7 +190,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   are image-delivered, so the step stands narrowed to those ecosystems. The sitting is
   [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md), 2026-09-08.
 - **3.1 closed for `uv` and Julia, 2026-09-10, in a space on the house image.** `uv` is
-  `/opt/conda/bin/uv` 0.12.5 (the base's, `images/base` section 3): `uv init` + `uv add pandas`
+  `/opt/conda/bin/uv` 0.12.5 (the base's, `gitlab/awsds/dev-env/base` section 3): `uv init` + `uv add pandas`
   resolved and installed **5 packages in 1.56 s** once the six variables were exported — and failed
   before that, which is the same reading 3.1 took on the stock image in another form. Julia 1.12.7
   from the baked depot added `InterestRates` with its four dependencies and precompiled them in 4 s,
@@ -201,7 +201,7 @@ is the one the environment will have. A denied name is a decision to take, not a
 - **The image's Python layer was rewritten the same day, on the user's decision.** No package of ours
   goes into the distribution's environment any more and its default kernel is untouched: uv builds a
   **second, independent** environment under `/opt/awsds` on a uv-managed CPython, from
-  `images/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
+  `gitlab/awsds/dev-env/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
   kernel (`awsds-python`, *Python (awsds dev-env)*). The list is seeded to the distribution's own
   library surface, and then **diffed against it**: `cpu.env.in` for SMD 4.3.0 names 71 packages, of
   which 30 were already covered and 6 are tooling rather than libraries. Of the 36 missing, 24 are
@@ -216,7 +216,8 @@ is the one the environment will have. A denied name is a decision to take, not a
   (`aws-glue-sessions` → `notebook`; the SMUS sessions package → `sparkmagic` → `notebook`): files on
   disk that nothing starts, since the server a space runs is the base environment's. Three measurements came out of writing it, all from `uv lock` on the laptop rather
   than from a build: **TensorFlow has no wheel past `cp313`**, which is what set the interpreter —
-  the user kept the framework and moved the Python to **3.13** rather than the newest; the default
+  the user kept the framework and moved the Python to **3.13** rather than the newest (and to the
+  distribution's **3.12** on 2026-10-14, Stage 8 decision 13, from `default-v0.7.0`); the default
   PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
   PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the dependency is
   `xgboost-cpu` — which is the same choice the distribution makes (`py-xgboost-cpu` in its own
@@ -250,7 +251,7 @@ is the one the environment will have. A denied name is a decision to take, not a
     read `403` fourteen minutes earlier. conda's
     two names stay off: the build plane is `open` and reaches them, and a solver run inside a space would
     move the distribution's own pins. What CRAN does not buy is the compiled half — it serves source
-    packages, so `images/dev-env/r/conda-packages.txt` stays the delivery path for anything with C or
+    packages, so `gitlab/awsds/dev-env/dev-env/r/conda-packages.txt` stays the delivery path for anything with C or
     Fortran in it.
 - **Rust is read in a remote session, 2026-09-11, and it names an image defect.** `cargo` fetched
   `index.crates.io` (2.07 MiB) and `static.crates.io` (0.34 MiB) through the proxy while
@@ -259,7 +260,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   `sysroot_path=/opt/rust/rustup/toolchains/1.98.0-…`: the image installs the toolchain with rustup's
   **`minimal` profile**, which does not carry `rust-src`, so the standard library is not indexed —
   completion, hover and go-to-definition for `std` are lost, and nothing else is. Fixed in
-  `images/dev-env/Dockerfile` (`--component rust-src`), which means the **next build**; it is not
+  `gitlab/awsds/dev-env/dev-env/Dockerfile` (`--component rust-src`), which means the **next build**; it is not
   repairable from a space, since `RUSTUP_HOME` is root-owned under `/opt` and a `sudo rustup component
   add` dies with the container.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
@@ -269,7 +270,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   and Rust (`crates.io`, `rust-lang.org`) **are on it**; **`conda` (`repo.anaconda.com`,
   `conda.anaconda.org`) and CRAN (`cloud.r-project.org`) are not** — each is a `403` naming the host in
   the proxy's log, and a decision (due 6): allow the name on the compute plane, or record the loss and
-  keep the ecosystem image-delivered (`images/dev-env/`'s premise). CodeArtifact needs no endpoint in
+  keep the ecosystem image-delivered (`gitlab/awsds/dev-env/dev-env/`'s premise). CodeArtifact needs no endpoint in
   Sandbox: `.amazonaws.com` is on the plane, so INT-02's consumer half is proved **through the proxy**.
 - **3.2 done 2026-09-08, on two channels.** The instrument was `sts:GetCallerIdentity` rather than
   `aws s3 ls` — the call the session made — and CloudTrail carries **`vpcEndpointId`
@@ -1527,7 +1528,7 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    suffix form** (fits, and `UpdateAppImageConfig` would make a change an in-place apply — at the price
    of a perimeter change, since every AWS name in the Region would then bypass the proxy and a service
    with no endpoint would become a silent timeout rather than a public call).
-   **Delivered in code the same day**: [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile)
+   **Delivered in code the same day**: [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile)
    §6 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
    **`NO_PROXY` as a dated literal** — Sandbox's, 50 entries, sha256 `856bc57bb…` — and the command
    that refreshes it in the comment beside it; the `ARG` stays as its default, so another account
@@ -1539,7 +1540,7 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    (`DE-1`..`DE-4`) compares the literal with the account's current output and names each side's extra
    entries, and `/opt/awsds-proxy.txt` inside a space carries the digest of what was actually baked;
    [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Rebuilt**: `default-v0.2.0` (2026-09-11) was the first image to carry the literal, and every release
-   since has ([`images/README.md`](../../../images/README.md) §*The releases*).
+   since has ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases*).
 9. **Whether Amazon Q Developer's Free tier is opened at all** (10.2). As written, it does not meet the
    persistence clause Stage 6e was built to satisfy: the content is stored in AWS's `us-east-1`, outside
    the estate, under no setting this estate can declare. Open it as a `Sandbox` residual with its own row in

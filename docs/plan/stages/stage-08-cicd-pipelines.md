@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **Pass 3 written 2026-10-14, not run** (PR #131, decisions 13 to 17): the house environment on Python 3.12, first in `default-v0.7.0`; everything under `images/` moved to the private GitLab, copied here under `gitlab/`; the release chain, `scripts/devenv-register.py`, the runner's read of the registry's state and `gates-v0.3.0` written. GitLab holds none of it until the user's session pushes it. **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
 | **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
@@ -126,7 +126,7 @@ compute plane's allow-list serves PyPI, Julia, crates and CRAN since 6d, and D38
 a space installs most packages in seconds; what still needs this chain is what the image itself carries — the
 conda-built R stack, the toolchains under `/opt`, the proxy literal, the assistant's pins.
 
-- **1.0 — Done 2026-10-12, at Stage 7 step 3.6**: on `awsds/dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only; read back in the project's settings (Stage 7's log).
+- **1.0 — Done 2026-10-12, at Stage 7 step 3.6**: on `awsds/dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only; read back in the project's settings (Stage 7's log). **Attempted 2026-10-14**: the data-scientist persona, a Developer, could not create the tag `default-v0.0.0`, and the project holds no tag. The recipe moved there the same day (decision 16): the seed at `f44f19e3`, and the release's merge request !1 merged at `69ad278e`.
 - **1.0 — [user] Set the repository's roles and protection** (with Stage 7 steps 3.4-3.5, restated with
   the fields named): on `dev-env/` — `data-scientists` **Developer**, `dev-env-stewards` **Maintainer**;
   the release tag pattern **protected, creation Maintainers-only** — in CE that role mapping *is*
@@ -138,21 +138,41 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   of the CE authorization, the gate would be open to every **Developer** — i.e. to `data-scientists` — while
   still reading as protected in the settings page. The failure is invisible from inside GitLab: an
   unprotected tag is created successfully. **Verify by attempting a tag creation as a Developer after
-  setting it**, rather than by reading the pattern back. **The recipe moves first** (decision 6): `images/`
-  lives in this GitHub repository today, where every hand build took it from, and a protected tag on a
-  repository that does not hold the recipe gates nothing.
+  setting it**, rather than by reading the pattern back. **The recipe moves first** (decisions 6 and 16): `images/`
+  leaves this GitHub repository for the GitLab projects `awsds/dev-env` and `awsds/deploy-image`, whose
+  copies this repository keeps under `gitlab/`, since a protected tag on a repository that does not hold
+  the recipe gates nothing.
 - **1.1 — Stage 7 left a working shape (2026-10-12)**: `images/build.gitlab-ci.yml`, carried by GitLab's
   `awsds/dev-env` as its `.gitlab-ci.yml`, cloned this repository at a given commit, built `base` with the
   distribution through the pull-through cache, built `dev-env` `FROM` it, pushed both as `default-v0.6.0` with
   the runner's role through the ECR credential helper the runner mounts, and ran a smoke stage (Stage 7 step
   2.6). It runs on a web trigger with `IMAGE_TAG` and `RECIPE_SHA`, so the steward's gate is who can run a
   pipeline on `main` of a project the protected runner serves (Lesson 67), not yet a protected tag.
+- **1.1 to 1.6 — Written 2026-10-14, not run** (decisions 13 to 17): the copy of `awsds/dev-env` under
+  `gitlab/awsds/dev-env/` holds the chain as its `.gitlab-ci.yml`. Every push runs the gates of `ci-gates`
+  and `recipe-checks` on the test runner. A tag `<flavour>-v<semver>` runs `build-images` on the build runner:
+  `base` and `dev-env` pushed as `<tag>-<short sha>`, `dev-env` `FROM` the base by digest (`ARG BASE_REF`),
+  then the smoke build `FROM` the pushed `dev-env`, which fails on a client that does not trust the root, a
+  runtime at another version than the recipe's ARGs, or a key import, and exports the manifests of both
+  Pythons, R, Julia, the runtimes, the proxy list's digest and the imports. Then `scan-base` and
+  `scan-dev-env`, informative; `release-gate`, manual and blocking; and `register` on the deploy runner,
+  which clones the mirror `awsds/infrastructure` with the job token and runs `scripts/devenv-register.py
+  --pipeline`: each target's slice as its own deploy role, the registry's state through the runner's own
+  profile (decision 14), with no guard (decision 17). `sandbox/dev-env/` accepts the `-<short sha>` suffix.
+  The include stood at `gates-v0.2.0` until the release's merge request !1 moved it to `gates-v0.3.0`, which
+  carries decision 15's accepted list; `scripts/devenv-register.py --dry-run` prints both paths' commands, and
+  every pipeline file parses. **Decision 14 applied 2026-10-14 by Claude, authorized by the user**:
+  `production/foundation/` 1 added, 1 changed (the runner role's `registry-state` and its description),
+  `sandbox/dev-env/` 1 changed (the image's description), each re-plan `No changes`. The policy simulator,
+  given the Region and the organization as context, reads the runner role's `s3:GetObject` and
+  `s3:ListBucket` allowed on the registry's key alone, `kms:Decrypt` on the state key, and `s3:PutObject`
+  denied; the runner's profile is unexercised until a `make gitlab-up` from this branch.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release
   tag from colliding in a repository where **a tag is spent on first landing**, and makes a pipeline-built
   image distinguishable from the six hand builds (`default-v0.1.0` to `default-v0.5.0`) and Stage 7's
-  web-triggered `default-v0.6.0`, which carry no suffix (ledger: [`images/README.md`](../../../images/README.md)
+  web-triggered `default-v0.6.0`, which carry no suffix (ledger: [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)
   §*The releases*). **The
   flavour stays in front**, so the registry's lifecycle rule (untagged after 14 days, the 30 newest tagged
   kept across flavours) can be split per flavour with a plain `tagPrefixList` when a second one exists. The
@@ -474,7 +494,8 @@ the approval, and 4.6's alarm.
   because the **declarative policy already defaults IMDSv2 hop limit 2** org-wide (verification (ii)).
 - **4.3 — Applied 2026-10-13 by Claude, authorized by the user.** The deploy image is
   `awsds-prod-ecr-deploy:v0.1.0` (`sha256:1b1a5830…a53a`), built on the build runner by the GitLab project
-  `awsds/deploy-image`, which holds only that pipeline (`images/README.md`); its two CRITICALs, Debian 13's
+  `awsds/deploy-image`, which then held only that pipeline (its copy:
+  [`gitlab/awsds/deploy-image/README.md`](../../../gitlab/awsds/deploy-image/README.md)); its two CRITICALs, Debian 13's
   curl with no fixed package, were accepted by the user by name as its baseline (decision 1).
   `production/runners/` 1 added, re-plan `No changes`. The first boot (3 min 31 s) assumed all three deploy
   roles with the instance's credentials, registered under GitLab runner #3 (protected, locked, tag
@@ -824,6 +845,55 @@ Measured (`docs/PRICING.md`), us-west-2:
     Glue scripts, and no Terraform. The release a slice runs is a variable whose default is the tracked line
     3.7 records, and the pipeline passes the release it promotes. **Taken by the user 2026-10-13, as
     recommended.**
+13. **The house environment's Python** (1.1, 5.2). The image carries two Python environments: the SageMaker
+    Distribution's `/opt/conda`, 3.12, and the house environment `/opt/awsds/venv`, 3.13 since 6d set it
+    (TensorFlow publishes nothing past `cp313`). The shared pip-audit gate runs on CPython 3.12 with
+    downloads off, and `uv export --locked` needs an interpreter the project's `requires-python` admits, so
+    the gate could not export the house environment's lock: exit 2, `No interpreter found for Python
+    >=3.13`, read 2026-10-14 on the laptop under the gate's conditions. **Taken by the user 2026-10-14:
+    every Python environment on 3.12**, the distribution's minor. The recipe carries `requires-python =
+    ">=3.12,<3.13"` and `PYTHON_VERSION=3.12`; the re-lock kept all 453 packages at their versions and
+    needs one source build fewer (`statsforecast` 2.0.1 publishes a `cp312` wheel and no `cp313`), and the
+    export then passes under the gate's conditions. 6i's `awsds-demo-deps` moved with it. The first image
+    carrying it is `default-v0.7.0`; `default-v0.6.0`, and the `default-v0.5.0` that 6i's kept workflows
+    run, stay 3.13. This repository's own tooling stays on 3.14, the version `CLAUDE.md` pins.
+14. **How a pipeline job reads `production/registry/`'s state** (1.6; 3.2's Staging slice). `sandbox/dev-env/`
+    reads it for the repository URL and ARNs through `awsds-infra-prod`, the infrastructure user's SSO
+    session, which the runner does not have. Recommended: **the deploy runner's own role reads that one
+    object** (`s3:GetObject` on its key, `kms:Decrypt` on Production's state key) through a profile named
+    after the role that carries the instance's credentials, and `gen-tfvars.py --pipeline` emits that profile
+    for the registry read. Rejected: the read as `awsds-deploy-prod`, which puts Production's deploy role
+    into every Sandbox and Staging leg's CloudTrail (INT-08); a cross-account grant on Production's state
+    bucket and key per target, which widens the estate's most sensitive bucket policy. **Taken by the user
+    2026-10-14, as recommended.**
+15. **The pip-audit findings the house environment cannot shed** (5.2). Its lock carries 73 vulnerabilities
+    with a fixed version in 14 packages; a targeted `uv lock --upgrade-package` moves 13 packages and clears
+    65, and 8 stay because other packages of the environment require the old versions (fsspec 2025.3.0,
+    setuptools 81.0.0, sqlparse 0.5.0). Recommended: **an accepted list per GitLab project** in
+    `baselines.gitlab-ci.yml`, `<id>|<package>`, chosen by `CI_PROJECT_PATH` so a gated pipeline cannot edit
+    its own list, each entry naming the package that holds it and entered by name in a commit that carries
+    the steward's acceptance, the ECR baseline's discipline; in the same `gates-v0.3.0`, **the gate fails
+    when it audits fewer packages than the export pins**, since it audited 0 of 452 on the laptop and passed;
+    and the first release, `default-v0.7.0`, carries the targeted upgrade as a data scientist's merge
+    request. **Taken by the user 2026-10-14, as recommended**, and the 8 accepted by name the same day by the
+    user as the Dev Env Steward: `CVE-2026-104851|fsspec`, `PYSEC-2026-3447|setuptools` and six of `sqlparse`,
+    held by `autogluon-multimodal` 1.6.1, `autogluon-core` 1.6.1 and `amazon-sagemaker-sql-magic` 0.1.3.
+16. **Where the image recipes live, and the copy this repository keeps** (1.0, decision 6). Recommended: a
+    clone of `awsds/dev-env` in a gitignored folder of the project folder, read by `devenv.py` and
+    `bedrock-scope.py`. **Taken by the user 2026-10-14, wider than recommended: everything under `images/`
+    moves to the private GitLab, which becomes its source of truth**, the house image's recipe to
+    `awsds/dev-env` and the deploy image's to `awsds/deploy-image`. This repository keeps a tracked copy of
+    each project's last commit under `gitlab/`, written by `scripts/gitlab-mirror.py`, and
+    `scripts/check-gitlab-mirror.py` reads the copy's NO_PROXY literal and Bedrock pins against the estate. A
+    change it asks for is made in GitLab by the user, then copied back; an edit under `gitlab/` is a proposal
+    until GitLab holds it and the copy reads equal.
+17. **The register job's guards** (1.6). The apply destroys the version the domain attaches before it creates
+    the next one, AWS refuses neither, and the failure arrives at the next attach (`dev-env.md` §B).
+    Recommended: the registration refuses while any domain's `CustomImages` names the image, and refuses a
+    plan that changes anything but the image version; after the apply it compares `ContainerImage` with the
+    pushed digest and lists the spaces the bump strands, for four read actions on the dev-env deploy role.
+    **Taken by the user 2026-10-14: no guard, the steward's discipline in §B's order is the control**; the
+    guards wait in [issue #129](https://github.com/felipenoris/AWS-DataScience/issues/129).
 
 ## Verifications to answer while executing
 
@@ -831,7 +901,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); the second half is answered when 1.5 and 3.5 are written | pass 0 |
+| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); 1.5 is written in it on 2026-10-14, `awsds/dev-env`'s `release-gate` a manual job on the protected tag `*-v*`, and 3.5's half waits for pass 4 | pass 0 |
 | ii | Does a job container on the deploy runner obtain instance-profile credentials — the declarative hop-limit-2 default reaching a real launch? **Yes, read 2026-10-13**: `awsds/app-etl`'s job #15 printed the instance role through the metadata service and each of the three deploy roles assumed through its profile | 4.3 |
 | iii | Does a job on a non-protected ref fail to schedule onto the protected runner? **Yes, read 2026-10-13**: job #16, the same job on the unprotected branch `deploy-runner-probe`, sat `pending` with no runner for 314 s under GitLab's stuck notice, runner #3 `online` | 4.5 |
 | iv | Does the scan gate read the push's scan (wait → findings), and is a re-scan inside 24 h refused rather than silently absorbed? **The first half yes, read 2026-10-14** on `awsds/app-etl`'s pipeline #15: `scan-gate` waited for `v0.1.0-d7e093a9`'s scan, complete 5 min 44 s after the push, read 723 CRITICAL and HIGH findings and failed on the 593 absent from the baseline; the re-scan half is not exercised | 1.4 |
@@ -840,7 +910,7 @@ Record every answer, including the ones that come out fine.
 | vii | Does 1.6's apply land from the pipeline, does the version's `ContainerImage` equal the pushed digest, and does the attachment survive the next blueprint reconciliation (INT-17's open half — diff of two `./aws/cicd.py`/`./aws/studio.py` runs)? | 1.6 |
 | viii | Is the registered dev-env digest identical across all N targets (D17 by construction — `note` at N = 1), and does every existing space start on the new version after the sweep? | 1.6 |
 | ix | Does a deliberately broken version stop at 3.3 with Production untouched? | 3.3 |
-| x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once), and does a failed export fail the job rather than pass it? | 5.2 |
+| x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once), and does a failed export fail the job rather than pass it? **Yes to both**: offline on 2026-10-13 a pinned `requests==2.19.0` blocked and a project with no lock failed at the export; on 2026-10-14 the house lock itself, `awsds/dev-env` pipeline #2 failing on 73 findings with a fixed version and #3 and #4 passing on the upgraded lock with the steward's 8 accepted, 452 of 452 audited; and a set the interpreter's platform skips, 0 of 452 audited on the laptop, fails since `gates-v0.3.0` instead of passing | 5.2 |
 | xi | Does the by-hand `make up ENV=staging` path produce the same result as the pipeline's (3.8)? | 3.8 |
 | xii | Is the Staging burn zero after a failed promotion — does 3.4's `after_script` hold? | 3.4 |
 | xiii | Does every gate job carry the proxy variables, and does a job with them removed fail rather than hang? **Yes to both, read 2026-10-14** on `awsds/app-etl`'s pipeline #13: `pip-audit` and `test` reached OSV and PyPI through the variables the test runner sets, and `gate-without-proxy`, with them removed, failed in 45 s with exit 2, uv's "Request failed after 3 retries in 44.5s" on a connect timeout, under its 300 s bound | 5.2 |

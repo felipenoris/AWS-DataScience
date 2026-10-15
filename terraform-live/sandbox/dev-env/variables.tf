@@ -55,10 +55,12 @@ variable "registry" {
 
 # --------------------------------------------------------------------------- what is registered
 #
-# The tag, not a digest. docs/SMUS.md's tag rule is `<flavour>-v<major>.<minor>.<patch>` and both
+# The tag, not a digest. docs/SMUS.md's tag rule is `<flavour>-v<major>.<minor>.<patch>`, and a build
+# of the release pipeline appends `-<short sha>`, the commit it built (Stage 8 step 1.1). Both
 # repositories are tag-immutable, so a tag names exactly one digest for the life of the repository
 # and the two forms carry the same guarantee. The tag is also what the steward approves and what a
-# reader recognises; a digest is neither.
+# reader recognises; a digest is neither. The registration job passes the release it built with
+# `-var image_tag=`, and the default below is the tracked line the release is recorded on afterwards.
 #
 # Bumping it replaces the image version: a SageMaker image version is immutable, so base_image is a
 # force-new attribute. What the domain then serves depends on how the attachment names the version
@@ -70,8 +72,8 @@ variable "image_tag" {
   default     = "default-v0.6.0"
 
   validation {
-    condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+$", var.image_tag))
-    error_message = "the tag is <flavour>-v<major>.<minor>.<patch> - the hand-build form, with no -<short-sha> suffix (docs/SMUS.md, The tag rule)."
+    condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9a-f]{8,40})?$", var.image_tag))
+    error_message = "the tag is <flavour>-v<major>.<minor>.<patch>, and a pipeline build's carries -<short sha> after it (docs/SMUS.md, The tag rule)."
   }
 }
 

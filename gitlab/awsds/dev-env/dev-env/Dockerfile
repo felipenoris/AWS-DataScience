@@ -7,7 +7,7 @@
 # FROM `base`, not from the distribution directly, because of D17: the application images are
 # `FROM base:<pinned tag>`, so "the runtime the code runs on is the runtime it was written
 # against" is true BY CONSTRUCTION only if this image shares that ancestor.
-# images/base/Dockerfile carries the argument and the SMUS BYOI constraint that forced base's
+# base/Dockerfile carries the argument and the SMUS BYOI constraint that forced base's
 # own root; read it before changing either.
 #
 # What this image adds, and why it is three languages (docs/plan/architecture.md §4.3): the
@@ -17,24 +17,25 @@
 # ad-hoc `pip install` under design A becomes a merge request, a build, a scan and a steward
 # approval under design B.
 #
-# No ENTRYPOINT, no CMD - see images/base/Dockerfile §the SMUS BYOI rule. The base's
+# No ENTRYPOINT, no CMD - see base/Dockerfile §the SMUS BYOI rule. The base's
 # /usr/local/bin/_entrypoint.sh must survive.
 #
 # Nothing is compiled here. Julia, rustup and the R environment are all prebuilt binary
 # downloads, which is what keeps an amd64 build under emulation on an Apple Silicon laptop
-# slow rather than impossible (images/README.md).
+# slow rather than impossible (README.md).
 #
-# Build (after base, amd64):
-#   docker buildx build --platform linux/amd64 -t awsds/dev-env:local images/dev-env
+# Build (after base, amd64), from the project root:
+#   docker buildx build --platform linux/amd64 -t awsds/dev-env:local dev-env
 
-ARG BASE_IMAGE=awsds/base
-ARG BASE_TAG=local
-FROM ${BASE_IMAGE}:${BASE_TAG}
+# The base, by reference. The release pipeline names it by digest, the base it pushed a moment
+# earlier (AWS-DataScience's Stage 8 step 1.1), so the provenance records the bytes and not a name;
+# a local build names the tag it built.
+ARG BASE_REF=awsds/base:local
+FROM ${BASE_REF}
 
-# Re-declared for the same reason images/base/Dockerfile re-declares its three: an ARG stated
-# before FROM does not survive it, and both are read back in section 5.
-ARG BASE_IMAGE
-ARG BASE_TAG
+# Re-declared for the same reason base/Dockerfile re-declares its three: an ARG stated before FROM
+# does not survive it, and it is read back in section 5.
+ARG BASE_REF
 
 # ------------------------------------------------------------------------------- the pins
 #
@@ -84,7 +85,7 @@ USER root
 # both live in the same layer - 5.4 GB of cache beside a 5.2 GB environment, in a layer of 10.7 GB.
 # A later `rm -rf` would return nothing, since the bytes are already committed to this layer; the
 # cache has to never be written. The build is a single resolve, so nothing is lost by it.
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 ARG UV_DEFAULT_INDEX=""
 
 ENV AWSDS_PYTHON_ENV=/opt/awsds/venv \
@@ -94,7 +95,7 @@ COPY python/pyproject.toml python/uv.lock /opt/awsds/python-project/
 
 RUN set -eu; \
     command -v uv >/dev/null 2>&1 \
-      || { echo "FATAL: no uv on PATH. The base image installs it (images/base section 3)." >&2; exit 1; }; \
+      || { echo "FATAL: no uv on PATH. The base image installs it (base/Dockerfile section 3)." >&2; exit 1; }; \
     echo "== uv $(uv --version), asking for CPython ${PYTHON_VERSION}"; \
     export UV_PYTHON_DOWNLOADS=automatic; \
     export UV_PYTHON_INSTALL_DIR="${AWSDS_PYTHON_HOME}"; \
@@ -265,7 +266,7 @@ RUN set -eu; \
 # The three runtimes are read back here so that a build log carries them, and so that Stage 8
 # step 1.2's smoke test has an in-image equivalent to assert against.
 RUN set -eu; \
-    { echo "base image      : ${BASE_IMAGE}:${BASE_TAG}"; \
+    { echo "base image      : ${BASE_REF}"; \
       echo "python (base)   : $(python --version 2>&1)"; \
       echo "python (awsds)  : $(${AWSDS_PYTHON_ENV}/bin/python --version 2>&1) at ${AWSDS_PYTHON_ENV}"; \
       echo "uv              : $(uv --version)"; \
@@ -278,7 +279,7 @@ RUN set -eu; \
 
 LABEL org.opencontainers.image.title="awsds-dev-env" \
       org.opencontainers.image.description="The SMUS custom image (BYOI): the shared ancestor plus Julia, R and Rust." \
-      org.opencontainers.image.source="https://github.com/felipenoris/AWS-DataScience" \
+      org.opencontainers.image.source="https://gitlab.awsds.internal/awsds/dev-env" \
       org.awsds.stage="6.5.0" \
       org.awsds.julia="${JULIA_VERSION}" \
       org.awsds.rust="${RUST_TOOLCHAIN}"
@@ -335,8 +336,9 @@ LABEL org.opencontainers.image.title="awsds-dev-env" \
 # line-continued RUN does not work - the backslash eats the newline the heredoc body needs. And a
 # side file is reviewable as JSON: a trailing comma is visible in a diff instead of surviving to a
 # build, where an unparseable managed-settings.json is IGNORED SILENTLY and every key above simply
-# stops applying. `pre-commit`'s check-json covers images/**.json for exactly that reason, and the
-# RUN below re-parses it in the image as well - guarded like the visudo call below, because whether
+# stops applying. AWS-DataScience parses this project's copy of it (pre-commit's check-json and
+# scripts/check-gitlab-mirror.py GM-6) for exactly that reason, and the RUN below re-parses it in the
+# image as well - guarded like the visudo call below, because whether
 # python3 is on PATH here is the distribution's choice and not this file's.
 COPY claude-code/managed-settings.json /etc/claude-code/managed-settings.json
 

@@ -264,7 +264,7 @@ the whole CA is one pass. The fourth trust surface is GitLab itself, which needs
 - **2.6 — Built and registered 2026-10-12**: pipeline #4 of GitLab's `awsds/dev-env` (`images/build.gitlab-ci.yml`, the recipe cloned at `e885dcd`) pushed `base:default-v0.6.0` `sha256:94359041…1975` and `dev-env:default-v0.6.0` `sha256:43079013…5518` in about 16 minutes, the distribution pulled through the cache; the smoke test read GitLab with curl, git and both Pythons through the image's own trust (`base` section 5 now points OpenSSL, `requests`, curl and Node at the system bundle). Registered the same evening by `dev-env.md` §B (version 6, `ContainerImage` the pushed digest, re-attached at 19:48:45 UTC, no space stranded); INT-09's clone from a notebook is owed.
 - **2.6 — [user] Rebuild and repush the images with the root**: the recipe carries an **empty CA-install
   layer** in `base` (§5: the copy, the count assertion and `update-ca-certificates`, with `ARG
-  CA_ROOTS_EXPECTED=0`), filled here from 2.3's one source. Drop the PEM into `images/base/ca-certificates/`
+  CA_ROOTS_EXPECTED=0`), filled here from 2.3's one source. Drop the PEM into `gitlab/awsds/dev-env/base/ca-certificates/`
   with a `.crt` extension and build with **`--build-arg CA_ROOTS_EXPECTED=1`**, so a forgotten file fails the
   build instead of shipping a trusting-nothing image; fix the layer's comments, which still name
   `gitlab.prod.internal` and `*.pages.internal`, in the same commit. **The tag is `default-v0.6.0`**, the
@@ -338,7 +338,7 @@ shape is `when: manual` under `rules:` on a protected tag.
 - **3.6 — [user] Create the repositories**: `app-etl` (conventions §6's template) and `dev-env`, the latter
   writable by `data-scientists` with its **release tag protected** so only `dev-env-stewards` can push it —
   the CE shape of Stage 8 step 1's gate. `dev-env` starts empty: the recipe lives in this repository's
-  `images/` until Stage 8 decision 6.
+  `images/` until Stage 8 decision 16 moves it there (2026-10-14).
 
 ### 4. Publish docs on GitLab Pages (D36)
 
@@ -485,7 +485,7 @@ and to the immutable tags.
   Deleted: the slice, its `layers.py` row (rank 55) and slice entry, its `backend.py` `NETWORK_SLICES` entry, `scripts/buildbox.py`, the runbook's
   procedures (the page stays as a pointer, since two stage logs link to it and a log entry is never
   rewritten), the tracked size file's `.gitignore` exception and its `check-tfvars-shape.py` row. The ledger moved to
-  [`images/README.md`](../../../images/README.md) §*The releases*, with `default-v0.6.0` added; every live
+  [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases*, with `default-v0.6.0` added; every live
   reference was repointed, and executed stages and logs keep theirs as records. The empty state object
   `production/buildbox/terraform.tfstate` stays in the versioned state bucket.
 - **6.5 — [Claude⚡] Retire the buildbox in the same sitting**: destroy `production/buildbox/` if it is up
