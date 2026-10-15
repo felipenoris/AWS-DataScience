@@ -803,3 +803,16 @@ Account ids are replaced by the account's name in angle brackets.*
   452 pinned package(s) audited, 0 blocking vulnerability(ies)". With pipeline #2's 73 on the seed, that is
   verification (x) on a real lock: the gate stops the vulnerable set and admits the upgraded one with the
   steward's list.
+- **[user]** Merged `awsds/dev-env` !1 as the steward, at 00:11:36Z on 2026-10-15 (UTC), merge commit
+  `69ad278e`.
+- **[Claude] `main` pipeline #4** on `69ad278e`, green on the test runner: `pip-audit` 89 s, "8 accepted
+  finding(s)" and "452 of 452 pinned package(s) audited, 0 blocking vulnerability(ies)", `recipe-checks`,
+  `secret_detection` and its gate.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/dev-env` read 2 changed (`.gitlab-ci.yml`'s
+  `ref` line and `dev-env/python/uv.lock`), 0 added, 0 removed; the merged lock is byte for byte the one
+  audited offline, with the same 8 source builds and 444 packages carrying a `cp312` Linux x86_64 wheel.
+  `./scripts/check-gitlab-mirror.py --plan` passes all eight checks: `GM-1` the copy at `69ad278e`, `GM-4`
+  70 names, sha256 `aafa08da98a61f5c` on both sides, `GM-8` 3 pins each scoped and granted.
+- **Owed, after PR #131 merges**: the mirror `awsds/infrastructure` and `git push gitlab main` (`gitlab.md`
+  §M), then the tag `default-v0.7.0` and the release in `dev-env.md` §B's order. The hub, GitLab and the
+  three runners are left up.

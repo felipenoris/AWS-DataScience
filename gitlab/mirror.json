@@ -7,8 +7,8 @@
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "f44f19e3adec85c6aac5323b5e35d494bb887d84",
-    "committed": "2026-10-14T20:37:57-03:00",
-    "subject": "The recipe, moved from AWS-DataScience's images/ at e45e1e3a, with the release chain (Stage 8 decision 16)"
+    "commit": "69ad278e53f048e13848af764baba3f5c286c049",
+    "committed": "2026-10-15T00:11:35Z",
+    "subject": "Merge branch 'lock-past-the-findings' into 'main'"
   }
 }

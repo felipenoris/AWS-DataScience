@@ -126,7 +126,7 @@ compute plane's allow-list serves PyPI, Julia, crates and CRAN since 6d, and D38
 a space installs most packages in seconds; what still needs this chain is what the image itself carries — the
 conda-built R stack, the toolchains under `/opt`, the proxy literal, the assistant's pins.
 
-- **1.0 — Done 2026-10-12, at Stage 7 step 3.6**: on `awsds/dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only; read back in the project's settings (Stage 7's log).
+- **1.0 — Done 2026-10-12, at Stage 7 step 3.6**: on `awsds/dev-env`, `data-scientists` Developer, `dev-env-stewards` Maintainer, the tag pattern `*-v*` protected with creation Maintainers-only; read back in the project's settings (Stage 7's log). **Attempted 2026-10-14**: the data-scientist persona, a Developer, could not create the tag `default-v0.0.0`, and the project holds no tag. The recipe moved there the same day (decision 16): the seed at `f44f19e3`, and the release's merge request !1 merged at `69ad278e`.
 - **1.0 — [user] Set the repository's roles and protection** (with Stage 7 steps 3.4-3.5, restated with
   the fields named): on `dev-env/` — `data-scientists` **Developer**, `dev-env-stewards` **Maintainer**;
   the release tag pattern **protected, creation Maintainers-only** — in CE that role mapping *is*
@@ -159,7 +159,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   which clones the mirror `awsds/infrastructure` with the job token and runs `scripts/devenv-register.py
   --pipeline`: each target's slice as its own deploy role, the registry's state through the runner's own
   profile (decision 14), with no guard (decision 17). `sandbox/dev-env/` accepts the `-<short sha>` suffix.
-  The include stays at `gates-v0.2.0` until the release's merge request moves it to `gates-v0.3.0`, which
+  The include stood at `gates-v0.2.0` until the release's merge request !1 moved it to `gates-v0.3.0`, which
   carries decision 15's accepted list; `scripts/devenv-register.py --dry-run` prints both paths' commands, and
   every pipeline file parses. **Decision 14 applied 2026-10-14 by Claude, authorized by the user**:
   `production/foundation/` 1 added, 1 changed (the runner role's `registry-state` and its description),
@@ -901,7 +901,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); the second half is answered when 1.5 and 3.5 are written | pass 0 |
+| i | Which gate shape did Stage 7 3.3's edition answer fix — and are both gates (1.5, 3.5) written in that shape? **The protected-tag shape, read 2026-10-12** (CE v19.4.2 has neither protected environments nor deployment approvals); 1.5 is written in it on 2026-10-14, `awsds/dev-env`'s `release-gate` a manual job on the protected tag `*-v*`, and 3.5's half waits for pass 4 | pass 0 |
 | ii | Does a job container on the deploy runner obtain instance-profile credentials — the declarative hop-limit-2 default reaching a real launch? **Yes, read 2026-10-13**: `awsds/app-etl`'s job #15 printed the instance role through the metadata service and each of the three deploy roles assumed through its profile | 4.3 |
 | iii | Does a job on a non-protected ref fail to schedule onto the protected runner? **Yes, read 2026-10-13**: job #16, the same job on the unprotected branch `deploy-runner-probe`, sat `pending` with no runner for 314 s under GitLab's stuck notice, runner #3 `online` | 4.5 |
 | iv | Does the scan gate read the push's scan (wait → findings), and is a re-scan inside 24 h refused rather than silently absorbed? **The first half yes, read 2026-10-14** on `awsds/app-etl`'s pipeline #15: `scan-gate` waited for `v0.1.0-d7e093a9`'s scan, complete 5 min 44 s after the push, read 723 CRITICAL and HIGH findings and failed on the 593 absent from the baseline; the re-scan half is not exercised | 1.4 |
@@ -910,7 +910,7 @@ Record every answer, including the ones that come out fine.
 | vii | Does 1.6's apply land from the pipeline, does the version's `ContainerImage` equal the pushed digest, and does the attachment survive the next blueprint reconciliation (INT-17's open half — diff of two `./aws/cicd.py`/`./aws/studio.py` runs)? | 1.6 |
 | viii | Is the registered dev-env digest identical across all N targets (D17 by construction — `note` at N = 1), and does every existing space start on the new version after the sweep? | 1.6 |
 | ix | Does a deliberately broken version stop at 3.3 with Production untouched? | 3.3 |
-| x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once), and does a failed export fail the job rather than pass it? | 5.2 |
+| x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once), and does a failed export fail the job rather than pass it? **Yes to both**: offline on 2026-10-13 a pinned `requests==2.19.0` blocked and a project with no lock failed at the export; on 2026-10-14 the house lock itself, `awsds/dev-env` pipeline #2 failing on 73 findings with a fixed version and #3 and #4 passing on the upgraded lock with the steward's 8 accepted, 452 of 452 audited; and a set the interpreter's platform skips, 0 of 452 audited on the laptop, fails since `gates-v0.3.0` instead of passing | 5.2 |
 | xi | Does the by-hand `make up ENV=staging` path produce the same result as the pipeline's (3.8)? | 3.8 |
 | xii | Is the Staging burn zero after a failed promotion — does 3.4's `after_script` hold? | 3.4 |
 | xiii | Does every gate job carry the proxy variables, and does a job with them removed fail rather than hang? **Yes to both, read 2026-10-14** on `awsds/app-etl`'s pipeline #13: `pip-audit` and `test` reached OSV and PyPI through the variables the test runner sets, and `gate-without-proxy`, with them removed, failed in 45 s with exit 2, uv's "Request failed after 3 retries in 44.5s" on a connect timeout, under its 300 s bound | 5.2 |
