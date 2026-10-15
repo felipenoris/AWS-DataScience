@@ -28,7 +28,7 @@ Two implementations of the same workflow behind the same application contract �
 
 A third MWAA shape removes the multiplication entirely: **MWAA Serverless** (GA November 2025), USD 0.088 per task-hour with a one-minute minimum and no environment fee, which is pay-per-execution Airflow and therefore the variant to try first. Its trade-offs are not only financial and are set out in `docs/PRICING.md` §1.3: YAML workflow definitions instead of Python DAGs, Airflow v3 fixed, no Airflow web UI, and **one IAM execution role per workflow**, where provisioned MWAA gives every task the same environment role. Against the data perimeter (`docs/plan/architecture.md` §4.2) that last point is an argument for Serverless independent of cost.
 
-**The Terraform route:** the classic `aws` provider still has nothing for MWAA Serverless (the issue requesting `aws_mwaaserverless_workflow` is open with no branch), but **`AWS::MWAAServerless::Workflow` exists in CloudFormation, and the `awscc` provider exposes it as `awscc_mwaaserverless_workflow`** — and `awscc` is a required provider anyway once D26 adopts the Unified Studio module. Alternative A is buildable in Terraform today; re-verify at Stage 10, with `aws_cloudformation_stack` as the wrapper fallback and, since D41, the `CreateWorkflow` call from the release job as the last resort. A `mw1.micro` environment is not a rung (the amendment above). Alternative B's components are pinned by D28: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, and an explicit **`aws_cloudwatch_log_group` per workflow** for execution logs. The full production artifact contract — what must exist in the deployment target for either alternative to receive a scientist-authored workflow — is D28.
+**The Terraform route:** the classic `aws` provider still has nothing for MWAA Serverless (the issue requesting `aws_mwaaserverless_workflow` is open with no branch), but **`AWS::MWAAServerless::Workflow` exists in CloudFormation, and the `awscc` provider exposes it as `awscc_mwaaserverless_workflow`** — and `awscc` is a required provider anyway once D26 adopts the Unified Studio module. Alternative A is buildable in Terraform today; re-verify at Stage 10, with `aws_cloudformation_stack` as the wrapper fallback and, since D41, the `CreateWorkflow` call from the release job as the last resort. A `mw1.micro` environment is not a rung (the amendment above). Alternative B's components are pinned by D28: **EventBridge Scheduler** as the trigger, **Step Functions** as the state machine, and an explicit log group for execution logs, one per account for the state machines beside A's **`aws_cloudwatch_log_group` per workflow**. The full production artifact contract — what must exist in the deployment target for either alternative to receive a scientist-authored workflow — is D28.
 
 **Layer `[E]`, with a caveat design B does not have:** an MWAA environment takes ~20-30 minutes to create and about as long to delete, so it does not fit the `make up`/`make down` cadence the way a NAT gateway does, and its metadata database (run history, XComs, UI-defined connections and variables) is state living *only* inside an `[E]` resource, which `docs/plan/conventions.md` §5.1 rule 2 forbids. DAG code is in S3 and survives; run history does not. Either Stage 10 adds an export-before-teardown step, or MWAA is run as an `[E]` **experiment** whose history is expendable — decide that when the stage starts, and record it. Design B is `[E]` without qualification: the state machine definition *is* the state. The application's entry point stays a plain container, so it can be driven by either implementation, or by the two options that were not built.
 
@@ -39,12 +39,14 @@ gateway"*, served by interface endpoints (`logs`, `monitoring`, `kms` at minimum
 the workflow calls, each with **private DNS enabled** and associated to both subnets and the workflow
 security group), a security group with a **self-referencing inbound rule** and an outbound rule for all
 traffic, and **two private subnets in two Availability Zones**. Consequences for the plan: MWAA
-Serverless is no longer D38's NAT contingency candidate (D38 §1 amended); the two-AZ requirement is a
-named [D9](D09-az-count.md) exception with a price, because the estate's metered endpoints are
-single-AZ everywhere else; and the guide's private-shape NACL line (inbound allow-all, **outbound
-deny-all**) is a claim to **verify at build time**, not to copy — a stateless ACL denying all egress would
-break the very endpoints it sits in front of. Omitting `NetworkConfiguration` entirely remains what it was:
-tasks run in the service's own worker VPC, outside the perimeter, which the slice never does.
+Serverless is no longer D38's NAT contingency candidate (D38 §1 amended); the two-AZ requirement asks
+two subnets, which [D9](D09-az-count.md) already gives every VPC, and no second endpoint set:
+[6i](../stages/stage-06i-sandbox-orchestration.md)'s workers, placed in both AZs, reached single-AZ
+endpoints (measured 2026-10-11, Stage 10 decision 3); and the guide's private-shape NACL line (inbound
+allow-all, **outbound deny-all**) is a claim to **verify at build time**, not to copy — a stateless ACL
+denying all egress would break the very endpoints it sits in front of. Omitting `NetworkConfiguration`
+entirely remains what it was: tasks run in the service's own worker VPC, outside the perimeter, which the
+slice never does.
 
 ---
 

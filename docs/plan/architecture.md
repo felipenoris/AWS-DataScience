@@ -113,7 +113,7 @@ AWS Organization (Management account - console only)                        [P]
         ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
         ├── interface VPC endpoints per VPC - no NAT anywhere (D38)         [E]
-        ├── orchestration: MWAA Serverless only (D7 amended 2026-09-05)     [E]
+        ├── orchestration: MWAA Serverless, chains above it (D7, D41)       [E]
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
@@ -542,18 +542,19 @@ A mental model, not a status. Every old habit contradicts some part of it.
 - **One unified domain, projects as the isolation unit (D26):** the DataZone V2 domain is registered in
   **Data Governance** because a domain is a registry of projects and data products — ownership axis, not
   lifecycle axis. **It holds no compute:** the
-  `experimentation` project profile provisions into Sandbox, `engineering` into Development, and nothing
-  is ever provisioned into the domain account itself. Sandbox×Development is therefore *strengthened*, not
-  dissolved — it stops being "which URL did the person open" and becomes a property of the project.
+  `experimentation` project profile provisions into the Sandboxes, the only associated accounts since 6b
+  removed `engineering` with Development, and nothing is ever provisioned into the domain account itself.
+  Where a person's work runs is therefore a property of the project, never of the URL they open.
   Lakehouse blueprint in its Glue/Athena form only — **never** the Redshift Serverless variant, and that
   still holds since [D40](decisions/D40-redshift-warehouse.md) (2026-09-19): the warehouse that decision
   admits is **one namespace per account, written by Terraform**, reached through a *connection to an existing
   compute resource*, and no blueprint provisions one. So the domain remains a registry that provisions
   nothing into itself and no project can create a warehouse of its own.
   Staging and Production are never associated. What crosses the gate is
-  the D28 artifact set — image, workflow YAML in S3, per-workflow role, orchestration resource, log
-  group, model package group — carried by the project's git repository, linted against domain-scoped
-  references.
+  the D28 artifact set — image, workflow YAML in S3, the code its tasks read from S3, per-workflow role,
+  orchestration resource with a chain's state machine and schedule, log group, model package group —
+  carried by the application's git repository, which the CI/CD CLI deploys between the Sandbox projects
+  and bundles ([D41](decisions/D41-sagemaker-application.md)), and linted against domain-scoped references.
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
   compute); **D19** keeps the derived zone designed rather than left over — since 2026-08-26 it is the
   SMUS project path, per project, the service's hand.
