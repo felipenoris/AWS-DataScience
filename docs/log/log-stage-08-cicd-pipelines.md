@@ -816,3 +816,131 @@ Account ids are replaced by the account's name in angle brackets.*
 - **Owed, after PR #131 merges**: the mirror `awsds/infrastructure` and `git push gitlab main` (`gitlab.md`
   §M), then the tag `default-v0.7.0` and the release in `dev-env.md` §B's order. The hub, GitLab and the
   three runners are left up.
+
+## 2026-10-15 — the infrastructure mirror, and `default-v0.7.0` stopped at its gate
+
+- **[user]** Created the GitLab project `awsds/infrastructure` (`gitlab.md` §M): private, `main` protected
+  for Maintainers, `awsds/dev-env-stewards` as Reporter, `awsds/dev-env` on the job token's allowlist;
+  added the remote `gitlab` to the project folder and pushed `main`.
+- **[Claude] Read through the user's Chrome session**: project 6, private, default branch `main` at
+  `b7d37ff`, `origin/main`'s commit; `main` protected, push and merge Maintainers, no force push; the
+  stewards group shared at Reporter, no direct member; the job token's inbound scope on, its allowlist
+  `awsds/dev-env` and the project itself.
+- **[user] As the steward**, as the local administrator: the tag `default-v0.7.0` on `awsds/dev-env`'s
+  `main`, `69ad278e`.
+- **[Claude] Pipeline #24**, created 00:40:07Z. `pip-audit` 81 s and `recipe-checks` 6 s on the test
+  runner. `build-images` 951 s on the build runner: `base` 3 min 3 s, `dev-env` 10 min 58 s, the smoke
+  build 1 min 32 s.
+
+  | Image | Digest | Size (ECR) | Pushed (UTC) |
+  |---|---|---|---|
+  | `awsds-prod-ecr-base:default-v0.7.0-69ad278e` | `sha256:c17191c96d03c20f529ebe324349352b0188b54b48057fbfe730d85b52e122be` | 3,745,649,522 | 00:44:45 |
+  | `awsds-prod-ecr-dev-env:default-v0.7.0-69ad278e` | `sha256:b1e896e043de6e46a286ec5b455f659d427dee885abc0c67a440508f801d685c` | 6,678,357,140 | 00:55:43 |
+
+  The smoke build, inside the image as its user: curl `200 ssl_verify=0`; git stopped at the
+  authentication wall, not a certificate; urllib and requests `200` in both Pythons; the house Python
+  3.12 (pinned 3.12), Julia 1.12.7, Rust 1.98.0; the 14 imports, torch `2.13.0+cpu` and tensorflow
+  2.21.0 among them. The manifests: Python 3.12.14 in both environments, uv 0.12.17, R 4.5.3, the
+  `NO_PROXY` literal 70 entries with sha256 `aafa08da98a61f5c`; the house environment's 452 packages
+  equal the merged lock to the version, the virtual project the one lock entry absent; the distribution
+  621, R 70.
+- **[Claude] The scans**, informative (decision 1): both images read CRITICAL 113, HIGH 610, MEDIUM 154,
+  LOW 4, UNDEFINED 436. The 130 baseline findings are all still found, and the 593 past it are all
+  `linux-libc-dev 6.8.0-142.142` (113 CRITICAL, 480 HIGH), identical in both images and the count
+  `app-etl`'s `v0.1.0` met. The SageMaker Distribution pin is `default-v0.6.0`'s,
+  `sha256:e4ca47c4…476b`; `dev-env` is 3,263,767 bytes larger than `v0.6.0`'s.
+- **[user] In chat**: authorized the detach. **[Claude]** `dev-env.md` §B steps 1 and 2: no app running;
+  the two peer sessions told; `update-domain` from the live block at 01:13:42Z, `InService` at 01:13:44Z,
+  the read-back identical to the block sent, both `CustomImages` empty.
+- **[user]** Ran `release-gate` at 01:15:06Z. **[Claude]** It failed in 7 s on the test runner: it printed
+  `released by felipenoris: default-v0.7.0-69ad278e`, then bash stopped with `unexpected EOF while looking
+  for matching '"'`. The apostrophe in `${BASE_DIGEST:-(an earlier run's, SKIP_BASE=1)}` opened a quote
+  that never closed. `register` was skipped: nothing applied, version 6 intact, the domain left detached.
+  `bash -n` over every script item of the six tracked pipeline files fails this one item and no other.
+- **[user] In chat**: asked whether the detach is needed on every deployment, and why the mirror is a
+  copy rather than a clone of GitHub. **[Claude]** Yes under the current design (decision 7); the mirror's
+  argument is now in decision 2's text. The measurement of a release without the detach was proposed
+  as a separate session and started by the user.
+
+## 2026-10-15 — the gate's quote fixed, and two defects of the register path found before it
+
+- **[user]** `awsds/dev-env` merge request !2 (`fn/fix_eof`), opened 01:22:27Z, merged 01:24:06Z at
+  `c268de48`: the one line, `(from an earlier run, SKIP_BASE=1)`. Then the tag `default-v0.7.1` at
+  `c268de48`. `default-v0.7.0-69ad278e` stays in both repositories, built and never registered.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/dev-env` read 1 changed (`.gitlab-ci.yml`).
+  `scripts/check-gitlab-ci.py` gained check C, every `before_script`, `script` and `after_script` item
+  read with `bash -n`: 24 items in 6 files pass, and the copy before !2 fails at the release gate.
+- **[Claude] `ListAliases`**, read before the gate. The register job's plan is the slice's first as
+  `awsds-deploy-devenv-sandbox`. CloudTrail of the infrastructure user's replace of version 5
+  (2026-10-12) lists the provider's calls: on refresh `DescribeImage`, `DescribeImageVersion`,
+  `ListAliases`, `ListTags`, `DescribeAppImageConfig`; on the replace `DeleteImageVersion`,
+  `CreateImageVersion` and `ListAliases` again. The role's `apply-dev-env` lacked `ListAliases`, and
+  the policy simulator read it `implicitDeny` on the image and the version. **[user] In chat**:
+  authorized the apply. **[Claude]** `sandbox/foundation/` from its saved plan, 01:35:55Z-01:36:05Z:
+  `0 added, 1 changed, 0 destroyed`, the one action added; re-plan `No changes`; the simulator then read
+  it allowed on both.
+- **[Claude] The runner's own profile**, read before the gate. The register job reads
+  `production/registry/`'s state through `awsds-prod-runner-deploy` (decision 14), which the runner
+  wrote with `credential_source = Ec2InstanceMetadata` and no `role_arn`. On the laptop, Terraform
+  1.15.8's S3 backend in a `terraform_remote_state` refused that shape: `Error: credential type
+  credential_source requires role_arn`. A profile with a `role_arn` passed that check and a profile
+  with a region alone did too, both then stopping at the instance metadata the laptop lacks; the AWS
+  CLI, which the runner's boot used, ignores the key. **[user] In chat**: authorized the apply.
+  **[Claude]** `production/runners/` from its saved plan, 01:50:16Z-01:51:13Z: the deploy runner
+  replaced (`1 added, 1 destroyed`), the user data's one difference the removed line; re-plan `No
+  changes`. The new instance's first boot (01:51:15Z-01:55:00Z) assumed the three deploy roles and
+  read `awsds-prod-runner-deploy` as the instance's own role, registered as a new manager of runner #3
+  at 01:54:45Z, and pulled the deploy image by digest.
+- **[Claude] The resource policies on the path**: both state buckets carry `DenyInsecureTransport` alone,
+  and both state keys delegate to the account's IAM alone.
+- **[Claude] Pipeline #28**, created 01:24:30Z. `pip-audit` 84 s, `recipe-checks` 5 s. `build-images`
+  956 s: `base` 3 min 5 s, `dev-env` 11 min 8 s, the smoke build about 1 min 40 s.
+
+  | Image | Digest | Size (ECR) | Pushed (UTC) |
+  |---|---|---|---|
+  | `awsds-prod-ecr-base:default-v0.7.1-c268de48` | `sha256:4accbaf5fbed110e805a79e7893bb13d9b8246425bc4447264b8bb81b481e525` | 3,745,649,509 | 01:29:10 |
+  | `awsds-prod-ecr-dev-env:default-v0.7.1-c268de48` | `sha256:3b6d706a9a16025a4b3d749fbe0d8dbca76ccacb69f1080ed5b0b2c29c3384a4` | 6,678,358,952 | 01:40:18 |
+
+  The smoke build read as `v0.7.0`'s, and the eight manifests are byte for byte `v0.7.0`'s but the base
+  digest's line. `scan-base` 35 s, `scan-dev-env` 5 min 46 s with 20 polls of `IN_PROGRESS`: the same
+  723, 130 and 593 `linux-libc-dev`.
+
+## 2026-10-15 — version 7, registered by the pipeline
+
+- **[user]** Ran `release-gate` of pipeline #28: 01:58:57Z-01:59:06Z, `released by felipenoris:
+  default-v0.7.1-c268de48` with both digests.
+- **[pipeline] `register`**, 01:59:07Z-02:00:05Z on the new deploy runner instance: the proxy answered
+  `404`; `infrastructure checkout: b7d37ff…`, the mirror's commit; target `sandbox` as
+  `awsds-deploy-devenv-sandbox`; `init` with the module from GitHub and the providers through the proxy;
+  `data.terraform_remote_state.registry: Read complete after 0s` through the runner's own profile; `Plan:
+  1 to add, 0 to change, 1 to destroy`; version 6 destroyed and version 7 created at 01:59:57Z, `Apply
+  complete! Resources: 1 added, 0 changed, 1 destroyed`; `awsds-sandbox-dev-env version 7: CREATED`, its
+  `ContainerImage` the pushed digest `sha256:3b6d706a…84a4`.
+- **[Claude] Read from the laptop**: version 7 `CREATED`, `ContainerImage`
+  `…/awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`, `BaseImage` the tag `default-v0.7.1-c268de48`, the only
+  version of the image. `image_tag`'s default set to the released tag, and the slice's plan as the
+  infrastructure user read `No changes`.
+- **[user] In chat**: authorized the re-attach and `make up ENV=sandbox ONLY=egress AUTO=1`. **[Claude]**
+  §B step 5: `update-domain` from the live block and the slice's `custom_images` output at 02:11:36Z,
+  `InService` at 02:11:38Z, the read-back identical to the block sent, and against the block read before
+  the detach only `ImageVersionNumber` 6 to 7 on both app types. Step 6: the project's one space,
+  `default-28f1b390-…`, names AWS's distribution by alias `4.5`, nothing to repair. `sandbox/egress`
+  applied 02:11:50Z-02:14:44Z, `27 added`, 18 interface endpoints `available`.
+- **[user] The new space**, in the portal as the Data Scientist User: `jup-house-image`, JupyterLab,
+  created 03:05:41Z with `DefaultResourceSpec` naming `image-version/awsds-sandbox-dev-env/7`; its app
+  `CreateApp` 03:05:45Z, `InService`, `ResourceSpec` version 7. **[Claude]** Production's CloudTrail:
+  `BatchGetImage` on `awsds-prod-ecr-dev-env` at 03:07:32Z, `AWSAccount` with session `SageMaker`, by the
+  digest `sha256:3b6d706a…84a4`. The project's default space had started an app at 03:01:24Z, the
+  project role with the user's identity as `sourceIdentity`, on its own `sagemaker-distribution-cpu`
+  `4.5`: a space keeps the image it was created with.
+- **[Claude] The instruments**: `./aws/devenv.py` passes `DE-1` to `DE-6`, `DE-5` reading version 7,
+  `sha256:3b6d706a9a16…`, 70 names, sha256 `aafa08da98a61f5c`; `./aws/cicd.py` 0 checks failed, `CI-6`
+  noting N = 1 with `awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`, `CI-1` the new runner instance, `CI-8`
+  27 assumptions, all the deploy runner's; `./aws/studio.py` every `US-*` passing. Its exit 1 is the
+  signed-out persona and `ctadmin` profiles. The attachment read version 7 on both app types at 03:17:13Z,
+  the domain's `LastModifiedTime` still the re-attach's.
+- **[Claude] The release loop (step 1.7)**, on `default-v0.7.1`, a one-line change: merge request opened
+  01:22:27Z, version registered 02:00:05Z, 37 min 38 s. Of it, the pipeline's machine time was about 24
+  min (gates 1.5, build 16, scans 6, registration 1) and the steward's gate waited 11 min 12 s, the
+  deploy runner's replacement inside it. The re-attach followed 11 min 31 s later. The first release took 3 h
+  23 min from merge request !1 (23:44:01Z) to the first space's pull, three first-run defects included.

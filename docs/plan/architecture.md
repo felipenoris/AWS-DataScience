@@ -450,6 +450,13 @@ request, a build, a scan and a human approval. That is the right governance for 
 and it is the friction the Stage 6 verdict has to measure rather than average away. Whether the gate can
 be automated at all is `INT-17`.
 
+**The loop, measured 2026-10-15** (Stage 8 step 1.7) on `default-v0.7.1`, a one-line change: merge
+request to a registered image version **37 min 38 s**. About 24 minutes of it is the pipeline's machine
+time: the gates 1.5, the two image builds 16, the two scans 6, the registration 1. The steward's gate
+waited 11 minutes, and the domain writes and a new space's start, about 2 minutes to pull the image,
+come after. A package the compute plane's allow-list serves pays none of it: PyPI, Julia, crates and
+CRAN reach a space directly since Stage 6d, in seconds.
+
 **The dev-env container image is itself the dependency delivery mechanism.** It is built by a CI pipeline
 (Stage 8) on a runner that *does* have internet, so Julia, R, Rust and their package sets are installed at
 build time and arrive in SageMaker pre-installed. A package proxy is then only needed for *ad-hoc*

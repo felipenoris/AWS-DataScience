@@ -1153,6 +1153,19 @@ can be recognised without opening this file; the reasoning that makes each one u
     (Lesson 65), and past that the space had no CPython 3.13 that uv could find. A sentence naming an
     environment is a claim about that environment until a run there makes it a reading.
 
+    Stage 8, 2026-10-15, adds a job that cannot run before the release it gates. `awsds/dev-env`'s
+    `release-gate` runs only on a protected tag, after a steward starts it by hand. GitLab's CI Lint, the
+    offline check and every branch pipeline were green, and the job's first run was the release
+    `default-v0.7.0`, after a 16-minute build: bash stopped on an apostrophe inside
+    `${BASE_DIGEST:-...}`, and the registration behind it was skipped. The fix needed a new tag and a new
+    build. A lint reads the YAML and no shell, so `check-gitlab-ci.py` now reads every script item with
+    `bash -n`; a job that only a release can start is read offline, or its first run is the release.
+    The same release met a configuration proven by the wrong reader. The deploy runner's boot checked
+    its own AWS profile with the AWS CLI, which ignores a `credential_source` that has no `role_arn`,
+    while the registration reads it through Terraform, which refuses that shape. A run of Terraform on
+    the laptop found it before the gate. A file read by two clients is proven only for the client that
+    read it.
+
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
     [Lesson 42](#) separates a permission failure, which is a response, from a network failure,
     which is the absence of one. This is its mirror and the harder case: there is a response, and
