@@ -423,8 +423,10 @@ aws sagemaker describe-space --domain-id <domain-id> --space-name <space> \
 
 **Read the third field, not only the first two.** `DefaultResourceSpec` carries the space's **own
 copy of the image version number**, written when the space was created, and it **overrides the
-domain default** — so an image bump leaves it naming a version that no longer exists. Measured
-2026-09-12: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
+domain default** — so a release leaves it on its old version until it is moved, and a version
+deleted by hand leaves it naming one that no longer exists (`EXC-09`); since Stage 8 decision 18 no
+release deletes a version a space names. Measured 2026-09-12, when a release still replaced the
+version: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
 version 3, which the apply had destroyed, and **its app did not start** until the user edited the
 space to version 4 in the portal. That edit kept `RemoteAccess: ENABLED`, the EBS size and the
 project's S3 connection. Repairing it is [`dev-env.md`](dev-env.md) §B, *Moving a space*, never a recreate —

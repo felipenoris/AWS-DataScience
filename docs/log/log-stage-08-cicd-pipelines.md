@@ -1134,3 +1134,135 @@ the registry's state read through `awsds-infra-prod`; each act authorized by the
   in `terraform init` on refreshing the expired SSO token while the CLI's cached role credentials still
   answered, so `GM-4` read one side. The merge request changed no line of `dev-env/Dockerfile`, and its
   literal is the one `GM-4` matched this morning.
+
+## 2026-10-15 — the first release under decisions 7 and 18
+
+Every reading below as the infrastructure user, `InfrastructureAccess`: on Sandbox through
+`awsds-infra-sandbox-1`, on Production through `awsds-infra-prod`.
+
+- **[Claude] Read before the tag**, 06:53Z-06:57Z, with the environment down. `awsds-sandbox-dev-env` holds
+  version 7 alone: `CREATED`, `ContainerImage` `…/awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`, no alias.
+  `awsds-deploy-devenv-sandbox` carries the inline policy `dev-env-versions` alone, under the ceiling
+  `awsds-sandbox-deploy-boundary`, last used at 02:00:03Z (version 7's registration).
+  `release/versions.py retire --dry-run --target awsds-infra-sandbox-1` read the one version, kept it and
+  would delete nothing.
+- **[Claude] The domains**: `d-p6gthxc82ckg`, project `avhvbqn37ty7m8`, attaches the image with no version
+  number on both app types, its `LastModifiedTime` 06:14:04Z (D1 above). A second domain, `d-lfgbdrjncmsu`
+  of project `4gqfau9xuo6e4w`, was created at 06:06:13Z by `awsds-sandbox-smus-provisioning` in an
+  `AmazonDataZoneEnvironmentDeployer` session: a second project's `Tooling` environment. It attaches no
+  custom image, so its picker does not offer the house image. Each domain holds one space, its default,
+  and no app ran. Both `DefaultUserSettings` were saved for the comparison after the release, and read
+  unchanged again at 15:23:10Z.
+- **[Claude] The instruments before the tag**: `./aws/devenv.py` passes `DE-1` and `DE-4`, and `DE-5` reads
+  version 7, `sha256:3b6d706a9a16…`, 70 names, sha256 `aafa08da98a61f5c`; `DE-2` fails and `DE-3` notes,
+  since `sandbox/egress` is down and its state holds no outputs. `DE-3`'s comparison, read from a plan
+  instead: `./scripts/check-gitlab-mirror.py --plan` passes `GM-1` to `GM-8`, `GM-4` 70 names and sha256
+  `aafa08da98a61f5c` on both sides, on the copy at `8e78ab53`. `./aws/cicd.py`: 0 checks failed, `CI-6`
+  noting N = 1 with `awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`, `CI-8` 27 assumptions, all the deploy
+  runner's; its exit 1 is the seven persona and `ctadmin` profiles that hold no token.
+- **[user]** `make hub-up` and `make gitlab-up` from the project folder's `main`, at `87c1a87`,
+  `origin/main`'s commit. **[Claude] Read** at 15:22:57Z: the hub hosts started at 15:18:09Z and
+  15:18:13Z, GitLab at 15:19:18Z, the three runners launched 15:21:19Z-15:21:27Z, and 12 interface
+  endpoints `available`. `git ls-remote` of `awsds/dev-env` read `main` at `8e78ab53` and the tags
+  `default-v0.7.0` and `default-v0.7.1`.
+- **[Claude] The runners' first boots**, read on their serial consoles: the build runner done at
+  15:24:20Z; the deploy runner done at 15:25:45Z, having assumed `awsds-deploy-prod`,
+  `awsds-deploy-devenv-sandbox` and `awsds-deploy-staging` with the instance's credentials, registered as
+  `awsds-prod-runner-deploy-i-0e9f2c8c81a1f9295` (gitlab-runner 19.5.0) and pulled the deploy image by
+  digest `sha256:1b1a5830…a53a`; the test runner done at 15:26:40Z, reading `no token from a container:
+  the jobs hold no AWS identity`. Each read `pypi.org` `200` and a private address `403` through the
+  proxy, and the sign-in page `200` direct.
+- **[user] As the steward**: the tag `default-v0.7.2` on `awsds/dev-env`'s `main`, `8e78ab53`, a rebuild
+  with no recipe change (`base/`, `dev-env/` and `smoke/` unchanged since `c268de48`). Pipeline #33,
+  created 15:34:14Z.
+- **[Claude] Read through the user's Chrome session, GitLab's API, GET only, at the user's request**:
+  `recipe-checks` passed (15:34:17Z-15:34:35Z); `pip-audit` failed on the test runner, job #106
+  15:34:16Z-15:36:02Z and its retry #114 15:37:44Z-15:39:10Z, each auditing 452 of 452; `build-images` and
+  every later job skipped, so nothing was built or pushed. The one finding: `BLOCK fsspec 2025.3.0
+  PYSEC-2026-4217 (GHSA-27vj-qcqg-25rc, CVE-2026-104851) fixed in 2026.6.0`, printed twice by #106 and
+  once by #114, each run also printing `gone CVE-2026-104851|fsspec: accepted and no longer found`. The
+  steward accepted that vulnerability on 2026-10-14 as `CVE-2026-104851|fsspec`: the same version, the
+  same fix, another id.
+- **[Claude] Read in OSV** (`api.osv.dev`): a query for fsspec 2025.3.0 answers `GHSA-27vj-qcqg-25rc`
+  (published 2026-10-05, modified 14:56:18Z) and `PYSEC-2026-4217` (published 10:22:44Z), each naming
+  `CVE-2026-104851` as an alias. The record `CVE-2026-104851` still exists, modified at 14:56:18Z, and
+  names no PyPI package, so the query no longer returns it. pip-audit reports one id per alias group, and
+  the id the gate keys on moved with OSV's records. One query per package of the copy's `uv.lock` (452)
+  found the other seven accepted entries unchanged.
+- **[user] In chat**: decision 15 amended, the gate to match an accepted entry by the finding's id or any
+  of its aliases (`gates-v0.4.0`), rather than the list re-keyed to `PYSEC-2026-4217`.
+- **[Claude] `gates-v0.4.0`, written** in `ci-gates/gates.gitlab-ci.yml` and its README: an entry is
+  accepted when its id is the finding's id or one of its aliases, prints `accepted as <id>` when the
+  match is an alias, and is no longer found only when no finding carries it. Run offline on reports
+  shaped like job #114's: the fsspec finding `accpt` twice `accepted as CVE-2026-104851`, 0 blocking,
+  exit 0; an added finding with a fix `BLOCK`, exit 1; a removed accepted finding `gone`, exit 0.
+  `./scripts/check-gitlab-ci.py` passes, 25 script items in 6 files. GitLab's `awsds/ci-gates` read
+  `main` at `2cc06749` (`gates-v0.3.0`), byte for byte this repository's `ci-gates/`. Committed in a
+  clone of it as `6fcea132`, and the include moved to that commit in a clone of `awsds/dev-env`, branch
+  `gates-alias-match`, as `679e33a6`; neither pushed.
+- **[user]** Pushed `awsds/ci-gates`' `main` at `6fcea132` and the tag `gates-v0.4.0` on it, whose
+  pipelines #34 and #35 passed, then the branch `gates-alias-match` of `awsds/dev-env` (pipeline #36,
+  16:00:57Z). **[Claude, through the user's Chrome, at the user's request]** Opened merge request !5 from
+  it into `main`, its title and description the commit's.
+- **[Claude, through the user's Chrome, at the user's request]** Pipeline #36 passed at 16:02:31Z:
+  `pip-audit` audited 452 of 452 with 0 blocking, the fsspec finding read `accpt … PYSEC-2026-4217 …
+  accepted as CVE-2026-104851`, the 8 accepted findings took 15 `accpt` lines (OSV answers some twice),
+  `nltk 3.10.3 PYSEC-2026-3740` warned with no fixed version, and no entry read `gone`. Merged !5 at
+  16:03:26Z as the local administrator, the source branch deleted: `main` at `15fac237`, whose pipeline
+  #37 passed at 16:05:02Z. Then the tag `default-v0.7.3` from `main`, `15fac237`, lightweight and
+  protected: pipeline #38, created 16:05:28Z.
+- **[Claude] Pipeline #38**, read through GitLab's API and ECR. `pip-audit` 87 s, 0 blocking, and
+  `recipe-checks` 7 s on the test runner. `build-images` 983 s on the build runner, 16:07:00Z-16:23:23Z:
+
+  | Image | Digest | Size (ECR) | Pushed (UTC) |
+  |---|---|---|---|
+  | `awsds-prod-ecr-base:default-v0.7.3-15fac237` | `sha256:b05552a8ef413a5cfca9cf37e73a74520c6f9718ce1ac2712778d5ef3bc92ba1` | 3,745,649,508 | 16:10:23 |
+  | `awsds-prod-ecr-dev-env:default-v0.7.3-15fac237` | `sha256:38f4864c8b85c1e99d3093368cb2a10a8c094c92a17bd8da777f3f5adfffdd6f` | 6,682,673,224 | 16:21:35 |
+
+  The eight manifests are byte for byte `v0.7.1`'s but the base digest's line, and `dev-env` is
+  4,314,272 bytes larger than `v0.7.1`'s with the same package sets. `scan-base` 43 s and `scan-dev-env`
+  151 s failed as informative jobs: each read CRITICAL 113, HIGH 610, MEDIUM 158, LOW 16, UNDEFINED 436,
+  the 593 past the baseline all `linux-libc-dev` (113 CRITICAL, 480 HIGH).
+- **[user] As the steward**: ran `release-gate` 16:33:59Z-16:34:08Z, `released by felipenoris:
+  default-v0.7.3-15fac237` with both digests.
+- **[pipeline] `register`**, 16:34:11Z-16:34:32Z on the deploy runner: the proxy answered `404`; target
+  `awsds-deploy-devenv-sandbox`; `awsds-sandbox-dev-env, 1 version(s), release default-v0.7.3-15fac237`;
+  `create-image-version` from the pushed digest; `awsds-sandbox-dev-env version 8: CREATED, alias 0.7.3`,
+  its `ContainerImage` the pushed digest `sha256:38f4864c…dd6f`.
+- **[pipeline] `retire`**, 16:34:35Z-16:34:59Z: `2 version(s), keeping the newest 10`, `keep version 8
+  0.7.3`, `keep version 7`, nothing deleted. Pipeline #38 succeeded at 16:34:59Z.
+- **[Claude] Read from the laptop**: version 8 `CREATED` at 16:34:29Z, `BaseImage` and `ContainerImage`
+  both `…/awsds-prod-ecr-dev-env@sha256:38f4864c…dd6f`, `VendorGuidance` `STABLE`, release notes
+  `default-v0.7.3-15fac237`, alias `0.7.3`; version 7 kept, with no alias. Both domains'
+  `DefaultUserSettings` read at 16:35Z byte for byte the 06:54Z reading, and their `LastModifiedTime`
+  unchanged (06:14:04Z for `d-p6gthxc82ckg`, 06:06:23Z for `d-lfgbdrjncmsu`): the release made no domain
+  write, and `d-p6gthxc82ckg`'s version-less entry now offers version 8.
+- **[Claude] Sandbox's CloudTrail** for the deploy role, two sessions, every call allowed and from
+  `35.95.20.251`, the proxy's address, since `VPC-SharedServices` has no SageMaker endpoint. `register`:
+  `ListImages`, `ListImageVersions`, `DescribeImageVersion` and `ListAliases` on version 7, then
+  `CreateImageVersion` at 16:34:29Z with the digest as `baseImage`, then `DescribeImageVersion` on version
+  8. `retire`: `ListImages`, `ListImageVersions`, `DescribeImageVersion` and `ListAliases` on versions 8
+  and 7, `ListSpaces`, `DescribeSpace` on both default spaces, `ListDomains`, and `DescribeDomain` on both
+  domains. No `DeleteImageVersion`, `UpdateImageVersion`, `UpdateDomain`, `UpdateSpace` or `DeleteImage`
+  by any caller since 16:30Z. Each session's `AssumeRole` was recorded as `AWSAccount` with the principal
+  `<runner role id>:i-0e9f2c8c81a1f9295`, from the runner's private address. AWS Config's recorder read
+  version 8 at 16:35:18Z.
+- **[Claude] The instruments after**: `./aws/devenv.py` `DE-5` reads version 8, `sha256:38f4864c8b85…`,
+  config blob `sha256:af0e1150…e818` hash-checked, 70 names, sha256 `aafa08da98a61f5c`; `DE-2` fails and
+  `DE-3` notes as before the tag, `sandbox/egress` being down. `./aws/cicd.py` at 16:37:24Z: 0 checks
+  failed, `CI-6` noting N = 1 with `awsds-prod-ecr-dev-env@sha256:38f4864c…dd6f`, `CI-8` 33 assumptions,
+  all the deploy runner's, `CI-1` and `CI-9` passing on the running runners.
+- **[Claude] The release loop under decision 18**: the tag at 16:05:28Z to the registered version at
+  16:34:32Z, 29 min 3 s, with no domain write after it; merge request !5 at 16:02:03Z to the version, 32
+  min 29 s. Of it, the gates 1 min 29 s, the build 16 min 23 s, the scans 2 min 33 s and the registration
+  21 s; the steward's gate waited 8 min 3 s.
+- **[Claude] The ledger row**: `default-v0.7.3` after `default-v0.7.1`'s in README.md's "The releases",
+  `default-v0.7.2` named in it as a tag that pushed no image. **[user] In chat**: the push, the merge
+  request and the merge are Claude's, through the user's Chrome. **[Claude]** The branch
+  `the-releases-v0.7.3` at `5a422781` pushed from a clone; merge request !6 opened at 16:43:03Z, its
+  pipeline #39 passed at 16:44:16Z, merged at 16:44:41Z as the local administrator, the branch deleted:
+  `main` at `1372b471`.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py --dry-run awsds/dev-env`, then without it: 2 changed,
+  `.gitlab-ci.yml` (the include at `gates-v0.4.0`) and `README.md` (the row), and `gitlab/mirror.json` at
+  `1372b471`. `./scripts/check-gitlab-mirror.py --plan` passes `GM-1` to `GM-8` on it, `GM-4` 70 names and
+  sha256 `aafa08da98a61f5c` on both sides.

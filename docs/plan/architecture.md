@@ -453,9 +453,11 @@ be automated at all is `INT-17`.
 **The loop, measured 2026-10-15** (Stage 8 step 1.7) on `default-v0.7.1`, a one-line change: merge
 request to a registered image version **37 min 38 s**. About 24 minutes of it is the pipeline's machine
 time: the gates 1.5, the two image builds 16, the two scans 6, the registration 1. The steward's gate
-waited 11 minutes, and the domain writes and a new space's start, about 2 minutes to pull the image,
-come after. A package the compute plane's allow-list serves pays none of it: PyPI, Julia, crates and
-CRAN reach a space directly since Stage 6d, in seconds.
+waited 11 minutes, and a new space's start, about 2 minutes to pull the image, comes after. Since Stage 8
+decision 18 the registered version is the whole release, with no domain write after it: on
+`default-v0.7.3`, a rebuild with no recipe change, the tag to the registered version took **29 min 3 s**,
+the steward's gate 8 of them. A package the compute plane's allow-list serves pays none of it: PyPI,
+Julia, crates and CRAN reach a space directly since Stage 6d, in seconds.
 
 **The dev-env container image is itself the dependency delivery mechanism.** It is built by a CI pipeline
 (Stage 8) on a runner that *does* have internet, so Julia, R, Rust and their package sets are installed at
