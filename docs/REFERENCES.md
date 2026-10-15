@@ -1326,8 +1326,9 @@
   storage does not redirect); and a package published again under an existing name and version gains
   the new files unless the group's "Allow duplicates" for Generic, on by default and changed by an
   Owner, is turned off: <https://docs.gitlab.com/user/packages/generic_packages/>. Protection rules
-  cover generic packages since GitLab 18.2, and the delete protection arrived in 17.10 behind a
-  feature flag that is off by default:
+  cover generic packages since GitLab 18.2, and with none *"By default, any user with the Developer,
+  Maintainer, or Owner role can create, edit, and delete packages"*; the delete protection arrived in
+  17.10 behind the feature flag `packages_protected_packages_delete`, off by default:
   <https://docs.gitlab.com/user/packages/package_registry/package_protection_rules/>.
   `glab release create --use-package-registry` uploads the files to the project's generic package
   registry and links them to the release, and in a job `CI_JOB_TOKEN` signs it in when

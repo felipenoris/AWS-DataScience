@@ -180,8 +180,9 @@ lives in `[P]` slices.
   3. The **consolidated object storage** block on 1.1's bucket with **`use_iam_profile = true`** — no keys
      anywhere (principle 2) — and `backup_upload_connection` to the backup bucket, which the consolidated
      form deliberately excludes.
-  4. `registry['enable'] = false` (ECR is the registry, by objective) and the packages feature off, which
-     Stage 8 decision 20 recommends turning on for the bundle each application release stores.
+  4. `registry['enable'] = false` (ECR is the registry, by objective) and the packages feature off until
+     Stage 8 step 2.5 turns it on for the bundle each application release stores (Stage 8 decision 20,
+     taken 2026-10-15).
   5. Pages, per step 4.
   6. SAML, per step 3.
 

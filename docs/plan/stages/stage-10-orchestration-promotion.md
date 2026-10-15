@@ -423,24 +423,24 @@ ran in the lab on 2026-10-15 (D41).
   kept from overwrite by decision 12's statement and checked by rule (h). No CI job builds 6i's folder
   for an application: what the code needs beyond itself is in the image, whose interpreter runs it.
 - **2.4 — [pipeline] Deploy the definition to the versioned home**: in each leg the release job downloads
-  the tag's bundle (2.2) from where Stage 8 decision 20 stores it, checks its SHA256 against the release
-  the pipeline promotes (the value Stage 8 step 2.5 recorded with it and step 3.7 commits) before it reads
-  a file of it, and rebuilds nothing. It renders `workflows/app-etl.yaml` for its account (decision 6) and
-  copies the rendered copy to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`** in
-  Production (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1),
-  or to the same key of Staging's bucket (decision 17), and records the returned S3 `VersionId` — the
-  value 1.1 pins, so a definition edit without a deploy cannot reach the workflow (`CreateWorkflow`
-  snapshots anyway; the pin makes the intent explicit). When the workflow has Python or Bash tasks, the
-  code package the tag pipeline built from `code/`, which the bundle carries, goes beside it and its
-  `VersionId` is recorded the same way; the processing task's `src/` goes to
-  `workflows/app-etl/<tag>/src/`, the job's input (D28 class 2d, decision 7, taken). The scripts in
-  `glue/` go to `workflows/app-etl/<tag>/glue/`, where the application slice's Glue jobs name them; Glue
-  reads them at every run and pins no version, so what keeps them from changing is decision 12. **The
-  release job writes from the deploy runner**, in `VPC-SharedServices`, whose gateway endpoint the
-  perimeter leaves out by name (Stage 9 1.1), and under a key that delegates nothing to IAM: so
-  `production/data/` gains a principal branch admitting the role the release job runs as to `workflows/*`
-  alone, the shape of `DataScientistProdAccess`'s branch (D39), and a key-policy statement naming that
-  role; Staging's bucket gains the same for `awsds-deploy-staging`.
+  the tag's bundle (2.2) from where Stage 8 decision 20 stores it, checks its SHA256, before it reads a
+  file of it, against the value Stage 8 step 2.5's third job passed down the pipeline, never against
+  GitLab's record of the file, and rebuilds nothing; step 3.7 commits that value for a later re-apply. It
+  renders `workflows/app-etl.yaml` for its account (decision 6) and copies the rendered copy to
+  **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`** in Production (decision 1 — the
+  bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1), or to the same key of
+  Staging's bucket (decision 17), and records the returned S3 `VersionId` — the value 1.1 pins, so a
+  definition edit without a deploy cannot reach the workflow (`CreateWorkflow` snapshots anyway; the pin
+  makes the intent explicit). When the workflow has Python or Bash tasks, the code package the tag pipeline
+  built from `code/`, which the bundle carries, goes beside it and its `VersionId` is recorded the same
+  way; the processing task's `src/` goes to `workflows/app-etl/<tag>/src/`, the job's input (D28 class 2d,
+  decision 7, taken). The scripts in `glue/` go to `workflows/app-etl/<tag>/glue/`, where the application
+  slice's Glue jobs name them; Glue reads them at every run and pins no version, so what keeps them from
+  changing is decision 12. **The release job writes from the deploy runner**, in `VPC-SharedServices`,
+  whose gateway endpoint the perimeter leaves out by name (Stage 9 1.1), and under a key that delegates
+  nothing to IAM: so `production/data/` gains a principal branch admitting the role the release job runs as
+  to `workflows/*` alone, the shape of `DataScientistProdAccess`'s branch (D39), and a key-policy statement
+  naming that role; Staging's bucket gains the same for `awsds-deploy-staging`.
 
 ### 3. Schedule, retry, alerting, and the chain layer (D28 item 5, D41)
 
