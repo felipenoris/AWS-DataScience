@@ -382,9 +382,9 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   the CI/CD CLI's notation, the four tasks of D41's scope (a Glue job with a Python Spark transform, a
   processing task on the application image with the code as the job's input, a light Python task, an
   S3 operator task writing the result), and `.gitlab-ci.yml` gains, on the tag after `build-image`, a job
-  that runs `aws-smus-cicd-cli bundle --local`, the artifact step 3 promotes, packed from the checkout
-  with the variables unresolved (Stage 10 step 2.2), then `deploy --targets test --skip-validation
-  --no-events` of that bundle (the bootstrap `workflow.create` and `workflow.run` with `wait`, the
+  that runs `aws-smus-cicd-cli bundle`, the artifact step 3 promotes, packed from the checkout with the
+  variables unresolved because the manifest's `content.storage` items name no connection (Stage 10 step
+  2.2), then `deploy --targets test --skip-validation --no-events` of that bundle (the bootstrap `workflow.create` and `workflow.run` with `wait`, the
   application's own test), the digest `build-image` reports passed as the stage's image variable. The
   identity that job runs as is decision 19. `processing_job_request` stays the diagnostic it is; the
   image is built from the lock alone (`uv sync --locked --no-install-project`) and `smoke` mounts the
@@ -1011,8 +1011,8 @@ Measured (`docs/PRICING.md`), us-west-2:
     hold it, since the CLI applies no slice, so the role's policy is the whole control, and D21's answer
     to its surviving objection ("CI applies into Staging and never into Sandbox") gains this exception in
     writing when it is taken. The alternative: the person who tags runs `deploy --targets test` of the
-    tagged commit from the laptop and the pipeline waits at a manual job for it, while `bundle --local`
-    stays in the pipeline, which keeps CI out of Sandbox at the cost of a person in every release. Either
+    tagged commit from the laptop and the pipeline waits at a manual job for it, while `bundle`, which
+    reads the checkout and writes nothing in AWS, stays in the pipeline, which keeps CI out of Sandbox at the cost of a person in every release. Either
     is measured first on the `test` project, with CloudTrail naming the calls, before the job is written
     (verification xix).
 
@@ -1040,7 +1040,7 @@ Record every answer, including the ones that come out fine.
 | xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? **Yes to both, read 2026-10-13**: the infrastructure user's assumptions fired `awsds-prod-deploy-misuse` (same account) and `awsds-staging-deploy-misuse` (from Production), one alerts message each, both emails received by the user; a refused one is recorded in the caller's account only, with `requestParameters` null and the role named in `errorMessage` | 4.6 |
 | xvii | Does the first pipeline-built `dev-env` keep `./aws/devenv.py` green: `DE-3` on the recipe before the tag, `DE-5` on the registered bytes after? **Yes, read 2026-10-15**: before the tag, `check-gitlab-mirror.py` `GM-4` read the recipe at `69ad278e` against the account's list, 70 names and sha256 `aafa08da98a61f5c` on both sides (2026-10-14); after it, `DE-3` the same on the copy at `c268de48`, the commit the release built, and `DE-5` version 7, `sha256:3b6d706a9a16…`, 70 names with the same sha256. **Again on `default-v0.7.3`, 2026-10-15**, with `sandbox/egress` down: `GM-4` by plan before the tag, 70 names and `aafa08da98a61f5c` on both sides, and `DE-5` on version 8, `sha256:38f4864c8b85…`, the same 70 names | 1.1, 1.6 |
 | xviii | Does the application image write to a processing output mount as uid 1000, with networking off? **Yes, read 2026-10-14**: pipeline #15's smoke stage, networking off, printed `uid 1000, output owned 0:0 755` and wrote the Parquet after `sudo -n chown`; the Sandbox job `app-etl-20261014T175359` ran the same command on the same image under network isolation and its two outputs arrived in `awsds-sandbox-outputs` | 2.2 |
-| xix | Which calls do `bundle --local` and `deploy --targets test` make, read in Sandbox's CloudTrail on the `test` project under the identity decision 19 picks, and which of them does AWS's example policy for the CLI leave out? | 2.5 |
+| xix | Which calls do `bundle` and `deploy --targets test` make, read in Sandbox's CloudTrail on the `test` project under the identity decision 19 picks, and which of them does AWS's example policy for the CLI leave out? | 2.5 |
 
 ## Risks
 

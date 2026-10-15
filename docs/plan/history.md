@@ -733,8 +733,8 @@ one module tag.
 
 - **2026-10-15 — The plan read against D41.** A review the user asked for after D41 merged corrected what
   the decision left inconsistent. The `test` deploy and the bundle move onto the release tag, after the
-  image is built and before the Staging leg, the bundle made with `bundle --local` and deployed to `test`
-  so the artifact tested is the one promoted (D41 item 3, Stage 8 step 2.5, Stage 10 step 2.2). D28 gains
+  image is built and before the Staging leg, the bundle packed from the checkout and deployed to `test` so
+  the artifact tested is the one promoted (D41 item 3, Stage 8 step 2.5, Stage 10 step 2.2). D28 gains
   class (2d), a processing task's code under the release's `src/` prefix, which the lint's new rule (h)
   checks against the release's manifest. The execution role's S3 writes of D41 item 10 and the release
   job's copy, whose runner sits in a VPC the outputs bucket's perimeter does not trust, need statements in

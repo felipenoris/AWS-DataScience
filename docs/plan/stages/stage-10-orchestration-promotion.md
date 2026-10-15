@@ -357,16 +357,18 @@ ran in the lab on 2026-10-15 (D41).
   (read 2026-10-15; no save has measured it).
 - **2.2 — [user + pipeline] Bundle and deploy to the `test` project** (D21 — the gate is the tag, and the
   rewrite happened in the repository): on the release tag, once the image is built (Stage 8 step 2.5, under
-  the identity its decision 19 settles), `bundle --local` packs the repository's content and workflows,
-  their variables unresolved, into the artifact the pipeline promotes, and `deploy --targets test` deploys
-  that bundle, running `workflow.create` in the `test` project and `workflow.run` with `wait` as the test,
-  so the artifact tested is the one promoted. Without `--local` the CLI packs the `dev` project's storage,
-  where `deploy` left the YAML resolved for `dev` (inferred from the CLI's `_resolve_workflow_variables`,
-  unmeasured: verification xxvii). The repository's YAML is the source: the portal's own YAML is never the
-  artifact (6i: no Python authoring and no converter in the path), project-scoped values are the CLI's
-  variables, and the job image is the application image (Stage 8, decision 7). `schedule` (cron) belongs to
-  no workflow promoted to Staging or Production, since a chain starts every one (decision 13, taken), and
-  the lint refuses one in the rendered copy (2.3). The validated parameter set: `retries` ≤ 3 and set
+  the identity its decision 19 settles), `bundle` packs the checkout into the artifact the pipeline
+  promotes, its workflows with their variables unresolved, and `deploy --targets test` deploys that bundle,
+  running `workflow.create` in the `test` project and `workflow.run` with `wait` as the test, so the
+  artifact tested is the one promoted. `bundle` reads a `content.storage` item from the checkout when the
+  item names no connection, the manifest naming it per stage under `deployment_configuration`, and
+  downloads the item from the stage's project when it names one, where `deploy` left the YAML resolved for
+  that project; `--local` only changes the default stage's name (the CLI's 1.0.9 code, read 2026-10-15;
+  verification xxvii). The repository's YAML is the source: the portal's own YAML is never the artifact
+  (6i: no Python authoring and no converter in the path), project-scoped values are the CLI's variables,
+  and the job image is the application image (Stage 8, decision 7). `schedule` (cron) belongs to no
+  workflow promoted to Staging or Production, since a chain starts every one (decision 13, taken), and the
+  lint refuses one in the rendered copy (2.3). The validated parameter set: `retries` ≤ 3 and set
   explicitly (the service defaults it to 1), `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s.
   The service **ignores** `catchup`, callbacks, `trigger_rule`, `deferrable`, `render_template_as_native_obj`,
   `do_xcom_push` and `is_paused_upon_creation`; a template sees only `macros`, `ti`, `params`, `ds` and `ts`
@@ -879,7 +881,7 @@ Record every answer, including the ones that come out fine.
 | xxiv | Does the schedule start the machine unattended, what `RunType` does the workflow run it started report, and does `state = DISABLED` stop the next execution? | 3.5, 6.1 |
 | xxv | Do a `Workflow Run Succeeded` event and an `Object Created` under `inbox/<app>/` start the consuming chain, with what delay, and does a second object start a second execution? | 3.6, decision 18 |
 | xxvi | Do `aws_sfn_state_machine` and `aws_scheduler_schedule` apply under the deploy role's boundary beside the `awscc` workflow, and does `OR-9` read the layer back? | 1.5, 3.7 |
-| xxvii | Does `bundle --local` carry the repository's YAML with its variables unresolved, and does a `bundle` without it, after a `dev` deploy, carry the YAML resolved for `dev`, as the CLI's code reads? | 2.2 |
+| xxvii | Does `bundle` carry the checkout's YAML with its variables unresolved when the manifest's `content.storage` items name no connection, and a project's copy, resolved for that project, when one names a connection, as the CLI's 1.0.9 code reads? | 2.2 |
 | xxviii | Does the S3 operator task write the result file and an inbox marker as the execution role, admitted by the key policy's `aws:PrincipalArn` statement, while the same role's read of a lake bucket is refused? | 1.3, 3.6 |
 
 ## Risks
