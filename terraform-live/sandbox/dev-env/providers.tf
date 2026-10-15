@@ -5,9 +5,8 @@
 # awsds-<env>-tfstate, which admits no cross-account principal.
 #
 # There is no aliased provider although this slice reads the registry account. What it needs from
-# Production is two values - the repository URL and the two repository ARNs - and both are outputs
-# of production/registry/, so the read is a terraform_remote_state with a profile (data.tf) rather
-# than a second provider. A provider would let this slice create something over there; a state read
+# Production is the two repository ARNs, outputs of production/registry/, so the read is a
+# terraform_remote_state with a profile (data.tf) rather than a second provider. A provider would let this slice create something over there; a state read
 # cannot.
 
 provider "aws" {

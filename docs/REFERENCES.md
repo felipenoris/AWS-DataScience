@@ -577,8 +577,9 @@
   image from your domain before deleting the image from the SageMaker AI image store. If not, you may
   experience errors while viewing your domain information or attaching new custom images to your
   domain"* — a deferred failure rather than a refusal, and it lands on the re-attach — and *"Before you
-  can update the custom images, you must delete all of the applications in your domain"*, which makes a
-  running app a precondition on both the detach and the re-attach:
+  can update the custom images, you must delete all of the applications in your domain"*, which made a
+  running app a precondition on both the detach and the re-attach, until four writes with apps running
+  were accepted on 2026-10-15 (Stage 8 decision 7):
   <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-detach-from-domain.html>,
   reached from
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-clean-up.html>.
@@ -598,6 +599,21 @@
   `ContainerEnvironmentVariables` is *"Map Entries: … Maximum number of 25 items"* with *"Key Length
   Constraints: … Maximum length of 256"* and the same cap on each value, which no BYOI page mentions:
   <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ContainerConfig.html>.
+
+- Image versions, their aliases and their lifecycle — Stage 8 decisions 7 and 18 (read 2026-10-14). A
+  domain's `CustomImage` names an image, an optional version number and a configuration, with no alias:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CustomImage.html>. A space's
+  `ResourceSpec` takes a semver-shaped `SageMakerImageVersionAlias`, and a version ARN outranks an image
+  ARN: <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ResourceSpec.html>. A version is
+  created with aliases and a `VendorGuidance`, and both change in place later (`TO_BE_ARCHIVED` archives a
+  custom version after three months):
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateImageVersion.html> and
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_UpdateImageVersion.html>. Neither launch
+  page says what the image picker lists for a custom image with several versions:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-launch.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-launch-custom-image.html>.
+  Provider 6.64.0's resource, keyed by name and version number:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.64.0/internal/service/sagemaker/image_version.go>.
 
 - VS Code's own two pages, consumed by Stage 6d step 7.8 (read 2026-09-11). **UI versus workspace
   extensions** is what decides where an extension installs — *"These extensions contribute to the VS Code

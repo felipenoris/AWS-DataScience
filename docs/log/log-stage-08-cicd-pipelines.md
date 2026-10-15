@@ -962,3 +962,165 @@ Account ids are replaced by the account's name in angle brackets.*
   `98a3dc7e`. `./scripts/check-gitlab-mirror.py --plan` passed `GM-1` to `GM-8`, `GM-1` naming
   `bb13918b` and `GM-4` reading 70 names, sha256 `aafa08da98a61f5c`, on both sides. `awsds/infrastructure`
   then read `ffa23d7`, `origin/main`'s commit.
+
+## 2026-10-15 — decision 7 reopened, and decision 18
+
+- **[user] In chat, 2026-10-14**: proposed that each dev-env tag add an image version instead of replacing
+  one, as SageMaker publishes its own images, with a second flow retiring any version past a history of
+  10; and asked whether `register` applies, how its state reaches this repository, and whether
+  `sandbox/dev-env/` could live in GitLab alone.
+- **[Claude] Read as the infrastructure user on Sandbox** (`awsds-infra-sandbox-1`, `InfrastructureAccess`),
+  read-only, at about 01:35Z with the release in flight: both `CustomImages` lists `[]`, version 6 the
+  image's only version and no alias on it, the project's default space on AWS's distribution by alias
+  `4.5`, no app running, `sandbox/egress` down. Service Quotas: 500 SageMaker images per account (default
+  250), and no quota on versions per image. Every bump in this log and in Stage 6d's deleted the domain's
+  apps before the first `update-domain`, so whether it refuses with an app running has never been read.
+- **[Claude] Read in the references**: `CustomImage` carries `ImageName`, an optional `ImageVersionNumber`
+  and `AppImageConfigName`, and no alias field; `ResourceSpec.SageMakerImageVersionAlias` is semver-shaped;
+  `UpdateImageVersion` takes `AliasesToAdd`, `AliasesToDelete` and `VendorGuidance`, whose
+  `TO_BE_ARCHIVED` archives a custom version after three months and whose `ARCHIVED` is "not searchable".
+  Provider 6.64.0 keys `aws_sagemaker_image_version` by name and number, reads aliases with `ListAliases`,
+  updates aliases and `VendorGuidance` in place, and forces a new version only on `base_image` and
+  `image_name`.
+- **[user] Decision 18 taken**: the image version is a release artifact, created by `awsds/dev-env`'s
+  pipeline with a semver alias, and the versions leave Terraform's state; the stage file carries the
+  decision and its alternatives.
+
+## 2026-10-15 — decision 7's readings on a probe image
+
+Every write below as the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`),
+authorized by the user in chat per write; account ids masked as `<acct>` while reading.
+
+- **[Claude] W1-W3**, authorized: `create-image awsds-sandbox-dev-env-probe` (role
+  `awsds-sandbox-sagemaker-image`, the five tags, `ManagedBy=console`, `CostCenter=stage-08`) at 04:33:05Z,
+  `CREATED` within 9 s; `create-app-image-config awsds-sandbox-dev-env-probe-jupyterlab` (JupyterLab, empty)
+  at 04:33:06Z; `create-image-version` at 04:33:25Z with `BaseImage` the `awsds-prod-ecr-dev-env` repository
+  **by digest** (`default-v0.5.0`'s `@sha256:8ec04e35…9dd6`), alias `0.5.0`, `VendorGuidance STABLE`:
+  version 1 `CREATED` 2 s later, `BaseImage` and `ContainerImage` both the digest form, `list-aliases`
+  reading `0.5.0`. The first attempt of W1 and W2 failed in the CLI (exit 252, `ParamValidation` on
+  `--tags`, an unsplit zsh variable) and sent nothing.
+- **[Claude] W4**, authorized: `update-domain` at 04:33:51Z, the live `DefaultUserSettings` with the
+  JupyterLab list holding version 7's entry unchanged and `{awsds-sandbox-dev-env-probe,
+  awsds-sandbox-dev-env-probe-jupyterlab}` with **no** `ImageVersionNumber`, sent while two apps were
+  `InService` (`jup-house-image` and the project's default space). **Accepted**: `InService` at 04:33:53Z with
+  no `FailureReason`, the block read back identical to the one sent, the probe entry stored with no version
+  number, and both apps still `InService` at their 03:05:45Z and 03:01:24Z creation times. So the vendor's
+  *"you must delete all of the applications in your domain"* is not enforced on adding a custom image.
+- **[Claude] `probe-p1`, through the user's Chrome at the user's request**, in the portal's project
+  `eighth-experimentation` as the data scientist. *Create new space*'s **Image** picker listed *Default*:
+  `SageMaker Distribution 4.5`; *Custom Images (2)*: `AWS-DataScience dev-env v7` and `dev-env probe (Stage 8
+  decision 7) v1`; *Image Versions (19)*: AWS's distribution `2.14`, `3.9`, `4.0` to `4.4`, and twelve more
+  marked `(End of support)`. **The entry with no version number is labelled with the image's newest
+  version.** `probe-p1` (JupyterLab, `ml.t3.medium`, 16 GB, remote access disabled) was created at
+  04:43:58Z: CloudTrail's `CreateSpace`, by the project role in the data scientist's portal session, carried
+  a `defaultResourceSpec` naming the probe's image **and `image-version/awsds-sandbox-dev-env-probe/1`**. So
+  the portal resolves the entry to the newest version and pins that number into the new space, and
+  `describe-space` reads it back. `CreateApp` at 04:44:03Z, through `sagemaker.amazonaws.com`, sent an empty
+  `resourceSpec`; the app was `InService` at 04:53:59Z on version 1, 9 min 56 s after its creation.
+- **[Claude] Two apps stopped meanwhile, neither by this session**: `jup-house-image`'s `DeleteApp` at
+  04:41:12Z, by the project role in the data scientist's portal session from the browser's address; the
+  default space's at 04:44:04Z, by `AWSServiceRoleForAmazonSageMakerNotebooks` (idle shutdown,
+  `log-debugging.md`). Both had read `InService` after W4.
+- **[Claude] W5**, authorized with W6-W17 and the portal steps: probe version 2 at 05:00:59Z, by digest of
+  `default-v0.6.0` (`@sha256:43079013…5518`), alias `0.6.0`, `CREATED` 3 s later. `probe-p1` still read
+  version 1 in its spec and its running app. With the entry still version-less, the picker then listed
+  **every version**: *Custom Images (3)*, `dev-env v7`, `probe … v2` and `probe … v1`, newest first.
+  `probe-p2` was created on `v2` at 05:01:54Z and its spec reads `image-version/…-probe/2`.
+- **[Claude] `jup-house-image` deleted meanwhile**, not by this session: `DeleteSpace` at 04:58:03Z by the
+  project role in the data scientist's portal session, from the browser's address.
+- **[Claude] W6**: `update-domain` at 05:02:24Z with the JupyterLab list holding version 7's entry and the
+  probe **twice**, `ImageVersionNumber` 1 and 2, while `probe-p1` and the default space ran. **Accepted**,
+  `InService` within 3 s, the block read back identical. The picker listed the same three options.
+- **[Claude] W7**: probe version 1 to `VendorGuidance TO_BE_ARCHIVED` at 05:03:09Z; its label in the
+  picker stayed `… v1`, with no `(End of support)`. **W8**: version 1 to `ARCHIVED` at 05:03:49Z;
+  `describe-image-version` reads `CREATED` and `ARCHIVED`, `list-image-versions` still lists it, and the
+  picker still offered it with the entry naming it.
+- **[Claude] W9**: `update-domain` at 05:05:03Z back to the version-less probe entry, read back identical
+  to the block after W4. **With version 1 `ARCHIVED`, the picker still listed `… v2` and `… v1`**: archiving
+  hides nothing from the portal's picker. `probe-p1` was stopped in the portal at 05:04Z and started at
+  05:06Z, its spec still naming the archived version 1.
+- **[Claude] The default space started by the portal**: `CreateApp` on `default-28f1b390-…` at 05:01:18Z, by
+  the project role in the data scientist's portal session, with AWS's distribution by alias `4.5`, and a
+  second one in the same second refused `ResourceInUse`. It came with this session's navigation to the
+  project's *Spaces* page in the user's Chrome, so opening the project starts its default space.
+- **[Claude] `probe-p1` restarted on the archived version**: stopped in the portal at 05:04Z and started at
+  05:05:53Z. The portal's `CreateApp` sent the space's own spec, `image-version/…-probe/1`, and the service
+  accepted it with version 1 `ARCHIVED`.
+- **[Claude] W10**, the first run of `dev-env.md` §B step 6's CLI route: `probe-p2` stopped in the portal
+  (its app `Deleted` at 05:12:37Z), then `update-space` at 05:12:38Z with the live `SpaceSettings`, its
+  `DefaultResourceSpec` carrying `SageMakerImageVersionAlias: "0.6.0"` and `SageMakerImageVersionArn:
+  "None"`. **Accepted**, `InService` within 2 s. Read back, the spec names the image and the alias and no
+  version; the idle settings, the 16 GB volume, `RemoteAccess: DISABLED` and the project's S3 mount are
+  intact, and **`SpaceManagedResources: ENABLED`, sent with the block, is gone from the read**. The portal
+  then bannered `probe-p2` as running an *outdated SageMaker Distribution image*, `Recommended Version:
+  4.5`: it reads any alias as the distribution's. `probe-p2` started from the portal at 05:13Z, its app
+  `ResourceSpec` carrying the alias `0.6.0`.
+- **[Claude] Read in Production's CloudTrail** (`awsds-infra-prod`), `BatchGetImage` on
+  `awsds-prod-ecr-dev-env`, each record `AWSAccount` with a `<role id>:SageMaker` principal, the role ids
+  resolved in Sandbox: at each `CreateImageVersion` the image role `awsds-sandbox-sagemaker-image` (05:01:01Z
+  for version 2, 05:23:28Z for version 3), and at each app start the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, always by digest: `probe-p1`'s first start
+  `8ec04e35…9dd6` at 04:45:45Z; `probe-p2`'s first start `43079013…5518` at 05:03:39Z; **`probe-p1`'s
+  restart on the `ARCHIVED` version 1, `8ec04e35…9dd6` at 05:07:35Z**, its app `InService` at 05:16:29Z;
+  and **`probe-p2`'s start on the alias `0.6.0`, `43079013…5518` at 05:14:46Z**, version 2's digest, its app
+  `InService` at 05:22:43Z. So an archived version still starts the space that names it, and a space's
+  alias resolves to the version holding it.
+- **[Claude] W11-W13**: probe version 3 at 05:23:26Z, by digest of `default-v0.7.1-c268de48`
+  (`@sha256:3b6d706a…84a4`), no alias, `CREATED` 3 s later; alias `0.6.0` deleted from version 2 at
+  05:23:29Z and added to version 3 at 05:23:30Z. The picker then listed *Custom Images (4)*: `dev-env v7`
+  and `probe … v3`, `v2`, `v1`, so a version-less entry offers versions no space names. `probe-p2` was
+  stopped and started again in the portal at about 05:24:30Z.
+- **[Claude] W14**: `delete-image-version` of probe version 1 at 05:25:27Z, `ARCHIVED`, named by no domain
+  entry and by `probe-p1`'s spec while its app ran. Gone within 5 s; `list-image-versions` reads 3 and 2.
+  The domain stayed `InService` with no `FailureReason`, its `LastModifiedTime` W9's and
+  `DefaultUserSettings` unchanged; `probe-p1`'s app stayed `InService` on the deleted version, and its spec
+  still names `image-version/…-probe/1`, so its next start is stranded (`EXC-09`). The picker then listed
+  `dev-env v7`, `probe … v3` and `v2`: a deleted version leaves it, an archived one does not.
+- **[Claude] `probe-p2` after the alias moved**: its restart pulled **`3b6d706a…84a4` at 05:26:41Z**,
+  version 3's digest, as the project role. A space naming an alias follows the alias to its new version
+  at its next start.
+- **[Claude] W15**: `update-domain` at 05:29:28Z removing the probe's entry, while three apps ran,
+  `probe-p1` and `probe-p2` on the probe among them. **Accepted**, `InService` within 2 s, the block read
+  back identical and **identical to the one read before W4**; the three apps unchanged. So adding, listing
+  twice and removing a custom image were each accepted with apps running, one of them an image in use.
+- **[user] Deleted `probe-p1` and `probe-p2`** in the portal; at 05:41:57Z `list-spaces` read the project's
+  default space alone, and neither domain list named the probe.
+- **[Claude] W16-W17**: `delete-image awsds-sandbox-dev-env-probe` at 05:42:09Z, `DELETING`, then gone by
+  05:42:18Z with versions 2 and 3; `delete-app-image-config awsds-sandbox-dev-env-probe-jupyterlab` at
+  05:42:18Z, gone. Left: `awsds-sandbox-dev-env` with version 7, its two configurations, the domain's block
+  as before W4, the default space's app started by the portal at 05:01:18Z, and `sandbox/egress` up since
+  the release's re-attach.
+- **[user] Decision 7 taken, as recommended**: the house image is attached once per domain with no version
+  number, a release is the pipeline's `create-image-version`, and the retirement deletes every version past
+  the newest 10 that no space names. Implemented in the same pull request, each apply and the domain write
+  authorized per occurrence.
+
+## 2026-10-15 — decisions 7 and 18 applied
+
+Pull request #134, as the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`),
+the registry's state read through `awsds-infra-prod`; each act authorized by the user in chat.
+
+- **[Claude] `deploy-role-v0.4.0`**, Recipe B: the module alone in commit `454ca7e`, tagged and pushed,
+  `git ls-remote` reading the tag at that commit. `state_prefixes` may be empty, and a role with no prefix
+  and no read key gets no state policy.
+- **[Claude] A1**: `sandbox/dev-env/`'s saved plan applied at 06:11:51Z, `Apply complete! Resources: 0 added,
+  0 changed, 0 destroyed.`, with `aws_sagemaker_image_version.dev_env` no longer managed (`destroy =
+  false`); re-plan `No changes`, the state listing the image, the two configurations and the image role
+  only. Version 7 still `CREATED` at `@sha256:3b6d706a…84a4`.
+- **[Claude] A2**: `sandbox/foundation/`'s saved plan applied at 06:12:32Z, `1 added, 2 changed, 2
+  destroyed`: the inline policies `state` and `apply-dev-env` destroyed, the ceiling and the role's
+  description updated, `dev-env-versions` created; `list-role-policies` reads `dev-env-versions` alone.
+  **The re-plan read `0 to add, 1 to change`**: the saved plan predates the commit that added
+  `sagemaker:ListDomains` and `DescribeDomain` on `domain/*` to `dev-env-versions` for the retire job's
+  domain read, so that change waits for its own authorization, saved as a plan.
+- **[Claude] D1**: `update-domain` on the project's domain at 06:14:04Z, the live `DefaultUserSettings` with
+  both lists set from the slice's `custom_images` output. `InService` 2 s later, read back identical, and
+  against the block read before it the only change is `ImageVersionNumber: 7` gone from both entries; the
+  default space's app, running, untouched. The house image is attached with no version number.
+- **[Claude] A2b**, authorized separately: the saved plan applied at 06:17:00Z, `0 added, 1 changed, 0
+  destroyed`, `dev-env-versions` with `sagemaker:ListDomains` and `DescribeDomain` on `domain/*`; re-plan
+  `No changes`. The policy simulator, given the Region as context, reads the role's edges:
+  `CreateImageVersion` on `awsds-sandbox-dev-env`, `DeleteImageVersion` on its versions, `ListImages`,
+  `ListSpaces`, `ListDomains`, `DescribeSpace` and `DescribeDomain` allowed; `CreateImageVersion` on another
+  image, `DeleteImage` and `s3:GetObject` on `sandbox/dev-env/`'s state an implicit deny; `UpdateDomain`,
+  `UpdateSpace`, `iam:PassRole` and `iam:PutRolePolicy` on the image role an explicit deny, the ceiling's.

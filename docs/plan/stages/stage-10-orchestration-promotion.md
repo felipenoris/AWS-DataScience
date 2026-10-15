@@ -139,7 +139,7 @@ Studio surface and this stage's alternative A are one product, is [6i](stage-06i
   removes or keeps the Sandbox endpoint on it. Removing it is not one edit: the house image's `NO_PROXY`
   literal names `lakeformation.<region>.amazonaws.com`, and a name the image bypasses the proxy for, with
   no endpoint behind it, times out. So removal is a recipe change ([`dev-env.md`](../runbooks/dev-env.md)
-  §E, "What an endpoint change costs") followed by §B's version bump, plus a `core_services` override in
+  §E, "What an endpoint change costs") followed by a release and every space moved to it (§B), plus a `core_services` override in
   `sandbox/egress`.
 - **0.4 — Moved to [6i](stage-06i-sandbox-orchestration.md) steps 2.1 and 3.1.** The toggle
   half was answered at [6d](stage-06d-unified-studio-remainder.md) step 4.1 (2026-09-09): nothing enables

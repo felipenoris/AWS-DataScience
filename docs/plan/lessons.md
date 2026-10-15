@@ -1661,7 +1661,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   vendor says the form in the detach page and nowhere near the attach page: *"you will need to leave
   `CustomImages` blank, such that `"CustomImages": []`"*. What survives of Lesson 60 here is the
   discipline, not the mechanism: send the block back as read, and clear a list explicitly. Where:
-  `runbooks/dev-env.md` §B step 2.
+  `runbooks/dev-env.md` §C6 and §X step 1.
 
 - **SMUS appoints itself a Lake Formation administrator** when the first project is created: two
   service roles nobody chose, in an account whose `admins` list a later
@@ -1887,13 +1887,39 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   domain, an existing space still named version 3, which the same apply had destroyed
   (`aws_sagemaker_image_version` is force-new on `base_image`). AWS's own images are referenced by a
   mutable **alias** instead, which survives a bump. **An app started against the destroyed version
-  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B step
-  6, `AWS_STATE.md` `EXC-09`, Lesson 63.
+  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B,
+  *Moving a space*, `AWS_STATE.md` `EXC-09`, Lesson 63.
 - **`describe-app` still returns the `ResourceSpec` of an app that has been deleted** (measured
   2026-09-12), so the image a removed space ran can be attributed after the fact. A space deleted
   within the hour read `sagemaker-distribution-cpu`, alias `4.3`, with `Status: Deleted` — the
   evidence that it had been created on AWS's image rather than this estate's, which is what its
   missing proxy variables had looked like a defect of. Where: `dev-env.md` §C7.
+- **`UpdateDomain` changes `CustomImages` with apps running, whatever the vendor's page says**
+  (measured 2026-10-15 on a probe image, Stage 8 decision 7). The detach page reads *"Before you can
+  update the custom images, you must delete all of the applications in your domain"*, and four
+  `update-domain` calls changing the list were accepted with apps `InService`, one removing an entry
+  while two apps ran on that image. Each read back identical, and the running apps were untouched.
+  Where: `dev-env.md` §C6.
+- **A `CustomImage` with no `ImageVersionNumber` offers every version of the image** (measured
+  2026-10-15). The portal's picker listed each version, newest first, as `<display name> v<n>`,
+  including one created after the attach and one no space named, and the portal's `CreateSpace` pinned
+  the chosen version's ARN into the new space. The API reference says only that the field is optional.
+  Where: `dev-env.md` §C6 and §B.
+- **`VendorGuidance ARCHIVED` hides nothing from the portal, and an archived version still starts**
+  (measured 2026-10-15). With a version `TO_BE_ARCHIVED` and then `ARCHIVED`, the picker kept offering
+  it under the same label, `list-image-versions` kept listing it, and a space pinned to it started and
+  pulled it by digest. Deleting it is what took it out of the picker. Where: `dev-env.md` §B, *The
+  retirement*.
+- **A custom image's alias works in a space's spec, and the portal reads it as the SageMaker
+  Distribution's** (measured 2026-10-15). `update-space` accepted `SageMakerImageVersionAlias` with the
+  version ARN cleared by `"None"`; the app resolved the alias at each start and followed it to another
+  version; and the portal then bannered the space as running an *outdated SageMaker Distribution image*.
+  The same `update-space`, sent the whole live block, left `SpaceManagedResources: ENABLED` out of the
+  read afterwards. Where: `dev-env.md` §B, *Moving a space*.
+- **Opening a project's *Spaces* page in the portal starts its default space** (read 2026-10-15).
+  CloudTrail recorded a `CreateApp` on the default space, by the project role in the data scientist's
+  portal session and on AWS's distribution by alias, as the page loaded, and the app ran until its idle
+  shutdown. Where: `dev-env.md` §C7.
 - **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
   2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
   blanket deny on the action. **A condition key being in a service's catalogue and a key being

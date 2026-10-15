@@ -326,8 +326,8 @@ def main(argv: list) -> int:
             )
 
     # ------------------------------------------------------- what the registered image carries
-    # The latest version is the one read: the slice's version is force-new on `base_image`, so an
-    # apply destroys the previous one and there is never a second to choose between.
+    # The newest version is the one read: the picker offers it first, and the older ones are earlier
+    # releases' bytes, kept until the release pipeline's retire job deletes them (Stage 8 decision 18).
     image_name = f"awsds-{env_token}-dev-env"
     served: dict = {}
     served_version = None
@@ -512,7 +512,8 @@ HOW TO READ THIS FILE
     name AWS's SageMaker Distribution instead, which bakes no proxy at all. Read
     `describe-app`'s ResourceSpec, or /opt/awsds-proxy.txt inside the space.
   - The repair for any divergence is the chain in docs/plan/runbooks/dev-env.md E:
-    edit the Dockerfile, rebuild, push a new tag, bump image_tag, re-attach, restart.
+    edit the Dockerfile, rebuild, release a new tag (the pipeline registers the
+    version), move every space to it, restart.
 
 This file is not versioned (aws/output/ is in .gitignore). Regenerate it rather than
 trusting a stale copy.""")

@@ -639,19 +639,17 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
 
     A pipeline profile is a deploy role's (backend.DEPLOY_ROLES; the deploy runner names each profile
-    after its role). In an Interactive account it applies nothing but that account's dev-env/ under
-    its own dev-env deploy role, the one flow where the supply chain writes where people work (step
-    1.6, INT-18): CI never applies into Sandbox (D21's surviving objection). The roles' state access
-    refuses the same writes in IAM; this says so before anything runs.
+    after its role). In an Interactive account it applies no slice: CI never applies into Sandbox
+    (D21's surviving objection), and the one flow that writes where people work, the dev-env release,
+    creates image versions through the API (step 1.6, decision 18). The dev-env deploy role holds no
+    state access, which refuses the same writes in IAM; this says so before anything runs.
     """
     if profile not in backend.DEPLOY_ROLES.values() or account not in backend.SMUS_MEMBERS:
         return None
-    if slice_name == "dev-env" and profile == backend.DEPLOY_ROLES.get(account):
-        return None
     return (
-        f"refusal 8: the pipeline profile {profile} applies no {account}/ slice but dev-env/ under "
-        "its own dev-env deploy role - CI never applies into the account people work in (Stage 8 "
-        "step 2.4)"
+        f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
+        "into the account people work in, and the dev-env release creates image versions through the "
+        "API (Stage 8 step 2.4, decision 18)"
     )
 
 

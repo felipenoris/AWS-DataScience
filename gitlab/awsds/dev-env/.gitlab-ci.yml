@@ -8,14 +8,15 @@
 #                           the smoke build FROM the pushed dev-env, its manifests the gate's evidence
 #     verify                each image's push scan, informative (decision 1)
 #     release               the steward's gate: a manual job that blocks the chain
-#     register              the deploy runner applies every target's dev-env/ slice with the new tag
+#     register              the deploy runner creates the release's image version in every target account
+#                           retire, then deletes every version past the newest 10 that nothing names
 #
 # Which runner takes which job (decision 11): the gates carry tag awsds-test, the test runner, whose jobs
 # hold no AWS identity; build-images and the scans are untagged, so only the build runner takes them, a
-# protected runner serving protected refs alone; register carries tag awsds-deploy, the deploy runner. The
-# release tag `*-v*` is protected and created by Maintainers only, the dev-env-stewards, which in CE is the
-# whole of the release's authorization (Stage 7 step 3.3); the manual job is the pause where the steward
-# reads the evidence, after the domain's apps are deleted and the image detached (dev-env.md §B).
+# protected runner serving protected refs alone; register and retire carry tag awsds-deploy, the deploy
+# runner. The release tag `*-v*` is protected and created by Maintainers only, the dev-env-stewards, which
+# in CE is the whole of the release's authorization (Stage 7 step 3.3); the manual job is the pause where
+# the steward reads the evidence, and nothing is selectable in a domain before it (dev-env.md §B).
 
 include:
   - project: awsds/ci-gates
@@ -200,17 +201,18 @@ release-gate:
       echo "released by $GITLAB_USER_LOGIN: $IMAGE_TAG"
       echo "  base    ${BASE_DIGEST:-(from an earlier run, SKIP_BASE=1)}"
       echo "  dev-env $DEV_ENV_DIGEST"
-      echo "the registration follows; the domain's apps are deleted and the image detached by now (dev-env.md §B steps 1-2)"
+      echo "the registration follows: a new image version, which the domains offer with no write of theirs (dev-env.md §B)"
   artifacts:
     paths: [manifests/, scan-base/, scan-dev-env/]
     expire_in: never
 
 # --------------------------------------------------------------------------------------- register
 #
-# Step 1.6, on the deploy runner, in the deploy image (the runner's default, by digest). It clones the
-# infrastructure repository's GitLab mirror and runs its scripts/devenv-register.py, which applies every
-# target's dev-env/ slice as that target's deploy role and prints the version it registered. No guard
-# (decision 17): what the steward does before the gate and after this job is dev-env.md §B.
+# Step 1.6, on the deploy runner, in the deploy image (the runner's default, by digest), from this
+# project's own checkout: release/versions.py creates the release's image version in every target as
+# that target's deploy role, from the pushed digest with the release's semver as an alias, and reads it
+# back against that digest. The domains attach the image with no version number (decisions 7 and 18),
+# so the portal offers the version at once and no domain write follows.
 register:
   extends: .release
   stage: register
@@ -221,9 +223,6 @@ register:
   tags: [awsds-deploy]
   resource_group: dev-env-registration
   timeout: 30m
-  variables:
-    GIT_STRATEGY: none
-    INFRA_MIRROR: gitlab.awsds.internal/awsds/infrastructure.git
   script:
     - |
       set -eu
@@ -235,7 +234,20 @@ register:
         exit 1
       fi
       echo "proxy answers ($code)"
-      git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 \
-        "https://gitlab-ci-token:${CI_JOB_TOKEN}@${INFRA_MIRROR}" infra
-      cd infra
-      ./scripts/devenv-register.py --pipeline --tag "$IMAGE_TAG" --digest "$DEV_ENV_DIGEST"
+      python3 release/versions.py register --tag "$IMAGE_TAG" --digest "$DEV_ENV_DIGEST" \
+        ${ECR_REGISTRY:+--repository "$ECR_REGISTRY/awsds-prod-ecr-dev-env"}
+
+# ----------------------------------------------------------------------------------------- retire
+#
+# The second flow (decision 18): every version past the newest 10 that no space and no domain names is
+# deleted. Deleting is what takes a version out of the portal's picker, and archiving takes nothing out
+# (decision 7's readings); a version a space still names stays, listed for the steward to move it.
+retire:
+  extends: .release
+  stage: register
+  needs: [register]
+  tags: [awsds-deploy]
+  resource_group: dev-env-registration
+  timeout: 15m
+  script:
+    - python3 release/versions.py retire --keep 10

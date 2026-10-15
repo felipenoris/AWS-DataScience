@@ -717,8 +717,8 @@ plan, so the layer of the other two is written here rather than inferred from a 
 **A space is not `[E]`**, although the step that asked for this table first listed it there: it holds a
 user's home directory and, since [Stage 6d](stages/stage-06d-unified-studio-remainder.md) step 7, the
 `RemoteAccess` flag and a project's S3 connection, so destroying it is a data loss rather than a cost
-saving. It also carries **its own copy of the image version number**, so a version bump reaches it only
-through `dev-env.md` §B step 6 (`AWS_STATE.md` `EXC-09`).
+saving. It also carries **its own copy of the image version number**, so a release reaches it only
+when it is moved (`dev-env.md` §B, *Moving a space*; `AWS_STATE.md` `EXC-09`).
 
 **Rules this imposes:**
 

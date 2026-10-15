@@ -278,8 +278,8 @@ the whole CA is one pass. The fourth trust surface is GitLab itself, which needs
   conda, `git` and `curl` each carry a bundle of their own, while uv already reads the system store
   (`UV_SYSTEM_CERTS=true`). The layer points each at the system bundle it fills, or appends the root to each
   bundle, and the smoke test is a `git clone` and a `requests` call against `gitlab.awsds.internal` from both
-  Pythons. **Making it selectable is [`dev-env.md`](../runbooks/dev-env.md) §B's six steps**, not a
-  repointing: delete the apps, detach, apply (`1 to add, 1 to destroy`), read the new version's
+  Pythons. **Making it selectable was then [`dev-env.md`](../runbooks/dev-env.md) §B's six steps**, not a
+  repointing (a version and no domain write since Stage 8 decisions 7 and 18): delete the apps, detach, apply (`1 to add, 1 to destroy`), read the new version's
   `ContainerImage` against the pushed digest, re-attach, and sweep every existing space, which keeps the
   version number it was created with and does not start once that version is gone (`EXC-09`, Lesson 63);
   `./aws/devenv.py` `DE-3` before the build, `DE-5` after. It runs on the build runner of step 6, so 2.6 is

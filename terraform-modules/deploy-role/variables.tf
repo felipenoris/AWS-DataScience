@@ -49,13 +49,13 @@ variable "runner_role_id" {
 }
 
 variable "state_prefixes" {
-  description = "The state-key prefixes of the slices this role applies, each ending in '/' (e.g. \"staging/egress/\"). Read, write and delete under each - the lock file sits beside the state."
+  description = "The state-key prefixes of the slices this role applies, each ending in '/' (e.g. \"staging/egress/\"). Read, write and delete under each - the lock file sits beside the state. Empty for a role that applies no slice, Sandbox's since Stage 8 decision 18."
   type        = list(string)
   nullable    = false
 
   validation {
-    condition     = length(var.state_prefixes) > 0 && alltrue([for p in var.state_prefixes : endswith(p, "/")])
-    error_message = "state_prefixes needs at least one prefix, each ending in '/', so a prefix never matches a sibling folder."
+    condition     = alltrue([for p in var.state_prefixes : endswith(p, "/")])
+    error_message = "each state prefix ends in '/', so a prefix never matches a sibling folder."
   }
 }
 
