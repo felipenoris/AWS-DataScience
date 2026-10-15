@@ -3,8 +3,8 @@
 # Production (D7 amended: one orchestrator; D41's chain layer above them is OR-9 once built),
 # with their per-workflow roles (boundary, trust, the D13 absences), their NetworkConfiguration
 # (present, two AZs, no default route), the named log groups with retention (D28 item 5), the
-# failure rules and the model-approval rule, recent runs (the schedule evidence), the absence of
-# any provisioned MWAA environment, the definitions home, and the registry's register/approve
+# failure rules and the model-approval rule, recent runs with their type, the absence of any
+# provisioned MWAA environment, the definitions home, and the registry's register/approve
 # record (INT-07's registry half, consumed).
 #
 #   needs:    a live SSO session, and nothing else:
@@ -37,14 +37,16 @@
 #   - the definitions home is s3://awsds-prod-outputs/workflows/, with the object's S3
 #     VersionId pinned (steps 1.1, 2.4, decision 1)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
+#   - no workflow carries a cron of its own: a chain's Scheduler schedule starts every
+#     production workflow (decision 13), so OR-1 fails on one
 #   - the chain layer carries awsds-<env>-chain- (steps 3.4, 3.5; OR-9, not written)
 #   - the lake buckets carry awsds-data- (Stage 5a), so OR-3 can read D13's absence
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - Sandbox's portal-authored workflows. The Studio surface has no switch to read (6d step
 #     4.1), and what it creates bills task-hours in Sandbox, outside these contracts.
-#   - The behavioural proofs (an unattended scheduled run, the failure rules firing, the
-#     lint rejecting a bad artifact) are the stage's own (Lesson 20).
+#   - The behavioural proofs (a chain's schedule firing unattended, the failure rules firing,
+#     the lint rejecting a bad artifact) are the stage's own (Lesson 20).
 #   - Whether the awscc apply lands under the deploy role's boundary (INT-14) is pass 2's
 #     pipeline run; this file only shows what exists afterwards.
 
@@ -621,6 +623,13 @@ def main(argv: list) -> int:
                     f"{env}: {name}",
                     f"status {d['status']} - mid-transition; re-run once it settles.",
                 )
+            elif d["cron"] != "-":
+                checks.fail(
+                    "OR-1",
+                    f"{env}: {name}",
+                    f"cron {d['cron']} - a chain's schedule starts every production "
+                    "workflow, and the rendered copy carries no schedule (decision 13).",
+                )
             else:
                 checks.ok(
                     "OR-1",
@@ -836,7 +845,7 @@ SECTIONS
   4. The per-workflow roles: boundary, trust, the D13 absences
   5. Log groups and retention (D28 item 5)
   6. The EventBridge rules: failures and the approval rule
-  7. Recent runs (the schedule evidence)
+  7. Recent runs
   8. Provisioned MWAA environments - the absence reading
   9. The service-linked role, and the definitions home
  10. The registry record: who registered, who approved (INT-07)
@@ -851,7 +860,7 @@ HOW TO READ THIS FILE
   - AN ABSENT slice is [E] working between sessions, not an outage. What must NOT
     appear at rest is a provisioned MWAA environment (OR-6) or an auto-created
     /aws/mwaa-serverless/ log group in Staging or Production (OR-2).
-  - THIS IS A CONTROL-PLANE READING. Whether a SCHEDULED run fires unattended,
+  - THIS IS A CONTROL-PLANE READING. Whether a chain's schedule fires unattended,
     a failure rule pages, or the lint rejects a bad artifact is behavioural -
     the stage's own proofs (Lesson 20). INT-14's apply-under-boundary proof is
     pass 2's pipeline run, not this file's.
@@ -887,8 +896,9 @@ never a compliant one.
                 + ["\t".join(r) for r in wf_table]
             )
         rep.text("""
-The cron column is the schedule: it lives in the YAML definition and the service
-runs it through EventBridge Scheduler internally; TriggerMode is the pause lever.
+The cron column reads "-" for every workflow here: a chain's Scheduler schedule
+starts each one, the pause is that schedule's state (decision 13, OR-9 once
+built), and a workflow with no schedule carries TriggerMode manual_only.
 Staging is applied first (pass 2), so a Production workflow with no Staging twin
 is worth a second look, not a failure - the [E] slices come and go by session.""")
 
@@ -917,9 +927,10 @@ association is read against its VPC's main table.""")
             rep.line("No awsds-<env>-wf-* role.")
         rep.text(f"""
 The contract (step 1.3): trust in {WF_PRINCIPAL} alone, a permissions
-boundary (the pipeline creates these under Stage 8 4.1's condition), and no data
-reach - no s3 allow naming a lake bucket, no lakeformation:GetDataAccess. The
-orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
+boundary (the pipeline creates these under Stage 8 4.1's condition), and no lake
+reach - no s3 allow naming a lake bucket, no lakeformation:GetDataAccess; its S3
+is its application's result and inbox prefixes (D41 item 10). The orchestrator
+starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
 
         # ==============================================================================
         rep.h1("5. Log groups and retention (D28 item 5)")
@@ -936,7 +947,7 @@ orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up)."
             rep.line("No awsds-<env>-wf-* or model-approval rule (pre-step-3.1/5.3).")
 
         # ==============================================================================
-        rep.h1("7. Recent runs (the schedule evidence)")
+        rep.h1("7. Recent runs")
         if run_rows:
             rep.tabulate(
                 ["ENV\tWORKFLOW\tRUN\tTYPE\tSTATUS\tSTARTED"]
@@ -947,9 +958,11 @@ orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up)."
         else:
             rep.line("No recorded run.")
         rep.text("""
-Verification (v) wants at least one TYPE=SCHEDULED row with nobody at the
-keyboard. The type is read per run with get-workflow-run: list-workflow-runs
-returns RunType null for every run (measured 2026-10-10). Runs and their history
+A run a chain's machine starts is expected to read ON_DEMAND, the type of a
+StartWorkflowRun call, inferred until verification xxiv reads it; the unattended
+proof is the machine's execution the schedule started (OR-9 once built). The type
+is read per run with get-workflow-run: list-workflow-runs returns RunType null for
+every run (measured 2026-10-10). Runs and their history
 die with the [E] slice (Lesson 4) - 6.3 writes the disposition into the log
 before the first make down.""")
 
@@ -1018,7 +1031,8 @@ any account.""")
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  OR-1  each account's workflows exist and rest READY (step 1.1)
+  OR-1  each account's workflows exist, rest READY and carry no cron (step 1.1,
+        decision 13)
   OR-2  named log groups with retention; no /aws/mwaa-serverless/ orphan (D28 item 5)
   OR-3  per-workflow roles bounded, airflow-serverless trust only, no lake reach;
         NetworkConfiguration set, two AZs, no default route (steps 1.2, 1.3)
