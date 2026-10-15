@@ -1,6 +1,6 @@
 # Inputs. region, env, environment_tag and the registry map arrive from the generated, untracked
-# terraform.auto.tfvars (./scripts/gen-tfvars.py <account> dev-env). image_tag is this slice's
-# own, edited by hand when a steward approves a build.
+# terraform.auto.tfvars (./scripts/gen-tfvars.py <account> dev-env). No release reaches this slice:
+# the versions are the release pipeline's (Stage 8 decision 18, main.tf).
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."
@@ -33,8 +33,8 @@ variable "environment_tag" {
 # ------------------------------------------------------------------- the registry account
 #
 # The image lives in Production and is registered here, so this slice reads one state across an
-# account boundary: production/registry/'s outputs carry the repository URL the image version is
-# built from and the two repository ARNs the image role's statement names. Both would otherwise be
+# account boundary: production/registry/'s outputs carry the two repository ARNs the image role's
+# statement names. Both would otherwise be
 # account-id-bearing literals in a tracked file, which aws/INDEX.md rule 1 forbids (Lesson 3).
 #
 # The map shape and the profile-from-tfvars idiom are the ones sandbox/sagemaker/ uses for the lake
@@ -50,30 +50,6 @@ variable "registry" {
   validation {
     condition     = length(var.registry) == 1
     error_message = "exactly one registry account - both repositories live in Production (docs/SMUS.md, Custom images)."
-  }
-}
-
-# --------------------------------------------------------------------------- what is registered
-#
-# The tag, not a digest. docs/SMUS.md's tag rule is `<flavour>-v<major>.<minor>.<patch>`, and a build
-# of the release pipeline appends `-<short sha>`, the commit it built (Stage 8 step 1.1). Both
-# repositories are tag-immutable, so a tag names exactly one digest for the life of the repository
-# and the two forms carry the same guarantee. The tag is also what the steward approves and what a
-# reader recognises; a digest is neither. The registration job passes the release it built with
-# `-var image_tag=`, and the default below is the tracked line the release is recorded on afterwards.
-#
-# Bumping it replaces the image version: a SageMaker image version is immutable, so base_image is a
-# force-new attribute. What the domain then serves depends on how the attachment names the version
-# - runbooks/dev-env.md, "Attaching the image to the domain".
-
-variable "image_tag" {
-  description = "The dev-env image tag to register, `<flavour>-v<semver>[-<short sha>]` (docs/SMUS.md). default-v0.7.1-c268de48 carries, against default-v0.6.0: every Python environment on 3.12 (Stage 8 decision 13), the house lock past every pip-audit finding it can leave, with the steward's 8 accepted (decision 15), the same 70-entry NO_PROXY_LIST (sha256 aafa08da98a61f5c); built by awsds/dev-env's release pipeline #28 on 2026-10-15, dev-env sha256:3b6d706a...84a4, and registered by its register job as version 7."
-  type        = string
-  default     = "default-v0.7.1-c268de48"
-
-  validation {
-    condition     = can(regex("^[a-z0-9]+-v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9a-f]{8,40})?$", var.image_tag))
-    error_message = "the tag is <flavour>-v<major>.<minor>.<patch>, and a pipeline build's carries -<short sha> after it (docs/SMUS.md, The tag rule)."
   }
 }
 

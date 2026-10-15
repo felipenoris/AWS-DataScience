@@ -427,7 +427,7 @@ domain default** — so an image bump leaves it naming a version that no longer 
 2026-09-12: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
 version 3, which the apply had destroyed, and **its app did not start** until the user edited the
 space to version 4 in the portal. That edit kept `RemoteAccess: ENABLED`, the EBS size and the
-project's S3 connection. Repairing it is [`dev-env.md`](dev-env.md) §B step 6, never a recreate —
+project's S3 connection. Repairing it is [`dev-env.md`](dev-env.md) §B, *Moving a space*, never a recreate —
 **those three fields live in the same block as the version number**, and a recreate loses the home
 directory with them.
 

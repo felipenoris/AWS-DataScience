@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **Pass 3 written 2026-10-14** (PR #131, decisions 13 to 17): the house environment on Python 3.12; everything under `images/` moved to the private GitLab, copied here under `gitlab/`; the release chain, `scripts/devenv-register.py`, the runner's read of the registry's state and `gates-v0.3.0`. **Run 2026-10-15**: the mirror `awsds/infrastructure` (6.1); `default-v0.7.0`'s release gate failed on a shell quote, and the register path's two first-run defects were fixed before the next gate; `default-v0.7.1-c268de48` registered by the pipeline as Sandbox's version 7, attached by hand, and a new space started on it (verifications vii, viii and xvii); the release loop measured (1.7). **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version** ([6d](stage-06d-unified-studio-remainder.md) step 2, [`dev-env.md`](../runbooks/dev-env.md)): the domain writes that make a version selectable cannot be made from another account and stay the steward's, by hand. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **Pass 3 written 2026-10-14** (PR #131, decisions 13 to 17): the house environment on Python 3.12; everything under `images/` moved to the private GitLab, copied here under `gitlab/`; the release chain, `scripts/devenv-register.py`, the runner's read of the registry's state and `gates-v0.3.0`. **Run 2026-10-15**: the mirror `awsds/infrastructure` (6.1); `default-v0.7.0`'s release gate failed on a shell quote, and the register path's two first-run defects were fixed before the next gate; `default-v0.7.1-c268de48` registered by the pipeline as Sandbox's version 7, attached by hand, and a new space started on it (verifications vii, viii and xvii); the release loop measured (1.7). **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version, and since decisions 7 and 18 (2026-10-15) the version is the whole release** ([`dev-env.md`](../runbooks/dev-env.md) §B): the pipeline creates it through the API and retires every version past the newest 10 that nothing names, and the domain, attached once with no version number, offers every version with no write of its own. Both decisions rest on readings of a probe image taken that day, and the change is `deploy-role-v0.4.0`, the slice's `removed` block, refusal 8 widened and `awsds/dev-env`'s `release/versions.py`. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records |
 | **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
@@ -51,7 +51,7 @@ flowchart LR
     end
     GL --> BR -->|"build · smoke · push"| ECR
     GL --> DR
-    DR -->|"awsds-deploy-devenv-sandbox-* · INT-18<br/>image version only"| REG["sandbox/dev-env/ ×N (D35)<br/>domain writes by hand"]
+    DR -->|"awsds-deploy-devenv-sandbox-* · INT-18<br/>image versions only"| REG["image versions ×N (D35)<br/>create · retire, no domain write"]
     DR -->|"awsds-deploy-staging · INT-07/08"| STG["staging/ egress+app [E]<br/>endpoints only, no NAT<br/>deploy · test · destroy"]
     DR -->|"awsds-deploy-prod · INT-08"| PAPP
     STG -->|"tests pass + 3.5 approval"| PAPP
@@ -232,20 +232,19 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   the image by −11.8 MB, so the review reads what the manifests changed. Premium form: a deployment approval
   assigned to `dev-env-stewards`. CE reality, per 3.3's answer: the manual job is a deliberate pause and the
   *authorization* is 1.0's protected tag — who could start this pipeline at all.
-- **1.6 — [pipeline + user] Register the approved version (INT-17, INT-18)**: the job assumes each target's
-  `awsds-deploy-devenv-<unit>` role (4.2) and applies that account's `sandbox/dev-env/` slice with the
-  approved tag as its input (`CreateImageVersion` resolves it to the digest), targets enumerated from the
-  D35 map. **The pipeline's half ends there.** The domain writes that make the version selectable are the
-  steward's, by hand, in `dev-env.md` §B's order, because they cannot be made from another account and each
-  needs every app in the domain deleted first: delete the apps; detach (`"CustomImages": []`, since an
-  omitted key is not cleared); let the pipeline apply (`1 to add, 1 to destroy`, the attached version
-  destroyed before the new one exists, which is why the detach precedes it); read the new version's
-  `ContainerImage` against the pushed digest; re-attach; and sweep every existing space's
-  `DefaultResourceSpec`, because a space keeps the version number it was created with and a bump strands it
-  (`EXC-09`). `./aws/devenv.py` `DE-3` reads the recipe before, `DE-5` the registered bytes after. The writes
-  repeat in **every project's domain**, since each project has its own. **The first pipeline run replaces**
-  `default-v0.6.0` (version 6). Record the changeover in
-  the log. Whether the hand half can shrink is decision 7.
+- **1.6 — [pipeline + user] Register the approved version and retire old ones (INT-17, INT-18)**: since
+  decisions 7 and 18 (2026-10-15) the version is a release artifact. `awsds/dev-env`'s `register` job runs
+  the project's `release/versions.py register` as each target's `awsds-deploy-devenv-<unit>` role (4.2), the
+  targets found by the deploy runner's profile names (D35): `create-image-version` from the pushed digest,
+  the release's semver as an alias, read back against that digest. Its `retire` job deletes every version
+  past the newest 10 that no space and no domain names, and lists the ones a space still names. **No domain
+  write follows**: each domain attaches the image once with no version number, so the portal offers every
+  version, newest first, and a new space pins the one it is created on. An existing space keeps its version
+  until it is moved (`dev-env.md` §B), and a deleted version would strand it (`EXC-09`), which is why
+  `retire` keeps it. The steward's hand writes are one attach per domain and the moves. `./aws/devenv.py`
+  `DE-3` reads the recipe before, `DE-5` the registered bytes after. Until 2026-10-15 the job applied
+  `sandbox/dev-env/` with the tag as `-var`, around the steward's apps deleted, detach, re-attach and
+  sweep; version 7 was the last release registered that way.
 - **1.7 — [user] Measure the release loop once**: time one change the image must carry — MR → tag → chain
   → gate → version → the domain writes — and write the number into `docs/plan/architecture.md` §4.3 as the
   cost of a runtime change; packages the compute plane serves do not pay it.
@@ -494,6 +493,11 @@ the approval, and 4.6's alarm.
   `UpdateDomain`, `DeleteApp` and `UpdateSpace` on the blueprint's domain stay out of it, which is why 1.6's
   hand half exists. **Never a general deploy role reused**: this is the one flow where the supply chain writes
   *into* the accounts where people work.
+- **4.2 — Narrowed by decision 18, written 2026-10-15** (`deploy-role-v0.4.0`, whose `state_prefixes` may be
+  empty): the role applies no slice and holds no state. It finds the image by name, creates, reads and
+  deletes its versions, reads their aliases, and reads every space and domain for the version each names;
+  its ceiling denies every role change and every domain and space write. `CreateImageVersion` has no
+  dependent action in the service authorization reference, read the same day.
 - **4.3 — Read 2026-10-12, before writing it: the runner's role is `[P]` while the runner is `[E]`.** A
   trust policy that names a role stores the role's unique id, and a role destroyed and re-created under
   the same name gets a new one, so every deploy role would stop trusting the next session's runner (the
@@ -834,6 +838,17 @@ Measured (`docs/PRICING.md`), us-west-2:
    alone changes what every new space starts (the review gate goes with it); and version aliases.
    Recommended: **neither yet**: the hand writes are the review gate, and a release is rare enough to pay for
    it; re-read when a second project domain makes the sweep a multiple. **Taken by the user 2026-10-12, as recommended.**
+   **Re-read 2026-10-15 on a probe image** (decision 18; the readings are the log's). `UpdateDomain` on
+   `CustomImages` was accepted four times with apps running, one of them on the image being removed, so the
+   apps never had to go (Lesson 41). An entry with no `ImageVersionNumber` makes the portal offer every
+   version of the image, newest first, and `CreateSpace` pins the chosen number into the new space, which
+   keeps it. `VendorGuidance ARCHIVED` hides nothing, and an archived version still starts. A deleted version
+   leaves the picker and strands the spaces that name it. A space's alias resolves at each start, and the
+   portal then banners the space as an outdated SageMaker Distribution. Recommended: **attach once with no
+   version number, and retire by deletion**: one domain write per domain, on both app types, after which a
+   release is the pipeline's `create-image-version` alone, behind the steward's `release-gate`; the
+   retirement deletes every version past the newest 10 that no space names, and lists the ones a space
+   still names. **Taken by the user 2026-10-15, as recommended.**
 8. **Who owns a processing job's output mount** (2.2). Recommended: **the image keeps passwordless `sudo`
    and the job's command opens with 6i's `chown`**, the measured shape; running jobs as root would remove a
    step and widen every job's container to root for a mount's sake. **Taken by the user 2026-10-12, as recommended.**
@@ -921,6 +936,26 @@ Measured (`docs/PRICING.md`), us-west-2:
     pushed digest and lists the spaces the bump strands, for four read actions on the dev-env deploy role.
     **Taken by the user 2026-10-14: no guard, the steward's discipline in §B's order is the control**; the
     guards wait in [issue #129](https://github.com/felipenoris/AWS-DataScience/issues/129).
+    **Overtaken 2026-10-15 by decision 18**: no release destroys a version, so the first two guards have
+    nothing to guard; `release/versions.py register` compares `ContainerImage` with the pushed digest, and
+    `retire` keeps every version a space or a domain names instead of listing the stranded spaces.
+18. **Where an image version lives** (1.6, decision 7). `sandbox/dev-env/` holds one
+    `aws_sagemaker_image_version`, force-new on `base_image`, so a release destroys the version the domain and
+    every space created on it name. The release tag reaches the slice as `-var image_tag=`, and the tracked
+    default is committed back by hand (`ffa23d7` for `default-v0.7.1`). The user proposed on 2026-10-14 that
+    each release add a version, as SageMaker publishes its own images, and that a second flow retire any
+    version past a history of 10. Recommended: **the version is a release artifact**, like an ECR image or a
+    Model Registry version. The slice keeps the image, the two app image configurations and the image role,
+    applied by hand; `awsds/dev-env`'s `register` job creates the version with `create-image-version` and a
+    semver alias, and a second job retires every version past the newest 10, archiving or deleting as
+    decision 7's readings decide. That removes the tracked line, the job's clone of `awsds/infrastructure` and
+    every IAM write from the dev-env deploy role; the versions leave Terraform's state, so their record is
+    `ListImageVersions` and the GitLab tags. Two alternatives: a `for_each` over the last 10 tags in the slice,
+    which provider 6.64.0 supports (a version keyed by name and number, aliases and `VendorGuidance` updated
+    in place) and which needs the whole list passed on every apply; and the slice moved to GitLab whole,
+    which keeps four couplings to this repository (the deploy role, `backend.py`'s targets, the two
+    generators, refusal 8) and hands the image role's policy to the stewards' merge requests (Lesson 11).
+    **Taken by the user 2026-10-15, as recommended.**
 
 ## Verifications to answer while executing
 
@@ -934,8 +969,8 @@ Record every answer, including the ones that come out fine.
 | iv | Does the scan gate read the push's scan (wait → findings), and is a re-scan inside 24 h refused rather than silently absorbed? **The first half yes, read 2026-10-14** on `awsds/app-etl`'s pipeline #15: `scan-gate` waited for `v0.1.0-d7e093a9`'s scan, complete 5 min 44 s after the push, read 723 CRITICAL and HIGH findings and failed on the 593 absent from the baseline; the re-scan half is not exercised | 1.4 |
 | v | Does Staging pull the application image from the Production ECR (INT-07), and as which principal — the job's own role through the service, as 6i measured in Sandbox? | 3.2 |
 | vi | Do CloudTrail's `AssumeRole` events name the two roles distinguishably across one full promotion (INT-08)? | 3.6 |
-| vii | Does 1.6's apply land from the pipeline, does the version's `ContainerImage` equal the pushed digest, and does the attachment survive the next blueprint reconciliation (INT-17's open half — diff of two `./aws/cicd.py`/`./aws/studio.py` runs)? **The first two yes, read 2026-10-15**: `awsds/dev-env` pipeline #28's `register` applied `sandbox/dev-env/` as `awsds-deploy-devenv-sandbox`, and version 7's `ContainerImage` is the pushed `sha256:3b6d706a…84a4`. The attachment read unchanged 65 min after the re-attach, the domain's `LastModifiedTime` still the re-attach's; no reconciliation was seen in that window, so the third half stays open | 1.6 |
-| viii | Is the registered dev-env digest identical across all N targets (D17 by construction — `note` at N = 1), and does every existing space start on the new version after the sweep? **`note` at N = 1, read 2026-10-15**: `CI-6` names `awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`. The project's one existing space runs AWS's distribution by alias, so the sweep had nothing to repair and it keeps that image; a new space, `jup-house-image`, started on version 7 and pulled the image by digest | 1.6 |
+| vii | Does 1.6's apply land from the pipeline, does the version's `ContainerImage` equal the pushed digest, and does the attachment survive the next blueprint reconciliation (INT-17's open half — diff of two `./aws/cicd.py`/`./aws/studio.py` runs)? **The first two yes, read 2026-10-15**: `awsds/dev-env` pipeline #28's `register` applied `sandbox/dev-env/` as `awsds-deploy-devenv-sandbox`, and version 7's `ContainerImage` is the pushed `sha256:3b6d706a…84a4`. The attachment read unchanged 65 min after the re-attach, the domain's `LastModifiedTime` still the re-attach's; no reconciliation was seen in that window, so the third half stays open. **Asked again under decision 18**, at the next release: does `register` create the version from the pipeline as the narrowed role, and does the version-less attachment survive | 1.6 |
+| viii | Is the registered dev-env digest identical across all N targets (D17 by construction — `note` at N = 1), and does every existing space start on the new version after the sweep? **`note` at N = 1, read 2026-10-15**: `CI-6` names `awsds-prod-ecr-dev-env@sha256:3b6d706a…84a4`. The project's one existing space runs AWS's distribution by alias, so the sweep had nothing to repair and it keeps that image; a new space, `jup-house-image`, started on version 7 and pulled the image by digest. **Under decision 18** no sweep follows a release: an existing space keeps its version until it is moved, and `retire` lists the ones past the history | 1.6 |
 | ix | Does a deliberately broken version stop at 3.3 with Production untouched? | 3.3 |
 | x | Does 5.2 stop a known-vulnerable dependency (pin one deliberately, once), and does a failed export fail the job rather than pass it? **Yes to both**: offline on 2026-10-13 a pinned `requests==2.19.0` blocked and a project with no lock failed at the export; on 2026-10-14 the house lock itself, `awsds/dev-env` pipeline #2 failing on 73 findings with a fixed version and #3 and #4 passing on the upgraded lock with the steward's 8 accepted, 452 of 452 audited; and a set the interpreter's platform skips, 0 of 452 audited on the laptop, fails since `gates-v0.3.0` instead of passing | 5.2 |
 | xi | Does the by-hand `make up ENV=staging` path produce the same result as the pipeline's (3.8)? | 3.8 |
@@ -959,9 +994,11 @@ Record every answer, including the ones that come out fine.
 - **The registration path writes from the supply chain into the accounts where people work** (INT-18) —
   the reversal of every other flow; the control is the per-target narrow role, and the domain writes stay
   with the steward.
-- **A version bump strands every existing space** (`EXC-09`, Lesson 63): a space keeps the version number it
-  was created with, and the apply destroys that version. 1.6's sweep is the control, and a project domain the
-  sweep forgets is a project whose spaces do not start.
+- **A deleted version strands the spaces that name it** (`EXC-09`, Lesson 63): a space keeps the version it
+  was created on. Since decision 18 no release deletes a version and `retire` keeps every version a space
+  names, so only a hand deletion strands a space. **A space left on an old version keeps that version's
+  image**: the steward moves it when a release must reach every space, as an endpoint change does
+  (`dev-env.md` §E).
 - **A blueprint reconciliation may undo the attachment** (INT-17's open half) — verification (vii)'s
   diff is the instrument; the fallback chain is INT-17's row.
 - **The scan gate meets debt it did not create**: the inherited CVEs make a severity-only rule either

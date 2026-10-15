@@ -48,18 +48,22 @@ A release is a tag `<flavour>-v<semver>` on `main`, which only a Maintainer can 
 | build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the key imports, and the manifests | build |
 | verify | `scan-base`, `scan-dev-env` | each push's own scan against the lineage's baseline in `awsds/ci-gates`; informative, a red one stops nothing | build |
 | release | `release-gate` | the steward's gate, a manual job the chain waits on; running it is the approval, and it keeps the evidence | test |
-| register | `register` | on the deploy runner: clones the infrastructure repository's mirror and applies every target's `dev-env/` slice with the new tag, which becomes a new SageMaker image version | deploy |
+| register | `register` | on the deploy runner: [`release/versions.py`](release/versions.py) `register` creates the release's SageMaker image version in every target account from the pushed digest, with the release's semver as an alias, and reads it back against that digest | deploy |
+| register | `retire` | on the deploy runner: `release/versions.py retire --keep 10` deletes every version past the newest 10 that no space and no domain names, and lists the ones a space still names | deploy |
 
-The order around the gate is the steward's, in [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md) §B, and
-nothing in the chain checks it (decision 17):
+The order around the gate is the steward's, in [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md) §B:
 
 1. Read the evidence: `build-images`' `manifests/` (the package sets of both Pythons, R and Julia, the
    runtimes, the proxy list's digest, the imports) and both scans.
-2. Delete the domain's apps and detach the image (§B steps 1 and 2).
-3. Run `release-gate`; `register` follows and prints the version it registered and its `ContainerImage`.
-4. Re-attach the image on the new version and sweep the spaces (§B steps 5 and 6).
-5. Record the release: the tag in AWS-DataScience's `terraform-live/sandbox/dev-env/variables.tf` and a row
-   below.
+2. Run `release-gate`. `register` follows and prints the version it created and its `ContainerImage`, and
+   `retire` the versions it deleted or kept.
+3. Record the release: a row below.
+
+No domain write follows. Each domain attaches the image with no version number (AWS-DataScience's Stage 8
+decision 7), so the portal offers every version of it, newest first, and a new space pins the one it is
+created on. An existing space keeps its version: the steward moves the ones `retire` lists before their
+version can go. By hand, the same script runs from a checkout as the infrastructure user,
+`python3 release/versions.py register --target awsds-infra-sandbox-1 --tag <tag> --digest <digest>`.
 
 A tag is spent on first landing. When `base` landed and `dev-env` did not, run the pipeline again on the
 same tag with `SKIP_BASE=1`: `dev-env` then names the base by its tag, the same bytes in a tag-immutable
@@ -99,7 +103,7 @@ account's image overrides the literal without editing the file: `--build-arg NO_
 **This is what makes the image estate-shaped.** It is baked with one VPC's endpoint list, so an endpoint
 added anywhere in that account — `sandbox/egress` went 28 → 50 entries on 2026-09-09 without a hand edit,
 on a module bump — makes every existing image stale, and the repair is a rebuild, a new tag, a new
-SageMaker image version and a re-attach. A second Sandbox (D35) needs its own build for the same reason.
+SageMaker image version and every space moved to it. A second Sandbox (D35) needs its own build for the same reason.
 The trade was taken with its eyes open, against two API-side mechanisms that cannot carry the value at
 all: [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md) §E. **What reports a stale Dockerfile** is
 `scripts/check-gitlab-mirror.py`, and `./aws/devenv.py` beside it, which compare the literal against the

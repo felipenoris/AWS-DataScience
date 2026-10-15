@@ -608,7 +608,7 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
    uv lock --directory dev-env/python --upgrade-package fsspec --upgrade-package jupyterlab --upgrade-package mako --upgrade-package multidict --upgrade-package notebook --upgrade-package oauthlib --upgrade-package pyjwt --upgrade-package setuptools --upgrade-package sqlparse --upgrade-package torch --upgrade-package torchvision --upgrade-package tornado --upgrade-package urllib3 --upgrade-package virtualenv --upgrade-package werkzeug
    ```
 
-6. The mirror (above), once PR #131 has merged, since the registration job runs `scripts/devenv-register.py` from it. Then the steward merges the merge request and tags the release; [`dev-env.md`](dev-env.md) §B is the order around its gate.
+6. The steward merges the merge request and tags the release; [`dev-env.md`](dev-env.md) §B is the order around its gate. The registration runs from the project's own checkout since Stage 8 decision 18 (2026-10-15), so it reads no mirror.
 
 ## A. SAML
 

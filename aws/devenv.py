@@ -512,7 +512,8 @@ HOW TO READ THIS FILE
     name AWS's SageMaker Distribution instead, which bakes no proxy at all. Read
     `describe-app`'s ResourceSpec, or /opt/awsds-proxy.txt inside the space.
   - The repair for any divergence is the chain in docs/plan/runbooks/dev-env.md E:
-    edit the Dockerfile, rebuild, push a new tag, bump image_tag, re-attach, restart.
+    edit the Dockerfile, rebuild, release a new tag (the pipeline registers the
+    version), move every space to it, restart.
 
 This file is not versioned (aws/output/ is in .gitignore). Regenerate it rather than
 trusting a stale copy.""")

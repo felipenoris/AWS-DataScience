@@ -34,7 +34,8 @@
 #   7. up never applies an application  layers.is_refused on the slice name: the pipeline or, in
 #      or orchestration slice           Sandbox, the engineer by hand applies it (Stage 8 step 2.4)
 #   8. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
-#      sandbox/ slice but dev-env/      CI never applies into the account people work in (2.4)
+#      sandbox/ slice                   CI never applies into the account people work in (2.4,
+#                                       decision 18)
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
 # (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this

@@ -986,12 +986,15 @@ hand step against an object `Tooling` owns, and `UpdateDomain` replaces `Default
 has neither `CustomImages` nor `LifecycleConfigArns` — **but it does name one image and one version**,
 in `DefaultResourceSpec`, and that copy **overrides the domain's default for that space** (measured
 2026-09-12, correcting the 2026-09-10 reading above, which said a space cannot name an image at all).
-The copy is written when the space is created and never revisited, so an image bump reaches new
-spaces only and leaves existing ones naming a version the bump destroyed — `AWS_STATE.md` `EXC-09`,
-[Lesson 63](plan/lessons.md), and the sweep is [`dev-env.md`](plan/runbooks/dev-env.md) §B step 6.
-**AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather than a version
-ARN, which is what makes them survive a bump; `aws_sagemaker_image_version.dev_env` sets
-`aliases = []`. Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
+The copy is written when the space is created and never revisited, so a release reaches new spaces
+only, and a deleted version strands the spaces that name it — `AWS_STATE.md` `EXC-09`,
+[Lesson 63](plan/lessons.md), and the move is [`dev-env.md`](plan/runbooks/dev-env.md) §B, *Moving a
+space*. **A domain entry with no `ImageVersionNumber` offers every version of the image** in the
+picker, newest first, and the portal's `CreateSpace` pins the chosen one (measured 2026-10-15), which is
+how this estate attaches the house image since Stage 8 decision 7: a release is a new version and no
+domain write. **AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather
+than a version ARN; a custom image's alias works the same way in a space's spec, and the portal then
+banners that space as an outdated SageMaker Distribution (2026-10-15). Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
 `RoleArn` reads it **by tag** and pins the version to a digest; when a space starts, the **project
 role** reads it **by digest**, so a space never sees the tag. Both a **JupyterLab** and a **Code
 Editor** space started on this image (2026-09-10) from the `DefaultUserSettings` block, with
@@ -1004,8 +1007,8 @@ Editor** space started on this image (2026-09-10) from the `DefaultUserSettings`
 both assumed does not exist. 6d
 decision 8 (2026-09-10) puts the six variables in the **image** instead — `ENV` in
 `gitlab/awsds/dev-env/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
-estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and a
-re-attach.
+estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and
+every space moved to the new version.
 
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
