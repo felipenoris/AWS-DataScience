@@ -98,6 +98,11 @@ secret-detection-gate:
 # packages than the export pins: pip-audit skips a requirement whose environment marker the running
 # interpreter does not match, so a lock resolved for another platform audits nothing and reads clean
 # (0 of 452 on a macOS laptop, 2026-10-14).
+#
+# An accepted entry matches a finding when its id is the finding's id or one of its aliases
+# (gates-v0.4.0). pip-audit reports one id per alias group, and which one depends on OSV's records of the
+# day: on 2026-10-15 fsspec's accepted CVE-2026-104851 came back as PYSEC-2026-4217, the same
+# vulnerability, version and fix.
 pip-audit:
   extends: [.gates-uv, .gates-baselines]
   stage: test
@@ -147,17 +152,19 @@ pip-audit:
           for v in d.get("vulns", []):
               fixes = ", ".join(v.get("fix_versions") or [])
               aliases = ", ".join(v.get("aliases") or [])
-              key = f"{v['id']}|{d['name'].lower()}"
-              seen.add(key)
+              keys = {f"{i}|{d['name'].lower()}" for i in [v["id"], *(v.get("aliases") or [])]}
+              seen |= keys
+              matched = sorted(k.split("|")[0] for k in keys & accepted)
               if not fixes:
                   mark = "warn "
-              elif key in accepted:
+              elif matched:
                   mark = "accpt"
               else:
                   mark = "BLOCK"
                   blocking += 1
+              via = f"  accepted as {', '.join(matched)}" if matched and v["id"] not in matched else ""
               print(f"   {mark}  {d['name']} {d.get('version', '?')}  {v['id']} ({aliases})  "
-                    + (f"fixed in {fixes}" if fixes else "no fixed version"))
+                    + (f"fixed in {fixes}" if fixes else "no fixed version") + via)
       print(f"   {len(deps)} of {pinned} pinned package(s) audited, {blocking} blocking vulnerability(ies)")
       if len(deps) < pinned:
           print(f"   FAIL: {pinned - len(deps)} pinned package(s) not audited - an environment marker the "

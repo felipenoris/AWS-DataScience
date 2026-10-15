@@ -29,7 +29,7 @@ read access to it, so the four persona groups are its members (Reporter at least
 | Gate | Runs | Blocks on | Set by the including pipeline |
 |---|---|---|---|
 | `secret_detection` + `secret-detection-gate` | every branch pipeline, on the test runner | any finding in the scanned commits (5.3) | nothing |
-| `pip-audit` | every pipeline, on the test runner | a known vulnerability with a fixed version, in the runtime set the lock pins, unless the project's accepted list names it; and fewer packages audited than the export pins (5.2, decision 15) | `GATES_UV_PROJECTS`: the uv projects, space-separated paths |
+| `pip-audit` | every pipeline, on the test runner | a known vulnerability with a fixed version, in the runtime set the lock pins, unless the project's accepted list names its id or one of its aliases; and fewer packages audited than the export pins (5.2, decision 15) | `GATES_UV_PROJECTS`: the uv projects, space-separated paths |
 | `checkov` | every pipeline, on the test runner | any failed check (5.1) | `GATES_CHECKOV_DIRS`: the Terraform directories, space-separated |
 | `.gates-ecr-scan` | the job that extends it, after an image push, on the build runner | nothing: it lists each CRITICAL or HIGH finding absent from the lineage's baseline, and the job may fail without stopping the pipeline (1.4, 5.4) | `needs:` on the push job, a stage, the protected-tag rule, `SCAN_REPOSITORY`, and `SCAN_DIGEST` from the push job's dotenv report |
 
@@ -49,7 +49,10 @@ for the reader. The repository an image was pushed to chooses the list, never th
 | `GATES_BASELINE_DEPLOY` | `awsds-prod-ecr-deploy` | `v0.1.0`, scanned 2026-10-13: CRITICAL 2, HIGH 8 |
 
 pip-audit's accepted lists follow the same rule, chosen by the project's path, which GitLab sets
-(`CI_PROJECT_PATH`), and never by the gated pipeline:
+(`CI_PROJECT_PATH`), and never by the gated pipeline. Their `<finding>` may be any of the vulnerability's
+ids: since `gates-v0.4.0` the gate compares the finding's id and each of its aliases, because pip-audit
+reports one id per alias group and OSV's records decide which (fsspec's `CVE-2026-104851` came back as
+`PYSEC-2026-4217` on 2026-10-15):
 
 | List | Project | Seeded from |
 |---|---|---|
