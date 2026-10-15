@@ -22,8 +22,8 @@ follows is still unanswered:
    failed run — Serverless has run/task APIs, a console page, per-task log streams and (since 2026-06)
    EventBridge events, but no Airflow web interface (read 2026-08-16). Stage 10 measures it in step 3.2's
    diagnosis session and answers it in its decision 11. Keep application entry points as plain containers
-   so design B (INT-14's terminal fallback), SageMaker Pipelines and self-managed Airflow, all documented
-   and not built, remain viable.
+   so SageMaker Pipelines and self-managed Airflow, both documented and not built, remain viable; design
+   B is the chain layer above the workflows since D41 (2026-10-15), not a replacement for them.
 3. ~~**AZ name-to-ID mapping across accounts**~~ — **measured 2026-08-12 in Stage 1b step 6.** Every
    account that has a profile returns an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`,
    `c` → `az3`, `d` → `az4`; the names are *not* in ID order). The full table is in
@@ -757,10 +757,13 @@ policy set lives in code, which is Stage 2 step 5's mandate.
 ### Raised by the user, 2026-08-26 — the promotion half of the re-homing
 
 26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
-    **Half of this is answered (2026-09-05):** the SageMaker Unified Studio CI/CD CLI is what carries a
-    project's content, and it is an **exporter** here, because it deploys only into existing SMUS
-    projects and a deployment target has none (D26/D28 amended). The `gitConnectionArn`-is-createOnly
-    half stays open.
+    **The mechanism half is answered (2026-09-05, revised 2026-10-15 by
+    [D41](decisions/D41-sagemaker-application.md)):** the repository holds the application, the SageMaker
+    Unified Studio CI/CD CLI deploys it from the repository into the `dev` and `test` projects and makes
+    the bundle the pipeline promotes; what a space produces reaches the repository by `git` from the space
+    (INT-13's accepted path). The CLI deploys only into existing SMUS projects and a deployment target
+    has none, so the pipeline stays the deployer there (D26/D28 amended). The
+    `gitConnectionArn`-is-createOnly half stays open.
     The re-homing made the SMUS project path the derived zone ([D19](decisions/D19-derived-zone.md)
     revised), so a scientist's output now lives in `dev/sys/athena/` (where the project's enforced
     workgroup writes) and `shared/` (the folder JupyterLab mounts). **The promotion contract on the
