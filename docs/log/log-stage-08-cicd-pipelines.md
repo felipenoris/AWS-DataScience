@@ -1124,3 +1124,13 @@ the registry's state read through `awsds-infra-prod`; each act authorized by the
   `ListSpaces`, `ListDomains`, `DescribeSpace` and `DescribeDomain` allowed; `CreateImageVersion` on another
   image, `DeleteImage` and `s3:GetObject` on `sandbox/dev-env/`'s state an implicit deny; `UpdateDomain`,
   `UpdateSpace`, `iam:PassRole` and `iam:PutRolePolicy` on the image role an explicit deny, the ceiling's.
+- **[Claude] The GitLab half**: the branch `decision-18-versions` of a clone of `awsds/dev-env` (commit
+  `ef0e0e5`, byte for byte the copy under `gitlab/awsds/dev-env/`) pushed at 06:22:41Z, authorized by the
+  user after a first push had not left the clone (`git ls-remote` read `main` alone).
+- **[user]** Opened merge request !4 and merged it as the steward at 06:24:47Z: `main` at `8e78ab53`.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/dev-env` read the commit's 14 files and found the
+  copy already holding them, and moved `gitlab/mirror.json` to `8e78ab53`. `./scripts/check-gitlab-mirror.py
+  --plan`: `GM-1`, `GM-2` (70 entries, sha256 `aafa08da98a61f5c`) and `GM-5` to `GM-8` pass; `GM-3` failed
+  in `terraform init` on refreshing the expired SSO token while the CLI's cached role credentials still
+  answered, so `GM-4` read one side. The merge request changed no line of `dev-env/Dockerfile`, and its
+  literal is the one `GM-4` matched this morning.
