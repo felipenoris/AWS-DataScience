@@ -46,8 +46,11 @@ The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC
    `Dockerfile` for the processing task, `code/` for the worker's Python and Bash tasks, `glue/` for
    the Glue scripts (`docs/plan/conventions.md`, "Application repository layout"). The workflow's
    YAML names a project's values as the CLI's variables (`{proj.id}`, `{proj.iam_role_arn}`,
-   `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`) and what the CLI does not resolve
-   as `${VAR}` (the image by digest, the job subnets, the data key), so one file serves every stage.
+   `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`) and a value no project holds as a
+   stage variable, `{env.VAR}` (the image by digest, the job subnets, the data key), so one file serves
+   every stage. The CLI writes an `{env.VAR}` as `{{ params.VAR }}` and fills it only in a run it starts,
+   passing the stage's `environment_variables` as the run's `OverrideParameters`, and leaves a `${VAR}`
+   in a workflow's YAML as written (its 1.0.9 code, read 2026-10-15; Stage 10 verification xxix).
    The awsds-workflows examples take the same form, one YAML per example, and its `render` learns
    the CLI's variables for an import into the portal without the CLI.
 2. **Where production runs.** Without a project: the pipeline creates the workflow from the bundle,

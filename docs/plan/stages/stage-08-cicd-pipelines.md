@@ -378,18 +378,22 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
     `sandbox/dev-env/` under the dev-env deploy role, the one flow where the supply chain writes into Sandbox
     (1.6, INT-18).
 - **2.5 — [Claude] Make `app-etl` a SageMaker application** (D41, 2026-10-15; not written yet, after the
-  lab measurement D41 records): the repository gains `manifest.yaml` and `workflows/app-etl.yaml` in
-  the CI/CD CLI's notation, the four tasks of D41's scope (a Glue job with a Python Spark transform, a
-  processing task on the application image with the code as the job's input, a light Python task, an
-  S3 operator task writing the result), and `.gitlab-ci.yml` gains, on the tag after `build-image`, a job
+  lab measurement D41 records): the repository gains `manifest.yaml` and `workflows/app-etl.yaml` in the
+  CI/CD CLI's notation, the four tasks of D41's scope (a Glue job with a Python Spark transform, a
+  processing task on the application image with the code as the job's input, a light Python task, an S3
+  operator task writing the result), and `.gitlab-ci.yml` gains, on the tag after `build-image`, a job
   that runs `aws-smus-cicd-cli bundle`, the artifact step 3 promotes, packed from the checkout with the
   variables unresolved because the manifest's `content.storage` items name no connection (Stage 10 step
-  2.2), then `deploy --targets test --skip-validation --no-events` of that bundle (the bootstrap `workflow.create` and `workflow.run` with `wait`, the
-  application's own test), the digest `build-image` reports passed as the stage's image variable. The
-  identity that job runs as is decision 19. `processing_job_request` stays the diagnostic it is; the
-  image is built from the lock alone (`uv sync --locked --no-install-project`) and `smoke` mounts the
-  code, the shape Stage 10 decision 7's taking fixes. The image is built on the tag alone, so a change of
-  the lock first runs in a job in the `test` project, and a deploy to `dev` runs the last released image.
+  2.2), then `deploy --targets test --skip-validation --no-events` of the same checkout, which for such
+  items reads the manifest's folder and never the bundle (the bootstrap `workflow.create` and
+  `workflow.run` with `wait`, the application's own test). The digest `build-image` reports reaches the
+  run as a stage variable: the job exports it, the `test` stage's `environment_variables` read it through
+  the manifest's own `${VAR}`, and the workflow names it `{env.VAR}`, which `workflow.run` fills as the
+  run's `OverrideParameters` (D41 item 1, Stage 10 verification xxix). The identity that job runs as is
+  decision 19. `processing_job_request` stays the diagnostic it is; the image is built from the lock
+  alone (`uv sync --locked --no-install-project`) and `smoke` mounts the code, the shape Stage 10
+  decision 7's taking fixes. The image is built on the tag alone, so a change of the lock first runs in a
+  job in the `test` project, and a deploy to `dev` runs the last released image.
 
 ### 3. Promotion pipeline — tag → Staging → Production (D20, D21, INT-07, INT-08)
 
@@ -659,9 +663,10 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
     authoring Sandbox project and would resolve to nothing in Staging or Production. The patterns 6i met:
     `datazone_usr_role_*`, `AmazonDataZoneProject`, a `dzd-` domain id, `DataZone*` and `ProjectS3Path`
     variables, `domain_id`/`project_id`, `smus-projects`, `datazone-<project>-dev`,
-    `alias/awsds-<env>-project` and `dev/operatorFiles/`, and in a rendered copy a CI/CD CLI variable
-    (`{proj.*}`, `{domain.*}`) or a `${VAR}` left unresolved (D41). The domain and project the portal
-    injects at save time are invisible in the YAML, so the rule reads the rendered file, never the portal;
+    `alias/awsds-<env>-project` and `dev/operatorFiles/`, and in a rendered copy a CI/CD CLI variable left
+    unresolved (`{proj.*}`, `{domain.*}`, `{env.*}`; D41, Stage 10 decision 6). The domain and project the
+    portal injects at save time are invisible in the YAML, so the rule reads the rendered file, never the
+    portal;
   - **(b) hard-codes a `start_date`**, which is **rewritten at deploy time** rather than promoted;
   - **(c) uses an operator outside MWAA Serverless's supported list** (the Amazon-provider operators plus
     `PythonOperator` and `BashOperator`, added by AWS 2026-08-17), names `SageMakerNotebookOperator` (refused

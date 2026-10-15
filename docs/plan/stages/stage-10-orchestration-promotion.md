@@ -358,13 +358,19 @@ ran in the lab on 2026-10-15 (D41).
 - **2.2 — [user + pipeline] Bundle and deploy to the `test` project** (D21 — the gate is the tag, and the
   rewrite happened in the repository): on the release tag, once the image is built (Stage 8 step 2.5, under
   the identity its decision 19 settles), `bundle` packs the checkout into the artifact the pipeline
-  promotes, its workflows with their variables unresolved, and `deploy --targets test` deploys that bundle,
-  running `workflow.create` in the `test` project and `workflow.run` with `wait` as the test, so the
-  artifact tested is the one promoted. `bundle` reads a `content.storage` item from the checkout when the
-  item names no connection, the manifest naming it per stage under `deployment_configuration`, and
-  downloads the item from the stage's project when it names one, where `deploy` left the YAML resolved for
-  that project; `--local` only changes the default stage's name (the CLI's 1.0.9 code, read 2026-10-15;
-  verification xxvii). The repository's YAML is the source: the portal's own YAML is never the artifact
+  promotes, its workflows with their variables unresolved, and `deploy --targets test` deploys the same
+  checkout, running `workflow.create` in the `test` project and `workflow.run` with `wait` as the test, so
+  what `test` runs is what the bundle carries, both read from the tag. The manifest's `content.storage`
+  items name no connection, so `bundle` reads each from the checkout, the manifest naming it per stage
+  under `deployment_configuration`, and `deploy` reads each from the manifest's folder, opening a bundle
+  archive only for a catalog export or notebooks, which the manifest does not enable; an item that named a
+  connection would make `bundle` download it from the stage's project, where `deploy` left the YAML
+  resolved for that project, and `deploy` read it from the bundle. `--local` only
+  changes the default stage's name (the CLI's 1.0.9 code, read 2026-10-15; verification xxvii). A value no
+  project holds, the image by digest first, reaches the run as a stage variable, `{env.VAR}` in the YAML
+  (D41 item 1): `workflow.create` writes it as `{{ params.VAR }}` and `workflow.run` passes the stage's
+  `environment_variables` as the run's `OverrideParameters`; a `${VAR}` stays in the YAML as written
+  (verification xxix). The repository's YAML is the source: the portal's own YAML is never the artifact
   (6i: no Python authoring and no converter in the path), project-scoped values are the CLI's variables,
   and the job image is the application image (Stage 8, decision 7). `schedule` (cron) belongs to no
   workflow promoted to Staging or Production, since a chain starts every one (decision 13, taken), and the
@@ -739,19 +745,28 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    `awsds-staging-job-exec`), the subnets and security group, the data key, the prefixes it reads and
    writes. One YAML cannot name both, and the plan already rewrites one value at deploy time
    (`start_date`, 2.3). Recommended: **render per environment, each copy in its own account**: the release
-   job renders the bundle's YAML with the account's values, read from the slices that own them (the job
-   role, the subnets and security group, the data key) before the `orchestration/` slice applies, since
-   that slice pins the rendered copy, and never from a SMUS project's, which the CI/CD CLI resolves in
-   `dev` and `test` (D41); the D28 lint runs on every rendered file; and each copy (definition, code
-   package, `src/` and `glue/`) lands in its account's outputs bucket, Staging's written by
-   `awsds-deploy-staging` in the Staging leg and Production's by `awsds-deploy-prod` after the gate. A
-   failed Staging leg then leaves Production untouched (Stage 8 step 3), and Staging reads nothing of
-   Production's outputs, the deny Stage 9 decision 1 keeps its key for. The alternative, every copy under
-   `awsds-prod-outputs/workflows/<app>/<tag>/<env>/` with Staging reading its own through a bucket-policy
-   and key grant, follows the precedent of the images Staging pulls from Production's ECR (INT-07, D14),
-   but writes into Production before the gate and is a new `INT` row. Staging's home is decision 17.
-   `OR-5` encodes today's text (every definition under `awsds-prod-outputs/workflows/`) and changes with
-   this decision.
+   job renders the release's YAML (2.2) with the account's values, read from the slices that own them (the
+   job role, the subnets and security group, the data key) before the `orchestration/` slice applies,
+   since that slice pins the rendered copy, and never from a SMUS project's, which the CI/CD CLI resolves
+   in `dev` and `test` (D41). The rendering is a translation, not a value per variable (`houseprice-etl`'s
+   YAML and the CLI's 1.0.9 code, read 2026-10-15): one `{proj.connection.default.s3_shared.s3Uri}` names
+   the code, the input and the output, which land under the release's prefix and in the lake; the names
+   DataZone generates for a project (the Glue network connections, the log prefix, the
+   `AmazonDataZoneProject` tag) have no counterpart; a Glue task drops its creation arguments, the job
+   being the application slice's (D41 item 9); and an `{env.VAR}` becomes the account's literal, or stays
+   a `{{ params.VAR }}` the chain's machine fills, as it fills the date (3.5). So the application keeps a
+   fixed layout under the project's `s3Uri`, one prefix per class (`glue/`, `src/`, `code/`, the input,
+   the output), the render holds the table that maps each class and each variable to its place in the
+   account, and the D28 lint, run on every rendered file, refuses a `{proj.*}` the table does not know.
+   Each copy (definition, code package, `src/` and `glue/`) lands in its account's outputs bucket,
+   Staging's written by `awsds-deploy-staging` in the Staging leg and Production's by `awsds-deploy-prod`
+   after the gate. A failed Staging leg then leaves Production untouched (Stage 8 step 3), and Staging
+   reads nothing of Production's outputs, the deny Stage 9 decision 1 keeps its key for. The alternative,
+   every copy under `awsds-prod-outputs/workflows/<app>/<tag>/<env>/` with Staging reading its own through
+   a bucket-policy and key grant, follows the precedent of the images Staging pulls from Production's ECR
+   (INT-07, D14), but writes into Production before the gate and is a new `INT` row. Staging's home is
+   decision 17. `OR-5` encodes today's text (every definition under `awsds-prod-outputs/workflows/`) and
+   changes with this decision.
 7. **Where a promoted processing job's dependencies come from** (2.3). [6i](stage-06i-sandbox-orchestration.md)
    ran the Sandbox path: the folder [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1
    builds, as the job's code input (its verification xvi). The processing API pins no version on an
@@ -881,8 +896,9 @@ Record every answer, including the ones that come out fine.
 | xxiv | Does the schedule start the machine unattended, what `RunType` does the workflow run it started report, and does `state = DISABLED` stop the next execution? | 3.5, 6.1 |
 | xxv | Do a `Workflow Run Succeeded` event and an `Object Created` under `inbox/<app>/` start the consuming chain, with what delay, and does a second object start a second execution? | 3.6, decision 18 |
 | xxvi | Do `aws_sfn_state_machine` and `aws_scheduler_schedule` apply under the deploy role's boundary beside the `awscc` workflow, and does `OR-9` read the layer back? | 1.5, 3.7 |
-| xxvii | Does `bundle` carry the checkout's YAML with its variables unresolved when the manifest's `content.storage` items name no connection, and a project's copy, resolved for that project, when one names a connection, as the CLI's 1.0.9 code reads? | 2.2 |
+| xxvii | Does `bundle` carry the checkout's YAML with its variables unresolved when the manifest's `content.storage` items name no connection, and a project's copy, resolved for that project, when one names a connection, and does `deploy --targets test` write the tag's files from the checkout, whatever bundle it is given, as the CLI's 1.0.9 code reads? | 2.2 |
 | xxviii | Does the S3 operator task write the result file and an inbox marker as the execution role, admitted by the key policy's `aws:PrincipalArn` statement, while the same role's read of a lake bucket is refused? | 1.3, 3.6 |
+| xxix | Does a run the CLI's `workflow.run` starts receive the stage's `environment_variables` as `OverrideParameters` and render them where the YAML reads `{{ params.VAR }}`, in a processing task's `ImageUri` and in a Glue task's arguments, and what does a run started from the portal, without them, read? | 2.2 |
 
 ## Risks
 

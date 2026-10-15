@@ -733,19 +733,22 @@ one module tag.
 
 - **2026-10-15 — The plan read against D41.** A review the user asked for after D41 merged corrected what
   the decision left inconsistent. The `test` deploy and the bundle move onto the release tag, after the
-  image is built and before the Staging leg, the bundle packed from the checkout and deployed to `test` so
-  the artifact tested is the one promoted (D41 item 3, Stage 8 step 2.5, Stage 10 step 2.2). D28 gains
-  class (2d), a processing task's code under the release's `src/` prefix, which the lint's new rule (h)
-  checks against the release's manifest. The execution role's S3 writes of D41 item 10 and the release
-  job's copy, whose runner sits in a VPC the outputs bucket's perimeter does not trust, need statements in
-  that bucket's policy and its key's, which delegates nothing to IAM (Stage 10 steps 1.3, 2.4). The bridge
-  rule gets a role of its own, `awsds-<env>-chain-events`. Decision 13 takes the standalone workflow's cron
-  and pause out of step 6.1, verification v and `orchestration.py`, whose `OR-1` now fails on a workflow's
-  cron. D7, D26, `conventions.md` and `architecture.md` lose wording from before 6b and 6i. Stage 10
-  decision 6 now recommends a copy per account and decision 10 the inbox consume on the execution role,
-  decisions 17 (Staging's outputs bucket) and 18 (a second workflow for the chain proofs) are new, and
-  verifications xxvii and xxviii join Stage 10 and xix Stage 8, whose decision 19 now says that refusal 8
-  cannot hold a CLI job. Nothing in AWS changed.
+  image is built and before the Staging leg, the bundle packed from the checkout and the same checkout
+  deployed to `test`, since the CLI's 1.0.9 code reads a connection-less `content.storage` item from the
+  manifest's folder in both commands and `deploy` never takes it from the bundle (D41 item 3, Stage 8
+  step 2.5, Stage 10 step 2.2). D41 item 1's `${VAR}` becomes `{env.VAR}`: the CLI leaves a `${VAR}` in a
+  workflow's YAML as written and fills an `{env.VAR}` only in a run it starts. D28 gains class (2d), a
+  processing task's code under the release's `src/` prefix, which the lint's new rule (h) checks against
+  the release's manifest. The execution role's S3 writes of D41 item 10 and the release job's copy, whose
+  runner sits in a VPC the outputs bucket's perimeter does not trust, need statements in that bucket's
+  policy and its key's, which delegates nothing to IAM (Stage 10 steps 1.3, 2.4). The bridge rule gets a
+  role of its own, `awsds-<env>-chain-events`. Decision 13 takes the standalone workflow's cron and pause
+  out of step 6.1, verification v and `orchestration.py`, whose `OR-1` now fails on a workflow's cron.
+  D7, D26, `conventions.md` and `architecture.md` lose wording from before 6b and 6i. Stage 10 decision 6
+  now recommends a copy per account, rendered through a translation table, and decision 10 the inbox
+  consume on the execution role, decisions 17 (Staging's outputs bucket) and 18 (a second workflow for
+  the chain proofs) are new, and verifications xxvii to xxix join Stage 10 and xix Stage 8, whose
+  decision 19 now says that refusal 8 cannot hold a CLI job. Nothing in AWS changed.
 
 ---
 
