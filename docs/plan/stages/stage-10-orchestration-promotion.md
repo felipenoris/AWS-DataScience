@@ -356,16 +356,18 @@ ran in the lab on 2026-10-15 (D41).
   wrote them (`TagResource`), so a save there would also drop the tags `monitor` and `logs` filter by
   (read 2026-10-15; no save has measured it).
 - **2.2 — [user + pipeline] Bundle and deploy to the `test` project** (D21 — the gate is the tag, and the
-  rewrite happened in the repository): on the release tag, once the image is built (Stage 8 step 2.5, under
-  the identity its decision 19 settles), `bundle` packs the checkout into the artifact the pipeline
-  promotes, its workflows with their variables unresolved, and `deploy --targets test` deploys the same
-  checkout, running `workflow.create` in the `test` project and `workflow.run` with `wait` as the test, so
-  what `test` runs is what the bundle carries, both read from the tag. The manifest's `content.storage`
-  items name no connection, so `bundle` reads each from the checkout, the manifest naming it per stage
-  under `deployment_configuration`, and `deploy` reads each from the manifest's folder, opening a bundle
-  archive only for a catalog export or notebooks, which the manifest does not enable; an item that named a
-  connection would make `bundle` download it from the stage's project, where `deploy` left the YAML
-  resolved for that project, and `deploy` read it from the bundle. `--local` only
+  rewrite happened in the repository): on the release tag, once the image is built (Stage 8 step 2.5,
+  under the identity its decision 19 settles), `bundle` packs the checkout and the files the tag pipeline
+  built from it into the artifact the pipeline promotes, its workflows with their variables unresolved,
+  and `deploy --targets test` deploys the same folders, running `workflow.create` in the `test` project
+  and `workflow.run` with `wait` as the test, so what `test` runs is what the bundle carries, both read in
+  one job; once `test` passes, the tag's GitLab release links to the bundle, stored where Stage 8 decision
+  20 says. The manifest's `content.storage` items name no connection, so `bundle` reads each from the
+  checkout, the manifest naming it per stage under `deployment_configuration`, and `deploy` reads each
+  from the manifest's folder, opening a bundle archive only for a catalog export or notebooks, which the
+  manifest does not enable and the lint refuses (Stage 8 step 5.6); an item that named a connection would
+  make `bundle` download it from the stage's project, where `deploy` left the YAML resolved for that
+  project, and `deploy` read it from the bundle. `--local` only
   changes the default stage's name (the CLI's 1.0.9 code, read 2026-10-15; verification xxvii). A value no
   project holds, the image by digest first, reaches the run as a stage variable, `{env.VAR}` in the YAML
   (D41 item 1): `workflow.create` writes it as `{{ params.VAR }}` and `workflow.run` passes the stage's
@@ -420,15 +422,18 @@ ran in the lab on 2026-10-15 (D41).
   2d), copied by the CLI in `dev` and `test` and written by the release job under the release's prefix,
   kept from overwrite by decision 12's statement and checked by rule (h). No CI job builds 6i's folder
   for an application: what the code needs beyond itself is in the image, whose interpreter runs it.
-- **2.4 — [pipeline] Deploy the definition to the versioned home**: in each leg the release job reads the
-  bundle (2.2), renders `workflows/app-etl.yaml` for its account (decision 6) and copies the rendered copy
-  to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`** in Production (decision 1 — the
-  bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1), or to the same key of
-  Staging's bucket (decision 17), and records the returned S3 `VersionId` — the value 1.1 pins, so a
-  definition edit without a deploy cannot reach the workflow (`CreateWorkflow` snapshots anyway; the pin
-  makes the intent explicit). When the workflow has Python or Bash tasks, the code package built from
-  `code/` goes beside it and its `VersionId` is recorded the same way; the processing task's `src/` goes
-  to `workflows/app-etl/<tag>/src/`, the job's input (D28 class 2d, decision 7, taken). The scripts in
+- **2.4 — [pipeline] Deploy the definition to the versioned home**: in each leg the release job downloads
+  the tag's bundle (2.2) from where Stage 8 decision 20 stores it, checks its SHA256 against the release
+  the pipeline promotes (the value Stage 8 step 2.5 recorded with it and step 3.7 commits) before it reads
+  a file of it, and rebuilds nothing. It renders `workflows/app-etl.yaml` for its account (decision 6) and
+  copies the rendered copy to **`s3://awsds-prod-outputs/workflows/app-etl/<tag>/workflow.yaml`** in
+  Production (decision 1 — the bucket is versioned, CMK-protected, perimeter-branched since Stage 9 1.1),
+  or to the same key of Staging's bucket (decision 17), and records the returned S3 `VersionId` — the
+  value 1.1 pins, so a definition edit without a deploy cannot reach the workflow (`CreateWorkflow`
+  snapshots anyway; the pin makes the intent explicit). When the workflow has Python or Bash tasks, the
+  code package the tag pipeline built from `code/`, which the bundle carries, goes beside it and its
+  `VersionId` is recorded the same way; the processing task's `src/` goes to
+  `workflows/app-etl/<tag>/src/`, the job's input (D28 class 2d, decision 7, taken). The scripts in
   `glue/` go to `workflows/app-etl/<tag>/glue/`, where the application slice's Glue jobs name them; Glue
   reads them at every run and pins no version, so what keeps them from changing is decision 12. **The
   release job writes from the deploy runner**, in `VPC-SharedServices`, whose gateway endpoint the

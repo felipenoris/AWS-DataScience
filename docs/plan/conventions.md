@@ -644,11 +644,11 @@ application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
 release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
 the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
-bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment and copies it to the
-definitions home with the code package built from `code/` when there is one, which the
-`orchestration/` slices pin, and `src/` beside them as the processing job's input (step 2.4). `glue/`
-holds the scripts the application's Glue jobs run: the release job copies them under the release's
-prefix, and the jobs the application slice declares name them there (Stage 10 decision 12).
+bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
+and copies it to the definitions home with the code package the tag pipeline built from `code/` when
+there is one, which the `orchestration/` slices pin, and `src/` beside them as the processing job's input
+(step 2.4). `glue/` holds the scripts the application's Glue jobs run: the release job copies them under
+the release's prefix, and the jobs the application slice declares name them there (Stage 10 decision 12).
 
 The directories follow D28's line between content and activation. `src/` is the code a SageMaker job
 runs, read as the job's input on the application image, which carries the lock's dependencies (D41 item

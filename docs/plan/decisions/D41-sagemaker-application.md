@@ -60,9 +60,13 @@ The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC
    `datazone:*` out of the `Workloads` SCP and make the project role the execution role.
 3. **The CLI's place.** It deploys from the `dev` project to the `test` project and makes the bundle
    the pipeline promotes: `deploy --targets dev` from the laptop or a space while the application is
-   engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release tag,
-   once its image is built and before the Staging leg (Stage 8 step 2.5), the identity of those jobs
-   its decision 19.
+   engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release
+   tag, once its image is built and before the Staging leg (Stage 8 step 2.5), the identity of those
+   jobs its decision 19. `bundle` builds nothing, so the tag pipeline first builds what the
+   application needs built (a task's code package, a compiled extension) into the folders the
+   manifest includes, `bundle` and the `test` deploy read them in one job, and once `test` passes
+   the tag's GitLab release links to the bundle, stored where Stage 8 decision 20 says: the file
+   Staging and Production receive (proposed by the user at 22:06 UTC the same day).
 4. **The execution role in the CLI's stages.** The project role, as the CLI does: the model AWS
    documents for `dev` and `test`; a role per workflow there would need a field the CLI lacks.
 5. **The production scheduler.** EventBridge Scheduler with one Step Functions Standard state
@@ -185,8 +189,9 @@ there. Sandbox gets no machine and no schedule: `sandbox/workflows/` (rank 56) s
   rendered file, since the repository's YAML carries the CLI's variables; the CLI's manifest draws the
   same line between content and activation.
 - **Stage 8** gains step 2.5 (`app-etl` as an application, the `test` deploy and the `bundle` in its
-  pipeline) and decision 19 (the identity those jobs run as); step 5.7 records the CLI as measured;
-  step 3.3 keeps Staging's integration tests, the application's run having been tested in `test`.
+  pipeline, the GitLab release linking to the bundle), decision 19 (the identity those jobs run as)
+  and decision 20 (where the release's bundle is stored); step 5.7 records the CLI as measured; step
+  3.3 keeps Staging's integration tests, the application's run having been tested in `test`.
 - **Stage 10** rewrites step 2 (the workflow is born in the repository and reaches the projects by
   the CLI, the pipeline deploying the bundle), adds steps 3.4 to 3.7 (the chain layer's base, a
   chain, the dependencies between workflows, the chain's failure rule), turns step 4.2 into the API

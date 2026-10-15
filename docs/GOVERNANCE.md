@@ -710,12 +710,13 @@ flowchart LR
   execution role, the orchestration resource with its chain's state machine and schedule, its log group
   and, for ML, the model package group — carried by the repository, never by the portal.
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
-  Steward's gate; the application pipeline tests, lints and builds the image on a release tag, then
-  bundles the application and has the CI/CD CLI deploy the same checkout to the Sandbox `test` project
-  and run it there before Staging (Stage 8 step 2.5, decision 19); the promotion pipeline applies the
-  tag into Staging, runs the integration tests, tears Staging down, pauses at the Deployment Manager's
-  manual gate with the test results and the Production plan in front of them, and applies into
-  Production as `awsds-deploy-prod`.
+  Steward's gate; the application pipeline tests, lints and builds the image and the application's code
+  package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
+  the Sandbox `test` project and run it there, and stores the bundle with the tag's GitLab release
+  before Staging (Stage 8 step 2.5, decisions 19 and 20); the promotion pipeline applies the tag and
+  that bundle into Staging, runs the integration tests, tears Staging down, pauses at the Deployment
+  Manager's manual gate with the test results and the Production plan in front of them, and applies
+  into Production as `awsds-deploy-prod`.
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
   deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to
