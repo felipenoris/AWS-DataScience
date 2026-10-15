@@ -6,8 +6,8 @@
 #             name. No GitLab session, no network, nothing written.
 #   exit:     0 clean | 1 at least one violation
 #
-# Two mistakes in a GitLab CI file, found before a push; GitLab's CI Lint answers only through the
-# VPN. The GitLab behaviour cited is v19.4.2's source.
+# Mistakes in a GitLab CI file, found before a push; GitLab's CI Lint answers only through the VPN
+# and parses no shell. The GitLab behaviour cited is v19.4.2's source.
 #
 #   A. A job named after a global keyword. GitLab reads a top-level `image`, `services`, `cache`,
 #      `before_script`, `after_script`, `variables`, `stages` or `include` as the keyword whatever it
@@ -21,6 +21,13 @@
 #      with everything it includes, in GitLab's order; an included file is judged inside each
 #      pipeline that includes it. A job's lists are its own or the ones `extends` gives it, with
 #      `!reference` resolved and each `rules:` entry's `needs:` included.
+#   C. A script item the shell cannot parse. The runner evaluates each `before_script`, `script` and
+#      `after_script` item on its own, so an unterminated quote fails the job when it reaches the item
+#      and every job that needs it is skipped: awsds/dev-env's release gate, pipeline #24 on
+#      2026-10-15, an apostrophe inside `${BASE_DIGEST:-...}`, a job that runs only on a protected tag
+#      after a manual start. Each item is read with `bash -n`, in every job, template and `default:`
+#      of every file; a `!reference` item is read where it is defined. A job whose image has no bash
+#      runs `sh`, and a bashism there parses here.
 #
 # A `local:` include resolves against the project root: the folder of the file a pipeline starts
 # from, or a carried project's folder. A `project:` include of a project in CARRIED is read from that
@@ -28,14 +35,15 @@
 # need on a job only it defines fails.
 #
 # What it does not see: a need on a job that `rules:` leave out of one run's pipeline, a need on a
-# job of a later stage, a need listed twice, and a list held by a template or a `!reference` target
-# in no file read (listed as unchecked). An `optional: true` need on no job is a note: GitLab admits
-# it.
+# job of a later stage, a need listed twice, a list held by a template or a `!reference` target in no
+# file read (listed as unchecked), and a script that parses and fails when it runs. An
+# `optional: true` need on no job is a note: GitLab admits it.
 
 from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -66,6 +74,9 @@ JOB_ONLY = frozenset(
 
 # A variable's value is a scalar, or a mapping of these keys.
 VARIABLE_KEYS = frozenset({"value", "description", "options", "expand"})
+
+# The keys whose items the runner hands to the shell.
+SCRIPT_KEYS = ("before_script", "script", "after_script")
 
 # The GitLab projects whose content this repository carries, by the folder each project's root maps
 # to (ci-gates/README.md). A project include of one is read from that folder.
@@ -378,6 +389,44 @@ def defined(need: str, visible: set, jobs: dict) -> bool:
     )
 
 
+def shell_items(value: object, label: str):
+    """(label, text) for each shell item of a script value; a `!reference` is skipped, since its
+    target is read in the job that defines it."""
+    if isinstance(value, Reference):
+        return
+    if isinstance(value, str):
+        yield label, value
+    elif isinstance(value, list):
+        for n, item in enumerate(value):
+            yield from shell_items(item, f"{label}[{n}]")
+
+
+def script_failures(f: CIFile, bash: str) -> tuple[int, list[str]]:
+    """(items read, one failure per item `bash -n` refuses) for every script in the file: each job and
+    template, `default:`, and the top-level `before_script` and `after_script`."""
+    owners = [(None, f.config)]
+    for name, body in f.config.items():
+        if not isinstance(name, str) or not isinstance(body, dict):
+            continue
+        if is_job(name, body) or name == "default":
+            owners.append((name, body))
+    count, fails = 0, []
+    for name, body in owners:
+        for key in SCRIPT_KEYS:
+            if name is None and key == "script":
+                continue
+            for label, text in shell_items(body.get(key), key):
+                count += 1
+                r = subprocess.run([bash, "-n"], input=text, capture_output=True, text=True)
+                if r.returncode == 0:
+                    continue
+                said = r.stderr.strip().replace("\n", "; ") or f"exit {r.returncode}"
+                where = f"{f.path}:{f.lines.get(name or key, '?')}"
+                who = f"{name}'s " if name else ""
+                fails.append(f"{where}: {who}{label} does not parse: {said}")
+    return count, fails
+
+
 def check_pipeline(order: list[CIFile]) -> tuple[int, int, list[str], list[str]]:
     """(jobs, names resolved, failures, notes) for the pipeline whose files, merged, are `order`."""
     jobs, origin = merge_jobs(order)
@@ -497,6 +546,20 @@ def main() -> int:
             print(f"  note  {text}")
     for path in sorted(judged_in):
         print(f"  {path}: included, judged in {', '.join(judged_in[path])}")
+
+    print("\n== C. script items, read with bash -n ==")
+    bash = shutil.which("bash")
+    if bash is None:
+        print("  note  no bash on PATH: the scripts are not read")
+    else:
+        before, items = len(failures), 0
+        for path in sorted(read):
+            count, fails = script_failures(read[path], bash)
+            items += count
+            for text in fails:
+                bad(text)
+        if len(failures) == before:
+            print(f"  ok, {items} item(s) in {len(read)} file(s)")
 
     print("\n== includes not read: a job only they define is invisible to B ==")
     unread_by = sorted({(u, str(f.path)) for f in read.values() for u in f.unread})

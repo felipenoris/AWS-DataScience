@@ -48,6 +48,9 @@ module "deploy_role" {
 }
 
 data "aws_iam_policy_document" "apply_dev_env" {
+  # ListAliases: the provider reads an image version's aliases on every refresh and after a create,
+  # read from CloudTrail on the infrastructure user's replace of version 5 (2026-10-12), so a plan of
+  # the slice is refused without it although the slice sets no alias.
   statement {
     sid    = "TheImageAndItsVersions"
     effect = "Allow"
@@ -60,6 +63,7 @@ data "aws_iam_policy_document" "apply_dev_env" {
       "sagemaker:DeleteTags",
       "sagemaker:DescribeImage",
       "sagemaker:DescribeImageVersion",
+      "sagemaker:ListAliases",
       "sagemaker:ListImageVersions",
       "sagemaker:ListTags",
       "sagemaker:UpdateImage",

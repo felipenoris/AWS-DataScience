@@ -16,7 +16,10 @@ locals {
 
   # One profile per deploy role, named after it, and the runner's own, named after its role: the
   # instance's credentials with no role to assume, for the registry's state its role reads (Stage 8
-  # decision 14, the profile `gen-tfvars.py --pipeline` writes).
+  # decision 14, the profile `gen-tfvars.py --pipeline` writes). The runner's own profile carries no
+  # credential setting, so both the AWS CLI and Terraform reach the instance metadata through their
+  # default chain: Terraform 1.15.8 refuses a `credential_source` without `role_arn` ("credential
+  # type credential_source requires role_arn"), read 2026-10-15, where the AWS CLI ignores it.
   deploy_aws_config = join("\n", concat(
     [
       for arn in values(data.terraform_remote_state.foundation.outputs.deploy_role_arns) : join("\n", [
@@ -30,7 +33,6 @@ locals {
     ],
     [join("\n", [
       "[profile ${local.deploy_runner_name}]",
-      "credential_source = Ec2InstanceMetadata",
       "region = ${var.region}",
       "",
     ])],

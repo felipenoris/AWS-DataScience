@@ -7,8 +7,8 @@
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "69ad278e53f048e13848af764baba3f5c286c049",
-    "committed": "2026-10-15T00:11:35Z",
-    "subject": "Merge branch 'lock-past-the-findings' into 'main'"
+    "commit": "c268de48da0e820ef01dfd3c18ec8409dd200870",
+    "committed": "2026-10-15T01:24:05Z",
+    "subject": "Merge branch 'fn/fix_eof' into 'main'"
   }
 }

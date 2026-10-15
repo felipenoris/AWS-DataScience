@@ -198,7 +198,7 @@ release-gate:
     - |
       set -eu
       echo "released by $GITLAB_USER_LOGIN: $IMAGE_TAG"
-      echo "  base    ${BASE_DIGEST:-(an earlier run's, SKIP_BASE=1)}"
+      echo "  base    ${BASE_DIGEST:-(from an earlier run, SKIP_BASE=1)}"
       echo "  dev-env $DEV_ENV_DIGEST"
       echo "the registration follows; the domain's apps are deleted and the image detached by now (dev-env.md §B steps 1-2)"
   artifacts:
