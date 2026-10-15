@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run --quiet
 # orchestration.py - Stage 10's evidence: the MWAA Serverless workflows in Staging and
-# Production (D7 amended: one orchestrator, design B not built), with their per-workflow roles
-# (boundary, trust, the D13 absences), their NetworkConfiguration (present, two AZs, no default
-# route), the named log groups with retention (D28 item 5), the failure rules and the
-# model-approval rule, recent runs (the schedule evidence), the absence of any provisioned MWAA
-# environment, the definitions home, and the registry's register/approve record (INT-07's
-# registry half, consumed).
+# Production (D7 amended: one orchestrator; D41's chain layer above them is OR-9 once built),
+# with their per-workflow roles (boundary, trust, the D13 absences), their NetworkConfiguration
+# (present, two AZs, no default route), the named log groups with retention (D28 item 5), the
+# failure rules and the model-approval rule, recent runs (the schedule evidence), the absence of
+# any provisioned MWAA environment, the definitions home, and the registry's register/approve
+# record (INT-07's registry half, consumed).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -37,6 +37,7 @@
 #   - the definitions home is s3://awsds-prod-outputs/workflows/, with the object's S3
 #     VersionId pinned (steps 1.1, 2.4, decision 1)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
+#   - the chain layer carries awsds-<env>-chain- (steps 3.4, 3.5; OR-9, not written)
 #   - the lake buckets carry awsds-data- (Stage 5a), so OR-3 can read D13's absence
 #
 # What it cannot see, since an empty listing and a missing account look alike:

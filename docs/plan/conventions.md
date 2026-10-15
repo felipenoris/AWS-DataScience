@@ -431,9 +431,11 @@ terraform-live/
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
-    │                     #     always set on VPC-Workloads' private subnets. Design B
-    │                     #     (Scheduler + Step Functions) is documented-not-built, as
-    │                     #     INT-14's terminal fallback; the provisioned-MWAA rung is gone
+    │                     #     always set on VPC-Workloads' private subnets. Above the
+    │                     #     workflows, the chain layer (D41): per account a schedule
+    │                     #     group, the machines' log group and two roles; per chain a
+    │                     #     Step Functions state machine, its Scheduler schedule and its
+    │                     #     failure rule; the provisioned-MWAA rung is gone
     └── app/
         └── app-etl/      # [E]
 
@@ -624,33 +626,36 @@ app-etl/
 ├── samples/          # synthetic input: the image's smoke test and a Sandbox job read it
 ├── .gitlab-ci.yml    # the pipeline, with the shared gates of awsds/ci-gates
 ├── Dockerfile        # the application image, FROM base by digest, and the job image
-├── workflow/
-│   ├── workflow.yaml # the MWAA Serverless definition (dag-factory YAML), checked by the D28 lint
-│   └── code/         # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
+├── manifest.yaml     # the SageMaker application: its name, its content and its stages (D41)
+├── workflows/
+│   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint on its rendered copy
+├── code/             # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
 ├── glue/             # one script per Glue job, a Visual ETL flow's generated script among them (D28 class 2c)
 ├── pyproject.toml    # and uv.lock
 └── README.md
 ```
 
 The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
-`awsds/app-etl` at Stage 8 step 2.2; `workflow/` and `glue/` join it at Stage 10. The development stack is
-similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
+`awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/` and `code/` join it at Stage 8
+step 2.5 (D41), `glue/` at Stage 10. The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
 application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
-release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflow/` is
-where a definition authored in a Sandbox project lands when it graduates (Stage 10 step 2.2); the release
-job copies it, and the code package built from `workflow/code/` when there is one, to the definitions
-home, and the `orchestration/` slices pin both objects (step 2.4). `glue/` holds the scripts the
+release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
+the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
+bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment and copies it, with the
+code package built from `code/` when there is one, to the definitions home, and the `orchestration/`
+slices pin both objects (step 2.4). `glue/` holds the scripts the
 application's Glue jobs run: the release job copies them under the release's prefix, and the jobs the
 application slice declares name them there (Stage 10 decision 12).
 
 The directories follow D28's line between content and activation. `src/` is the code, built into the
 application image and run as a SageMaker job, and `glue/` the code of a step that reads or writes
-governed data. `workflow/` is the activation: the definition that starts that code on a schedule or on
-demand, with `workflow/code/` holding the orchestration code its Python and Bash tasks run on the worker,
-never a data path. The application's slice is structure, applied by the pipeline at deploy time with no
-workflow. A notebook's logic graduates as code in `src/` plus a task in `workflow/workflow.yaml` that calls
-it; the notebook itself does not graduate (6d decision due 14).
+governed data. `workflows/` is the activation: the definition that starts that code on a schedule or on
+demand, with `code/` holding the orchestration code its Python and Bash tasks run on the worker, never a
+data path, the line the CLI's manifest draws the same way (D41). The application's slice is structure,
+applied by the pipeline at deploy time with no workflow. A notebook's logic graduates as code in `src/`
+plus a task in `workflows/app-etl.yaml` that calls it; the notebook itself does not graduate (6d decision
+due 14).
 
 ---
 

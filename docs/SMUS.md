@@ -563,13 +563,24 @@ shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-w
 - **A run's state lags its task instances**: `RunState` read `QUEUED` after the first task had
   finished.
 
-## The CI/CD tool is an exporter
+## The CI/CD tool deploys between projects
 
 The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and it deploys only
 into projects that already exist. A deployment target under D26 has no project and no domain
-association, so the tool cannot reach one: on the Sandbox side it exports a project's artifacts, and
-the GitLab pipeline stays the deployer (D28). Stage 8 step 5.6 writes the lint that enforces the
-difference.
+association, so the tool cannot reach one: it deploys an application from its repository into the
+Sandbox projects, `dev` and `test`, and makes the bundle, and the GitLab pipeline stays the deployer in
+Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the manifest's
+`storage` content into the project's S3 and the workflow is born by the bootstrap action
+`workflow.create`, which resolves the YAML's variables, rewrites it at the same key and calls
+`CreateWorkflow` with the project role, the Tooling subnets, security group and key, no `TriggerMode`
+(so `manual_only`), the log group `/aws/mwaa-serverless/<domain>-<project>/<name>` and six tags
+(`AmazonDataZoneProject`, `AmazonDataZoneDomain`, `Target`, `CreatedBy=SMUS-CICD`, `STAGE`, `Pipeline`);
+the name is `<application>_<project>_<workflow>`, every other character turned into `_`. The CLI's
+pre-deployment validation simulates the role's policies with no context keys, so every SCP conditioned
+on `aws:RequestedRegion` or `aws:ResourceOrgID` reads denied and the deploy runs with
+`--skip-validation`; `--no-events` keeps its `PutEvents` off the default bus; its boto3 ignores the
+`aws` CLI's SSO cache. Stage 8 step 5.6 writes the lint that enforces the difference, on the rendered
+file.
 
 ## The catalog surface
 

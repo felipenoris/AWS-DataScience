@@ -16,8 +16,9 @@ Data Science environment, and the template its other applications start from: th
 
 The Terraform that runs the application is not here: each environment's slice is
 `terraform-live/<env>/app/app-etl/` in the infrastructure repository (Stage 8 decision 12), and Sandbox's
-is applied by hand while the application is engineered (step 2.4). The workflow definition and its code
-(`workflow/`) and the Glue scripts (`glue/`) join this tree at Stage 10.
+is applied by hand while the application is engineered (step 2.4). The application's manifest
+(`manifest.yaml`), its workflow definition (`workflows/app-etl.yaml`) and its code package (`code/`) join
+this tree at Stage 8 step 2.5, the Glue scripts (`glue/`) at Stage 10 (D41).
 
 ## Working on it
 

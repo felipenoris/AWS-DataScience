@@ -717,6 +717,20 @@ which did not exist before the tag turned out to be single-valued. **Provisioned
 Sandbox namespace and workgroup, one key-policy statement, two SCP statements, one permission-set document,
 one module tag.
 
+- **2026-10-15 — D41: the SageMaker application is the deployable unit, and design B is built above the
+  workflows.** The user decided, between 04:40 and 15:43 UTC, that an application is a repository holding
+  `manifest.yaml`, its workflows in the CI/CD CLI's notation and its code; that the CLI deploys it from
+  the repository into the `dev` and `test` Sandbox projects and makes the bundle; that the pipeline
+  deploys the bundle to Staging and Production, where one Step Functions state machine per chain starts
+  the workflows and one EventBridge Scheduler schedule starts the machine, the shape of
+  `terraform-reference/`'s `modules/orchestration/`; that the application image carries the dependencies
+  alone and the code is the job's input (Stage 10 decision 7, taken as the alternative); that the
+  application slice owns the Glue job; and that an S3 operator task writes the result. The first CLI
+  deploy into a project ran in the lab the same day, with `--skip-validation`. D7, D26 and D28 are amended
+  in place; Stage 10 gains steps 3.4-3.7, decisions 13-16 and verifications xxii-xxvi, Stage 8 step 2.5
+  and decision 19; INT-14's terminal rung is the `CreateWorkflow` call from the release job, design B
+  having left the ladder.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
