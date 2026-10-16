@@ -109,10 +109,12 @@ item 6 (the registry Stage 10 consumes rather than invents); step 2 from Stage 5
 Pass 1 precedes pass 2 because the grantor's regrant target and Stage 5a's drop-box statements both name
 the job role; pass 3 cannot precede pass 2 (a resource link to a share that does not exist resolves
 nothing — Stage 5a's rule, repeated for this consumer). **Pass 5 waits on nothing but pass 4 and Stage 8's
-chain**. **Pass 6 is last and separable**: the warehouse needs the job role (pass 1), the account data CMK
-with its Redshift statement (pass 3) and the pipeline (pass 5), and nothing needs it, so it can be deferred
-past the stage's closing proof without holding anything up, which is the honest place for the estate's most
-expensive object per unit of time.
+chain**; Stage 8 decision 23 (due) recommends running Stage 8's pass 4 once this stage's platforms
+exist, which makes 8.5 the promotion's first run rather than a re-run. **Pass 6 is last and
+separable**: the warehouse needs the job role (pass 1), the account data CMK with its Redshift statement
+(pass 3) and the pipeline (pass 5), and nothing needs it, so it can be deferred past the stage's closing
+proof without holding anything up, which is the honest place for the estate's most expensive object per
+unit of time.
 
 **One consequence of that order:** Production becomes a Lake Formation account only at **pass 3** (1.3
 names its first data lake administrator), so **pass 2's post-grant reading is a RAM reading, not a catalog

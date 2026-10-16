@@ -109,10 +109,11 @@ change. The sequence is **five passes**:
 | **4** | 6 | the end-to-end scheduled promotion and the negative sweep | sessions + pipeline | user; pipeline |
 
 Pass 1 precedes pass 2 because `CreateWorkflow` **snapshots the definition at creation** — the YAML must
-sit in S3 first. **Pass 2 lands in Staging before Production** for the same reason Stage 8's chain does: the
-first `CreateWorkflow` in the estate creates a service-linked role and spends a version, and it is better
-that it does so in the account whose failure costs nothing. Step 4 is not a pass — it is the fallback
-ladder, read only if pass 2's apply is refused.
+sit in S3 first. Stage 8 decision 23 (due) recommends running Stage 8's pass 4, the promotion chain,
+together with passes 1 and 2, after Stage 9. **Pass 2 lands in Staging before Production** for the same
+reason Stage 8's chain does: the first `CreateWorkflow` in the estate creates a service-linked role and
+spends a version, and it is better that it does so in the account whose failure costs nothing. Step 4 is
+not a pass — it is the fallback ladder, read only if pass 2's apply is refused.
 
 ---
 
@@ -231,7 +232,13 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   stateless ACL denying all egress would break the endpoints it fronts.
 - **1.3 — [Claude] Write the execution role**: trust `airflow-serverless.amazonaws.com`
   (`sts:AssumeRole`; add `aws:SourceAccount` — the docs sample omits it, so if creation fails naming
-  trust, drop the condition and record it). Permissions, enumerated:
+  trust, drop the condition and record it), and the permissions boundary `awsds-<env>-app-boundary`: the
+  deploy role's ceiling refuses `CreateRole` and every policy change on a role without it
+  (`DenyRoleChangesOutsideTheApplicationCeiling`, `terraform-modules/deploy-role/main.tf`), so a role
+  this slice writes without it fails at the pipeline's first apply. The boundary is `[P]`, the
+  infrastructure user's (Stage 8 step 3.0), since the deploy role may neither change nor delete a policy
+  named `awsds-<env>-*-boundary`, so it never lives in this `[E]` slice; its content admits what this
+  role and the chain roles do. Permissions, enumerated:
   - Glue: `glue:GetJob`, `StartJobRun`, `GetJobRun`, `GetJobRuns` and `BatchStopJobRun` on the named jobs.
     `GlueJobOperator` calls `GetJob` before every start and counts only `EntityNotFoundException` as
     absent, so without it the task fails before the job starts (the Amazon provider 9.32.0 the worker
@@ -243,7 +250,8 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
     create with tags is also authorized as `AddTags`; `CreateTrainingJob`/`DescribeTrainingJob`/
     `StopTrainingJob` for step 5, whose operator's existence check is unread; `kms:CreateGrant` on the
     volume key, which the submitting session creates for `sagemaker.amazonaws.com`; and `iam:PassRole` on
-    `awsds-prod-job-exec` conditioned `iam:PassedToService = sagemaker.amazonaws.com` (conventions §6).
+    `awsds-prod-job-exec` conditioned `iam:PassedToService = sagemaker.amazonaws.com` (conventions §6),
+    one of the three names the plan gives the job role, which Stage 8 step 2.5 asks to settle.
   - ECS only if decision 8 keeps it: `ecs:RunTask`/`DescribeTasks`/`StopTask` on the `awsds-prod-app-etl`
     task definition and `iam:PassRole` on its task roles, conditioned on `iam:PassedToService`.
   - `logs:CreateLogStream`/`PutLogEvents` on its own group.
@@ -276,7 +284,7 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   `awsds-<env>-chain-scheduler`, which EventBridge Scheduler assumes to start a machine
   (`states:StartExecution` on `awsds-<env>-chain-*`); and `awsds-<env>-chain-events`, the same grant for
   the EventBridge rules that start a machine. None touches data, and none is the workflow's execution
-  role.
+  role. Each carries `awsds-<env>-app-boundary`, for the same refusal.
 - **1.4 — [Claude] Write the machinery rows in the same sitting**: `RANKS["orchestration"]` above
   `app/app-etl` (so `make down` removes the trigger before the thing it triggers), **two** `[E]` `SLICES`
   rows — `staging` and `production` (`usd_per_hour` 0.0: nothing in the slice meters by the hour; the runs
@@ -324,7 +332,8 @@ ran in the lab on 2026-10-15 (D41).
 
 - **2.1 — [user] Author the workflow in the application repository and deploy it to the `dev` project with
   the CLI**: `aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation
-  --no-events`, run from the laptop (the identity the pipeline runs it as is Stage 8 decision 19).
+  --no-events`, run from the laptop or a space as the identity Stage 8 decision 22 settles (due; the
+  pipeline's is decision 19).
   `deploy` syncs the manifest's `storage` content into the project's S3 (`aws s3 sync`, no `--delete`),
   and the workflow is born by the bootstrap action `workflow.create`: the CLI resolves the variables,
   rewrites the YAML at the same key and calls `CreateWorkflow` with the project role, the Tooling subnets,
@@ -337,7 +346,9 @@ ran in the lab on 2026-10-15 (D41).
   with the project key. `--skip-validation` is needed: the CLI's pre-deployment validation simulates the
   project role's policies with no context keys, so every SCP conditioned on `aws:RequestedRegion` or
   `aws:ResourceOrgID` reads denied (Lesson 30), and the simulation never reads a bucket or key policy
-  anyway. Then test-run its shape there (Sandbox task-hours, metered per run). **This is where D21's
+  anyway. Whether each deploy of the same workflow spends one of its 50 versions (1.6) is unmeasured, and
+  this loop deploys often (Stage 8 verification xxiii). Then test-run its shape there, with Sandbox's
+  `[E]` session up (Stage 8 step 2.5; Sandbox task-hours, metered per run). **This is where D21's
   "authored and test-run" clause now points**, and Sandbox is the only account it can point at. What a
   Sandbox run can test is the workflow's shape, not its jobs: every task runs as the project role, against
   the project's `shared/` storage and the application image (D41 item 7; the project role's pull of it is
@@ -504,7 +515,9 @@ state machine (3.5) and what carries data between them is a contract on S3 (3.6)
   `logs:*` delivery actions on `Resource: "*"`, nothing on jobs and nothing on S3 (`ListWorkflows` only
   if a chain resolves a workflow by name instead of by ARN); and the Scheduler role
   `awsds-<env>-chain-scheduler`, trusted by `scheduler.amazonaws.com`, holding `states:StartExecution` on
-  `arn:aws:states:<region>:<account>:stateMachine:awsds-<env>-chain-*`. This is
+  `arn:aws:states:<region>:<account>:stateMachine:awsds-<env>-chain-*`. Both roles, and 3.6's
+  `awsds-<env>-chain-events`, carry the permissions boundary `awsds-<env>-app-boundary`, which the deploy
+  role's ceiling requires on every role it creates (1.3; Stage 8 step 3.0). This is
   `terraform-reference/`'s `modules/orchestration/` base (its `controladoria-schedules` group, its
   `<prefixo>-pipelines` log group and its `<prefixo>-step-functions` and `<prefixo>-eventbridge-scheduler`
   roles), with the EMR, crawler, SNS and X-Ray grants that estate's role carries left out until a chain
@@ -887,7 +900,7 @@ Record every answer, including the ones that come out fine.
 | vi | Does a broken step fire the failure rule, and is the failure diagnosable from the service APIs alone? | 3.2 |
 | vii | Which app-etl steps fit inside the **60-minute task cap**, a processing task's provisioning, image pull and teardown counted (about 13 minutes in 6i) — and what is the plan for a step that does not (fire-and-poll, or the step split)? | 2.2 |
 | viii | If authoring ever produced Python: what did the Python→YAML converter warn about or drop, and did the round-trip stay faithful? | 2.2 |
-| ix | Do both execution roles read back with no lake S3 (their S3 only 1.3's result and inbox prefixes), no `GetDataAccess`, boundary attached, `NetworkConfiguration` set and **private** (`OR-3`)? | 1.3, 6.2 |
+| ix | Do both execution roles read back with no lake S3 (their S3 only 1.3's result and inbox prefixes), no `GetDataAccess`, `awsds-<env>-app-boundary` attached, `NetworkConfiguration` set and **private** (`OR-3`)? | 1.3, 6.2 |
 | xiii | Is `airflow list-environments` empty in **every** account, and does `airflow:CreateEnvironment` deny from a Production session (`OR-6`, `DenyProvisionedMwaa`)? | 4.3, 6.2 |
 | xiv | Does the private-routing NACL the guide describes actually work with the endpoints in front of it, or does its outbound deny-all break them (verified, never copied)? | 1.2 |
 | x | Does the model chain hold end to end — registration only under `awsds-deploy-prod`, training `OutputDataConfig` carrying the CMK, the approved version served in **Staging before Production**? | 5.1-5.4 |

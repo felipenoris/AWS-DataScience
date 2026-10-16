@@ -20,7 +20,7 @@ the house image, a `PythonOperator` and a `BashOperator`.
 | **§O** | both | the pieces: where the definition, the code, the logs and the runs live |
 | **§T** | both | the tool, `awsds-workflows`: installing it, where it runs, and this lab's values |
 | **§G** | infrastructure | the grant a project needs before its first processing task, once per project |
-| **§A** | the data scientist | authoring rules every workflow obeys: the editor, the import, the templates, the sensor |
+| **§A** | the data scientist | authoring rules every workflow obeys: the editor, the import, a workflow the CI/CD CLI made, the templates, the sensor |
 | **§J** | the data scientist | a processing task in the house image, under the D13 boundary; a project with dependencies through `awsds-workflows package-job` |
 | **§C** | the data scientist | code for a Python or Bash task: what the worker expects, packaging a uv project with `awsds-workflows package-task`, the upload |
 | **§V** | both | reading a run back, one instrument per question |
@@ -217,6 +217,22 @@ name already exists` (measured 2026-10-11). Delete the old workflow first (*Work
 workflow*, type "confirm"), then save: CloudTrail reads `DeleteWorkflow` then `CreateWorkflow`, the ARN
 suffix changes and the run and version history restart. The log group is named after the workflow and
 keeps every run's logs.
+
+**A workflow the CI/CD CLI made is read in the portal, never saved or run there.** It is named
+`<application>_<project>_<workflow>`, carries the tag `CreatedBy=SMUS-CICD`, and its YAML lives where
+the application's manifest put it, under the project's `shared/` in the lab's deploy (D41). Change it in
+the application's repository and deploy again with the CLI.
+
+- **A save from the portal** replaces the workflow whole (Lesson 60) and writes the editor's copy under
+  `dev/workflows/`, a second definition beside the CLI's. Its Tags tab shows the CLI's six tags under a
+  notice that tags come from the definition file, where the CLI never wrote them (it tags by
+  `TagResource`), so the save would also drop the tags the CLI's `monitor` and `logs` filter by. Read in
+  the portal on 2026-10-15 with no save; no save has measured either.
+- **A run started from the portal** passes no `OverrideParameters`. The CLI writes each `{env.VAR}` of
+  the workflow as `{{ params.VAR }}` and fills it only in a run it starts, from the stage's
+  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values;
+  what it renders in their place is [Stage 10](../stages/stage-10-orchestration-promotion.md)
+  verification xxix. Start the run from the CLI.
 
 **Save errors and their way through:**
 

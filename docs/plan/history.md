@@ -781,6 +781,24 @@ one module tag.
   whether `sandbox/app/app-etl/` retires, which identity runs `deploy --targets dev`, and when Stage 8's
   pass 4 runs against Stages 9 and 10. Nothing in AWS changed.
 
+- **2026-10-16 — What D41 leaves open, written where Stage 8 step 2.5 and Stage 10 meet it.** The same
+  review's gaps, each read in the file that holds it. The user's three questions are Stage 8 decisions
+  21 to 23, each with a recommendation and none taken: retire `sandbox/app/app-etl/`, whose request runs
+  code D41 item 7 takes out of the image; run `deploy --targets dev` from a space as the project role,
+  since no persona set holds an `airflow-serverless:` action; and run pass 4 after Stage 9, together
+  with Stage 10's passes 1 and 2, since the promotion now needs the outputs buckets, the job role and
+  the workflow slice. Step 2.5 gains its preconditions: Sandbox's `[E]` session, which no pipeline
+  identity raises, checked by the `test` job in seconds; the `test` prefix, which `aws s3 sync` never
+  empties; the deploy image, which carries neither the CLI nor `glab`; the job role's three names; the
+  workflow versions a deploy may spend; and the gates' include, still at `gates-v0.2.0`. Decision 19's
+  role needs more than IAM: probably a membership of the `test` project, a ceiling admitting the
+  `PassRole` that Sandbox's `DenyEveryRoleChange` refuses and that the `deploy-role` module's one ceiling
+  per account cannot carry, and a second Sandbox row in a map that holds one. Step 3.0 makes
+  `awsds-<env>-app-boundary` a `[P]` precondition of the infrastructure user, since the deploy role may
+  neither change nor delete it, and Stage 10's execution and chain roles carry it. The workflows
+  runbook says a workflow the CLI made is never saved or run from the portal. Verifications xxiii to
+  xxvi join Stage 8. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

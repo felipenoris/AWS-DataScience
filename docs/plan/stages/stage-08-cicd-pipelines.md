@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **Pass 3 written 2026-10-14** (PR #131, decisions 13 to 17): the house environment on Python 3.12; everything under `images/` moved to the private GitLab, copied here under `gitlab/`; the release chain, `scripts/devenv-register.py`, the runner's read of the registry's state and `gates-v0.3.0`. **Run 2026-10-15**: the mirror `awsds/infrastructure` (6.1); `default-v0.7.0`'s release gate failed on a shell quote, and the register path's two first-run defects were fixed before the next gate; `default-v0.7.1-c268de48` registered by the pipeline as Sandbox's version 7, attached by hand, and a new space started on it (verifications vii, viii and xvii); the release loop measured (1.7). **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version, and since decisions 7 and 18 (2026-10-15) the version is the whole release** ([`dev-env.md`](../runbooks/dev-env.md) §B): the pipeline creates it through the API and retires every version past the newest 10 that nothing names, and the domain, attached once with no version number, offers every version with no write of its own. Both decisions rest on readings of a probe image taken that day, and the change is `deploy-role-v0.4.0`, the slice's `removed` block, refusal 8 widened and `awsds/dev-env`'s `release/versions.py`. Applied the same day (PR #134): version 7 out of the slice's state, the deploy role narrowed and read back by the policy simulator, and the house image attached with no version number; `awsds/dev-env` !4 merged and copied back in PR #135. The first release under them ran the same day: `default-v0.7.2` stopped at `pip-audit` on the steward's accepted fsspec finding under a new OSV id, decision 15 was amended to match an accepted finding by any of its ids (`gates-v0.4.0`), and `default-v0.7.3` became Sandbox's version 8 through `register`, with no domain write, `retire` deleting nothing (verification vii); 29 min from the tag to the version. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records. **[D41](../decisions/D41-sagemaker-application.md) (2026-10-15) makes `app-etl` a SageMaker application**: the change, step 2.5, waits on the lab measurement D41 records; decision 19 (2026-10-15) runs the CLI's `test` deploy as `awsds-deploy-sandbox-test`, a Sandbox role only the deploy runner assumes, the exception D21 records, and decision 20 (2026-10-15) stores each release's bundle in `awsds-prod-releases`, a bucket of `production/registry/` that the tag's GitLab release names |
+| **Status** | **in progress since 2026-10-12**: pass 0's readings are taken, step 6.2's workflow is written and proven, and pass 1's `[P]` half is applied with the environment down, and the deploy runner is up since 2026-10-13 with verifications ii and iii answered; 4.6's rule names the runner by its role's unique id since `deploy-role-v0.2.0`, and verification xvi saw it fire in both accounts. **Pass 2 is done (2026-10-13/14, PR #125)**: the shared gates in `ci-gates/` for the GitLab project `awsds/ci-gates` (decision 10), the application template in `examples/app-etl/`, the test runner (decision 11), `sandbox/app/app-etl/` with its two `[P]` halves (decision 12), refusals 7 and 8, and 4.4's `ONLY=`/`PROFILE=`. Its `[P]` slices were applied 2026-10-13; on 2026-10-14 `awsds/ci-gates` reached `gates-v0.2.0`, the test runner registered as runner #4, `awsds/app-etl` took the template and released `v0.1.0`, and `sandbox/app/app-etl/` ran it once (verifications xiii and xviii, and iv's first half). The user amended decision 1 the same day: the ECR scan informs and blocks no deployment. **Pass 3 written 2026-10-14** (PR #131, decisions 13 to 17): the house environment on Python 3.12; everything under `images/` moved to the private GitLab, copied here under `gitlab/`; the release chain, `scripts/devenv-register.py`, the runner's read of the registry's state and `gates-v0.3.0`. **Run 2026-10-15**: the mirror `awsds/infrastructure` (6.1); `default-v0.7.0`'s release gate failed on a shell quote, and the register path's two first-run defects were fixed before the next gate; `default-v0.7.1-c268de48` registered by the pipeline as Sandbox's version 7, attached by hand, and a new space started on it (verifications vii, viii and xvii); the release loop measured (1.7). **The chain is `Sandbox → Staging → Production`** and nothing waits on a vend ([6b](stage-06b-development-becomes-staging.md)). The *engineering* apply of step 2.4 is a `sandbox/app/app-etl/` slice applied **by hand**, and CI never applies an application into Sandbox — D21's surviving objection, held by `layers.py` refusals 7 and 8 (refusal 5 is the `[D]` one, since Stage 4, and 6 the hub's, since Stage 7). **The runners sit on the build plane, which is `open`** ([6c](stage-06c-networking-hub.md), [D38](../decisions/D38-single-egress-hub.md)): every build step is an explicit-proxy client and any public name answers, so an unlisted host is not a 403 here. **The dev-env chain ends at the image version, and since decisions 7 and 18 (2026-10-15) the version is the whole release** ([`dev-env.md`](../runbooks/dev-env.md) §B): the pipeline creates it through the API and retires every version past the newest 10 that nothing names, and the domain, attached once with no version number, offers every version with no write of its own. Both decisions rest on readings of a probe image taken that day, and the change is `deploy-role-v0.4.0`, the slice's `removed` block, refusal 8 widened and `awsds/dev-env`'s `release/versions.py`. Applied the same day (PR #134): version 7 out of the slice's state, the deploy role narrowed and read back by the policy simulator, and the house image attached with no version number; `awsds/dev-env` !4 merged and copied back in PR #135. The first release under them ran the same day: `default-v0.7.2` stopped at `pip-audit` on the steward's accepted fsspec finding under a new OSV id, decision 15 was amended to match an accepted finding by any of its ids (`gates-v0.4.0`), and `default-v0.7.3` became Sandbox's version 8 through `register`, with no domain write, `retire` deleting nothing (verification vii); 29 min from the tag to the version. Three findings shape the rest: the scan gate meets the SageMaker Distribution's inherited findings (CRITICAL 30 in 6a's first scan, CRITICAL 0 and HIGH 130 in `default-v0.6.0`), so its severity rule is a delta (decision 1); from the runner, `make up`'s hub check is waived, so a job checks the proxy itself (3.1); and no member account has an SNS topic for the misuse alarm to reach (decision 5). The workflow lint's rules come from 6d step 4 and [6i](stage-06i-sandbox-orchestration.md) (5.6), and both gates take the CE shape [Stage 7](stage-07-gitlab-runners-ecr.md) step 3.3 records. **[D41](../decisions/D41-sagemaker-application.md) (2026-10-15) makes `app-etl` a SageMaker application**: the change, step 2.5, waits on the lab measurement D41 records; decision 19 (2026-10-15) runs the CLI's `test` deploy as `awsds-deploy-sandbox-test`, a Sandbox role only the deploy runner assumes, the exception D21 records, and decision 20 (2026-10-15) stores each release's bundle in `awsds-prod-releases`, a bucket of `production/registry/` that the tag's GitLab release names. Decisions 21 to 23 are due (2026-10-16): whether `sandbox/app/app-etl/` retires, which identity runs `deploy --targets dev`, and when pass 4 runs against Stages 9 and 10 |
 | **Prerequisites** | Stage 7 — the build runner, the registries with immutable tags, the protected-tag shapes (3.5), **the recorded edition answer (3.3)** that fixes both gates' CE form, and the mirror answer (7.1). **6d step 2** — the registration mechanism (`sandbox/dev-env/` and the hand attach) and the image the first pipeline release replaces: `default-v0.6.0`, version 6, registered at Stage 7 step 2.6. **6b** — `Staging` exists, its tree is `terraform-live/staging/` on its own state bucket. **6c** — every runner job is an explicit-proxy client and there is no NAT to bring up. Nothing here waits on a quota |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D8](../decisions/D08-gitlab-hosting.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md), [D41](../decisions/D41-sagemaker-application.md) (the application, the CLI's deploy to the `test` project and its bundle, 2.5) |
 | **Proves** | [INT-07](../integrations.md) (Staging pulling the application image), [INT-08](../integrations.md) (the two promotion deploy roles, distinguishable in CloudTrail), [INT-18](../integrations.md) (the dev-env deploy role reaching from Production into Sandbox, as far as the image version), [INT-25](../integrations.md) (the CI/CD CLI's `test` deploy reaching from Production into Sandbox's `test` project, decision 19). **Exercises INT-17's automated half**: INT-17 was answered at 6d (the slice plus a hand attach to the domain's `DefaultUserSettings`), and this stage adds the pipeline making the image version, not the domain writes |
@@ -396,7 +396,8 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   connection (Stage 10 step 2.2). The same job then runs
   `deploy --targets test --skip-validation --no-events`, which for such items reads the manifest's folder
   and never the bundle (the bootstrap `workflow.create` and `workflow.run` with `wait`, the application's
-  own test), so `test` runs the bytes the bundle carries. The zip stays in the job's folder, the
+  own test), so `test` runs the bytes the bundle carries once the project's prefix holds nothing else
+  (below). The zip stays in the job's folder, the
   `--output-dir` default, and reaches the third job as a job artifact, since this job holds a Sandbox
   identity. The third, once `test` passes, runs on the build runner: it copies the zip to
   `s3://awsds-prod-releases/<application>/<tag>/` with the runner's own role and creates the tag's GitLab
@@ -412,7 +413,45 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   is; the image is built from the lock alone (`uv sync --locked --no-install-project`) and `smoke` mounts
   the code, the shape Stage 10 decision 7's taking fixes. The image is built on the tag alone, so a change
   of the lock first runs in a job in the `test` project, and a deploy to `dev` runs the last released
-  image.
+  image. The jobs meet the following before they are written, each read 2026-10-16 in the file it names:
+  - **The `test` run needs Sandbox's `[E]` session.** `workflow.run` with `wait` runs the workers, the
+    processing job and the Glue job on Sandbox's private tier, which has no default route and reaches
+    every AWS service but S3 through `sandbox/egress`'s interface endpoints. They exist only while that
+    slice is applied, which `make up ENV=sandbox` does only with the hub's proxy up, and no pipeline
+    identity raises it: refusal 8 refuses every deploy role's profile on a Sandbox slice
+    (`scripts/tfhygiene/layers.py`). So the person who pushes the tag first runs `make up ENV=sandbox
+    ONLY=egress` as the infrastructure user (`awsds-infra-sandbox-1`), and the second job, before
+    `deploy`, reads the endpoints its run reaches in Sandbox's VPC (`ec2:DescribeVpcEndpoints`, a read
+    decision 19's role gains) and fails in seconds when one is absent, as 3.1's proxy check does: the
+    workers carry no proxy, so a missing endpoint fails at the firewall or as a timeout, never as a 403
+    (Stage 9 step 4.3a's reading of the same shape; verification xxiv).
+  - **The `test` project's prefix keeps what earlier releases put there.** `deploy` copies with `aws s3
+    sync` and no `--delete` (D41), so a file a later release removed stays under the manifest's target. A
+    processing input is a whole prefix, so a module removed from `src/` stays importable, and `app-etl`
+    reads every CSV under its input folder (`rglob`, `examples/app-etl/src/app_etl/__main__.py`): `test`
+    can run bytes the bundle does not carry. Either the manifest's target names a prefix per tag, so each
+    release lands in an empty one, or the job empties the target before `deploy`, a delete decision 19's
+    role then holds; the manifest's first version takes one (verification xxvi).
+  - **The deploy image carries neither the CLI nor `glab`.** `awsds-prod-ecr-deploy:v0.1.0`
+    (`gitlab/awsds/deploy-image/Dockerfile`) holds make, uv, Terraform, git and the AWS CLI on Python 3.14
+    with `UV_PYTHON_DOWNLOADS=never`, and the deploy runner runs no image outside `awsds-prod-ecr-deploy*`
+    (`--docker-allowed-images`, `production/runners/deploy-user-data.sh.tftpl`). The second job's
+    `aws-smus-cicd-cli` and the third's `glab` join that image, pinned like its other tools, and whether
+    the CLI's 1.0.9 installs and runs on Python 3.14 is read before the build (verification xxv).
+  - **The job role has three names.** `awsds-<env>-app-etl-job` is 2.4's, matched by
+    `AllowApplicationJobRolesViaS3`'s `awsds-<env>-app-*-job`; Stages 9 and 10 name
+    `awsds-<env>-job-exec`, Stage 9's `[P]` role, whose Production name Stage 5a step 1.4's drop-box
+    statements carry; and in `dev` and `test` a job runs as the project role (D41 item 8). Staging and
+    Production need one, settled before the manifest's stage variables and Stage 10 decision 6's render
+    table name it: the application slice's own role under the application ceiling (3.0), or Stage 9's.
+  - **Whether a deploy spends a workflow version is unread.** A workflow keeps at most 50 versions and no
+    prune API is documented (Stage 10 step 1.6). Whether a second `deploy` of the same workflow updates it,
+    spending one, or deletes and re-creates it, losing its run history, is unmeasured, and the `dev` loop
+    deploys often (verification xxiii).
+  - **The gates' include moves.** `examples/app-etl/.gitlab-ci.yml` includes `awsds/ci-gates` at
+    `gates-v0.2.0` (`a335f37f…`), behind `awsds/dev-env`'s `gates-v0.4.0` (`6fcea132…`). 2.5 moves it,
+    taking `gates-v0.3.0`'s per-project accepted list and its failure on fewer packages audited than the
+    export pins, and `gates-v0.4.0`'s match by alias (decision 15).
 
 ### 3. Promotion pipeline — tag → Staging → Production (D20, D21, INT-07, INT-08)
 
@@ -427,7 +466,7 @@ purpose, so a CloudTrail audit can tell which one ran (INT-08). A failure at 3.3
 Production is never touched. Every `terraform` in it runs with `-input=false` and `-auto-approve`, never
 through a pipe whose exit code would hide its own (Lessons 46, 47).
 
-- **3.0 — [Claude⚡] Add the two Staging preconditions this stage owns** — 6b already delivered the
+- **3.0 — [Claude⚡] Add the deployment targets' preconditions this stage owns** — 6b already delivered the
   account, its tree, its state bucket and its `backend.py`/`layers.py` rows: **the app-repository pull
   grant for Staging in `production/registry/`** (INT-07's enabling half — `app-*` repositories only, an
   authored entry of its own) and `staging/foundation/` gaining `awsds-deploy-staging` (4.1's module). Who
@@ -435,7 +474,19 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   never through Staging's `ecr.*` endpoints, so the repository policy admits the Staging account and the
   pulling role holds `ecr:BatchGetImage`, `GetDownloadUrlForLayer` and `GetAuthorizationToken`.
   `REGISTRY_CONSUMERS` lists Staging today (6b kept it, on purpose); Stage 7 step 5.4 decides whether it
-  stays, and this grant does not depend on the answer. Apply as `awsds-infra-prod` and `awsds-infra-staging`.
+  stays, and this grant does not depend on the answer. **And the application ceiling
+  `awsds-<env>-app-boundary`, in Staging and Production**: the deploy role's ceiling refuses
+  `iam:CreateRole` and every policy change on a role that does not carry it
+  (`DenyRoleChangesOutsideTheApplicationCeiling`, `terraform-modules/deploy-role/main.tf`), so no slice
+  the pipeline applies creates a role before it exists. It is `[P]` and the infrastructure user's, in
+  each account's `foundation/` beside the deploy role whose ceiling names it: `DenyChangingTheCeilings`
+  refuses the deploy role `iam:DeletePolicy` and `iam:CreatePolicyVersion` on `awsds-<env>-*-boundary`,
+  so a pipeline apply could at most create it, never change it, and 3.4's `make down` would stop at its
+  destroy. The `deploy-role` module's comment, which places it in the first application slice, changes
+  with the module's next version, which decision 19's second Sandbox role needs anyway. Its content
+  admits what the roles it bounds do: Stage 10's workflow execution role and chain roles (Stage 10 steps
+  1.3, 3.4 and 3.6), and the application's job role if 2.5 makes it the slice's. Apply as
+  `awsds-infra-prod` and `awsds-infra-staging`.
 - **3.1 — [pipeline] Bring Staging up**: `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1` — the
   `[E]` `egress/` slice, which since 6c is **interface endpoints only, with no NAT gateway and no default
   route**, and exists only for the duration of this run. Three things the job does before it:
@@ -1059,7 +1110,24 @@ Measured (`docs/PRICING.md`), us-west-2:
     `test` project, with CloudTrail naming the calls, before the job is written (verification xix).
     **Taken by the user 2026-10-15, as recommended**; D21 records the exception and INT-25 the wiring.
     When 2.5 is written it names the slice that holds the role, and the deploy runner's role (4.3) and AWS
-    config (4.4) gain its assume and its profile.
+    config (4.4) gain its assume and its profile. **The scope above is IAM's, and the role needs more**,
+    read 2026-10-16 in the files each item names; verification xix records the readings:
+    - **a membership of the `test` project**, probably: the CLI resolves `{proj.*}`, and `bundle` looks up
+      the project, through DataZone, which refused `InfrastructureAccess` three times as a non-member of
+      the project (`EXC-17`) and answered it on 2026-10-15 with the cause unread (D41). AWS's CI/CD pages
+      name a project membership for an identity the CLI runs as (`docs/REFERENCES.md`), a DataZone grant
+      no IAM policy carries;
+    - **a ceiling of its own**: `CreateWorkflow` passes the `test` project's role as the workflow's
+      execution role (D41 item 4), so the ceiling admits `iam:PassRole` of that role to
+      `airflow-serverless.amazonaws.com`, where Sandbox's `DenyEveryRoleChange`
+      (`terraform-live/sandbox/foundation/deploy-role.tf`) denies every `PassRole`; and the `deploy-role`
+      module names its ceiling `awsds-<env>-deploy-boundary`, one per account, so a second caller in
+      Sandbox collides with the first's policy name until the module takes a name per role;
+    - **a second row where the map holds one**: `DEPLOY_ROLES` (`scripts/tfhygiene/backend.py`) maps each
+      account folder to one role, and `production/foundation/`'s `deploy_targets` validation requires
+      exactly `staging` and `sandbox`, so a second Sandbox role reshapes both and what is built from them:
+      the runner's assume list (`deploy-anchors.tf`), its AWS config (4.4), refusal 8, which reads the
+      map's values, and `./aws/cicd.py`'s role map.
 20. **Where a release's bundle is stored** (2.5, 3.2, 3.6; Stage 10 step 2.4). A GitLab release holds
     links, not files, and GitLab's page on release fields points a release's binaries at the project's
     generic package registry and advises against linking job artifacts, which expire. The user proposed on
@@ -1099,6 +1167,48 @@ Measured (`docs/PRICING.md`), us-west-2:
     its region (`modules/security/iam_roles.tf`, read 2026-10-15), so its change is the bucket, or a
     prefix of an existing one, and the delete deny, which names every role but `gitlab_cicd` and the
     administrators', since its account also holds the data scientists' projects.
+21. **Whether `sandbox/app/app-etl/` retires** (2.4, 2.5; D41 item 7). Its `processing_job_request`
+    (`outputs.tf`) runs `python -m app_etl` on the project installed in the image and reads the image's
+    own sample, and D41 item 7 builds the image from the lock with no project, so once 2.5 lands the
+    request has no code to run. Nor can a person give it a code input: the input would sit in
+    `awsds-sandbox-outputs`, under Sandbox's data key, on which the infrastructure user, the slice's
+    applier, holds no cryptographic action (D31). And the `dev` project is D41's engineering loop, with
+    the project role, its storage and the last released image. Recommended: **retire the slice, with `awsds-sandbox-outputs`
+    and the key statement `AllowApplicationJobRolesViaS3` in `sandbox/data/`**, which exist for it alone;
+    `APP_REGISTRY_CONSUMERS` keeps Sandbox, whose projects pull the application image (Stage 10
+    verification xxiii). The bucket holds `v0.1.0`'s two outputs until they expire on 2026-11-14 (2.4).
+    D21's sentence that the by-hand engineering apply lives in `sandbox/app/`, refusal 7's Sandbox clause
+    and the slice's row in `layers.py`, and this file's rows for the slice follow the decision. The
+    alternative keeps the slice as a hand-run check of a released image, its request given a code input,
+    which needs a key-policy statement admitting that input's writer: a widening of D31 for a person.
+22. **Which identity runs `deploy --targets dev`** (2.5; Stage 10 step 2.1; D41 item 3). D41 runs the
+    `dev` deploy from the laptop or a space while the application is engineered, and the lab ran it as
+    `InfrastructureAccess` (2026-10-15). No persona permission set holds an `airflow-serverless:` action or
+    the project's storage (`terraform-live/identity/sso/`), so a data scientist's own session deploys
+    nothing. Recommended: **the CLI pinned in the house image** (`awsds/dev-env`, copied under
+    `gitlab/awsds/dev-env/`), **run from a space as the project role**, inside the D13 boundary: the
+    identity that already creates the project's workflows from the portal (Stage 6i read `CreateWorkflow`
+    by the project role), is their execution role (D41 item 4) and holds the project's storage and key,
+    so no person gains a grant. Read first, from a space: the CLI's DataZone lookups as the project role,
+    decision 19's membership question asked of it, and the credentials its boto3 finds there. A CLI
+    version is then a house-image release, 29 min from tag to version on `default-v0.7.3` (1.6). The
+    alternative amends `DataScientistAccess` with the `airflow-serverless:` writes, `iam:PassRole` of the
+    project role and the project bucket's prefix and key, so the CLI runs from the laptop as the person: a
+    write path into a project's workflows from outside any space, which the persona set does not hold
+    today, with the same DataZone question.
+23. **When pass 4 runs** (step 3; Stage 9; Stage 10 passes 1-2). The pass table gives pass 4 "passes 1-2"
+    as its need, and "On ordering" exercises the chain with an application that touches no data until
+    Stage 9 builds the platforms. In D41's form the promotion writes into `awsds-<env>-outputs` (Stage 9
+    step 1.1, Stage 10 decision 17), declares a Glue job that needs Stage 9's job role (D41 item 9), and
+    creates the workflow in Stage 10's `orchestration/` slice, so a pass 4 run before those promotes an
+    `app-etl` without its workflow, or one whose Staging leg has nowhere to write. Recommended: **step
+    2.5, then Stage 9, then pass 4 together with Stage 10's passes 1 and 2**: the first promotion carries
+    the application D41 shapes, and Stage 10's pass 2 is the same pipeline's apply. The pass table, "On
+    ordering", Stage 9's pass order ("Pass 5 waits on nothing but pass 4 and Stage 8's chain") with its
+    8.5, which re-runs this stage's promotion, and Stage 10's Prerequisites follow the decision. The
+    alternative runs pass 4 now with the image and a slice that runs no workflow, proving the deploy
+    roles, the gate and Staging's teardown before Stage 9, and runs the promotion again whole once Stages
+    9 and 10 exist, as Stage 9's 8.5 plans.
 
 ## Verifications to answer while executing
 
@@ -1124,10 +1234,14 @@ Record every answer, including the ones that come out fine.
 | xvi | Does a successful `AssumeRole` of a deploy role by a caller other than the deploy runner fire 4.6's rule — and is a refused one found in CloudTrail by its `errorCode`? **Yes to both, read 2026-10-13**: the infrastructure user's assumptions fired `awsds-prod-deploy-misuse` (same account) and `awsds-staging-deploy-misuse` (from Production), one alerts message each, both emails received by the user; a refused one is recorded in the caller's account only, with `requestParameters` null and the role named in `errorMessage` | 4.6 |
 | xvii | Does the first pipeline-built `dev-env` keep `./aws/devenv.py` green: `DE-3` on the recipe before the tag, `DE-5` on the registered bytes after? **Yes, read 2026-10-15**: before the tag, `check-gitlab-mirror.py` `GM-4` read the recipe at `69ad278e` against the account's list, 70 names and sha256 `aafa08da98a61f5c` on both sides (2026-10-14); after it, `DE-3` the same on the copy at `c268de48`, the commit the release built, and `DE-5` version 7, `sha256:3b6d706a9a16…`, 70 names with the same sha256. **Again on `default-v0.7.3`, 2026-10-15**, with `sandbox/egress` down: `GM-4` by plan before the tag, 70 names and `aafa08da98a61f5c` on both sides, and `DE-5` on version 8, `sha256:38f4864c8b85…`, the same 70 names | 1.1, 1.6 |
 | xviii | Does the application image write to a processing output mount as uid 1000, with networking off? **Yes, read 2026-10-14**: pipeline #15's smoke stage, networking off, printed `uid 1000, output owned 0:0 755` and wrote the Parquet after `sudo -n chown`; the Sandbox job `app-etl-20261014T175359` ran the same command on the same image under network isolation and its two outputs arrived in `awsds-sandbox-outputs` | 2.2 |
-| xix | Which calls do `bundle` and `deploy --targets test` make, read in Sandbox's CloudTrail on the `test` project as `awsds-deploy-sandbox-test` (decision 19), and which of them does AWS's example policy for the CLI leave out? | 2.5 |
+| xix | Which calls do `bundle` and `deploy --targets test` make, read in Sandbox's CloudTrail on the `test` project as `awsds-deploy-sandbox-test` (decision 19), and which of them does AWS's example policy for the CLI leave out? Does DataZone answer the role's lookups with no membership of the project, and with one, and does `CreateWorkflow` pass the project's role under the role's own ceiling? | 2.5 |
 | xx | Does 2.5's third job write the bundle to `awsds-prod-releases` under `<application>/<tag>/` as `awsds-prod-runner`, and create the tag's release under `CI_JOB_TOKEN` on the lab's GitLab CE 19.4.2, its notes naming the object, the image digest and the SHA256? | 2.5, decision 20 |
 | xxi | Is a `DeleteObject` on `awsds-prod-releases` refused by the bucket's deny to a principal whose own policy allows it, while `InfrastructureAccess` deletes a test object, and is a Sandbox role refused a read? With the optional `If-None-Match` deny written, is a second upload under the same key refused, and with what response? | decision 20 |
 | xxii | Does the downloaded bundle's SHA256 equal the one 2.5's third job passed down the pipeline and the one `release.tf` records, and does a release job handed another file under the same key stop before it renders? | 2.5, 3.2, 3.6, 3.7 |
+| xxiii | Does a second `deploy` of the same workflow spend one of its 50 versions through `UpdateWorkflow`, or delete and re-create it, losing its run history, read on the `test` project's workflow and on the `dev` loop's, and what does a deploy past the 50th do? | 2.5; Stage 10 2.1 |
+| xxiv | With `sandbox/egress` down, does 2.5's endpoint check fail the `test` job in seconds, before `deploy` writes anything? | 2.5 |
+| xxv | Does `aws-smus-cicd-cli` 1.0.9 install and run on the deploy image's Python 3.14 with `UV_PYTHON_DOWNLOADS=never`? | 2.5 |
+| xxvi | After a release that removes a file the previous one carried, does the next `test` run read only what its bundle carries? | 2.5 |
 
 ## Risks
 
