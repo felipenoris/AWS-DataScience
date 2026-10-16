@@ -1717,3 +1717,26 @@ GitLab over HTTPS with the laptop's credential helper on the user's request. Eve
 - **[user] The merge** at 22:41:51 (`5d5391a`).
 - **[Claude] The copy**: `./scripts/gitlab-mirror.py` changed `README.md` in `gitlab/awsds/dev-env/` and
   `mirror.json`; `awsds/deploy-image`'s copy already held `7bf9acf`.
+
+## 2026-10-16 — the hardened runners' first boots (verification xxvii)
+
+Written by Claude in the laptop session that applied step 2.5a, as the infrastructure user through
+`awsds-infra-prod` (`InfrastructureAccess`), reads only. Every time is UTC.
+
+- **[user] `make gitlab-up`** after PR #147 reached `main`: the three runners recreated, launched 22:26:05
+  on `ami-0803a33fd43db1fbf`: `i-0e2329501161e2feb` (build), `i-08a2443adfe11fa0d` (test) and
+  `i-069d264f327b93700` (deploy).
+- **[Claude] Their first boots, read through the serial console** by 23:08, each on Amazon Linux
+  2023.12.20261016: the build runner 22:26:14 to 22:27:57 (107.2 s), the test runner 22:26:20 to
+  22:29:44 (211.8 s), the deploy runner 22:26:25 to 22:30:15 (240.2 s). Each passed "the CA root, from its
+  one source, once the instance's role answers" on its first read, with no `not yet` line and no
+  `FATAL`; `rpm -q` printed `gitlab-runner-19.4.1-1.x86_64` and
+  `gitlab-runner-helper-images-19.4.1-1.noarch`; `Verifying runner... is valid`, registered as
+  `awsds-prod-runner-i-0e2329501161e2feb`, `awsds-prod-runner-test-i-08a2443adfe11fa0d` and
+  `awsds-prod-runner-deploy-i-069d264f327b93700`; through the proxy `pypi.org` `200` and `10.31.0.1`
+  `403`, GitLab direct `200`. The deploy runner assumed its four deploy roles and pulled the job image
+  as `awsds-prod-ecr-deploy@sha256:ee31048e…7e91ac`, `v0.2.0`.
+- **[Claude] Verification xxvii, the boot half**: each runner read the root, installed 19.4.1-1 with its
+  helper images and registered. The retry was not exercised: the three roles predate their hosts, so no
+  read failed and no `not yet` line printed; only an apply that creates a role and its host together,
+  as at 16:36, reaches it. The plan half waits on the next Amazon Linux release.
