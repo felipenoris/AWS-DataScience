@@ -1277,22 +1277,23 @@ As the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureA
 login by the user; account ids masked as `<acct>` while reading.
 
 - **[user] In chat**: the second project's domain is to offer the house image.
-- **[Claude] Read** at 23:49Z-23:51Z. DataZone's domain holds two projects, `eighth-experimentation` and
-  `test-experimentation` (`4gqfau9xuo6e4w`, `ACTIVE`), the second created at 06:05:18Z from the same
-  project profile and by the same Identity Center user, `28f1b390-…`, whose default space each SageMaker
-  domain holds: D41's `test` project. Its domain `d-lfgbdrjncmsu`, `InService`, `LastModifiedTime`
-  06:06:23Z, is tagged `AmazonDataZoneBlueprint=Tooling` and environment `bi356s1sacz0cw`. Its
-  `DefaultUserSettings` carries the project role, one security group, idle settings alone in both app
-  settings with no `CustomImages` key, 16 GB of a 100 GB ceiling, the `shared` S3 mount, the portal
-  settings and `AutoMountHomeEFS`: outside `CustomImages`, the key paths of `d-p6gthxc82ckg`'s. One user
-  profile, one space (the default), its JupyterLab app `Deleted`.
-- **[Claude] Read**: `sandbox/dev-env/`'s output `custom_images`, one entry per app type with no
-  `ImageVersionNumber`; the image `CREATED`, versions 8 and 7 `CREATED`.
+- **[Claude] Read** at 23:49Z-23:51Z. `list-projects` returns two projects to this identity,
+  `eighth-experimentation` and `test-experimentation` (`4gqfau9xuo6e4w`, `ACTIVE`, created at 06:05:18Z):
+  by its name, D41's `test` project. Its domain `d-lfgbdrjncmsu`, `InService`, `LastModifiedTime`
+  06:06:23Z, is tagged `AmazonDataZoneBlueprint=Tooling` and `AmazonDataZoneEnvironment=bi356s1sacz0cw`.
+  Its `DefaultUserSettings` carries the project role, one security group, idle settings alone in both app
+  settings with no `CustomImages` key, a 16 GB volume under a 100 GB ceiling, the `shared` S3 mount, the
+  portal settings and `AutoMountHomeEFS`: outside `CustomImages`, the key paths of `d-p6gthxc82ckg`'s.
+  One user profile, one space (the default), its JupyterLab app `Deleted`. `sandbox/dev-env/`'s output
+  `custom_images` holds one entry per app type with no `ImageVersionNumber`; the image is `CREATED`, its
+  versions 8 and 7 `CREATED`.
 - **[Claude] The write**, authorized by the user in chat: `dev-env.md` §C6's CLI route, as D1 on
   `d-p6gthxc82ckg`. The block generated from the 23:51:01Z read differed from it in the two lists alone,
   and a re-read just before the send found the live block unchanged. `update-domain` at
-  2026-10-16T00:31:24Z: `InService` with no `FailureReason`, `LastModifiedTime` 00:31:26Z. Read back at
-  00:31:42Z, the block is identical to the one sent, and against the 23:51:01Z read the only change is the
-  two lists, `awsds-sandbox-dev-env` with `awsds-sandbox-dev-env-jupyterlab` and with
+  2026-10-16T00:31:24Z. Read back at 00:31:42Z: `InService` with no `FailureReason`, `LastModifiedTime`
+  00:31:26Z, the block identical to the one sent, and against the 23:51:01Z read the only change is the two
+  lists, `awsds-sandbox-dev-env` with `awsds-sandbox-dev-env-jupyterlab` and with
   `awsds-sandbox-dev-env-codeeditor`, no version number; the rest of the domain object unchanged, the
   default space's app still `Deleted`. The portal's picker in `test-experimentation` is not read (§C7).
+- **[Claude] Read after the write**: both projects come from the same project profile and were created by
+  the same Identity Center user, `28f1b390-…`, whose user profile and default space each domain holds.
