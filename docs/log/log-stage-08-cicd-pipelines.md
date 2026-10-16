@@ -1492,3 +1492,49 @@ infrastructure user through `awsds-infra-prod` (`InfrastructureAccess`). Every t
   `awsds-prod-runner-deploy-i-0cf719f584e9bdfcd`; through the proxy `pypi.org` `200` and `10.31.0.1`
   `403`, GitLab's sign-in page direct `200`; the job image pulled through the helper as
   `awsds-prod-ecr-deploy@sha256:1b1a5830…a53a`, `v0.1.0`'s digest.
+
+## 2026-10-16 — `awsds-sandbox-outputs` retired (decision 21)
+
+Written by Claude in the laptop session that applied step 2.5a, as the infrastructure user through
+`awsds-infra-sandbox-1` (`InfrastructureAccess`). The deletion of the two versions is the user's, by
+a command naming the same profile. Every time is UTC.
+
+- **[Claude] `make status ENV=sandbox`** (17:43:07): `sandbox/app/app-etl` `down`, 0 resources, so no
+  `make down` ran; `egress`, `warehouse-compute` and `probes` up.
+- **[Claude] The bucket read** with `list-object-versions`: two versions and no delete marker, both
+  `IsLatest` and written 2026-10-14T17:59:27Z: `app-etl/v0.1.0/trades.parquet` (1,780 bytes) and
+  `app-etl/v0.1.0/trades.summary.json` (407 bytes). The bucket policy holds `DenyInsecureTransport`
+  alone.
+- **[Claude] `sandbox/data/` planned**, after `git pull --ff-only`, to a saved file: `Plan: 0 to add, 1
+  to change, 6 to destroy`: the six resources of `module.outputs_bucket` (`force_destroy = false`)
+  and the data key `awsds-sandbox-data` losing `AllowApplicationJobRolesViaS3`, its other statements
+  unchanged.
+- **[Claude] The deletion handed to the user** at 17:53, in this session's chat: `aws s3api
+  delete-objects` on the bucket with both keys and their version ids, since Claude deletes no data
+  permanently.
+- **[user] The deletion's output**, pasted before 18:00:
+
+  ```json
+  {
+      "Deleted": [
+          {
+              "Key": "app-etl/v0.1.0/trades.parquet",
+              "VersionId": "algi3DIbv6NUBfebgvQFBLSJfE0V._He"
+          },
+          {
+              "Key": "app-etl/v0.1.0/trades.summary.json",
+              "VersionId": "zdwjxFYdQgdThMtjUtorpU18r5xHXEge"
+          }
+      ]
+  }
+  ```
+
+- **[Claude] The bucket empty** at 18:00:13: `list-object-versions` returns neither `Versions` nor
+  `DeleteMarkers`.
+- **[Claude] `sandbox/data/` applied** from the saved plan (18:00:35 to 18:00:52): `Apply complete!
+  Resources: 0 added, 1 changed, 6 destroyed.`; re-plan `No changes` (18:01:17).
+- **[Claude] Read back**: `head-bucket` on `awsds-sandbox-outputs` answers `404 Not Found`; the data
+  key's policy holds three statements, `EnableKeyAdministrationInThisAccount`,
+  `AllowSandboxLakeAccessRoleViaS3` and `AllowRedshiftServerlessViaServiceInThisAccount`. Outside
+  `sandbox/app/app-etl/`, no Terraform, script or GitLab copy names the bucket; `production/sagemaker/`'s
+  `awsds-${var.env}-outputs` is `awsds-prod-outputs`.
