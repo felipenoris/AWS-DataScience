@@ -39,15 +39,19 @@ and Stage 10's steps 1, 3, 5 and 6, which gain the chain's pieces.
 ## The decision
 
 The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC, 9 and 10 at
-05:45 UTC, each as recommended but 7, and confirmed the deploy mechanism of item 5 at 15:43 UTC.
+05:45 UTC, each as recommended but 7, confirmed the deploy mechanism of item 5 at 15:43 UTC, and
+took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 23:55 UTC.
 
 1. **The application format.** An application is a repository holding `manifest.yaml`,
    `workflows/<name>.yaml` in the CLI's notation and the code its tasks run: `src/` and the
    `Dockerfile` for the processing task, `code/` for the worker's Python and Bash tasks, `glue/` for
    the Glue scripts (`docs/plan/conventions.md`, "Application repository layout"). The workflow's
    YAML names a project's values as the CLI's variables (`{proj.id}`, `{proj.iam_role_arn}`,
-   `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`) and what the CLI does not resolve
-   as `${VAR}` (the image by digest, the job subnets, the data key), so one file serves every stage.
+   `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`) and a value no project holds as a
+   stage variable, `{env.VAR}` (the image by digest, the job subnets, the data key), so one file serves
+   every stage. The CLI writes an `{env.VAR}` as `{{ params.VAR }}` and fills it only in a run it starts,
+   passing the stage's `environment_variables` as the run's `OverrideParameters`, and leaves a `${VAR}`
+   in a workflow's YAML as written (its 1.0.9 code, read 2026-10-15; Stage 10 verification xxix).
    The awsds-workflows examples take the same form, one YAML per example, and its `render` learns
    the CLI's variables for an import into the portal without the CLI.
 2. **Where production runs.** Without a project: the pipeline creates the workflow from the bundle,
@@ -57,8 +61,13 @@ The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC
    `datazone:*` out of the `Workloads` SCP and make the project role the execution role.
 3. **The CLI's place.** It deploys from the `dev` project to the `test` project and makes the bundle
    the pipeline promotes: `deploy --targets dev` from the laptop or a space while the application is
-   engineered, `deploy --targets test` and `bundle` in the application's pipeline before the tag
-   (Stage 8 step 2.5), the identity of those jobs its decision 19.
+   engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release
+   tag, once its image is built and before the Staging leg (Stage 8 step 2.5), the identity of those
+   jobs its decision 19. `bundle` builds nothing, so the tag pipeline first builds what the
+   application needs built (a task's code package, a compiled extension) into the folders the
+   manifest includes, `bundle` and the `test` deploy read them in one job, and once `test` passes
+   the tag's GitLab release links to the bundle, stored where Stage 8 decision 20 says: the file
+   Staging and Production receive (proposed by the user at 22:06 UTC the same day).
 4. **The execution role in the CLI's stages.** The project role, as the CLI does: the model AWS
    documents for `dev` and `test`; a role per workflow there would need a field the CLI lacks.
 5. **The production scheduler.** EventBridge Scheduler with one Step Functions Standard state
@@ -155,6 +164,7 @@ takes it in the `orchestration/` slice of each deployment account, with the name
 | the role `<prefix>-step-functions` (trust `states.amazonaws.com`): EMR Serverless, Glue crawlers, SageMaker jobs, `sns:Publish`, `iam:PassRole`, logs, X-Ray | `awsds-<env>-chain-exec`: `airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on the account's workflows, and the log delivery; nothing on jobs. The reference's state machine chains jobs; here the workflow chains jobs (D28) and the machine chains workflows |
 | the role `<prefix>-eventbridge-scheduler` (trust `scheduler.amazonaws.com`): `states:StartExecution` on `stateMachine:<prefix>-*` | `awsds-<env>-chain-scheduler`, the same form on `awsds-<env>-chain-*` |
 | the role `gitlab_cicd`: `states:*`, `scheduler:*`, `events:*`, no `airflow-serverless` | `awsds-deploy-<env>` (Stage 8), the named actions of Stage 10 step 1.5 inside the boundary |
+| the module's input `eventbridge_role_arn`, given `<prefix>-eventbridge-scheduler`, trusted by `scheduler.amazonaws.com` alone, so a bridge rule needs a second trust on it or a second role | `awsds-<env>-chain-events`, trusted by `events.amazonaws.com`, the same `states:StartExecution`: a second role, so that CloudTrail tells a start on an inbox write from a scheduled one (Stage 10 step 3.6) |
 | `sagemaker_provisioning_policy`: `SchedulerAccess` on `schedule-group/*` and `schedule/SageMakerUnifiedStudio-*/*` | nothing to build: a portal workflow's schedule is a Scheduler schedule in that family of names (inferred from the policy; unread in the lab) |
 | the GitLab pipeline: validate, plan, manual apply | Stage 8's chain with its manual gate (3.5): the deploy job applies `staging/orchestration/`, then `production/orchestration/` |
 
@@ -175,11 +185,14 @@ there. Sandbox gets no machine and no schedule: `sandbox/workflows/` (rank 56) s
 - **D26** keeps "a deployment target is never associated"; the CLI deploys between the projects,
   never into a target.
 - **D28** gains class (4b), a chain's state machine and schedule, created by the pipeline with the
-  workflow; the lint runs on the rendered file, since the repository's YAML carries the CLI's
-  variables; the CLI's manifest draws the same line between content and activation.
+  workflow, and class (2d), a processing task's code under the release's prefix (item 7); the
+  execution role writes its application's result and inbox prefixes (item 10); the lint runs on the
+  rendered file, since the repository's YAML carries the CLI's variables; the CLI's manifest draws the
+  same line between content and activation.
 - **Stage 8** gains step 2.5 (`app-etl` as an application, the `test` deploy and the `bundle` in its
-  pipeline) and decision 19 (the identity those jobs run as); step 5.7 records the CLI as measured;
-  step 3.3 keeps Staging's integration tests, the application's run having been tested in `test`.
+  pipeline, the GitLab release linking to the bundle), decision 19 (the identity those jobs run as)
+  and decision 20 (where the release's bundle is stored); step 5.7 records the CLI as measured; step
+  3.3 keeps Staging's integration tests, the application's run having been tested in `test`.
 - **Stage 10** rewrites step 2 (the workflow is born in the repository and reaches the projects by
   the CLI, the pipeline deploying the bundle), adds steps 3.4 to 3.7 (the chain layer's base, a
   chain, the dependencies between workflows, the chain's failure rule), turns step 4.2 into the API
@@ -199,7 +212,7 @@ Measured rates, `us-west-2` (`docs/PRICING.md` §1.4): Step Functions Standard U
 transition, so a chain of three applications polled every 60 s for an hour makes about 550
 transitions, USD 0.014 per execution, and a chain of one about 180, USD 0.005; EventBridge Scheduler
 USD 1.00 per million invocations after 14 million free a month; the schedule group, the log group and
-the two roles meter nothing at rest. The reference's Region pays 0.0000375 per transition and 1.70
+the roles meter nothing at rest. The reference's Region pays 0.0000375 per transition and 1.70
 per million. The workflow's own cost is D7's, 0.088 per task-hour, unchanged.
 
 ## Revision trigger

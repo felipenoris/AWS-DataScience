@@ -317,7 +317,8 @@ terraform-live/
 │   │                     #     batch transform, the Model Registry consumer side)
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
-│   │                     #     orchestration was Production-only is gone)
+│   │                     #     orchestration was Production-only is gone), with the chain
+│   │                     #     layer above them (D41), as in production/orchestration/
 │   ├── egress/           # [E] interface endpoints only (11) - NO NAT, no default route
 │   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
 │   │                     #     down between sittings
@@ -433,9 +434,10 @@ terraform-live/
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
     │                     #     always set on VPC-Workloads' private subnets. Above the
     │                     #     workflows, the chain layer (D41): per account a schedule
-    │                     #     group, the machines' log group and two roles; per chain a
-    │                     #     Step Functions state machine, its Scheduler schedule and its
-    │                     #     failure rule; the provisioned-MWAA rung is gone
+    │                     #     group, the machines' log group and the chain roles; per
+    │                     #     chain a Step Functions state machine, its Scheduler schedule
+    │                     #     and its failure rule; per bridge an EventBridge rule; the
+    │                     #     provisioned-MWAA rung is gone
     └── app/
         └── app-etl/      # [E]
 
@@ -618,14 +620,14 @@ The template for an application written by a data scientist and intended for dep
 
 ```
 app-etl/
-├── src/app_etl/
+├── src/app_etl/      # the code a processing job reads as its input, never in the image (D28 class 2d)
 │   ├── pipeline.py   # the transformation
 │   └── __main__.py   # the command a processing job runs
 ├── tests/
 │   └── test_pipeline.py
 ├── samples/          # synthetic input: the image's smoke test and a Sandbox job read it
 ├── .gitlab-ci.yml    # the pipeline, with the shared gates of awsds/ci-gates
-├── Dockerfile        # the application image, FROM base by digest, and the job image
+├── Dockerfile        # the application image and the job image, FROM base by digest: the lock's dependencies, not the project
 ├── manifest.yaml     # the SageMaker application: its name, its content and its stages (D41)
 ├── workflows/
 │   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint on its rendered copy
@@ -642,20 +644,20 @@ application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
 release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
 the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
-bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment and copies it, with the
-code package built from `code/` when there is one, to the definitions home, and the `orchestration/`
-slices pin both objects (step 2.4). `glue/` holds the scripts the
-application's Glue jobs run: the release job copies them under the release's prefix, and the jobs the
-application slice declares name them there (Stage 10 decision 12).
+bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
+and copies it to the definitions home with the code package the tag pipeline built from `code/` when
+there is one, which the `orchestration/` slices pin, and `src/` beside them as the processing job's input
+(step 2.4). `glue/` holds the scripts the application's Glue jobs run: the release job copies them under
+the release's prefix, and the jobs the application slice declares name them there (Stage 10 decision 12).
 
-The directories follow D28's line between content and activation. `src/` is the code, built into the
-application image and run as a SageMaker job, and `glue/` the code of a step that reads or writes
-governed data. `workflows/` is the activation: the definition that starts that code on a schedule or on
-demand, with `code/` holding the orchestration code its Python and Bash tasks run on the worker, never a
-data path, the line the CLI's manifest draws the same way (D41). The application's slice is structure,
-applied by the pipeline at deploy time with no workflow. A notebook's logic graduates as code in `src/`
-plus a task in `workflows/app-etl.yaml` that calls it; the notebook itself does not graduate (6d decision
-due 14).
+The directories follow D28's line between content and activation. `src/` is the code a SageMaker job
+runs, read as the job's input on the application image, which carries the lock's dependencies (D41 item
+7), and `glue/` the code of a step that reads or writes governed data. `workflows/` is the activation:
+the definition that starts that code on a schedule or on demand, with `code/` holding the orchestration
+code its Python and Bash tasks run on the worker, never a data path, the line the CLI's manifest draws
+the same way (D41). The application's slice is structure, applied by the pipeline at deploy time with no
+workflow. A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
+calls it; the notebook itself does not graduate (6d decision due 14).
 
 ---
 

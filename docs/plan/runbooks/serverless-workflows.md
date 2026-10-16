@@ -9,8 +9,11 @@ code is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) (§T
 
 A serverless workflow is a MWAA Serverless workflow that the project's *Workflows* page creates: a YAML
 definition (Airflow 3.0.6 through dag-factory), run by workers the service starts per task, as the
-project role, inside the project's network. This runbook covers the three task kinds Stage 6i
-exercised: a SageMaker processing job in the house image, a `PythonOperator` and a `BashOperator`.
+project role, inside the project's network. Since [D41](../decisions/D41-sagemaker-application.md)
+(2026-10-15) an application's workflow is created instead from its repository by the CI/CD CLI, which
+deploys it to the `dev` and `test` projects (Stage 10 steps 2.1-2.2; the deploy to `dev` measured in the
+lab that day). This runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in
+the house image, a `PythonOperator` and a `BashOperator`.
 
 | Section | Audience | What it holds |
 |---|---|---|

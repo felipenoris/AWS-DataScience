@@ -11,11 +11,11 @@ target is still never associated, and the pipeline stays the deployer in Staging
 
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
-**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to Sandbox and Development; a registry, never a runtime.
+**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md), [D41](D41-sagemaker-application.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 10](../stages/stage-10-orchestration-promotion.md)
 
 ---
 

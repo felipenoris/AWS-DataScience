@@ -704,18 +704,24 @@ flowchart LR
 
 ### Promotion — Sandbox → Staging → Production
 
-- **The repository is the promotion vehicle** (D21, D28). The application follows the `app-etl` template
-  in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's artifact classes — the image,
-  the workflow definition, a per-workflow execution role, the orchestration resource, its log group and,
-  for ML, the model package group — carried by the repository, never by the portal.
+- **The repository is the promotion vehicle** (D21, D28, D41). The application is a SageMaker application
+  on the `app-etl` template in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's
+  artifact classes — the image, the workflow definition, the code its tasks read from S3, a per-workflow
+  execution role, the orchestration resource with its chain's state machine and schedule, its log group
+  and, for ML, the model package group — carried by the repository, never by the portal.
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
-  Steward's gate; the application pipeline tests, lints and builds the image on a release tag; the
-  promotion pipeline applies the tag into Staging, runs the integration tests, tears Staging down,
-  pauses at the Deployment Manager's manual gate with the test results and the Production plan in front
-  of them, and applies into Production as `awsds-deploy-prod`.
-- **A workflow is authored in a Sandbox project and rewritten into the repository** (Stage 10 steps
-  2.1-2.2): the D28 lint refuses anything portal-scoped, and the definition is deployed to
-  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role.
+  Steward's gate; the application pipeline tests, lints and builds the image and the application's code
+  package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
+  the Sandbox `test` project and run it there, and stores the bundle in Production's releases bucket,
+  which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20); the
+  promotion pipeline applies the tag and that bundle into Staging, runs the integration tests, tears
+  Staging down, pauses at the Deployment Manager's manual gate with the test results and the Production
+  plan in front of them, and applies into Production as `awsds-deploy-prod`.
+- **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
+  deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
+  portal-scoped in the copy rendered per account, and in Production the definition is deployed to
+  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
+  by its chain's state machine.
 - **Staging tests against a mirror.** Its databases carry the lake's names, definitions and LF-Tag keys
   and values over sampled or synthetic rows (Stage 9 4.1), and no share reaches it (D20). The integration
   test catches schema, permission and wiring errors against the same definitions; the cross-account

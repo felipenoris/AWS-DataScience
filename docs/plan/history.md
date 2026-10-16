@@ -731,6 +731,45 @@ one module tag.
   xxii-xxvi, Stage 8 step 2.5 and decision 19; INT-14's terminal rung is the `CreateWorkflow` call
   from the release job, design B having left the ladder.
 
+- **2026-10-15 — The plan read against D41.** A review the user asked for after D41 merged corrected what
+  the decision left inconsistent. The `test` deploy and the bundle move onto the release tag, after the
+  image is built and before the Staging leg, the bundle packed from the checkout and the same checkout
+  deployed to `test`, since the CLI's 1.0.9 code reads a connection-less `content.storage` item from the
+  manifest's folder in both commands and `deploy` never takes it from the bundle (D41 item 3, Stage 8
+  step 2.5, Stage 10 step 2.2). The user proposed that evening that the tag pipeline end in a GitLab
+  release linking to the bundle, the file Staging and Production receive: the pipeline builds what the
+  application needs built before `bundle`, which builds nothing, the `test` deploy reads the same
+  folders, and a release job checks the downloaded bundle's SHA256 before it writes from it (Stage 8
+  steps 2.5 and 3, Stage 10 step 2.4), Stage 8 decision 20, taken the same night, storing the file in
+  `awsds-prod-releases`, a versioned bucket of Production's `registry/` slice whose policy refuses a
+  deletion to all but `InfrastructureAccess`: the user first took the application project's GitLab
+  package registry and replaced it once GitLab's page showed that any Developer of the project can delete
+  a package there. Each release job checks the SHA256 the pipeline computed, never a record kept beside
+  the file, and Stage 7 keeps GitLab's packages feature off. D41 item 1's `${VAR}` becomes `{env.VAR}`:
+  the CLI leaves a `${VAR}` in a workflow's YAML as written and fills an `{env.VAR}` only in a run it
+  starts. D28 gains class (2d), a processing task's code under the release's `src/` prefix, which the
+  lint's new rule (h) checks against the release's manifest. The execution role's S3 writes of D41 item
+  10 and the release job's copy, whose runner sits in a VPC the outputs bucket's perimeter does not
+  trust, need statements in that bucket's policy and its key's, which delegates nothing to IAM (Stage 10
+  steps 1.3, 2.4). The bridge rule gets a role of its own, `awsds-<env>-chain-events`. Decision 13 takes
+  the standalone workflow's cron and pause out of step 6.1, verification v and `orchestration.py`, whose
+  `OR-1` now fails on a workflow's cron. D7, D26, `conventions.md` and `architecture.md` lose wording
+  from before 6b and 6i. Stage 10 decision 6 now recommends a copy per account, rendered through a
+  translation table, and decision 10 the inbox consume on the execution role, decisions 17 (Staging's
+  outputs bucket) and 18 (a second workflow for the chain proofs) are new, and verifications xxvii to
+  xxix join Stage 10 and xix to xxii Stage 8, whose decision 19 now says that refusal 8 cannot hold a CLI
+  job and whose decision 20 is new. Nothing in AWS changed.
+
+- **2026-10-16 — The review's decisions taken.** The user took the decisions the review left, one at a
+  time between 23:54 UTC on 2026-10-15 and 00:02 UTC: Stage 8 decision 19 as recommended, the CLI's
+  `test` deploy running as `awsds-deploy-sandbox-test`, a Sandbox role only the deploy runner assumes,
+  with D21 recording the exception to its surviving objection while refusal 8 keeps every slice apply out
+  of Sandbox; D41 item 1's `{env.VAR}`; Stage 10 decisions 6, 10 and 17 as recommended, a rendered copy
+  per account, the execution role emptying its own inbox and `awsds-staging-outputs` as Staging's home,
+  so that `OR-5` reads each account's own outputs bucket; decision 18 as the alternative, the chain's
+  order and verification xxv waiting for a second application; and `src/` as the release's prefix for a
+  processing task's code, decision 7's. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
