@@ -33,7 +33,7 @@ and the pipeline deploys its bundle here (D41).
 | `production/workloads/` + `staging/foundation/` (amended) | `vpc-v0.4.0`: the S3 gateway endpoint's policy admits `mwaa-serverless-code-files-*`, the service bucket a worker reads a task's `Code` from. `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage 3 | `[P]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
 | `production/data/` (amended) | on `awsds-prod-outputs`: the `Object Created` notification to EventBridge for the bridge decision 16 took (3.6), decision 12's statement on `workflows/*`, and a principal branch admitting the release job's role to `workflows/*` from the deploy runner's network, which the perimeter does not trust (2.4); on `alias/awsds-prod-data`, which delegates nothing to IAM, the deploy role and the workflows' execution roles named (1.3, 1.5, 2.4) | `[P]` |
-| `staging/data/` (amended) | `awsds-staging-outputs`, if decision 17 takes its recommendation: Staging's copy of what `awsds-prod-outputs` holds for a workflow (its definition, its code, its result file and its inbox), with the same statements, under `alias/awsds-staging-data` | `[P]` |
+| `staging/data/` (amended) | `awsds-staging-outputs` (decision 17): Staging's copy of what `awsds-prod-outputs` holds for a workflow (its definition, its code, its result file and its inbox), with the same statements, under `alias/awsds-staging-data` | `[P]` |
 | `identity/sso/` (amended) | `airflow-serverless:` reads for the persona that diagnoses a run (decision 11), beside the `states:` and `scheduler:` reads it holds, which read the chain layer: no set holds an `airflow-serverless:` read today, so 3.2's diagnosis has no reader | `[P]` |
 | `app-etl` repository (GitLab) | the SageMaker application (D41): `manifest.yaml`, the workflow definition in the CI/CD CLI's notation (`workflows/app-etl.yaml`), the code package its Python and Bash tasks run (D28 class 2b, built from `code/` when there are such tasks), the processing task's code (D28 class 2d, `src/`, beside the `Dockerfile` that builds the lock's dependencies into the application image), the scripts its Glue steps run (D28 class 2c, from `glue/`); its Terraform is `terraform-live/<env>/app/app-etl/` (Stage 8 decision 12), and **the D28 promotion lint** is a command of `awsds-workflows` (Stage 8 decision 9) the pipeline runs on the rendered file. No ASL lives here: a chain's definition is the `orchestration/` slice's (decision 14) | — |
 | Domain portal (console, recorded) | the serverless-Workflows surface of a Sandbox project, as 6i used it (the `engineering` project profile left at 6b); the **OnDemand Workflows blueprint stays off** (it provisions a fee-bearing MWAA environment) | — |
@@ -48,10 +48,10 @@ and its failure rule), the schedule group **`awsds-<env>-chains`**, its log grou
 **`awsds-<env>-chain-scheduler`** and **`awsds-<env>-chain-events`**, and the bridge rule
 **`awsds-<env>-inbox-<app>`** (3.4-3.6); the log group
 **`/awsds/<env>/wf/app-etl`**; the definitions home **`s3://awsds-prod-outputs/workflows/<app>/<tag>/`**,
-Staging's in the bucket decision 17 names; the model-approval rule **`awsds-prod-model-approval`**; and,
-consumed from earlier stages: the job roles `awsds-prod-job-exec` and `awsds-staging-job-exec` (Stage 9)
-and the application image by digest (Stage 8). The task-definition family
-`awsds-prod-app-etl` exists only if decision 8 keeps an ECS step.
+Staging's under the same prefix of **`awsds-staging-outputs`** (decision 17); the model-approval rule
+**`awsds-prod-model-approval`**; and, consumed from earlier stages: the job roles `awsds-prod-job-exec`
+and `awsds-staging-job-exec` (Stage 9) and the application image by digest (Stage 8). The
+task-definition family `awsds-prod-app-etl` exists only if decision 8 keeps an ECS step.
 
 ```mermaid
 flowchart LR
@@ -677,8 +677,9 @@ proofs are the stage's own (Lesson 20):
   of step 4's ladder, and the wording that forced it.
 - **The scheduled run (6.1):** one execution started by the schedule unattended and the workflow run it
   started, then the pause lever holding.
-- **The chain's order (3.5, 3.6):** the second workflow (decision 18) starts only after the first run
-  ends, and a missing `_SUCCESS` marker fails the consuming run rather than reading a partial output.
+- **The chain's order (3.5, 3.6):** a second application's workflow starts only after the first run
+  ends, and a missing `_SUCCESS` marker fails the consuming run rather than reading a partial output;
+  open until a second application exists (decision 18).
 - **The failure path (3.2):** the rule fires on a broken step, and the diagnosis is reachable from the
   service APIs alone — recorded, because there is no environment to log into.
 - **The lint (2.3):** a portal-scoped definition rejected in CI, and a code package whose `python_callable`
@@ -771,8 +772,8 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    every copy under `awsds-prod-outputs/workflows/<app>/<tag>/<env>/` with Staging reading its own through
    a bucket-policy and key grant, follows the precedent of the images Staging pulls from Production's ECR
    (INT-07, D14), but writes into Production before the gate and is a new `INT` row. Staging's home is
-   decision 17. `OR-5` encodes today's text (every definition under `awsds-prod-outputs/workflows/`) and
-   changes with this decision.
+   decision 17's `awsds-staging-outputs`, and `OR-5` reads each account's definitions in that account's
+   bucket. **Taken by the user 2026-10-15, as recommended.**
 7. **Where a promoted processing job's dependencies come from** (2.3). [6i](stage-06i-sandbox-orchestration.md)
    ran the Sandbox path: the folder [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1
    builds, as the job's code input (its verification xvi). The processing API pins no version on an
@@ -790,7 +791,9 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
    in `dev` and `test`, and the release job writing it under the release's prefix, kept from overwrite by
    decision 12's statement: D28's class (2d), checked by Stage 8 5.6's rule (h). The image is built on the
    release tag alone, so a change of the lock first runs in a job in the `test` project (Stage 8 step 2.5),
-   and an iteration in `dev` runs the last released image.
+   and an iteration in `dev` runs the last released image. The user took the release's prefix `src/` on
+   2026-10-16, the name of the application's folder, so that `code/` names the worker's code package
+   alone.
 8. **The container step: a SageMaker processing job or an ECS task** (1.3, 2.1). Recommended: **the
    processing job**, the shape 6i measured. The job role's trust stays `sagemaker.amazonaws.com` and
    `glue.amazonaws.com`, the job settings bind it (Stage 9 3.5), the service pulls its image, and no `ecs`
@@ -806,7 +809,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     used: since D41 item 10 the execution role writes S3 outside the lake anyway (the result file and the
     inbox markers, 1.3), so a Glue step that only empties an inbox would add a job and keep no permission
     off the role that matters. The alternative is the consume-and-delete in a Glue step, which keeps the
-    delete off the execution role.
+    delete off the execution role. **Taken by the user 2026-10-16, as recommended.**
 11. **Who reads a run's status** (3.2, 6.2). Recommended: **`DeploymentManagerAccess` gains the
     `airflow-serverless:` reads** (`ListWorkflows`, `GetWorkflow`, `ListWorkflowRuns`, `GetWorkflowRun`,
     `ListTaskInstances`, `GetTaskInstance`) beside its `states:` and `scheduler:` reads (`ReadOrchestrationExecutionStatus`), which
@@ -860,7 +863,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     EventBridge, and the deploy role and the execution roles named in the key policy, so the Staging leg
     runs under the statements Production runs under (D20). The alternative, prefixes of
     `awsds-staging-data`, saves a bucket and puts decision 12's statement on the bucket the sample seed
-    (Stage 9 4.4) rewrites.
+    (Stage 9 4.4) rewrites. **Taken by the user 2026-10-15, as recommended.**
 18. **The second workflow the chain proofs need** (3.5, 3.6, verification xxv). The order inside a chain,
     the missing marker that fails a run and the bridge each need a workflow that consumes another's
     marker, and `app-etl` is one workflow. Recommended: **a second workflow in `app-etl`'s manifest,
@@ -868,7 +871,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     operator task, which the `app-etl` chain runs after `app-etl` and which a second chain, started by the
     bridge from an inbox write, runs again: a few worker task-minutes per proof, inside the stage that
     builds the layer. The alternative waits for a second application, and the deliverable and
-    verification xxv stay open until one exists.
+    verification xxv stay open until one exists. **Taken by the user 2026-10-16, as the alternative.**
 
 ## Verifications to answer while executing
 

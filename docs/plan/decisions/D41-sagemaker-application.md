@@ -39,7 +39,8 @@ and Stage 10's steps 1, 3, 5 and 6, which gain the chain's pieces.
 ## The decision
 
 The user took the items on 2026-10-15: 1 to 6 at 04:40 UTC, 7 and 8 at 05:29 UTC, 9 and 10 at
-05:45 UTC, each as recommended but 7, and confirmed the deploy mechanism of item 5 at 15:43 UTC.
+05:45 UTC, each as recommended but 7, confirmed the deploy mechanism of item 5 at 15:43 UTC, and
+took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 23:55 UTC.
 
 1. **The application format.** An application is a repository holding `manifest.yaml`,
    `workflows/<name>.yaml` in the CLI's notation and the code its tasks run: `src/` and the

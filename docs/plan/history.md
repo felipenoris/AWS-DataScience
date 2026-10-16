@@ -760,6 +760,16 @@ one module tag.
   xxix join Stage 10 and xix to xxii Stage 8, whose decision 19 now says that refusal 8 cannot hold a CLI
   job and whose decision 20 is new. Nothing in AWS changed.
 
+- **2026-10-16 — The review's decisions taken.** The user took the decisions the review left, one at a
+  time between 23:54 UTC on 2026-10-15 and 00:02 UTC: Stage 8 decision 19 as recommended, the CLI's
+  `test` deploy running as `awsds-deploy-sandbox-test`, a Sandbox role only the deploy runner assumes,
+  with D21 recording the exception to its surviving objection while refusal 8 keeps every slice apply out
+  of Sandbox; D41 item 1's `{env.VAR}`; Stage 10 decisions 6, 10 and 17 as recommended, a rendered copy
+  per account, the execution role emptying its own inbox and `awsds-staging-outputs` as Staging's home,
+  so that `OR-5` reads each account's own outputs bucket; decision 18 as the alternative, the chain's
+  order and verification xxv waiting for a second application; and `src/` as the release's prefix for a
+  processing task's code, decision 7's. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

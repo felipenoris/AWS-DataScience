@@ -655,7 +655,7 @@ there.
 | Which type did each run read, `ON_DEMAND` expected for a run a chain's machine starts? | 7 — reported, the type read per run because `list-workflow-runs` returns it null; the unattended proof is the machine's execution (verification xxiv), the stage's own |
 | Is a provisioned MWAA environment burning anywhere (0.29 USD/h each)? | 8, decided by `OR-6` — an account whose listing did not answer is a note, never a pass |
 | Did the service-linked role appear at the first `CreateWorkflow` in each account (Lesson 17, steps 0.3/1.6)? | 9 — reported both ways, absent is the pre-stage baseline |
-| Are the definitions under `s3://awsds-prod-outputs/workflows/`, with the S3 `VersionId` pinned (decision 1)? | 9, decided by `OR-5`, which changes with decision 6 |
+| Is each account's definition under `workflows/` in its own outputs bucket, `awsds-prod-outputs` or `awsds-staging-outputs`, with the S3 `VersionId` pinned (decisions 1, 6 and 17)? | 9, decided by `OR-5` |
 | How many workflow versions exist against the 50-version quota (risk 4)? | 2, decided by `OR-7` |
 | Was every registry write `awsds-deploy-prod` (INT-07's registry half, Stage 9 3.2 read as behaviour)? | 10, decided by `OR-8` |
 | Does any Sandbox carry a `Workflows` blueprint configuration? | 11 — context; `./aws/studio.py` `US-3` is the check |

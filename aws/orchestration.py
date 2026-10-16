@@ -34,8 +34,9 @@
 # The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - workflows, their roles and their failure rules carry awsds-<env>-wf- (steps 1.1, 1.3, 3.1)
 #   - log groups: /awsds/<env>/wf/ (step 1.1)
-#   - the definitions home is s3://awsds-prod-outputs/workflows/, with the object's S3
-#     VersionId pinned (steps 1.1, 2.4, decision 1)
+#   - each account's definitions home is workflows/ in its own outputs bucket,
+#     awsds-prod-outputs or awsds-staging-outputs, with the object's S3 VersionId pinned
+#     (steps 1.1, 2.4, decisions 1, 6 and 17)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
 #   - no workflow carries a cron of its own: a chain's Scheduler schedule starts every
 #     production workflow (decision 13), so OR-1 fails on one
@@ -71,7 +72,8 @@ SANDBOX_PREFIX = "awsds-infra-sandbox-"
 # The contracts (see header).
 AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
-DEF_BUCKET = "awsds-prod-outputs"
+# Each account holds its own rendered copy in its own outputs bucket (decisions 6 and 17).
+DEF_BUCKETS = {"staging": "awsds-staging-outputs", "prod": "awsds-prod-outputs"}
 DEF_PREFIX = "workflows/"
 LAKE_FRAG = "awsds-data-"
 WF_PRINCIPAL = "airflow-serverless.amazonaws.com"
@@ -509,14 +511,14 @@ def main(argv: list) -> int:
             state = "(read failed)"
         slr_rows.append((env, state))
 
-    # --------------------------------------- the definitions home (step 2.4, decision 1)
-    def_rows: list = []  # (key, size)
-    if prod_live:
-        res = cli_for(PROD_PROFILE).run(
+    # ------------------------ each account's definitions home (step 2.4, decisions 1, 6, 17)
+    def_rows: list = []  # (env, bucket, key, size)
+    for env, p in measured:
+        res = cli_for(p).run(
             "s3api",
             "list-objects-v2",
             "--bucket",
-            DEF_BUCKET,
+            DEF_BUCKETS[env],
             "--prefix",
             DEF_PREFIX,
             "--max-keys",
@@ -528,7 +530,7 @@ def main(argv: list) -> int:
             log=False,
             tolerate="NoSuchBucket|AccessDenied",
         )
-        def_rows = [(str(k), str(s)) for k, s in _json(res, [])]
+        def_rows += [(env, DEF_BUCKETS[env], str(k), str(s)) for k, s in _json(res, [])]
 
     # -------------- the registry record: who registered, who approved (INT-07's registry half)
     reg_rows: list = []  # (time, event, caller tail)
@@ -735,18 +737,19 @@ def main(argv: list) -> int:
     if prod_live and not any(r == APPROVAL_RULE for _, r, _ in rule_rows):
         checks.note("OR-4", f"prod: rule {APPROVAL_RULE}", "absent - expected before step 5.3.")
 
-    # OR-5: each definition sits in the definitions home with its S3 version pinned.
+    # OR-5: each definition sits in its own account's definitions home with its S3 version pinned.
     for env, ws in workflows.items():
+        home = DEF_BUCKETS[env]
         for name, d in ws.items():
             if not d["def_bucket"]:
                 continue
             what = f"definition of {env}: {name}"
             loc = f"s3://{d['def_bucket']}/{d['def_key']}"
-            if d["def_bucket"] != DEF_BUCKET or not d["def_key"].startswith(DEF_PREFIX):
+            if d["def_bucket"] != home or not d["def_key"].startswith(DEF_PREFIX):
                 checks.fail(
                     "OR-5",
                     what,
-                    f"{loc} - outside s3://{DEF_BUCKET}/{DEF_PREFIX} (decision 1).",
+                    f"{loc} - outside s3://{home}/{DEF_PREFIX} (decisions 1, 6 and 17).",
                 )
             elif not d["def_version"]:
                 checks.fail(
@@ -986,16 +989,15 @@ once applied. This section is the reading behind that control.""")
             rep.line(f"{SLR_NAME}: not measured.")
         rep.line()
         if def_rows:
-            rep.tabulate(
-                [f"s3://{DEF_BUCKET}/{DEF_PREFIX}* KEY\tSIZE"] + ["\t".join(r) for r in def_rows]
-            )
+            rep.tabulate(["ENV\tBUCKET\tKEY\tSIZE"] + ["\t".join(r) for r in def_rows])
         else:
-            rep.line(f"No object under s3://{DEF_BUCKET}/{DEF_PREFIX} (pre-2.4).")
+            rep.line(f"No object under {DEF_PREFIX} in any definitions home read (pre-2.4).")
         rep.text("""
 The SLR appears at the first CreateWorkflow in each account (Lesson 17), Staging
 before Production - 0.3 records the absent baseline, 1.6 the enumerated arrival.
-The definitions home is decision 1's: versioned, CMK-protected, perimeter-branched
-since Stage 9 1.1.""")
+Each account's definitions home is its own outputs bucket (decisions 6 and 17):
+Production's, decision 1's, is versioned, CMK-protected and perimeter-branched since
+Stage 9 1.1, and Staging's, awsds-staging-outputs, is built by the same module call.""")
 
         # ==============================================================================
         rep.h1("10. The registry record: who registered, who approved (INT-07)")
@@ -1037,8 +1039,8 @@ What the checks are, and where each comes from:
   OR-3  per-workflow roles bounded, airflow-serverless trust only, no lake reach;
         NetworkConfiguration set, two AZs, no default route (steps 1.2, 1.3)
   OR-4  the *-failed rules and awsds-prod-model-approval ENABLED (steps 3.1, 5.3)
-  OR-5  definitions under s3://awsds-prod-outputs/workflows/, VersionId pinned
-        (steps 1.1, 2.4, decision 1)
+  OR-5  definitions under workflows/ in each account's own outputs bucket,
+        VersionId pinned (steps 1.1, 2.4, decisions 1, 6 and 17)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)
   OR-8  every registry write was awsds-deploy-prod (INT-07, Stage 9 3.2)""")
