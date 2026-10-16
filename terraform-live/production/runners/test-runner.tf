@@ -68,7 +68,7 @@ resource "aws_iam_instance_profile" "test_runner" {
 resource "aws_instance" "test_runner" {
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same session buys nothing - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_88:no public address is set here and none is inherited - the subnet is the private tier, which has no default route
-  ami           = data.aws_ssm_parameter.al2023.value
+  ami           = data.aws_ssm_parameter.al2023.insecure_value
   instance_type = var.test_runner_instance_type
   ebs_optimized = true
 
@@ -78,17 +78,22 @@ resource "aws_instance" "test_runner" {
   associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/test-user-data.sh.tftpl", {
-    proxy_url           = local.proxy_url
-    no_proxy            = local.no_proxy
-    region              = var.region
-    gitlab_url          = local.gitlab_url
-    gitlab_host         = local.gitlab_host
-    ca_root_param       = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
-    runner_token_secret = data.terraform_remote_state.foundation.outputs.test_runner_token_secret_arn
-    concurrent_jobs     = 2
-    name_tag            = local.test_runner_name
+    proxy_url             = local.proxy_url
+    no_proxy              = local.no_proxy
+    region                = var.region
+    gitlab_url            = local.gitlab_url
+    gitlab_host           = local.gitlab_host
+    ca_root_param         = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
+    runner_token_secret   = data.terraform_remote_state.foundation.outputs.test_runner_token_secret_arn
+    concurrent_jobs       = 2
+    name_tag              = local.test_runner_name
+    gitlab_runner_version = var.gitlab_runner_version
   })
   user_data_replace_on_change = true
+
+  # The boot's first read needs the role's inline policy, and the instance profile waits for the
+  # role alone.
+  depends_on = [module.test_runner_role]
 
   metadata_options {
     http_endpoint = "enabled"
@@ -109,5 +114,10 @@ resource "aws_instance" "test_runner" {
   # ./aws/supplychain.py SC-10's `awsds-prod-runner*` counts it among the runners.
   tags = {
     Name = local.test_runner_name
+  }
+
+  lifecycle {
+    # The AMI is the parameter's value when the host is created (data.tf, Stage 8 decision 25).
+    ignore_changes = [ami]
   }
 }

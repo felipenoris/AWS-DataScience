@@ -15,6 +15,7 @@ NAME_TAG="${name_tag}"
 ECR_REGISTRY="${ecr_registry}"
 ECR_HELPER_VERSION="${ecr_helper_version}"
 ECR_HELPER_SHA256="${ecr_helper_sha256}"
+RUNNER_VERSION="${gitlab_runner_version}"
 
 export http_proxy="$PROXY" https_proxy="$PROXY"
 export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
@@ -31,8 +32,20 @@ no_proxy=$NOPROXY
 NO_PROXY=$NOPROXY
 ENVEOF
 
-echo "--- the CA root, from its one source"
-aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text > /etc/pki/ca-trust/source/anchors/awsds-root.crt
+# The boot's first AWS call. IAM is eventually consistent, so it can meet NoCredentials or
+# AccessDenied while this host's instance profile and its role's policies propagate: the test
+# runner's did on 2026-10-16, 28 s after its role and profile were created, and its boot stopped
+# there. The read is retried, the wait doubling up to 32 s, for five minutes; then the boot stops
+# with the call's last error.
+echo "--- the CA root, from its one source, once the instance's role answers"
+deadline=$((SECONDS + 300))
+delay=2
+until err="$(aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text 2>&1 >/etc/pki/ca-trust/source/anchors/awsds-root.crt)"; do
+  [ "$SECONDS" -lt "$deadline" ] || { echo "FATAL: the CA root unread after five minutes: $(echo "$err" | tail -n 1)" >&2; exit 1; }
+  echo "    not yet, again in $delay s: $(echo "$err" | tail -n 1)"
+  sleep "$delay"
+  delay=$((delay < 32 ? delay * 2 : 32))
+done
 update-ca-trust
 mkdir -p /etc/gitlab-runner/certs
 cp /etc/pki/ca-trust/source/anchors/awsds-root.crt "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
@@ -47,7 +60,7 @@ curl -fsS --max-time 120 -o /usr/local/bin/docker-credential-ecr-login \
 echo "$ECR_HELPER_SHA256  /usr/local/bin/docker-credential-ecr-login" | sha256sum -c -
 chmod 755 /usr/local/bin/docker-credential-ecr-login
 
-echo "--- the runner package repository, proxied per repository"
+echo "--- gitlab-runner $RUNNER_VERSION, from its repository, proxied per repository"
 cat > /etc/yum.repos.d/runner_gitlab-runner.repo <<'REPOEOF'
 [runner_gitlab-runner]
 name=runner_gitlab-runner
@@ -63,8 +76,10 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 REPOEOF
 echo "proxy=$PROXY" >> /etc/yum.repos.d/runner_gitlab-runner.repo
-dnf -y -q install gitlab-runner
-gitlab-runner --version | head -n1
+# The release is variables.tf's pin. The package requires gitlab-runner-helper-images of its own
+# release, so dnf installs both at it, and a release the repository lacks stops the boot here.
+dnf -y -q install "gitlab-runner-$RUNNER_VERSION"
+rpm -q gitlab-runner gitlab-runner-helper-images
 
 echo "--- proxy (2/5): the docker daemon"
 mkdir -p /etc/systemd/system/docker.service.d
