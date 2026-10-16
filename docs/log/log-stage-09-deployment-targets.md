@@ -11,12 +11,13 @@ Account ids are replaced by the account's name in angle brackets.*
 
 - **[user] The pass is written from a cloud session.** In the Claude project's thread "Plano do
   AWS-DataScience em paralelo", at 05:56 UTC, the user answered the card *"Avançar a etapa 9 escrevendo o
-  código aqui ou numa sessão no seu Mac?"* with *"Código aqui"*: Claude writes pass 1 in a pull request,
-  and a session on the laptop reads, plans, runs the battery and applies with the user's authorization.
-  The card's context, in Claude's words, said that no decision of the stage blocks the pass, that the
-  recommended options would be followed, and that 3.7 would refuse serverless inference without waiting
-  for Stage 17's reading. The cloud session holds no AWS credential: no `aws` call, plan or battery ran in
-  it, so nothing below is a measurement of AWS, and pass 0's readings come first on the laptop.
+  código aqui ou numa sessão no seu Mac?"* with *"Código aqui"*: Claude writes pass 1 in a pull request
+  (PR #144), and a session on the laptop reads, plans, runs the battery and applies with the user's
+  authorization. The card's context, in Claude's words, said that no decision of the stage blocks the
+  pass, that the recommended options would be followed, and that 3.7 would refuse serverless inference
+  without waiting for Stage 17's reading. The cloud session holds no AWS credential: no `aws` call, plan
+  or battery ran in it, so nothing below is a measurement of AWS, and pass 0's readings come first on the
+  laptop.
 - **[Claude] Decisions taken as recommended, under that answer.** Decision 4: the window is
   `var.debug_window_end`, a `DateLessThan` on `aws:CurrentTime` whose default, `2026-01-01T00:00:00Z`,
   sits in the past; opening it is one apply with `-var debug_window_end=<the approved end>`, and a
@@ -24,7 +25,10 @@ Account ids are replaced by the account's name in angle brackets.*
   Decision 10: both Sandbox readers, matched by `aws:PrincipalArn`. Step 3.7: shape (b), a deny in the
   same document. The roles name `awsds-prod-outputs`, `awsds-prod-derived` and `alias/awsds-prod-data`,
   the contracts `./aws/deploytargets.py` reads (`OUT_BUCKET`, `RESULTS_BUCKET`, `PROD_CMK_ALIAS`), so pass
-  3 creates them under those names; decisions 1, 2 and 11 stay pass 3's.
+  3 creates them under those names; decisions 1, 2 and 11 stay pass 3's. Which role an application's
+  job runs as in Staging and Production, among the three names Stage 8 step 2.5 lists, stays that
+  step's question; this pass creates Stage 9's `awsds-prod-job-exec`, the name Stage 5a step 1.4's
+  drop-box statements carry.
 - **[Claude] 7.3, the ECR non-grant.** A cross-account pull of the application image needs the
   repository policy only, no key grant: ECR decrypts a pull through the grants it holds on the
   repository key, so the puller needs no `kms:Decrypt`, and no statement of this pass grants one.
