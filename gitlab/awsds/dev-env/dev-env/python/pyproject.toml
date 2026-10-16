@@ -104,6 +104,11 @@ dependencies = [
     # The connection recipe is runbooks/redshift-connection.md section J.
     "redshift-connector",
 
+    # The SageMaker CI/CD CLI, pinned: an application's `deploy --targets dev` runs from a space as the
+    # project role (AWS-DataScience's Stage 8 decision 22, D41), so a CLI version is a release of this
+    # image. The deploy image pins the same version by hash.
+    "aws-smus-cicd-cli==1.0.9",
+
     # The ML frameworks.
     "tensorflow",
     "torch",
@@ -148,8 +153,11 @@ dependencies = [
     "aws-glue-sessions",
     "sagemaker-studio-cli",
 
-    # The agent SDKs the distribution carries.
-    "mcp",
+    # The agent SDKs the distribution carries. mcp stays on its 1.x line from 1.30.0, that line's fix
+    # for CVE-2026-59951 (GHSA-84m7-p3x7-pcfv): strands-agents requires mcp<2.2 (1.55.1 to 1.61.1,
+    # read 2026-10-16), so 2.2.0, the 2.x line's fix, cannot resolve. The bound goes when strands
+    # admits mcp 2.2.
+    "mcp>=1.30.0,<2",
     "strands-agents",
     "strands-agents-tools",
     "strands-agents-mcp-server",

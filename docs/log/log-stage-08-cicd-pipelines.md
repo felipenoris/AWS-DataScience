@@ -1618,3 +1618,39 @@ Written by Claude in the laptop session that applied step 2.5a, as the infrastru
 - **[Claude] The mirror**, `./scripts/gitlab-mirror.py`: `awsds/dev-env`'s copy already held `1372b47`;
   `awsds/deploy-image` copied at `b064ba80`, one file changed, `.dockerignore`, whose GitLab version
   ends with no newline. Commit `9eb1406`.
+
+## 2026-10-16 — the `v0.2.0` release row, and `mcp` held to 1.30.0 in the house environment
+
+Written by Claude in the laptop session that applied step 2.5a; both pushes go to the private GitLab
+over HTTPS with the laptop's credential helper, each on the user's request in that session's chat.
+Every time is UTC.
+
+- **[Claude] `awsds/deploy-image` branch `the-releases-v0.2.0`**, commit `05e10a5` (21:11) on `main`'s
+  `b064ba80`, pushed on the user's request: the `v0.2.0` row of the README's releases table, from the
+  previous entry's ECR readings and pipeline #43's job (64 s). The merge request and the merge are the
+  user's.
+- **[Claude] `awsds/dev-env` pipeline #41's `pip-audit`**, run again at 21:15 on the new test runner
+  (read by another session): 453 of 453 packages audited, blocked on `mcp` 2.1.1, CVE-2026-59951
+  (GHSA-84m7-p3x7-pcfv), published 2026-10-15, GitHub severity `MODERATE`, unbounded session
+  accumulation in the StreamableHTTP transport. OSV lists two fixed releases, 1.30.0 on the 1.x line
+  and 2.2.0 on the 2.x line.
+- **[Claude] Why 2.2.0 cannot resolve**: `uv lock --upgrade-package mcp`, with and without
+  `--refresh-package mcp`, reads `No lockfile changes detected`. PyPI's metadata for `strands-agents`
+  gives `mcp<2.2,>=1.23.0` in 1.55.1, the locked version, and in 1.61.1, the newest (2026-10-15).
+  PyPI holds `mcp` 1.30.0 (2026-09-07), 2.2.0 (2026-09-07) and 2.3.0 (2026-10-02).
+- **[Claude] The 1.x bound tested** with `uv lock --dry-run` and the edit reverted: 455 packages,
+  `mcp` 2.1.1 → 1.30.0, `mcp-types` removed, `httpx-sse` 0.4.3 and `pydantic-settings` 2.16.0 added.
+- **[user] The choice**, in this session's chat: "Restrinja o mcp a >=1.30.0,<2 no
+  dev-env/python/pyproject.toml do branch cli-1.0.9, refaça o lock e empurre."
+- **[Claude] `cli-1.0.9` commit `386fd52`** (21:25), pushed over `7345733`: `"mcp>=1.30.0,<2"` with its
+  reason in the comment, and `uv lock` with the same four changes and no other version moved. The
+  push starts the branch's pipeline; its verdict is not read here.
+- **[user] The merges**: `the-releases-v0.2.0` into `awsds/deploy-image`'s `main` at 21:28:08
+  (`7bf9acf`), and `cli-1.0.9` into `awsds/dev-env`'s `main` at 21:28:34 (`7c59998`, merge request !7),
+  after the branch's pipeline #44 passed, as another session read it.
+- **[Claude] The copies** (21:30): `./scripts/gitlab-mirror.py` changed `dev-env/python/pyproject.toml`
+  and `uv.lock` in `gitlab/awsds/dev-env/` and `README.md` in `gitlab/awsds/deploy-image/`, and
+  `mirror.json` records both commits; commit `1d63588`. `./scripts/check-gitlab-mirror.py` failed
+  `GM-3` first, since `sandbox/egress`'s state held no `no_proxy_all_groups` (the slice down); with
+  `--plan`, `GM-1` to `GM-8` pass, the literal and the account's list both 70 names, `sha256
+  aafa08da98a61f5c`. No tag `default-v0.8.0` exists yet.

@@ -1,14 +1,14 @@
 {
   "awsds/deploy-image": {
     "branch": "main",
-    "commit": "b064ba80bd77d0b8c2b70fb8f397e6f27e4f2598",
-    "committed": "2026-10-16T20:53:00Z",
-    "subject": "Edit .dockerignore"
+    "commit": "7bf9acf6843e6e0e20a5d8a8e6c789b545dafc36",
+    "committed": "2026-10-16T21:28:08Z",
+    "subject": "Merge branch 'the-releases-v0.2.0' into 'main'"
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "1372b471affa5668f81086f8c6b48dfdb35c9a96",
-    "committed": "2026-10-15T16:44:41Z",
-    "subject": "Merge branch 'the-releases-v0.7.3' into 'main'"
+    "commit": "7c59998cf814e0fd32503aa34be1d03a921b54ab",
+    "committed": "2026-10-16T21:28:34Z",
+    "subject": "Merge branch 'cli-1.0.9' into 'main'"
   }
 }
