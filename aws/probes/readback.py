@@ -66,9 +66,11 @@ def counts(doc):
     there is no action list, so the weight is the number of leaf settings."""
     if "Statement" in doc:
         sids = [s["Sid"] for s in doc["Statement"]]
-        actions = sum(
-            len(s["Action"]) if isinstance(s["Action"], list) else 1 for s in doc["Statement"]
-        )
+        # A statement carries Action or NotAction; both count, so a NotAction edit shows too.
+        actions = 0
+        for s in doc["Statement"]:
+            listed = s.get("Action", s.get("NotAction", []))
+            actions += len(listed) if isinstance(listed, list) else 1
         return sids, actions
     if "tags" in doc:
         keys = [v["tag_key"]["@@assign"] for v in doc["tags"].values()]

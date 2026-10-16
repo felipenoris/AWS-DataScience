@@ -80,5 +80,12 @@ resource "aws_organizations_policy" "this" {
       condition     = length(local.descriptions_missing) == 0 && length(local.descriptions_extra) == 0
       error_message = "locals.tf's policy_descriptions has drifted from the document set - missing: ${join(", ", local.descriptions_missing)}; stale: ${join(", ", local.descriptions_extra)}."
     }
+
+    # Stage 9 step 3.5: the Workloads document carries sagemaker-denies' statements as the pinned
+    # tag renders them (job-denies.tf).
+    precondition {
+      condition     = length(local.sagemaker_denies_drift) == 0
+      error_message = "${local.workloads_document}.json differs from the sagemaker-denies tag job-denies.tf pins, on ${join(", ", local.sagemaker_denies_drift)}. Copy the module's statements into the document, or bump the tag and copy its statements, in the same commit."
+    }
   }
 }

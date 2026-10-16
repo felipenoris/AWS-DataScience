@@ -241,6 +241,74 @@ probe("ou", "staging", "deny", None, "ro",
       "workloads: datazone:ListDomains in the account Stage 6b moved",
       ["datazone", "list-domains", "--region", "us-west-2"])
 
+# --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
+#     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
+#     statement and keeps the other four, so a refusal names the statement it was written for
+#     (AWS names the policy, never the Sid - Lesson 20); the two allow rows are the same calls
+#     with nothing broken, which is what proves the document leaves a compliant job and an
+#     instance-backed endpoint configuration alone. The compliant job is also the reading of
+#     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
+#     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
+#     row into a deny.
+#
+#     `blocked`: the role, the image, the security group, the key and the model named exist
+#     nowhere, so an authorized call fails validation and creates nothing. The subnet is real,
+#     so a VPC check that runs before authorization cannot be mistaken for the deny.
+_JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
+# The registry host is joined to the placeholder rather than written beside it, which
+# ./scripts/check-identifiers.py would read as an e-mail address.
+_JOB_REGISTRY = "@ACCT@" + ".dkr.ecr.us-west-2.amazonaws.com"
+_JOB_IMAGE = '{"ImageUri":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest"}'
+_JOB_KEY = "arn:aws:kms:us-west-2:@ACCT@:key/00000000-0000-0000-0000-000000000000"
+_JOB_VPC = '"VpcConfig":{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+
+
+def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
+    """create-processing-job argv with each of the five settings chosen by the caller."""
+    cluster = '{"InstanceCount":1,"InstanceType":"' + instance_type + '","VolumeSizeInGB":1'
+    cluster += (',"VolumeKmsKeyId":"' + _JOB_KEY + '"}') if volume_key else "}"
+    network = ('{"EnableInterContainerTrafficEncryption":' + encryption
+               + ',"EnableNetworkIsolation":' + isolation + ((',' + _JOB_VPC) if vpc else "") + "}")
+    return ["sagemaker", "create-processing-job", "--processing-job-name", "awsds-canary-probe",
+            "--role-arn", _JOB_ROLE, "--app-specification", _JOB_IMAGE,
+            "--processing-resources", '{"ClusterConfig":' + cluster + "}",
+            "--network-config", network, "--region", "us-west-2"]
+
+
+probe("ou", "prod", "allow", "ValidationException", "blocked",
+      "workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)",
+      _processing_job("ml.m5.large", True, "true", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)",
+      _processing_job("ml.m5.large", True, "true", "true", False))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
+      _processing_job("ml.m5.2xlarge", True, "true", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+      _processing_job("ml.m5.large", True, "false", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
+      _processing_job("ml.m5.large", True, "true", "false", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)",
+      _processing_job("ml.m5.large", False, "true", "true", True))
+
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)",
+      ["sagemaker", "create-endpoint-config", "--endpoint-config-name", "awsds-canary-probe",
+       "--production-variants",
+       '[{"VariantName":"probe","ModelName":"awsds-canary-probe",'
+       '"ServerlessConfig":{"MemorySizeInMB":1024,"MaxConcurrency":1}}]',
+       "--region", "us-west-2"])
+probe("ou", "prod", "allow", "ValidationException", "blocked",
+      "workloads: instance-backed CreateEndpointConfig still authorized (3.7 contrast)",
+      ["sagemaker", "create-endpoint-config", "--endpoint-config-name", "awsds-canary-probe",
+       "--production-variants",
+       '[{"VariantName":"probe","ModelName":"awsds-canary-probe",'
+       '"InstanceType":"ml.m5.large","InitialInstanceCount":1}]',
+       "--region", "us-west-2"])
+
 # --- Interactive: the allows say decision 1 costs no feature. The nonexistent domain keeps an
 #     "allowed" outcome from billing a space.
 #

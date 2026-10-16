@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice is empty and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
+| **Status** | **pass 1 written 2026-10-16, not applied** ([the log](../../log/log-stage-09-deployment-targets.md)): `production/sagemaker/`, the `Workloads` OU document's job settings and serverless deny with their battery rows, `production/workloads-egress/`'s six endpoints and DNS Firewall, and `DT-11`; decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Pass 0's readings and every apply wait on a laptop session. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
 | **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Nothing waits on a quota: 5b 0.4 read 25 namespaces and 25 workgroups per account |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** (the two read shares are Stage 5a's); [INT-05](../integrations.md) (the Production branch, anchored on `VPC-Workloads`, and the persona's principal branch); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part**, the model-registry read half, which absorbed INT-04 at 6b (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** (the writer and maintenance halves are Stage 5a's); [INT-24](../integrations.md), a Sandbox project reading a governed Redshift table that lives in Production |
@@ -412,6 +412,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   [Stage 17](stage-17-sandbox-machine-learning.md) 4.4's**: a serverless endpoint configuration over a model
   that carries the project's `VpcConfig`, and one over a model created without it, under the Sandbox copy of
   the same boundary; Stage 17 decision 8 records the outcome in this step and leaves the decision here.
+  **Taken 2026-10-16: (b), before Stage 17's reading**, as `DenySageMakerServerlessInference`. "Without a
+  `VpcConfig`" cannot be written, since `CreateEndpointConfig` carries no VPC field and no VPC condition
+  key, so the deny keys on `sagemaker:ServerlessMemorySize` being present (the log).
 - **3.4 — [Claude⚡] Apply as `awsds-infra-prod`** (after 3.5-3.7, so the enforcement is in place before any
   role can submit a job), then **[user] prove the registry gate** with the reader decision 10 picked:
   `DescribeModelPackageGroup` answers while `CreateModelPackage` and `UpdateModelPackage` are denied; an
@@ -873,7 +876,8 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
    groups give `governance-managers` a role on the repository that holds it.
 4. **The debug window mechanics** (6.1) — recommended: the **`DateLessThan` trust condition from a
    tfvars value defaulting to the past** — approval is a recorded apply, closure is a revert, and no
-   standing machinery exists to rot.
+   standing machinery exists to rot. **Taken 2026-10-16, as recommended**: the default the user's card of
+   that day named (the log).
 5. **How a Sandbox project reads a governed Redshift table** (9.5, 9.5a, 9.7, INT-24). The brief narrowed
    the field on 2026-09-20 — the controls do not change, so the mechanism is one Lake Formation governs — and
    **two shapes qualify**: a federated catalog read by Athena, or a Lake Formation-managed **datashare**.
@@ -900,12 +904,15 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
    governed values is a store of them.
 9. **Where the job settings are enforced** (3.5) — recommended: **(a), the `Workloads` OU SCP**, composed
    from `sagemaker-denies`. The alternative is the module as the boundary of every submitting role.
+   **Taken 2026-10-16, as recommended**: the default the user's card of that day named (the log).
 10. **Who reads model status from Sandbox** (3.2) — the persona from a laptop, the project role from a
     space, or both. Recommended: **both, by `aws:PrincipalArn`**: the person reads status where they work,
     and a notebook comparing its model with the approved one is the project role. Each half also needs an
     allow on its own side: the persona's in `identity/sso/`, the project role's as a policy attached the way
     `sandbox/bedrock/` and `sandbox/workflows/` attach theirs. The project role already reaches this account
-    for the house image (INT-01).
+    for the house image (INT-01). **Taken 2026-10-16, as recommended**: the default the user's card of
+    that day named (the log). Both own-side allows exist already: the persona's `ReadSageMakerStatus` and
+    the project role's `SageMakerCrossAccountPermissions` in AWS's managed policy, so 3.4 measures them.
 11. **Where each deployment target's query results land** ([D19](../decisions/D19-derived-zone.md)'s
     re-decision, 1.2, 4.2). `consumer-data-v0.6.0` supplies neither the bucket nor the workgroup, and in a
     deployment target no service supplies them either, so ours is the only destination. Recommended: **each

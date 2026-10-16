@@ -839,12 +839,27 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             for acct in REGISTRY_HOME
         }
 
+    # Stage 9 step 3 - a deployment target's sagemaker/ slice, the runtime half of D17: the job
+    # role, the Model Registry and the debug role. It reads its own foundation/ and registry/
+    # states by the account folder (the deploy roles, the alerts topic, the application
+    # repository), the lake's state for the drop-box pickup, and the account id of each account
+    # whose data scientists read model status (decision 10) through `readers`, one aliased
+    # provider per key. The readers are the SMUS members, the accounts with projects.
+    if slice_name == "sagemaker" and account in DATA_PRODUCERS:
+        values["account_folder"] = account
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["readers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+        }
+
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
     # blueprint configurations. account_folder is the same emission every non-foundation
     # network slice takes: this slice reads its own foundation/ state for the VPC, the subnets
     # and the endpoint security group, and the state key is keyed by the account folder, which
     # no .tf file may re-derive from the env token (Lesson 14).
-    if slice_name == "sagemaker":
+    elif slice_name == "sagemaker":
         values["account_folder"] = account
         # Two maps at the same account, and they are not one map. `lake` is the governed lake's
         # state (the registered bucket ARNs the D13 boundary excludes, the drop-box prefix, the
@@ -1047,6 +1062,12 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
             for acct, p in v["lake"].items()
         )
         out += f"lake = {{\n{rows}}}\n"
+    if "readers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["readers"].items()
+        )
+        out += f"readers = {{\n{rows}}}\n"
     if "persona_vending_policy_name" in v:
         out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
     if "identity_profile" in v:
