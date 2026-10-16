@@ -1748,3 +1748,14 @@ records the 22:26 apply and verification xxvii, as the infrastructure user throu
   helper images and registered. The retry was not exercised: the three roles predate their hosts, so no
   read failed and no `not yet` line printed; only an apply that creates a role and its host together,
   as at 16:36, reaches it. The plan half waits on the next Amazon Linux release.
+
+## 2026-10-16 — `devenv.py` on version 9
+
+- **[user] `./aws/devenv.py`**, run from the project folder on `main` (`a5862bd`) with Sandbox down,
+  the user's paste in the thread at 23:04: "region: us-west-2 / awsds-infra-sandbox-1 OK / wrote
+  aws/output/devenv.txt checks: 5 passed or noted, 1 FAILED".
+- **[Claude] The report**, read on the laptop: `DE-5` green, version 9's `ContainerImage`
+  (`sha256:b788dbd9…1b87`) baking the 70 names, sha256 `aafa08da98a61f5c`; `DE-1` and `DE-4` green;
+  `DE-2` FAILED because `sandbox/egress` is down and its state holds neither output, the absence the
+  check itself names, with `DE-3` and `DE-6` noted as not compared. The exit 2 reads the
+  environment's state, not the image's; the two comparisons wait for a `make up ENV=sandbox`.
