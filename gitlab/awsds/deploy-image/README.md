@@ -38,3 +38,4 @@ change of one there is a change here.
 | Tag | Built | Digest | Scan |
 |---|---|---|---|
 | `v0.1.0` | 2026-10-13, pipeline #5 from AWS-DataScience `de2dc08`, 68 s | `sha256:1b1a5830…a53a`, 208,935,352 bytes, on `python:3.14-slim` (Debian 13) `sha256:a2b82f3c…9170` | CRITICAL 2, HIGH 8, MEDIUM 10, LOW 4. Both CRITICALs are Debian's `curl` (CVE-2026-8924, CVE-2026-8927), `<no-dsa>` with no fixed package for Debian 13, and git links libcurl; accepted by name by the user 2026-10-13 as this image's baseline (Stage 8 decision 1), rebuilt once Debian 13 ships the fix |
+| `v0.2.0` | 2026-10-16, pipeline #43 from `b064ba80`, 64 s; the SageMaker CI/CD CLI 1.0.9 added | `sha256:ee31048e…7e91ac`, 255,596,236 bytes, on `python:3.14-slim` (Debian 13) `sha256:a2b82f3c…9170` | CRITICAL 0, HIGH 4, MEDIUM 10, LOW 4. The HIGHs are the Debian 13 base's: `glibc` (CVE-2026-19499, CVE-2026-5435), `zlib` (CVE-2026-85091) and `gnupg2` (CVE-2026-24882); no finding names `curl` |
