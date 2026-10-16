@@ -177,7 +177,7 @@ test-deploy:
       aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > run.json
       cat run.json
       if [ "$rc" -ne 0 ]; then echo "FATAL: the deploy or the run failed"; exit "$rc"; fi
-      grep -q '"RunStatus": "SUCCESS"' run.json
+      grep -q '"RunState": "SUCCESS"' run.json
   artifacts:
     paths: [artifacts/, bundle.log, deploy.log, run.json]
     reports:
