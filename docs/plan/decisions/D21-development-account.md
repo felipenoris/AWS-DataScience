@@ -106,7 +106,7 @@ technical, which says where to spend the care if the branch is ever taken.
 SageMaker is two halves and D17 runs the account boundary between them.
 
 - Development needs the **runtime** half without argument: pipeline executions, training and processing
-  jobs, and the by-hand apply of `terraform-live/development/app/app-etl/` against its own data (Stage 8).
+  jobs.
 - The open question is only the **interactive** half — the domain, the spaces, the apps.
 
 It is a live question because **everything the person does to *author* is already available in Sandbox**: a

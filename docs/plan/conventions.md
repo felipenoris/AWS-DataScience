@@ -655,7 +655,7 @@ The template's first content is [`examples/app-etl/`](../../examples/app-etl/REA
 Stage 8 step 2.5 (2026-10-16), whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
 application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`
-(Sandbox's retires by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
+(Sandbox's retired by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
 and the release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
 the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
 bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle

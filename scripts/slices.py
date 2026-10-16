@@ -31,8 +31,8 @@
 #                                       ENV=production` that stopped the proxy would blackhole
 #                                       every peer session's spoke; GitLab's session (`make
 #                                       gitlab-up`/`gitlab-down`) is `--only tooling,egress,runners`
-#   7. up never applies an application  layers.is_refused on the slice name: the pipeline or, in
-#      or orchestration slice           Sandbox, the engineer by hand applies it (Stage 8 step 2.4)
+#   7. up never applies an application  layers.is_refused on the slice name: the pipeline applies
+#      or orchestration slice           it with the release it runs (Stage 8 step 2.4)
 #   8. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
 #      sandbox/ slice                   CI never applies into the account people work in (2.4,
 #                                       decision 18)

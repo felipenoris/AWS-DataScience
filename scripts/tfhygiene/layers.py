@@ -539,15 +539,6 @@ SLICES = [
         PERSISTENT,
         "the Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
     ),
-    # Stage 8 step 2.4 - the application, run by hand in Sandbox while it is engineered (decision 12):
-    # its processing jobs' role and security group. Nothing in it meters by the hour; a job meters per
-    # run, ml.t3.medium at 0.050 USD/h (docs/PRICING.md), and the run is the request's, not the slice's.
-    Slice(
-        "sandbox",
-        "app/app-etl",
-        EPHEMERAL,
-        "app-etl's processing-job role and security group (St.8 2.4)",
-    ),
     # Stage 5b pass 1 - the compute half, and the whole point of the split.
     #
     # usd_per_hour IS THE WORST CASE, NOT THE RATE, and it was 0.0 until 2026-09-20 cost 9.48 USD to
@@ -622,9 +613,9 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # pair to hub-up and hub-down.
 #
 # Refusal 7 - Stage 8 step 2.4. `up` never applies an application or orchestration slice: its applier
-# is the pipeline, which passes the release it promotes, or in Sandbox the engineer by hand. A `make
-# up` for an unrelated session would deploy the recorded release outside both, and an orchestration
-# slice's schedule would start firing. `down` destroys both normally (Stage 10 step 1.4 relies on it).
+# is the pipeline, which passes the release it promotes. A `make up` for an unrelated session would
+# deploy the recorded release outside it, and an orchestration slice's schedule would start firing.
+# `down` destroys both normally (Stage 10 step 1.4 relies on it).
 APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
 APPLICATION_PARENT = "app"
 #
@@ -706,8 +697,8 @@ def is_refused(sl: Slice, action: str) -> str | None:
         sl.name.startswith(f"{APPLICATION_PARENT}/") or sl.name in APPLIED_BY_THEIR_OWN_HAND
     ):
         return (
-            "refusal 7: up never applies an application or orchestration slice - the pipeline, or "
-            "in Sandbox the engineer by hand, applies it with the release it runs (Stage 8 step 2.4)"
+            "refusal 7: up never applies an application or orchestration slice - the pipeline "
+            "applies it with the release it runs (Stage 8 step 2.4)"
         )
     if sl.layer == PERSISTENT:
         return "refusal 1: [P] slices are never touched by up or down (D11)"

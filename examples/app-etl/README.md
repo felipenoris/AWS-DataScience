@@ -20,8 +20,8 @@ the CI/CD CLI deploys to a project, and a workflow of four tasks.
 | `pyproject.toml`, `uv.lock` | the project and its lock; the resolver ignores anything published after `exclude-newer` |
 
 The Terraform that runs the application is not here: each environment's slice is
-`terraform-live/<env>/app/app-etl/` in the infrastructure repository (Stage 8 decision 12), and Sandbox's
-is applied by hand while the application is engineered (step 2.4).
+`terraform-live/<env>/app/app-etl/` in the infrastructure repository (Stage 8 decision 12), applied by the
+pipeline; Sandbox's retired with decision 21, the `dev` and `test` projects being where the CLI deploys it.
 
 ## The workflow
 
