@@ -1,9 +1,9 @@
 {
   "awsds/deploy-image": {
     "branch": "main",
-    "commit": "98a3dc7eb9a85ae210c9f2aeb2d9ad2135caf0d1",
-    "committed": "2026-10-14T20:38:26-03:00",
-    "subject": "The deploy image's recipe, moved from AWS-DataScience's images/deploy/ at e45e1e3a (Stage 8 decision 16)"
+    "commit": "b064ba80bd77d0b8c2b70fb8f397e6f27e4f2598",
+    "committed": "2026-10-16T20:53:00Z",
+    "subject": "Edit .dockerignore"
   },
   "awsds/dev-env": {
     "branch": "main",
