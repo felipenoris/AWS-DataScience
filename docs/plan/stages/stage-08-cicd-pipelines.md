@@ -1328,8 +1328,14 @@ Measured (`docs/PRICING.md`), us-west-2:
     lock`), in a merge request of the user's, and the copy under `gitlab/awsds/dev-env/` follows it;
     the reads from a space are Stage 10 step 2.1's. The branch `cli-1.0.9` of `awsds/dev-env` was
     pushed from the laptop 2026-10-16 (17:42 UTC): the dependency and the lock (454 packages, only
-    the CLI new, no version changed), the branch pipeline running the recipe checks and the gates;
-    the merge request, the merge and the tag are the user's.
+    the CLI new, no version changed), the branch pipeline running the recipe checks and the gates.
+    That pipeline stopped at `pip-audit` on `mcp` 2.1.1, GHSA-84m7-p3x7-pcfv (CVE-2026-59951),
+    published 2026-10-15 with fixes at 1.30.0 and 2.2.0; `strands-agents` 1.55.1 to 1.61.1 require
+    `mcp<2.2`, so no lock upgrade reaches 2.2.0, and the user held `mcp` to `>=1.30.0,<2` (21:25
+    UTC; the lock at 455 packages, `mcp` 1.30.0, `mcp-types` out, `httpx-sse` and
+    `pydantic-settings` in, no other version moved), the hold to leave when `strands-agents` accepts
+    `mcp` 2.2. The merge request !7 merged at 21:28 UTC (`7c59998`), the copy under `gitlab/`
+    following; the tag `default-v0.8.0` and the release gate are the user's.
 23. **When pass 4 runs** (step 3; Stage 9; Stage 10 passes 1-2). The pass table gives pass 4 "passes 1-2"
     as its need, and "On ordering" exercises the chain with an application that touches no data until
     Stage 9 builds the platforms. In D41's form the promotion writes into `awsds-<env>-outputs` (Stage 9
