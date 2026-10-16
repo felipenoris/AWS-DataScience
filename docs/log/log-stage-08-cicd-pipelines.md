@@ -1403,3 +1403,75 @@ step 2.5, by the user's scope of 14:30 UTC ("tudo num PR"); nothing applied. Eve
 - **[Claude] The authorization pages read**, in `docs/REFERENCES.md`: MWAA Serverless's (`workflow` the
   one resource type, `CreateWorkflow` with `aws:RequestTag`, `iam:PassedToService`) and DataZone's
   (`GetDomain` the one read with a resource type).
+
+## 2026-10-16 — the Terraform of decisions 19 and 20 applied, from the laptop
+
+Applied by Claude in a laptop session the user started with the procedure the cloud session wrote,
+authorized by the user at 16:02, 16:45 ("deixe o ambiente no ar") and 16:47 UTC ("autorizo os
+commits e applies necessários"), with the hub, Sandbox, GitLab and the VPN tunnel up by the user's
+own hand (16:45); each slice a Recipe A plan read before its apply and re-planned after it, the
+cloud session recording. Every time is UTC.
+
+- **[Claude⚡] Step 0** (17:25:55 to 17:28:40): the infrastructure user's SSO session valid, with
+  `InfrastructureAccess` in Production and Sandbox, no login; the worktree
+  `.claude/worktrees/stage-08-2.5a` on a local branch `claude/smus-applications-rw30u1` tracking
+  `origin`, at `819e830`, a branch and not the detached HEAD the procedure named, since `git pull
+  --ff-only` and the push need one; the other laptop sessions told of the four writes.
+- **[Claude⚡] `production/foundation/` applied as `awsds-infra-prod`** (17:28:41 to 17:32:01), with
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`: `Plan: 1 to add, 1 to change, 0 to
+  destroy`, as expected: `module.deploy_runner_role.aws_iam_role_policy.inline["releases"]` created
+  (`ListBucket` and `GetObject` on `awsds-prod-releases`, `kms:Decrypt` under the alias
+  `awsds-prod-registry` through S3), `inline["deploy"]` changed (`awsds-deploy-sandbox-test` joins
+  the `AssumeRole` list, the other three entries reordered), the output `deploy_role_arns_by_name`
+  new with four roles; no drift, the alerts subscription untouched. `Apply complete! Resources: 1
+  added, 1 changed, 0 destroyed.` (17:31:24 to 17:31:36); re-plan `No changes`.
+- **[Claude⚡] `production/registry/` applied as `awsds-infra-prod`** (17:32:20 to 17:35:23): `Plan:
+  6 to add, 0 to change, 0 to destroy`, as expected, `module.releases_bucket`: the bucket
+  `awsds-prod-releases` (`force_destroy = false`, `CostCenter = stage-08`), versioning `Enabled`,
+  SSE `aws:kms` with the bucket key under `alias/awsds-prod-registry` (the alias's `TargetKeyId`
+  read against the plan before the apply), the public access block on all four, the lifecycle
+  (noncurrent versions expire in 90 days, incomplete multipart uploads are aborted after 7) and the
+  bucket policy. `Apply complete! Resources: 6 added, 0 changed, 0 destroyed.` (17:33:44 to
+  17:35:00, the lifecycle 58 s); re-plan `No changes`; output `releases_bucket_name =
+  awsds-prod-releases`.
+- **[Claude⚡] `sandbox/workflows/` applied as `awsds-infra-sandbox-1`** (17:35:44 to 17:36:51),
+  after a fresh `init` that fetched `deploy_role_test` from the tag `deploy-role-v0.5.0`, whose
+  `terraform-modules/deploy-role` is the branch's: `Plan: 5 to add, 0 to change, 0 to destroy`, as
+  expected, `aws_iam_policy.workflows` and its attachments untouched, so the Glue grant applied at
+  14:54 (policy v3) stays: the ceiling `awsds-sandbox-deploy-test-boundary`, the role
+  `awsds-deploy-sandbox-test` trusting `awsds-prod-runner-deploy` alone (sid `OnlyTheDeployRunner`),
+  the inline policies `project-reads`, `storage` (the `test` project's `shared/` prefix in
+  `awsds-sandbox-smus-projects` and the project's key) and `workflows` (creation with the `test`
+  project's tag, `PassRole` of that project's role alone to `airflow-serverless`). `Apply complete!
+  Resources: 5 added, 0 changed, 0 destroyed.` (17:36:28 to 17:36:40); re-plan `No changes`.
+- **[Claude⚡] `production/runners/` applied as `awsds-infra-prod`** (17:37:16 to 17:40:17), after
+  the user's `make gitlab-up` of 16:45 had applied it with `main`'s code, by the commands `slices.py
+  up --env production --only runners --dry-run` prints (`gen-tfvars`, `gen-backend-hcl`, `init`)
+  with the plan saved and read, since `up` without `--auto-approve` waits for a typed `yes`; the hub
+  read first (`awsds-prod-vpn` and `awsds-prod-proxy` running). `Plan: 2 to add, 0 to change, 1 to
+  destroy`: only `aws_instance.deploy_runner[0]` replaced, its user data gaining `[profile
+  awsds-deploy-sandbox-test]` with the profiles now read from `deploy_role_arns_by_name`, sorted by
+  name; the build runner `awsds-prod-runner` keeps its user data and its role gains the inline
+  `releases` (`PutObject` and `AbortMultipartUpload` on `awsds-prod-releases/*`, the registry key
+  through S3); the test runner untouched. The procedure's "both runners' user data" was wrong: the
+  PR changes `deploy-runner.tf` (reading `deploy_role_arns_by_name`) and `main.tf` (the inline
+  `releases`), and the build runner's template does not change. `Apply complete! Resources: 2 added,
+  0 changed, 1 destroyed.` (17:38:57 to 17:39:55), the old deploy runner instance destroyed and a
+  new one created, its console read for the boot; re-plan `No changes`.
+- **[Claude⚡] Step 5, `awsds/deploy-image`** (17:40:40 to 17:41:01): `main` cloned at `98a3dc7`, the
+  commit of `gitlab/mirror.json`; the branch `cli-1.0.9` with `Dockerfile`, `README.md` and
+  `requirements-cli.txt` copied from `gitlab/awsds/deploy-image/` (the other three files already
+  identical to the copy); commit `acb73f1`, pushed without refusal; the project's pipeline runs from
+  the form only, so the push started none. The user's: the merge request, the merge and Build >
+  Pipelines > Run pipeline on `main` with `IMAGE_TAG=v0.2.0`; then the laptop reads the digest
+  (`awsds-prod-ecr-deploy:v0.2.0`, or the job's `deploy.json: containerimage.digest` line), writes
+  it to `deploy_image_digest`, applies `production/runners/` again, runs `gitlab-mirror.py` and
+  commits to PR #145.
+- **[Claude⚡] Step 6, `awsds/dev-env`** (17:41:30 to 17:42:31; decision 22): `main` cloned at
+  `1372b47`; the branch `cli-1.0.9` with `aws-smus-cicd-cli==1.0.9` in
+  `dev-env/python/pyproject.toml` and a comment citing decision 22; `uv lock` resolved 454 packages,
+  the CLI the only entrant and no version changed; commit `7345733`, pushed without refusal; the
+  push started the branch's pipeline with the test jobs only (`recipe-checks` and the gates of
+  `gates-v0.4.0`), its result not read. The user's: that pipeline's verdict, the merge request, the
+  merge and the tag; the README's rule makes a recipe change a minor, `default-v0.8.0`, the user's
+  choice.

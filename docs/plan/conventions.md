@@ -227,8 +227,8 @@ terraform-live/
 │   │                     #     which SageMakerProcessingOperator's existence check needs, and
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
-│   │                     #     like bedrock/'s. Since Stage 8 decision 19 (written 2026-10-16,
-│   │                     #     unapplied) also awsds-deploy-sandbox-test, the role the deploy
+│   │                     #     like bedrock/'s. Since Stage 8 decision 19 (applied 2026-10-16)
+│   │                     #     also awsds-deploy-sandbox-test, the role the deploy
 │   │                     #     runner assumes for the CI/CD CLI's test deploy (INT-25), on the
 │   │                     #     deploy-role module with its own ceiling: the supply chain's
 │   │                     #     second write path into Sandbox, after dev-env/'s
@@ -403,8 +403,8 @@ terraform-live/
     │                     #     pushes into them; the pull-through cache and the
     │                     #     per-application repositories (5.b) wait for Stage 7, the first
     │                     #     thing that pulls from either. The 5.a half is applied
-    │                     #     (2026-08-21, 14 resources). Stage 8 decision 20 (written
-    │                     #     2026-10-16, unapplied) adds awsds-prod-releases, the bucket
+    │                     #     (2026-08-21, 14 resources). Stage 8 decision 20 (applied
+    │                     #     2026-10-16) adds awsds-prod-releases, the bucket
     │                     #     each application release's bundle is stored in, under the
     │                     #     slice's key, its deletes denied to every principal but
     │                     #     InfrastructureAccess
@@ -731,7 +731,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
-| the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; written 2026-10-16, unapplied) | nothing | never |
+| the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; applied 2026-10-16) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |
