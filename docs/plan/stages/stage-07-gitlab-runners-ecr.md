@@ -553,6 +553,13 @@ rehearsal happens now, while the instance holds throwaway content.
   header, which still describes imported ACM leaves and a "TLS triple", is brought to the nginx option and the
   four surfaces. `SC-9` (the CA root parameter) and `SC-10` (the runner's presence) keep their meanings.
   `./aws/proxy.py` `PX-3` already compares all five planes, the SharedServices one included.
+- **8.4 — `SC-13` and `check-gitlab-pins.py`, written 2026-10-16** (decision 10). `./aws/supplychain.py`
+  `SC-13` compares the release in the newest backup's name with `gitlab_ce_version`; its first run as
+  `awsds-infra-prod` (23:04 UTC) passed on `1792033259_2026_10_15_19.4.2_gitlab_backup.tar`, and with the
+  variable set to 19.5.0 in the working copy it failed and exited 2. `scripts/check-gitlab-pins.py`, in
+  `make check` and the commit gate, fails while `gitlab_ce_version`'s major.minor and
+  `gitlab_runner_version`'s differ: `OK` on 19.4.2 and 19.4.1, `FAILED` on a copy with the runner at
+  19.5.0.
 
 ---
 
@@ -588,7 +595,8 @@ and 8.4's two new checks. The behavioural proofs are the stage's own (Lesson 20)
 
 ## Validation
 
-1. Run `./aws/supplychain.py` — all `SC-*` pass, including 8.4's `SC-11`/`SC-12`; diff two runs across
+1. Run `./aws/supplychain.py` — all `SC-*` pass, including 8.4's `SC-11`/`SC-12` and decision 10's
+   `SC-13`; diff two runs across
    8.1's cycle.
 2. Run `./aws/proxy.py` — `PX-1`..`PX-4` pass (`PX-5` is retired at Stage 6g); `PX-3` covers the build plane
    already.
@@ -694,13 +702,14 @@ awkward, and it would land in `production/egress/`.
     `gitlab_ce_version = "19.4.2"`**, installed as `gitlab-ce-19.4.2-ce.0.amazon2023`, the form GitLab's
     upgrade page gives for Amazon Linux 2023; a release the repository lacks stops the boot at dnf. The
     variable names the release the host runs, so an upgrade on the host moves it and
-    `gitlab_runner_version` in the same sitting (`gitlab.md` §P). Its costs: the pin binds a rebuild and
-    never the running host, since the user data is held (decision 8), so every value plans `No changes`,
-    and an upgrade made in a shell leaves the variable behind with no diff, visible only in the next
-    backup's name, which no check reads; and a recovery from a backup older than the last upgrade rebuilds
-    at the backup's release, then upgrades again (`gitlab.md` §B). The alternative, no pin: each rebuild
-    installs the newest CE, a restore needs a downgrade by hand before `gitlab-backup restore`, and the
-    runners' pin follows a server release no file holds.
+    `gitlab_runner_version` in the same sitting (`gitlab.md` §P); `scripts/check-gitlab-pins.py` fails
+    `make check` while their major.minor differ. Its costs: the pin binds a rebuild and never the running
+    host, since the user data is held (decision 8), so every value plans `No changes`, and an upgrade made
+    in a shell leaves the variable behind with no diff, visible only in the next backup's name, which
+    `./aws/supplychain.py` `SC-13` compares with the variable; and a recovery from a backup older than
+    the last upgrade rebuilds at the backup's release, then upgrades again (`gitlab.md` §B). The
+    alternative, no pin: each rebuild installs the newest CE, a restore needs a downgrade by hand before
+    `gitlab-backup restore`, and the runners' pin follows a server release no file holds.
     Written 2026-10-16 as recommended; the plan reads `No changes` (1.3).
 
 ## Verifications to answer while executing
