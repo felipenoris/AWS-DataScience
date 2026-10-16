@@ -1569,3 +1569,52 @@ user's run. Every time is UTC.
   `sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac`, 255,596,236 bytes
   against `v0.1.0`'s 208,935,352, pushed at 20:54:33 by ECR's reading. The digest step, the runner's
   re-apply and the mirror follow in the laptop session's own entry.
+
+## 2026-10-16 — the deploy image `v0.2.0` pinned, and the runners rebuilt on a new AMI
+
+Written by Claude in the laptop session that applied step 2.5a, as the infrastructure user through
+`awsds-infra-prod` (`InfrastructureAccess`). Every time is UTC.
+
+- **[Claude] `v0.2.0` read from ECR**: `sha256:ee31048e…7e91ac`, pushed 20:54:33, 255,596,236 bytes,
+  from `awsds/deploy-image`'s `main` at `b064ba80`. Its scan, `COMPLETE` at 20:54:48: CRITICAL 0, HIGH
+  4 (`glibc` CVE-2026-19499 and CVE-2026-5435, `zlib` CVE-2026-85091, `gnupg2` CVE-2026-24882), MEDIUM
+  10, LOW 4; no finding names `curl`. The pull-through cache's `python:3.14-slim` is still
+  `sha256:a2b82f3c…9170`.
+- **[Claude] `deploy_image_digest`** set to it in `production/runners/variables.tf`, commit `a99721b`.
+- **[Claude] No deploy job could be waiting**: `git ls-remote --tags` reads `awsds/dev-env`'s newest tag
+  as `default-v0.7.3` and `awsds/app-etl`'s as `v0.1.0`, both older than the day.
+- **[Claude] `production/runners/` planned** (20:58:51) to a saved file: `Plan: 3 to add, 0 to change, 3
+  to destroy`, where the deploy runner alone was expected. Each of `aws_instance.deploy_runner[0]`,
+  `aws_instance.runner` and `aws_instance.test_runner` reads `ami = (sensitive value) # forces
+  replacement`, and the deploy runner's `DEPLOY_IMAGE` moves to the new digest. The three take `ami`
+  from `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, which changed at
+  20:01:25 (version 194) to `ami-0803a33fd43db1fbf`; all three ran `ami-042bfcefcf88b2ac8` (Amazon
+  Linux 2023.12.20261014), and step 2.5a's plan at 17:37 touched neither the build nor the test
+  runner. Held until the user's decision.
+- **[Claude] The test runner's boot of 16:36, read through its serial console**: `i-018f82308a703b5fa`
+  stopped at "the CA root, from its one source" with `aws: [ERROR]: An error occurred (NoCredentials):
+  Unable to locate credentials.` at 16:36:29, and `cloud-final` `FAILED`, so runner #4 never
+  registered. Its role and instance profile came from the same `make gitlab-up`, created
+  16:36:01-02 by another session's reading, and the templates read the root once, with no retry.
+- **[user] The apply**, authorized in this session's chat: "Aplique o plano salvo de
+  production/runners, com os três runners substituídos, e leia os três boots."
+- **[Claude] Applied** from the saved plan (21:07:45 to 21:08:47): `Apply complete! Resources: 3 added,
+  0 changed, 3 destroyed.`, each destruction 32 s and each creation 15 s: `i-0f053b2cd9bdf492e` (build),
+  `i-0cc9c1b95621c5be2` (deploy), `i-00c29f8ea8e6265c4` (test), all on `ami-0803a33fd43db1fbf`, launched
+  21:08:32. Re-plan `No changes` (21:09:14).
+- **[Claude] The three first boots, read through the serial console**, each on Amazon Linux
+  2023.12.20261016 with `docker-25.0.16`, `git-2.50.1` and `gitlab-runner-19.5.0`:
+  - the build runner, 21:08:41 to 21:10:24 (107.5 s): the credential helper `OK`, `Verifying
+    runner... is valid`, registered as `awsds-prod-runner-i-0f053b2cd9bdf492e`; through the proxy
+    `pypi.org` `200` and `10.31.0.1` `403`, GitLab direct `200`.
+  - the test runner, 21:08:46 to 21:12:09 (209.6 s): the CA root read with no error, `Verifying
+    runner... is valid`, registered as `awsds-prod-runner-test-i-00c29f8ea8e6265c4`; `200`, `403`,
+    `200`.
+  - the deploy runner, 21:08:49 to 21:12:56 (255.5 s): the four deploy roles assumed with the
+    instance's credentials (`awsds-deploy-devenv-sandbox`, `awsds-deploy-prod`,
+    `awsds-deploy-sandbox-test`, `awsds-deploy-staging`), `Verifying runner... is valid`, registered as
+    `awsds-prod-runner-deploy-i-0cc9c1b95621c5be2`; `200`, `403`, `200`; the job image pulled through
+    the helper as `awsds-prod-ecr-deploy@sha256:ee31048e…7e91ac`, `v0.2.0`.
+- **[Claude] The mirror**, `./scripts/gitlab-mirror.py`: `awsds/dev-env`'s copy already held `1372b47`;
+  `awsds/deploy-image` copied at `b064ba80`, one file changed, `.dockerignore`, whose GitLab version
+  ends with no newline. Commit `9eb1406`.
