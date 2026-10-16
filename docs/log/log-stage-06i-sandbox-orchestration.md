@@ -1329,3 +1329,26 @@ pass 5 and pass 3b met no S3 endpoint refusal.
 - **After:** `state list` empty; `describe-trails` lists `aws-controltower-BaselineCloudTrail` alone;
   `head-bucket` on `awsds-sandbox-endpoint-refusals` answers `404 Not Found`; the state object
   `sandbox/endpoint-audit/terraform.tfstate` stays in `awsds-sandbox-tfstate`, 540 bytes.
+
+## The Glue job's birth in `dev` and `test` (2026-10-16)
+
+### [user] The decision
+
+**[user]**, in the project thread, closing the question the CI/CD CLI's measurement of 2026-10-16 left
+(run `u4AFogXA74olkqo`: `glue:GetJob` refused to the project role on a job that does not exist yet, so
+`GlueJobOperator` never reached its `CreateJob`): "Sobre como o job glue nasce, vamos pela opção 1: um
+grant de glue:GetJob".
+
+### [Claude] The `GetJob` statement, written and not applied
+
+- **`sandbox/workflows/` gains `GetAGlueJobNoProjectHolds`**: `glue:GetJob` on
+  `job/*-${aws:PrincipalTag/AmazonDataZoneProject}` with `Null aws:ResourceTag/AmazonDataZoneProject`,
+  the shape of `DescribeAProcessingJobNoProjectHolds` narrowed to the names an application gives its job
+  (`<app>-<project id>`, D41). Another project's job stays out of reach by its tag, an untagged job of
+  another name by its name.
+- **The boundary admits it**: `awsds-sandbox-project-boundary` v2 denies no Glue call (read 2026-10-16).
+- **The apply is the user's.** The measurement after it: delete the `dev` project's job, one `run` of
+  `houseprice-etl` in `dev`, and read whether `GetJob` answers `EntityNotFoundException` and whether the
+  `CreateJob` with the project tag passes with nothing more, unlike the processing job's `AddTags`
+  (decision 6). The negative control is a `simulate-principal-policy` of the `dev` role against the
+  `test` project's job, expected `implicitDeny`.

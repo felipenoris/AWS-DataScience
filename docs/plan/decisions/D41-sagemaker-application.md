@@ -93,8 +93,10 @@ took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 
    measurement; the alternative is the slice's job role with `iam:PassRole` from the project role.
 9. **The Glue job's owner.** In Staging and Production the application slice declares the job and
    the workflow only runs it, so the workflow's role holds no `glue:CreateJob` there (Stage 10
-   decision 12, D28 class 2c); in `dev` and `test` the operator creates and updates it, under a
-   stage variable.
+   decision 12, D28 class 2c); in `dev` and `test` the operator creates and updates it, with
+   `update_config: true` and the whole `Command` in `create_job_kwargs` (user, 2026-10-16: no stage
+   variable controls `update_config`, which is not a template field), and `sandbox/workflows/` grants
+   the `glue:GetJob` on a name not yet taken that the blueprint's policy refuses (user, 2026-10-16).
 10. **The result file.** The last task is an S3 operator task (`S3CopyObjectOperator` or
     `S3CreateObjectOperator`), the operator of the inbox contract between applications; the Python
     task stays light.

@@ -162,8 +162,8 @@ that hour, against the scripts at `c0baddd`, with the same results at both commi
 
 ## §G — The grant a project needs, once per project
 
-A project role cannot run `SageMakerProcessingOperator` with the blueprint's policies alone, for two
-reasons measured on 2026-10-10:
+A project role cannot run `SageMakerProcessingOperator`, nor create a Glue job from `GlueJobOperator`,
+with the blueprint's policies alone, for three reasons, two measured on 2026-10-10 and one on 2026-10-16:
 
 - **The operator describes the job name before creating it**, and the blueprint lets a project role
   describe only a job tagged with its own project. A name not yet taken carries no tag, so the first run
@@ -171,6 +171,10 @@ reasons measured on 2026-10-10:
 - **A create that carries tags is also authorized as `sagemaker:AddTags`**, and the blueprint excludes
   every `AmazonDataZone*` key from `AddTags` while requiring the job to carry `AmazonDataZoneProject`. The
   second run fails with `AccessDeniedException` on `sagemaker:AddTags`.
+- **`GlueJobOperator` reads the job it names with `glue:GetJob` before it creates or updates it**, and the
+  blueprint lets a project role read only a job tagged with its own project. A name not yet taken
+  carries no tag, so the first run fails with `AccessDenied` on `glue:GetJob` before any job exists
+  (the CI/CD CLI's run `u4AFogXA74olkqo`, 2026-10-16).
 
 The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
@@ -179,9 +183,12 @@ The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment 
 2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
    lives in. A precondition refuses a role without the D13 boundary.
 
-The policy allows `DescribeProcessingJob` on a job with no project tag, and `AddTags` of the caller's own
-project tag alone, on a job with no project tag or with the caller's. Another project's jobs stay out of
-reach.
+The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
+project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
+project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach. The Glue statement is written
+and waits on an apply and a run that creates the job: whether `CreateJob` with the project tag then
+passes with nothing more, unlike the processing job's `AddTags`, is unmeasured.
 
 ---
 
