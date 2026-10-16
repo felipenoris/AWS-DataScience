@@ -1270,3 +1270,29 @@ Every reading below as the infrastructure user, `InfrastructureAccess`: on Sandb
   17:15:39Z: the three runners terminated, GitLab and the WireGuard host stopped, the proxy stopping, no
   interface endpoint left in Production; `make status` at about 17:18Z read every host stopped, every
   `[E]` slice down and an estimated burn of USD 0.0000/h.
+
+## 2026-10-15 — the house image attached to the second project's domain
+
+As the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`), after an SSO
+login by the user; account ids masked as `<acct>` while reading.
+
+- **[user] In chat**: the second project's domain is to offer the house image.
+- **[Claude] Read** at 23:49Z-23:51Z. DataZone's domain holds two projects, `eighth-experimentation` and
+  `test-experimentation` (`4gqfau9xuo6e4w`, `ACTIVE`), the second created at 06:05:18Z from the same
+  project profile and by the same Identity Center user, `28f1b390-…`, whose default space each SageMaker
+  domain holds: D41's `test` project. Its domain `d-lfgbdrjncmsu`, `InService`, `LastModifiedTime`
+  06:06:23Z, is tagged `AmazonDataZoneBlueprint=Tooling` and environment `bi356s1sacz0cw`. Its
+  `DefaultUserSettings` carries the project role, one security group, idle settings alone in both app
+  settings with no `CustomImages` key, 16 GB of a 100 GB ceiling, the `shared` S3 mount, the portal
+  settings and `AutoMountHomeEFS`: outside `CustomImages`, the key paths of `d-p6gthxc82ckg`'s. One user
+  profile, one space (the default), its JupyterLab app `Deleted`.
+- **[Claude] Read**: `sandbox/dev-env/`'s output `custom_images`, one entry per app type with no
+  `ImageVersionNumber`; the image `CREATED`, versions 8 and 7 `CREATED`.
+- **[Claude] The write**, authorized by the user in chat: `dev-env.md` §C6's CLI route, as D1 on
+  `d-p6gthxc82ckg`. The block generated from the 23:51:01Z read differed from it in the two lists alone,
+  and a re-read just before the send found the live block unchanged. `update-domain` at
+  2026-10-16T00:31:24Z: `InService` with no `FailureReason`, `LastModifiedTime` 00:31:26Z. Read back at
+  00:31:42Z, the block is identical to the one sent, and against the 23:51:01Z read the only change is the
+  two lists, `awsds-sandbox-dev-env` with `awsds-sandbox-dev-env-jupyterlab` and with
+  `awsds-sandbox-dev-env-codeeditor`, no version number; the rest of the domain object unchanged, the
+  default space's app still `Deleted`. The portal's picker in `test-experimentation` is not read (§C7).
