@@ -638,8 +638,8 @@ app-etl/
 ```
 
 The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
-`awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/` and `code/` join it at Stage 8
-step 2.5 (D41), `glue/` at Stage 10. The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
+`awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/`, `code/` and `glue/` join it at
+Stage 8 step 2.5, whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
 application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
 release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds

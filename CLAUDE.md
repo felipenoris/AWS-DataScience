@@ -281,7 +281,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c, 6i are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
   triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 41 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h step 5's negatives** (5.2, 5.2a, 5.3 from the project, 5.4 as the persona; 5.1 and 5.2b wait for a second project), 0.4's portal reading and 6.4's keep-or-drop of `lab`, each session after `make hub-up` and `make up ENV=sandbox GROUPS=redshift`.
+  Development account, ever; interactive compute is Sandbox only. All 41 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h step 5's negatives** (5.2, 5.2a, 5.3 from the project, 5.4 as the persona, 5.1 from `test-experimentation`; 5.2b waits on decision 8), 0.4's portal reading and 6.4's keep-or-drop of `lab`, each session after `make hub-up` and `make up ENV=sandbox GROUPS=redshift`.
 - **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20); 6h's passes 0-2 and 6.1-6.3 are done, its negatives are not.** Two slices:
   `sandbox/warehouse/` rank **53** `[P]` (namespace + admin secret + 3 audit groups at 30 d + exec role with
   **no policy** + SG + 2 alarms) and `sandbox/warehouse-compute/` rank **54** `[E]` (workgroup `base 4 / max 8`

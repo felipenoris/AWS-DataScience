@@ -770,6 +770,17 @@ one module tag.
   order and verification xxv waiting for a second application; and `src/` as the release's prefix for a
   processing task's code, decision 7's. Nothing in AWS changed.
 
+- **2026-10-16 — The executed stages read against D41.** A review the user asked for found sentences that
+  Stage 8's decisions 1, 18 and 19 left stale, and a gap the second project opens. Stage 8 no longer
+  describes refusal 8 with the `sandbox/dev-env/` exemption decision 18 removed, the dev-env release as
+  domain writes, or the ECR scan as a gate that stops an image; the runner's assume list and the risks
+  name the CLI's `test` deploy (INT-25). `glue/` joins `app-etl` at Stage 8 step 2.5, whose workflow runs
+  a Glue job. `test-experimentation`, created 2026-10-15 as D41's `test` project, carried the blueprint's
+  three policies alone when read on 2026-10-16, so `sandbox/workflows/` lists its role, unapplied: without
+  it the `test` deploy's processing task meets the refusals 6i measured. Three decisions stay the user's:
+  whether `sandbox/app/app-etl/` retires, which identity runs `deploy --targets dev`, and when Stage 8's
+  pass 4 runs against Stages 9 and 10. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
