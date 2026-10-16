@@ -1377,6 +1377,14 @@
   registry and links them to the release, and in a job `CI_JOB_TOKEN` signs it in when
   `GLAB_ENABLE_CI_AUTOLOGIN=true`: <https://docs.gitlab.com/cli/release/create/>.
 
+- GitLab's `cli` image, the one the `release` keyword runs `glab` from, pinned by digest in
+  `examples/app-etl/.gitlab-ci.yml` (read 2026-10-16, Stage 8 step 2.5). The registry's token:
+  <https://gitlab.com/jwt/auth?service=container_registry&scope=repository:gitlab-org/cli:pull>; the
+  tags: <https://registry.gitlab.com/v2/gitlab-org/cli/tags/list>; a tag's manifest, whose digest the
+  job pins: <https://registry.gitlab.com/v2/gitlab-org/cli/manifests/v1.120.0>; the releases and
+  their dates (v1.120.0 on 2026-09-29, v1.119.0 on 2026-09-22, v1.123.0 on 2026-10-13):
+  <https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases>.
+
 - Amazon S3 conditional writes enforced by a bucket policy (read 2026-10-15, Stage 8 decision 20's
   optional deny). The condition keys `s3:if-none-match` and `s3:if-match` enforce conditional writes
   in a general purpose bucket; the enforcement covers `PutObject` and `CompleteMultipartUpload`, the

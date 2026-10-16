@@ -1326,3 +1326,40 @@ on 2026-10-16.
 - **[Claude]** The workflows grant is on both Sandbox projects' roles, `eighth-experimentation` (D41's
   `dev`) and `test-experimentation`. Stage 6i verification xiv's second half, another project's processing
   jobs out of reach, needed a second project and is not run here.
+
+## 2026-10-16 — step 2.5 written: app-etl as an application
+
+Written by Claude in the cloud session of the project thread, with no AWS identity: the application
+in `examples/app-etl/` and its pipeline, read against the CLI 1.0.9 and the lint offline. No tag ran
+it; the Terraform of decisions 19 and 20 and the CLI in the deploy image are PRs of their own.
+
+- **[Claude] Verification xxv, the CLI on the deploy image's Python**: in a scratch venv on CPython
+  3.14.6 with `UV_PYTHON_DOWNLOADS=never`, `uv pip install aws-smus-cicd-cli==1.0.9` resolved 25
+  distributions, every one a wheel (boto3 1.43.114, botocore 1.43.114, typer 0.27.3, rich 15.0.0,
+  jsonschema 4.26.0, PyYAML 6.0.3, requests 2.34.2, urllib3 2.8.0, s3transfer 0.19.2 among them), and
+  `aws-smus-cicd-cli --version` printed `aws-smus-cicd-cli 1.0.9`, exit 0, with the proxy and the AWS
+  variables unset.
+- **[Claude] `bundle` over the application, offline** (`env -i`, the proxies on a closed port, no
+  credentials, fabricated values for the manifest's variables, a copy of the folder): with the
+  manifest's `code` item as `include: ["code/*.zip"]` and the zip present, `Warning: Pattern not
+  found: code/*.zip` on stderr, `Bundled 0 files for 'code'`, exit 0, a bundle of 5,609 bytes without
+  the zip. Read in 1.0.9's `commands/bundle.py`: an include is `os.path.isfile` or `os.path.isdir`,
+  never a glob, while `commands/deploy.py` expands it with `glob.glob`. With `include:
+  [code/app-etl.zip]`: `Copied file: code/app-etl.zip`, a bundle of 6,968 bytes holding
+  `code/app-etl.zip`, `src/app_etl/` (3 files), `glue/transform.py`, `samples/trades.csv` and
+  `workflows/app-etl.yaml`; without the zip, the warning and exit 0, which `test-deploy` turns into a
+  failure. The domain lookup logged three `ERROR` lines (`Unable to locate credentials`) and the
+  bundle went on. The manifest's `${DOMAIN_ID}` is validated against `^dzd-[a-z0-9]+$` before anything
+  runs.
+- **[Claude] GitLab's `cli` image for the `release` keyword**, read from `registry.gitlab.com`'s tags
+  and manifests and from the project's releases: `v1.120.0`, released 2026-09-29, digest
+  `sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812` (linux amd64 and arm64);
+  `v1.119.0` of 2026-09-22 is `sha256:79223ad3fa6e3c3226119ac5d0b73e55f1b909e6d5bbf8469726480723b63ba8`;
+  the newest, `v1.123.0` of 2026-10-13, is under the two-week bound. The job pins `v1.120.0`.
+- **[Claude] The local checks**: `uv run --locked pytest` 14 passed (the seven of the pipeline, five
+  of the worker's task over a double of boto3, two of the Glue script over doubles of awsglue, pyspark
+  and boto3); `ruff check` and `ruff format --check` clean; `awsds-workflows lint examples/app-etl`
+  at `3c1708e`, `ok: 6 arquivo(s)`; the zip built with `python3 -m zipfile` (1,246 bytes, the module
+  alone) and imported from the zip on CPython 3.12.3; `./scripts/check-gitlab-ci.py` OK (13 jobs from
+  3 files, 8 names resolved for `examples/app-etl/.gitlab-ci.yml`); `./scripts/check-identifiers.py`
+  OK; `./scripts/check-plan-refs.py` OK.
