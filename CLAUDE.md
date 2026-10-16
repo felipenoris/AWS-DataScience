@@ -443,7 +443,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Sandbox project, kept (`demo-devenv-job`, `demo-devenv-deps`, `demo-python-operator`,
   `demo-bash-operator`); a job's command opens with `sudo -n chown "$(id -u)" /opt/ml/processing/outbox`;
   `sandbox/workflows/` (rank 56, `[P]`, policy v2) grants the operator's existence check and the project
-  tag on create.
+  tag on create, and since 2026-10-16 (user's choice, written, unapplied) Glue's `GetJob` on an untagged
+  job named `<app>-<project id>`, the `GlueJobOperator`'s existence check.
   A job imports a vendored extension module from its code input (`package-uv-job.py`). 6i's log groups sit
   under `EXC-10`. A processing input is a prefix read at each run with no version to pin, so Stage 10
   decision 7 (D41 item 7) puts a promoted job's dependencies in its image, its code in its input. **The

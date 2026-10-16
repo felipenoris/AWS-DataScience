@@ -845,7 +845,10 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
     and 17. D41 (2026-10-15)
     fixes the owner: the application slice declares the job in Staging and Production and the workflow's
     role holds no `glue:CreateJob`; in the `dev` and `test` projects the operator creates and updates it,
-    under a stage variable.
+    with `update_config: true` and the whole `Command` in `create_job_kwargs` (user, 2026-10-16), and
+    `sandbox/workflows/` grants the `glue:GetJob` on a name not yet taken that the blueprint's policy
+    refuses, the shape of 6i's `DescribeProcessingJob` statement narrowed to `<app>-<project id>`
+    (user, 2026-10-16; written, unapplied).
 13. **Whether every production workflow is started by a state machine** (3.5, 6.1). Recommended: **yes,
     a chain of one included**: every workflow carries `TriggerMode` `manual_only`, the cron lives in the
     Scheduler schedule, the pause is the schedule's `state`, the date is an `OverrideParameters` the
