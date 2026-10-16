@@ -614,6 +614,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     passes — and where the two are one principal, the measurement agrees with the wrong design.**
 67. **Whoever can make a machine run code holds the machine's role — a runner's scope is an IAM decision
     made in GitLab's UI.**
+68. **An `[E]` host's first boot runs every session: what it reads unpinned is a release, and what it
+    reads without waiting is a race.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

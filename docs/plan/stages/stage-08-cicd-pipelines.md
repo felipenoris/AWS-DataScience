@@ -725,6 +725,21 @@ the approval, and 4.6's alarm.
   `backend.py` from `DEPLOY_ROLES_BY_SLICE`); `deploy_role_arns`, keyed by account, stays for
   `production/sagemaker/`'s promotion roles. The deploy runner's AWS config gains the profile
   `awsds-deploy-sandbox-test` and its role the assume of that role; `./aws/cicd.py` reads the four.
+- **4.3 — The three boots hardened, written 2026-10-16, not applied** (decisions 24 and 25). The test
+  runner `i-018f82308a703b5fa`, created by `make gitlab-up` in the same apply as its role and instance
+  profile (16:36:01 UTC), failed its first AWS call, the CA root's read, at
+  16:36:29 with `NoCredentials`; `cloud-final` ended `FAILED` and runner #4 never registered, since each
+  template read the root once. Each template now retries that read, the wait doubling from 2 s up to
+  32 s, for five minutes, then stops the boot with the call's last error. On a stand-in `aws` command
+  with the sleeps simulated: no failure reads once, three failures read at the fourth try after 14 s,
+  and a failure that never ends stops at the fourteenth try, 318 s in. The build and test instances
+  also `depends_on` their role's module: the instance profile names the role alone, so nothing made
+  the host wait for the inline policy its boot reads with. The read-only plan as `awsds-infra-prod`
+  (21:41 UTC): `Plan: 3 to add, 0 to change, 3 to destroy`, each runner replaced for its `user_data`
+  alone, its AMI `ami-0803a33fd43db1fbf` before and after; the user data grows from 7,354 to 8,390
+  bytes (build), 7,347 to 8,379 (test) and 9,717 to 10,717 (deploy), under EC2's 16 KB. An apply
+  replaces the three hosts, so it waits for a moment with no job running; the next `make gitlab-up`
+  builds them from this code in any case.
 - **4.5 — [Claude⚡] Apply** `production/runners/` (and the Sandbox `foundation/` amendment of 4.2) as
   `awsds-infra-prod` and `awsds-infra-sandbox-1`. **[user]** Create the runner in GitLab (UI → authentication
   token `glrt-…`, Stage 7's flow), mark it **Protected**, lock it to the projects, and store the token where
@@ -1334,6 +1349,63 @@ Measured (`docs/PRICING.md`), us-west-2:
     9 and 10 exist, as Stage 9's 8.5 plans.
     **Taken by the user 2026-10-16 (14:58 UTC), as recommended.** The pass table, "On ordering", Stage 9's
     pass order and Stage 10's prerequisites follow it.
+24. **Which `gitlab-runner` release the runners install** (4.3; decision 11; Stage 7 step 6). The three
+    boots ran `dnf -y -q install gitlab-runner` with no release, so a host took packages.gitlab.com's
+    newest at its first boot: the deploy runner installed 19.4.1 on 2026-10-13 and 19.5.0 on 2026-10-16
+    from the same line, against GitLab CE v19.4.2. GitLab's page on runner versions keeps a runner's
+    major.minor in sync with the server's: minor updates are backward compatible, and a version
+    difference can leave features unavailable. The `amazon/2023` index, read 2026-10-16: a new minor
+    each month (19.4.0 on 2026-09-16, 19.4.1 on 2026-09-24, 19.5.0 on 2026-10-15), and every
+    `gitlab-runner` requires `gitlab-runner-helper-images` of its own version and release.
+    Recommended: **pin the release in `production/runners/variables.tf`, `gitlab_runner_version =
+    "19.4.1"`**, the newest 19.4. Each boot installs `gitlab-runner-<release>`, dnf brings the helper
+    images at the same release, `rpm -q` prints both into the boot log, and a release the repository
+    lacks stops the boot at dnf. A GitLab upgrade moves the line in the same sitting. Its costs: the
+    server's version is in no file here (`production/tooling/` installs the newest `gitlab-ce` at its
+    first boot and holds the host), so no check compares the two, and the coupling lives in the
+    variable's description and `gitlab.md` §K; and a runner fix inside 19.4 reaches the hosts only by a
+    commit. The alternative, no pin: each new host takes the newest, so for up to a month after a runner
+    release the runners lead the server by a minor, two boots of one commit install different
+    releases, and a release nobody reviewed runs on the host whose role reaches the deploy roles
+    (Lesson 67). Written 2026-10-16 as recommended, unapplied (4.3).
+25. **When a runner takes a new Amazon Linux image** (4.3; decision 11; Stage 7 step 6). Each runner read
+    its `ami` from `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` at every
+    plan, so an Amazon Linux release replaced all three at the slice's next plan, whatever that plan was
+    for: the parameter moved to `ami-0803a33fd43db1fbf` (version 194) at 20:01:25 UTC on 2026-10-16, and
+    the plan written to replace the deploy runner for its job image read `3 to add, 3 to destroy`, each
+    `ami = (sensitive value) # forces replacement`. Amazon Linux 2023 published 8 releases in the 30
+    days to 2026-10-16, 4 of them in October (`describe-images`, owner `amazon`), and each image carries
+    a `DeprecationTime` 90 days after its creation. The options, with their costs:
+    - (a) **the image pinned by a variable.** The portability rule forbids an `ami-` literal
+      (`architecture.md`, "Region portability"). A pin by the image's name
+      (`al2023-ami-2023.12.20261016.0-kernel-6.18-x86_64`) through `data "aws_ami"` is portable, and stops
+      resolving 90 days after the image's creation unless `include_deprecated` is set. A pin by the
+      parameter's version does not exist: `GetParameter` with a version selector answers
+      `ParameterVersionNotFound` for every version, the current 194 included, and `GetParameterHistory`
+      is refused (read 2026-10-16). Cost: a commit per image, and hosts that age between commits on a
+      slice rebuilt every session.
+    - (b) **`lifecycle { ignore_changes = [ami] }` on each runner.** A host keeps the image it was
+      created on, a release replaces no running runner, and a host the slice creates takes the newest:
+      for an `[E]` slice that is every `make gitlab-up`, so an image ages at most one session. Measured
+      on a `terraform_data` stand-in with Terraform 1.15.8 (2026-10-16): a moved value alone plans `No
+      changes`, and a replacement forced by another argument creates with the configuration's value and
+      prints the move. Cost: the plan no longer says that a running host's image is older than the
+      parameter; after one runner's replacement the three can run different images; an image wanted
+      mid-session takes a `-replace` or the next session; and a release that breaks the boot breaks the
+      next `make gitlab-up`, read in the boot log. `production/tooling/` holds its `[D]` host this way,
+      with `ignore_changes = [ami, user_data]`.
+    - (c) **accept and document**, as `vpn.md` does for the hub's two hosts. Cost: each release, 8 in 30
+      days, turns the slice's next plan into three replacements, so a change to one runner replaces all
+      three; each replacement fails the job running on it and costs a first boot (107 to 256 s on
+      2026-10-16); and the plan prints the forcing value as `(sensitive value)`, so the reader looks the
+      id up elsewhere before applying (Lesson 64).
+
+    Recommended: **(b)**, the runners reading the parameter's `insecure_value`, since an AMI id is
+    public: a plan that creates or replaces a runner then prints the id where `value` printed
+    `(sensitive value)`. The first plan after the change still marks it, the prior state carrying the
+    mark once. The runners are rebuilt every session, so (b) brings the newest image with no commit;
+    (a), by name, is the fallback for a release that breaks the boot, held until the next one. Written
+    2026-10-16 as recommended, unapplied (4.3).
 
 ## Verifications to answer while executing
 
@@ -1367,6 +1439,7 @@ Record every answer, including the ones that come out fine.
 | xxiv | With `sandbox/egress` down, does 2.5's endpoint check fail the `test` job in seconds, before `deploy` writes anything? | 2.5 |
 | xxv | Does `aws-smus-cicd-cli` 1.0.9 install and run on the deploy image's Python 3.14 with `UV_PYTHON_DOWNLOADS=never`? **Yes, read 2026-10-16** on CPython 3.14.6 with downloads refused: every one of its 25 distributions resolved as a wheel (boto3 1.43.114, typer 0.27.3, rich 15.0.0, jsonschema 4.26.0, PyYAML 6.0.3 among them) and `--version` printed `aws-smus-cicd-cli 1.0.9` offline; `bundle` ran offline too, exit 0 with no credentials | 2.5 |
 | xxvi | After a release that removes a file the previous one carried, does the next `test` run read only what its bundle carries? | 2.5 |
+| xxvii | Does each runner's first boot on the hardened templates read the CA root, printing a `not yet` line per retry, install `gitlab-runner-19.4.1-1` with `gitlab-runner-helper-images-19.4.1-1`, and register; and does the slice's first plan after the next Amazon Linux release read `No changes`? | 4.3, decisions 24 and 25 |
 
 ## Risks
 
