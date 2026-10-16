@@ -1678,3 +1678,23 @@ Every time is UTC.
 - **[Claude] `register`**, read in Sandbox by another session: version 9 of `awsds-sandbox-dev-env`
   created at 22:03:16, alias `0.8.0`, `ContainerImage` the pushed digest, no write on the domain;
   `retire` kept versions 9, 8 and 7. The README's `v0.8.0` row and the mirror follow.
+
+## 2026-10-16 — the runners' boot hardened, and decisions 24 and 25 taken
+
+Written by Claude in the laptop session of PR #147, as the infrastructure user through `awsds-infra-prod`
+(`InfrastructureAccess`), reads only; nothing applied. Every time is UTC.
+
+- **[Claude] The AMI parameter read** (between 21:22 and 21:34): the runners' parameter,
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, at version 194,
+  `ami-0803a33fd43db1fbf`, modified 20:01:25. `get-parameter-history` on it is refused
+  (`AccessDeniedException: Cannot access/update data for the restricted parameter`), and `get-parameter`
+  with the selectors `:193` and `:194` answers `ParameterVersionNotFound`. `describe-images` (owner
+  `amazon`): 8 AL2023 releases in the 30 days to 2026-10-16, 4 of them in October; `ami-042bfcefcf88b2ac8`
+  and `ami-0803a33fd43db1fbf` each carry a `DeprecationTime` 90 days after their `CreationDate`.
+- **[Claude] `production/runners/` planned, read-only**: on PR #145's head, `No changes` (21:27:14); with
+  the hardening (`dbd5dbc`), `Plan: 3 to add, 0 to change, 3 to destroy` (21:41:59), each instance's
+  `replace_paths` `user_data` alone and its AMI `ami-0803a33fd43db1fbf` before and after; after `main`
+  merged in with #145 (`66f0b1e`), the same at 22:18:02.
+- **[user] Decisions 24 and 25** (by 22:21, in this session's chat): "Aceito as decisões 24 e 25 como
+  recomendadas. Registre no arquivo da etapa 8." `gitlab-runner` pinned at 19.4.1, and each runner's AMI
+  held by `ignore_changes`. The apply stays the user's.
