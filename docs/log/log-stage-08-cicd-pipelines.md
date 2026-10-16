@@ -1717,3 +1717,28 @@ GitLab over HTTPS with the laptop's credential helper on the user's request. Eve
 - **[user] The merge** at 22:41:51 (`5d5391a`).
 - **[Claude] The copy**: `./scripts/gitlab-mirror.py` changed `README.md` in `gitlab/awsds/dev-env/` and
   `mirror.json`; `awsds/deploy-image`'s copy already held `7bf9acf`.
+
+## 2026-10-16 — the runners rebuilt from PR #147's code
+
+- **[user] `make gitlab-up`** after #147's merge (22:21:53, `b713f2a`), from the project folder on
+  `main`, the user's word in the thread at 23:04: "Eu já apliquei o `make gitlab-up`." The plan's
+  figures stayed in the user's terminal.
+- **[Claude] The replacement read**, in the instances and in GitLab by another session on the
+  laptop, reads only: the three runners of 21:08:32 `terminated`, the new three launched together at
+  22:26:05, build `i-0e2329501161e2feb`, deploy `i-069d264f327b93700` and test
+  `i-08a2443adfe11fa0d`, every one on `ami-0803a33fd43db1fbf`, the AMI the code now holds; each user
+  data PR #147's, `RUNNER_VERSION="19.4.1"` with `dnf install gitlab-runner-$RUNNER_VERSION` and the
+  `until … aws ssm get-parameter …; do sleep "$delay"` loop that waits for the role's credentials
+  before the CA root's read; in GitLab, runners #1, #3 and #4 online at 19.4.1. Decisions 24 and 25
+  are applied.
+
+## 2026-10-16 — `devenv.py` on version 9
+
+- **[user] `./aws/devenv.py`**, run from the project folder on `main` (`a5862bd`) with Sandbox down,
+  the user's paste in the thread at 23:04: "region: us-west-2 / awsds-infra-sandbox-1 OK / wrote
+  aws/output/devenv.txt checks: 5 passed or noted, 1 FAILED".
+- **[Claude] The report**, read on the laptop: `DE-5` green, version 9's `ContainerImage`
+  (`sha256:b788dbd9…1b87`) baking the 70 names, sha256 `aafa08da98a61f5c`; `DE-1` and `DE-4` green;
+  `DE-2` FAILED because `sandbox/egress` is down and its state holds neither output, the absence the
+  check itself names, with `DE-3` and `DE-6` noted as not compared. The exit 2 reads the
+  environment's state, not the image's; the two comparisons wait for a `make up ENV=sandbox`.

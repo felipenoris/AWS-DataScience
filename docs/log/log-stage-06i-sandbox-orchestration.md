@@ -1403,3 +1403,19 @@ on 2026-10-16.
   hub-down` at 15:40:39Z, `awsds-prod-vpn` and `awsds-prod-proxy` both `stopped` at 15:41:28Z. The
   day's readings are in `/tmp/medicao-cli/` on the laptop (`d*` the apply, `e*` the `make up`, `f*` the
   runs, `g*` the `make down`), with the worktree and the plan file, to remove on the user's word.
+- **[Claude] The orphan object deleted**, by the user's word of 23:04 ("pode apagar o arquivo órfão
+  etl_houseprice.py"), as `awsds-infra-sandbox-1`, the other sessions on the laptop told first:
+  `shared/exemplos/houseprice-etl/jobs/etl_houseprice.py` in the `dev` project's `shared/`, `delete-
+  object` at 23:05:58Z. The bucket is versioned, so a delete marker sits over the version of
+  2026-10-15 (`Pwx9Avjf…`), recoverable, and its permanent removal is the user's own act;
+  `glue/etl_houseprice.py`, the layout in use, is untouched, and the `test` project held no orphan.
+- **[Claude] The laptop's copies**, by the user's words of 23:04: `/tmp/medicao-cli/` (1.6 MB) and
+  the lab copies `/tmp/houseprice-etl`, `/tmp/houseprice-etl-d41`, `/tmp/awsds-workflows` and
+  `/tmp/valores-lab.json` moved to `~/.Trash/tmp-lab-residues-2026-10-16` (3.6 MB), and the 80 plan
+  files of `~/tmp` (2026-08-19 to 2026-10-15) to `~/.Trash/tmp-tfplans-2026-10-16` (4.0 MB), nothing
+  deleted for good: the Trash is the user's to empty.
+- **[Claude] What stays in Sandbox**, idle at no cost, since the user's word named the files: the
+  two workflows the CLI deployed, `houseprice_etl_eighth_experimentation_houseprice_etl` in `dev`
+  and `houseprice_etl_test_experimentation_houseprice_etl` in `test`, the two Glue jobs `houseprice-
+  etl-<project id>` and `shared/exemplos/houseprice-etl/` in both projects. Deleting a workflow
+  takes the measurement's run history with it; the logs stay in CloudWatch.
