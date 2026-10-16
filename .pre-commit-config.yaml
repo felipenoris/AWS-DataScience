@@ -209,6 +209,17 @@ repos:
         pass_filenames: false
         files: (\.tf|scripts/check-sg-descriptions\.py|scripts/tfhygiene/hcl\.py)$
 
+      # GitLab keeps a runner's major.minor with the server's. The server's release is
+      # production/tooling/'s gitlab_ce_version (Stage 7 decision 10), the runners' is
+      # production/runners/'s gitlab_runner_version (Stage 8 decision 24), and an upgrade moves
+      # both; the hook fails a commit that moves one and leaves the other a minor behind.
+      - id: check-gitlab-pins
+        name: the runners' gitlab-runner release keeps the GitLab server's major.minor
+        entry: ./scripts/check-gitlab-pins.py
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/production/(tooling|runners)/variables\.tf|scripts/check-gitlab-pins\.py|scripts/tfhygiene/hcl\.py)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov

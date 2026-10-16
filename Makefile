@@ -181,7 +181,8 @@ check:
 	         "./scripts/check-identifiers.py" \
 	         "./scripts/check-provider-locks.py" \
 	         "./scripts/check-gitlab-ci.py" \
-	         "./scripts/check-sg-descriptions.py"; do \
+	         "./scripts/check-sg-descriptions.py" \
+	         "./scripts/check-gitlab-pins.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \
 	done; \
