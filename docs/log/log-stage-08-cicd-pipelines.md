@@ -1718,19 +1718,36 @@ GitLab over HTTPS with the laptop's credential helper on the user's request. Eve
 - **[Claude] The copy**: `./scripts/gitlab-mirror.py` changed `README.md` in `gitlab/awsds/dev-env/` and
   `mirror.json`; `awsds/deploy-image`'s copy already held `7bf9acf`.
 
-## 2026-10-16 — the runners rebuilt from PR #147's code
+## 2026-10-16 — the 22:26 apply of `production/runners/`, and the hardened runners' first boots (verification xxvii)
 
-- **[user] `make gitlab-up`** after #147's merge (22:21:53, `b713f2a`), from the project folder on
-  `main`, the user's word in the thread at 23:04: "Eu já apliquei o `make gitlab-up`." The plan's
-  figures stayed in the user's terminal.
-- **[Claude] The replacement read**, in the instances and in GitLab by another session on the
-  laptop, reads only: the three runners of 21:08:32 `terminated`, the new three launched together at
-  22:26:05, build `i-0e2329501161e2feb`, deploy `i-069d264f327b93700` and test
-  `i-08a2443adfe11fa0d`, every one on `ami-0803a33fd43db1fbf`, the AMI the code now holds; each user
-  data PR #147's, `RUNNER_VERSION="19.4.1"` with `dnf install gitlab-runner-$RUNNER_VERSION` and the
-  `until … aws ssm get-parameter …; do sleep "$delay"` loop that waits for the role's credentials
-  before the CA root's read; in GitLab, runners #1, #3 and #4 online at 19.4.1. Decisions 24 and 25
-  are applied.
+Written by Claude in the laptop session that applied step 2.5a, by the user's word that this session
+records the 22:26 apply and verification xxvii, as the infrastructure user through `awsds-infra-prod`
+(`InfrastructureAccess`), reads only. Every time is UTC.
+
+- **[user] `make gitlab-up`** after PR #147 reached `main`: the three runners recreated, launched 22:26:05
+  on `ami-0803a33fd43db1fbf`: `i-0e2329501161e2feb` (build), `i-08a2443adfe11fa0d` (test) and
+  `i-069d264f327b93700` (deploy). The apply's output was not pasted.
+- **[Claude] The apply in CloudTrail** (Production, `us-west-2`): `TerminateInstances` at 22:25:33-34 on
+  `i-0f053b2cd9bdf492e`, `i-0cc9c1b95621c5be2` and `i-00c29f8ea8e6265c4`, the runners of 21:08, and three
+  `RunInstances` at 22:26:05: the build runner `m8i.xlarge` with a 64 GiB `gp3` root, the deploy and test
+  runners `t3a.small`, each on `ami-0803a33fd43db1fbf`, the test runner's metadata hop limit 1 against
+  the others' 2. Every event by the infrastructure user's `InfrastructureAccess` session (created
+  22:25:31) with Terraform 1.15.8 and provider `aws` 6.68.0 as its user agent.
+- **[Claude] Their first boots, read through the serial console** by 23:08, each on Amazon Linux
+  2023.12.20261016: the build runner 22:26:14 to 22:27:57 (107.2 s), the test runner 22:26:20 to
+  22:29:44 (211.8 s), the deploy runner 22:26:25 to 22:30:15 (240.2 s). Each passed "the CA root, from its
+  one source, once the instance's role answers" on its first read, with no `not yet` line and no
+  `FATAL`; `rpm -q` printed `gitlab-runner-19.4.1-1.x86_64` and
+  `gitlab-runner-helper-images-19.4.1-1.noarch`; `Verifying runner... is valid`, registered as
+  `awsds-prod-runner-i-0e2329501161e2feb`, `awsds-prod-runner-test-i-08a2443adfe11fa0d` and
+  `awsds-prod-runner-deploy-i-069d264f327b93700`; through the proxy `pypi.org` `200` and `10.31.0.1`
+  `403`, GitLab direct `200`. The test runner printed `no token from a container: the jobs hold no AWS
+  identity`. The deploy runner assumed its four deploy roles and pulled the job image as
+  `awsds-prod-ecr-deploy@sha256:ee31048e…7e91ac`, `v0.2.0`.
+- **[Claude] Verification xxvii, the boot half**: each runner read the root, installed 19.4.1-1 with its
+  helper images and registered. The retry was not exercised: the three roles predate their hosts, so no
+  read failed and no `not yet` line printed; only an apply that creates a role and its host together,
+  as at 16:36, reaches it. The plan half waits on the next Amazon Linux release.
 
 ## 2026-10-16 — `devenv.py` on version 9
 
