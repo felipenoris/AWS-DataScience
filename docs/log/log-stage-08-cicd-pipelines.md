@@ -1297,3 +1297,32 @@ login by the user; account ids masked as `<acct>` while reading.
   default space's app still `Deleted`. The portal's picker in `test-experimentation` is not read (§C7).
 - **[Claude] Read after the write**: both projects come from the same project profile and were created by
   the same Identity Center user, `28f1b390-…`, whose user profile and default space each domain holds.
+
+## 2026-10-16 — the workflows grant attached to the second project's role
+
+As the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`). Every time is UTC
+on 2026-10-16.
+
+- **[user] `terraform-live/sandbox/workflows/` applied**, Recipe A, after PR #140 listed
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, the role of `test-experimentation` (D41's `test`
+  project), in `project_roles`. The apply's output was not pasted.
+- **[user] Read back after the apply**, `aws iam list-attached-role-policies --profile awsds-infra-sandbox-1
+  --role-name datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw --query "AttachedPolicies[].PolicyName"
+  --output text`, pasted in the chat of the session that opened PR #140 and relayed verbatim:
+
+  ```text
+  SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy    SageMakerStudioProjectRoleMachineLearningPolicy SageMakerStudioProjectUserRolePolicy    awsds-sandbox-workflows
+  ```
+
+- **[Claude] The re-plan** by the session that opened PR #140, 02:22:58Z-02:23:07Z, from content identical
+  to `main`'s `f33a6d1` for the slice: `No changes. Your infrastructure matches the configuration.`
+- **[Claude] CloudTrail**, `lookup-events` in `us-east-1` for `AttachRolePolicy` since 2026-10-15T20:00Z:
+  one event, at 02:21:44Z, `awsds-sandbox-workflows` on `test-experimentation`'s role, by the
+  infrastructure user's `InfrastructureAccess` session with Terraform 1.15.8's user agent, no error code.
+  That is the apply's time.
+- **[Claude] Read back**: `list-attached-role-policies` at 02:23:25Z lists the same four policies, the
+  blueprint's three and `awsds-sandbox-workflows`. The re-plan, 02:23:53Z-02:24:02Z: `No changes`,
+  `-detailed-exitcode` 0, both roles' attachments refreshed.
+- **[Claude]** The workflows grant is on both Sandbox projects' roles, `eighth-experimentation` (D41's
+  `dev`) and `test-experimentation`. Stage 6i verification xiv's second half, another project's processing
+  jobs out of reach, needed a second project and is not run here.
