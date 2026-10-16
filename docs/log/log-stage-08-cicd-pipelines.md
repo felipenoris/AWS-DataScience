@@ -1561,3 +1561,11 @@ user's run. Every time is UTC.
   copy under `gitlab/awsds/deploy-image/` in PR #145, and in GitLab, the source of truth, by the
   user's own edit, who started the pipeline again with `IMAGE_TAG=v0.2.0` by 20:54; the mirror then
   reports the copy unchanged.
+- **[Claude] The rebuild** (read in the user's browser): the user's edit `b064ba80` ("Edit
+  .dockerignore") went straight to `main`, and pipeline #43's job `build-deploy-image` (#148) ran
+  from 20:53:30 to 20:54:34, 64 s: the `COPY` passed, the venv took `aws-smus-cicd-cli==1.0.9` and
+  its 24 dependencies by hash, `aws-smus-cicd-cli --help` answered in the build, and the image was
+  pushed as `awsds-prod-ecr-deploy:v0.2.0`, digest
+  `sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac`, 255,596,236 bytes
+  against `v0.1.0`'s 208,935,352, pushed at 20:54:33 by ECR's reading. The digest step, the runner's
+  re-apply and the mirror follow in the laptop session's own entry.
