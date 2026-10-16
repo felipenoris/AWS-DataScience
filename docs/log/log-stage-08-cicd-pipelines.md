@@ -1654,3 +1654,27 @@ Every time is UTC.
   `GM-3` first, since `sandbox/egress`'s state held no `no_proxy_all_groups` (the slice down); with
   `--plan`, `GM-1` to `GM-8` pass, the literal and the account's list both 70 names, `sha256
   aafa08da98a61f5c`. No tag `default-v0.8.0` exists yet.
+
+## 2026-10-16 — the release `default-v0.8.0`: Sandbox's image version 9
+
+- **[user] The tag** `default-v0.8.0` on `awsds/dev-env`'s `main` `7c59998`, created in GitLab at
+  21:39, the user's word in the thread: "Criei a tag `default-v0.8.0` no repositório `dev-env`.
+  Pipeline está em execução." It starts release pipeline #46 (test, build, verify, release,
+  register).
+- **[Claude] The build**, read in GitLab and ECR by another session: `build-images` 955 s on the
+  rebuilt build runner, its BuildKit cache gone with the instance; the smoke green (trust, runtimes,
+  imports, manifests); the images tagged `default-v0.8.0-7c59998c`: `base` 3,745,649,519 bytes
+  (`sha256:681dcb20…f23e`), `dev-env` 6,678,573,838 bytes (`sha256:b788dbd9…1b87`), 4.1 MB under
+  `v0.7.3`'s.
+- **[Claude] The manifests against `v0.7.3`'s**: the house Python gains `aws-smus-cicd-cli` 1.0.9,
+  `httpx-sse` 0.4.3 and `pydantic-settings` 2.16.0, moves `mcp` from 2.1.1 to 1.30.0 and loses
+  `mcp-types` (452 to 454 packages); `runtimes` changes in the base's digest alone; imports, Julia,
+  R, conda, trust and the proxy list identical.
+- **[Claude] The scans**: both CRITICAL 113 and HIGH 610, the 593 past the baseline every one
+  `linux-libc-dev`, as in `v0.7.1` and `v0.7.3`; nothing new. Both jobs fail, since they inform and
+  never block (decision 1 amended), and the pipeline shows `Warning`.
+- **[user] The gate**: `release-gate` run at 22:02:51 with the scans red, the user's word in the
+  thread: "O `scan-base` e `scan-dev-env` falhou. Mas aprovei o gate de release mesmo assim."
+- **[Claude] `register`**, read in Sandbox by another session: version 9 of `awsds-sandbox-dev-env`
+  created at 22:03:16, alias `0.8.0`, `ContainerImage` the pushed digest, no write on the domain;
+  `retire` kept versions 9, 8 and 7. The README's `v0.8.0` row and the mirror follow.
