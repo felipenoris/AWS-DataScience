@@ -10,12 +10,13 @@
 *Read with [`docs/plan/conventions.md`](../conventions.md) (naming, layout, `[P]`/`[D]`/`[E]`, IAM rules).*
 
 **Forward constraint from D35:** step 1's registration writes into **N accounts — every unit's Sandbox,
-N = 1 today** — and, inside each, into every project's SageMaker AI domain, since each project has its own
-(6d). The target list, the per-target roles and the trust-policy ARNs are enumerated **from the authored map
-in `scripts/tfhygiene/backend.py`**, so a vend adds one map entry (Lesson 14). **The promotion chain is
-untouched by N** (D21/D35): whatever the Sandbox count, there is one tag, one Staging leg, one gate. `CI-6`'s
-image-parity check prints `note` ("N = 1, parity trivially true") until [Stage 14](stage-14-sandbox-vending.md)
-vends a second unit.
+N = 1 today** — an image version in each, and no domain: every project has a SageMaker AI domain of its
+own (6d), two in Sandbox since 2026-10-15, and each attaches the image once with no version number
+(decision 18). The target list, the per-target roles and the trust-policy ARNs are enumerated **from the
+authored map in `scripts/tfhygiene/backend.py`**, so a vend adds one map entry (Lesson 14). **The promotion
+chain is untouched by N** (D21/D35): whatever the Sandbox count, there is one tag, one Staging leg, one gate.
+`CI-6`'s image-parity check prints `note` ("N = 1, parity trivially true") until
+[Stage 14](stage-14-sandbox-vending.md) vends a second unit.
 
 ---
 
@@ -375,9 +376,11 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   - **refusal 7: `make up` never applies an `app/` or `orchestration/` slice** — the pipeline (or this hand
     apply) is the applier: a `make up` for an unrelated session would deploy the recorded release outside
     both (decision 12); `make down` destroys them normally (Stage 10 step 1.4 relies on it);
-  - **refusal 8: no pipeline profile applies a `sandbox/` slice**, with one exemption written into the rule:
-    `sandbox/dev-env/` under the dev-env deploy role, the one flow where the supply chain writes into Sandbox
-    (1.6, INT-18).
+  - **refusal 8: no pipeline profile applies a `sandbox/` slice.** Its one exemption, `sandbox/dev-env/`
+    under the dev-env deploy role, left with decision 18: the dev-env release creates image versions
+    through the API (1.6, INT-18). The supply chain writes into Sandbox through two roles that apply no
+    slice, that one and the CLI's `test` deploy (decision 19, INT-25), and each role's policy is the
+    whole control.
 - **2.5 — [Claude] Make `app-etl` a SageMaker application** (D41, 2026-10-15; not written yet, after the
   lab measurement D41 records): the repository gains `manifest.yaml` and `workflows/app-etl.yaml` in the
   CI/CD CLI's notation, the four tasks of D41's scope (a Glue job with a Python Spark transform, a
@@ -560,7 +563,8 @@ the approval, and 4.6's alarm.
   **`awsds-prod-runner-deploy`** (a contract with `./aws/cicd.py`; Stage 7's `awsds-prod-runner*` glob
   still matches), `[E]`, registered **Protected** (runs only jobs on protected branches/tags — a Free-tier
   runner attribute) and **locked to the `dev-env/` and application projects**. Instance role:
-  `sts:AssumeRole` on **exactly the three deploy-role ARNs** (from the map), ECR auth/pull for the deploy
+  `sts:AssumeRole` on **exactly the deploy-role ARNs the map names** (three applied, and
+  `awsds-deploy-sandbox-test` the fourth once 2.5 writes it, decision 19), ECR auth/pull for the deploy
   image 3.1 names, which the build runner builds from this repository's toolchain and pushes into a
   repository of its own, `awsds-prod-ecr-deploy`, the CA root parameter — and nothing else; no push, no
   direct deploy permissions. Jobs inside containers reach the instance profile
@@ -815,14 +819,17 @@ behavioural proofs are the stage's own (Lesson 20):
   with one human approval — and **a deliberately broken version fails at 3.3 and never reaches
   Production**, the test that proves the D20 account earns its keep.
 - **The gate pair:** a build with a known-vulnerable dependency is stopped by 5.2; an image with a
-  blocking finding under decision 1's rule is stopped by 1.4.
+  CRITICAL or HIGH finding absent from the baseline is reported by 1.4, which stops nothing since decision
+  1's amendment.
 - **The dev-env release:** a steward-approved tag ends as an image version whose `ContainerImage` is the
-  pushed digest, attached in every project domain by the steward's hand writes, with no space stranded by the
-  bump (`EXC-09`'s sweep); with N = 1 the parity check is `note` rather than `pass` until Stage 14. The first
+  pushed digest, offered by every project domain through its one attachment with no version number, with
+  no domain write of the release's own and no space stranded (`retire` keeps every version a space names,
+  `EXC-09`); with N = 1 the parity check is `note` rather than `pass` until Stage 14. The first
   pipeline digest replaces the hand-built one, recorded.
 - **The credential negatives:** a job on a non-protected branch never schedules onto the deploy runner;
   CloudTrail names which deploy role ran each leg (INT-08); and **no pipeline profile can apply a
-  `sandbox/` slice other than `sandbox/dev-env/`** (refusal 8, proved once by attempting it).
+  `sandbox/` slice** (refusal 8, `sandbox/dev-env/` included since decision 18; proved once by attempting
+  it).
 - **The proxy negative:** a gate job with its proxy variables removed fails, since no route leaves
   `VPC-SharedServices` but the proxy; on the build plane, which is `open`, the refusal to read is a private
   destination or a `CONNECT` to a port other than 443 (a 403 read over `http://` or in the access log), never
@@ -1125,15 +1132,16 @@ Record every answer, including the ones that come out fine.
 ## Risks
 
 - **The supply chain shares Production's blast radius** (D14, accepted): no boundary between the runner
-  and its Production target. Compensations, all built here: the three narrow roles, the boundary condition
+  and its Production target. Compensations, all built here: the narrow deploy roles, the boundary condition
   on role creation, the plan attached to 3.5, the 4.6 alarms — and the Staging leg's real account
   boundary. `docs/plan/institutional-delta.md` records the build/deploy account split.
 - **In CE the gate constrains who can push the tag, not who approves the release** (Lesson 12) — read at
   Stage 7 3.3 and consumed here as fact, with hand-maintained role/membership pairing as the standing
   duty.
-- **The registration path writes from the supply chain into the accounts where people work** (INT-18) —
-  the reversal of every other flow; the control is the per-target narrow role, and the domain writes stay
-  with the steward.
+- **The registration path and the CLI's `test` deploy write from the supply chain into the accounts where
+  people work** (INT-18, INT-25) — the reversal of every other flow; the control is each one's narrow role,
+  the domain writes stay with the steward, and no misuse rule watches either role, since Sandbox has no
+  alerts topic (decision 5, 4.6).
 - **A deleted version strands the spaces that name it** (`EXC-09`, Lesson 63): a space keeps the version it
   was created on. Since decision 18 no release deletes a version and `retire` keeps every version a space
   names, so only a hand deletion strands a space. **A space left on an old version keeps that version's

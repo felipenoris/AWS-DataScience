@@ -38,10 +38,13 @@ variable "project_roles" {
   description = "The SMUS project roles whose workflows run SageMaker processing jobs, by role NAME (not ARN). One entry per project; empty is legal and attaches nothing."
   type        = list(string)
 
-  # The experimentation project created 2026-08-22 (Stage 6a pass 3), the account's only one,
-  # read from `iam list-roles` on 2026-10-10.
+  # One entry per project, each read from `iam list-roles`:
+  # - eighth-experimentation, created 2026-08-22 (Stage 6a pass 3), D41's `dev` project; read 2026-10-10.
+  # - test-experimentation, created 2026-10-15, D41's `test` project, where the CI/CD CLI's deploy of a
+  #   release runs its processing task as this role (Stage 8 step 2.5); read 2026-10-16.
   default = [
     "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
+    "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw",
   ]
 
   validation {

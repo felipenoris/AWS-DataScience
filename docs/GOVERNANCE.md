@@ -266,8 +266,9 @@ Consequences this file has to carry rather than leave to a stage:
   CREATE` and nothing at table level, so a table belongs to the database user that created it, and another
   project reads it only through a default privilege written for that creator: `SELECT`, never `INSERT` or
   `DROP`, and widening it is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8's. Measured
-  2026-10-10 on the first tables a project wrote; the second project that would exercise it does not exist
-  yet (6h 5.2b).
+  2026-10-10 on the first tables a project wrote; no second project is admitted to exercise it (6h 5.2b).
+  The account's second project, `test-experimentation` (2026-10-15), is D41's `test` project, not admitted
+  to the warehouse.
 - **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
   assumes the project's access role, reach the database as one per-project user; a notebook that connects
   directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
