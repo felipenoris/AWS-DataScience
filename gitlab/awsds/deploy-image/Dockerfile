@@ -1,7 +1,8 @@
 # The deploy image (AWS-DataScience's Stage 8 steps 3.1 and 4.3): what the deploy runner's jobs run in.
 # It carries what that repository's lifecycle calls and nothing else - make, uv and the Python its
-# .python-version names, Terraform at the version its slices pin, git and the AWS CLI - built for amd64,
-# the deploy runner's architecture (decision 4).
+# .python-version names, Terraform at the version its slices pin, git, the AWS CLI and the SageMaker
+# CI/CD CLI an application's test deploy runs (step 2.5, D41) - built for amd64, the deploy runner's
+# architecture (decision 4).
 #
 # Every download is pinned: Terraform and uv by the SHA-256 their publishers list, the AWS CLI by the
 # AWS CLI team's signature, checked against a key whose fingerprint is pinned below. Built by this
@@ -55,6 +56,16 @@ RUN export GNUPGHOME="$(mktemp -d)" \
 # over HTTPS with no key, as the GitHub workflow does.
 RUN git config --system url."https://github.com/".insteadOf "git@github.com:" \
  && git config --system --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+
+# The CI/CD CLI, in a venv of its own so its dependencies never meet a job's: every package from
+# requirements-cli.txt, each file checked against the hash pinned there, and nothing resolved at
+# build time. The venv's own interpreter is this image's.
+COPY requirements-cli.txt /tmp/requirements-cli.txt
+RUN uv venv --python /usr/local/bin/python3.14 /opt/smus-cli \
+ && uv pip install --python /opt/smus-cli/bin/python --require-hashes --no-deps -r /tmp/requirements-cli.txt \
+ && ln -s /opt/smus-cli/bin/aws-smus-cicd-cli /usr/local/bin/aws-smus-cicd-cli \
+ && rm /tmp/requirements-cli.txt \
+ && aws-smus-cicd-cli --help > /dev/null
 
 # uv runs the scripts on this image's interpreter and downloads none: a Python fetched at job time
 # would be a toolchain nobody reviewed.
