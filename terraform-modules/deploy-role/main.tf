@@ -1,9 +1,10 @@
 # deploy-role - one deploy role of Stage 8 step 4 (INT-08, INT-18): the role, the ceiling it carries,
-# its state access, and the alarm on anyone else assuming it. Three callers, one per account the
-# deploy runner reaches: production/, staging/ and sandbox/ foundation/. One module because the
-# contract ./aws/cicd.py reads across the three accounts - the runner's role as the only principal,
-# sts:AssumeRole as the only action, a boundary on every role - must be one document, not three
-# copies (Lesson 33).
+# its state access, and the alarm on anyone else assuming it. Four callers: production/, staging/ and
+# sandbox/ foundation/, one deploy role per account the deploy runner reaches, and sandbox/workflows/,
+# the role that deploys an application's release to the `test` project (Stage 8 decision 19). One
+# module because the contract ./aws/cicd.py reads across the accounts - the runner's role as the only
+# principal, sts:AssumeRole as the only action, a boundary on every role - must be one document, not
+# four copies (Lesson 33).
 #
 # The trust names the runner's role by ARN, which IAM stores as the role's unique id: the runner's
 # role must outlive its host, which is why production/foundation/ holds it as an anchor.
@@ -21,6 +22,9 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
 
   state_bucket_arn = "arn:${local.partition}:s3:::awsds-${var.env}-tfstate"
+
+  # One ceiling per account unless the caller names a second role's own (decision 19).
+  boundary_name = coalesce(var.boundary_name, "awsds-${var.env}-deploy-boundary")
 
   # A role that applies no slice reads no state and gets no state policy: Sandbox's since Stage 8
   # decision 18, whose jobs create and delete image versions through the API.
@@ -132,12 +136,12 @@ data "aws_iam_policy_document" "boundary" {
 }
 
 resource "aws_iam_policy" "boundary" {
-  name        = "awsds-${var.env}-deploy-boundary"
+  name        = local.boundary_name
   description = "The ceiling of ${var.name} (Stage 8 step 4): everything its identity policies grant, minus changing a deploy identity or a ceiling, minus what the account adds."
   policy      = data.aws_iam_policy_document.boundary.json
 
   tags = {
-    Name = "awsds-${var.env}-deploy-boundary"
+    Name = local.boundary_name
   }
 }
 

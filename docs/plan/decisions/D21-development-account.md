@@ -106,7 +106,7 @@ technical, which says where to spend the care if the branch is ever taken.
 SageMaker is two halves and D17 runs the account boundary between them.
 
 - Development needs the **runtime** half without argument: pipeline executions, training and processing
-  jobs, and the by-hand apply of `terraform-live/development/app/app-etl/` against its own data (Stage 8).
+  jobs.
 - The open question is only the **interactive** half — the domain, the spaces, the apps.
 
 It is a live question because **everything the person does to *author* is already available in Sandbox**: a
@@ -193,6 +193,11 @@ If experimentation shows the two accounts are barely distinguishable in practice
 - **One objection survives:** it puts CI-applied infrastructure in the account with the loosest policy set
   and the widest human access. That is an argument about *where an apply runs*, unaffected by anything
   above.
+- **The objection's answer, and its one exception** (Stage 8): `layers.py`'s refusals 7 and 8 keep every
+  pipeline identity from applying a Sandbox slice, so CI applies into Staging and never into Sandbox.
+  Stage 8 decision 19 (2026-10-15) records the exception: the CI/CD CLI's `test` deploy into Sandbox's
+  `test` project runs as `awsds-deploy-sandbox-test`, a role the deploy runner alone assumes, whose policy
+  is the whole control since the CLI applies no slice (INT-25; applied 2026-10-16).
 - **The objection that does not survive** is that removing the account removes the visible graduation act.
   The account boundary never *enforced* the rewrite; it prompted it, and a prompt is not a control
   (Lesson 5). What carries the act is an immutable tag on a reviewed repository, which is in GitLab either

@@ -35,6 +35,16 @@ output "ecr_repository_arns" {
   }
 }
 
+output "releases_bucket_arn" {
+  description = "The release store (Stage 8 decision 20) - what the build runner's put statement names."
+  value       = module.releases_bucket.bucket_arn
+}
+
+output "releases_bucket_name" {
+  description = "The release store's name, awsds-<env>-releases - what a pipeline's `aws s3 cp` names."
+  value       = module.releases_bucket.bucket_name
+}
+
 output "pull_through_cache_prefixes" {
   description = "The cache rules' repository prefixes (Stage 7 step 5.2) - the repository families the runner may import into."
   value       = keys(aws_ecr_pull_through_cache_rule.this)

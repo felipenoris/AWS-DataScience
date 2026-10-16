@@ -266,7 +266,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   CodeArtifact, the slice's own key, and the consumer policies built from the D35 map. **5.b** (Stage 7,
   2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
   `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
-  blocks the cache's own update, and AES256 for a public upstream's bytes.
+  blocks the cache's own update, and AES256 for a public upstream's bytes. **Stage 8 decision 20**
+  (written 2026-10-16, unapplied) adds `awsds-prod-releases`, the bucket each application release's
+  bundle is stored in, under the slice's key, versioned, with its deletes and its versioning and
+  lifecycle changes denied to every principal but `InfrastructureAccess`.
 - **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
   (`gitlab.awsds.internal`, `*.awsds-pages.internal`) in the `tls` provider's state, under the account's
   **second** state key; the certificates published as three SSM parameters under `/datascience/prod/pki/`
@@ -284,6 +287,12 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
   to the three image repositories with its own instance profile and pulling through the cache - and no
   deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
+  Since Stage 8 pass 1 (2026-10-13) the slice also holds the **deploy runner** `awsds-prod-runner-deploy`,
+  protected and project-locked, whose role assumes only the deploy roles (`awsds-deploy-sandbox-test` the
+  fourth, Stage 8 decision 19, written 2026-10-16) and whose AWS config carries one profile per role,
+  rendered from `production/foundation/`'s `deploy_role_arns_by_name`; since pass 2 the **test runner**,
+  with no AWS identity reachable from its jobs; and since decision 20 the build runner's role also writes
+  `awsds-prod-releases`.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
   AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
   per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
@@ -308,7 +317,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
-  written by hand after a project exists.
+  written by hand after a project exists. Since Stage 8 decision 19 (written 2026-10-16, unapplied) the
+  slice also holds `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (INT-25), on the
+  `deploy-role` module with its own ceiling `awsds-sandbox-deploy-test-boundary`, trusted by the deploy
+  runner's role alone and confined to the `test` project's storage prefix, key, log groups and workflows.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 

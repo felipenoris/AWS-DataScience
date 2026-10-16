@@ -7,3 +7,5 @@ out/
 pip-audit-*
 scan-gate/
 gl-secret-detection-report.json
+code/*.zip
+artifacts/

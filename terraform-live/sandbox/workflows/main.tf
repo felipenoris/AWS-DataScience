@@ -77,7 +77,9 @@ data "aws_iam_policy_document" "workflows" {
   # on a job that carries no project tag and whose name ends with the caller's project id, the name
   # an application gives its job (<app>-<project id>, D41): another project's job stays out of reach
   # by its tag, and an untagged job of any other name by its name. The create that follows is the
-  # blueprint's own GlueCreateAndTagPermissions, unexercised until the first run after this grant.
+  # blueprint's own GlueCreateAndTagPermissions, exercised by the first run after this grant: the
+  # operator read EntityNotFoundException and created the job with the project tag (2026-10-16, run
+  # JO9MJ2BMRo7RL1Z).
   statement {
     sid       = "GetAGlueJobNoProjectHolds"
     effect    = "Allow"

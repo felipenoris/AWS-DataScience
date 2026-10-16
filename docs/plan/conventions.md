@@ -227,7 +227,11 @@ terraform-live/
 │   │                     #     which SageMakerProcessingOperator's existence check needs, and
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
-│   │                     #     like bedrock/'s
+│   │                     #     like bedrock/'s. Since Stage 8 decision 19 (applied 2026-10-16)
+│   │                     #     also awsds-deploy-sandbox-test, the role the deploy
+│   │                     #     runner assumes for the CI/CD CLI's test deploy (INT-25), on the
+│   │                     #     deploy-role module with its own ceiling: the supply chain's
+│   │                     #     second write path into Sandbox, after dev-env/'s
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -399,7 +403,11 @@ terraform-live/
     │                     #     pushes into them; the pull-through cache and the
     │                     #     per-application repositories (5.b) wait for Stage 7, the first
     │                     #     thing that pulls from either. The 5.a half is applied
-    │                     #     (2026-08-21, 14 resources)
+    │                     #     (2026-08-21, 14 resources). Stage 8 decision 20 (applied
+    │                     #     2026-10-16) adds awsds-prod-releases, the bucket
+    │                     #     each application release's bundle is stored in, under the
+    │                     #     slice's key, its deletes denied to every principal but
+    │                     #     InfrastructureAccess
     ├── warehouse-compute/# [E] the governed workgroup and its usage limit (D40, Stage 9 step 9,
     │                     #     rank 54). Same split and same reason as sandbox/'s: no pause exists
     ├── warehouse/        # [P] the governed half of the warehouse (D40, Stage 9 step 9, rank 53):
@@ -643,11 +651,12 @@ app-etl/
 ```
 
 The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
-`awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/`, `code/` and `glue/` join it at
-Stage 8 step 2.5, whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
+`awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/`, `code/` and `glue/` joined it at
+Stage 8 step 2.5 (2026-10-16), whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
 application's Terraform is not in its repository: each environment's slice is
-`terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`, and the
-release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
+`terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`
+(Sandbox's retired by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
+and the release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
 the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
 bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
 and copies it to the definitions home with the code package the tag pipeline built from `code/` when
@@ -722,6 +731,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
+| the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; applied 2026-10-16) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

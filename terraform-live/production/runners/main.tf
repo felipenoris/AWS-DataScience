@@ -138,6 +138,30 @@ module "role" {
       ]
     })
 
+    # The release store (Stage 8 decision 20): the tag's store-bundle job puts the bundle `test` ran
+    # under <application>/<tag>/ and deletes nothing, which the bucket's policy refuses anyway. The
+    # data key comes from the registry key through S3.
+    "releases" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid      = "PutABundle"
+          Effect   = "Allow"
+          Action   = ["s3:PutObject", "s3:AbortMultipartUpload"]
+          Resource = "${data.terraform_remote_state.registry.outputs.releases_bucket_arn}/*"
+        },
+        {
+          Sid      = "EncryptItUnderTheRegistryKey"
+          Effect   = "Allow"
+          Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+          Resource = data.terraform_remote_state.registry.outputs.registry_key_arn
+          Condition = {
+            StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
+          }
+        },
+      ]
+    })
+
     "boot" = jsonencode({
       Version = "2012-10-17"
       Statement = [

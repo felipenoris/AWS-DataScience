@@ -1,14 +1,14 @@
 {
   "awsds/deploy-image": {
     "branch": "main",
-    "commit": "98a3dc7eb9a85ae210c9f2aeb2d9ad2135caf0d1",
-    "committed": "2026-10-14T20:38:26-03:00",
-    "subject": "The deploy image's recipe, moved from AWS-DataScience's images/deploy/ at e45e1e3a (Stage 8 decision 16)"
+    "commit": "7bf9acf6843e6e0e20a5d8a8e6c789b545dafc36",
+    "committed": "2026-10-16T21:28:08Z",
+    "subject": "Merge branch 'the-releases-v0.2.0' into 'main'"
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "1372b471affa5668f81086f8c6b48dfdb35c9a96",
-    "committed": "2026-10-15T16:44:41Z",
-    "subject": "Merge branch 'the-releases-v0.7.3' into 'main'"
+    "commit": "7c59998cf814e0fd32503aa34be1d03a921b54ab",
+    "committed": "2026-10-16T21:28:34Z",
+    "subject": "Merge branch 'cli-1.0.9' into 'main'"
   }
 }

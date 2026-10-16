@@ -123,8 +123,13 @@ output "deploy_runner_role_arn" {
 }
 
 output "deploy_role_arns" {
-  description = "Every deploy role the runner's role may assume, keyed by the account folder it lives in - what production/runners/ renders the deploy runner's AWS profiles from."
+  description = "Each account's own deploy role, keyed by the account folder it lives in - the promotion roles production/sagemaker/ names."
   value       = local.deploy_role_arn_by_account
+}
+
+output "deploy_role_arns_by_name" {
+  description = "Every deploy role the runner's role may assume, keyed by role name: each account's own and the roles a target's other slices hold (Stage 8 decision 19) - what production/runners/ renders the deploy runner's AWS profiles from."
+  value       = local.deploy_role_arn_by_name
 }
 
 output "deploy_runner_instance_profile_name" {

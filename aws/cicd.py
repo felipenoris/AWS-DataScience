@@ -30,8 +30,8 @@
 # Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the test runner's Name tag and role name are awsds-prod-runner-test (decision 11)
-#   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
-#     awsds-deploy-devenv-sandbox (step 4.2, INT-18)
+#   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08),
+#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19)
 #   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
 #     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
 #     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
@@ -59,12 +59,13 @@ OUT_NAME = "cicd.txt"
 
 # The producer account and the deploy-role homes (D14; D35 - the sandbox side is per unit).
 PROD_PROFILE = "awsds-infra-prod"
-ROLE_BY_PROFILE = {
-    "awsds-infra-staging": "awsds-deploy-staging",
-    "awsds-infra-prod": "awsds-deploy-prod",
-    "awsds-infra-sandbox-1": "awsds-deploy-devenv-sandbox",
+ROLES_BY_PROFILE = {
+    "awsds-infra-staging": ["awsds-deploy-staging"],
+    "awsds-infra-prod": ["awsds-deploy-prod"],
+    "awsds-infra-sandbox-1": ["awsds-deploy-devenv-sandbox", "awsds-deploy-sandbox-test"],
 }
-# Interactive compute exists in Sandbox only, so the map holds one dev-env registration home.
+# Interactive compute exists in Sandbox only, so the map holds one dev-env registration home, and
+# Sandbox holds the one `test` project of D41, so its second role is the test deploy's (decision 19).
 # Staging is a deploy target and stays headless (D28); it appears one row up as
 # `awsds-deploy-staging`, a different role for a different job.
 # The accounts the application repository's grant admits (step 2.4, INT-07).
@@ -326,59 +327,60 @@ def main(argv: list) -> int:
                         if s == "*" or "::*:" in s or "/awsds-deploy-" not in s:
                             runner_bad_resources.append((str(pname), s))
 
-    # ---------------------- the three deploy roles: existence, boundary, trust (per home)
+    # ---------------------- the deploy roles: existence, boundary, trust (per home)
     role_rows: list = []  # (profile, role, state, boundary tail, trust summary)
     trust_bad: list = []  # (role, principal or action that breaks the contract)
     roles_found = 0
     deploy_role_arns: list = []  # what section 7 asks CloudTrail about, by resource
-    for p, role in ROLE_BY_PROFILE.items():
+    for p, roles in ROLES_BY_PROFILE.items():
         if p not in live:
             continue
         cli = cli_for(p)
-        note(f"measuring {p} ({role}) ...")
-        res = cli.run(
-            "iam",
-            "get-role",
-            "--role-name",
-            role,
-            "--query",
-            "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument,Arn]",
-            "--output",
-            "json",
-            log=False,
-            tolerate="NoSuchEntity",
-        )
-        if res.tolerated:
-            role_rows.append((p, role, "(absent)", "-", "-"))
-            continue
-        if not (res.ok and res.stdout):
-            role_rows.append((p, role, "(read failed)", "-", "-"))
-            continue
-        boundary, trust, found_arn = json.loads(res.stdout)
-        roles_found += 1
-        deploy_role_arns.append(str(found_arn))
-        btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
-        principals: list = []
-        stmts = (trust or {}).get("Statement", [])
-        if isinstance(stmts, dict):
-            stmts = [stmts]
-        for st in stmts:
-            actions = st.get("Action", [])
-            actions = [actions] if isinstance(actions, str) else actions
-            aws_p = (st.get("Principal", {}) or {}).get("AWS", [])
-            aws_p = [aws_p] if isinstance(aws_p, str) else aws_p
-            principals += [str(x) for x in aws_p]
-            for a in actions:
-                if str(a) not in ("sts:AssumeRole",):
-                    trust_bad.append((role, f"action {a}"))
-            for prin in aws_p:
-                if RUNNER_NAME not in str(prin):
-                    trust_bad.append((role, f"principal {prin}"))
-            if (st.get("Principal", {}) or {}).get("Service") or (
-                st.get("Principal", {}) or {}
-            ).get("Federated"):
-                trust_bad.append((role, "a non-AWS principal type in the trust policy"))
-        role_rows.append((p, role, "present", btail, " ".join(principals) or "(no principal)"))
+        for role in roles:
+            note(f"measuring {p} ({role}) ...")
+            res = cli.run(
+                "iam",
+                "get-role",
+                "--role-name",
+                role,
+                "--query",
+                "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument,Arn]",
+                "--output",
+                "json",
+                log=False,
+                tolerate="NoSuchEntity",
+            )
+            if res.tolerated:
+                role_rows.append((p, role, "(absent)", "-", "-"))
+                continue
+            if not (res.ok and res.stdout):
+                role_rows.append((p, role, "(read failed)", "-", "-"))
+                continue
+            boundary, trust, found_arn = json.loads(res.stdout)
+            roles_found += 1
+            deploy_role_arns.append(str(found_arn))
+            btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
+            principals: list = []
+            stmts = (trust or {}).get("Statement", [])
+            if isinstance(stmts, dict):
+                stmts = [stmts]
+            for st in stmts:
+                actions = st.get("Action", [])
+                actions = [actions] if isinstance(actions, str) else actions
+                aws_p = (st.get("Principal", {}) or {}).get("AWS", [])
+                aws_p = [aws_p] if isinstance(aws_p, str) else aws_p
+                principals += [str(x) for x in aws_p]
+                for a in actions:
+                    if str(a) not in ("sts:AssumeRole",):
+                        trust_bad.append((role, f"action {a}"))
+                for prin in aws_p:
+                    if RUNNER_NAME not in str(prin):
+                        trust_bad.append((role, f"principal {prin}"))
+                if (st.get("Principal", {}) or {}).get("Service") or (
+                    st.get("Principal", {}) or {}
+                ).get("Federated"):
+                    trust_bad.append((role, "a non-AWS principal type in the trust policy"))
+            role_rows.append((p, role, "present", btail, " ".join(principals) or "(no principal)"))
 
     built = roles_found > 0 or bool(runner_rows)
 

@@ -1377,6 +1377,14 @@
   registry and links them to the release, and in a job `CI_JOB_TOKEN` signs it in when
   `GLAB_ENABLE_CI_AUTOLOGIN=true`: <https://docs.gitlab.com/cli/release/create/>.
 
+- GitLab's `cli` image, the one the `release` keyword runs `glab` from, pinned by digest in
+  `examples/app-etl/.gitlab-ci.yml` (read 2026-10-16, Stage 8 step 2.5). The registry's token:
+  <https://gitlab.com/jwt/auth?service=container_registry&scope=repository:gitlab-org/cli:pull>; the
+  tags: <https://registry.gitlab.com/v2/gitlab-org/cli/tags/list>; a tag's manifest, whose digest the
+  job pins: <https://registry.gitlab.com/v2/gitlab-org/cli/manifests/v1.120.0>; the releases and
+  their dates (v1.120.0 on 2026-09-29, v1.119.0 on 2026-09-22, v1.123.0 on 2026-10-13):
+  <https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases>.
+
 - Amazon S3 conditional writes enforced by a bucket policy (read 2026-10-15, Stage 8 decision 20's
   optional deny). The condition keys `s3:if-none-match` and `s3:if-match` enforce conditional writes
   in a general purpose bucket; the enforcement covers `PutObject` and `CompleteMultipartUpload`, the
@@ -1593,6 +1601,8 @@
   - *MWAA Serverless networking* — `NetworkConfiguration` optional; absent, tasks run in the service's VPC; set, ECS workers land in the customer's private subnets (≥ 2 AZs, self-referencing SG), with VPC endpoints for each service the tasks call under private routing: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/networking.html>.
   - *MWAA Serverless execution role* — trust `airflow-serverless.amazonaws.com`, one role per workflow, `logs:CreateLogStream`/`PutLogEvents` required: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>; the service-linked role `AWSServiceRoleForAmazonMWAAServerless`, auto-created at the first `CreateWorkflow` (Lesson 17): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/using-service-linked-roles.html>.
   - *MWAA Serverless observability* — run/task APIs, per-task log streams, the auto-created `/aws/mwaa-serverless/<id>/` group when none is named: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/observe-with-cloudwatch.html>; EventBridge events since 2026-06 (source `aws.airflow-serverless`, 15 detail types): <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-airflow-serverless.html> and <https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-mwaa-serverless-eventbridge/>.
+  - *The actions, resources and condition keys of MWAA Serverless* (service prefix `airflow-serverless`; read 2026-10-16, for Stage 8 decision 19's role): one resource type, `workflow`, `arn:${Partition}:airflow-serverless:${Region}:${Account}:workflow/${WorkflowId}`, with `aws:ResourceTag/${TagKey}`; `ListWorkflows` and `CreateWorkflow` take no resource type, and `CreateWorkflow` the keys `aws:RequestTag` and `aws:TagKeys`; the workflow-scoped actions take `aws:ResourceTag`; `CreateWorkflow` and `UpdateWorkflow` need `iam:PassRole` with `iam:PassedToService = airflow-serverless.amazonaws.com`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_mwaa-serverless.html>. A third-party listing of the same actions, read first: <https://www.awsfundamentals.com/iam/airflow-serverless>.
+  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>.
   - *The Python→YAML converter* — `python-to-yaml-dag-converter-mwaa-serverless` (dag-factory 1.0 target; AWS-provider operators only; no dynamic task mapping): <https://github.com/awslabs/python-to-yaml-dag-converter-mwaa-serverless>.
   - *Serverless workflows in SageMaker Unified Studio* — and the two-way sync ("create workflows in either platform and access them from both"): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-workflows.html> and <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows.html>.
   - *The OnDemand Workflows blueprint* — the provisioned-MWAA flavour of the Studio's Workflows tool, refused at Stage 10 step 0.4: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/modify-on-demand-workflows-blueprint.html>.

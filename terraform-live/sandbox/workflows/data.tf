@@ -4,6 +4,14 @@
 # segment, which cannot be a literal in a tracked file (aws/INDEX.md rule 1).
 data "aws_caller_identity" "current" {}
 
+data "aws_partition" "current" {}
+
+# The project key, by the alias sagemaker-prereqs/kms.tf gives it: the projects bucket is encrypted
+# under it, and the test deploy role (deploy-role.tf) uses it through S3 and the workflow service.
+data "aws_kms_alias" "project" {
+  name = "alias/awsds-${var.env}-project"
+}
+
 # Each project role, read rather than assumed: a missing project fails at plan, naming the role,
 # and main.tf's precondition reads the role's permissions boundary. The roles are the service's,
 # minted when a project is created in the portal.

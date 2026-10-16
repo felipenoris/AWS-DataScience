@@ -1326,3 +1326,331 @@ on 2026-10-16.
 - **[Claude]** The workflows grant is on both Sandbox projects' roles, `eighth-experimentation` (D41's
   `dev`) and `test-experimentation`. Stage 6i verification xiv's second half, another project's processing
   jobs out of reach, needed a second project and is not run here.
+
+## 2026-10-16 — step 2.5 written: app-etl as an application
+
+Written by Claude in the cloud session of the project thread, with no AWS identity: the application
+in `examples/app-etl/` and its pipeline, read against the CLI 1.0.9 and the lint offline. No tag ran
+it; the Terraform of decisions 19 and 20 and the CLI in the deploy image are PRs of their own.
+
+- **[Claude] Verification xxv, the CLI on the deploy image's Python**: in a scratch venv on CPython
+  3.14.6 with `UV_PYTHON_DOWNLOADS=never`, `uv pip install aws-smus-cicd-cli==1.0.9` resolved 25
+  distributions, every one a wheel (boto3 1.43.114, botocore 1.43.114, typer 0.27.3, rich 15.0.0,
+  jsonschema 4.26.0, PyYAML 6.0.3, requests 2.34.2, urllib3 2.8.0, s3transfer 0.19.2 among them), and
+  `aws-smus-cicd-cli --version` printed `aws-smus-cicd-cli 1.0.9`, exit 0, with the proxy and the AWS
+  variables unset.
+- **[Claude] `bundle` over the application, offline** (`env -i`, the proxies on a closed port, no
+  credentials, fabricated values for the manifest's variables, a copy of the folder): with the
+  manifest's `code` item as `include: ["code/*.zip"]` and the zip present, `Warning: Pattern not
+  found: code/*.zip` on stderr, `Bundled 0 files for 'code'`, exit 0, a bundle of 5,609 bytes without
+  the zip. Read in 1.0.9's `commands/bundle.py`: an include is `os.path.isfile` or `os.path.isdir`,
+  never a glob, while `commands/deploy.py` expands it with `glob.glob`. With `include:
+  [code/app-etl.zip]`: `Copied file: code/app-etl.zip`, a bundle of 6,968 bytes holding
+  `code/app-etl.zip`, `src/app_etl/` (3 files), `glue/transform.py`, `samples/trades.csv` and
+  `workflows/app-etl.yaml`; without the zip, the warning and exit 0, which `test-deploy` turns into a
+  failure. The domain lookup logged three `ERROR` lines (`Unable to locate credentials`) and the
+  bundle went on. The manifest's `${DOMAIN_ID}` is validated against `^dzd-[a-z0-9]+$` before anything
+  runs.
+- **[Claude] GitLab's `cli` image for the `release` keyword**, read from `registry.gitlab.com`'s tags
+  and manifests and from the project's releases: `v1.120.0`, released 2026-09-29, digest
+  `sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812` (linux amd64 and arm64);
+  `v1.119.0` of 2026-09-22 is `sha256:79223ad3fa6e3c3226119ac5d0b73e55f1b909e6d5bbf8469726480723b63ba8`;
+  the newest, `v1.123.0` of 2026-10-13, is under the two-week bound. The job pins `v1.120.0`.
+- **[Claude] The local checks**: `uv run --locked pytest` 14 passed (the seven of the pipeline, five
+  of the worker's task over a double of boto3, two of the Glue script over doubles of awsglue, pyspark
+  and boto3); `ruff check` and `ruff format --check` clean; `awsds-workflows lint examples/app-etl`
+  at `3c1708e`, `ok: 6 arquivo(s)`; the zip built with `python3 -m zipfile` (1,246 bytes, the module
+  alone) and imported from the zip on CPython 3.12.3; `./scripts/check-gitlab-ci.py` OK (13 jobs from
+  3 files, 8 names resolved for `examples/app-etl/.gitlab-ci.yml`); `./scripts/check-identifiers.py`
+  OK; `./scripts/check-plan-refs.py` OK.
+
+## 2026-10-16 — decisions 21 to 23, and the Terraform of decisions 19 and 20 written
+
+Written by Claude in the cloud session of the project thread, with no AWS identity, in PR #145 after
+step 2.5, by the user's scope of 14:30 UTC ("tudo num PR"); nothing applied. Every time is UTC.
+
+- **[user] Decision 21** (14:55, on a card): `sandbox/app/app-etl/` retires, with `awsds-sandbox-outputs`
+  and `AllowApplicationJobRolesViaS3`; the destroy is the user's. **Decision 22** (14:57): the CLI pinned
+  in the house image, run from a space as the project role. **Decision 23** (14:58): pass 4 after Stage
+  9, with Stage 10's passes 1 and 2. **The `test` project's prefix** (14:53): emptied before each deploy,
+  as 2.5 wrote it. Each as recommended.
+- **[Claude] `deploy-role-v0.5.0`** (`39cf834`): `boundary_name`, null by default, validated as
+  `awsds-<env>-*-boundary`, names the ceiling's policy and its tag; the misuse rule keeps its one name
+  per account, so a second role in an account carries no alarm. The module folder validated with
+  `terraform validate` and `tflint`. The session's GitHub credential pushes the branch and refuses a tag
+  (`HTTP 403` on the tag ref alone), so the user tagged and pushed it from the laptop (15:28).
+- **[Claude] `sandbox/workflows/deploy-role.tf`**: `awsds-deploy-sandbox-test` on the module, with the
+  policy decision 19 records, built from the lab's 158 CloudTrail events of `bundle` and
+  `deploy --targets test`, and the ceiling `awsds-sandbox-deploy-test-boundary`. A provider alias on the
+  deploy runner's profile reads the runner role's ARN, the trust's principal, so a plan of the slice
+  takes both profiles. `terraform init` refused the module ref until the tag existed (`invalid ref:
+  deploy-role-v0.5.0`); with it, `validate`, `fmt -check` and `tflint` pass.
+- **[Claude] `production/foundation/`, `registry/` and `runners/`**: `deploy_targets` gains
+  `other_roles`, the output `deploy_role_arns_by_name` feeds the runner's assume list and profiles,
+  `deploy_role_arns` stays by account for `production/sagemaker/`; `releases.tf` holds the bucket; the
+  runner role's `releases` read and the build runner's `releases` write. `terraform validate`, `fmt
+  -check` and `tflint` pass on the three (provider `aws` 6.64.0 from a filesystem mirror, since the
+  registry is refused to the session; the lock files restored after `-upgrade`).
+- **[Claude] The hygiene scripts and `./aws/cicd.py`**: `DEPLOY_ROLES_BY_SLICE` in `backend.py`, keyed by
+  account and slice, with `gen-tfvars` rendering `other_roles = ["awsds-deploy-sandbox-test"]` for the
+  `sandbox` target of `production/foundation/` and `deploy_role_name` and `deploy_runner` for
+  `sandbox/workflows/`; refusal 8 reading both maps; `cicd.py` listing the four roles by profile.
+  `ruff format` and `ruff check` clean.
+- **[Claude] The deploy image's recipe** (`gitlab/awsds/deploy-image/`): `requirements-cli.txt`, the 25
+  distributions of `aws-smus-cicd-cli==1.0.9` compiled for Python 3.14 with hashes; the Dockerfile
+  installing them into `/opt/smus-cli` with `--require-hashes --no-deps` and linking the command; the
+  README. A proposal for the GitLab project, the source; `mirror.json` is unchanged until it is pushed.
+- **[Claude] The authorization pages read**, in `docs/REFERENCES.md`: MWAA Serverless's (`workflow` the
+  one resource type, `CreateWorkflow` with `aws:RequestTag`, `iam:PassedToService`) and DataZone's
+  (`GetDomain` the one read with a resource type).
+
+## 2026-10-16 — the Terraform of decisions 19 and 20 applied, from the laptop
+
+Applied by Claude in a laptop session the user started with the procedure the cloud session wrote,
+authorized by the user at 16:02, 16:45 ("deixe o ambiente no ar") and 16:47 UTC ("autorizo os
+commits e applies necessários"), with the hub, Sandbox, GitLab and the VPN tunnel up by the user's
+own hand (16:45); each slice a Recipe A plan read before its apply and re-planned after it, the
+cloud session recording. Every time is UTC.
+
+- **[Claude⚡] Step 0** (17:25:55 to 17:28:40): the infrastructure user's SSO session valid, with
+  `InfrastructureAccess` in Production and Sandbox, no login; the worktree
+  `.claude/worktrees/stage-08-2.5a` on a local branch `claude/smus-applications-rw30u1` tracking
+  `origin`, at `819e830`, a branch and not the detached HEAD the procedure named, since `git pull
+  --ff-only` and the push need one; the other laptop sessions told of the four writes.
+- **[Claude⚡] `production/foundation/` applied as `awsds-infra-prod`** (17:28:41 to 17:32:01), with
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`: `Plan: 1 to add, 1 to change, 0 to
+  destroy`, as expected: `module.deploy_runner_role.aws_iam_role_policy.inline["releases"]` created
+  (`ListBucket` and `GetObject` on `awsds-prod-releases`, `kms:Decrypt` under the alias
+  `awsds-prod-registry` through S3), `inline["deploy"]` changed (`awsds-deploy-sandbox-test` joins
+  the `AssumeRole` list, the other three entries reordered), the output `deploy_role_arns_by_name`
+  new with four roles; no drift, the alerts subscription untouched. `Apply complete! Resources: 1
+  added, 1 changed, 0 destroyed.` (17:31:24 to 17:31:36); re-plan `No changes`.
+- **[Claude⚡] `production/registry/` applied as `awsds-infra-prod`** (17:32:20 to 17:35:23): `Plan:
+  6 to add, 0 to change, 0 to destroy`, as expected, `module.releases_bucket`: the bucket
+  `awsds-prod-releases` (`force_destroy = false`, `CostCenter = stage-08`), versioning `Enabled`,
+  SSE `aws:kms` with the bucket key under `alias/awsds-prod-registry` (the alias's `TargetKeyId`
+  read against the plan before the apply), the public access block on all four, the lifecycle
+  (noncurrent versions expire in 90 days, incomplete multipart uploads are aborted after 7) and the
+  bucket policy. `Apply complete! Resources: 6 added, 0 changed, 0 destroyed.` (17:33:44 to
+  17:35:00, the lifecycle 58 s); re-plan `No changes`; output `releases_bucket_name =
+  awsds-prod-releases`.
+- **[Claude⚡] `sandbox/workflows/` applied as `awsds-infra-sandbox-1`** (17:35:44 to 17:36:51),
+  after a fresh `init` that fetched `deploy_role_test` from the tag `deploy-role-v0.5.0`, whose
+  `terraform-modules/deploy-role` is the branch's: `Plan: 5 to add, 0 to change, 0 to destroy`, as
+  expected, `aws_iam_policy.workflows` and its attachments untouched, so the Glue grant applied at
+  14:54 (policy v3) stays: the ceiling `awsds-sandbox-deploy-test-boundary`, the role
+  `awsds-deploy-sandbox-test` trusting `awsds-prod-runner-deploy` alone (sid `OnlyTheDeployRunner`),
+  the inline policies `project-reads`, `storage` (the `test` project's `shared/` prefix in
+  `awsds-sandbox-smus-projects` and the project's key) and `workflows` (creation with the `test`
+  project's tag, `PassRole` of that project's role alone to `airflow-serverless`). `Apply complete!
+  Resources: 5 added, 0 changed, 0 destroyed.` (17:36:28 to 17:36:40); re-plan `No changes`.
+- **[Claude⚡] `production/runners/` applied as `awsds-infra-prod`** (17:37:16 to 17:40:17), after
+  the user's `make gitlab-up` of 16:45 had applied it with `main`'s code, by the commands `slices.py
+  up --env production --only runners --dry-run` prints (`gen-tfvars`, `gen-backend-hcl`, `init`)
+  with the plan saved and read, since `up` without `--auto-approve` waits for a typed `yes`; the hub
+  read first (`awsds-prod-vpn` and `awsds-prod-proxy` running). `Plan: 2 to add, 0 to change, 1 to
+  destroy`: only `aws_instance.deploy_runner[0]` replaced, its user data gaining `[profile
+  awsds-deploy-sandbox-test]` with the profiles now read from `deploy_role_arns_by_name`, sorted by
+  name; the build runner `awsds-prod-runner` keeps its user data and its role gains the inline
+  `releases` (`PutObject` and `AbortMultipartUpload` on `awsds-prod-releases/*`, the registry key
+  through S3); the test runner untouched. The procedure's "both runners' user data" was wrong: the
+  PR changes `deploy-runner.tf` (reading `deploy_role_arns_by_name`) and `main.tf` (the inline
+  `releases`), and the build runner's template does not change. `Apply complete! Resources: 2 added,
+  0 changed, 1 destroyed.` (17:38:57 to 17:39:55), the old deploy runner instance destroyed and a
+  new one created, its console read for the boot; re-plan `No changes`.
+- **[Claude⚡] Step 5, `awsds/deploy-image`** (17:40:40 to 17:41:01): `main` cloned at `98a3dc7`, the
+  commit of `gitlab/mirror.json`; the branch `cli-1.0.9` with `Dockerfile`, `README.md` and
+  `requirements-cli.txt` copied from `gitlab/awsds/deploy-image/` (the other three files already
+  identical to the copy); commit `acb73f1`, pushed without refusal; the project's pipeline runs from
+  the form only, so the push started none. The user's: the merge request, the merge and Build >
+  Pipelines > Run pipeline on `main` with `IMAGE_TAG=v0.2.0`; then the laptop reads the digest
+  (`awsds-prod-ecr-deploy:v0.2.0`, or the job's `deploy.json: containerimage.digest` line), writes
+  it to `deploy_image_digest`, applies `production/runners/` again, runs `gitlab-mirror.py` and
+  commits to PR #145.
+- **[Claude⚡] Step 6, `awsds/dev-env`** (17:41:30 to 17:42:31; decision 22): `main` cloned at
+  `1372b47`; the branch `cli-1.0.9` with `aws-smus-cicd-cli==1.0.9` in
+  `dev-env/python/pyproject.toml` and a comment citing decision 22; `uv lock` resolved 454 packages,
+  the CLI the only entrant and no version changed; commit `7345733`, pushed without refusal; the
+  push started the branch's pipeline with the test jobs only (`recipe-checks` and the gates of
+  `gates-v0.4.0`), its result not read. The user's: that pipeline's verdict, the merge request, the
+  merge and the tag; the README's rule makes a recipe change a minor, `default-v0.8.0`, the user's
+  choice.
+
+## 2026-10-16 — the new deploy runner's first boot
+
+Written by Claude in the laptop session that applied step 2.5a (the entry above), as the
+infrastructure user through `awsds-infra-prod` (`InfrastructureAccess`). Every time is UTC.
+
+- **[Claude] `i-0cf719f584e9bdfcd`'s serial console**, read at 17:47:21 with `aws ec2
+  get-console-output --latest`: cloud-init finished at 17:43:32, 226 s after boot. `docker-25.0.16`,
+  `git-2.50.1`, the ECR credential helper `OK`, and `gitlab-runner-19.5.0`, where the deploy runner's
+  boot of 2026-10-13 installed `19.4.1`: the three runner templates run `dnf -y -q install
+  gitlab-runner` with no version, so each new instance takes the repository's newest. Each profile
+  assumed once with the instance's credentials: `assumed-role/awsds-deploy-devenv-sandbox/…`,
+  `assumed-role/awsds-deploy-prod/…`, `assumed-role/awsds-deploy-sandbox-test/…` and
+  `assumed-role/awsds-deploy-staging/…`. `Verifying runner... is valid`, registered as
+  `awsds-prod-runner-deploy-i-0cf719f584e9bdfcd`; through the proxy `pypi.org` `200` and `10.31.0.1`
+  `403`, GitLab's sign-in page direct `200`; the job image pulled through the helper as
+  `awsds-prod-ecr-deploy@sha256:1b1a5830…a53a`, `v0.1.0`'s digest.
+
+## 2026-10-16 — `awsds-sandbox-outputs` retired (decision 21)
+
+Written by Claude in the laptop session that applied step 2.5a, as the infrastructure user through
+`awsds-infra-sandbox-1` (`InfrastructureAccess`). The deletion of the two versions is the user's, by
+a command naming the same profile. Every time is UTC.
+
+- **[Claude] `make status ENV=sandbox`** (17:43:07): `sandbox/app/app-etl` `down`, 0 resources, so no
+  `make down` ran; `egress`, `warehouse-compute` and `probes` up.
+- **[Claude] The bucket read** with `list-object-versions`: two versions and no delete marker, both
+  `IsLatest` and written 2026-10-14T17:59:27Z: `app-etl/v0.1.0/trades.parquet` (1,780 bytes) and
+  `app-etl/v0.1.0/trades.summary.json` (407 bytes). The bucket policy holds `DenyInsecureTransport`
+  alone.
+- **[Claude] `sandbox/data/` planned**, after `git pull --ff-only`, to a saved file: `Plan: 0 to add, 1
+  to change, 6 to destroy`: the six resources of `module.outputs_bucket` (`force_destroy = false`)
+  and the data key `awsds-sandbox-data` losing `AllowApplicationJobRolesViaS3`, its other statements
+  unchanged.
+- **[Claude] The deletion handed to the user** at 17:53, in this session's chat: `aws s3api
+  delete-objects` on the bucket with both keys and their version ids, since Claude deletes no data
+  permanently.
+- **[user] The deletion's output**, pasted before 18:00:
+
+  ```json
+  {
+      "Deleted": [
+          {
+              "Key": "app-etl/v0.1.0/trades.parquet",
+              "VersionId": "algi3DIbv6NUBfebgvQFBLSJfE0V._He"
+          },
+          {
+              "Key": "app-etl/v0.1.0/trades.summary.json",
+              "VersionId": "zdwjxFYdQgdThMtjUtorpU18r5xHXEge"
+          }
+      ]
+  }
+  ```
+
+- **[Claude] The bucket empty** at 18:00:13: `list-object-versions` returns neither `Versions` nor
+  `DeleteMarkers`.
+- **[Claude] `sandbox/data/` applied** from the saved plan (18:00:35 to 18:00:52): `Apply complete!
+  Resources: 0 added, 1 changed, 6 destroyed.`; re-plan `No changes` (18:01:17).
+- **[Claude] Read back**: `head-bucket` on `awsds-sandbox-outputs` answers `404 Not Found`; the data
+  key's policy holds three statements, `EnableKeyAdministrationInThisAccount`,
+  `AllowSandboxLakeAccessRoleViaS3` and `AllowRedshiftServerlessViaServiceInThisAccount`. Outside
+  `sandbox/app/app-etl/`, no Terraform, script or GitLab copy names the bucket; `production/sagemaker/`'s
+  `awsds-${var.env}-outputs` is `awsds-prod-outputs`.
+
+## 2026-10-16 — the deploy image's first rebuild, failed on `.dockerignore`
+Written by Claude, from the pipeline's job log read in the user's browser from the laptop, after the
+user's run. Every time is UTC.
+
+- **[user] The merge and the run**: the merge request of `cli-1.0.9` landed on
+  `awsds/deploy-image`'s `main` at 18:57 (`b599b12`), and pipeline #42 was started from Build →
+  Pipelines → Run pipeline on `main` with `IMAGE_TAG=v0.2.0`; its job `build-deploy-image` (#147)
+  ran on the build runner.
+- **[Claude] The failure** (20:38:39): the step
+  `[8/9] COPY requirements-cli.txt /tmp/requirements-cli.txt` ended with
+  `"/requirements-cli.txt": not found`. The project's `.dockerignore` excludes everything (`*`) and
+  readmits `aws-cli-team.asc` alone, so the file the recipe gained in PR #145 (`976dae4`) never
+  entered the build context: 1.76 kB transferred, the earlier layers from cache and the base through
+  the pull-through cache. Nothing was pushed: `awsds-prod-ecr-deploy` holds `v0.1.0` alone, read
+  after the failure, and the tag `v0.2.0` is free.
+- **[Claude] Why no run caught it before the merge**: the pipeline's rule admits the `web` source
+  with `IMAGE_TAG` alone, so neither the branch nor the merge built the recipe; this run was its
+  first build (Lesson 54).
+- **[Claude] The fix**: `!requirements-cli.txt` in `.dockerignore`, with its comment, written in the
+  copy under `gitlab/awsds/deploy-image/` in PR #145, and in GitLab, the source of truth, by the
+  user's own edit, who started the pipeline again with `IMAGE_TAG=v0.2.0` by 20:54; the mirror then
+  reports the copy unchanged.
+- **[Claude] The rebuild** (read in the user's browser): the user's edit `b064ba80` ("Edit
+  .dockerignore") went straight to `main`, and pipeline #43's job `build-deploy-image` (#148) ran
+  from 20:53:30 to 20:54:34, 64 s: the `COPY` passed, the venv took `aws-smus-cicd-cli==1.0.9` and
+  its 24 dependencies by hash, `aws-smus-cicd-cli --help` answered in the build, and the image was
+  pushed as `awsds-prod-ecr-deploy:v0.2.0`, digest
+  `sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac`, 255,596,236 bytes
+  against `v0.1.0`'s 208,935,352, pushed at 20:54:33 by ECR's reading. The digest step, the runner's
+  re-apply and the mirror follow in the laptop session's own entry.
+
+## 2026-10-16 — the deploy image `v0.2.0` pinned, and the runners rebuilt on a new AMI
+
+Written by Claude in the laptop session that applied step 2.5a, as the infrastructure user through
+`awsds-infra-prod` (`InfrastructureAccess`). Every time is UTC.
+
+- **[Claude] `v0.2.0` read from ECR**: `sha256:ee31048e…7e91ac`, pushed 20:54:33, 255,596,236 bytes,
+  from `awsds/deploy-image`'s `main` at `b064ba80`. Its scan, `COMPLETE` at 20:54:48: CRITICAL 0, HIGH
+  4 (`glibc` CVE-2026-19499 and CVE-2026-5435, `zlib` CVE-2026-85091, `gnupg2` CVE-2026-24882), MEDIUM
+  10, LOW 4; no finding names `curl`. The pull-through cache's `python:3.14-slim` is still
+  `sha256:a2b82f3c…9170`.
+- **[Claude] `deploy_image_digest`** set to it in `production/runners/variables.tf`, commit `a99721b`.
+- **[Claude] No deploy job could be waiting**: `git ls-remote --tags` reads `awsds/dev-env`'s newest tag
+  as `default-v0.7.3` and `awsds/app-etl`'s as `v0.1.0`, both older than the day.
+- **[Claude] `production/runners/` planned** (20:58:51) to a saved file: `Plan: 3 to add, 0 to change, 3
+  to destroy`, where the deploy runner alone was expected. Each of `aws_instance.deploy_runner[0]`,
+  `aws_instance.runner` and `aws_instance.test_runner` reads `ami = (sensitive value) # forces
+  replacement`, and the deploy runner's `DEPLOY_IMAGE` moves to the new digest. The three take `ami`
+  from `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, which changed at
+  20:01:25 (version 194) to `ami-0803a33fd43db1fbf`; all three ran `ami-042bfcefcf88b2ac8` (Amazon
+  Linux 2023.12.20261014), and step 2.5a's plan at 17:37 touched neither the build nor the test
+  runner. Held until the user's decision.
+- **[Claude] The test runner's boot of 16:36, read through its serial console**: `i-018f82308a703b5fa`
+  stopped at "the CA root, from its one source" with `aws: [ERROR]: An error occurred (NoCredentials):
+  Unable to locate credentials.` at 16:36:29, and `cloud-final` `FAILED`, so runner #4 never
+  registered. Its role and instance profile came from the same `make gitlab-up`, created
+  16:36:01-02 by another session's reading, and the templates read the root once, with no retry.
+- **[user] The apply**, authorized in this session's chat: "Aplique o plano salvo de
+  production/runners, com os três runners substituídos, e leia os três boots."
+- **[Claude] Applied** from the saved plan (21:07:45 to 21:08:47): `Apply complete! Resources: 3 added,
+  0 changed, 3 destroyed.`, each destruction 32 s and each creation 15 s: `i-0f053b2cd9bdf492e` (build),
+  `i-0cc9c1b95621c5be2` (deploy), `i-00c29f8ea8e6265c4` (test), all on `ami-0803a33fd43db1fbf`, launched
+  21:08:32. Re-plan `No changes` (21:09:14).
+- **[Claude] The three first boots, read through the serial console**, each on Amazon Linux
+  2023.12.20261016 with `docker-25.0.16`, `git-2.50.1` and `gitlab-runner-19.5.0`:
+  - the build runner, 21:08:41 to 21:10:24 (107.5 s): the credential helper `OK`, `Verifying
+    runner... is valid`, registered as `awsds-prod-runner-i-0f053b2cd9bdf492e`; through the proxy
+    `pypi.org` `200` and `10.31.0.1` `403`, GitLab direct `200`.
+  - the test runner, 21:08:46 to 21:12:09 (209.6 s): the CA root read with no error, `Verifying
+    runner... is valid`, registered as `awsds-prod-runner-test-i-00c29f8ea8e6265c4`; `200`, `403`,
+    `200`.
+  - the deploy runner, 21:08:49 to 21:12:56 (255.5 s): the four deploy roles assumed with the
+    instance's credentials (`awsds-deploy-devenv-sandbox`, `awsds-deploy-prod`,
+    `awsds-deploy-sandbox-test`, `awsds-deploy-staging`), `Verifying runner... is valid`, registered as
+    `awsds-prod-runner-deploy-i-0cc9c1b95621c5be2`; `200`, `403`, `200`; the job image pulled through
+    the helper as `awsds-prod-ecr-deploy@sha256:ee31048e…7e91ac`, `v0.2.0`.
+- **[Claude] The mirror**, `./scripts/gitlab-mirror.py`: `awsds/dev-env`'s copy already held `1372b47`;
+  `awsds/deploy-image` copied at `b064ba80`, one file changed, `.dockerignore`, whose GitLab version
+  ends with no newline. Commit `9eb1406`.
+
+## 2026-10-16 — the `v0.2.0` release row, and `mcp` held to 1.30.0 in the house environment
+
+Written by Claude in the laptop session that applied step 2.5a; both pushes go to the private GitLab
+over HTTPS with the laptop's credential helper, each on the user's request in that session's chat.
+Every time is UTC.
+
+- **[Claude] `awsds/deploy-image` branch `the-releases-v0.2.0`**, commit `05e10a5` (21:11) on `main`'s
+  `b064ba80`, pushed on the user's request: the `v0.2.0` row of the README's releases table, from the
+  previous entry's ECR readings and pipeline #43's job (64 s). The merge request and the merge are the
+  user's.
+- **[Claude] `awsds/dev-env` pipeline #41's `pip-audit`**, run again at 21:15 on the new test runner
+  (read by another session): 453 of 453 packages audited, blocked on `mcp` 2.1.1, CVE-2026-59951
+  (GHSA-84m7-p3x7-pcfv), published 2026-10-15, GitHub severity `MODERATE`, unbounded session
+  accumulation in the StreamableHTTP transport. OSV lists two fixed releases, 1.30.0 on the 1.x line
+  and 2.2.0 on the 2.x line.
+- **[Claude] Why 2.2.0 cannot resolve**: `uv lock --upgrade-package mcp`, with and without
+  `--refresh-package mcp`, reads `No lockfile changes detected`. PyPI's metadata for `strands-agents`
+  gives `mcp<2.2,>=1.23.0` in 1.55.1, the locked version, and in 1.61.1, the newest (2026-10-15).
+  PyPI holds `mcp` 1.30.0 (2026-09-07), 2.2.0 (2026-09-07) and 2.3.0 (2026-10-02).
+- **[Claude] The 1.x bound tested** with `uv lock --dry-run` and the edit reverted: 455 packages,
+  `mcp` 2.1.1 → 1.30.0, `mcp-types` removed, `httpx-sse` 0.4.3 and `pydantic-settings` 2.16.0 added.
+- **[user] The choice**, in this session's chat: "Restrinja o mcp a >=1.30.0,<2 no
+  dev-env/python/pyproject.toml do branch cli-1.0.9, refaça o lock e empurre."
+- **[Claude] `cli-1.0.9` commit `386fd52`** (21:25), pushed over `7345733`: `"mcp>=1.30.0,<2"` with its
+  reason in the comment, and `uv lock` with the same four changes and no other version moved. The
+  push starts the branch's pipeline; its verdict is not read here.
+- **[user] The merges**: `the-releases-v0.2.0` into `awsds/deploy-image`'s `main` at 21:28:08
+  (`7bf9acf`), and `cli-1.0.9` into `awsds/dev-env`'s `main` at 21:28:34 (`7c59998`, merge request !7),
+  after the branch's pipeline #44 passed, as another session read it.
+- **[Claude] The copies** (21:30): `./scripts/gitlab-mirror.py` changed `dev-env/python/pyproject.toml`
+  and `uv.lock` in `gitlab/awsds/dev-env/` and `README.md` in `gitlab/awsds/deploy-image/`, and
+  `mirror.json` records both commits; commit `1d63588`. `./scripts/check-gitlab-mirror.py` failed
+  `GM-3` first, since `sandbox/egress`'s state held no `no_proxy_all_groups` (the slice down); with
+  `--plan`, `GM-1` to `GM-8` pass, the literal and the account's list both 70 names, `sha256
+  aafa08da98a61f5c`. No tag `default-v0.8.0` exists yet.
