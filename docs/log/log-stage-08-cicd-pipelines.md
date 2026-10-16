@@ -1645,3 +1645,12 @@ Every time is UTC.
 - **[Claude] `cli-1.0.9` commit `386fd52`** (21:25), pushed over `7345733`: `"mcp>=1.30.0,<2"` with its
   reason in the comment, and `uv lock` with the same four changes and no other version moved. The
   push starts the branch's pipeline; its verdict is not read here.
+- **[user] The merges**: `the-releases-v0.2.0` into `awsds/deploy-image`'s `main` at 21:28:08
+  (`7bf9acf`), and `cli-1.0.9` into `awsds/dev-env`'s `main` at 21:28:34 (`7c59998`, merge request !7),
+  after the branch's pipeline #44 passed, as another session read it.
+- **[Claude] The copies** (21:30): `./scripts/gitlab-mirror.py` changed `dev-env/python/pyproject.toml`
+  and `uv.lock` in `gitlab/awsds/dev-env/` and `README.md` in `gitlab/awsds/deploy-image/`, and
+  `mirror.json` records both commits; commit `1d63588`. `./scripts/check-gitlab-mirror.py` failed
+  `GM-3` first, since `sandbox/egress`'s state held no `no_proxy_all_groups` (the slice down); with
+  `--plan`, `GM-1` to `GM-8` pass, the literal and the account's list both 70 names, `sha256
+  aafa08da98a61f5c`. No tag `default-v0.8.0` exists yet.
