@@ -107,7 +107,7 @@ There is no hand installation. A GitLab host is built by Terraform and configure
    1. the proxy into `/etc/environment`: the explicit proxy and the generated `NO_PROXY`;
    2. the data volume: the one disk that is not the root, formatted XFS only when it carries no filesystem (a re-attached volume keeps its data), mounted at `/var/opt/gitlab` by UUID through `/etc/fstab`;
    3. `jq` from the AL2023 repositories (S3, no proxy);
-   4. the GitLab package repository for Amazon Linux 2023 with its three keys and `proxy=` set per repository, then `dnf install gitlab-ce` under `/etc/gitlab/skip-auto-reconfigure`, so the package installs without configuring;
+   4. the GitLab package repository for Amazon Linux 2023 with its three keys and `proxy=` set per repository, then `dnf install gitlab-ce-<release>-ce.0.amazon2023`, the release `tooling/variables.tf` pins (`gitlab_ce_version`, Stage 7 decision 10), under `/etc/gitlab/skip-auto-reconfigure`, so the package installs without configuring; a release the repository lacks stops the boot here;
    5. the fetch: `gitlab.rb` from `s3://awsds-prod-gitlab-objects/config/gitlab.rb`; the root into `/etc/gitlab/trusted-certs/`; the two leaves from their SSM parameters into `/etc/gitlab/ssl/<host>.crt`, each followed by the root, which is the chain the host serves; the two keys from Secrets Manager into `/etc/gitlab/ssl/<host>.key` at mode 600; `update-ca-trust`;
    6. `gitlab-secrets.json`: restored from `awsds-prod-gitlab-secrets` when the container holds a value, otherwise left for the reconfigure to generate;
    7. `gitlab-ctl reconfigure`, the first and the long one: Chef converges every service, initialises PostgreSQL and runs the migrations (5 min 03 s on 2026-10-12). `gitlab.rb` orders the supervisor after `network-online.target`, since Omnibus's default `After=multi-user.target` waits for cloud-init, which is waiting for this step;
@@ -119,7 +119,9 @@ There is no hand installation. A GitLab host is built by Terraform and configure
 
 4. **Then §I**: the root trusted on the laptop, the initial password, the first sign-in, the first refresh, the instance settings, the namespace.
 
-**A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors.
+**A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors. Both install `gitlab_ce_version`, the release the host runs.
+
+**An upgrade** follows GitLab's upgrade page and its upgrade path, a backup first. The bootstrap leaves `/etc/gitlab/skip-auto-reconfigure` on the host, so the new package does not reconfigure by itself. The same sitting moves `gitlab_ce_version` to the new release and `runners/variables.tf`'s `gitlab_runner_version` to the newest runner of its major.minor (§K). The plan reads `No changes`, since the user data is held: the commit is the record, and the next backup's name carries the new release.
 
 ## I. The initial setup, on a fresh host
 
@@ -257,6 +259,8 @@ sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitla
 
 The backup file is fetched first from the backup bucket into `/var/opt/gitlab/backups/`, as `git` (`aws s3 cp` as root, then `chown git:git`). A restore proves itself by a pre-backup repository cloning cleanly.
 
+**The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
+
 ## K. The runner
 
 The runner is a **protected project runner** of `awsds/app-etl`, never an instance runner (step 6.1). Any job on the host reads the instance role's credentials through the metadata service, and the role pushes to the three image repositories. An instance runner serves every project on the instance, including a self-registered account's while sign-up is open; a protected project runner serves only the protected branches and tags of the projects it is enabled in, so whoever can push an image is whoever can push a protected ref there.
@@ -271,7 +275,7 @@ The runner is a **protected project runner** of `awsds/app-etl`, never an instan
 
 3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)).
 
-Every `make gitlab-up` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor (Stage 8 decision 24), so a GitLab upgrade moves `gitlab_runner_version` in the same sitting. The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+Every `make gitlab-up` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
 
 **What a job can rely on**:
 
@@ -650,6 +654,7 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 | `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
 | `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy and test runners 0.0188 each |
+| the help page and the backup bucket | the release the host runs, with no GitLab sign-in: `https://gitlab.awsds.internal/help` publishes `gon.revision` to an anonymous visitor, matched against `gitlab-foss`'s tag on gitlab.com (`ecff27ae760` is `v19.4.2`, read 2026-10-16), and `aws s3 ls s3://awsds-prod-gitlab-backup/` lists each backup's release in its name |
 
 ---
 

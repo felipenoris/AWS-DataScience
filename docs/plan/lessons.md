@@ -1497,9 +1497,12 @@ its serial console showed that evening. The deploy runner installed `gitlab-runn
 Linux release moved the AMI parameter at 20:01 UTC, so the next plan, written to replace one runner,
 replaced three.
 
-**Why it is a class rather than a slip.** A `[P]` or `[D]` host boots once: the person building it meets
-its races, and its versions are fixed on the day it was built and then held (`production/tooling/`
-installed CE 19.4.2 on 2026-10-12 and holds its AMI and user data with `ignore_changes`). D11 makes an
+**Why it is a class rather than a slip.** A `[P]` or `[D]` host boots once per build: the person building
+it meets its races, and its versions are fixed on the day it was built and then held (`production/tooling/`
+installed CE 19.4.2 on 2026-10-12 and holds its AMI and user data with `ignore_changes`). The hold keeps
+the host, never the template: the next first boot is a rebuild, and for GitLab the rebuild is the restore,
+which GitLab refuses unless it installs the backup's release (Stage 7 decision 10, read 2026-10-16 while
+CE 19.5.0 was the newest). D11 makes an
 `[E]` host's first boot a recurring event, and each session's boot meets a new package index, a new
 image and a new IAM timing with the same template. A boot that passed once is one sample. Its reads
 come in three kinds, each failing its own way: a dependency it must wait for (its own role, the GitLab
@@ -1509,7 +1512,8 @@ slice into a release.
 
 **The rule.** For each read in an `[E]` host's boot, name its kind. Wait for a dependency with a
 deadline that fails loudly, the host's own identity included. Pin a version the host's behaviour
-depends on, with the coupling it must keep written beside the pin (here, the server's major.minor).
+depends on, with the coupling it must keep written beside the pin (here, the server's major.minor; for
+GitLab itself, the release its backups were made by).
 Hold an input that only ages, so it is read when the host is created and never by an unrelated plan.
 
 **What makes it expensive.** The apply's verdict is about the instance, not its boot: `Apply complete`

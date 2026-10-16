@@ -42,6 +42,10 @@
 # replaced GitLab moves its address and loses its first boot's state. The data volume would survive
 # (it is a separate resource, re-attached to the new instance) and the records would follow; what
 # would not is the two volumes' consistency, so a replacement is a decision taken by tainting.
+#
+# The user data pins the GitLab release (var.gitlab_ce_version, Stage 7 decision 10). The hold
+# keeps the running host; the pin decides what a rebuild installs, and a restore refuses every
+# release but the backup's.
 # ------------------------------------------------------------------------------------------
 
 locals {
@@ -94,6 +98,7 @@ locals {
     leaf_gitlab_secret_arn    = data.terraform_remote_state.pki.outputs.leaf_key_secret_arns["gitlab"]
     leaf_pages_secret_arn     = data.terraform_remote_state.pki.outputs.leaf_key_secret_arns["pages"]
     gitlab_secrets_secret_arn = data.terraform_remote_state.foundation.outputs.gitlab_secrets_secret_arn
+    gitlab_ce_version         = var.gitlab_ce_version
   })
 }
 

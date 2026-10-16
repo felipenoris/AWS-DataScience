@@ -16,6 +16,7 @@ LEAF_PAGES_PARAM="${leaf_pages_param}"
 LEAF_GITLAB_SECRET="${leaf_gitlab_secret_arn}"
 LEAF_PAGES_SECRET="${leaf_pages_secret_arn}"
 GITLAB_SECRETS_ARN="${gitlab_secrets_secret_arn}"
+GITLAB_VERSION="${gitlab_ce_version}"
 DATA_MOUNT="/var/opt/gitlab"
 
 export http_proxy="$PROXY" https_proxy="$PROXY"
@@ -78,10 +79,13 @@ metadata_expire=300
 REPOEOF
 echo "proxy=$PROXY" >> /etc/yum.repos.d/gitlab_gitlab-ce.repo
 
-echo "--- installing gitlab-ce (no automatic reconfigure)"
+echo "--- installing gitlab-ce $GITLAB_VERSION (no automatic reconfigure)"
 mkdir -p /etc/gitlab
 touch /etc/gitlab/skip-auto-reconfigure
-dnf -y -q install gitlab-ce
+# The release is variables.tf's pin, named in the form GitLab's upgrade page gives for Amazon Linux
+# 2023. A restore needs the release that created the backup, and a release the repository lacks
+# stops the boot here.
+dnf -y -q install "gitlab-ce-$GITLAB_VERSION-ce.0.amazon2023"
 rpm -q gitlab-ce
 
 fetch_config() {
