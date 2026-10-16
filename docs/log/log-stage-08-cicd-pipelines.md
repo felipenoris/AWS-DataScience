@@ -1363,3 +1363,43 @@ it; the Terraform of decisions 19 and 20 and the CLI in the deploy image are PRs
   alone) and imported from the zip on CPython 3.12.3; `./scripts/check-gitlab-ci.py` OK (13 jobs from
   3 files, 8 names resolved for `examples/app-etl/.gitlab-ci.yml`); `./scripts/check-identifiers.py`
   OK; `./scripts/check-plan-refs.py` OK.
+
+## 2026-10-16 — decisions 21 to 23, and the Terraform of decisions 19 and 20 written
+
+Written by Claude in the cloud session of the project thread, with no AWS identity, in PR #145 after
+step 2.5, by the user's scope of 14:30 UTC ("tudo num PR"); nothing applied. Every time is UTC.
+
+- **[user] Decision 21** (14:55, on a card): `sandbox/app/app-etl/` retires, with `awsds-sandbox-outputs`
+  and `AllowApplicationJobRolesViaS3`; the destroy is the user's. **Decision 22** (14:57): the CLI pinned
+  in the house image, run from a space as the project role. **Decision 23** (14:58): pass 4 after Stage
+  9, with Stage 10's passes 1 and 2. **The `test` project's prefix** (14:53): emptied before each deploy,
+  as 2.5 wrote it. Each as recommended.
+- **[Claude] `deploy-role-v0.5.0`** (`39cf834`): `boundary_name`, null by default, validated as
+  `awsds-<env>-*-boundary`, names the ceiling's policy and its tag; the misuse rule keeps its one name
+  per account, so a second role in an account carries no alarm. The module folder validated with
+  `terraform validate` and `tflint`. The session's GitHub credential pushes the branch and refuses a tag
+  (`HTTP 403` on the tag ref alone), so the user tagged and pushed it from the laptop (15:28).
+- **[Claude] `sandbox/workflows/deploy-role.tf`**: `awsds-deploy-sandbox-test` on the module, with the
+  policy decision 19 records, built from the lab's 158 CloudTrail events of `bundle` and
+  `deploy --targets test`, and the ceiling `awsds-sandbox-deploy-test-boundary`. A provider alias on the
+  deploy runner's profile reads the runner role's ARN, the trust's principal, so a plan of the slice
+  takes both profiles. `terraform init` refused the module ref until the tag existed (`invalid ref:
+  deploy-role-v0.5.0`); with it, `validate`, `fmt -check` and `tflint` pass.
+- **[Claude] `production/foundation/`, `registry/` and `runners/`**: `deploy_targets` gains
+  `other_roles`, the output `deploy_role_arns_by_name` feeds the runner's assume list and profiles,
+  `deploy_role_arns` stays by account for `production/sagemaker/`; `releases.tf` holds the bucket; the
+  runner role's `releases` read and the build runner's `releases` write. `terraform validate`, `fmt
+  -check` and `tflint` pass on the three (provider `aws` 6.64.0 from a filesystem mirror, since the
+  registry is refused to the session; the lock files restored after `-upgrade`).
+- **[Claude] The hygiene scripts and `./aws/cicd.py`**: `DEPLOY_ROLES_BY_SLICE` in `backend.py`, keyed by
+  account and slice, with `gen-tfvars` rendering `other_roles = ["awsds-deploy-sandbox-test"]` for the
+  `sandbox` target of `production/foundation/` and `deploy_role_name` and `deploy_runner` for
+  `sandbox/workflows/`; refusal 8 reading both maps; `cicd.py` listing the four roles by profile.
+  `ruff format` and `ruff check` clean.
+- **[Claude] The deploy image's recipe** (`gitlab/awsds/deploy-image/`): `requirements-cli.txt`, the 25
+  distributions of `aws-smus-cicd-cli==1.0.9` compiled for Python 3.14 with hashes; the Dockerfile
+  installing them into `/opt/smus-cli` with `--require-hashes --no-deps` and linking the command; the
+  README. A proposal for the GitLab project, the source; `mirror.json` is unchanged until it is pushed.
+- **[Claude] The authorization pages read**, in `docs/REFERENCES.md`: MWAA Serverless's (`workflow` the
+  one resource type, `CreateWorkflow` with `aws:RequestTag`, `iam:PassedToService`) and DataZone's
+  (`GetDomain` the one read with a resource type).
