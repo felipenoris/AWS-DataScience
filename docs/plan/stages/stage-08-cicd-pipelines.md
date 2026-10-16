@@ -738,8 +738,9 @@ the approval, and 4.6's alarm.
   `awsds-deploy-sandbox-test` and its role the assume of that role; `./aws/cicd.py` reads the four.
 - **4.3 — The three boots hardened, written 2026-10-16, not applied** (PR #147; decisions 24 and
   25). The test runner `i-018f82308a703b5fa`, created by `make gitlab-up` in the same apply as its role
-  and instance profile (16:36:01 UTC), failed its first AWS call, the CA root's read, at 16:36:29 with `NoCredentials`; `cloud-final` ended `FAILED` and runner #4 never registered, since each
-  template read the root once. Each template now retries that read, the wait doubling from 2 s up to
+  and instance profile (16:36:01 UTC), failed its first AWS call, the CA root's read, at 16:36:29 with
+  `NoCredentials`; `cloud-final` ended `FAILED` and runner #4 never registered, since each template
+  read the root once. Each template now retries that read, the wait doubling from 2 s up to
   32 s, for five minutes, then stops the boot with the call's last error. On a stand-in `aws` command
   with the sleeps simulated: no failure reads once, three failures read at the fourth try after 14 s,
   and a failure that never ends stops at the fourteenth try, 318 s in. The build and test instances
