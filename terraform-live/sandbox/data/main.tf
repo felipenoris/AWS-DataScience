@@ -128,47 +128,5 @@ module "consumer_data" {
         StringEquals = { "kms:ViaService" = "redshift-serverless.${var.region}.amazonaws.com" }
       }
     },
-
-    # ------------------------------------------ an application job's writes (Stage 8 step 2.4)
-    #
-    # An application's job role writes its outputs to awsds-<env>-outputs below, a data bucket under
-    # this key (docs/GOVERNANCE.md, Encryption). The role is [E], in sandbox/app/<app>/, and a key
-    # policy naming a role stores the role's unique id, so the role the next session creates would not
-    # be the one named. The statement therefore admits through the account root, which delegates to
-    # IAM, and names the roles in a condition evaluated on every call: a role called
-    # awsds-<env>-app-*-job, whose own policy allows the action, calling through S3. Both halves must
-    # hold, as for the warehouse above. It is D31's fourth reader, of the third's shape: a role no
-    # person holds, its identity policy naming one prefix of one bucket.
-    {
-      Sid       = "AllowApplicationJobRolesViaS3"
-      Effect    = "Allow"
-      Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-      Action    = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
-      Resource  = "*"
-      Condition = {
-        StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
-        ArnLike = {
-          "aws:PrincipalArn" = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-app-*-job"
-        }
-      }
-    },
   ]
-}
-
-# ------------------------------------------------------ the applications' outputs (Stage 8 step 2.4)
-#
-# Where an application run by hand in this account writes, one prefix per application: the Sandbox
-# counterpart of production/data/'s output buckets (Stage 9). [P], since the module's buckets are, and
-# disposable by declaration: an output is the result of an engineering run, reproducible from the
-# application's release, so every object expires after 30 days. Under the data key; the application
-# job roles reach it through the statement above. CostCenter names Stage 8, over this slice's
-# default_tags, which name Stage 5.
-module "outputs_bucket" {
-  # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/s3-bucket?ref=s3-bucket-v0.4.0"
-
-  bucket_name     = "awsds-${var.env}-outputs"
-  kms_key_arn     = module.consumer_data.data_key_arn
-  expiration_days = 30
-  tags            = { CostCenter = "stage-08" }
 }

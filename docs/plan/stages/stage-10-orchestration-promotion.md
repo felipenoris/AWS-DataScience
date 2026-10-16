@@ -263,7 +263,7 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
     and `kms:GenerateDataKey` and `kms:Decrypt` on the bucket's key, conditioned on `kms:ViaService`. The
     key delegates nothing to IAM (Stage 9 1.1), so its policy names these roles too, by `aws:PrincipalArn`
     on `awsds-<env>-wf-*` and never by the `[E]` role's ARN, whose unique id the next session's role does
-    not carry (Stage 8 2.4's `AllowApplicationJobRolesViaS3`).
+    not carry (the shape of Stage 8 2.4's `AllowApplicationJobRolesViaS3`, retired by its decision 21).
 
   **This role is the caller of every `Create*Job` the workflow makes, so the job settings bind it** (Stage
   9 3.5, Lesson 66): each job carries `VpcConfig` with the job subnets, `EnableNetworkIsolation: true`,

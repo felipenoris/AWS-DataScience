@@ -13,13 +13,3 @@ output "resource_link_names" {
   description = "The local databases resolving to the lake's shared ones."
   value       = module.consumer_data.resource_link_names
 }
-
-output "outputs_bucket_name" {
-  description = "awsds-<env>-outputs - where an application run by hand in this account writes, one prefix per application (Stage 8 step 2.4)."
-  value       = module.outputs_bucket.bucket_name
-}
-
-output "outputs_bucket_arn" {
-  description = "The outputs bucket's ARN - what an application job role's statement names."
-  value       = module.outputs_bucket.bucket_arn
-}
