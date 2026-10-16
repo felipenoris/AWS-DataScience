@@ -1538,3 +1538,26 @@ a command naming the same profile. Every time is UTC.
   `AllowSandboxLakeAccessRoleViaS3` and `AllowRedshiftServerlessViaServiceInThisAccount`. Outside
   `sandbox/app/app-etl/`, no Terraform, script or GitLab copy names the bucket; `production/sagemaker/`'s
   `awsds-${var.env}-outputs` is `awsds-prod-outputs`.
+
+## 2026-10-16 — the deploy image's first rebuild, failed on `.dockerignore`
+Written by Claude, from the pipeline's job log read in the user's browser from the laptop, after the
+user's run. Every time is UTC.
+
+- **[user] The merge and the run**: the merge request of `cli-1.0.9` landed on
+  `awsds/deploy-image`'s `main` at 18:57 (`b599b12`), and pipeline #42 was started from Build →
+  Pipelines → Run pipeline on `main` with `IMAGE_TAG=v0.2.0`; its job `build-deploy-image` (#147)
+  ran on the build runner.
+- **[Claude] The failure** (20:38:39): the step
+  `[8/9] COPY requirements-cli.txt /tmp/requirements-cli.txt` ended with
+  `"/requirements-cli.txt": not found`. The project's `.dockerignore` excludes everything (`*`) and
+  readmits `aws-cli-team.asc` alone, so the file the recipe gained in PR #145 (`976dae4`) never
+  entered the build context: 1.76 kB transferred, the earlier layers from cache and the base through
+  the pull-through cache. Nothing was pushed: `awsds-prod-ecr-deploy` holds `v0.1.0` alone, read
+  after the failure, and the tag `v0.2.0` is free.
+- **[Claude] Why no run caught it before the merge**: the pipeline's rule admits the `web` source
+  with `IMAGE_TAG` alone, so neither the branch nor the merge built the recipe; this run was its
+  first build (Lesson 54).
+- **[Claude] The fix**: `!requirements-cli.txt` in `.dockerignore`, with its comment, written in the
+  copy under `gitlab/awsds/deploy-image/` in PR #145, and in GitLab, the source of truth, by the
+  user's own edit, who started the pipeline again with `IMAGE_TAG=v0.2.0` by 20:54; the mirror then
+  reports the copy unchanged.

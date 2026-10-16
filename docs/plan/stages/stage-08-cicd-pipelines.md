@@ -521,7 +521,10 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   `awsds/deploy-image` rebuilt from the recipe with the CLI, the next `v0.*` tag
   `--docker-allowed-images` matches (the branch `cli-1.0.9` with the recipe pushed from the laptop
   at 17:41 UTC; the merge request, the merge and the pipeline with `IMAGE_TAG=v0.2.0` are the
-  user's); and, if verification xix finds the CLI's lookups refused to the role as a non-member,
+  user's; the merge landed at 18:57 UTC, and the first run, pipeline #42 at 20:38 UTC, failed at
+  `COPY requirements-cli.txt`, since the project's `.dockerignore` readmits `aws-cli-team.asc`
+  alone, a line added in the copy and in GitLab by the user, who ran the pipeline again at 20:54
+  UTC); and, if verification xix finds the CLI's lookups refused to the role as a non-member,
   `awsds-deploy-sandbox-test` added to the `test` project's members in the portal, the step AWS's
   prerequisites page names (`EXC-17`'s shape). The reads after, still owed: `./aws/cicd.py` (the
   fourth role's ceiling and trust, its assumptions once a tag ran), the policy simulator on the role

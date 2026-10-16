@@ -1,3 +1,4 @@
-# The build context is the project root, and the image copies aws-cli-team.asc alone.
+# The build context is the project root, and the image copies only the files readmitted below.
 *
 !aws-cli-team.asc
+!requirements-cli.txt
