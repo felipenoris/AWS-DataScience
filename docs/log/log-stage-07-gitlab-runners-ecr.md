@@ -542,3 +542,27 @@ Account ids are replaced by the account's name in angle brackets.*
   21:26 UTC apply. The shell's first command form failed in the project folder, where
   `production/tooling/` was never initialised, so `terraform output` returned nothing and `start-session`
   got an empty target; the runbook now finds the host by its Name tag.
+
+## 2026-10-16 — the running release read; decision 10 written
+
+- **[Claude] The release `awsds-prod-gitlab` runs, read with no write and no GitLab sign-in**, before
+  22:41 UTC, as the infrastructure user through `awsds-infra-prod`, the tunnel up and the host `running`
+  since 16:33:50 UTC. `https://gitlab.awsds.internal/help`, opened in the desktop app's browser with no
+  GitLab session, shows "GitLab Community Edition" with no version and publishes `gon.revision`
+  `ecff27ae760`; gitlab.com's API names `ecff27ae76032d42095793aa7639d3e73ae6f0de` as the commit of
+  `gitlab-foss`'s tag `v19.4.2` (2026-10-07), so the host runs **CE 19.4.2**. The sign-in page publishes
+  no revision, and `/api/v4/version` answers `401` without a token. The backup bucket holds two
+  objects, `1791860449_2026_10_13_19.4.2_gitlab_backup.tar` (931,840 bytes) and
+  `1792033259_2026_10_15_19.4.2_gitlab_backup.tar` (9,953,280 bytes). Systems Manager holds no software
+  inventory for the host (`list-inventory-entries`, `AWS:Application`, empty).
+- **[Claude] The `amazon/2023` `aarch64` index of `gitlab-ce`**, its primary metadata last modified
+  2026-10-15 13:38:32 GMT, 315 packages: 19.4.0 built 2026-09-16, 19.4.1 on 09-22, 19.4.2 on 10-07 and
+  19.5.0 on 10-15, with 19.3.5 on 10-12 on the older line, each release `ce.0.amazon2023`. The
+  bootstrap's unpinned `dnf -y -q install gitlab-ce` would have installed 19.5.0 that day, and GitLab's
+  restore page restores a backup only into the release that created it.
+- **[Claude] Decision 10 written as recommended**, nothing applied: `gitlab_ce_version = "19.4.2"` in
+  `production/tooling/variables.tf`, installed as `gitlab-ce-19.4.2-ce.0.amazon2023`, and
+  `gitlab_runner_version`'s description names it. `terraform validate` and `tflint` clean on `tooling/`
+  and `runners/`. The read-only plan of `tooling/` as `awsds-infra-prod` with the project folder's
+  `saml.auto.tfvars`, 22:47:09 to 22:47:26 UTC: `No changes. Your infrastructure matches the
+  configuration.`, `-detailed-exitcode` 0, no drift noted.

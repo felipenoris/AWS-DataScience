@@ -1511,6 +1511,18 @@
     The `amazon/2023` index lists every release, each `gitlab-runner` requiring
     `gitlab-runner-helper-images` of its own version and release (19.4.1 on 2026-09-24, 19.5.0 on
     2026-10-15): <https://packages.gitlab.com/runner/gitlab-runner/amazon/2023/x86_64/repodata/repomd.xml>.
+  - *GitLab CE, one release installed by name* (read 2026-10-16, Stage 7 decision 10): the upgrade page
+    gives `gitlab-ce-<version>-ce.0.amazon2023` for a release on Amazon Linux 2023:
+    <https://docs.gitlab.com/update/package/>. The restore page restores a backup only into the version
+    and edition that created it and names the `GitLab version mismatch` error:
+    <https://docs.gitlab.com/administration/backup_restore/restore_gitlab/>. The zero-downtime page says
+    `/etc/gitlab/skip-auto-reconfigure` keeps an upgrade from running `gitlab-ctl reconfigure`:
+    <https://docs.gitlab.com/update/zero_downtime/>. The `amazon/2023` `aarch64` index lists every CE
+    release (19.4.2 built 2026-10-07, 19.5.0 on 2026-10-15):
+    <https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/aarch64/repodata/repomd.xml>. gitlab.com's
+    API names a tag's commit, against which the help page's `gon.revision` is read (`ecff27ae760` is
+    `v19.4.2`):
+    <https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-foss/repository/tags/v19.4.2>.
   - *Terraform's `ignore_changes`* (read 2026-10-16, Stage 8 decision 25): the listed attributes are
     considered when a create is planned and ignored when an update is; the page says nothing of a
     replacement, which a `terraform_data` stand-in measured the same day (the configuration's value):
