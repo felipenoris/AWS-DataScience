@@ -2,8 +2,9 @@
 # the five mandatory tags as default_tags, CostCenter naming the stage that created the resources.
 #
 # The wrong-account guard is the backend: this slice's state lives in this account's own
-# awsds-<env>-tfstate, which admits no cross-account principal. Nothing here is cross-account: a
-# project role, the policy it gets and the processing jobs it names are all in this one account.
+# awsds-<env>-tfstate, which admits no cross-account principal. One read crosses an account boundary:
+# the deploy runner's home identity, for the trust of the test deploy role (deploy-role.tf's alias);
+# a project role, the policies it gets and the jobs it names are all in this one account.
 
 provider "aws" {
   region = var.region

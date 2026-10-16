@@ -645,18 +645,22 @@ APPLICATION_PARENT = "app"
 def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
 
-    A pipeline profile is a deploy role's (backend.DEPLOY_ROLES; the deploy runner names each profile
-    after its role). In an Interactive account it applies no slice: CI never applies into Sandbox
-    (D21's surviving objection), and the one flow that writes where people work, the dev-env release,
-    creates image versions through the API (step 1.6, decision 18). The dev-env deploy role holds no
-    state access, which refuses the same writes in IAM; this says so before anything runs.
+    A pipeline profile is a deploy role's (backend.DEPLOY_ROLES and DEPLOY_ROLES_BY_SLICE; the deploy
+    runner names each profile after its role). In an Interactive account it applies no slice: CI
+    never applies into Sandbox (D21's surviving objection), and the two flows that write where people
+    work create their objects through the API - the dev-env release its image versions (step 1.6,
+    decision 18), the test deploy its workflow (decision 19). Neither deploy role holds state access,
+    which refuses the same writes in IAM; this says so before anything runs.
     """
-    if profile not in backend.DEPLOY_ROLES.values() or account not in backend.SMUS_MEMBERS:
+    deploy_profiles = set(backend.DEPLOY_ROLES.values()) | set(
+        backend.DEPLOY_ROLES_BY_SLICE.values()
+    )
+    if profile not in deploy_profiles or account not in backend.SMUS_MEMBERS:
         return None
     return (
         f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
-        "into the account people work in, and the dev-env release creates image versions through the "
-        "API (Stage 8 step 2.4, decision 18)"
+        "into the account people work in; the dev-env release creates image versions and the test "
+        "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
     )
 
 

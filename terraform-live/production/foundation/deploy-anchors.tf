@@ -51,7 +51,9 @@ locals {
   }
 
   # Every deploy role the runner may assume: this account's own and one per target, each ARN built
-  # from an account id an aliased provider resolved (aws/INDEX.md rule 1).
+  # from an account id an aliased provider resolved (aws/INDEX.md rule 1), and, keyed by name, the
+  # same plus the roles a target's other slices hold (decision 19) - the runner's AssumeRole list
+  # and the profiles production/runners/ renders.
   deploy_target_account_ids = {
     staging = data.aws_caller_identity.deploy_staging.account_id
     sandbox = data.aws_caller_identity.deploy_sandbox.account_id
@@ -60,7 +62,13 @@ locals {
     { (var.account_folder) = module.deploy_role.role_arn },
     { for k, t in var.deploy_targets : k => "arn:${data.aws_partition.current.partition}:iam::${local.deploy_target_account_ids[k]}:role/${t.role}" },
   )
-  deploy_role_arns = values(local.deploy_role_arn_by_account)
+  deploy_role_arn_by_name = merge(
+    { for k, arn in local.deploy_role_arn_by_account : reverse(split("/", arn))[0] => arn },
+    merge([for k, t in var.deploy_targets : { for r in t.other_roles : r => "arn:${data.aws_partition.current.partition}:iam::${local.deploy_target_account_ids[k]}:role/${r}" }]...),
+  )
+  deploy_role_arns = values(local.deploy_role_arn_by_name)
+
+  releases_bucket_arn = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-releases"
 }
 
 # ------------------------------------------------------------------- the runner's role (4.3)
@@ -148,6 +156,38 @@ module "deploy_runner_role" {
           Effect   = "Allow"
           Action   = "kms:Decrypt"
           Resource = data.aws_kms_alias.tfstate.target_key_arn
+        },
+      ]
+    })
+
+    # The release store (Stage 8 decision 20): a promotion leg reads the bundle a tag's release names
+    # as the runner's own role, since the bucket lives in this account and no other account's deploy
+    # role reaches it. The bucket and its key are production/registry/'s, applied after this slice,
+    # so both are named, the key by its alias, never read from that slice's state.
+    "releases" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid      = "ListTheReleases"
+          Effect   = "Allow"
+          Action   = "s3:ListBucket"
+          Resource = local.releases_bucket_arn
+        },
+        {
+          Sid      = "ReadABundle"
+          Effect   = "Allow"
+          Action   = "s3:GetObject"
+          Resource = "${local.releases_bucket_arn}/*"
+        },
+        {
+          Sid      = "DecryptItUnderTheRegistryKey"
+          Effect   = "Allow"
+          Action   = "kms:Decrypt"
+          Resource = "*"
+          Condition = {
+            "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = "alias/awsds-${var.env}-registry" }
+            StringEquals               = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
+          }
         },
       ]
     })

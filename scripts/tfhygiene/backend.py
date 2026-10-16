@@ -471,6 +471,21 @@ DEPLOY_ROLES = {
     "sandbox": "awsds-deploy-devenv-sandbox",
 }
 
+# Stage 8 decision 19 - a deploy role outside its account's foundation/, keyed by the (account,
+# slice) that builds it: the role that deploys an application's release to D41's `test` project. The
+# slice gets its name and the home's profile, as a foundation/ does, and the home lists it in that
+# account's `other_roles`, so the runner's AssumeRole list and its profiles carry it. The account
+# holds a DEPLOY_ROLES row and is not the home: the home lists only the targets.
+DEPLOY_ROLES_BY_SLICE = {
+    ("sandbox", "workflows"): "awsds-deploy-sandbox-test",
+}
+for _account, _slice in DEPLOY_ROLES_BY_SLICE:
+    if _account not in DEPLOY_ROLES or _account in DEPLOY_RUNNER_HOME:
+        raise ValueError(
+            f"DEPLOY_ROLES_BY_SLICE: {_account}/{_slice} needs a DEPLOY_ROLES row outside "
+            "DEPLOY_RUNNER_HOME, the deploy_targets row that lists it"
+        )
+
 # Stage 8 decision 14 - the profile a pipeline job reads the registry's state through. The registry
 # lives in the runner's home (D14), so the runner's own role reads that one state object, under a
 # profile of the runner's AWS configuration named after the role and carrying the instance's
@@ -901,13 +916,19 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
     # Stage 8 step 4 - the deploy credential layer, both ends (the table above carries the
-    # argument). The home builds the runner's role and lists every other target; each target
-    # builds its own deploy role, whose trust names the home's runner role.
+    # argument). The home builds the runner's role and lists every other target, each with the
+    # roles its other slices hold; each target builds its own deploy role, whose trust names the
+    # home's runner role, and a slice of DEPLOY_ROLES_BY_SLICE builds its role the same way.
     if slice_name == "foundation" and account in DEPLOY_ROLES:
         values["deploy_role_name"] = DEPLOY_ROLES[account]
         if account in DEPLOY_RUNNER_HOME:
             values["deploy_targets"] = {
-                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct], "role": role}
+                acct: {
+                    "profile": PROFILES[acct],
+                    "env": ENV_TOKENS[acct],
+                    "role": role,
+                    "other_roles": [r for (a, _s), r in DEPLOY_ROLES_BY_SLICE.items() if a == acct],
+                }
                 for acct, role in DEPLOY_ROLES.items()
                 if acct not in DEPLOY_RUNNER_HOME
             }
@@ -916,6 +937,12 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
                 acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
                 for acct in DEPLOY_RUNNER_HOME
             }
+    if (account, slice_name) in DEPLOY_ROLES_BY_SLICE:
+        values["deploy_role_name"] = DEPLOY_ROLES_BY_SLICE[(account, slice_name)]
+        values["deploy_runner"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in DEPLOY_RUNNER_HOME
+        }
 
     if account == "identity" and slice_name == "sso":
         # Stage 5a pass 4c put two cross-account reads here. The `data_consumers` map (each
@@ -1075,10 +1102,13 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
     if "deploy_role_name" in v:
         out += f'deploy_role_name = "{v["deploy_role_name"]}"\n'
     if "deploy_targets" in v:
-        rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", role = "{p["role"]}" }}\n'
-            for acct, p in v["deploy_targets"].items()
-        )
+        rows = ""
+        for acct, p in v["deploy_targets"].items():
+            other_roles = ", ".join(f'"{r}"' for r in p["other_roles"])
+            rows += (
+                f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '
+                f'role = "{p["role"]}", other_roles = [{other_roles}] }}\n'
+            )
         out += f"deploy_targets = {{\n{rows}}}\n"
     if "deploy_runner" in v:
         rows = "".join(

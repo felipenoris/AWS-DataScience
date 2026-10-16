@@ -22,7 +22,7 @@ locals {
   # type credential_source requires role_arn"), read 2026-10-15, where the AWS CLI ignores it.
   deploy_aws_config = join("\n", concat(
     [
-      for arn in values(data.terraform_remote_state.foundation.outputs.deploy_role_arns) : join("\n", [
+      for arn in values(data.terraform_remote_state.foundation.outputs.deploy_role_arns_by_name) : join("\n", [
         "[profile ${reverse(split("/", arn))[0]}]",
         "role_arn = ${arn}",
         "credential_source = Ec2InstanceMetadata",

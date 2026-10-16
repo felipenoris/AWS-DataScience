@@ -116,8 +116,8 @@ variable "deploy_role_name" {
 }
 
 variable "deploy_targets" {
-  description = "The deploy roles outside this account, keyed by the account folder each lives in, with the profile an aliased provider resolves that account's id from."
-  type        = map(object({ profile = string, env = string, role = string }))
+  description = "The deploy roles outside this account, keyed by the account folder each lives in, with the profile an aliased provider resolves that account's id from: the account's own role, in its foundation/, and in other_roles the roles its other slices hold (Stage 8 decision 19: sandbox/workflows/'s awsds-deploy-sandbox-test)."
+  type        = map(object({ profile = string, env = string, role = string, other_roles = list(string) }))
   nullable    = false
 
   validation {
