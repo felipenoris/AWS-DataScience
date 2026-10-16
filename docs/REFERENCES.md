@@ -1503,6 +1503,23 @@
     the AL2023 repositories, which come through the S3 gateway, at the proxy (6c 5.8):
     <https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/amazon/2023/config_file.repo> and
     <https://packages.gitlab.com/install/repositories/runner/gitlab-runner/amazon/2023/config_file.repo>.
+  - *GitLab Runner versions, and one release installed by name* (read 2026-10-16, Stage 8 decision 24): a
+    runner's major.minor should stay in sync with the server's; minor updates are backward compatible,
+    and a version difference can leave features unavailable:
+    <https://docs.gitlab.com/runner/#gitlab-runner-versions>. A release is installed by its name, the
+    RHEL example being `gitlab-runner-17.2.0-1`: <https://docs.gitlab.com/runner/install/linux-repository/>.
+    The `amazon/2023` index lists every release, each `gitlab-runner` requiring
+    `gitlab-runner-helper-images` of its own version and release (19.4.1 on 2026-09-24, 19.5.0 on
+    2026-10-15): <https://packages.gitlab.com/runner/gitlab-runner/amazon/2023/x86_64/repodata/repomd.xml>.
+  - *Terraform's `ignore_changes`* (read 2026-10-16, Stage 8 decision 25): the listed attributes are
+    considered when a create is planned and ignored when an update is; the page says nothing of a
+    replacement, which a `terraform_data` stand-in measured the same day (the configuration's value):
+    <https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle>.
+  - *The AMI public parameters* (read 2026-10-16, Stage 8 decision 25): the EC2 page that recommends
+    `/aws/service/ami-amazon-linux-latest/…` and Parameter Store's page on public parameters, neither
+    saying that the history and the version selectors are refused (`lessons.md`, Systems Manager):
+    <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami-parameter-store.html> and
+    <https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters.html>.
   - *GitLab Runner with a self-signed or private CA* (read 2026-10-12, Stage 7 step 6.1): the runner reads
     `/etc/gitlab-runner/certs/<gitlab host>.crt` on its own, passes it to the helper as
     `CI_SERVER_TLS_CA_FILE` for the clone and the artifacts, and a job's own scripts see it only through a

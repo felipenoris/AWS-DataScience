@@ -1486,6 +1486,37 @@ only if no unprotected path reaches the same host.
 **What makes it expensive.** The gate keeps working: the tag stays protected and its settings page reads
 correctly, while the credential it was meant to guard is reachable around it, and nothing refuses.
 
+## Lesson 68 — an `[E]` host's first boot runs every session, so what it reads unpinned is a release and what it reads without waiting is a race
+
+**What happened.** Stage 8, 2026-10-16, `production/runners/`: three defects in one day, all in the first
+boot of hosts that `make gitlab-up` creates and `make gitlab-down` destroys. The test runner, created in
+the same apply as its role and instance profile, read the CA root 28 s later and met `NoCredentials`;
+its boot stopped there, the apply had already reported success, and runner #4 never registered, which
+its serial console showed that evening. The deploy runner installed `gitlab-runner` 19.4.1 on
+2026-10-13 and 19.5.0 on 2026-10-16 from an unchanged line, against a 19.4.2 server. And an Amazon
+Linux release moved the AMI parameter at 20:01 UTC, so the next plan, written to replace one runner,
+replaced three.
+
+**Why it is a class rather than a slip.** A `[P]` or `[D]` host boots once: the person building it meets
+its races, and its versions are fixed on the day it was built and then held (`production/tooling/`
+installed CE 19.4.2 on 2026-10-12 and holds its AMI and user data with `ignore_changes`). D11 makes an
+`[E]` host's first boot a recurring event, and each session's boot meets a new package index, a new
+image and a new IAM timing with the same template. A boot that passed once is one sample. Its reads
+come in three kinds, each failing its own way: a dependency it must wait for (its own role, the GitLab
+it registers with) loses a race some sessions; a version it installs (a package's newest) moves with no
+diff in the repository; and an input the plan resolves (the AMI parameter) turns every plan of the
+slice into a release.
+
+**The rule.** For each read in an `[E]` host's boot, name its kind. Wait for a dependency with a
+deadline that fails loudly, the host's own identity included. Pin a version the host's behaviour
+depends on, with the coupling it must keep written beside the pin (here, the server's major.minor).
+Hold an input that only ages, so it is read when the host is created and never by an unrelated plan.
+
+**What makes it expensive.** The apply's verdict is about the instance, not its boot: `Apply complete`
+and a running host that bills while registered as nothing. Each failure is also intermittent or
+silent: the race loses some sessions, the version drifts with no commit, and the replacement arrives
+inside a plan written for something else.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -1534,6 +1565,15 @@ starting at a state nobody named. Each entry carries the stage that found it.
   that reads like a policy problem and is a naming one. Measured at Stage 2's Validation,
   2026-08-16; the rule and this project's `/datascience/<env>/…` names live in `conventions.md`. The
   undocumented half is the error text.
+- **A public AMI parameter answers only its current value** (measured 2026-10-16 as
+  `InfrastructureAccess` in Production, Stage 8 decision 25). On
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, `GetParameterHistory` is
+  refused with `AccessDeniedException: Cannot access/update data for the restricted parameter`, and
+  `GetParameter` with a version selector answers `ParameterVersionNotFound` for every version, the
+  current one (194) included. A pin by parameter version is therefore unavailable, and which image the
+  parameter named at a past moment is read from `describe-images` (owner `amazon`, name and
+  `CreationDate`), never from Parameter Store. Neither the EC2 page that recommends the parameter nor
+  Parameter Store's page on public parameters says so (both read the same day).
 
 ### ECR, S3 and the NAT
 

@@ -89,6 +89,17 @@ variable "ecr_credential_helper" {
   }
 }
 
+variable "gitlab_runner_version" {
+  description = "The gitlab-runner release all three runners install, from packages.gitlab.com's amazon/2023 repository (Stage 8 decision 24). GitLab keeps a runner's major.minor with the server's, so it follows GitLab CE v19.4.2 (production/tooling/): 19.4.1, the newest 19.4 in the repository on 2026-10-16, whose newest release is 19.5.0. A GitLab upgrade moves it in the same sitting; a release the repository lacks stops the boot at dnf."
+  type        = string
+  default     = "19.4.1"
+
+  validation {
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.gitlab_runner_version))
+    error_message = "gitlab_runner_version must be a release such as 19.4.1."
+  }
+}
+
 variable "concurrent_jobs" {
   description = "How many jobs the runner manager runs at once. Two: a docs build beside an image build; a third would contend for the same four vCPUs."
   type        = number

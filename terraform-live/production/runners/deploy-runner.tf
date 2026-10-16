@@ -44,7 +44,7 @@ resource "aws_instance" "deploy_runner" {
   # checkov:skip=CKV_AWS_88:no public address is set here and none is inherited - the subnet is the private tier, which has no default route
   count = var.deploy_image_digest == null ? 0 : 1
 
-  ami           = data.aws_ssm_parameter.al2023.value
+  ami           = data.aws_ssm_parameter.al2023.insecure_value
   instance_type = var.deploy_runner_instance_type
   ebs_optimized = true
 
@@ -54,20 +54,21 @@ resource "aws_instance" "deploy_runner" {
   associate_public_ip_address = false
 
   user_data = templatefile("${path.module}/deploy-user-data.sh.tftpl", {
-    proxy_url           = local.proxy_url
-    no_proxy            = local.no_proxy
-    region              = var.region
-    gitlab_url          = local.gitlab_url
-    gitlab_host         = local.gitlab_host
-    ca_root_param       = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
-    runner_token_secret = data.terraform_remote_state.foundation.outputs.deploy_runner_token_secret_arn
-    concurrent_jobs     = 1
-    name_tag            = local.deploy_runner_name
-    ecr_registry        = local.ecr_registry
-    ecr_helper_version  = var.ecr_credential_helper.version
-    ecr_helper_sha256   = var.ecr_credential_helper.sha256
-    deploy_image        = local.deploy_image
-    aws_config          = local.deploy_aws_config
+    proxy_url             = local.proxy_url
+    no_proxy              = local.no_proxy
+    region                = var.region
+    gitlab_url            = local.gitlab_url
+    gitlab_host           = local.gitlab_host
+    ca_root_param         = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
+    runner_token_secret   = data.terraform_remote_state.foundation.outputs.deploy_runner_token_secret_arn
+    concurrent_jobs       = 1
+    name_tag              = local.deploy_runner_name
+    ecr_registry          = local.ecr_registry
+    ecr_helper_version    = var.ecr_credential_helper.version
+    ecr_helper_sha256     = var.ecr_credential_helper.sha256
+    deploy_image          = local.deploy_image
+    aws_config            = local.deploy_aws_config
+    gitlab_runner_version = var.gitlab_runner_version
   })
   user_data_replace_on_change = true
 
@@ -90,5 +91,10 @@ resource "aws_instance" "deploy_runner" {
   # ./aws/supplychain.py SC-10's `awsds-prod-runner*` counts it among the runners.
   tags = {
     Name = local.deploy_runner_name
+  }
+
+  lifecycle {
+    # The AMI is the parameter's value when the host is created (data.tf, Stage 8 decision 25).
+    ignore_changes = [ami]
   }
 }

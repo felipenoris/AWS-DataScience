@@ -61,7 +61,12 @@ data "terraform_remote_state" "registry" {
 }
 
 # x86_64, which is the point of the slice: the sagemaker-distribution base publishes no arm64 tag
-# and SMUS spaces run on x86 instance types (the buildbox's argument, 6c 5.8).
+# and SMUS spaces run on x86 instance types (the buildbox's argument, 6c 5.8). Read through the
+# public parameter, never as an `ami-` literal (architecture.md, "Region portability"), and held by
+# each runner's `ignore_changes = [ami]` (Stage 8 decision 25): a host keeps the image it was
+# created on, so an Amazon Linux release replaces no running runner, and a host this slice creates
+# takes the newest. The runners read `insecure_value`, since an AMI id is public: a plan then
+# prints the id where `value` prints `(sensitive value)`.
 data "aws_ssm_parameter" "al2023" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
