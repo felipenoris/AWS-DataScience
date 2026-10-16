@@ -4,7 +4,7 @@
 #               zone_ids, account_folder, interactive_private_cidrs - the allocation table's values,
 #               never literals here.
 #   defaults    below: the host's shape, the two volume sizes, the proxy bypass list (a dated
-#               literal, step 1.3), the names.
+#               literal, step 1.3), the GitLab release, the names.
 #   typed once  saml.auto.tfvars, gitignored: the identity provider's SSO URL and certificate, read
 #               off the Identity Center console at step 3.1 and never committed.
 
@@ -127,6 +127,19 @@ variable "snapshot_retain_count" {
   description = "How many daily DLM snapshots of the data volume are kept. Seven: a week of restore points beside the 30 days of application backups in the backup bucket."
   type        = number
   default     = 7
+}
+
+# ---------------------------------------------------------------------------- the GitLab release
+
+variable "gitlab_ce_version" {
+  description = "The GitLab CE release the first boot installs, gitlab-ce-<release>-ce.0.amazon2023 from packages.gitlab.com's amazon/2023 repository (Stage 7 decision 10). It is the release the host runs, 19.4.2 on 2026-10-16: GitLab restores a backup only into the release that created it, and a rebuild installs this one. It moves together with production/runners/'s gitlab_runner_version, which keeps the server's major.minor (Stage 8 decision 24), so an upgrade on the host moves both in the same sitting. The user data is held by ignore_changes: a new value plans no change and reaches the host at its next rebuild."
+  type        = string
+  default     = "19.4.2"
+
+  validation {
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.gitlab_ce_version))
+    error_message = "gitlab_ce_version must be a GitLab release such as 19.4.2."
+  }
 }
 
 # ------------------------------------------------------------------------------- SAML (step 3.2)
