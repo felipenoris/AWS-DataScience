@@ -374,6 +374,31 @@ a last measurement describing a version that no longer exists.
 by AWS, not by the caller: there is no way to present as a service principal on purpose. The re-run above
 proves the regression half — adding the guard did not open the deny for people.
 
+**The Stage 9 step 3.5 and 3.7 amendment — `awsds-org-scp-ou-workloads` gains sagemaker-denies' five
+statements and `DenySageMakerServerlessInference`.** Run as `awsds-infra-prod` with `--phase ou`, after the
+`identity/org-policies/` apply and before `production/sagemaker/` is applied (Stage 9 step 3.4). Each deny
+row breaks one setting and keeps the other four, because AWS names the policy and never the statement
+(Lesson 20); the two allow rows are the same calls with nothing broken. Every call is `blocked`: the role,
+the image, the security group, the key and the model named do not exist, and the subnet is the account's
+own, so a VPC check that ran before authorization would read as a validation error, never as the deny.
+
+| Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | Statement it answers |
+|---|---|---|
+| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` (authorized) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
+| the same, without `VpcConfig` | `AccessDenied` naming the policy | `DenySageMakerJobsOffVpc` |
+| the same, on `ml.m5.2xlarge` | `AccessDenied` | `DenySageMakerInstanceCeiling` |
+| the same, `EnableNetworkIsolation: false` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation` |
+| the same, `EnableInterContainerTrafficEncryption: false` | `AccessDenied` | `DenySageMakerJobsWithoutInterContainerEncryption` |
+| the same, without `VolumeKmsKeyId` | `AccessDenied` | `DenySageMakerJobsWithoutVolumeEncryption` |
+| `create-endpoint-config` with a `ServerlessConfig` variant | `AccessDenied` | `DenySageMakerServerlessInference` |
+| `create-endpoint-config` with an `ml.m5.large` variant | `ValidationException` (authorized) | none: the contrast for the serverless row |
+
+**A `ValidationException` on a deny row records it untested, not passed** (the box above), and here no
+retry is safe: a role that exists would let an authorized call create a job, which makes the row
+`creates`, refused outside `Policy Canary`. The question then moves to Stage 10's first submitted job, read
+from CloudTrail. The compliant row turning into a deny is the finding that matters most: either the volume
+key stopped populating under its old name, or another statement reaches further than written.
+
 ## Phase 5 — step 7.8's documents, one attach at a time
 
 **7.8 is the first sitting where the documents are not all the same kind of thing.** Each is attached alone,

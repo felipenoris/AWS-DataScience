@@ -186,6 +186,28 @@
   <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
   <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
 
+- The IAM, KMS and STS readings behind Stage 9 pass 1's roles and alarm (read 2026-10-16):
+  - *KMS alias authorization*: `kms:ResourceAliases` controls access to a key by its aliases, and an
+    alias change can take up to five minutes to affect authorization, which bounds how soon after pass 3
+    the job role's alias-matched key statement works:
+    <https://docs.aws.amazon.com/kms/latest/developerguide/alias-authorization.md>; the KMS condition
+    keys, `kms:ViaService` among them:
+    <https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.md>.
+  - *The confused-deputy problem*, `aws:SourceAccount` in a service role's trust:
+    <https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html>; AWS Support's answer quoted
+    in a Prowler issue, that Glue sends no such key when it assumes a role, the reason
+    `awsds-prod-job-exec`'s Glue statement carries no condition:
+    <https://github.com/prowler-cloud/prowler/issues/2810>.
+  - *STS endpoints*: a call to the global endpoint is recorded in `us-east-1`, the reason the debug
+    role's trust pins `aws:RequestedRegion`:
+    <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_region-endpoints.html>.
+  - *A console role switch in CloudTrail*: the sign-in service's `SwitchRole` event and its
+    `additionalEventData.SwitchTo`, from two published rules, neither read against this estate:
+    <https://blog.serverworks.co.jp/how-to-set-up-eventbridge-for-switchrole-notifications> and
+    <https://aws.amazon.com/blogs/security/how-to-audit-cross-account-roles-using-aws-cloudtrail-and-amazon-cloudwatch-events/>;
+    IAM's page on the permissions to switch roles:
+    <https://docs.aws.eu/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html>.
+
 ## Terraform
 
 - Terraform S3 backend (including native state locking): <https://developer.hashicorp.com/terraform/language/backend/s3>.
@@ -873,6 +895,22 @@
   for `GetScheduleGroup` (AWS Big Data Blog, 2025-04-30)
   <https://aws.amazon.com/blogs/big-data/unified-scheduling-for-visual-etl-flows-and-query-books-in-amazon-sagemaker-unified-studio/>.
 
+- The SageMaker readings behind Stage 9 pass 1 (read 2026-10-16):
+  - *The Service Authorization Reference for SageMaker AI*: the job creates list
+    `sagemaker:VolumeKmsKeyArn`, where `terraform-modules/sagemaker-denies/` names
+    `sagemaker:VolumeKmsKey`, the key 6i populated; `CreateEndpointConfig` lists
+    `sagemaker:ServerlessMemorySize` and no VPC key, which is what step 3.7's deny keys on. Read on
+    docs.amazonaws.cn in HTML and in its Markdown rendition, and on the zh_tw page:
+    <https://docs.amazonaws.cn/en_us/service-authorization/latest/reference/list_amazonsagemaker.html>,
+    <https://docs.amazonaws.cn/en_us/service-authorization/latest/reference/list_amazonsagemaker.md> and
+    <https://docs.aws.amazon.com/zh_tw/service-authorization/latest/reference/list_amazonsagemaker.html>.
+  - *Model Registry cross-account deployment*, re-read for step 3.2's three statements:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-deploy.md>.
+  - *The project role's managed policy*: `SageMakerCrossAccountPermissions` (v44) admits
+    `DescribeModelPackage`, `DescribeModelPackageGroup` and `ListModelPackages` on another account's
+    resources, decision 10's project-role half:
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
@@ -1149,6 +1187,11 @@
 - Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
+
+- `AWSGlueServiceRole` (read 2026-10-16): v5's EC2 statements, the describes, the network interfaces and
+  the `aws-glue-service-resource` tag, which `awsds-prod-job-exec` copies without the policy's S3 and IAM
+  reads (Stage 9 step 3.1):
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSGlueServiceRole.html>.
 
 ## Containers, CI/CD and orchestration
 

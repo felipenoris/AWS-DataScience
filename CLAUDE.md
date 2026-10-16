@@ -379,8 +379,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `status` field because each run stops when its successor starts. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps `ServiceEnabled: true` with no standard, so the hub answers everywhere and no check runs. The window closed 2026-09-20 and FSBP billed ~0.45 USD/day for the organization (13.5/month against a floor row of 1-2). `DL-11` reads the pause as a note; revert is `runbooks/security-hub.md` §R, from Audit.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`), Staging 11, SharedServices 12 (`secretsmanager` added and the SageMaker pair dropped at Stage 7),
-  Workloads 0; estate fixed rate 0.390/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
+  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`), Staging 11, SharedServices 12,
+  Workloads 0 (6 once Stage 9 pass 1 is applied); estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
   stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
   PX-1..PX-4; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
 - **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it

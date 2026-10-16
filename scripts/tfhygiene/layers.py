@@ -327,16 +327,16 @@ SLICES = [
         "12 interface endpoints (5.5, 7 1.7, 7 dec 9) - no NAT",
         0.120,
     ),
-    # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, written empty and egress_mode "B" from
-    # birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so usd_per_hour is 0.0
-    # and true rather than 0.0 and pending. It exists now because an [E] slice that arrives
-    # after the teardown target was last read is how a bill starts.
+    # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
+    # its six endpoints: sts, logs, kms and glue of the core, sagemaker.api and secretsmanager. The
+    # DNS Firewall bills per query and per domain list, never by the hour, so it adds nothing to
+    # this column.
     Slice(
         "production",
         "workloads-egress",
         EPHEMERAL,
-        "VPC-Workloads endpoints - empty until St.9/10",
-        0.0,
+        "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
+        0.060,
     ),
     # Stage 3's Deliverables, as slices rather than as a script. These are instruments: created,
     # read from the serial console, destroyed in the same sitting - `make down` is why they are
@@ -483,6 +483,13 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
+    # Stage 9 step 3 - the same slice name in a deployment target, and a different content: the
+    # job role, the Model Registry's package groups, the debug role and its alarm, the job log
+    # groups (D17's runtime half). [P] and free at rest: roles, rules and empty groups cost
+    # nothing. Rank 46 sits above foundation/ and registry/, whose states it reads; the first apply
+    # also precedes production/data/ (45), whose key and bucket policies name the two roles, the
+    # inversion the sso/data row above describes and for the same reason no order acts on it.
+    Slice("production", "sagemaker", PERSISTENT, "job role, model registry, debug role + alarm"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
     # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). No compute lives here and none may: US-2 measures that, and Stage 6

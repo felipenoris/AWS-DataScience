@@ -97,7 +97,7 @@ module's arithmetic:
 | `production/workloads/` | `[P]` | **VPC-Workloads** and `prod.awsds.internal` |
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
 | `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
-| `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs, the DNS Firewall |
+| `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs and VPC-Workloads, the DNS Firewall |
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
@@ -318,10 +318,14 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
-**The DNS Firewall** is in the two **compute** VPCs only, its allow-list is **fourteen** entries —
-AWS's own namespaces and this estate's private zones — and its job is **closing the recursive resolver
-as an exfiltration channel** rather than filtering the internet, which the proxy does.
-`VPC-Networking` carries none: the proxy has to resolve.
+**The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
+job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
+which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and
+this estate's private zones. VPC-Workloads' is **four**, AWS's namespaces only, so `gitlab`, `proxy`
+and every `prod.awsds.internal` name answer NXDOMAIN there: GitLab is in a VPC it has no peering to,
+and the proxy refuses its plane everything. VPC-Workloads' six interface endpoints are the jobs' set:
+`sts`, `logs`, `kms`, `glue`, `sagemaker.api` and `secretsmanager`. `VPC-Networking` carries none: the
+proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:

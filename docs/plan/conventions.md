@@ -369,8 +369,10 @@ terraform-live/
     │                     #     A second endpoint slice in one account, because an egress-
     │                     #     shaped slice reads exactly one foundation/: egress/ below
     │                     #     serves VPC-SharedServices and cannot also serve this one.
-    │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a,
-    │                     #     populated by Stages 9 and 10 - empty today
+    │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a;
+    │                     #     Stage 9 step 3.3a names the jobs' six endpoints and turns the
+    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2 adds
+    │                     #     the workers'
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,
     │                     #     not foundation/'s: foundation is opened to change a CIDR or
     │                     #     accept a peering, and every such edit would otherwise decrypt
@@ -410,9 +412,12 @@ terraform-live/
     │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
     │                     #     so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
-    │                     #     pipeline-submitted jobs assume. No domain, no user profiles (D17)
-    ├── egress/           # [E] VPC-SharedServices' interface endpoints (14 since Stage 7 1.7:
-    │                     #     6c 5.5's 13 plus secretsmanager) - no NAT anywhere (D38; the NAT
+    │                     #     pipeline-submitted jobs assume, its job log groups, and the
+    │                     #     escape hatch awsds-prod-debug with its alarm (Stage 9 steps 3
+    │                     #     and 6, rank 46). No domain, no user profiles (D17)
+    ├── egress/           # [E] VPC-SharedServices' interface endpoints (12 since Stage 7: 6c
+    │                     #     5.5's 13 plus secretsmanager, step 1.7, minus the SageMaker pair,
+    │                     #     decision 9) - no NAT anywhere (D38; the NAT
     │                     #     code left vpc-egress at v0.6.0, 6c 5.1). No internal ALB: Stage 7
     │                     #     decision 1 terminates TLS on GitLab's own nginx
     ├── probes/           # [E] Stage 3's instrument here: the peering target
