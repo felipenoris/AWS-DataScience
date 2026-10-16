@@ -1698,3 +1698,22 @@ Written by Claude in the laptop session of PR #147, as the infrastructure user t
 - **[user] Decisions 24 and 25** (by 22:21, in this session's chat): "Aceito as decisões 24 e 25 como
   recomendadas. Registre no arquivo da etapa 8." `gitlab-runner` pinned at 19.4.1, and each runner's AMI
   held by `ignore_changes`. The apply stays the user's.
+
+## 2026-10-16 — the `default-v0.8.0` release row, copied back
+
+Written by Claude in the laptop session that applied step 2.5a, the reads as the infrastructure user
+through `awsds-infra-prod` and `awsds-infra-sandbox-1` (`InfrastructureAccess`), the push to the private
+GitLab over HTTPS with the laptop's credential helper on the user's request. Every time is UTC.
+
+- **[Claude] The row's figures read back** before the push: ECR's `default-v0.8.0-7c59998c` in
+  `awsds-prod-ecr-base` (`sha256:681dcb20…f23e`, 3,745,649,519 bytes, pushed 21:43:56) and in
+  `awsds-prod-ecr-dev-env` (`sha256:b788dbd9…1b87`, 6,678,573,838 bytes, pushed 21:54:54), both scans
+  `COMPLETE` at CRITICAL 113, HIGH 610, MEDIUM 158, LOW 16, UNDEFINED 436; Sandbox's
+  `awsds-sandbox-dev-env` version 9 `CREATED` at 22:03:16 on the `dev-env` digest, alias `0.8.0`, beside
+  versions 8 and 7. The build time, the pipeline and the manifests' changes come from another session's
+  reading of the jobs.
+- **[Claude] `awsds/dev-env` branch `the-releases-v0.8.0`**, commit `dff50f4` (22:30) on `main`'s
+  `7c59998`: the `default-v0.8.0` row of the README's releases table.
+- **[user] The merge** at 22:41:51 (`5d5391a`).
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py` changed `README.md` in `gitlab/awsds/dev-env/` and
+  `mirror.json`; `awsds/deploy-image`'s copy already held `7bf9acf`.
