@@ -117,9 +117,9 @@ variable "cost_center" {
 # awsds/deploy-image's pipeline printed, committed, so the approved image is a reviewed line in this
 # repository and never only a fact inside an [E] host (Lesson 4).
 variable "deploy_image_digest" {
-  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.1.0: built 2026-10-13 from de2dc08, on python:3.14-slim (Debian 13) at sha256:a2b82f3c...9170 through the cache."
+  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.2.0: built 2026-10-16 from b064ba80, with the SageMaker CI/CD CLI 1.0.9 in /opt/smus-cli, on python:3.14-slim through the cache."
   type        = string
-  default     = "sha256:1b1a583030cc7b963c2bd9ffdaf57af215aa6dd76e3599139bc8cf06dc38a53a"
+  default     = "sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac"
 
   validation {
     condition     = var.deploy_image_digest == null || can(regex("^sha256:[0-9a-f]{64}$", var.deploy_image_digest))
