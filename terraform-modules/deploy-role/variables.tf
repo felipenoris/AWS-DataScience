@@ -21,6 +21,17 @@ variable "env" {
   nullable    = false
 }
 
+variable "boundary_name" {
+  description = "The ceiling's policy name. Null, the default, names it awsds-<env>-deploy-boundary, the one ceiling of an account with one deploy role. A second deploy role in the same account names its own ceiling, under awsds-<env>-*-boundary so DenyChangingTheCeilings protects it (Stage 8 decision 19: awsds-sandbox-deploy-test-boundary in sandbox/workflows/). The misuse rule keeps its one name per account, so a second role carries no alarm."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.boundary_name == null || (startswith(coalesce(var.boundary_name, "-"), "awsds-${var.env}-") && endswith(coalesce(var.boundary_name, "-"), "-boundary"))
+    error_message = "boundary_name is awsds-<env>-<what>-boundary, with this account's env token: DenyChangingTheCeilings denies changing awsds-<env>-*-boundary and nothing else."
+  }
+}
+
 variable "runner_role_arn" {
   description = "The deploy runner's role - the only principal the trust admits (Stage 8 step 4.1). Built by the caller from the runner's name and its home's account id, never pasted."
   type        = string

@@ -9,7 +9,7 @@ output "role_name" {
 }
 
 output "boundary_arn" {
-  description = "The ceiling the role carries, awsds-<env>-deploy-boundary."
+  description = "The ceiling the role carries: awsds-<env>-deploy-boundary, or the name the caller gave a second role's."
   value       = aws_iam_policy.boundary.arn
 }
 
