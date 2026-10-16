@@ -1397,7 +1397,8 @@ Measured (`docs/PRICING.md`), us-west-2:
     releases, and a release nobody reviewed runs on the host whose role reaches the deploy roles
     (Lesson 67). **Taken by the user 2026-10-16 (22:21 UTC), as recommended**; written in PR #147,
     unapplied (4.3). Stage 7 decision 10 puts the server's release in `production/tooling/variables.tf`
-    (`gitlab_ce_version`), and each variable's description names the other; no check compares them.
+    (`gitlab_ce_version`), each variable's description names the other, and
+    `scripts/check-gitlab-pins.py` fails `make check` while their major.minor differ.
 25. **When a runner takes a new Amazon Linux image** (4.3; decision 11; Stage 7 step 6). Each runner read
     its `ami` from `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` at every
     plan, so an Amazon Linux release replaced all three at the slice's next plan, whatever that plan was

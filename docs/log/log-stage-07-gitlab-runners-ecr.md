@@ -566,3 +566,11 @@ Account ids are replaced by the account's name in angle brackets.*
   and `runners/`. The read-only plan of `tooling/` as `awsds-infra-prod` with the project folder's
   `saml.auto.tfvars`, 22:47:09 to 22:47:26 UTC: `No changes. Your infrastructure matches the
   configuration.`, `-detailed-exitcode` 0, no drift noted.
+- **[Claude] The two pins' checks, written and exercised** (decision 10, 8.4). `scripts/check-gitlab-pins.py`
+  read `gitlab_ce_version` `19.4.2` and `gitlab_runner_version` `19.4.1`: `both on 19.4`, `OK`. On a copy
+  with the runner at 19.5.0 it printed `the server installs 19.4 and the runners 19.5` and `FAILED`, exit 1;
+  a missing variable and a default that is not a literal each read `UNREAD`, exit 2.
+  `./aws/supplychain.py awsds-infra-prod`, read-only, from 23:04 UTC: `SC-13` pass,
+  `1792033259_2026_10_15_19.4.2_gitlab_backup.tar (2026-10-15T03:01:09+00:00), made by 19.4.2, equal to
+  gitlab_ce_version`, every check passed. With `gitlab_ce_version` set to 19.5.0 in the working copy,
+  `SC-13` failed and the script exited 2; the file was restored, and a third run left the snapshot green.

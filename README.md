@@ -138,7 +138,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   pipeline, mistakes GitLab otherwise reports only when it creates the pipeline, behind the VPN.
   `check-sg-descriptions.py` reads every security group and rule description in the Terraform trees: a
   character outside the set EC2 accepts fails it, a mistake `validate` catches only on inline rules and
-  EC2 otherwise reports at apply, after the resources ahead of it exist.
+  EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
+  two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
+  `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
+  with the server's.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run

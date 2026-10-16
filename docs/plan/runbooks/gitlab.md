@@ -4,7 +4,7 @@
 |---|---|
 | **Scope** | The GitLab host (`production/tooling/`, `[D]`), its anchors (`production/foundation/`), the internal CA that certifies it (`production/pki/`), the build runner (`production/runners/`, `[E]`) and the acts a person performs on them. Built by [Stage 7](../stages/stage-07-gitlab-runners-ecr.md); the design is in the stage file and the slices' own comments, and this file repeats none of it |
 | **Operator** | The **infrastructure user** through `awsds-infra-prod` (Production, `InfrastructureAccess`) for every AWS act; GitLab's local administrator (`felipenoris`, §I) or a SAML user for everything inside GitLab's UI |
-| **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-12`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end |
+| **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-13`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end; `./scripts/check-gitlab-pins.py` offline, in `make check` |
 
 ## S. The pieces
 
@@ -121,7 +121,7 @@ There is no hand installation. A GitLab host is built by Terraform and configure
 
 **A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors. Both install `gitlab_ce_version`, the release the host runs.
 
-**An upgrade** follows GitLab's upgrade page and its upgrade path, a backup first. The bootstrap leaves `/etc/gitlab/skip-auto-reconfigure` on the host, so the new package does not reconfigure by itself. The same sitting moves `gitlab_ce_version` to the new release and `runners/variables.tf`'s `gitlab_runner_version` to the newest runner of its major.minor (§K). The plan reads `No changes`, since the user data is held: the commit is the record, and the next backup's name carries the new release.
+**An upgrade** follows GitLab's upgrade page and its upgrade path, with a backup before it and another after (§B), so the newest backup is the new release's. The bootstrap leaves `/etc/gitlab/skip-auto-reconfigure` on the host, so the new package does not reconfigure by itself. The same sitting moves `gitlab_ce_version` to the new release and `runners/variables.tf`'s `gitlab_runner_version` to the newest runner of its major.minor (§K). The plan reads `No changes`, since the user data is held: the commit is the record. `./scripts/check-gitlab-pins.py` fails `make check` while the two pins' major.minor differ, and `./aws/supplychain.py` `SC-13` fails while the newest backup's release differs from `gitlab_ce_version`.
 
 ## I. The initial setup, on a fresh host
 
@@ -259,7 +259,7 @@ sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitla
 
 The backup file is fetched first from the backup bucket into `/var/opt/gitlab/backups/`, as `git` (`aws s3 cp` as root, then `chown git:git`). A restore proves itself by a pre-backup repository cloning cleanly.
 
-**The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
+**The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy: `./aws/supplychain.py` `SC-13` compares them for the newest backup. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
 
 ## K. The runner
 
@@ -651,10 +651,11 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 
 | Instrument | Reads |
 |---|---|
-| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
+| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`), the newest backup's release against `gitlab_ce_version` (`SC-13`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
 | `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy and test runners 0.0188 each |
-| the help page and the backup bucket | the release the host runs, with no GitLab sign-in: `https://gitlab.awsds.internal/help` publishes `gon.revision` to an anonymous visitor, matched against `gitlab-foss`'s tag on gitlab.com (`ecff27ae760` is `v19.4.2`, read 2026-10-16), and `aws s3 ls s3://awsds-prod-gitlab-backup/` lists each backup's release in its name |
+| the help page | the release the host runs now, with no GitLab sign-in: `https://gitlab.awsds.internal/help` publishes `gon.revision` to an anonymous visitor, matched against `gitlab-foss`'s tag on gitlab.com (`ecff27ae760` is `v19.4.2`, read 2026-10-16); `SC-13`'s reading is as old as the newest backup |
+| `./scripts/check-gitlab-pins.py` | offline, in `make check` and the commit gate: `gitlab_ce_version`'s major.minor against `gitlab_runner_version`'s |
 
 ---
 
