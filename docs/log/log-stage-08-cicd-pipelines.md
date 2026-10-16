@@ -1475,3 +1475,20 @@ cloud session recording. Every time is UTC.
   `gates-v0.4.0`), its result not read. The user's: that pipeline's verdict, the merge request, the
   merge and the tag; the README's rule makes a recipe change a minor, `default-v0.8.0`, the user's
   choice.
+
+## 2026-10-16 — the new deploy runner's first boot
+
+Written by Claude in the laptop session that applied step 2.5a (the entry above), as the
+infrastructure user through `awsds-infra-prod` (`InfrastructureAccess`). Every time is UTC.
+
+- **[Claude] `i-0cf719f584e9bdfcd`'s serial console**, read at 17:47:21 with `aws ec2
+  get-console-output --latest`: cloud-init finished at 17:43:32, 226 s after boot. `docker-25.0.16`,
+  `git-2.50.1`, the ECR credential helper `OK`, and `gitlab-runner-19.5.0`, where the deploy runner's
+  boot of 2026-10-13 installed `19.4.1`: the three runner templates run `dnf -y -q install
+  gitlab-runner` with no version, so each new instance takes the repository's newest. Each profile
+  assumed once with the instance's credentials: `assumed-role/awsds-deploy-devenv-sandbox/…`,
+  `assumed-role/awsds-deploy-prod/…`, `assumed-role/awsds-deploy-sandbox-test/…` and
+  `assumed-role/awsds-deploy-staging/…`. `Verifying runner... is valid`, registered as
+  `awsds-prod-runner-deploy-i-0cf719f584e9bdfcd`; through the proxy `pypi.org` `200` and `10.31.0.1`
+  `403`, GitLab's sign-in page direct `200`; the job image pulled through the helper as
+  `awsds-prod-ecr-deploy@sha256:1b1a5830…a53a`, `v0.1.0`'s digest.
