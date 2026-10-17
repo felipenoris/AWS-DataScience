@@ -1196,10 +1196,9 @@ stale copy.""")
                 "The metric lands per 30-minute interval, so the newest few minutes are never in it."
             )
             rep.line(
-                "The free trial's status is unsettled: the Management credits page showed no credit "
-                "on 2026-09-20, and Cost Explorer carried no Amazon Redshift line for this account "
-                "through 2026-10-17, which is how AWS says trial usage looks (5b verification xiii). "
-                "So these are ComputeSeconds figures, not billed ones."
+                "The free trial is active in Sandbox until 2026-12-19 (287.90 of 300 USD left on "
+                "2026-10-17, the Redshift console's Free trial section; 5b verification xiii): these "
+                "figures are absorbed by it, not billed, and the bill shows them only after it ends."
             )
 
             rep.h2("the audit groups")
