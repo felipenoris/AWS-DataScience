@@ -574,3 +574,10 @@ Account ids are replaced by the account's name in angle brackets.*
   `1792033259_2026_10_15_19.4.2_gitlab_backup.tar (2026-10-15T03:01:09+00:00), made by 19.4.2, equal to
   gitlab_ce_version`, every check passed. With `gitlab_ce_version` set to 19.5.0 in the working copy,
   `SC-13` failed and the script exited 2; the file was restored, and a third run left the snapshot green.
+
+## 2026-10-16 — decision 10 taken
+
+- **[user] Decision 10** (by 23:43 UTC, in this session's chat): "Tomo a decisão 10 da etapa 7 como
+  recomendada. Registre aqui num PR pequeno." `gitlab-ce` pinned at 19.4.2 by `gitlab_ce_version`,
+  written in PR #151 and checked by PR #154 (`check-gitlab-pins.py`, `SC-13`). Nothing to apply: the plan
+  reads `No changes`, and the pin reaches the host at its next rebuild.
