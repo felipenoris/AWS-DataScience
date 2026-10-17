@@ -581,3 +581,29 @@ Account ids are replaced by the account's name in angle brackets.*
   recomendada. Registre aqui num PR pequeno." `gitlab-ce` pinned at 19.4.2 by `gitlab_ce_version`,
   written in PR #151 and checked by PR #154 (`check-gitlab-pins.py`, `SC-13`). Nothing to apply: the plan
   reads `No changes`, and the pin reaches the host at its next rebuild.
+
+## 2026-10-17 — 8.3's down half: `supplychain.py` with GitLab stopped
+
+*Written by Claude, in a session with the environment down. `./aws/supplychain.py awsds-infra-prod`
+(account `<Production>`, permission set `InfrastructureAccess`), exit 0, "all checks passed". The report
+itself carries account ids and stays out of git; this is its verdict list, for the diff 8.3 asks for at
+the up half.*
+
+| Check | Verdict |
+|---|---|
+| `SC-1` the GitLab host | pass: `t4g.large`, stopped, IMDSv2 required |
+| `SC-2` the GitLab security groups | pass: no world-open ingress |
+| `SC-3` the backup bucket and the `gitlab-secrets` container | pass: versioned; the container last changed 2026-10-12 14:19:59Z |
+| `SC-4` `awsds-prod-ecr-base` and `-dev-env` | pass: both `IMMUTABLE` |
+| `SC-5` the cache rules | pass: three, no immutable cache repository |
+| `SC-6` CodeArtifact | pass: `pypi` and `crates`, one domain-policy block |
+| `SC-8` the two leaves | pass: 369 days of runway, to 2027-10-22 06:35:12Z |
+| `SC-9` the CA root parameter | pass: version 1, 2026-10-12 06:35:15Z |
+| `SC-10` the runner | pass: no instance, the `[E]` layer between sessions |
+| `SC-11` the bypass list | note: not compared, `production/egress` is down |
+| `SC-12` the three caches | pass: `ecr-public` 4 repositories, `quay` 1, `k8s` 1 |
+| `SC-13` the newest backup | pass: 2026-10-15 03:01:09Z, made by 19.4.2, equal to `gitlab_ce_version` |
+
+`SC-7`, the consumers' cross-account reads, prints no verdict when only the Production profile is
+named. 8.3's up half is the same run with GitLab up and the runner registered, every consumer profile
+included: only timestamps and instance state may move.

@@ -308,7 +308,9 @@ exercised both (Lesson 20's mirror).
    carrying the old text, so the next **apply** of `production/proxy/` replaces it. `make hub-up` is not
    that apply: a `[D]` slice is started and stopped by the dormant hook and applied only by hand, which
    2026-09-18's `hub-up` confirmed — `i-0d42d0393c39eefdb` came back up unchanged. The host is stateless
-   and rebuilds from this template; only the public address moves with it.
+   and rebuilds from this template; only the public address moves with it. **Still pending on
+   2026-10-17**: the proxy is the same `i-0d42d0393c39eefdb`, last started 2026-10-16 16:31:16Z, stopped
+   since 2026-10-16 23:33:56Z, with no public address while stopped.
 
    **The address is per-run, measured across the stop and start**: `35.90.250.102` on 2026-09-17 and
    `52.10.244.25` on 2026-09-18, one instance, private `10.31.160.140` throughout. `./aws/proxy.py`

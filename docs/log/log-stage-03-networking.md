@@ -529,4 +529,19 @@ allow-list would present as a VPN that will not come up.
 
 ---
 
+## 2026-10-17 — verification (v): the AZ mapping and where the hosts sit
+
+*Written by Claude, in a session with the environment down, from reads as `awsds-infra-sandbox-1` and
+`awsds-infra-prod` (permission set `InfrastructureAccess`).*
+
+- `ec2 describe-availability-zones` in `<Sandbox Account 1>` and `<Production>`: the same mapping in
+  both, `us-west-2a` → `usw2-az2`, `b` → `az1`, `c` → `az3`, `d` → `az4`, as open question 3 recorded on
+  2026-08-12 for every profiled account. The stage text that said the mappings differ is corrected.
+- `awsds-prod-gitlab`, `awsds-prod-vpn` and `awsds-prod-proxy` sit in `usw2-az1`, all three stopped.
+- Both Sandbox SageMaker domains are `VpcOnly` on `awsds-sandbox-private-usw2-az1` and
+  `-usw2-az2`. So a same-AZ path to GitLab exists, and a space placed in `usw2-az2` takes the other one;
+  no app ran, so the AZ a real space lands in was not read.
+
+---
+
 *Log index: [docs/log/INDEX.md](INDEX.md) · Stage index: [docs/plan/stages/INDEX.md](../plan/stages/INDEX.md)*

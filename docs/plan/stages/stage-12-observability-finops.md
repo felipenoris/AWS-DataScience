@@ -72,7 +72,10 @@ quietly. **Explanation:** one retention in this estate is floored by a complianc
 wrong is unrecoverable rather than merely expensive.
 
 - **3.1 — [Claude] Set retention on every group this project creates**, including the proxy access log and
-  the DNS query logs.
+  the DNS query logs. **Read ahead on 2026-10-17**: every group the code names has a retention
+  (`/awsds/prod/proxy` 365 days); the never-expiring ones are the services' own, 14 in Sandbox and 27.4 MB
+  in all (`/aws/sagemaker/studio`, `ProcessingJobs`, each project's `datazone-<project>-dev` pair and eight
+  `mwaa-serverless` groups, `EXC-10`), and none in Production, Staging, Data Governance or Identity.
 - **3.2 — [Claude] Do not shorten the organization CloudTrail bucket's lifecycle below 90 days.** Its
   objects carry S3 Object Lock in **compliance** mode at 90 days (Stage 1d step 9), and its lifecycle rule
   expires versions at 365. **Shortening it below 90 makes the landing zone's own expirations start failing
@@ -154,7 +157,11 @@ account quota that forced the 2026-09-05 re-scope was discovered by being refuse
 way to learn a limit. **Explanation:** the candidates are the ones this estate has actually approached.
 
 - **9.1 — [Claude] Read the current utilisation** for SageMaker instance limits, **Elastic IPs (the default
-  is five per Region and the hub now holds two)**, VPC endpoints per VPC, and hosted zones.
+  is five per Region and the hub holds one, the WireGuard host's, since the proxy took its instance's own
+  address at 6g)**, VPC endpoints per VPC, and hosted zones. **Read ahead on 2026-10-17, environment
+  down**: Elastic IPs 1 of 5 in Production; interface endpoints 0 of 50 in every VPC, so the reading that
+  matters is taken with the environment up; hosted zones 3 of 500 in Production and 1 in Sandbox and in
+  Staging. SageMaker instance quotas were not read.
 - **9.2 — [Claude⚡] Set CloudWatch alarms** on each at 80 %, pointing at the request-increase path.
 
 ### 10. Write `./aws/observability.py`

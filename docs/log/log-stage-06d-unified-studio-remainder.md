@@ -2918,3 +2918,106 @@ The destroy plans read `5 to destroy` on `production/buildbox` and `13 to destro
 egress` destroyed exactly those (`no SageMaker domain in production - nothing to delete` from its app
 sweep). Production holds no interface endpoint, the buildbox reads `absent`, and the hub's proxy is left
 running, as `[D]`.
+
+---
+
+## 2026-10-17 — the trail and the domains read with the environment down
+
+*Written by Claude in a session with the environment down, at the user's request to advance what needs
+no environment. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`) unless named: `sagemaker describe-domain` and `list-spaces`,
+`service-quotas`, `iam` and `organizations` reads, and CloudTrail `lookup-events` from 2026-09-12. No
+space ran; the hub was stopped.*
+
+### 6.1 (iii) — the domains provision on two Availability Zones
+
+Both SageMaker domains, `d-p6gthxc82ckg` (2026-08-23) and `d-lfgbdrjncmsu` (2026-10-15, the second
+project's), are `InService`, `VpcOnly`, on two subnets each, one in `usw2-az1` and one in `usw2-az2`.
+So the `Tooling` blueprint provisions on D9's two AZs, which closes (iii).
+
+### 2.4's after half — one reconciliation, and it did not write the domain
+
+The first project's environment stack, `DataZone-Env-5hkjdsy3umpi1c`, reads `UPDATE_COMPLETE`, last
+updated 2026-10-11 22:05:48Z. CloudTrail names the act: an `UpdateStack` by
+`awsds-sandbox-smus-provisioning`, `invokedBy: datazone.amazonaws.com`, re-sending the template's
+parameters (`permissionsBoundaryArn`, `enableRolesWithoutBoundary`, `availabilityZones`,
+`enableNetworkIsolation` among them). That is a blueprint reconciliation, and nothing in this
+repository's logs names what caused it.
+
+It issued no `UpdateDomain`: from 2026-10-11 to 2026-10-17 every `UpdateDomain` is the infrastructure
+user's own through the CLI (two on 2026-10-12, eight from 2026-10-14), none `invokedBy` a service. So the
+hand-written `CustomImages` were not touched by it, and the project role kept its boundary (INT-15,
+`get-role` on 2026-10-17). Both domains' `CustomImages` now name `awsds-sandbox-dev-env` and its app
+image configuration on JupyterLab and Code Editor with no `ImageVersionNumber`, as Stage 8 decision 7
+left them, and each domain's `LastModifiedTime` is about a second after its last human call (2026-10-15
+06:14:05 and 2026-10-16 00:31:25). One reconciliation of this kind is answered; one that rewrites the
+domain has not been seen.
+
+### Decision 13 — what `CreateApp` names
+
+113 `CreateApp` events since 2026-09-12, none through an endpoint. Three request shapes:
+
+| Who starts the app | `resourceSpec` | Calls |
+|---|---|---|
+| the portal, on AWS's image | `sageMakerImageArn` `image/sagemaker-distribution-cpu` plus an alias: `4.3` up to 2026-10-10 16:09:21, `4.5` after | 56 |
+| the portal or the Toolkit, on a custom image | `sageMakerImageArn` plus a `sageMakerImageVersionArn` (house image versions 3, 4 and 5; the probe image version 1), 29 times; the Toolkit's start of 2026-09-14 adds an alias, `3.2.0`; twice the probe image by its alias `0.6.0` alone | 31 |
+| the service, when a space is created (`invokedBy: sagemaker.amazonaws.com`) | `{}`: no image at all | 26 |
+
+So a request names the image in every start a person makes, and AWS's image is never named by a version
+ARN. The service's own start, on behalf of the project role's session, names nothing. A deny on
+`sagemaker:ImageArns` at `CreateApp` therefore meets an absent key on one start in four and needs a
+`Null` case, or that start runs on whatever image the space defaults to. Whether the key is published
+at request time is still the canary probe the decision recommends.
+
+### 5.2 — the teardown deletes apps first, where the trail can show it
+
+Fifteen full teardowns since 2026-09-12, each 19 to 25 `DeleteVpcEndpoints` calls by Terraform as the
+infrastructure user. Ten of them follow a `DeleteApp` by the same user through the CLI, 1 min 57 s to
+9 min 28 s before the first endpoint delete, which is `make down`'s app sweep. In the other five no
+`DeleteApp` by that user appears in the hour before: twice the project role had deleted its own apps
+(2026-10-10 20:31:35 and 2026-10-11 23:45:09), and three times there is no `DeleteApp` at all
+(2026-10-14 18:29, 2026-10-16 04:24, 2026-10-16 15:31). Whether an app was running and left behind
+is not readable from the trail, so *every running app* is still `US-10`'s to read after a teardown.
+
+### 5.1 — idle shutdown fires
+
+`AWSServiceRoleForAmazonSageMakerNotebooks` deleted 23 apps since 2026-09-12, through
+`global.workflows.looseleaf.im.amazonaws.com`. The mechanism fires routinely; its threshold is still
+unread, because a deletion time is not the length of the idle interval.
+
+### 1.3 — the refusal and the acceptance, both worded
+
+Every `CreateTrainingJob` since 2026-08-20 is refused: two on 2026-08-27 and four on 2026-09-10, as the
+project role's session `AmazonMWAAServerless`, through the SageMaker API endpoint, no `VpcConfig`:
+
+> User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_<project>_<env>/AmazonMWAAServerless
+> is not authorized to perform: sagemaker:CreateTrainingJob on resource:
+> arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/Notebook-task-<uuid> with an explicit deny
+> in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+
+The accepted side is 6i's: four `CreateProcessingJob` on 2026-10-11 under the same session, network
+isolation on and both private subnets, the house image by digest from Production's registry, three
+through `vpce-0a72d9d2674245821` and one through `vpce-09d61c889aeb85d38`. The first attempt that day,
+02:34:59, was refused on `sagemaker:AddTags` *"because no identity-based policy allows"* it, the gap
+`sandbox/workflows/` closed. Both wordings name their document, so the contrast is recorded for the
+project role. The persona's half is still 1.1's.
+
+### Decision 2 — the Query editor needs no endpoint
+
+239 `sqlworkbench` events since 2026-09-12 (2026-09-13, 2026-10-10 and 2026-10-16), none carrying a
+`vpcEndpointId`, all from laptop addresses with a browser user agent, as the project role or the
+warehouse access role. The editor's calls come from the browser, so this surface adds no endpoint.
+
+### Step 10's premise, re-read
+
+Nothing moved. `SageMakerStudioProjectUserRolePolicy` is still v75 (2026-08-27) with no `q:PassRequest`;
+`SageMakerStudioDomainExecutionRolePolicy` is still v23 (2026-08-12) and still carries it;
+`CTMULTISERVICEPV1` in `p-umksvu5a` still has 92 `NotAction` entries and none for `q:` or
+`codewhisperer:`; and both SSM parameters 10.1 names still answer `ParameterNotFound`, in
+`<Data Governance>` and in `<Sandbox Account 1>`.
+
+### The Querybook quotas were closed without an increase
+
+The three requests of 2026-09-13 (`L-F63F402C` and `L-B3401D17` at 5, `L-85C9EC5A` at 15) are
+`CASE_CLOSED` since 2026-09-24 07:49Z, and the applied values still read 0 on all three. So the
+portal's Querybook has no capacity in this account, and a new request is the user's if it is wanted.

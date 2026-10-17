@@ -272,10 +272,10 @@ Consequences this file has to carry rather than leave to a stage:
 - **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
   assumes the project's access role, reach the database as one per-project user; a notebook that connects
   directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
-  2026-10-10). So the database attributes work to a project, never to a person, and whether CloudTrail
-  still names the person on the chained session is unread (6h verification xv). The SQL itself would be in
-  the warehouse's audit export, which has been stopped since 2026-10-10T03:09:06Z (`EXC-16`), so
-  [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
+  2026-10-10). So the database attributes work to a project, never to a person, while CloudTrail still
+  names the person on every door, the chained session included (6h verification xv, read 2026-10-17).
+  The SQL itself would be in the warehouse's audit export, which carries nothing while a workgroup exists
+  (`EXC-16`), so [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
   federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
