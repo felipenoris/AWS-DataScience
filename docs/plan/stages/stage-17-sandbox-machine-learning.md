@@ -418,8 +418,12 @@ inside pass 7, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a
   `InfrastructureAccess`, `AWS_PROFILE=awsds-infra-identity`: the embeddings model's `foundation-model`
   ARN into the statement's `NotResource`, `POLICIES.md`'s row with the second trigger,
   `./scripts/check-index.py`, and the battery with its Bedrock rows, owed since 6e 7.5 and written now
-  (`probes.py` has none, read 2026-10-12). Sync again: expected `COMPLETE`, with the document count and
-  the time. [Claude] `ML-8` reads the knowledge base, its role with the role's policies and boundary, the
+  (`probes.py` has none, read 2026-10-12). The amendment waits for Stage 9 pass 1's apply of the same
+  slice and its battery, which had not run on 2026-10-17 (items 2 and 3 of the laptop list in
+  [its log](../../log/log-stage-09-deployment-targets.md)): an apply attaches every change pending in
+  the slice, and this one's plan changes `awsds-org-scp-ou-interactive.json` alone. Sync again:
+  expected `COMPLETE`, with the document count and the time. [Claude] `ML-8` reads the knowledge base,
+  its role with the role's policies and boundary, the
   data source, the two Lambdas and their role, the store (which OpenSearch Serverless kind or which S3
   Vectors bucket the IDE created, as which identity, and what it bills at idle: decision 12's reading), and
   whether every object carries the project tag (verification xxiii).
