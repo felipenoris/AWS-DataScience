@@ -401,7 +401,9 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
   after the lab measurement D41 records, in `examples/app-etl/`, and run on no tag yet): the repository
   gains `manifest.yaml` and `workflows/app-etl.yaml` in the CI/CD CLI's notation, the four tasks of
   D41's scope in one workflow: `transform`, a Glue job whose Python Spark transform reads the inbox and
-  writes one CSV; `process`, a processing job on the application image with `src/` as its input `code`;
+  writes one CSV; `process`, a processing job on the application image with `src/` as its input `code`
+  and the project key as its `VolumeKmsKeyId` (the stage variable `PROJECT_KEY_ARN`), which Sandbox's
+  D13 boundary requires of every job ([6i](stage-06i-sandbox-orchestration.md)'s four job denies);
   `summarize`, a Python task on the worker over the job's summaries, its report the task's XCom;
   `write_result`, an `S3CreateObjectOperator` that writes that XCom as the result. Every path is under
   the project's `shared/app-etl/` (`inbox/`, `work/glue/`, `work/job/`, `outbox/` beside the content's

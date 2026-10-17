@@ -31,7 +31,7 @@ Four tasks, in order, every path under the project's shared prefix,
 | Task | Operator | Reads | Writes |
 |---|---|---|---|
 | `transform` | `GlueJobOperator`: the Glue job `app-etl-<project id>`, created or updated by the task from `create_job_kwargs` (`update_config: true`), running `glue/transform.py` | `inbox/` | `work/glue/trades.csv`, one CSV with each trade's notional |
-| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json` |
+| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json` |
 | `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
 
@@ -42,10 +42,14 @@ the manifest's `samples` item, so a `test` run needs no input of its own.
 
 The project's values are the CLI's variables (`{proj.id}`, `{proj.iam_role_arn}`,
 `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`). What no project holds is a stage
-variable, `{env.VAR}` in the workflow and `${VAR}` in the manifest, read from the shell: `JOB_IMAGE_URI`,
-the image by digest; `SUBNET_AZ1` and `SUBNET_AZ2`, the domain's subnets, which name the Glue
-connections and the job's network; `PROJECT_SG`, the project's own security group, `DEV_PROJECT_SG` or
-`TEST_PROJECT_SG` in the shell. The CLI fills them on a run it starts, as the run's
+variable, `{env.VAR}` in the workflow and `${VAR}` in the manifest, read from the shell:
+`JOB_IMAGE_URI`, the image by digest; `SUBNET_AZ1` and `SUBNET_AZ2`, the domain's subnets, which name
+the Glue connections and the job's network; `PROJECT_SG`, the project's own security group,
+`DEV_PROJECT_SG` or `TEST_PROJECT_SG` in the shell; `PROJECT_KEY_ARN`, the ARN of the project's own KMS
+key (`kmsKeyArn` in its Tooling environment, whose id `awsds-workflows values` prints as
+`PROJECT_KEY_ID`), `DEV_PROJECT_KEY_ARN` or `TEST_PROJECT_KEY_ARN` in the shell, the processing job's
+`VolumeKmsKeyId`, which Sandbox's D13 boundary requires of every job
+(`DenySageMakerJobsWithoutVolumeEncryption`). The CLI fills them on a run it starts, as the run's
 `OverrideParameters`; a run started in the portal has no value for them.
 
 ## Working on it
@@ -109,13 +113,13 @@ the same tag is refused at the push; the short sha keeps two builds of one relea
 
 `test-deploy` runs as `awsds-deploy-sandbox-test` (Stage 8 decision 19) and reads the GitLab project's
 CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME`, `TEST_PROJECT_NAME`, `SUBNET_AZ1`,
-`SUBNET_AZ2`, `DEV_PROJECT_SG`, `TEST_PROJECT_SG` and `TEST_PROJECT_S3_URI`, the `test` project's
-`s3Uri` of `default.s3_shared`. Its run needs Sandbox's egress up (`make up ENV=sandbox ONLY=egress`, as
-the infrastructure user), which the job reads before it deploys; the bundle's SHA256 and the image go
-down the pipeline as a dotenv report, and the release's notes name them. `bundle` resolves an `include`
-as a file or a directory and not as a glob (`code/*.zip` is "Pattern not found" with the zip present,
-while `deploy` expands it; read in 1.0.9's code and run offline on 2026-10-16), so the manifest names
-the zip by its name.
+`SUBNET_AZ2`, `DEV_PROJECT_SG`, `TEST_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `TEST_PROJECT_KEY_ARN` and
+`TEST_PROJECT_S3_URI`, the `test` project's `s3Uri` of `default.s3_shared`. Its run needs Sandbox's
+egress up (`make up ENV=sandbox ONLY=egress`, as the infrastructure user), which the job reads before it
+deploys; the bundle's SHA256 and the image go down the pipeline as a dotenv report, and the release's
+notes name them. `bundle` resolves an `include` as a file or a directory and not as a glob (`code/*.zip`
+is "Pattern not found" with the zip present, while `deploy` expands it; read in 1.0.9's code and run
+offline on 2026-10-16), so the manifest names the zip by its name.
 
 Read on 2026-10-16 and not yet run: the first tag's pipeline, which shows whether the `test` run reaches
 `outbox/report.json`, the XCom of `summarize` pulled in `write_result`'s template, the project role's
