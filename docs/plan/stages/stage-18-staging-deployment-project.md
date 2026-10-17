@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | **Not started. Written 2026-10-17** from a cloud session with no AWS reading, on the user's word of that day at 18:28 UTC (*"vamos medir em staging o que falta para completar o quadro"*), the answer to the card of 2026-10-16 that offered to measure before [Stage 10](stage-10-orchestration-promotion.md) builds [D41](../decisions/D41-sagemaker-application.md) item 2. A measurement and its teardown, not a build: AWS's default shape for a deployment account, a SageMaker Unified Studio project that the CI/CD CLI deploys into and no person works in, is created once in `Staging`, read against this estate's perimeter, and unwound at pass 8 whatever the verdict. **D41 stands until the verdict** (8.9, decision 7): Stage 10 keeps item 2's design, no project in Staging or Production, while this stage runs. Nothing below is a measurement unless it carries its date |
-| **Prerequisites** | **[Stage 8](stage-08-cicd-pipelines.md)**: `awsds-deploy-staging` and the deploy runner (pass 1), the deploy image `v0.2.0` with the CLI 1.0.9, and `app-etl` as an application whose release carries a bundle (2.5, 2.5a). **[6a](stage-06a-unified-studio.md)**: the domain `awsds-studio` and the profile machinery of `data-governance/governance/`. **[6b](stage-06b-development-becomes-staging.md) pass 1**: the unwinding order pass 8 repeats, measured on this account on 2026-09-06. **[6c](stage-06c-networking-hub.md)**: Staging's private routing and its 11 `[E]` endpoints, so a sitting is `make hub-up` then `make up ENV=staging`. **[Stage 9](stage-09-deployment-targets.md) pass 1, when it is applied first**: both edit `awsds-org-scp-ou-workloads.json`, and 1.1 writes the carve-out on the document as attached. Stage 9 pass 4 (`staging/data/`) is not a prerequisite, and this stage runs before it (risk "The Lake Formation seat") |
+| **Prerequisites** | **[Stage 8](stage-08-cicd-pipelines.md)**: `awsds-deploy-staging` and the deploy runner (pass 1), the deploy image `v0.2.0` with the CLI 1.0.9, and `app-etl` as an application whose release carries a bundle (2.5, 2.5a) and whose `process` task names a `VolumeKmsKeyId`: its `ClusterConfig` holds none on `main`, and `DenySageMakerJobsWithoutVolumeEncryption` refuses such a job in `Workloads` and under Sandbox's D13 boundary alike [inferred from the two documents: the application has not run]. **[6a](stage-06a-unified-studio.md)**: the domain `awsds-studio` and the profile machinery of `data-governance/governance/`. **[6b](stage-06b-development-becomes-staging.md) pass 1**: the unwinding order pass 8 repeats, measured on this account on 2026-09-06. **[6c](stage-06c-networking-hub.md)**: Staging's private routing and its 11 `[E]` endpoints, so a sitting is `make hub-up` then `make up ENV=staging`. **[Stage 9](stage-09-deployment-targets.md) pass 1's `identity/org-policies/` apply**: its job statements are in `awsds-org-scp-ou-workloads.json` on `main` since PR #144 and not attached, so any apply of the slice attaches them; 1.3 runs after Stage 9's apply and battery, and this stage's processing jobs run under them (risk "The `Workloads` document"). Stage 9 pass 5 (`staging/data/`, step 4) is not a prerequisite, and this stage runs before it (risk "The Lake Formation seat") |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md) |
 | **Proves** | — (no `INT-nn` row: the association is [INT-12](../integrations.md)'s shape on an account INT-12 leaves out, and pass 8 removes it). It exercises [INT-23](../integrations.md) once, a subscription across two accounts over sample data (7.2, decision 5), and answers for Stage 10 how much of its steps 1.1, 2.4 and 4.2 a `deploy --targets staging` from the bundle does (4.5) |
 
@@ -132,9 +132,9 @@ removes only what exists, in its order.
   schedules, `./aws/studio.py`. Question ii is a comparison with this list.
 - **0.3 — [Claude] Read Staging as it is**: `./aws/studio.py`'s `US-6` (`datazone` reads denied in
   `Workloads`); CloudTrail's `datazone.amazonaws.com` events in Staging for 30 days, denials only
-  expected; the `Workloads` document as attached (Stage 9 pass 1 applied or not); Staging's Lake
-  Formation admins (`get-data-lake-settings`); `awsds-deploy-staging`'s policy and ceiling, against the
-  calls the CLI made in `test` (Stage 8 verification xix's list).
+  expected; the `Workloads` document as attached, Stage 9 pass 1's statements in it (Prerequisites);
+  Staging's Lake Formation admins (`get-data-lake-settings`); `awsds-deploy-staging`'s policy and
+  ceiling, against the calls the CLI made in `test` (Stage 8 verification xix's list).
 - **0.4 — [Claude⚡] Question vii, in Sandbox, with no Staging project**: as `awsds-infra-sandbox`, first
   read whether `InfrastructureAccess` is a member of the `test` project (`EXC-17` leaves it
   unanswered), then `aws mwaa-serverless list-workflows` and `start-workflow-run` on the workflow the
@@ -228,8 +228,8 @@ deploys.
 ### 4. The deploy and the run (D28, D41)
 
 - **4.1 — [Claude] Add a `staging` stage** to `app-etl`'s manifest on a measurement branch: the domain,
-  `deploy-staging`, Staging's `{env.*}` values (the job subnets, the data key, the image by digest), the
-  `workflow.create` action, no `workflow.run`.
+  `deploy-staging`, Staging's `{env.*}` values (the job subnets, the `process` task's volume key, the
+  image by digest), the `workflow.create` action, no `workflow.run`.
 - **4.2 — [Claude⚡] Deploy from the laptop** as `awsds-infra-staging`: `deploy --targets staging` with
   the release's bundle, `--skip-validation --no-events` (D41's flags). Read what it wrote: the objects
   under the project's storage, the workflow by its composed name, `manual_only`, its execution role (the
@@ -411,8 +411,10 @@ Each is decided during the stage and written into the stage log with its recomme
   actions. The `EXC-nn` and 8.7 bound the window.
 - **The Lake Formation seat.** SMUS made itself a Lake Formation admin in Sandbox (open question 24); if
   the blueprint does the same in Staging, a `staging/data/` built while the project exists would be
-  reachable by it. This stage runs before Stage 9 pass 4, 3.3 reads the admins, and 8.6 reads them back.
-- **The `Workloads` document is shared with Stage 9 pass 1.** 1.1 edits the document as attached, and the
-  two stages' applies of `identity/org-policies/` are never interleaved.
+  reachable by it. This stage runs before Stage 9 pass 5, 3.3 reads the admins, and 8.6 reads them back.
+- **The `Workloads` document carries Stage 9 pass 1's job statements, merged and not attached** (PR #144).
+  An apply of `identity/org-policies/` attaches what `main` holds, so 1.1 edits `main`'s document, 1.3 runs
+  only after Stage 9's own apply and battery, and its plan changes only `DenyDataZoneEntirely` and, if 1.1
+  split it, `CreateDomain`'s statement. The two stages never share an apply.
 - **Residues**: the CLI's log groups carry no retention, the workflows' versions and run history leave
   with the project, and the project key waits out its deletion window.
