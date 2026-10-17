@@ -824,6 +824,12 @@
   `SageMakerMlflowServerlessPermission` admits `CreateMlflowApp` on the project's tag; no statement names
   `lambda:` or `bedrock:`:
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- **The same policy's documentation, re-read 2026-10-17** after Stage 17's first run read v45 in Sandbox:
+  the reference page above still showed v44, last edited 2026-09-14, with `SageMakerCreatePermissions`
+  at 14 actions, `SageMakerTagPermissions` at 2 and `SageMakerMlflowServerlessPermission` at 6; the admin
+  guide's table of managed-policy updates, whose newest row for this policy is 2026-06-25 (Feature Store,
+  the public model hub, pipeline schedules):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-updates.html>.
 
 - **SageMaker AI pricing** (read 2026-10-12): the public page <https://aws.amazon.com/sagemaker/ai/pricing/>,
   and the `AmazonSageMaker` offer file for `us-west-2`, published `2026-10-12T18:05:38Z`, which gave
