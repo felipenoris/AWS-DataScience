@@ -150,6 +150,8 @@ help:
 	@printf '    bedrock-agent  2 endpoints, ~0.020 USD/h - the agent pair, for the six\n'
 	@printf '                   AmazonBedrock* blueprints; it needs bedrock-base beside it\n'
 	@printf '    emr            7 endpoints, ~0.070 USD/h - EmrServerless\n'
+	@printf '    mlflow         1 endpoint, ~0.010 USD/h - the MLflow App s tracking API, for\n'
+	@printf '                   MLflowApp (Stage 17); a space logging a run names it\n'
 	@printf '    redshift       1 endpoint, ~0.010 USD/h - redshift-serverless, the warehouse API\n'
 	@printf '                   door (5b 1.10); a session that queries the warehouse names it\n'
 	@printf '    mwaa           reserved and empty - names nothing. D7 settled MWAA Serverless only;\n'

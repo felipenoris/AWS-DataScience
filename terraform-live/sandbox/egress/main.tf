@@ -21,7 +21,7 @@ data "terraform_remote_state" "foundation" {
 
 module "egress" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.17.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/vpc-egress?ref=vpc-egress-v0.18.0"
 
   env    = var.env
   vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
@@ -98,7 +98,7 @@ module "egress" {
     "sagemaker.runtime",
     "sagemaker.studio",
 
-    # `S3TableCatalog` is one of category 1's eleven blueprints and the S3 gateway endpoint does not
+    # `S3TableCatalog` is one of category 1's blueprints and the S3 gateway endpoint does not
     # cover it: a gateway carries `s3` and `dynamodb`, nothing else, while `s3tables` is its own
     # service name in the Region's catalog (measured 2026-09-06). Always-on rather than behind 5.3's
     # flag, by the user's decision: one endpoint at ~USD 0.010/h, and the blueprint is enabled.

@@ -31,8 +31,10 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 **70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10), and the
 value of `no_proxy_all_groups` in the authoring plan of `vpc-egress-v0.17.0` the same day: every
-optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`). `no_proxy` names only the
-groups its last apply enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
+optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`); the `mlflow` group of
+`vpc-egress-v0.18.0` (Stage 17, not applied) is not in it, and reaches a space with the image that
+carries the next literal (Stage 17 decision 4). `no_proxy` names only the groups its last apply
+enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
 names, and the day that group is on its calls leave through the proxy as public calls. It was 28 until
 2026-09-09: the generator read the service's one canonical name and now reads every name the endpoint
 answers for. A copy with 28 entries lacks `datazone.us-west-2.api.aws` among twenty-three others, and

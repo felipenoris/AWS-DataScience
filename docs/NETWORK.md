@@ -186,7 +186,10 @@ literal in the image (6d decision 8), and since 2026-10-10 it carries **every** 
 proxy, and a group left off times out on its names instead. That literal is generated too: the second
 output, `no_proxy_all_groups` (`vpc-egress-v0.17.0`), reads every declarable service's names from the
 endpoint-service catalog at plan time, which returns the names `dns_entry` carries (compared on seven
-services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named.
+services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named. The `mlflow` group of
+`vpc-egress-v0.18.0` (Stage 17, written 2026-10-17, not applied) is outside the 70 entries until an
+image carries the next literal: the MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is
+under `.app.aws`, so a space on the 70-entry image is refused for it with a 403 (Stage 17 decision 4).
 
 **A missing entry fails two different ways and only one of them is visible:**
 

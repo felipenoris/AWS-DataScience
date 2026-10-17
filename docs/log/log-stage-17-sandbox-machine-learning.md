@@ -274,3 +274,37 @@ carries an account id or an e-mail address.*
   and create a listing change set. DataZone's own authorization is the other half, unread. That is the
   catalog road of [Stage 6f](../plan/stages/stage-06f-data-governance.md), whose decision 5 gains the
   reading as a note.
+
+## 2026-10-17 — pass 1 written in the cloud session, not applied
+
+*Provenance. Claude asked in the thread at 21:27 UTC "quer que eu escreva aqui o passo 1 (MLflow: o
+grupo `mlflow` no `vpc-egress` e o blueprint `MLflowApp`), sem aplicar nada?", and the user answered
+"Sim." at 21:46:05 UTC. Claude wrote the change in the cloud session, which holds no AWS credential, so
+nothing below is a measurement of AWS and nothing was applied.*
+
+- **[Claude] 1.4's module half, `vpc-egress-v0.18.0`** (`6a84bf3`): the group `mlflow`, one service,
+  `sagemaker.mlflow`, whose endpoint name `aws.sagemaker.<region>.mlflow` comes from AWS's pages, not
+  from the Region's catalog. The `aws.sagemaker.` exception became a list of short names,
+  `sagemaker.studio` and `sagemaker.mlflow`, because `sagemaker.api` and `sagemaker.runtime` are
+  `com.amazonaws.` names.
+  `terraform validate` passed on a scratch copy of the module with the AWS provider 6.68.0 from a local
+  mirror (the session's proxy refuses `registry.terraform.io`), and `terraform console` printed
+  `aws.sagemaker.us-west-2.mlflow`, `aws.sagemaker.us-west-2.studio` and
+  `com.amazonaws.us-west-2.sagemaker.api` for the three short names.
+- **[Claude] 1.2's module half, `sagemaker-prereqs-v0.5.0`** (`41be913`): `MLflowApp` last in
+  `blueprint_names`. `terraform validate` passed with the AWS provider 6.68.0 and `awscc` 1.98.0, the
+  caller's locked version, fetched from `releases.hashicorp.com` with its checksum matched.
+- **[Claude] The two tags exist only in the cloud session's clone.** Pushing them was refused twice with
+  HTTP 403 by the session's proxy, while the branch push went through, so Recipe B's push and its
+  `git ls-remote` check are the laptop's. Until the tags are on origin, the offline gates'
+  `terraform_validate` cannot initialise the two callers and the PR's CI reads red.
+- **[Claude] The callers' commit**: `sandbox/egress` at `vpc-egress-v0.18.0`, `sandbox/sagemaker` at
+  `sagemaker-prereqs-v0.5.0`, `MLflowApp` last in the governance profile's list and in `US-3`'s
+  allow-list; the group in `make help`, in `sandbox/egress`'s variable, in `layers.py`'s note, in
+  `cost-model.md`, `sg-proxy.md` and `NETWORK.md`; `SMUS.md`'s category 1 at twelve and category 2 at
+  three. Three comments that counted category 1 as eleven lost the count.
+- **[Claude] Decision 4's recommendation moved from (a) to (b).** (a) rested on "the space exports no
+  proxy variable". The house image sets `HTTPS_PROXY` and `NO_PROXY` as `ENV` (6d decision 8,
+  `gitlab/awsds/dev-env/dev-env/Dockerfile`), and `sagemaker-mlflow` 0.5.0 sends an app's calls to
+  `mlflow.sagemaker.<region>.app.aws`, a family no compute plane admits, so a space whose literal lacks
+  the host gets the proxy's 403 whether or not the endpoint exists. The choice is the user's.

@@ -55,6 +55,13 @@ locals {
     "AmazonBedrockFunction",
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
+    # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12):
+    # the serverless MLflow App. Last, so every environment above keeps its `deployment_order`.
+    # MLExperiments, the tracking server, stays category 2. Whether its template has a required
+    # parameter without a default, which `blueprint_parameters` below would then have to declare
+    # for UpdateProjectProfile, is read from the template before the apply (docs/SMUS.md, the
+    # category-2 checklist, step 3).
+    "MLflowApp",
   ]
 
   member_account_ids = {

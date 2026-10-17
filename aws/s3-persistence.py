@@ -480,8 +480,8 @@ def main(argv: list) -> int:
                 )
 
         # S3 Tables and S3 Express are separate namespaces: neither shows up in list-buckets,
-        # so both are asked for by name. `S3TableCatalog` is one of the eleven enabled SMUS
-        # blueprints (docs/SMUS.md), so a table bucket is a surface a project can create
+        # so both are asked for by name. `S3TableCatalog` is one of the SMUS blueprints category 1
+        # enables (docs/SMUS.md), so a table bucket is a surface a project can create
         # without anyone writing Terraform for it.
         text, state = probe(
             cli,
@@ -1398,7 +1398,7 @@ other file in aws/:
 
   - DIRECTORY BUCKETS (S3 Express One Zone). `list-buckets` documents that it does not
     return them; they are a different endpoint, a different naming scheme, and one AZ.
-  - TABLE BUCKETS (S3 Tables). `S3TableCatalog` is one of the eleven blueprint
+  - TABLE BUCKETS (S3 Tables). `S3TableCatalog` is one of the category-1 blueprint
     configurations enabled per member account (docs/SMUS.md), so a project can create
     one without anybody writing Terraform - a managed Iceberg store beside the governed
     lake, which is Lesson 1's shape if data lands in it.
