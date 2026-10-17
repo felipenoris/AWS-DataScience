@@ -877,6 +877,34 @@
   `AmazonS3` (`2026-10-12T17:53:18Z`)
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
 
+- **What Stage 17 pass 0's scripts were written against** (read 2026-10-17):
+  - The XGBoost recipe, re-read: `image_uris.retrieve(framework="xgboost", region=region,
+    version="1.7-1")`, the SDK 2.x `Estimator` on `ml.m5.xlarge` with the hyperparameters step 2.2 names,
+    `ml.m5.large` for the endpoint, `mlflow.register_model` on the job's `model.tar.gz` with no
+    `log_model`, and `%pip install --upgrade sagemaker` unpinned
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+    its CSV, fetched that day (7,043 rows, 970,457 bytes)
+    <https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv>.
+  - The interface endpoints' metrics, which `ML-5` and `ML-9` read: the namespace
+    `AWS/PrivateLinkEndpoints`, `BytesProcessed` among five metrics, published only for a minute with
+    traffic, the dimensions `Endpoint Type`, `Service Name`, `Subnet Id`, `VPC Endpoint Id` and `VPC Id` in
+    two combinations, no unit stated
+    <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-cloudwatch-metrics.html>.
+  - Unread that day: the SageMaker registry paths for `us-west-2`, a server error twice
+    <https://docs.aws.amazon.com/sagemaker/latest/dg-ecr-paths/ecr-us-west-2.html>; AWS's XGBoost
+    algorithm pages, refused by the session's proxy
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-previous-versions.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-how-it-works.html>; and the container's
+    source, outside the session's GitHub scope <https://github.com/aws/sagemaker-xgboost-container>.
+  - The wheels read in place of those pages: `sagemaker-core` 2.21.0, whose image table puts `xgboost`
+    `1.7-1`, `3.0-5` and `3.2-0` in the repository `sagemaker-xgboost` under one `us-west-2` registry
+    <https://pypi.org/project/sagemaker-core/2.21.0/>; `sagemaker-mlflow` 0.5.0, which takes an
+    `mlflow-app` ARN as the tracking URI and registers the `arn` model registry store and a presigned S3
+    artifact repository <https://pypi.org/project/sagemaker-mlflow/0.5.0/>; and `xgboost` 1.7.6 and 3.0.5
+    and `xgboost-cpu` 3.3.0, installed in scratch environments for the model-format probe
+    <https://pypi.org/project/xgboost/>, <https://pypi.org/project/xgboost-cpu/>.
+
 - **Visual ETL in an Identity Center domain** (read 2026-10-13; documentation, nothing measured): a flow
   is authored on AWS Glue interactive sessions, Glue 4.0, 5.0 or 5.1
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/visual-etl.html>; the editor
