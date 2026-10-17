@@ -63,6 +63,11 @@ contrast: the **wording** is the evidence, not the exit code.
   session in the Sandbox project. Read the refusal wording — it must name the policy.
 - **1.2 — [user] Submit the accepted job**: the same job with the project's subnets and an allowed instance
   type. It runs.
+- **1.3 — recorded 2026-10-17 for the project role, from the trail.** Every `CreateTrainingJob` since
+  2026-08-20 (six, the portal's notebook task) is refused *"with an explicit deny in a permissions
+  boundary"* naming `awsds-sandbox-project-boundary`; 6i's four accepted `CreateProcessingJob` of
+  2026-10-11 carry network isolation and both private subnets. The wordings are in the log. The persona's
+  pair is still 1.1's.
 - **1.3 — [Claude] Record the contrast**: both wordings into the log. If the refusal names a different
   document than expected, the attribution is a contrast probe, not a re-reading (Lesson 24).
 
@@ -151,7 +156,10 @@ work at all* — is still open.
   whether it appears in the list without any further act.
 - **2.4 — the before half read 2026-09-12; the after half waits on a reconciliation.** `./aws/studio.py`:
   `US-1`..`US-10` pass, the domain's `DefaultUserSettings` naming image version 4 on both app types. Nothing
-  here provokes a reconciliation, so the diff is taken the first time one happens.
+  here provokes a reconciliation, so the diff is taken the first time one happens. **Re-read 2026-10-17:
+  one happened and did not write the domain.** DataZone updated the environment's stack on 2026-10-11
+  22:05:48Z through the provisioning role, and no `UpdateDomain` by a service followed; both domains still
+  name the image with no version number. A reconciliation that rewrites the domain is still unseen.
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
 - **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
@@ -496,9 +504,16 @@ neither has been measured once.
   `AWSServiceRoleForAmazonSageMakerNotebooks` deleted the JupyterLab space's app at 20:40:30 −03 and the
   `editor` Code Editor app at 20:47:20 −03, `FailureReason` null on both; the Code Editor app had run 63
   minutes. The **threshold** stays unanswered: neither app was watched against its configured value, and
-  one deletion time is not the measurement of an interval. The step stands for that half.
+  one deletion time is not the measurement of an interval. The step stands for that half. By 2026-10-17
+  the same role had deleted 23 apps since 2026-09-12, so the mechanism fires routinely; the threshold is
+  still unread.
 - **5.1 — [user] Observe idle shutdown**: leave a space idle past its threshold and read the app's
   disappearance (verification (x)'s second half).
+- **5.2 — read from the trail 2026-10-17, half of it.** Ten of the fifteen endpoint teardowns since
+  2026-09-12 follow the infrastructure user's `DeleteApp`, 1 min 57 s to 9 min 28 s before the first
+  `DeleteVpcEndpoints`; in the other five no such call appears, twice because the project role had
+  deleted its own apps. Whether an app was left running is not readable from the trail, so `US-10`
+  after a teardown is still the reading.
 - **5.2 — [user] Run the teardown**: `make down ENV=sandbox` deletes every running app and touches nothing
   else; `US-10` reads zero running apps (verification (xi)).
 - **5.3 — done 2026-09-12**, into [`conventions.md`](../conventions.md) §5.1 as a table of owner, layer,
@@ -529,9 +544,11 @@ than intended.
   portal creates. **(xix) an S3 call from a project subnet presents `vpce-0cc3e139c1167ca83`**, the
   account's S3 gateway endpoint, measured on every `GetDataAccess` from a space. Read in the same
   call and recorded because nothing else names them: `AllowExternalDataFiltering` false, and
-  `Parameters` carrying `CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE`. **Still owed: (iii) and
-  (viii), which need a space; (xvi), which needs a subscription and belongs with
-  [6f](stage-06f-data-governance.md) step 2.2; and (xvii), which is an attempt rather than a read.**
+  `Parameters` carrying `CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE`. **(iii) answered 2026-10-17
+  by reading**: both SageMaker domains, the second project's included, are `VpcOnly` on one subnet in
+  `usw2-az1` and one in `usw2-az2`. **Still owed: (viii), which needs a space; (xvi), which needs a
+  subscription and belongs with [6f](stage-06f-data-governance.md) step 2.2; and (xvii), which is an
+  attempt rather than a read.**
 - **6.1 — [Claude and user] Answer iii, viii, xiv, xv, xvi, xvii and xix**: the two-AZ blueprint acceptance;
   a VPC-only space starting on the endpoint set under design B; whether the blueprint's manage-access role
   must be a Lake Formation administrator (open question 24's other half); whether a blueprint-created
@@ -1226,6 +1243,9 @@ second. Opening the ceiling before 10.2 is answered would turn an accident into 
   | the D13 boundary | allows: its one deny keys on `sagemaker:InstanceTypes`, absent from a `q:` request, so the `ForAnyValue` condition is false |
   | SMUS | *"by default, all users of an Amazon SageMaker unified domain have access to the Free Tier release of Amazon Q"*. The vendor names two SSM parameters, `/amazon/datazone/q/<domain-id>` and `…/q-enabled`, as the domain's switch. **Neither exists**: a direct `get-parameter` on both returned `ParameterNotFound` in `Data Governance`, where the domain lives, and in `Sandbox` — a named refusal rather than an empty listing, so the absence is read, not inferred (`AccessDenied` would have been the other answer). The switch was never created, so the default holds |
 
+  **Re-read 2026-10-17, unchanged:** v75 without `q:PassRequest`, v23 with it, 92 `NotAction` entries
+  with no `q:` or `codewhisperer:`, and both SSM parameters `ParameterNotFound`.
+
   **What this does not establish (Lesson 20):** the refusal names the SCP. Whether the service accepts
   the call past it is unknown until the ceiling opens, and 10.7 is the reading.
 
@@ -1412,7 +1432,9 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    already passes every name Amazon Q uses, and what refused it was the Control Tower Region ceiling. The
    question that remains is decision 9's.
 2. **Which portal surfaces of the optional endpoint table this estate actually uses** (3.6) — each one used
-   is an endpoint to add, each one unused is a line not to pay for.
+   is an endpoint to add, each one unused is a line not to pay for. Read 2026-10-17: the Query editor's
+   239 `sqlworkbench` calls since 2026-09-12 all came from the browser, none through an endpoint, so that
+   surface needs none.
 3. **Whether a space is created with remote access enabled, and whether that becomes the default** (7.3).
    Recommended: one space by hand, default off until 7.7 reads the 12-hour residual.
 4. **Which connection method is the estate's, and where the tag-scoped `StartSession` pair belongs** —
@@ -1574,6 +1596,11 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     alias, which is how the distribution is referenced. The deny would sit on the D13 boundary, which
     reaches the project role that creates apps. **Its cost is the SMUS default JupyterLab space**, which
     runs `sagemaker-distribution-cpu` and would stop starting unless AWS's image is exempted by ARN.
+    **Read from the trail 2026-10-17** (113 `CreateApp` since 2026-09-12): a start a person makes always
+    names `sageMakerImageArn`, AWS's image by an alias and never by a version ARN; the service's own
+    start when a space is created, `invokedBy` SageMaker on the project role's session, sends
+    `resourceSpec: {}`, 26 times. So the deny meets an absent key on one start in four and needs a `Null`
+    case, or that start runs on the space's default image.
     Recommended: probe it in `Policy Canary` first, then choose between house-image-only and
     house-image-plus-AWS's-distribution.
 14. **Whether the portal's notebook operator runs in this estate** (step 4, the 2026-09-10 re-runs). A

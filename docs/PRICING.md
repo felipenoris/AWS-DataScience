@@ -448,13 +448,17 @@ partition/format discipline on the Iceberg tables — worth roughly twice as muc
 
 ### Redshift Serverless — read 2026-09-19 for [D40](plan/decisions/D40-redshift-warehouse.md), **re-read and first measured 2026-09-20**
 
-**The price is unchanged and the warehouse has now billed.** Re-read on 2026-09-20 at
+**The price is unchanged, and whether the warehouse has billed is unsettled.** Re-read on 2026-09-20 at
 [Stage 5b](plan/stages/stage-05b-redshift-serverless.md) 0.2: same offer file, published
 `2026-09-11T12:45:05Z`, SKU `KQ3J5VYQJZ5QMG9Z`, usage type `USW2-Redshift:ServerlessUsage`,
 **`0.3600000000 USD per RPU-Hr`**. And the measured spend for that stage's execution:
-**94,767 RPU-seconds = 26.3242 RPU-hours = 9.4767 USD** — **19% of the D12 monthly ceiling, in one sitting**.
-**There is no free trial on this account** (the Management credits page shows none, read by the user
-2026-09-20), so it is billed in full.
+**94,767 RPU-seconds = 26.3242 RPU-hours = 9.4767 USD** — **19% of the D12 monthly ceiling, in one sitting**,
+measured from `ComputeSeconds`. **The bill and the credits page disagree on whether it was charged.** The
+Management credits page showed no credit on 2026-09-20 (the user), but Cost Explorer carries **no Amazon
+Redshift line** for the Sandbox account from 2026-09-18 to 2026-10-17, in a closed September that carries
+twelve other services (read 2026-10-17) — which is how AWS says free-trial usage looks until the trial
+ends. Until the trial's status is read in the Redshift console, every Redshift figure here is a
+`ComputeSeconds` figure ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii).
 
 **Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
 `count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the

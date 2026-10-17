@@ -1196,9 +1196,10 @@ stale copy.""")
                 "The metric lands per 30-minute interval, so the newest few minutes are never in it."
             )
             rep.line(
-                "THERE IS NO FREE TRIAL ON THIS ACCOUNT (the Management credits page, read "
-                "2026-09-20): every figure here is billed in full. Cost Explorer cannot cross-check "
-                "the same day - it returns zero groups for every service until its data lands."
+                "The free trial's status is unsettled: the Management credits page showed no credit "
+                "on 2026-09-20, and Cost Explorer carried no Amazon Redshift line for this account "
+                "through 2026-10-17, which is how AWS says trial usage looks (5b verification xiii). "
+                "So these are ComputeSeconds figures, not billed ones."
             )
 
             rep.h2("the audit groups")

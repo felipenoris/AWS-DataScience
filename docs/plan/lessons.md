@@ -1994,22 +1994,20 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unchanged, because a database user is created when credentials are used rather than when they are
   minted. Where: `log-stage-06h` (2026-10-10).
 
-- **The Redshift audit groups carry an internal heartbeat and no user activity, and the two halves of
-  that claim have different strengths** (measured 2026-09-20 and 2026-10-10). Configuration is not the
-  explanation: the namespace exports all three groups and the live workgroup reads
-  `enable_user_activity_logging true`.
-  **Firm:** a marker query left on 2026-09-20 is **absent** from `useractivitylog`, which holds events
-  *after* it — no lag explains that. And `connectionlog`'s 155 records are **every one `rdsdb`**: not one
-  user connection, by any path, ever.
-  **Not firm, and the correction matters:** today's 142 portal queries were also absent, but
-  `connectionlog`'s internal heartbeat fires only every ~2h25m and its last entry preceded that
-  activity — so a lag of tens of minutes fits the reading, and the first write-up overstated it.
-  `useractivitylog`'s 19-day silence is likewise explainable: the parameter lives on the **workgroup**,
-  and the `[E]` workgroup did not exist for most of that window.
-  **The reading to carry** is that an absence here needs a presence of the *same kind* to be evidence —
-  an internal event does not vouch for a user event (Lesson 62, applied to the half that fails it).
-  Stage 11 must not rest a DLP feed on these groups until a re-read settles it.
-  Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
+- **The Redshift Serverless audit export carries nothing while a workgroup exists** (measured
+  2026-10-17 over the groups' 30-day retention). Configuration is not the explanation: the namespace
+  exports all three groups, unchanged since its creation. After the first day no record of any kind
+  arrived during any of seven workgroup lifetimes, and the namespace's own `rdsdb` sessions arrive in a
+  `default` stream, about 29,000 a day, only while no workgroup exists, from about a day after a delete
+  until two minutes after the next create. The one window of user activity is the admin's Data API
+  sessions of 2026-09-21, 23 minutes long: 36 of the 268 Data API calls CloudTrail holds for those two
+  days, and no session through any other door.
+  **The reading of 2026-10-10 was a sampler's** (inference): 155 records at a ~2h25m cadence fit one
+  record per 1 MB `FilterLogEvents` page over the 444,502 records the group held, so the *heartbeat* was
+  the pager's, and the *stop* at 03:09:06 was that day's first create silencing the stream. **The
+  reading to carry**: before an absence or a cadence in a log group is evidence, count it with an
+  aggregate (Logs Insights `stats count(*) by bin(1h)`), not by paging events (Lesson 62's wrong path).
+  Stage 11 must not rest a DLP feed on these groups. Where: `log-stage-06h` (2026-10-10, 2026-10-17), `log-stage-05b`, Stage 11.
 
 - **A Redshift schema shared by a role shares nothing IN it, and `pg_default_acl` cannot tell you**
   (measured 2026-10-10, on the first table a project ever wrote). A role holding
