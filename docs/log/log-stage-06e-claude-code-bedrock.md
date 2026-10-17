@@ -1482,3 +1482,46 @@ presence was asked, and answered nothing).
   on the direct API, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` left the space with the deleted
   file. 98 refusals in one session is the measured cost of that coupling, and the reason the same
   file holds the provider switch and the suppression key is worth naming when either is edited.
+
+## 2026-10-17 — decision 13's evidence over five weeks, and the data plane silent since 2026-09-12
+
+*Written by Claude in a session with the environment down, at the user's request to advance what needs
+no environment. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`): CloudTrail `lookup-events` for `bedrock.amazonaws.com` from
+2026-09-12, and `get-model-invocation-logging-configuration`.*
+
+### The control-plane endpoint still carries one action
+
+930 `bedrock.amazonaws.com` events between 2026-09-12 00:04:52 and 2026-10-17 21:07:28, every one in
+`us-west-2`. **Through a VPC endpoint, the only control-plane action is still `ListInferenceProfiles`**,
+by the project role from `10.20.x` addresses, every call answered: 23 calls over four endpoint ids (16 on
+2026-09-12, 2 on 2026-09-14, 5 on 2026-09-19 and 2026-09-20), each id one `make up`'s endpoint. Every
+other control-plane call came with no endpoint: the infrastructure user's CLI from a laptop
+(`GetFoundationModelAvailability` 81 times, `GetFoundationModel` 41, `GetInferenceProfile` 29,
+`GetAccountDataRetention` 17, and the four `CreateFoundationModelAgreement` of 2026-09-12),
+`AWSServiceRoleForConfig`, and Resource Explorer. No SMUS blueprint role appears, and no
+`PutModelInvocationLoggingConfiguration` was ever called.
+
+So decision 13's evidence now covers five weeks instead of three days and reads the same: a scope of
+`bedrock:ListInferenceProfiles` on that endpoint would have broken nothing measured. The decision is
+still the user's to review.
+
+### No invocation since 2026-09-12
+
+The data plane holds 156 events, **all on 2026-09-12**: 130 `InvokeModelWithResponseStream` and 26
+`InvokeModel`, no `Converse*`. Answered: 90 through `vpce-0a35133bc322e1769` between 21:35 and 22:16
+(Opus 4.5, Sonnet 4.5 and Haiku 4.5 by their `us.` profiles), 18 through `vpce-0171b785473053321` at
+06:44–06:45 (Haiku 4.5), and 6 from the laptop. Refused: 22 `InvokeModelWithResponseStream` and one
+`InvokeModel` by an SCP between 05:33 and 05:44, the routed `us-east-1` calls among them; 18 `InvokeModel`
+with *"no identity-based policy"* between 06:27:51 and 06:43:50, minutes before the first answered call
+(Opus 4.1, 4.5, 4.6, 4.7 and 4.8, Sonnet 4 and 4.5, Nova Lite); and one laptop call by an SCP. A
+successful invocation writes two events, one carrying the profile in `requestParameters` and one
+carrying the model in `resources`.
+
+So no Claude Code session has reached Bedrock in Sandbox since 2026-09-12. The session of 2026-09-19 ran
+on Anthropic's own API, and CloudTrail is empty for it, as that day's entry recorded.
+
+### Invocation logging is not configured
+
+`get-model-invocation-logging-configuration` returned an empty body: still off, as 7.4 left it, and
+[Stage 11](../plan/stages/stage-11-dlp.md) decision 11 is where it is decided.
