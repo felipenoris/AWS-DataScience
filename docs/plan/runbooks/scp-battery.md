@@ -345,7 +345,8 @@ detached.
 **The Stage 6e step 7.5 amendment to `awsds-org-scp-baseline`** — `DenyBedrockRetentionModeOtherThanNone`
 and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
 ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M3). These rows are that measurement in
-`probes.py`, run with `--phase root`; the battery has not run them yet.
+`probes.py`, run with `--phase root`; the battery ran them on 2026-10-17, every row as expected
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)).
 
 | Probe (from `awsds-policy-canary`, `--region us-west-2`) | Expected | Statement it answers |
 |---|---|---|
@@ -415,11 +416,13 @@ key stopped populating under its old name, or another statement reaches further 
 
 **The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
 `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as
-`awsds-infra-sandbox-1` with `--phase ou`; the battery has not run these rows yet. On 2026-09-12 the first
-row's call was exercised by hand against a before/after control; no reading of the Region statement is
-recorded. `Sandbox Account 1` holds the use-case form and the agreements, so an authorized call answers.
-Every row is `ro`; the allow invocations bill one output token each and land in `AWS/Bedrock`'s per-model
-metrics, which carry no principal, so a run stays out of 6e step 6.4's measurement window.
+`awsds-infra-sandbox-1` with `--phase ou`; the battery ran these rows on 2026-10-17, every one as
+expected, and the `eu-west-1` row is the Region statement's first reading
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)). On 2026-09-12 the first row's call was
+exercised by hand against a before/after control. `Sandbox Account 1` holds the use-case form and the
+agreements, so an authorized call answers. Every row is `ro`; the allow invocations bill one output token
+each and land in `AWS/Bedrock`'s per-model metrics, which carry no principal, so a run stays out of 6e
+step 6.4's measurement window.
 
 | Probe (from `awsds-infra-sandbox-1`) | Expected | Statement it answers |
 |---|---|---|
