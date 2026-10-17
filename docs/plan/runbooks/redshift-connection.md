@@ -128,8 +128,9 @@ connect but sees nothing"* as the expected state for a while — which is the am
    because **no session tag is transitive**, so the per-person value does not follow into the chain.
    A notebook that connects directly still gets a user holding nothing and still fails at the schema,
    so this is a convention with a loud failure rather than a control. In-database attribution becomes
-   per project; whether CloudTrail still names the person on the chained session is unread (6h
-   verification xv): the trust policy admits `sts:SetSourceIdentity`, and §J's call passes none.
+   per project, and CloudTrail still names the person: the chained session carries the space's
+   `sourceIdentity`, the data scientist's Identity Center user id, although §J's call passes none (6h
+   verification xv, read 2026-10-17).
 4. **The connection, in the portal**, by the project member — it cannot be done any other way:
    `datazone list-connections` is refused to the account's administrator by **DataZone's own**
    authorization layer, because that identity is not a project member. *Compute → Data warehouse →

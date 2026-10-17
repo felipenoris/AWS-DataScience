@@ -787,8 +787,9 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
   §2/§2.1/§9 for the security group, and `INT-24`'s row brought to what 9.7 measured. `./aws/warehouse.py`
   already reads Production; it gains `WH-1b`'s Production rule if 9.2 grants the role, a cluster reading if
   9.5a takes (a), and a `WH-15` that names `make down ENV=production` instead of Sandbox's. **The audit
-  export is not assumed**: Sandbox's stopped (`EXC-16`), so before the Production groups are called an
-  audit trail, read one user connection and one user statement in them (Lesson 62).
+  export is not assumed**: Sandbox's carries nothing while a workgroup exists (`EXC-16`), so before the
+  Production groups are called an audit trail, read one user connection and one user statement in them,
+  logged while the workgroup was up (Lesson 62).
 
 ---
 
@@ -952,7 +953,7 @@ Record every answer, including the ones that come out fine.
 | xxiii | Does enabling the Iceberg-engine switch create a **managed Redshift cluster in this account** — under which principal, visible as which CloudTrail call, at what size and under which key — and does `DenyRedshiftProvisionedClusters` refuse it (its `CreateCluster` half's first exercise)? | 9.5, 9.5a |
 | xxiv | On the datashare path, does a producer-side revoke leave Lake Formation permissions behind, as documented — and does the register notice? | 9.7 |
 | xxv | Which database users do the job role's and the deploy role's sessions land on, read from `pg_user` after the first connection, and does the job role write a row into a table the deployer's user created? | 9.3, 9.4 |
-| xxvi | Do the Production audit groups hold a user connection and a user statement — the presence `EXC-16`'s stopped export makes necessary before the groups are called an audit trail? | 9.8 |
+| xxvi | Do the Production audit groups hold a user connection and a user statement, logged while the workgroup was up — the presence `EXC-16`'s export makes necessary before the groups are called an audit trail? | 9.8 |
 | xxvii | Does the Data API job cancel its statement on a timeout, and does `DescribeStatement` read the cancellation? | 9.4 |
 
 ## Risks
