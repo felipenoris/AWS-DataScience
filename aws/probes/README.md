@@ -13,8 +13,8 @@ the script every time.
 
 | Phase | Measures | Notes |
 |---|---|---|
-| `root` | the two documents on the organization root (7.5) | three `creates` probes, canary only |
-| `ou` | the four per-OU documents (7.6) | nothing here can create anything, in any account |
+| `root` | the two documents on the organization root (7.5) | five `creates` probes, canary only |
+| `ou` | the four per-OU documents (7.6) | nothing here can create anything, in any account; a Bedrock row bills at most one output token |
 | `region` | `CT.MULTISERVICE.PV.1` (7.7) | the pair — `us-east-1` denied *and* `us-west-2` still working |
 | `rcp` | `awsds-org-rcp-perimeter` (7.8) | all floor, no deny — the finding, not an omission |
 | `tags` | `awsds-org-scp-tag-enforcement` (7.8) | the triple; the single-tag row is the whole test |
@@ -95,7 +95,7 @@ probe(<phase>, <account>, <expect>, <allowed-regex or None>, <safety>, <label>,
   is reported `UNTESTED` rather than assumed allowed. Getting this field wrong is the one way to make the
   script lie, and it lies in the flattering direction.
 - **`safety`** — `creates` for a creation-shaped probe with no `--dry-run`. The driver refuses to run
-  those outside `Policy Canary`; give it a `--dry-run` form or leave it on the canary. There are seven,
+  those outside `Policy Canary`; give it a `--dry-run` form or leave it on the canary. There are nine,
   and `--dry-run` is not always the safer choice: a declarative policy is enforced in the service's
   control plane, so a dry-run form returns `DryRunOperation` whether or not the policy is attached — it
   would report a hole in the ceiling on every run.

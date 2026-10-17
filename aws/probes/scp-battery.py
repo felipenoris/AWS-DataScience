@@ -20,7 +20,7 @@
 #   dryrun   carries --dry-run, which the driver verifies is actually there
 #   blocked  mutating, but a prerequisite named in the command does not exist, so removing
 #            the deny only moves the failure one step later
-#   creates  would really do something if the deny lifted. Three probes in the root phase
+#   creates  would really do something if the deny lifted. Five probes in the root phase
 #            and four in `decl`, and the driver refuses to run them outside Policy Canary,
 #            the one place this project accepts the residual risk of an "allowed".
 #
