@@ -328,7 +328,11 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    derive and whose meaning no other tooling shares. (c) writes no grant at all and costs only
    discoverability in the catalog. **Recommendation: (c), with (d) as the shape to revisit** if
    discoverability of the lake turns out to matter more than keeping every lake grant in the
-   register — the two are the only shapes that leave the TBAC model intact.
+   register — the two are the only shapes that leave the TBAC model intact. A reading of 2026-10-17
+   ([Stage 18](stage-18-staging-deployment-project.md) step 7.2) weighs on (a): the troubleshooting
+   page says SageMaker Unified Studio *"does not support subscriptions to resource links"*, so
+   what a data source over `raw` and `curated` publishes could not be subscribed to, which no run
+   has tested.
 2. **How a fulfilment grant enters the grant register**, and whether `restricted` and `personal` tables
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
