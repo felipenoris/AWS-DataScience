@@ -153,11 +153,13 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   own creations**: the only nameable principal that could hold the carve-out is the Identity Center
   administrator role in Audit (`AWSReservedSSO_AWSAdministratorAccess_*`), which is decision 1's
   option (c). Record the SLR's exact ARN once it exists, in the stage log, so Stage 11 inherits a
-  reading rather than a search.
+  reading rather than a search. **The before, read 2026-10-17**: no detector and no
+  `AWSServiceRoleForAmazonGuardDuty` in Sandbox, Production, Staging, Data Governance or Identity.
 
 - **6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in
-  [`docs/AWS_STATE.md`](../../AWS_STATE.md) (nine trusted-access principals, `guardduty` delegated to
-  Audit — §C already predicts it); re-run `./aws/org-trusted-access-services.py` and
+  [`docs/AWS_STATE.md`](../../AWS_STATE.md) (`guardduty` delegated to Audit; the count is the row's, ten
+  principals and four delegations on 2026-10-17, one more of each per stage that lands); re-run
+  `./aws/org-trusted-access-services.py` and
   `./aws/guardduty.py`; and write the first findings on credential use into Stage 11 step 3.4's row, the
   detective half of D39's identity premise. **[user]** Record
   steps 1-4 in the stage log — including the feature list `get-detector` actually returned, which is

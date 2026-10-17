@@ -2935,15 +2935,23 @@ Both SageMaker domains, `d-p6gthxc82ckg` (2026-08-23) and `d-lfgbdrjncmsu` (2026
 project's), are `InService`, `VpcOnly`, on two subnets each, one in `usw2-az1` and one in `usw2-az2`.
 So the `Tooling` blueprint provisions on D9's two AZs, which closes (iii).
 
-### 2.4's after half — no reconciliation yet
+### 2.4's after half — one reconciliation, and it did not write the domain
 
-Eight `UpdateDomain` calls since 2026-10-14, every one by the infrastructure user through the CLI, none
-`invokedBy` a service. The last are 2026-10-15 06:14:05 on `d-p6gthxc82ckg` and 2026-10-16 00:31:25 on
-`d-lfgbdrjncmsu`, and each domain's `LastModifiedTime` is about a second after its last call. Both
-domains' `CustomImages` name `awsds-sandbox-dev-env` and its app image configuration on JupyterLab and
-Code Editor with no `ImageVersionNumber`, as Stage 8 decision 7 left them. Nothing has reconciled the
-domains since, so the question 2.4 asks, and Stage 8 verification vii's third half, is still waiting
-for its first reconciliation.
+The first project's environment stack, `DataZone-Env-5hkjdsy3umpi1c`, reads `UPDATE_COMPLETE`, last
+updated 2026-10-11 22:05:48Z. CloudTrail names the act: an `UpdateStack` by
+`awsds-sandbox-smus-provisioning`, `invokedBy: datazone.amazonaws.com`, re-sending the template's
+parameters (`permissionsBoundaryArn`, `enableRolesWithoutBoundary`, `availabilityZones`,
+`enableNetworkIsolation` among them). That is a blueprint reconciliation, and nothing in this
+repository's logs names what caused it.
+
+It issued no `UpdateDomain`: from 2026-10-11 to 2026-10-17 every `UpdateDomain` is the infrastructure
+user's own through the CLI (two on 2026-10-12, eight from 2026-10-14), none `invokedBy` a service. So the
+hand-written `CustomImages` were not touched by it, and the project role kept its boundary (INT-15,
+`get-role` on 2026-10-17). Both domains' `CustomImages` now name `awsds-sandbox-dev-env` and its app
+image configuration on JupyterLab and Code Editor with no `ImageVersionNumber`, as Stage 8 decision 7
+left them, and each domain's `LastModifiedTime` is about a second after its last human call (2026-10-15
+06:14:05 and 2026-10-16 00:31:25). One reconciliation of this kind is answered; one that rewrites the
+domain has not been seen.
 
 ### Decision 13 — what `CreateApp` names
 

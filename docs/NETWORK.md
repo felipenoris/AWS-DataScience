@@ -36,7 +36,7 @@ the plan.
 |---|---|---|---|
 | Sandbox 1 | `10.20.0.0/16` | Sandbox | SMUS project apps, the probes |
 | **VPC-SharedServices** | `10.30.0.0/16` | Production | GitLab, Pages, the build runner — *the VPC Stage 3 built, re-labelled at 6c step 1.1* |
-| **VPC-Networking** | `10.31.0.0/16` | Production | **the estate's only internet gateway route**; the WireGuard host; the Squid proxy |
+| **VPC-Networking** | `10.31.0.0/16` | Production | **the only internet gateway that serves a host**; the WireGuard host; the Squid proxy |
 | **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers — *nothing runs in it yet* |
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
@@ -93,7 +93,7 @@ module's arithmetic:
 |---|---|---|
 | `sandbox/foundation/` · `staging/foundation/` | `[P]` | one VPC 3×2, its gateway endpoints, its flow log, the per-account child zone |
 | `production/foundation/` | `[P]` | **VPC-SharedServices**, the `awsds.internal` **apex** and `awsds-pages.internal`, the cross-account authorisation for the apex, four peering ends |
-| `production/networking/` | `[P]` | **VPC-Networking** — the estate's only IGW route — both hub security groups, the WireGuard Elastic IP, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
+| `production/networking/` | `[P]` | **VPC-Networking** — the only IGW that serves a host — both hub security groups, the WireGuard Elastic IP, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
 | `production/workloads/` | `[P]` | **VPC-Workloads** and `prod.awsds.internal` |
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
 | `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
@@ -146,7 +146,7 @@ construction.
 | Route table | What is in it | What is NOT |
 |---|---|---|
 | **VPC-Networking · public** | `0.0.0.0/0` → IGW · the two gateway prefix lists · **`10.90.0.0/24` → the WireGuard ENI** | — |
-| **every other public tier** | `0.0.0.0/0` → that VPC's IGW · the gateway prefix lists | nothing reaches those IGWs: no host sits in those tiers |
+| **every other public tier** | `0.0.0.0/0` → that VPC's IGW · the gateway prefix lists; `workloads-public` carries no default route (read 2026-10-17) | nothing reaches those IGWs: no host sits in those tiers |
 | **every private tier** | the peer VPCs' ranges via peering · the gateway prefix lists | **no `0.0.0.0/0`, in any account** — design B in one line |
 | **every isolated tier** | the gateway prefix lists, and nothing else, ever | no peering route, no default |
 

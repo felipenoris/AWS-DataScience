@@ -157,8 +157,9 @@ work at all* — is still open.
 - **2.4 — the before half read 2026-09-12; the after half waits on a reconciliation.** `./aws/studio.py`:
   `US-1`..`US-10` pass, the domain's `DefaultUserSettings` naming image version 4 on both app types. Nothing
   here provokes a reconciliation, so the diff is taken the first time one happens. **Re-read 2026-10-17:
-  none has happened yet.** Every `UpdateDomain` since 2026-10-14 is the infrastructure user's own, the last
-  on 2026-10-15 and 2026-10-16, and both domains still name the image with no version number.
+  one happened and did not write the domain.** DataZone updated the environment's stack on 2026-10-11
+  22:05:48Z through the provisioning role, and no `UpdateDomain` by a service followed; both domains still
+  name the image with no version number. A reconciliation that rewrites the domain is still unseen.
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
 - **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
