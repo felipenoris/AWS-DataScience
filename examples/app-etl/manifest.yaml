@@ -47,6 +47,7 @@ stages:
       SUBNET_AZ1: ${SUBNET_AZ1}
       SUBNET_AZ2: ${SUBNET_AZ2}
       PROJECT_SG: ${DEV_PROJECT_SG}
+      PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
     bootstrap:
       actions:
         - type: workflow.create
@@ -81,6 +82,7 @@ stages:
       SUBNET_AZ1: ${SUBNET_AZ1}
       SUBNET_AZ2: ${SUBNET_AZ2}
       PROJECT_SG: ${TEST_PROJECT_SG}
+      PROJECT_KEY_ARN: ${TEST_PROJECT_KEY_ARN}
     bootstrap:
       actions:
         - type: workflow.create

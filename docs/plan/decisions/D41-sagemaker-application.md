@@ -18,7 +18,8 @@ chains the workflows, not as a replacement for them.
 [D28](D28-workflow-contract.md)
 
 **Referenced by stages:** [Stage 8](../stages/stage-08-cicd-pipelines.md),
-[Stage 10](../stages/stage-10-orchestration-promotion.md);
+[Stage 10](../stages/stage-10-orchestration-promotion.md),
+[Stage 18](../stages/stage-18-staging-deployment-project.md);
 [6i](../stages/stage-06i-sandbox-orchestration.md) measured the Sandbox half it builds on
 
 ---
@@ -58,7 +59,10 @@ took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 
    with the per-workflow role (D28), and a run is read by API, CloudWatch and EventBridge. The
    alternative, a project in Staging and in Production with the CLI deploying every stage, would
    associate the two accounts to the domain, provision the Tooling blueprint in each, carve
-   `datazone:*` out of the `Workloads` SCP and make the project role the execution role.
+   `datazone:*` out of the `Workloads` SCP and make the project role the execution role. The user
+   chose on 2026-10-17 to measure that alternative before Stage 10 builds this item, in Staging, with
+   a project whose only member is the identity that deploys
+   ([Stage 18](../stages/stage-18-staging-deployment-project.md)); this item stands until its verdict.
 3. **The CLI's place.** It deploys from the `dev` project to the `test` project and makes the bundle
    the pipeline promotes: `deploy --targets dev` from the laptop or a space while the application is
    engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release
