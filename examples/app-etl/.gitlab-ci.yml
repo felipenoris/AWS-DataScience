@@ -127,8 +127,9 @@ build-task-code:
 # hub or Sandbox's egress is down (verification xxiv). The `test` project's prefix is emptied before the
 # deploy, so no file of an earlier release survives beside this one's (verification xxvi). The job's
 # variables: DOMAIN_ID, DOMAIN_REGION, DEV_PROJECT_NAME, TEST_PROJECT_NAME, SUBNET_AZ1, SUBNET_AZ2,
-# DEV_PROJECT_SG, TEST_PROJECT_SG and TEST_PROJECT_S3_URI are CI/CD variables of the GitLab project;
-# JOB_IMAGE_URI is the image build-image pushed, by digest, which the stage passes to the run.
+# DEV_PROJECT_SG, TEST_PROJECT_SG, DEV_PROJECT_KEY_ARN, TEST_PROJECT_KEY_ARN and TEST_PROJECT_S3_URI are
+# CI/CD variables of the GitLab project; JOB_IMAGE_URI is the image build-image pushed, by digest, which
+# the stage passes to the run.
 test-deploy:
   stage: deploy
   needs: [build-image, build-task-code]
@@ -142,7 +143,7 @@ test-deploy:
   script:
     - |
       set -eu
-      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME TEST_PROJECT_NAME SUBNET_AZ1 SUBNET_AZ2 DEV_PROJECT_SG TEST_PROJECT_SG TEST_PROJECT_S3_URI; do
+      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME TEST_PROJECT_NAME SUBNET_AZ1 SUBNET_AZ2 DEV_PROJECT_SG TEST_PROJECT_SG DEV_PROJECT_KEY_ARN TEST_PROJECT_KEY_ARN TEST_PROJECT_S3_URI; do
         eval "value=\${$name:-}"
         if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
       done

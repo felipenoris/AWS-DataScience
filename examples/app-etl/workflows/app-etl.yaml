@@ -50,6 +50,7 @@ app-etl:
             InstanceCount: 1
             InstanceType: ml.t3.medium
             VolumeSizeInGB: 10
+            VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
         NetworkConfig:
           EnableNetworkIsolation: true
           EnableInterContainerTrafficEncryption: true

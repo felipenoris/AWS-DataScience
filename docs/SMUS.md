@@ -565,8 +565,10 @@ shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-w
 
 ## The CI/CD tool deploys between projects
 
-The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and it deploys only
-into projects that already exist. A deployment target under D26 has no project and no domain
+The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and AWS's guide says
+it deploys only into projects that already exist; its 1.0.9 code also creates one when a stage says
+`project.create: true`, and its `destroy` then deletes it (read 2026-10-17, Stage 18 step 0.1).
+A deployment target under D26 has no project and no domain
 association, so the tool cannot reach one: it deploys an application from its repository into the
 Sandbox projects, `dev` and `test`, and makes the bundle, and the GitLab pipeline stays the deployer in
 Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the manifest's
