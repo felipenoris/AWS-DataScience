@@ -144,6 +144,9 @@ DNS_LIST = "awsds-sandbox-egress-allow"
 # (verification vi). Each name written here is then checked against the DNS Firewall list.
 MLFLOW_NAMES: tuple = ()
 
+# Control Tower deploys its own functions into every enrolled account; ML-8 judges the others.
+CONTROL_TOWER_FUNCTION_PREFIX = "aws-controltower-"
+
 # Pass 7: the knowledge base's embeddings model (decision 11) and the store decision 12 keeps.
 EMBEDDINGS_MODEL = "amazon.titan-embed-text-v2:0"
 IDLE_FREE_STORES = ("S3_VECTORS",)
@@ -716,10 +719,17 @@ def main(argv: list) -> int:
                 source_name,
                 q.get("QuotaCode", "-"),
             )
+    # An increase below AWS's default is refused (6d, 2026-09-13), so the default is the floor.
+    quota_defaults = {q.get("QuotaName", ""): q.get("Value") for q in defaults}
     mlflow_quotas = sorted(n for n in quota_rows if "mlflow" in n.lower())
 
     # ------------------------------------------------------------------ Generative AI
-    functions = (run_json("lambda", "list-functions") or {}).get("Functions", [])
+    every_function = (run_json("lambda", "list-functions") or {}).get("Functions", [])
+    functions = [
+        f
+        for f in every_function
+        if not f.get("FunctionName", "").startswith(CONTROL_TOWER_FUNCTION_PREFIX)
+    ]
     kbs = []
     for summary in (run_json("bedrock-agent", "list-knowledge-bases") or {}).get(
         "knowledgeBaseSummaries", []
@@ -1457,7 +1467,8 @@ def main(argv: list) -> int:
                 "ML-7",
                 qname,
                 f"{quota_text(row[0])} ({row[1]}, {row[2]}) - a zero stops the stage; the "
-                "increase is a support case the user opens.",
+                "increase is a support case the user opens, at no less than AWS's default "
+                f"({quota_text(quota_defaults.get(qname))}).",
             )
         else:
             checks.ok("ML-7", qname, f"{quota_text(row[0])} ({row[1]}, {row[2]})")
@@ -1504,7 +1515,11 @@ def main(argv: list) -> int:
             f"in {vpc}" if vpc else "no VPC: the internet a function has by default (decision 10).",
         )
     if not functions:
-        checks.ok("ML-8", "Lambda functions", "none")
+        checks.ok(
+            "ML-8",
+            "Lambda functions",
+            "none" if not every_function else "none but Control Tower's own",
+        )
     if not kbs:
         checks.note("ML-8", "knowledge bases", "none - not built yet (pass 7, step 7.4a).")
     for kb in kbs:
@@ -1598,8 +1613,8 @@ def main(argv: list) -> int:
         checks.note(
             "ML-9",
             "the session's interface endpoints",
-            "none - the session is down; raise it (make hub-up, then make up ENV=sandbox "
-            "GROUPS=mlflow) to read the doors.",
+            "none - the session is down; raise it (make hub-up, then make up ENV=sandbox, "
+            "with GROUPS=mlflow once step 1.4 adds the group) to read the doors.",
         )
     elif len(present) < len(ALWAYS_ON):
         missing = [s for s in ALWAYS_ON if s not in by_service]
@@ -1928,10 +1943,11 @@ def main(argv: list) -> int:
         ]
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-"])
         rep.line()
-        rows = ["QUOTA\tVALUE\tSOURCE\tCODE"]
+        rows = ["QUOTA\tVALUE\tSOURCE\tAWS DEFAULT\tCODE"]
         for qname in QUOTAS + tuple(mlflow_quotas):
             value, source_name, code = quota_rows.get(qname, (None, "-", "-"))
-            rows.append(f"{qname}\t{quota_text(value)}\t{source_name}\t{code}")
+            default = quota_text(quota_defaults.get(qname))
+            rows.append(f"{qname}\t{quota_text(value)}\t{source_name}\t{default}\t{code}")
         rep.tabulate(rows)
 
         rep.h1("9. The Generative AI menu - ML-8")
@@ -1947,7 +1963,7 @@ def main(argv: list) -> int:
         rows += [
             f"Lambda\t{f.get('FunctionName', '-')}\t"
             f"{(f.get('VpcConfig') or {}).get('VpcId') or 'no VPC'}"
-            for f in functions
+            for f in every_function
         ]
         rows += [
             f"knowledge base\t{kb.get('name', '-')}\t{kb.get('status', '-')}, "
