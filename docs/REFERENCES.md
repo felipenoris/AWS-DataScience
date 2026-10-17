@@ -427,6 +427,24 @@
   (`runbooks/client-vpn-proxy-configuration.md` §4.1):
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
+- Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
+  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>.
+
+- Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
+  IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and
+  such a name resolves to the private address inside its VPC and to the public one from anywhere else, so
+  the compute plane's `.amazonaws.com` entry names hosts any AWS account controls and a lookup from the
+  hub returns an address `to_private` does not catch (read 2026-10-17, `threat-model.md`'s `TM-03`):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hostname-types.html>. The VPC side of the same
+  split-horizon rule: <https://docs.aws.amazon.com/vpc/latest/userguide/AmazonDNS-concepts.html>.
+
+- Amazon API Gateway: invoking a REST API — the default endpoint is
+  `https://<api-id>.execute-api.<region>.amazonaws.com/<stage>/`, callable without a signature when the
+  API's owner allows it (read 2026-10-17, `TM-03`):
+  <https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html>.
+
 ## SageMaker and shared storage
 
 - SageMaker Studio notebooks and internet access: <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html>.
