@@ -13,8 +13,8 @@ Account ids are replaced by the account's name in angle brackets.*
   user answered the card *"Qual passo do AWS-DataScience tocamos agora, em paralelo à medição em
   Staging?"* with *"Stage 17, passo 0"*, whose consequence read *"Escrevo aqui o instrumento
   (sandbox-ml.py) e os exemplos do passo, e você roda as leituras no laptop. Não toca em Staging nem na
-  SCP."* The cloud session holds no AWS credential: no `aws` call ran in it, so nothing below is a
-  measurement of AWS.
+  SCP."* The pass is PR #157. The cloud session holds no AWS credential: no `aws` call ran in it, so
+  nothing below is a measurement of AWS.
 - **[Claude] 0.1, `./aws/sandbox-ml.py`, written and not run.** `ML-1`..`ML-9` as the stage file lists
   them; its contracts and the halves it cannot close are in [`aws/INDEX.md`](../../aws/INDEX.md),
   "`sandbox-ml.py`, written for Stage 17". Its parsing and its verdicts were exercised against a
