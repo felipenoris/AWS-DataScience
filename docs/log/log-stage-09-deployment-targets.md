@@ -175,9 +175,10 @@ row of Stage 6b's for the policy id.*
 
 - **[Claude] The six processing-job rows did not reach their wording.** Each read `UNTESTED`:
   `create-processing-job` answered neither `ValidationException` nor a deny, the compliant contrast
-  included. With no statement attached, the five deny rows can read nothing else. The compliant row is
-  meant to read `ALLOWED` on both sides of the apply, since it attributes the five denies and reads
-  `sagemaker:VolumeKmsKey`, and it did not. The report keeps only the table, so the reply is unread.
+  included. With no statement attached, a deny row that reached the validation would read `ALLOWED`, a
+  `FAIL` like the serverless row's, and none did. The compliant row is meant to read `ALLOWED` on both
+  sides of the apply, since it attributes the five denies and reads `sagemaker:VolumeKmsKey`, and it did
+  not. The report keeps only the table, so the reply is unread.
   [inference] One cause would fit all six rows and spare both endpoint-configuration rows: a refusal after
   authorization that a configuration call never meets, such as an instance quota of 0 for processing jobs
   in Production. Reading that reply is owed before step 3 relies on the row.
