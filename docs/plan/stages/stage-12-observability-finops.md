@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started, and scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
+| **Status** | not started but for step 10, whose `./aws/observability.py` was written 2026-10-17 and has not run; scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, which is what separates this stage from a projection |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -142,7 +142,10 @@ exists"; this is where the widening is paid back.
 Stage 7 step 8.2 applies to GitLab.
 
 - **8.1 — [Claude] Write the org-wide backup plan** through an Organizations backup policy, covering the
-  EBS volumes of the `[D]` instances (GitLab, both hub hosts).
+  EBS volumes of the `[D]` instances (GitLab, both hub hosts). **Read ahead on 2026-10-17**: a plan a
+  backup policy makes follows the management account's resource opt-in, not the member's ([AWS Backup's
+  cross-account page](https://docs.aws.amazon.com/aws-backup/latest/devguide/manage-cross-account.html)),
+  so EBS and EC2 are opted in in Management, which `./aws/observability.py` cannot read.
 - **8.2 — [Claude⚡] Apply Vault Lock on the backup vault**, so a compromised administrator cannot delete
   the backups. **Read the lock's own irreversibility before applying it** — this is the second
   compliance-mode object in the estate, and 3.2's lesson applies.
@@ -177,6 +180,17 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
   under 80 % of its limit.
 - **10.2 — [Claude] Add it to [`aws/INDEX.md`](../../../aws/INDEX.md)** with its profile and its snapshot
   path, in the same commit as the script.
+- **10.1, 10.2 — Written 2026-10-17, not run**, from a cloud session with no AWS credentials:
+  [`aws/observability.py`](../../../aws/observability.py), its row, its question table and its section in
+  `aws/INDEX.md`. `OB-1` reads the project's groups (the `/awsds/` and `awsds-` namespace, or the
+  `Project` tag) apart from the services' own, whose never-expiring groups, 3.1's reading, are a note
+  (`EXC-10`). `OB-2` is decided only by the `-` run in Log Archive's CloudShell, where the bucket is, and
+  also holds the lifecycle to the lock's own retention. `OB-3` resolves each SNS action to a topic of the
+  same account and Region with a confirmed subscription, a policy that admits CloudWatch and a key
+  CloudWatch can use. `OB-3` and `OB-4` read `note` until steps 2 and 8 wire their first alarm or write
+  their first backup plan, then `fail` per alarm or volume left out (Lesson 50); `OB-4` takes 8.1's plan,
+  whose id starts `orgs/`, on its selection alone, since Management's opt-in governs it. `OB-5` adds the
+  gateway endpoints' Regional quota to 9.1's list and reads each quota code's name back (Lesson 38).
 
 ---
 
@@ -194,7 +208,8 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
 1. Provoke one alarm per class and confirm the notification arrives (2.4).
 2. Restore one backup of each kind (8.4) — a restore that has never run is not a backup.
 3. Diff `cost-model.md` before and after 4.2; every changed row names the invoice line that changed it.
-4. Run `./aws/observability.py` — `OB-1`..`OB-5` pass.
+4. Run `./aws/observability.py`, and `python3 aws/observability.py -` in Log Archive's CloudShell for
+   `OB-2` — `OB-1`..`OB-5` pass.
 
 ## Risks
 
