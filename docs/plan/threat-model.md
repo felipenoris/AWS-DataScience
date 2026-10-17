@@ -8,10 +8,11 @@ an entry marked accepted names who accepted what, when, and what reopens it.
 **Each ledger entry has a stable ID, `TM-nn`.** Reference an entry by its ID, never by its position. A
 closed entry keeps its ID, struck through, as an `EXC-nn` does in [`AWS_STATE.md`](../AWS_STATE.md).
 
-**This file is pass 0's skeleton, written 2026-10-17 with no AWS call.** Step 3's items and 2.1.2's
-resource types are drafted from the repository's readings; the reachability table waits on 2.1.1's Audit
-snapshot and on pass 3's internal analyzer; the residuals steps 4, 5 and 6 produce are named and wait on
-their passes. Pass 4 finishes the file, and the user confirms each acceptance in it.
+**This file is pass 0's skeleton, written 2026-10-17 from the repository's readings and the user's Audit
+snapshot of that evening (2.1.1).** Step 3's items and 2.1.2's resource types are drafted; the
+reachability table's inside column waits on pass 3's internal analyzer; the residuals steps 4, 5 and 6
+produce are named and wait on their passes. Pass 4 finishes the file, and the user confirms each
+acceptance in it.
 
 ## How an entry reads
 
@@ -40,18 +41,20 @@ neither.
 ## Governed resources and who can reach them
 
 The reachability table the stage's deliverables ask for. *From outside* is the external analyzer's answer
-(2.1.1); *from inside* is the internal analyzer's for the S3 layer (2.1.3 to 2.1.5), and a reading for the
+(2.1.1, read 2026-10-17 in [`log-stage-11`](../log/log-stage-11-dlp.md)), which does not weigh the RCPs:
+a resource policy granting outside the organization reads as a finding even where an RCP denies the
+call. *From inside* is the internal analyzer's for the S3 layer (2.1.3 to 2.1.5), and a reading for the
 keys and the catalog layer, which no analyzer covers.
 
 | Resource | What it holds | From outside the organization | From inside the organization | What records a read |
 |---|---|---|---|---|
-| `awsds-data-raw`, `awsds-data-curated` | the governed bases, LF-registered (D13) | pending 2.1.1. Read from code: the RCPs, and each bucket's `DenyOutsideTrustedNetworks`, which admits a consumer's gateway endpoint, a `Data Governance` principal or a service acting for its caller (`INV-19`) | Lake Formation's grants, the applied ones in `AWS_STATE.md`'s grant register; the S3 layer under the catalog, the bypass D13 closes, is pending 2.1.5 | object reads wait on 5.1's data-event trail |
-| `awsds-data-dropbox` | files users publish for the pipeline | pending 2.1.1 | the persona's put-only write by principal from any network (D39 section 3); the crawler and Stage 9's job read ([`GOVERNANCE.md`](../GOVERNANCE.md), the lake) | 5.1 and 5.2's `awsds-data-unexpected-writer`, both pending |
-| `awsds-data-artifacts`, `awsds-data-logs` | Athena results of 2026-08-20 under `athena-results/`; Stage 11's trails, none delivered yet | pending 2.1.1 | no designed reader or writer today | 5.1, pending |
-| The lake's data CMK | the key every lake bucket encrypts under | pending 2.1.1 | a reading of the key policy's enumerated `Decrypt` list (2.1.5), pending | unread |
+| `awsds-data-raw`, `awsds-data-curated` | the governed bases, LF-registered (D13) | no finding (2.1.1). Read from code: the RCPs, and each bucket's `DenyOutsideTrustedNetworks`, which admits a consumer's gateway endpoint, a `Data Governance` principal or a service acting for its caller (`INV-19`) | Lake Formation's grants, the applied ones in `AWS_STATE.md`'s grant register; the S3 layer under the catalog, the bypass D13 closes, is pending 2.1.5 | object reads wait on 5.1's data-event trail |
+| `awsds-data-dropbox` | files users publish for the pipeline | no finding (2.1.1) | the persona's put-only write by principal from any network (D39 section 3); the crawler and Stage 9's job read ([`GOVERNANCE.md`](../GOVERNANCE.md), the lake) | 5.1 and 5.2's `awsds-data-unexpected-writer`, both pending |
+| `awsds-data-artifacts`, `awsds-data-logs` | Athena results of 2026-08-20 under `athena-results/`; Stage 11's trails, none delivered yet | no finding (2.1.1) | no designed reader or writer today | 5.1, pending |
+| The lake's data CMK | the key every lake bucket encrypts under | no finding (2.1.1) | a reading of the key policy's enumerated `Decrypt` list (2.1.5), pending | unread |
 | The catalog layer | the Glue Data Catalog and Lake Formation in `Data Governance` | read: the Lake Formation shares name `Sandbox` and, from Stage 9, `Production` (INT-03); whether RAM refuses a principal outside the organization is unread | the grants and the LF-Tag expressions ([`GOVERNANCE.md`](../GOVERNANCE.md), grants), a reading | the organization trail, as management events |
-| `awsds-sandbox-smus-projects` | the derived zone: every project's outputs and working files; nothing expires ([open question 25](open-questions.md)) | pending 2.1.1 | the project CMK `alias/awsds-sandbox-project`, read ahead on 2026-10-17 at 2.1.5: `kms:Decrypt` is enumerated to DataZone with the domain execution role, to EMR Serverless under this account's applications, to `awsds-sandbox-smus-provisioning` and to principals carrying the domain's `AmazonDataZoneDomain` tag through DataZone; neither the persona nor the approver is named, and the root's `kms:*` leaves a persona's decrypt to its identity policy, so the reading is half of D31's answer. The S3 layer is pending 2.1.5 | 5.1, pending |
-| `awsds-sandbox-lake` | permanent per-group artifacts ([Stage 16](stages/stage-16-sandbox-lake.md)) | pending 2.1.1 | vended, prefix-scoped grants only, an enumerable register that `SL-4` reads, under `alias/awsds-sandbox-data`; the S3 layer is pending 2.1.5 | 5.1, pending; `TM-15` |
+| `awsds-sandbox-smus-projects` | the derived zone: every project's outputs and working files; nothing expires ([open question 25](open-questions.md)) | no finding on the bucket (2.1.1); its key, the project key, carries one: `TM-21` | the project CMK `alias/awsds-sandbox-project`, read ahead on 2026-10-17 at 2.1.5: `kms:Decrypt` is enumerated to DataZone with the domain execution role, to EMR Serverless under this account's applications, to `awsds-sandbox-smus-provisioning` and to principals carrying the domain's `AmazonDataZoneDomain` tag through DataZone; neither the persona nor the approver is named, and the root's `kms:*` leaves a persona's decrypt to its identity policy, so the reading is half of D31's answer. The S3 layer is pending 2.1.5 | 5.1, pending |
+| `awsds-sandbox-lake` | permanent per-group artifacts ([Stage 16](stages/stage-16-sandbox-lake.md)) | no finding on the bucket or its key (2.1.1) | vended, prefix-scoped grants only, an enumerable register that `SL-4` reads, under `alias/awsds-sandbox-data`; the S3 layer is pending 2.1.5 | 5.1, pending; `TM-15` |
 | The sandbox warehouse | the `lab` schema of database `sandbox` in `awsds-sandbox-warehouse`, outside Lake Formation by design (D40's sandbox class) | no analyzer covers it. Read: the workgroup is not publicly accessible, and is reached on 5439 from the VPC or through the Data API, which the persona sets deny | the database grants, which `WH-12` and `WH-14` read | `TM-16` |
 | Results homes in `Staging` and `Production`, `awsds-prod-outputs` | none exists (read 2026-10-17) | pending Stage 9; a project bucket in either only if Stage 18's verdict reopens D41 item 2 | pending | pending |
 
@@ -66,7 +69,7 @@ Every way out the readings name, with its control or the ledger entry that stand
 | An object written to an S3 bucket outside the organization with this organization's credentials | `DenyS3ObjectWriteOutsideOrganization` on the root, and the `aws:ResourceOrgID` policy on every S3 gateway endpoint | controlled; the SCP's effect measured ([`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md)) |
 | An image pushed to a registry outside the organization, or to ECR Public | `DenyEcrPushOutsideOrganization`, `DenyEcrPublicEntirely` | controlled: the outside push measured by the inverted probe, the ECR Public deny read from code (`POLICIES.md`) |
 | A volume snapshot, a DB snapshot or an image shared with another account or exported | `DenySnapshotAndImageSharing`, `DenyImageAndSnapshotExport` | controlled; the EC2 snapshot action attached and unexercised ([the resource types no RCP reaches](#resource-types-no-rcp-reaches)) |
-| A principal outside the organization reading a resource here | the RCPs' `aws:PrincipalOrgID` on the types they cover, and each resource policy | controlled for the RCP types; the others are [the resource types no RCP reaches](#resource-types-no-rcp-reaches) |
+| A principal outside the organization reading a resource here | the RCPs' `aws:PrincipalOrgID` on the types they cover, and each resource policy | controlled for the RCP types, read and never attempted; the one resource policy granting outside on 2026-10-17 is the Sandbox project key's, `TM-21`; the others are [the resource types no RCP reaches](#resource-types-no-rcp-reaches) |
 | An AWS API call carrying data to another account's topic, queue, event bus or function | none | `TM-17`, open |
 | A presigned URL handed to someone outside | on the lake, `DenyStalePresignedUrls` and the network deny; on the consumer buckets, none | `TM-14`, open |
 | A query in the sandbox warehouse, whose tables carry no LF-Tag | the database grants | `TM-16` |
@@ -125,12 +128,14 @@ what reopens it.
 | **TM-18** | A trail narrowed or redirected (5.4) | **Pending** pass 2. `DenyCloudTrailKill` (decision 6) would deny `StopLogging` and `DeleteTrail`; `UpdateTrail` and `PutEventSelectors` stay allowed, because Terraform manages the trail through them and a policy never constrains its author (Lesson 18). The mutation is a management event on the organization trail | 5.4 applied |
 | **TM-19** | Within-persona visibility of query results ([Stage 9](stages/stage-09-deployment-targets.md)) | **Pending** Stage 9: one enforced result location per account, not one per principal, is that stage's stated limit (its risk 6) | Stage 9's results homes built |
 | **TM-20** | Macie's discovery results expire in 90 days (decision 2) | **Pending** pass 3: decision 2 recommends skipping the results repository at lab scale, with the findings kept in Security Hub and here | decision 2 taken |
+| **TM-21** | The Sandbox project key's external finding (2.1.1) | **Open**: the RCP alone holds it, read and never attempted, and no decision has weighed the key policy's breadth. The organization analyzer reports `alias/awsds-sandbox-project` in `Sandbox Account 1` as reachable from outside, the only active finding on 2026-10-17 that was not an `AWSReservedSSO_*` role (`EXC-18`). Two statements of the policy ([`kms.tf`](../../terraform-modules/sagemaker-prereqs/kms.tf)) grant `Principal: {"AWS": "*"}`: `GrantKMSPermissionsForAllProjectRoles`, `GenerateDataKey` and `Decrypt` through DataZone for a caller carrying the domain's `AmazonDataZoneDomain` tag, and `AllowCreateGrantForProjectRoles`, `CreateGrant` constrained to the domain's encryption context. Neither condition bounds the caller's account or organization; which statement the finding carries is inferred, and `get-finding-v2` in Audit names it. Both need the domain's encryption context, which the decryption of an object in `awsds-sandbox-smus-projects` does not carry, so neither reaches the projects bucket's objects (inferred). Outside the organization `EnforceOrgIdentitiesOnSecretsAndKeys` denies `kms:*` ([`POLICIES.md`](../../terraform-live/identity/org-policies/POLICIES.md)), never attempted because no harness produces an outside principal (Lesson 22). Inside it, neither statement bounds the account either, and no analyzer reports a key there (2.1.5) | the user's choice: the two statements narrowed to this organization's principals, a `sagemaker-prereqs` change applied to `sandbox/sagemaker/`, after which a snapshot reads the finding `RESOLVED`; or the finding archived individually in Audit, never by a rule (`INV-10`), and this entry accepted with the RCP as its control |
 
 ## Resource types no RCP reaches
 
 2.1.2's reading. For these types an external finding is not a check on a perimeter that an RCP holds,
 because no RCP holds one; each type is answered on its own rather than by D19's "the perimeter contains
-it", which [`architecture.md`](architecture.md) §4.2 shows false for the snapshot types.
+it", which [`architecture.md`](architecture.md) §4.2 shows false for the snapshot types. 2.1.1 read no
+finding on any of these types on 2026-10-17.
 
 | Type | Data-bearing in this design | What closes the outside path | What an external finding is |
 |---|---|---|---|
@@ -142,9 +147,8 @@ it", which [`architecture.md`](architecture.md) §4.2 shows false for the snapsh
 
 ## What this file waits on
 
-- **2.1.1, the user**: `aws/cloudshell/audit-iam-analyser.sh` in Audit CloudShell, as `AWS Control Tower
-  Admin`. Its findings fill the outside column, and every finding beyond `INV-16`'s shape becomes an entry
-  here, answered or individually archived.
+- **The user's choice on `TM-21`**: narrow the Sandbox project key's two statements, or archive the
+  finding individually.
 - **Pass 2 (step 5)**: the data-event trails behind the read column, 5.2's presigned rule (`TM-14`), 5.4's
   residual (`TM-18`) and decision 11 (`TM-13`).
 - **Pass 3**: the internal analyzer (2.1.3 to 2.1.6) behind the inside column, and Macie (`TM-15`,
