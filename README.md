@@ -30,7 +30,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `gitlab.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
-    `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
+    `docs/plan/institutional-delta.md`, `docs/plan/threat-model.md` (the data-leakage channels and the
+    `TM-nn` ledger of accepted residuals), `docs/plan/history.md`.
 - `docs/GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
 - `docs/ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), the two
   families of IAM role, and the entitlement plane above them: the SSO users, the seven permission sets,
