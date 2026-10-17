@@ -169,3 +169,108 @@ quoted line carries an account id or an e-mail address, so no identifier substit
   interface half waits on `make hub-up` and `make up ENV=sandbox`.
 - **[Claude] What is owed.** The user's increase requests for the three quotas; 0.3 in a space and 0.7 in
   the portal, with the session up; v45's change, read with `get-policy-version`.
+
+---
+
+## 2026-10-17 — the three increase requests, and v45's change read
+
+*Provenance. The user ran the block Claude had written in the thread at 21:27 UTC on the laptop, as the
+infrastructure user with `InfrastructureAccess` in `Sandbox` (`awsds-infra-sandbox-1`), from the same
+worktree at `bc47f13`, and pasted the output at 21:46:05 UTC with "Rodei o pedido de aumento de cotas."
+Claude read the paste and wrote this entry; no `aws` call ran in the cloud session. No quoted line
+carries an account id or an e-mail address.*
+
+- **[user] The block**, as Claude wrote it:
+
+  ```
+  for q in L-CCE2AFA6 L-614B09FD L-236AE59F; do
+    d=$(aws service-quotas get-aws-default-service-quota --service-code sagemaker --quota-code $q --query Quota.Value --output text --profile awsds-infra-sandbox-1 --region us-west-2)
+    v=$(awk -v d="$d" 'BEGIN { v = 1; if (d + 0 > 1) v = int(d); print v }')
+    echo "$q: default $d, pedido $v"
+    aws service-quotas request-service-quota-increase --service-code sagemaker --quota-code $q --desired-value $v --profile awsds-infra-sandbox-1 --region us-west-2 --query 'RequestedQuota.[QuotaCode,DesiredValue,Status]' --output text
+  done
+  for v in v44 v45; do aws iam get-policy-version --policy-arn arn:aws:iam::aws:policy/SageMakerStudioProjectRoleMachineLearningPolicy --version-id $v --query PolicyVersion.Document --output json --profile awsds-infra-sandbox-1 | jq -S . > /tmp/ml-$v.json; done
+  diff /tmp/ml-v44.json /tmp/ml-v45.json
+  ```
+
+  The loop's own lines, in the order they reached the paste:
+
+  ```
+  L-CCE2AFA6: default 0.0, pedido 1
+  L-614B09FD: default 0.0, pedido 1
+  L-236AE59F: default 0.0, pedido 1
+  ```
+- **[Claude] The three requests ask for 1 instance each, against an AWS default of 0.** The request
+  calls' own lines (code, desired value, status) are absent, and so is any error line, which `aws` writes
+  to stderr; so the three calls most likely returned, and their statuses are unread. The absence is
+  inferred to be the CLI's pager: AWS CLI v2 sends output bound for a terminal through `less`, with its
+  own `FRX` flags only when `LESS` is unset; the paste's prompt is oh-my-zsh's default theme, and
+  oh-my-zsh sets `LESS=-R`, under which `less` holds each output until `q` and clears the screen as it
+  exits. The
+  repository's scripts already set `AWS_PAGER` to empty (`aws/awslib/context.py`); a block handed over by
+  hand carries `--no-cli-pager` from now on. `ML-7` now reads the request history, so the next run of
+  `./aws/sandbox-ml.py` prints each zero quota's latest request with its status.
+- **[user] What `diff` printed** between the two versions, each sorted by key with `jq -S` (which keeps
+  every array's order):
+
+  ```
+  1141a1142
+  >         "s3:GetAccessGrantsInstance",
+  1143a1145
+  >         "s3:ListAccessGrants",
+  1251a1254,1257
+  >         "datazone:Get*",
+  >         "datazone:CreateListingChangeSet",
+  >         "datazone:CreateSubscriptionRequest",
+  >         "datazone:RevokeSubscription",
+  1258c1264,1266
+  <         "datazone:*Compute*"
+  ---
+  >         "datazone:*Compute*",
+  >         "datazone:*Agent*",
+  >         "datazone:*DataApp*"
+  1291a1300,1315
+  >     },
+  >     {
+  >       "Action": [
+  >         "identitystore:DescribeUser",
+  >         "identitystore:DescribeGroup",
+  >         "sso:DescribeInstance",
+  >         "sso:DescribeApplication"
+  >       ],
+  >       "Condition": {
+  >         "Bool": {
+  >           "aws:ViaAWSService": "true"
+  >         }
+  >       },
+  >       "Effect": "Allow",
+  >       "Resource": "*",
+  >       "Sid": "SSOReadOnlyPermissions"
+  ```
+- **[Claude] Which statements changed**, read against v44 on the managed-policy reference page (re-read
+  2026-10-17, still v44, edited 2026-09-14). `diff` printed no context lines, so the attribution rests on
+  line positions:
+  - **`DataZoneUserPermissions`, certain.** On v44 it is the one statement holding `datazone:*Compute*`,
+    the last of its nine actions, on `Resource` `*` with no condition. The line without a trailing comma
+    puts that action at v44's line 1258, so the list is lines 1250 to 1258 and the four insertions after
+    line 1251 follow its `datazone:CreateAsset*`. v45 adds six actions to it: `datazone:Get*`,
+    `datazone:CreateListingChangeSet`, `datazone:CreateSubscriptionRequest`,
+    `datazone:RevokeSubscription`, `datazone:*Agent*` and `datazone:*DataApp*`.
+  - **`ConsumerS3AGPermission`, inferred.** On v44 the S3 Access Grants actions sit there
+    (`s3:GetAccessGrantsInstanceForPrefix`, `s3:GetDataAccess`, `s3:ListCallerAccessGrants`,
+    `ram:GetResourceShareInvitations`), and v45 inserts `s3:GetAccessGrantsInstance` and
+    `s3:ListAccessGrants` among lines 1141 to 1143. `s3:ListAccessGrants` lists the grants of the
+    account's Access Grants instance, not only the caller's.
+  - **`SSOReadOnlyPermissions`, new**: four Identity Center reads, admitted only when an AWS service
+    makes the call on the role's behalf (`aws:ViaAWSService` `true`).
+- **[Claude] What it changes here.** None of the three statements Stage 17 relies on moved:
+  `SageMakerCreatePermissions`, `SageMakerTagPermissions` and `SageMakerMlflowServerlessPermission` hold
+  what the first run read, so the `AddTags` gap of decision 7 stands and `ML-1`'s known version becomes
+  v45. The boundary `awsds-sandbox-project-boundary` v2 denies nothing in `datazone:`, in the Access
+  Grants actions or in `identitystore:` and `sso:` (`terraform-modules/sagemaker-prereqs/boundary.tf`),
+  and no statement `POLICIES.md` indexes denies them in Sandbox (`DenyDataZoneDomainOutsideDataOu` names
+  `CreateDomain` alone), so the IAM half of each new action reaches both project roles:
+  code running as a project role (a notebook, a workflow task) may now ask for a subscription, revoke one
+  and create a listing change set. DataZone's own authorization is the other half, unread. That is the
+  catalog road of [Stage 6f](../plan/stages/stage-06f-data-governance.md), whose decision 5 gains the
+  reading as a note.

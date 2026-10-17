@@ -29,7 +29,8 @@
 #             ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
 #             DescribeTransformJob, ListPipelines, DescribePipeline, ListPipelineExecutions,
 #             ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
-#             ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas;
+#             ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas,
+#             ListRequestedServiceQuotaChangeHistory;
 #             bedrock:ListGuardrails, ListEvaluationJobs, GetFoundationModelAvailability,
 #             ListTagsForResource; bedrock-agent (bedrock:) ListKnowledgeBases, GetKnowledgeBase,
 #             ListDataSources, ListAgents, ListPrompts, ListFlows; aoss:ListCollections;
@@ -92,11 +93,13 @@ HOUSE_IMAGE = "awsds-sandbox-dev-env"
 XGBOOST_REPOSITORY = "sagemaker-xgboost"  # AWS's algorithm registry; any tag (2.2 names 3.0-5)
 PIPELINE_SOURCE = "examples/sandbox-ml/pipeline/definition.json"
 
-# The project role's managed policy, as the managed-policy reference read it on 2026-10-12.
+# The project role's managed policy. The managed-policy reference read v44 on 2026-10-12; Sandbox
+# served v45 on 2026-10-17, whose create, tag and MLflow statements are v44's (the Stage 17 log
+# carries the diff).
 ML_TAG = "EnableSageMakerMLWorkloadsPermissions"
 BEDROCK_TAGS = ("EnableAmazonBedrockPermissions", "EnableAmazonBedrockIDEPermissions")
 ML_POLICY = "SageMakerStudioProjectRoleMachineLearningPolicy"
-ML_POLICY_VERSION = "v44"
+ML_POLICY_VERSION = "v45"
 SID_CREATE = "SageMakerCreatePermissions"
 SID_TAG = "SageMakerTagPermissions"
 SID_MLFLOW = "SageMakerMlflowServerlessPermission"
@@ -393,6 +396,20 @@ def last_segment(arn: str | None) -> str:
 def quota_text(value) -> str:
     """A Service Quotas value as the console prints it: 1, not 1.0."""
     return "-" if value is None else f"{value:g}"
+
+
+def request_text(requests: dict | None, code: str) -> str:
+    """A quota's newest increase request as one phrase; None means the history went unread."""
+    if requests is None:
+        return "its increase requests unread (section 13)"
+    request = requests.get(code)
+    if not request:
+        return "no increase request"
+    created = str(request.get("Created") or "-")[:10]
+    return (
+        f"increase to {quota_text(request.get('DesiredValue'))} requested {created}, "
+        f"{request.get('Status', '-')}"
+    )
 
 
 def main(argv: list) -> int:
@@ -722,6 +739,21 @@ def main(argv: list) -> int:
     # An increase below AWS's default is refused (6d, 2026-09-13), so the default is the floor.
     quota_defaults = {q.get("QuotaName", ""): q.get("Value") for q in defaults}
     mlflow_quotas = sorted(n for n in quota_rows if "mlflow" in n.lower())
+    # Each quota's newest increase request, by code: a zero with a request open is still a stop,
+    # and the request's status says whether it is ending. Timestamps are ISO 8601 in one offset,
+    # so the string order is the time order.
+    history = run_json(
+        "service-quotas",
+        "list-requested-service-quota-change-history",
+        "--service-code",
+        "sagemaker",
+    )
+    quota_requests = None if history is None else {}  # code -> the newest request
+    for r in (history or {}).get("RequestedQuotas", []):
+        code = r.get("QuotaCode", "")
+        newest = quota_requests.get(code, {})
+        if str(r.get("Created") or "") >= str(newest.get("Created") or ""):
+            quota_requests[code] = r
 
     # ------------------------------------------------------------------ Generative AI
     every_function = (run_json("lambda", "list-functions") or {}).get("Functions", [])
@@ -1018,7 +1050,7 @@ def main(argv: list) -> int:
                 checks.note(
                     "ML-1",
                     f"{who}: {ML_POLICY}",
-                    f"{detail} - read 2026-10-12 as {ML_POLICY_VERSION}; re-read its create, "
+                    f"{detail} - read 2026-10-17 as {ML_POLICY_VERSION}; re-read its create, "
                     "tag and MLflow statements before pass 1.",
                 )
             tag_st = sids.get(SID_TAG)
@@ -1466,9 +1498,9 @@ def main(argv: list) -> int:
             checks.fail(
                 "ML-7",
                 qname,
-                f"{quota_text(row[0])} ({row[1]}, {row[2]}) - a zero stops the stage; the "
-                "increase is a support case the user opens, at no less than AWS's default "
-                f"({quota_text(quota_defaults.get(qname))}).",
+                f"{quota_text(row[0])} ({row[1]}, {row[2]}) - a zero stops the stage; "
+                f"{request_text(quota_requests, row[2])}. An increase is the user's to "
+                f"request, at no less than AWS's default ({quota_text(quota_defaults.get(qname))}).",
             )
         else:
             checks.ok("ML-7", qname, f"{quota_text(row[0])} ({row[1]}, {row[2]})")
@@ -1943,11 +1975,12 @@ def main(argv: list) -> int:
         ]
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-"])
         rep.line()
-        rows = ["QUOTA\tVALUE\tSOURCE\tAWS DEFAULT\tCODE"]
+        rows = ["QUOTA\tVALUE\tSOURCE\tAWS DEFAULT\tCODE\tLATEST REQUEST"]
         for qname in QUOTAS + tuple(mlflow_quotas):
             value, source_name, code = quota_rows.get(qname, (None, "-", "-"))
             default = quota_text(quota_defaults.get(qname))
-            rows.append(f"{qname}\t{quota_text(value)}\t{source_name}\t{default}\t{code}")
+            latest = request_text(quota_requests, code)
+            rows.append(f"{qname}\t{quota_text(value)}\t{source_name}\t{default}\t{code}\t{latest}")
         rep.tabulate(rows)
 
         rep.h1("9. The Generative AI menu - ML-8")

@@ -830,6 +830,22 @@
   guide's table of managed-policy updates, whose newest row for this policy is 2026-06-25 (Feature Store,
   the public model hub, pipeline schedules):
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-updates.html>.
+  Read again the same evening against the user's `diff` of v44 and v45, still at v44:
+  `DataZoneUserPermissions` holds nine actions ending in `datazone:*Compute*` on `Resource` `*`, and
+  `ConsumerS3AGPermission` holds `s3:GetAccessGrantsInstanceForPrefix`, `s3:GetDataAccess`,
+  `s3:ListCallerAccessGrants` and `ram:GetResourceShareInvitations` (the Stage 17 log names the change).
+- **The quota requests' missing output** (read 2026-10-17): AWS CLI v2 sends its output through `less`,
+  with the `FRX` flags only when `LESS` is unset, and `--no-cli-pager`, `cli_pager` or `AWS_PAGER` turn
+  it off <https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-pagination.html>; oh-my-zsh sets
+  `LESS=-R` when it is unset <https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/lib/misc.zsh>.
+- **The MLflow App's door, for Stage 17 pass 1** (read 2026-10-17): the interface endpoint pages above,
+  re-read, name the service `aws.sagemaker.<region>.mlflow` and no hostname; an endpoint policy may be
+  attached to the MLflow endpoints, and an MLflow App's calls are authorized as
+  `sagemaker:CallMlflowAppApi` on `mlflow-app/*`
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-private-link-policy.html>. The client's
+  hostname is read in `sagemaker-mlflow` 0.5.0's `_get_endpoint`: `https://mlflow.sagemaker.<region>.app.aws`
+  for an `mlflow-app` ARN and `https://<region>.experiments.sagemaker.aws` for a tracking server, unless
+  `SAGEMAKER_MLFLOW_CUSTOM_ENDPOINT` names another (the wheel listed below).
 
 - **SageMaker AI pricing** (read 2026-10-12): the public page <https://aws.amazon.com/sagemaker/ai/pricing/>,
   and the `AmazonSageMaker` offer file for `us-west-2`, published `2026-10-12T18:05:38Z`, which gave

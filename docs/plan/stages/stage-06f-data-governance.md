@@ -341,7 +341,13 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 4. **Whether a deployment target is ever associated.** Recommended: no. Production publishes through the
    lake, and `DenyDataZoneEntirely` stands with its revision trigger.
 5. **Whether a direct Share is allowed**, and where its control lives: DataZone's authorization, a deny on
-   the domain execution role, or detection by `catalog.py`.
+   the domain execution role, or detection by `catalog.py`. A reading of 2026-10-17
+   ([Stage 17's log](../../log/log-stage-17-sandbox-machine-learning.md)) adds the project role to the
+   question: v45 of its `SageMakerStudioProjectRoleMachineLearningPolicy` grants
+   `datazone:CreateSubscriptionRequest`, `RevokeSubscription`, `CreateListingChangeSet`, `Get*`,
+   `*Agent*` and `*DataApp*` on `*`, which the D13 boundary does not narrow, so code running as a project
+   role holds the IAM half of a subscription request, a revocation and a publication. DataZone's own
+   authorization is the other half, unread.
 
 ## Cost
 
