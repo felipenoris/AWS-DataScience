@@ -316,3 +316,106 @@ nothing below is a measurement of AWS and nothing was applied.*
   carrying the next `NO_PROXY` literal is released in the sitting of the `mlflow` group's first apply,
   and PR #157's merge goes with it. Nothing follows yet: the literal comes from the first plan of
   `sandbox/egress` at `vpc-egress-v0.18.0`, which waits on the two tags reaching origin.
+
+## 2026-10-18 — pass 1's tags on origin, and its readings from the laptop
+
+*Provenance. The user started a laptop session with a procedure the cloud session wrote, and Claude ran
+every command below in it, as the infrastructure user with `InfrastructureAccess` in `Sandbox`
+(`awsds-infra-sandbox-1`) and in `Data Governance` (`awsds-infra-data`), with the session down. The relay
+the procedure named, `mcp__claude-code-remote__send_message`, did not exist in that session, so each
+report went to its chat, and the user then asked the same session to write this entry. No quoted line
+carries an account id or an e-mail address.*
+
+- **[Claude] Recipe B's push.** The reads before it matched the procedure:
+  `6a84bf3 vpc-egress: the optional group mlflow, the MLflow App's interface endpoint` and
+  `41be913 sagemaker-prereqs: MLflowApp joins the blueprint roster`, both ancestors of the branch's head
+  `fa20bfe`; origin's newest tags `vpc-egress-v0.17.0` and `sagemaker-prereqs-v0.4.0`; no local tag of
+  either name. The two lightweight tags were made at 00:57:12 UTC and pushed, each `* [new tag]`, and
+  `git ls-remote --tags origin vpc-egress-v0.18.0 sagemaker-prereqs-v0.5.0` printed:
+
+  ```
+  41be9134e459e4b7f8e9c57a30144fa7b6a9540e	refs/tags/sagemaker-prereqs-v0.5.0
+  6a84bf346945927b7fef5a377bec172fa239f986	refs/tags/vpc-egress-v0.18.0
+  ```
+
+- **[Claude] The readings below ran from a worktree detached at `fa20bfe`**, PR #157's head, which
+  `e6dfc6a` merged at 02:33 UTC.
+- **[Claude] `./aws/sandbox-ml.py`, its second run** (00:58:21 to 01:01:33 UTC, the report stamped
+  `2026-10-18T01:01:31Z`): `wrote aws/output/sandbox-ml.txt (all checks passed)`, exit 0, and section 13
+  `None. Every call in this report returned successfully.`
+  - **The three quotas no longer read zero.** `ML-7`'s rows for the exercise's types:
+
+    ```
+    QUOTA                                                   VALUE  SOURCE   AWS DEFAULT  CODE        LATEST REQUEST
+    ml.m5.xlarge for training job usage                     20     applied  0            L-CCE2AFA6  increase to 1 requested 2026-10-17, CASE_OPENED
+    ml.m5.large for endpoint usage                          8      applied  0            L-614B09FD  increase to 1 requested 2026-10-17, CASE_OPENED
+    ml.m5.large for transform job usage                     8      applied  0            L-236AE59F  increase to 1 requested 2026-10-17, CASE_OPENED
+    ml.t3.medium for processing job usage                   10     applied  4            L-0CE343FE  no increase request
+    ```
+
+    The first run, at 21:07:55 UTC the day before, read the same four at 0, 0, 0 and 4. Each applied
+    value now exceeds the 1 its request asks for while every request reads `CASE_OPENED`, and the
+    processing quota, never requested, rose from 4 to 10; what raised them is unread. The four rows pass,
+    and the MLflow quotas read as the first run did.
+  - **`ML-1` passes on v45** for both project roles; its other rows, `ML-2`..`ML-6` and `ML-8` read as the
+    first run did.
+  - **`ML-9`'s `DE-5` note is not a reading of this sitting.** It quotes `aws/output/devenv.txt` of
+    `2026-10-12T19:49:14Z` (version 6), an earlier session's snapshot left in the worktree, since
+    `./aws/devenv.py` was not run; the first run's quote, version 9 of 2026-10-17, stands.
+- **[Claude] 1.4, the catalog's reading.** `./scripts/check-gitlab-mirror.py --plan` (01:04:42 to
+  01:05:06 UTC) planned `sandbox/egress` at `vpc-egress-v0.18.0` with `-refresh=false` and applied
+  nothing. The plan ran, so the Region offers `aws.sagemaker.us-west-2.mlflow`, and the endpoint answers
+  for two names the house image's literal lacks:
+
+  ```
+    only in the account : .mlflow.sagemaker.us-west-2.app.aws
+    only in the account : mlflow.sagemaker.us-west-2.app.aws
+  ```
+
+  ```
+  fail    GM-4  the literal is the account's list          2 name(s) only in the account, 0 only in the image
+  pass    GM-2  the Dockerfile declares one NO_PROXY_LIST  70 entries, sha256 aafa08da98a61f5c
+  pass    GM-3  the account's list is readable             72 entries, sha256 6faf2e4761622508, from a plan of terraform-live/sandbox/egress
+  ```
+
+  The script exited 2, the fail decision 4 predicts, and wrote the next literal to
+  `aws/output/gitlab-mirror-no-proxy.txt`; `GM-1` and `GM-5`..`GM-8` passed.
+- **[Claude] 1.2's plans** (Recipe A, steps 3 to 5), kept as `~/tmp/s17-sagemaker.tfplan` and
+  `~/tmp/s17-governance.tfplan`. `sandbox/sagemaker`, as `awsds-infra-sandbox-1`:
+
+  ```
+    # module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["MLflowApp"] will be created
+    # module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["MLflowApp"] will be created
+  Plan: 2 to add, 0 to change, 0 to destroy.
+  ```
+
+  `data-governance/governance`, as `awsds-infra-data`:
+
+  ```
+    # awscc_datazone_project_profile.this["experimentation"] will be updated in-place
+  Plan: 0 to add, 1 to change, 0 to destroy.
+  ```
+
+  The change adds one element to the profile's `environment_configurations`: `MLflowApp`, `ON_DEMAND`,
+  `deployment_order` 11, the Sandbox account in `us-west-2`; the eleven elements already there are
+  unchanged. No `.terraform.lock.hcl` changed in either init.
+- **[Claude] 1.2, the checklist's step 3: the template** (`docs/SMUS.md`). As `awsds-infra-data`, the
+  managed `MLflowApp` blueprint of the domain `awsds-studio` lists one user parameter (key name, optional,
+  editable, default present):
+
+  ```
+  |  mlflowAppName |  False |  True |  True  |
+  ```
+
+  `curl` got HTTP 400 on the template's URL, and `aws s3 cp` as `awsds-infra-sandbox-1` fetched it, 2.6
+  KiB of JSON. It declares six parameters, none with `AllowedValues`: `datazoneEnvironmentDomainId`,
+  `datazoneEnvironmentProjectId` and `datazoneEnvironmentEnvironmentId` with no default and absent from
+  the user parameters (inferred: DataZone fills them), and `datazoneEnvironmentStage` `prod`,
+  `datazoneScopeName` `dev` and `mlflowAppName` `mlflow-app`. Its one resource is an
+  `AWS::CloudFormation::WaitConditionHandle`, and it declares no `AWS::IAM::Role`. Its outputs import the
+  Tooling environment's exports `userRoleArn-<project>-<scope>` and `s3BucketPath-<project>-<scope>`, the
+  artifact store being `<that path>/data/ml/mlflow`, and export four values keyed by the environment id.
+  So the profile has nothing to declare before the apply, and the stack creates no MLflow App (inferred:
+  the app is 1.5's *Create MLflow App*).
+- **[Claude] What is owed before the apply**: the checklist's step 4, the console's enable-wizard fields
+  for `MLflowApp` in Sandbox, read by the user and cancelled, then the sitting decision 4 orders.
