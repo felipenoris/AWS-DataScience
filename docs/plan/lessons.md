@@ -1560,6 +1560,31 @@ refusal read as "what this identity is" outlives the state that produced it.
 **What makes it expensive.** The change is silent in both directions: nothing announces the new access, and a
 permanent note stops anyone from re-trying the call that would show it.
 
+## Lesson 71 — a lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause
+
+**What happened.** Stage 8, 2026-10-18. Step 5.6 lists eight clauses for the D28 workflow lint, and
+`app-etl`'s CI runs it as `lint .`, which prints `ok: 6 arquivo(s)` or one line per refusal. Reading the
+tool at `3c1708e` found clauses that this invocation leaves unchecked and says nothing about: (d) and
+(h)'s comparison with the release's manifest have no rule at all, and (e)'s repository, (f)'s instance
+type and (f)'s volume key need `--image-repository`, `--instance-type` and `--promoted`, of which the
+pipeline passes none and the last refuses a folder. A `dev-env` image by digest and a job with no volume
+key both read `ok`. The clauses were written from the design (Lesson 57's neighbour); the pipeline's line
+was written from the tool's default.
+
+**Why it is a class rather than a slip.** A gate's verdict is one word for every clause, and a clause a
+mode skips does not print "skipped": `ok` means nothing was refused and reads as nothing is wrong, which is
+Lesson 13 inside one command. The clause list and the pipeline's line are two documents about one
+behaviour, and no step reads them together; the options that switch a clause on are what the pipeline's
+author did not think to add.
+
+**The rule.** For each clause of a gate, name the invocation that switches it on, and read the pipeline's
+command line against that table: a clause the line leaves off is written in the plan as a gap, with its
+owner. Prove each clause with a deliberate violation run through the pipeline's own invocation, never
+through the most thorough one (Stage 8 verification xiv says which option each row needed).
+
+**What makes it expensive.** The gate stays green while the thing it was written to refuse goes through,
+and the first reader to notice is a person looking at a rendered file.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
