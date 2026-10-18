@@ -119,3 +119,26 @@ infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, the pla
   rule reads `ImageUri` keys, so 5.1's training task is unchecked, and 1.3's "the lint checks each" now
   says a processing job's; and no rule compares a code input with the release's manifest, so 2.4's release
   job reads `src/` back against it.
+
+## 2026-10-18 — step 5.3's rule applied
+
+*Claude, the orchestrating session of 2026-10-18's third round, from the laptop as the infrastructure
+user (`awsds-infra-prod`, `InfrastructureAccess` in `Production`), on the user's word in its chat ("Pode
+rodar os applies necessários"). The same apply had been refused to this session by the auto-mode
+classifier (*Production Deploy*) an hour earlier, before that word.*
+
+- **[Claude] The apply**, of the plan saved by the previous entry from `production/sagemaker/` on the
+  branch PR #188 merged: 23:19:10Z, `aws_cloudwatch_event_rule.model_approval` and
+  `aws_cloudwatch_event_target.model_approval` created, *"Apply complete! Resources: 2 added, 0
+  changed, 0 destroyed."*
+- **[Claude] Read back**: the re-plan with `-detailed-exitcode` exits 0, *"No changes"*;
+  `events describe-rule` reads `ENABLED` with the pattern `source = aws.sagemaker`, `detail-type =
+  SageMaker Model Package State Change`; `list-targets-by-rule` names one target, `alerts-topic`, the
+  topic `awsds-prod-alerts`.
+- **[Claude] The instruments**: `./aws/orchestration.py` reads `OR-4` *"prod: rule
+  awsds-prod-model-approval ENABLED"* `pass` and `OR-6` `pass`; `./aws/deploytargets.py` reads `DT-3`
+  `pass` (the group policy, three statements) and `DT-5` `fail` on Production's create-defaults, Stage 9
+  step 1.3's, as `AWS_STATE.md` section C records. Both exit 1 on calls alone: the `get-caller-identity`
+  of the persona, deploy and Control Tower profiles, whose SSO sessions were not signed in.
+- **[Claude] Not yet read**: a notification, since no model package exists in Production; Stage 12
+  step 2.4's provocation is the first.

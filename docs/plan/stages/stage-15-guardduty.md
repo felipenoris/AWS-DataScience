@@ -86,6 +86,10 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   aws guardduty enable-organization-admin-account --admin-account-id <Audit> --region us-west-2
   ```
 
+  **Read 2026-10-18** (the upstream readings, PR #189): GuardDuty enablement can be an Organizations
+  policy since 2026-10-01, a declarative alternative to this act and step 2's; whether
+  `aws_organizations_policy` accepts the type is unread.
+
   Three properties of this one call, all documented and all consequential. **It is per-Region** (the
   same-account rule above). **It enables GuardDuty in Audit** and registers `guardduty.amazonaws.com`
   for trusted access in one act — that is what step 6's INV-09 restatement records; **delegating IS

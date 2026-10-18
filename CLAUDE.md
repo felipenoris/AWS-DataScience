@@ -226,7 +226,7 @@ per laptop, never one per session.
   Apply*), refused one session's apply of a new slice carrying an e-mail subscription, and refused one
   session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
   user's authorization in its own chat. It also refused the orchestrating session's own apply of a
-  saved plan in Production (*Production Deploy*, 2026-10-18), which is then the user's to run. Sessions told not to edit
+  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. Sessions told not to edit
   `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
   conflict on adjacent lines. Their notes land in
@@ -311,8 +311,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production `make up`. Pass 2 waits on decision 3. **Stage 10**: pass 0 read and 4.3's
   `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
   Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict. 5.3's `awsds-prod-model-approval`
-  is written and planned, 2 to add (PR #188); the auto-mode classifier refused its apply to Claude
-  (*Production Deploy*), so it is the user's to run.
+  is applied (2026-10-18 23:19Z, 2 added, `OR-4` passing) and has never fired: no model package exists.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,

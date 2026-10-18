@@ -628,6 +628,7 @@ satisfied by something nobody in this estate controls (Lesson 5). **Explanation:
   |---|---|
   | `default` | the standard data handling **for the model** applies |
   | `none` | zero data retention |
+  | `aws_review` | AWS may review the request data, which is not shared with the model provider; a model must support the mode to be invoked under it (in the model of `aws-cli/2.37.12`, read 2026-10-18; 7.5's `StringNotEquals` on `none` denies it like the others) |
   | `provider_data_share` | data may be shared with the model provider |
   | `inherit` | **no data retention mode is set at this scope** |
 
@@ -852,7 +853,8 @@ busy one has no upper bound at all. `make down` does not reach it.
   quickly. This can. **Decision due 6:** either close D12's deferral here — a budget notification with a
   real subscriber — or accept a manual daily read for the first week and name the date it is revisited.
   Recommended: close it. A per-use service with no ceiling and no notification is the shape of the
-  invoice nobody sees coming.
+  invoice nobody sees coming. A budget can be filtered to one Bedrock model since 2026-10-08 (read
+  2026-10-18, PR #189).
 - **8.4 — [Claude] Attribute the spend.** Invocation logging is off, so `identity.arn` grouping is not
   available; the attribution instruments that remain are CloudTrail's `userIdentity` per event and
   Cost Explorer by usage type. Per-request metadata tagging exists and needs a caller that sets it,
