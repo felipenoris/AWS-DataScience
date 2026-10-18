@@ -52,6 +52,8 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | The three persona memberships in GitLab; Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
+| Push `examples/app-etl/.gitlab-ci.yml` and its README to GitLab's `awsds/app-etl` at a GitLab session, so GitLab's pipeline runs the lint with its two options (PR #186) | [Stage 8](stages/stage-08-cicd-pipelines.md) 5.6 |
+| Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
 | The knowledge-base enable-wizard read in the console, before the roster commit that tags `sagemaker-prereqs-v0.7.0` (`docs/SMUS.md`'s order) | Stage 17 7.0a |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |

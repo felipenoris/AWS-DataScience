@@ -350,7 +350,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   3.12 with its recipe in GitLab, copied under `gitlab/`), four deploy roles, and `examples/app-etl/` an
   application since 2.5, its first tag owed. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
   (decision 23). `awsds/infrastructure` has no reader since decision 18: decision 2's open question, the
-  user's. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
+  user's. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
+  lint passes `--image-repository` and the ceiling's seven instance types (PR #186); GitLab's copy waits on
+  the user's push. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-21`): `TM-17`, the project role's managed policy
