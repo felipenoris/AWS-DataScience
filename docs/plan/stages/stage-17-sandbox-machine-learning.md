@@ -274,7 +274,9 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   reads `/awsds/sandbox/dns-firewall`'s log first (verification vi).
 - **1.7 — [Claude] `ML-2`**: the app's status, `ArtifactStoreUri` under the project path and the project
   key, `RoleArn`, `ModelRegistrationMode`, `AccountDefaultStatus`, `WeeklyMaintenanceWindowStart`, tags;
-  CloudTrail's `CreateMlflowApp`: which principal and session created it (verification ii).
+  CloudTrail's `CreateMlflowApp`: which principal and session created it (verification ii); and the app's
+  key: `CreateMlflowApp` takes `KmsKeyId` since 2026-08-20, and an app made without it carries no
+  customer-managed key (read 2026-10-18, PR #189; no CloudFormation or Terraform field carries it).
 
 ### 2. A model trained
 
@@ -759,6 +761,12 @@ recommendation stated (Lesson 16).
 
 ## Risks
 
+- **An instance preference list may pass beside the instance ceiling.** Since 2026-09-15 a job's
+  `ResourceConfig.InstancePreferences` names its instance types, and whether that fills
+  `sagemaker:InstanceTypes`, the key `DenySageMakerInstanceCeiling` reads, is unconfirmed (the upstream
+  readings of 2026-10-18, PR #189). Before pass 2's training job the SCP battery gains rows for
+  `CreateTrainingJob` and `CreateProcessingJob` naming an off-ceiling type only in the list, expected
+  `DENY-SCP` (`docs/plan/runbooks/scp-battery.md`); a pass there is a hole in the ceiling.
 - **The project role lacks `EnableSageMakerMLWorkloadsPermissions`.** Every `sagemaker:Create*` and the
   hub reads are refused, and the AI/ML menu is empty in effect; 0.1 reads it first, and decision 9 owns the
   answer. A day's delay, not a design change.
