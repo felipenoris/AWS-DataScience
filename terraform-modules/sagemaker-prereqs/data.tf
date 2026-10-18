@@ -4,6 +4,8 @@ data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
+data "aws_organizations_organization" "current" {} # DescribeOrganization answers from any member account (measured, Stage 1b)
+
 # The roster guard (pass 2b only). The awscc configuration resource takes the blueprint name
 # itself (blueprints.tf, measured 2026-08-21), so nothing here needs an id resolved; the lookup
 # stays as the plan-time check that every name in var.blueprint_names still exists as a managed
