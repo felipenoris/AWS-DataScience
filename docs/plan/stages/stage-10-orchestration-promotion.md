@@ -762,7 +762,7 @@ Measured (`docs/PRICING.md` §1.3-1.5, §5, §8), us-west-2:
 |---|---|---|
 | The workflow at rest | **0** — no environment fee, no standing resource that meters | `[E]` |
 | Managed task-hours | 0.088/task-h, 1-min minimum (~4.40/month for the §1.5 nightly); Python and Bash tasks bill the same (vendor page, 2026-10-10) | per run |
-| Task compute | Glue 0.44/DPU-h; SageMaker processing/training/transform per instance-h (§8); Fargate ARM ~0.036/vCPU-h + memory only if decision 8 keeps an ECS step | per run |
+| Task compute | Glue 0.308/DPU-h for Glue 6.0 and later, 0.44 before (offer of 2026-10-12); SageMaker processing/training/transform per instance-h (§8); Fargate ARM ~0.036/vCPU-h + memory only if decision 8 keeps an ECS step | per run |
 | A processing task | holds its worker for the whole job, provisioning and teardown included: about 13 task-minutes per run in [6i](stage-06i-sandbox-orchestration.md) for a one-second command (about 3 of provisioning, 7 of pulling the 6.97 GB house image, 2.5 after the job), about 0.029 with `ml.t3.medium`. An application image `FROM base` pulls less; the wait counts against the 3600 s task cap | per run |
 | The worker endpoint set while runs execute | 0.010/h per endpoint, single-AZ (decision 3): 6i's workers in both AZs reached single-AZ endpoints, so the two-AZ requirement costs nothing beyond cross-AZ transfer | `[E]` |
 | The chain layer | Step Functions Standard 0.000025 per state transition: about 550 transitions for a chain of three workflows polled every 60 s for an hour, about 0.014 per execution, and about 180 for a chain of one, about 0.005; EventBridge Scheduler 1.00 per million invocations after the free tier (§1.4) | per execution |
@@ -786,7 +786,9 @@ item 7 presuppose them: the user confirms them before pass 1.
    recorded. Neither key delegates to IAM, so each names the service's calls Stage 9 1.1 lists (6i measured
    `GenerateDataKey` with the encryption context `aws:airflow-serverless:workflow-arn` at creation and
    `Decrypt` at each run) and CloudWatch Logs for the encrypted group; which principal makes those calls is
-   read at the first apply.
+   read at the first apply. `EncryptionConfiguration` is create-only in `AWS::MWAAServerless::Workflow`
+   (the registry, read 2026-10-18), so the fallback to `AWS_MANAGED_KEY` replaces the workflow: a new ARN and
+   no run history.
 3. **The endpoint set's AZs** (1.2) — recommended: **single-AZ, like every other endpoint set in the
    estate**. 6i's workers landed in both AZs and reached Sandbox's single-AZ endpoints, so nothing is
    duplicated unless a reading shows an endpoint refused from the second AZ, and the module places every
@@ -955,7 +957,7 @@ Record every answer, including the ones that come out fine.
 | xix | What does the domain's `list-lineage-events` hold after a Sandbox workflow run, read twice with a delay between? | 3.3 |
 | xx | Does a `GlueJobOperator` task start a job the application slice declared, with `GetJob` in the execution role's grant, and does an undeclared name fail on `CreateJob` rather than create a job? | 1.3 |
 | xxi | Under decision 12's statement, is a write to `workflows/` refused to `awsds-prod-job-exec` by the bucket policy's explicit deny, while the release job's copy lands? | 2.4 |
-| xxii | Which SDK integration name starts a workflow from a state machine (`aws-sdk:mwaaserverless`, read in the console's integration list at the first apply), which `Status` values `getWorkflowRun` returns while a run is live, does the `ClientToken` make a repeated `startWorkflowRun` idempotent, and does `awscc` expose the version `WorkflowVersion` pins? | 3.5 |
+| xxii | Which SDK integration name starts a workflow from a state machine (`aws-sdk:mwaaserverless`, read in the console's integration list at the first apply), which `Status` values `getWorkflowRun` returns while a run is live, does the `ClientToken` make a repeated `startWorkflowRun` idempotent, and does `awscc` expose the version `WorkflowVersion` pins? **Read 2026-10-18 from the developer guide and the API model** (PR #189): the integration is `arn:aws:states:::aws-sdk:mwaaserverless:startWorkflowRun`, listed since 2026-03-12; a run's status is one of `STARTING`, `QUEUED`, `RUNNING`, `SUCCESS`, `FAILED`, `TIMEOUT`, `STOPPING`, `STOPPED`; `ClientToken` is an idempotency token; `awscc` exposes `workflow_version` (computed). The behaviour stays 3.5's measurement | 3.5 |
 | xxiii | Does the project role pull the application image from Production's ECR in a Sandbox run, and does the CLI's deploy copy a task's `Code` object as `workflow.create` copies the definition? | 2.1, 2.2 |
 | xxiv | Does the schedule start the machine unattended, what `RunType` does the workflow run it started report, and does `state = DISABLED` stop the next execution? | 3.5, 6.1 |
 | xxv | Do a `Workflow Run Succeeded` event and an `Object Created` under `inbox/<app>/` start the consuming chain, with what delay, and does a second object start a second execution? | 3.6, decision 18 |

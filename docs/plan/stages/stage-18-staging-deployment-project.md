@@ -276,7 +276,11 @@ deploys.
   actions 4.2's list adds to the role, written in `staging/foundation/` and applied as
   `awsds-infra-staging`; the job on a measurement branch the user protects in `awsds/app-etl` for the
   window, since the deploy runner takes protected refs only (Lesson 67 is the cost: protecting the
-  branch extends the runner to it).
+  branch extends the runner to it). `awsds-deploy-staging` holds `datazone:GetEnvironment`,
+  `ListEnvironmentBlueprints`, `ListEnvironments` and `ListConnections` before its first deploy: without
+  them the CLI 1.0.9 creates the workflow in the service's default worker network under a service-managed
+  key and prints one line, and MWAA Serverless offers no condition key an SCP could require a network
+  with (the CLI's code, read 2026-10-18, PR #189).
 - **4.4 — [Claude⚡] Run it** (ix), once the Prerequisites' Stage 8 3.0 half and `vpc-v0.4.0` are
   applied: the sample input placed, then `run --targets staging --workflow` from the laptop, and `start-workflow-run` as the deploy identity; `get-workflow-run` to the end; the
   tasks' identity, subnets and endpoints read from CloudTrail and the logs.
@@ -403,7 +407,7 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
 ## Cost
 
 Rates measured in `us-west-2` (`docs/PRICING.md`): Staging's 11 endpoints at USD 0.110 an hour while up,
-with the hub; MWAA Serverless at 0.088 per task-hour; Glue at 0.44 per DPU-hour; the DataZone domain's
+with the hub; MWAA Serverless at 0.088 per task-hour; Glue 6.0 and later at 0.308 per DPU-hour in `us-west-2` (offer of 2026-10-12; `app-etl`'s job is `GlueVersion: "6.0"`), 0.44 before; the DataZone domain's
 metadata in cents per month. A project's environment holds no compute of its own unless the blueprint
 starts one, which question ii reads. The stage's spend is read from Cost Explorer at 8.9, not estimated
 (Lesson 6).
@@ -416,7 +420,14 @@ Each is decided during the stage and written into the stage log with its recomme
    fails**. `ToolingLite` is category 3 as a second base on the eleven-blueprint profiles, and `SMUS.md`
    says it returns, if ever, as a profile of its own, which `deployment` is; what it creates is unread.
    `Tooling` creates a SageMaker AI domain per project, so it needs `CreateDomain` carved out too, and
-   Staging's quota admits ten such domains (5.4).
+   Staging's quota admits ten such domains (5.4). **A custom Tooling blueprint is a third candidate since
+   2026-10-09** (the upstream readings of 2026-10-18, PR #189): a CloudFormation template this repository
+   writes, registered with `CreateEnvironmentBlueprint --blueprint-category TOOLING` (no CloudFormation
+   type, so a hand object). The guide's minimum template for an Identity Center domain holds a bucket, a
+   log group, the project role and the three default connections and no SageMaker AI domain, so question
+   i needs no `CreateDomain` carve-out. The CLI 1.0.9 then takes a workflow's subnets, security group and
+   key from the environment's `privateSubnets`, `securityGroup` and `kmsKeyArn`, so the template exposes
+   them, or the workflow is created outside the VPC under a service-managed key.
 2. **The carve-out's form** (1.1). Recommended: **by account, for the stage's window**: which principals
    call `datazone:*` in a deployment account is what 3.3 measures, so a carve-out by principal cannot be
    written before it. A carve-out by principal is the form a permanent one would take, from 3.3's list.
