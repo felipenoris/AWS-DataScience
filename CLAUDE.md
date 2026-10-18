@@ -434,8 +434,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Four deploy roles, `awsds-deploy-sandbox-test` (2.5a) held to the `test` project and never used; 2.5
   makes `examples/app-etl/` an application, its first tag owed; the deploy image `v0.2.0` carries the CLI,
   bundles land in `awsds-prod-releases`, and decision 22 runs the `dev` deploy from a space as the
-  project role. `gates-v0.4.0` accepts a pip-audit finding by any of its ids. Decisions 1-25 taken; pass 4 runs after
-  Stage 9 with Stage 10's passes 1-2 (decision 23). **`alerts.auto.tfvars` lives in the project folder's
+  project role. `gates-v0.4.0` accepts a pip-audit finding by any of its ids. Decisions 1-25 taken; pass 4
+  runs after Stage 9 with Stage 10's passes 1-2 (decision 23). `awsds/infrastructure` has no reader since
+  decision 18: decision 2's open question, the user's. **`alerts.auto.tfvars` lives in the project folder's
   `secrets/`**: `production/foundation`, `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-21`). `TM-17`'s identity half: the project
@@ -449,8 +450,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (rank 70, `[P]`) applied: `awsds-prod-hub`, the proxy log's `AWSDS/Proxy` filters,
   `awsds-prod-proxy-refusals` (50/h), quota alarms, and `awsds-sandbox-alerts`, whose e-mail subscription
   awaits the user; `awsds-prod-alerts` admits CloudWatch. **The bill passes D12**: 53.31 USD in August and
-  74.48 in September from the accounts with a profile, and D12's budget still notifies nobody. `OB-3` fails by design (`EXC-19`) until the `[D]` hosts' alarms
-  are wired at a hub session.
+  74.48 in September from the accounts with a profile, and D12's budget still notifies nobody. Sandbox's two
+  warehouse alarms notify `awsds-sandbox-alerts` since 2026-10-18 (PR #181). `OB-3` fails by design
+  (`EXC-19`) until the three `[D]` hosts' alarms are wired at a hub session.
 - **Stage 17 pass 0 in progress, pass 1 merged and unapplied**: `./aws/sandbox-ml.py` (`ML-1`..`ML-9`),
   `examples/sandbox-ml/` (XGBoost `3.0-5`); quotas 20, 8 and 8 with the requests open. Main pins
   `vpc-egress-v0.18.0` (`mlflow`) and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`),
@@ -616,6 +618,7 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     stage's text still describes its own half.**
 70. **A refusal attributed to the identity's class was a membership, and memberships change in a portal
     nobody watches.**
+71. **A lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
