@@ -55,8 +55,8 @@ LAYER_NAMES = {
 # different rank, and Stage 3 owns it.
 RANKS = {
     "bootstrap": 0,
-    # The one row whose rank is not its dependency: identity/sso/ reads a slice that ranks below
-    # it, the lake's data/ state (rank 45), for the drop-box ARNs. The rank is
+    # A row whose rank is not its dependency (`warehouse` is another): identity/sso/ reads a slice
+    # that ranks below it, the lake's data/ state (rank 45), for the drop-box ARNs. The rank is
     # not moved: every slice on both ends is [P], so `up`/`down` refuse them all and no ordering
     # ever acts on the inversion; moving `sso` to 46 would change only the `make slices` display
     # and would falsely suggest a teardown ordering exists. The real order is enforced by the
@@ -174,8 +174,11 @@ RANKS = {
     #   warehouse          [P] the namespace, its admin secret, its three audit log groups, the
     #                      namespace role, the workgroup's security group and the alarms. Above
     #                      `data` (45), whose CMK encrypts the namespace, and above `foundation`
-    #                      (20), whose private subnets the compute lands in. Nothing in up/down
-    #                      ever acts on the number: every [P] row is skipped by both.
+    #                      (20), whose private subnets the compute lands in. Below `observability`
+    #                      (70) and applied after it, the inversion `sso` has: the alarms' topic
+    #                      is read from that slice's state, and the plan fails on the read until
+    #                      it exists. Nothing in up/down ever acts on the number: every [P] row is
+    #                      skipped by both.
     #   warehouse-compute  [E] the workgroup and its usage limit, nothing else. Above `warehouse`
     #                      because a workgroup needs its namespace, and `up` ascends rank while
     #                      `down` descends it - so the compute is created after the namespace

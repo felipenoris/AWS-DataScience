@@ -1184,3 +1184,40 @@ user-role grants and the register is what they are read against.
   CloudTrail.
 - **`EXC-16`**: the 30-day audit groups lose the records of 2026-09-20 and 2026-09-21 on 2026-10-20 and
   2026-10-21, the only user records they ever held. They are tabulated in the 6h log, 2026-10-17.
+
+## 2026-10-18 — both alarms given `awsds-sandbox-alerts` as their action: planned, the apply refused
+
+*Written by Claude, session "Sandbox warehouse alarms to awsds-sandbox-alerts", with the environment
+down. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`): CloudWatch `describe-alarms`, SNS `get-topic-attributes`,
+`terraform plan`, `./aws/observability.py`. No apply ran.*
+
+### Before the change
+
+- **[Claude]** Both alarms read `OK`, `ActionsEnabled: true`, with no alarm, OK or insufficient-data
+  action. `awsds-sandbox-alerts`, created by `sandbox/observability/` at 20:54Z, reads
+  `SubscriptionsConfirmed` 0, `SubscriptionsPending` 1, `SubscriptionsDeleted` 1, and no KMS key.
+- **[Claude]** `./aws/observability.py awsds-infra-sandbox-1` at 21:07Z, exit 2, on two `OB-3` lines: the
+  five quota alarms `broken` (`awsds-sandbox-alerts: no confirmed subscription (1 pending)`), and
+
+  ```
+  fail    OB-3  alarm targets in awsds-infra-sandbox-1   2 alarms notifying nobody (awsds-sandbox-warehouse-compute-capacity, awsds-sandbox-warehouse-data-storage) while awsds-sandbox-quota-codeeditor-ml-t3-large (awsds-infra-sandbox-1) notifies: step 2 is half-built.
+  ```
+
+### The plan
+
+- **[Claude]** `sandbox/warehouse/` reads the topic from `sandbox/observability/`'s state
+  (`alerts_topic_arn`) and gives it to both alarms as `alarm_actions`; both descriptions lose their
+  "No action" sentence. `terraform plan -input=false -out=<a file outside the repository>`:
+  *"Plan: 0 to add, 2 to change, 0 to destroy."* The two are `aws_cloudwatch_metric_alarm.compute_capacity`
+  and `.data_storage`, updated in place: `alarm_actions` gains
+  `arn:aws:sns:us-west-2:<Sandbox Account 1>:awsds-sandbox-alerts`, and `alarm_description` changes. The
+  namespace, the admin secret, the security group and its ingress rule, the audit groups, the roles and
+  the policy attachments refreshed with no diff.
+
+### The apply was refused
+
+- **[Claude]** `terraform apply -input=false` on the saved plan, after a notice to the one busy peer
+  session, was refused before it ran by this session's auto-mode classifier ("Modify Shared Resources").
+  It was not retried, and both alarms still carry no action. The apply is the orchestrating session's;
+  the re-plan, the read-back and `OB-3` after it are owed with it.
