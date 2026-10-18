@@ -16,8 +16,8 @@ warehouse is [`D40`](../../../docs/plan/decisions/D40-redshift-warehouse.md); th
 | `aws_security_group.warehouse` | the workgroup's group. Ingress `5439/tcp` from an admitted project's own security group only; **no egress rule at all** |
 | `aws_vpc_security_group_ingress_rule.project_5439[<projectId>]` | one per entry in `projects`. Group-to-group, never a CIDR: a CIDR would admit every ENI in two /18s |
 | `aws_iam_policy.project_warehouse[<projectId>]` + its attachment | layer 2 of the Redshift connection — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` scoped to this account's workgroups, plus the two listings that take no resource. The attachment's precondition refuses a role that does not carry the D13 boundary |
-| `aws_cloudwatch_metric_alarm.compute_capacity` | `ComputeCapacity > 4` on the workgroup. The ratchet is irreversible, so the alarm says *a manual `UpdateWorkgroup` is owed*, not *this will pass*. Notifies nobody — no SNS topic exists in this account (Stage 12) |
-| `aws_cloudwatch_metric_alarm.data_storage` | `DataStorage` above the dollar threshold, on the **namespace** dimension, so it keeps working while the compute is destroyed. It is the only bound on **total** storage: a schema `QUOTA` bounds one schema and nothing bounds the number of schemas |
+| `aws_cloudwatch_metric_alarm.compute_capacity` | `ComputeCapacity > 4` on the workgroup. The ratchet is irreversible, so the alarm says *a manual `UpdateWorkgroup` is owed*, not *this will pass*. Notifies `awsds-sandbox-alerts`, the topic `sandbox/observability/` owns (Stage 12 step 2.2), read from that slice's state |
+| `aws_cloudwatch_metric_alarm.data_storage` | `DataStorage` above the dollar threshold, on the **namespace** dimension, so it keeps working while the compute is destroyed. It is the only bound on **total** storage: a schema `QUOTA` bounds one schema and nothing bounds the number of schemas. Notifies the same topic |
 | `AmazonDataZoneProject` tag | on the namespace here and on the workgroup in the other slice, both from this slice's `projects` map. **One value**: see below |
 
 ## Layer 1 admits one project, and the limit is AWS's

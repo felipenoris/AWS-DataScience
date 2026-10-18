@@ -815,8 +815,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # does for every non-foundation network slice above.
     #
     #   warehouse          reads data/ for the account data CMK (docs/GOVERNANCE.md Encryption: one
-    #                      data key per account, and the namespace is a data store in this one) and
-    #                      foundation/ for the VPC the workgroup's security group lives in.
+    #                      data key per account, and the namespace is a data store in this one),
+    #                      foundation/ for the VPC the workgroup's security group lives in, and
+    #                      observability/ for the alerts topic both alarms notify.
     #   warehouse-compute  reads foundation/ for the two private subnets and warehouse/ for the
     #                      namespace name and the security group. It needs `zone_ids` as well,
     #                      because foundation/ reports its subnets as a map KEYED BY ZONE ID - the
