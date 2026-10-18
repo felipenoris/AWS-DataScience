@@ -492,7 +492,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     it regardless. **Lesson 30 is the reason for the restraint**: a page that was not found is not a
     property of the world.
     **Settled by attempting it, in the session (xii) and (xiii) already require** — a governance-manager
-    sign-in with the tunnel up, against Stage 6 step 2.4's throwaway project. Three outcomes: **(a)
+    sign-in, from any network since D39, against Stage 6 step 2.4's throwaway project. Three outcomes: **(a)
     denied** — record it and close; **(b) it vends, and the boundary caps what the vended role reads** —
     the wildcard is still worth narrowing, because the intent in the comment and the reach of the document
     have drifted; **(c) it vends a principal that reads rows** — `Get*` becomes an enumeration in that

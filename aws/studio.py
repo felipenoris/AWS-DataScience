@@ -1096,8 +1096,6 @@ What the checks are, and where each comes from:
         rep.h1("9. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 8 as a pass.
 
-  - `Staging` has no profile until the vend: US-6's Staging half is unmeasurable
-    until then (its absence from section 1 is the design, not coverage).
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - re-run after
     each vend; the domain association list must grow with N (D35, INT-12).
   - The portal is a browser surface, reached from any network with an Identity
