@@ -145,6 +145,25 @@
   organization, resources by exact ARN (S3 bucket ARNs only, no prefixes):
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-create-internal.html>.
 
+- IAM Access Analyzer and the RCPs (read 2026-10-17, Stage 11 2.1.1, `TM-21`). An external finding's
+  `resourceControlPolicyRestriction` reads `APPLICABLE` where *"There is an RCP present in the
+  organization but IAM Access Analyzer does not include it in the evaluation of effective
+  permissions"*, and of `APPLIED` the page says *"This restriction is not currently available for
+  external access findings"*, so a finding stands where an RCP denies the access:
+  <https://docs.aws.amazon.com/access-analyzer/latest/APIReference/API_ExternalAccessDetails.html>.
+  For a KMS key the analyzer *"analyzes the key policies and grants applied to a key"* and reports a
+  `kms:CallerAccount` condition naming an account other than the zone of trust; the page says nothing
+  of `aws:PrincipalOrgID` on a key:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-resources.html>. The filter keys
+  list `condition.aws:PrincipalOrgID` and `condition.kms:CallerAccount` among a finding's fields, and
+  do not say how a condition is weighed against the zone of trust:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-reference-filter-keys.html>.
+  The Tooling blueprint's key permissions (read 2026-10-18, `TM-21`) give
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles` with
+  `"Principal": {"AWS": "*"}` and no account or organization condition, and name neither Access
+  Analyzer nor public access:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
+
 - IAM root user (including centralized root access management for member accounts): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html>.
 
 - IAM permissions boundaries: <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html>.
