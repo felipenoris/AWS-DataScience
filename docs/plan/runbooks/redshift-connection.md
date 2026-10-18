@@ -131,9 +131,10 @@ connect but sees nothing"* as the expected state for a while — which is the am
    per project, and CloudTrail still names the person: the chained session carries the space's
    `sourceIdentity`, the data scientist's Identity Center user id, although §J's call passes none (6h
    verification xv, read 2026-10-17).
-4. **The connection, in the portal**, by the project member — it cannot be done any other way:
-   `datazone list-connections` is refused to the account's administrator by **DataZone's own**
-   authorization layer, because that identity is not a project member. *Compute → Data warehouse →
+4. **The connection, in the portal**, by a project member — this repository does not author it.
+   DataZone's own authorization layer refused the account's administrator `datazone list-connections`
+   three times, and answers it since Sandbox's `InfrastructureAccess` role was made contributor to both
+   Sandbox projects on 2026-10-15, as a group profile, so `WH-9` reads the object. *Compute → Data warehouse →
    Add compute → Connect to existing compute resources*, credential type **IAM credentials**. Three
    things the form does that no AWS page describes (measured 2026-09-21):
 
@@ -146,9 +147,12 @@ connect but sees nothing"* as the expected state for a while — which is the am
      connection must name that database — by a database field if the form has one, otherwise through
      the JDBC URL with the `/dev` suffix replaced. Measured 2026-10-10: the Query editor lists every
      database in the namespace (`dev`, `sandbox`, `warehouse`) and the project wrote `lab.hello` from
-     it; which database the connection object names was not recorded.
-   - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
-     meter cannot be turned on from the portal. It is reachable only through the API.
+     it; the connection object names `dev` (read 2026-10-18).
+   - **There is no `lineageSync` toggle** on this path, and the connection it wrote has the sync
+     **on**: the object read 2026-10-18 has `lineageSync.enabled: true` on a daily cron, and every run
+     so far failed without minting a database session (6h decision 3). A run that succeeds is a
+     scheduled query on the 1.44 USD/hour meter, and `WH-9` fails on it. Switching it off is an
+     `UpdateConnection` by a project member.
 5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
    **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
    prefixes its value, so with the tag set to the project role's name the user is
@@ -165,7 +169,8 @@ than broken:
 | a Glue database refused with *"Insufficient Lake Formation permission(s): Required Describe on \<db\>"* | **correct.** The editor enumerates every Glue database it can see; the lake's layers are not this project's to describe, and granting one is a governance act with a named requester |
 
 **What must stay absent, whatever else is granted:** no `GRANT ALL ON DATABASE`, nothing on a schema
-the project's row does not name, no `CREATE` on `public` (revoked at 5b 1.6), and no
+the project's row does not name, no `CREATE` on `public` (`PUBLIC` holds none in any of the three
+databases, read 2026-09-21; 6h 1.2 revoked it in `sandbox`), and no
 `secretsmanager:GetSecretValue` on the admin secret — a project role that can read the admin
 credential has the admin's rights and layer 3 stops meaning anything.
 
@@ -185,9 +190,9 @@ DROP USER "<identifier>";
 
 `WH-12` is what finds a role membership nothing declares; this section is what prevents it.
 
-**The connection object stays.** It is DataZone's, no apply touches it, and this identity cannot read
-it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access role
-the apply destroyed.
+**The connection object stays.** It is DataZone's, no apply touches it, and this repository does not
+author it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access
+role the apply destroyed, which `WH-9` reports.
 
 ---
 
@@ -256,9 +261,10 @@ workgroup, and that is a decision with a written argument, not a map entry.
 silently.
 
 **Two prerequisites, and neither is in the notebook.** The environment must be up with the Redshift
-endpoint group — `make up ENV=sandbox GROUPS=redshift` — because `redshift-serverless` is absent from
-the proxy's allow-list, so without that endpoint `GetCredentials` **times out** rather than being
-refused. And the project must be admitted to the warehouse: `sandbox/warehouse/`'s `projects` map, §P.
+endpoint group — `make up ENV=sandbox GROUPS=redshift` — because without that endpoint `GetCredentials`
+leaves through the proxy as a public request: the compute plane admits `.amazonaws.com`, so it is
+answered, through the door the group exists to replace (6h 3.5). And the project must be admitted to the
+warehouse: `sandbox/warehouse/`'s `projects` map, §P.
 
 ### The connection
 
@@ -347,13 +353,19 @@ with connect() as conn, conn.cursor() as cur:
 
 Every statement runs on compute billed at **0.36 USD per RPU-hour** with **four base RPUs**, so
 1.44 USD per query-hour — and there is a **60-second minimum charge per query**. A cell run fifty times
-while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), so
-leaving a connection open between cells is free; running a heavy query is not.
+while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), and an
+**open transaction** is not idle: AWS bills RPUs until it ends, and the driver opens one at your first
+statement, reads included. So end a cell's work with `conn.commit()` or `conn.rollback()`, or close the
+connection. On 2026-10-10 `ComputeSeconds` held 4 RPU from 17:57 to 18:56Z while a notebook session was
+open and no query longer than ten seconds completed (the 5b log, 2026-10-18).
 
-`max_query_execution_time` is **120 seconds** on this workgroup, so a runaway is cut off — and whether
-that setting binds every queue is [unresolved](../../log/log-stage-05b-redshift-serverless.md). The
-monthly ceiling is **10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup
-refuses queries until somebody raises it. Both are deliberate (5b decision 2).
+`max_query_execution_time` is **120 seconds** on this workgroup, and **whether it cuts anything off is
+unproven** ([the 5b log](../../log/log-stage-05b-redshift-serverless.md)). The monthly ceiling is
+**10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup refuses any query
+that needs the compute until somebody raises it, while the leader node keeps answering. A statement that
+reads only catalog tables (`pg_*`) runs on the leader node, and on 2026-09-20 one ran for six and a half
+hours at 1.44 USD/h, past an 1800-second limit and through two minutes of a breached ceiling: end one with
+`pg_terminate_backend(<pid>)`. Both values are the user's, set on 2026-09-20 after that runaway.
 
 ### Readings that will confuse you otherwise
 
@@ -383,7 +395,7 @@ refuses queries until somebody raises it. Both are deliberate (5b decision 2).
 | `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
 | `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
 | `WH-14` | every relation in a themed schema, against the roles that can read it through a grant or a default privilege | layer 3's sharing half: a table no role can read, which on a shared schema is one project's data the others cannot see (§T) |
-| `WH-9` | nothing: a note, always. The connection object is unreadable by this identity (`EXC-17`) | — the connection is read through the three layers above |
+| `WH-9` | each admitted project's Redshift connection: its workgroup, host, access role, database and `lineageSync` | the connection names an access role this repository did not author, or the lineage sync completed a run, a scheduled query on the meter. A `note` while `list-connections` is refused or the sync is on with no run completed (`EXC-17`) |
 
 `WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
 green for the wrong reason (Lesson 50).
@@ -452,9 +464,10 @@ nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by
 #
 #     make up ENV=sandbox GROUPS=redshift
 #
-# Without it there is no door to the API and no fallback: `redshift-serverless` is deliberately
-# absent from the proxy's allow-list, so step 3 fails at GetCredentials with a timeout rather than
-# with a refusal - which looks like a network fault and is a missing endpoint (Lesson 42).
+# Without it GetCredentials leaves through the proxy as a public request and is answered, because
+# the compute plane admits `.amazonaws.com`: the house image's six calls of 2026-10-10 took that door
+# (6h 3.5). The endpoint keeps the call inside the VPC; the house image's NO_PROXY names it since
+# `default-v0.5.0`.
 
 import ipaddress
 import socket

@@ -1063,3 +1063,124 @@ Free trial expiration December 19, 2026
   x reads it then.
 
 The console page: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
+
+## 2026-10-18 — the plateau of 2026-10-10, a third reading of the runaway, and the residuals
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", with the environment down
+and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`), except `WH-8` in three other accounts, read through their
+`awsds-infra-*` profiles. All reads: CloudTrail `lookup-events`, CloudWatch `get-metric-data` and
+`list-metrics`, `./aws/warehouse.py` without `--sql`.*
+
+### The 18:00Z hour of 2026-10-10 cannot say whether `max_query_execution_time` binds
+
+The hour's 13,733 RPU-seconds (6h log, 2026-10-17 amendment) is one plateau. Read per minute, the
+afternoon held two, each at about 241 RPU-seconds a minute (4 RPU), against the calls CloudTrail holds:
+
+| UTC, 2026-10-10 | Plateau | Calls around it |
+|---|---|---|
+| 16:18 → 16:56 | 39 minutes | `GetCredentials` by the project role through the endpoint at 16:15:23 and 16:55:03 (AWS's image); the Data API with the admin secret, 4 statements at 16:18:54-16:19:54 and 8 at 16:56:16-16:56:40 |
+| 17:57 → 18:56 | 60 minutes | `GetCredentials` by the project role through the proxy at 17:54:55 and 18:15:45 (the house image, a direct session, so the per-person non-superuser user); the Data API with the admin secret, 5 statements at 17:56:02-17:56:30 and 2 at 18:16:46-18:16:50 |
+
+- **Nothing was called at 18:56**, and the workgroup lived until 21:08:09. Sixty minutes is 3,600 s,
+  the idle-session timeout.
+- **No query of ten seconds or more completed since 2026-10-04**: `list-metrics` returns
+  `QueryDuration` and `QueriesCompletedPerSecond` with `LatencyRange=Short` alone. `QueriesRunning`
+  has no point between 17:30 and 19:30.
+- **Those two absences prove nothing on their own** (Lesson 62). The runaway of 2026-09-20, a
+  statement that ran 23,601 s, left `QueriesRunning` two points in 5-minute data (07:10 and 13:45) and
+  no `QueryDuration` above `Short`: a statement that never completes leaves neither.
+- **`ChargedSeconds`**, a metric CloudWatch publishes and AWS's metric list does not name, reads 480
+  for the 18:00 hour against `ComputeSeconds`' 13,733, while the runaway's hours read 14,400 on both.
+  Summed since 2026-09-19 it is 122,928 RPU-seconds = 12.2928 USD, against `ComputeSeconds`' 119,138 =
+  11.9138 USD, and the console's 12.10 USD consumed (2026-10-17) sits between the two. Which meter the
+  trial draws on is not settled by this; the bill after 2026-12-19 is (verification x).
+
+**Verdict.** The only non-superuser that could have run a long query in that hour is the per-person
+user of the 17:54:55 session. The plateau's shape, sixty minutes ending on no call and mostly
+uncharged, fits a session held open until the idle timeout better than a running query (inference).
+So the hour narrows nothing, and owed item 3 stands.
+
+### A third candidate for the runaway, from this stage's own record
+
+The runaway statement was `select count(*) from pg_attribute a, pg_attribute b, pg_attribute c`, and
+it read catalog tables alone. AWS, *Leader node–only functions*: such a query *"runs exclusively on the
+leader node"* ([`REFERENCES.md`](../REFERENCES.md), 2026-10-18). CloudTrail and the 5-minute
+`ComputeSeconds` place it against 5.1's breach:
+
+| UTC, 2026-09-20 | Reading |
+|---|---|
+| 07:08:08 | `UpdateUsageLimit`, 40 → 1 RPU-hour |
+| 07:13:09 → 07:15:15 | seven Data API statements: the runaway, then 5.1's breach readings, `select 1` finished and `CREATE TABLE` refused |
+| from about 07:14 | compute at base capacity: 227 RPU-seconds in the 07:10 interval, then 1,205 every 5 minutes |
+| 07:15:59 | `UpdateUsageLimit`, 1 → 40 |
+| 13:45 | `pg_terminate_backend`, after 23,601 s |
+
+So the statement kept running through the two minutes the workgroup was breached, while that breach
+refused every query needing the compute. That gives the two candidates of 2026-09-20 a third:
+
+| | |
+|---|---|
+| **(c)** | the statement never entered WLM, so neither the per-query limit nor the usage limit's refusal reached it. The query-monitoring page says nothing about leader-node queries either way (inference) |
+
+**The test changes with it**: the same statement as a non-superuser cannot separate (c) from the
+others. It has to be a long query over a user table, run as a non-superuser and as the admin:
+aborting for both is (c), for the non-superuser alone (a), for neither (b). The project's database
+users exist, so it needs only the compute up.
+
+**What it changes in the text**: the usage limit was not the guard that stopped the runaway, and the
+sentences that said it would have been are corrected in the stage file (status, 1.3, step 4, Risks),
+`runbooks/redshift-connection.md` §J, the comments on `sandbox/warehouse-compute/main.tf` and
+`sandbox/warehouse/variables.tf`, and `lessons.md`'s bullet. The same claim stands in four files other
+sessions hold, reported rather than edited: D40's *"The guard is therefore a hard one"*, Stage 9's
+two `max_query_execution_time` sentences, `cost-model.md`'s warehouse paragraph and
+`scripts/tfhygiene/layers.py`'s comment on the runaway.
+
+### `enable_large_strings_opt_in` came back empty, and the creates took it
+
+The six `CreateWorkgroup` calls since 2026-10-09, each sending the same nine declared parameters:
+
+| UTC | Provider | `configParameters` in the response |
+|---|---|---|
+| 2026-10-10 03:06:43, 16:03:33, 23:57:58; 2026-10-11 20:19:02 | 6.64.0 | nine |
+| 2026-10-16 01:55:53, 16:36:38 | 6.68.0 | ten: `enable_large_strings_opt_in`, value `""` |
+
+Both creates of 2026-10-16 succeeded, and no `UpdateWorkgroup` was called from 2026-10-09 to 2026-10-18.
+So the key returned as the AWS Health notice said, empty, and provider 6.68.0 created a workgroup that
+carries it. **Owed**: the re-plan against a live workgroup, which says whether the provider ignores it.
+
+### Step 4 — the residuals
+
+Written into the stage file and into `docs/AWS_STATE.md`'s Redshift section, each with what a reading
+shows. Two readings went into it:
+
+- `WH-8` in the accounts the script skips by default, `./aws/warehouse.py awsds-infra-staging
+  awsds-infra-data awsds-infra-identity`: **no namespace and no workgroup** in Staging, Data
+  Governance or Identity. No organization policy refuses `CreateNamespace` or `CreateWorkgroup`;
+  `DataScientistAccess` denies them in its own set.
+- the password line: no database password is issued (6h decision 2), and the admin's secret is
+  `EXC-13`.
+
+### `WH-6`'s third clause has no map to read
+
+The stage said `WH-6` reads that every schema in the sandbox database appears in the authored map.
+The map, `sandbox/warehouse/`'s `projects`, is keyed by project and names no schema, and no file
+authors the schema list in a form a script can read. So the clause is not implemented, and it cannot
+be without a new authored list; both stage files now say that `WH-12` lists the schemas and the
+user-role grants and the register is what they are read against.
+
+### The instruments with the compute down
+
+| Instrument | Result |
+|---|---|
+| `./aws/warehouse.py` | exit 0. Sandbox 7 pass, 9 notes: `WH-4`, `WH-4b`, `WH-5`, `WH-7`, `WH-8`, `WH-11`, `WH-1b` pass; Production 2 pass, 14 notes |
+| `./aws/studio.py` | `US-8` pass, *all 6 blueprint-provisioned role(s) bounded*. 16 pass, 2 notes; exit 1 only because five persona profiles hold no session |
+| `./aws/datalake.py` | `DL-5` and `DL-6` pass in both readings. 24 pass, 4 notes; exit 1 for the same profiles |
+
+### Dates to read later
+
+- **`EXC-13`**: the admin secret's first rotation is due by 2026-10-20 01:59:59Z, with no workgroup up.
+  The reading after that time is `describe-secret`'s `LastRotatedDate` and the rotation events in
+  CloudTrail.
+- **`EXC-16`**: the 30-day audit groups lose the records of 2026-09-20 and 2026-09-21 on 2026-10-20 and
+  2026-10-21, the only user records they ever held. They are tabulated in the 6h log, 2026-10-17.
