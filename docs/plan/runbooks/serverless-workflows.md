@@ -90,6 +90,7 @@ reference for every option and every message; this section says how this lab use
 | `package-job` | builds a processing job's code folder for the job's image (§J1) | `operators/package-uv-job.py` |
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
+| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s CI runs `lint .` | — |
 
 **Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
 else published there under it would install instead (the package's documentation, read 2026-10-11).
@@ -104,8 +105,10 @@ uv tool upgrade awsds-workflows
 
 The second command takes the newest commit of `main`: measured 2026-10-12 with uv 0.12.13, on an install
 from a local git remote that gained a commit. The commit installed is the `commit_id` in
-`direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The package needs Python 3.12 or newer,
-which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
+`direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The laptop's install was at `c9a4c20` on
+2026-10-18, older than `lint` (`3c1708e`, 2026-10-16), and answered `invalid choice: 'lint'`. The
+package needs Python 3.12 or newer, which uv installs. It calls `uv` as a program, and `aws` for
+`--profile`.
 
 **Where it runs:**
 

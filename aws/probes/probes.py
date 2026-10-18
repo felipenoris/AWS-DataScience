@@ -254,6 +254,20 @@ probe("root", "canary", "deny", None, "blocked",
        "--usage-limit-id", "00000000-0000-0000-0000-000000000000",
        "--region", "us-west-2"])
 
+# --- DenyProvisionedMwaa (Stage 10 step 4.3). Measured in Production rather than the canary: the
+#     call names two subnets, and the canary has none. `blocked`: the execution role, the source
+#     bucket and the security group exist nowhere, so an authorized call fails validation and
+#     creates nothing. A validation that ran before authorization reads UNTESTED, never a pass.
+probe("root", "prod", "deny", None, "blocked",
+      "airflow:CreateEnvironment (no such role, bucket or security group)",
+      ["mwaa", "create-environment", "--name", "awsds-canary-probe",
+       "--execution-role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
+       "--source-bucket-arn", "arn:aws:s3:::awsds-canary-probe-nonexistent",
+       "--dag-s3-path", "dags",
+       "--network-configuration",
+       '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
+       "--region", "us-west-2"])
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])
@@ -312,6 +326,11 @@ probe("ou", "staging", "deny", None, "ro",
 #     `blocked`: the role, the image, the security group, the key and the model named exist
 #     nowhere, so an authorized call fails validation and creates nothing. The subnet is real,
 #     so a VPC check that runs before authorization cannot be mistaken for the deny.
+#
+#     A processing-job row also reads `ResourceLimitExceeded` as authorized: the service checks
+#     the instance quota after authorization and before the role, and Production's processing
+#     quotas for both types read 0 (CloudTrail, the six replies of 2026-10-17).
+_JOB_AUTHORIZED = "ValidationException|ResourceLimitExceeded"
 _JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
 # The registry host is joined to the placeholder rather than written beside it, which
 # ./scripts/check-identifiers.py would read as an e-mail address.
@@ -333,22 +352,22 @@ def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
             "--network-config", network, "--region", "us-west-2"]
 
 
-probe("ou", "prod", "allow", "ValidationException", "blocked",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
       "workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)",
       _processing_job("ml.m5.large", True, "true", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)",
       _processing_job("ml.m5.large", True, "true", "true", False))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
       _processing_job("ml.m5.2xlarge", True, "true", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
       _processing_job("ml.m5.large", True, "false", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
       _processing_job("ml.m5.large", True, "true", "false", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)",
       _processing_job("ml.m5.large", False, "true", "true", True))
 

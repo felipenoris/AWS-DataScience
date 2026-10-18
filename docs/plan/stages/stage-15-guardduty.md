@@ -15,7 +15,7 @@
 **Objective:** threat detection over the whole organization — delegated to Audit, auto-enabled for every
 account present and future, held to **foundational detection only** (every optional protection plan
 switched off until [Stage 11](stage-11-dlp.md) step 4 decides the paid ones against a real bill), and its
-findings routed to a human for the first time in the project.
+findings routed to a human through a topic of its own in Audit.
 
 ## The position of this stage, and what it costs
 
@@ -124,8 +124,9 @@ every Region**, so a second Region later repeats step 1's command, never picks a
 
 - **4 — [user] Route findings** — in Audit, console-built (`ManagedBy` n/a — no Terraform reaches that
   account by design): an EventBridge rule on GuardDuty findings → SNS → e-mail. Decision 2 below;
-  record the topic name and who subscribes — D12 skipped budget alerts, so this is the project's first
-  automatic notification of anything. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
+  record the topic name and who subscribes. It is not the project's first notification: the break-glass
+  topic `awsds-org-break-glass-alerts` in Management (Stage 1a) and Stage 8 decision 5's
+  `awsds-<env>-alerts` topics already reach a person; this is the first for threat findings. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
   and this is measured, not assumed: the `Security` OU's Control Tower SCP was read from the Identity
   profile on 2026-08-18 and carries three SNS statements, all excluding only `AWSControlTowerExecution`.
   `GRSNSSUBSCRIPTIONPOLICY` denies `sns:Subscribe`/`Unsubscribe` on
@@ -137,7 +138,8 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   statement over it at all.
   **A related absence to leave related, not conflated**: the WireGuard health alarm
   (`terraform-modules/wireguard/observability.tf`) carries **no SNS action** — deferred to Stage 12, and
-  its comment names this step's topic only as the project's first notification of anything. The alarm
+  its comment still calls this step's topic the project's first notification, which the module's next tag
+  corrects. The alarm
   lives in the VPN home and this topic in Audit, so wiring them is a cross-account question for Stage 12,
   not a to-do of this step; record here only that the topic now exists.
 
@@ -163,7 +165,9 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   `./aws/guardduty.py`; and write the first findings on credential use into Stage 11 step 3.4's row, the
   detective half of D39's identity premise. **[user]** Record
   steps 1-4 in the stage log — including the feature list `get-detector` actually returned, which is
-  this stage's only measurement of what "the defaults" mean on the day it ran.
+  this stage's only measurement of what "the defaults" mean on the day it ran. **And re-read `EXC-14`**:
+  its revision trigger names this stage, since findings with a reader change whether the paused FSBP
+  standard ([`security-hub.md`](../runbooks/security-hub.md) §R) should come back; the choice is the user's.
 
 ## Deliverables
 
@@ -171,7 +175,8 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   delegated administrator (`./aws/org-trusted-access-services.py`, and `GD-1`).
 - **Coverage without silence**: `./aws/guardduty.py` shows a detector `ENABLED` in **every measured
   account** — and section 3 of its report names the accounts nothing measured (Management, Log Archive,
-  Audit, the unvended `Staging`), because a missing account is not a passing account (Lesson 13).
+  Audit), because a missing account is not a passing account (Lesson 13). `Staging` holds a profile since
+  it was renamed from `Development` (6b), so it is measured, not missing.
 - **Foundational only**: `GD-3` green — every optional plan `DISABLED` on every detector it can read.
   Audit's own detector is outside every profile; its clean-up is proven in the same sitting as
   decision 1's procedure, by `get-detector` read back in its CloudShell **before** the SCP re-attach.
@@ -249,7 +254,7 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does auto-enable `ALL` reach **Management itself**? **Answered no by the documentation, 2026-08-18** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — the `Staging` vend or Stage 14's first unit, whichever lands first (existing members were already documented as covered) | 2, 2a |
+| i | Does auto-enable `ALL` reach **Management itself**? **Answered no by the documentation, 2026-08-18** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — Stage 14's first unit, since `Staging` needed no vend (6b renamed `Development`) and is an existing member, documented as covered | 2, 2a |
 | ii | What does `get-detector` actually return in a freshly enabled account — which features, with which statuses? The documentation says "all but Runtime Monitoring"; this is the reading that turns that into a measurement, and it is also where AI Protection's feature name comes from | 0, 2 |
 | iii | How does the **SUSPENDED `Sandbox`** in the roster surface under auto-enable `ALL` — an error, a skipped row, or a member entry? The documentation says `ALL` includes "accounts that may have been suspended", and the standing rule (resolve accounts by exact vended name, filter on `ACTIVE`) exists because that account is a trap for instruments; record what the Accounts table shows for it | 2 |
 | iv | Does the `Security` OU's Region ceiling interact with the delegation at all — the enablement is `us-west-2` by design, but record whether any console surface tries another Region and is refused (the ceiling's `NotAction` list does not exempt GuardDuty, by decision 10 of Stage 1d) | 1, 2 |

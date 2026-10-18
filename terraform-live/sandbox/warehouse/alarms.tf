@@ -1,8 +1,6 @@
-# Two alarms, on the two things that are irreversible or unbounded. Both notify nobody, which is the
-# same state every other alarm in this repository is in: D12's budget has no subscriber and this
-# account's first automatic notification is Stage 15 step 4's GuardDuty topic, in Audit. What they
-# buy today is a state ./aws/warehouse.py and Stage 12's dashboard can read, not a page anybody
-# receives (Lesson 5 - said here rather than implied).
+# Two alarms, on the two things that are irreversible or unbounded. Both publish to
+# awsds-<env>-alerts, the topic sandbox/observability/ owns (Stage 12 step 2.2, data.tf). The topic
+# reaches a person only through a confirmed subscription, which ./aws/observability.py OB-3 reads.
 
 # ---------------------------------------------------------------------------- the ratchet (5b 6.2)
 #
@@ -19,7 +17,7 @@
 # machinery working exactly as designed.
 resource "aws_cloudwatch_metric_alarm" "compute_capacity" {
   alarm_name          = "${local.name}-compute-capacity"
-  alarm_description   = "Redshift Serverless allocated RPUs above the ${var.base_capacity}-RPU floor (Stage 5b step 6.2). The ratchet is irreversible: the warehouse does not return to ${var.base_capacity} on its own, so this alarm reports that a manual UpdateWorkgroup is owed. No action: no SNS topic exists in this account yet - see Stage 12."
+  alarm_description   = "Redshift Serverless allocated RPUs above the ${var.base_capacity}-RPU floor (Stage 5b step 6.2). The ratchet is irreversible: the warehouse does not return to ${var.base_capacity} on its own, so this alarm reports that a manual UpdateWorkgroup is owed."
   namespace           = "AWS/Redshift-Serverless"
   metric_name         = "ComputeCapacity"
   statistic           = "Maximum"
@@ -28,6 +26,7 @@ resource "aws_cloudwatch_metric_alarm" "compute_capacity" {
   threshold           = var.base_capacity
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [local.alerts_topic_arn]
 
   dimensions = {
     Workgroup = local.name
@@ -47,7 +46,7 @@ resource "aws_cloudwatch_metric_alarm" "compute_capacity" {
 # while the other one goes quiet: the namespace is [P] and keeps publishing.
 resource "aws_cloudwatch_metric_alarm" "data_storage" {
   alarm_name          = "${local.name}-data-storage"
-  alarm_description   = "Redshift Managed Storage above ${var.storage_alarm_usd} USD/month for namespace ${local.name} (Stage 6h decision 7). ${local.storage_alarm_mb} MB at 0.024 USD/GB-month. This is the only bound on total storage: a schema QUOTA bounds one schema and nothing bounds the number of schemas. No action - see Stage 12."
+  alarm_description   = "Redshift Managed Storage above ${var.storage_alarm_usd} USD/month for namespace ${local.name} (Stage 6h decision 7). ${local.storage_alarm_mb} MB at 0.024 USD/GB-month. This is the only bound on total storage: a schema QUOTA bounds one schema and nothing bounds the number of schemas."
   namespace           = "AWS/Redshift-Serverless"
   metric_name         = "DataStorage"
   statistic           = "Maximum"
@@ -57,6 +56,7 @@ resource "aws_cloudwatch_metric_alarm" "data_storage" {
   comparison_operator = "GreaterThanThreshold"
   # A namespace holding nothing publishes nothing, and "no data stored" must not read as a breach.
   treat_missing_data = "notBreaching"
+  alarm_actions      = [local.alerts_topic_arn]
 
   dimensions = {
     Namespace = local.name

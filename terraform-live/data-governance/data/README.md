@@ -12,6 +12,7 @@ What lands here by pass:
 | 1 | the account data CMK (`alias/awsds-data-data`); the five buckets with the perimeter and drop-box statements; the settings resource (admins + parameters + emptied defaults, **before any database**); registrations + the LF-Tag ontology; databases `raw`/`curated`/`dropbox`; the sample Iceberg table with its `restricted` column; the maintenance role, its LF grants, two on-demand crawlers, the compaction optimizer |
 | 2 | step 6 — the governance manager's own grants (`governance.tf`); the consumer TBAC grants are pass 3's, with the shares they ride on |
 | 3 | step 7 — the cross-account shares (`shares.tf`) + the INT-11 after-reading |
+| Stage 11 pass 1 | steps 2.1a and 2.1b — the data cells filters and their cross-account grants (`filters.tf`); nothing is created while `filter_shares` is empty, which it is until the user names the reading principal |
 
 ## The first apply is two steps
 
@@ -282,3 +283,28 @@ or `classification` value joining every consumer share by inheritance is the wid
 resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourcePolicy` →
 `EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
 consumers with no invitation, which is the falsifier not firing.
+
+## `filters.tf` — the data cells filters (Stage 11 pass 1, steps 2.1a and 2.1b)
+
+The explicit `restricted` grant, narrowed. The default share above carries `classification ∈ {public,
+internal}`, so `counterparty` reaches a consumer only through a grant in two hops: this slice grants
+`SELECT` through a filter to the consumer **account** with the grant option, and that account's
+administrator regrants it to one principal (`consumer-data`'s `data_cells_filter_grants`). Column
+restrictions the LF-Tag ontology already expresses stay on the tag-scoped grants; a filter carries only
+a column subset or a row predicate within one table.
+
+**Declared and not applied.** A filter is created only when `filter_shares` names a consumer account
+for it, and the map is empty: who reads a filter inside Sandbox is the user's choice (Stage 11 log,
+2026-10-18). With the map empty the slice plans `No changes`; a plan with Sandbox in it reads `4 to
+add` (measured 2026-10-18, not applied).
+
+| Object | What it holds or grants | The constraint behind its shape |
+|---|---|---|
+| filter `awsds-flt-sample_trades-counterparty` | `curated.sample_trades`: `trade_id`, `trade_date`, `instrument`, `counterparty`; all rows | Column restriction: the restricted column without `quantity` and `price`. An **include** list, because a column filter granted with the grant option takes no exclude list, and a column added to the table joins no filter by itself |
+| filter `awsds-flt-sample_trades-trade-id-le-6` | all six columns; rows where `trade_id <= 6` | Row restriction. On `trade_id` because PartiQL row filters take no `DATE`; AWS's page also says a row filter on a table containing an unsupported type is an error, and this table carries `trade_date date`, which the first apply settles. The 12 rows' ids are recorded nowhere, so 2.3 compares against an unfiltered count of the same predicate |
+| `filter_share` (one per consumer × filter) | `SELECT` **+ grant option** to the consumer account | The grant option is the only way that account's administrator can pass the filter on, and it reaches principals in that account only |
+
+**A row filter narrows nothing for a principal holding an unfiltered `SELECT` on the same table**: AWS
+documents the all-rows grant as prevailing. `DataScientistAccess` holds one through the default share,
+so the row filter discriminates only for a reader the default share does not reach. The filter names
+are the contract `./aws/dlp.py` `DP-2` reads (`awsds-flt-<table>-<what>`).

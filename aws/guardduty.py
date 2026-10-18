@@ -288,9 +288,10 @@ in docs/AWS_STATE.md when the delegation lands, and re-run
     decision 3); read it from its CloudShell.
   - Log Archive holds no profile either; its detector arrives via auto-enable
     and is visible only from Audit's Accounts table.
-  - `Staging` is unvended; every Sandbox beyond unit 1 has no profile until
-    Stage 14. A vend must ARRIVE covered by auto-enable - re-run this script
-    after each one (verification (i)'s residual).""")
+  - Every Sandbox beyond unit 1 has no profile until Stage 14. A vend must
+    ARRIVE covered by auto-enable - re-run this script after each one
+    (verification (i)'s residual). `Staging` is the renamed `Development` and
+    is measured through awsds-infra-staging.""")
 
         # ==============================================================================
         rep.h1("4. CHECKS")

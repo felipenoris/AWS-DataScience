@@ -28,6 +28,19 @@ data "terraform_remote_state" "foundation" {
   }
 }
 
+# awsds-<env>-alerts, both alarms' action, owned by sandbox/observability/ (Stage 12 step 2.2). The
+# plan fails on this read until that slice is applied; scripts/tfhygiene/layers.py RANKS owns the
+# order.
+data "terraform_remote_state" "observability" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/observability/terraform.tfstate"
+    region = var.region
+  }
+}
+
 # Each admitted project's role, read rather than assumed - the same two reasons sandbox/bedrock/
 # reads its own:
 #
@@ -60,8 +73,9 @@ data "aws_security_group" "project" {
 locals {
   name = "awsds-${var.env}-warehouse"
 
-  data_key_arn  = data.terraform_remote_state.data.outputs.data_key_arn
-  boundary_name = "awsds-${var.env}-project-boundary"
+  data_key_arn     = data.terraform_remote_state.data.outputs.data_key_arn
+  alerts_topic_arn = data.terraform_remote_state.observability.outputs.alerts_topic_arn
+  boundary_name    = "awsds-${var.env}-project-boundary"
 
   # The three audit log types. The group path is DERIVED FROM THE NAMESPACE NAME by the service -
   # AWS: "/aws/redshift/<namespace>/<log_type>" - so a namespace rename moves three log groups, and

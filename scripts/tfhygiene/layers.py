@@ -55,8 +55,8 @@ LAYER_NAMES = {
 # different rank, and Stage 3 owns it.
 RANKS = {
     "bootstrap": 0,
-    # The one row whose rank is not its dependency: identity/sso/ reads a slice that ranks below
-    # it, the lake's data/ state (rank 45), for the drop-box ARNs. The rank is
+    # A row whose rank is not its dependency (`warehouse` is another): identity/sso/ reads a slice
+    # that ranks below it, the lake's data/ state (rank 45), for the drop-box ARNs. The rank is
     # not moved: every slice on both ends is [P], so `up`/`down` refuse them all and no ordering
     # ever acts on the inversion; moving `sso` to 46 would change only the `make slices` display
     # and would falsely suggest a teardown ordering exists. The real order is enforced by the
@@ -174,8 +174,11 @@ RANKS = {
     #   warehouse          [P] the namespace, its admin secret, its three audit log groups, the
     #                      namespace role, the workgroup's security group and the alarms. Above
     #                      `data` (45), whose CMK encrypts the namespace, and above `foundation`
-    #                      (20), whose private subnets the compute lands in. Nothing in up/down
-    #                      ever acts on the number: every [P] row is skipped by both.
+    #                      (20), whose private subnets the compute lands in. Below `observability`
+    #                      (70) and applied after it, the inversion `sso` has: the alarms' topic
+    #                      is read from that slice's state, and the plan fails on the read until
+    #                      it exists. Nothing in up/down ever acts on the number: every [P] row is
+    #                      skipped by both.
     #   warehouse-compute  [E] the workgroup and its usage limit, nothing else. Above `warehouse`
     #                      because a workgroup needs its namespace, and `up` ascends rank while
     #                      `down` descends it - so the compute is created after the namespace
@@ -562,15 +565,15 @@ SLICES = [
     # right after an expensive query under-reads it.
     #
     # The other guards, and what each one turned out to be worth on 2026-09-20:
-    #   the usage limit    WORKED, and was not tight: breach_action = deactivate at the 40 RPU-hours
-    #                      then in force would have capped that runaway at 14.40 USD, 3.4 hours later.
-    #                      The user lowered it to 10 the same day - 3.60 USD/month - because a guard
-    #                      that lets two thirds of the damage through first is sized for the wrong
-    #                      failure.
+    #   the usage limit    UNPROVEN against this statement: breach_action = deactivate refused every
+    #                      query needing the compute during 5.1's two minutes of breach, and the
+    #                      runaway, a catalog query that runs on the leader node alone, kept running
+    #                      through them (log-stage-05b, 2026-10-18). The user lowered the limit from
+    #                      40 to 10 RPU-hours the same day - 3.60 USD/month.
     #   max_query_execution_time  DID NOT STOP IT. It was 1800 s, read back as 1800, and the query
-    #                      ran 23,601 s. The leading explanation is that it ran as a superuser and
-    #                      Redshift exempts the superuser queue from query-monitoring rules - a
-    #                      hypothesis, not a measurement (log-stage-05b, the third amendment).
+    #                      ran 23,601 s. Three candidates stand: a superuser exempt from the
+    #                      query-monitoring rules, a ceiling that binds nobody, or a leader-node
+    #                      statement no WLM limit reaches (log-stage-05b, owed item 3).
     #   `make down`        WORKED, and is the only guarantee that is not a setting: no pause exists,
     #                      so destroying the workgroup is what stops the meter.
     Slice(

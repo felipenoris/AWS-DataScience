@@ -205,6 +205,16 @@ on `*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` 
 this is written by hand. A **wildcard** name is emitted in **both** spellings, bare and dot-prefixed,
 because the clients disagree about which one covers a subtree.
 
+**Amazon Q is the one AWS dependency of a space that `NO_PROXY` cannot keep private.** Its endpoint
+service, `com.amazonaws.us-east-1.codewhisperer`, exists in `us-east-1` alone, and AWS PrivateLink's
+cross-Region catalog read from `us-west-2` (`describe-vpc-endpoint-services --service-regions
+us-east-1`, 2026-10-18) offers 92 `us-east-1` services and not this one. So the extension's calls take
+the third path, by name: on 2026-09-12 every name it used, `codewhisperer.us-east-1.amazonaws.com` and
+`aws-language-servers.us-east-1.amazonaws.com` among them, was `200 TCP_TUNNEL` through the compute
+plane's `.amazonaws.com` entry, and `q:SendMessage` reached CloudTrail `us-east-1` from the proxy's
+address with no `vpcEndpointId`. The call is refused today by the Control Tower Region ceiling, not by
+the network, and the path stays the same whichever way 6d decision due 9 goes (6d step 10.1).
+
 ---
 
 ## 6. What can reach a SageMaker app  `[as code]`
