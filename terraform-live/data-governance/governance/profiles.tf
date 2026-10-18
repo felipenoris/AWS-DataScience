@@ -3,9 +3,10 @@
 # They wait on the account association. A project profile is a bundle of environment
 # configurations, each naming (blueprint, account, Region), and the blueprint has to be
 # configured in that account first - which needs the account association, console-only with no
-# public API (step 1.3). `profiles_enabled` is false until every member in SMUS_MEMBERS appears
-# in SMUS_ASSOCIATED, and this file creates nothing before then. Creating them eagerly and
-# letting the API refuse would fail in the middle of an apply that had already created a domain.
+# public API (step 1.3). `profiles_enabled` is false until every account in SMUS_MEMBERS and
+# SMUS_DEPLOYMENT_MEMBERS appears in SMUS_ASSOCIATED, and this file creates nothing before then.
+# Creating them eagerly and letting the API refuse would fail in the middle of an apply that had
+# already created a domain.
 #
 # A profile fixes the blueprint set (which capabilities a project born of it can ever exercise),
 # the account and Region it provisions into, and the Tooling parameters with their Editable
