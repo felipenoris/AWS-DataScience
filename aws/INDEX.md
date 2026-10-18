@@ -727,7 +727,8 @@ v44's), the group `ml-demo-xgboost`, the prefix
 the embeddings model `amazon.titan-embed-text-v2:0`, whose admission it reads from this repository's SCP
 document through `awslib/bedrockscope.py`. Its parsing and its verdicts were exercised that day against a
 fabricated `aws` executable. Its first answers from AWS came on the laptop the same evening, with the
-session down: every call returned, and `ML-7` failed on three quotas at zero ([the Stage 17
+session down: every call returned, and `ML-7` failed on three quotas at zero; its second run, on
+2026-10-18, passed every check with them at 20, 8 and 8 ([the Stage 17
 log](../docs/log/log-stage-17-sandbox-machine-learning.md)). Three of its checks are halves: `ML-3` reads
 the jobs that exist and the trail's events, so a refusal that never reached CloudTrail is invisible to
 it; `ML-6` compares the steps' names, types and job settings, while `pipeline.py compare` compares the
