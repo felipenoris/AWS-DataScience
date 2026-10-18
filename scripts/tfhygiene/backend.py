@@ -830,7 +830,7 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             values["zone_ids"] = ZONE_IDS[account]
 
     # Stage 12 step 1 - observability/ reads the [P] states of the slices it watches (foundation/,
-    # networking/, workloads/, warehouse/), by the account folder for the same reason.
+    # networking/, workloads/), by the account folder for the same reason.
     if slice_name == "observability":
         values["account_folder"] = account
 

@@ -240,3 +240,17 @@ slices, alarms, quotas, cost", read-only, about 20:55 to 20:58 UTC.*
   2, no call failed: `OB-3` fails in Production for the three `[D]` hosts' alarms, as before; in Sandbox
   for the five quota alarms, whose topic holds *"no confirmed subscription (1 pending)"*, and for the two
   warehouse alarms, still unwired (`EXC-19`). The quota alarms resolve once the user confirms the e-mail.
+
+## 2026-10-18 — the warehouse alarms on the Sandbox topic, and the read that went circular
+
+*Claude, session "Stage 12: observability [P] slices, alarms, quotas, cost", read-only, about 21:20 to
+21:30 UTC, after the orchestrating session applied PR #181's `sandbox/warehouse/` (recorded in
+[the 5b log](log-stage-05b-redshift-serverless.md), the same day).*
+
+- **[Claude] Read back**: both warehouse alarms carry `awsds-sandbox-alerts` as their one action,
+  configuration updated 21:19:26Z; the topic reads 0 confirmed, 1 pending and 1 deleted subscriptions.
+- **[Claude] The two Sandbox slices read each other's state** once PR #181 merged: `sandbox/warehouse/`
+  reads this stage's `alerts_topic_arn`, and `sandbox/observability/` read `sandbox/warehouse/`'s
+  `namespace_name`, so an account holding neither (a Stage 14 unit, a rebuild) could plan neither first.
+  `sandbox/observability/` now builds the name as `sandbox/warehouse/data.tf` does,
+  `awsds-${var.env}-warehouse`, and reads no warehouse state. Code only: its re-plan reads `No changes`.

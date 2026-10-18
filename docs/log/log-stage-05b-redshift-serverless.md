@@ -1221,3 +1221,25 @@ permission set `InfrastructureAccess`): CloudWatch `describe-alarms`, SNS `get-t
   session, was refused before it ran by this session's auto-mode classifier ("Modify Shared Resources").
   It was not retried, and both alarms still carry no action. The apply is the orchestrating session's;
   the re-plan, the read-back and `OB-3` after it are owed with it.
+
+## 2026-10-18 — both alarms given `awsds-sandbox-alerts`: the apply, by the orchestrating session
+
+*The apply is the orchestrating session's ("Execução local no Mac"), from a detached worktree at `main`
+`df0d101` (PR #181 merged), as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1`, after the PR's own session had its apply refused. Its result is quoted as that
+session reported it. The read-back is Claude's, in the session "Stage 12: observability [P] slices,
+alarms, quotas, cost", read-only, at 21:23Z.*
+
+- **[Execução local no Mac] The apply**: plan *"0 to add, 2 to change, 0 to destroy"*,
+  `aws_cloudwatch_metric_alarm.compute_capacity` and `.data_storage`, `alarm_actions` and
+  `alarm_description`; apply 2026-10-18 21:19:18 to 21:19:28Z, *"Apply complete! Resources: 0 added, 2
+  changed, 0 destroyed."*; re-plan *"No changes"*; `describe-alarms` reads both `OK` with one action
+  each.
+- **[Execução local no Mac] `./aws/observability.py awsds-infra-sandbox-1` after it**, exit 2: `OB-3`
+  fails on *"7 alarms with a target that does not resolve ... awsds-sandbox-alerts: no confirmed
+  subscription (1 pending)"*, and the *"notifying nobody ... half-built"* line is gone.
+- **[Claude] Read back**: `awsds-sandbox-warehouse-compute-capacity` and `-data-storage` are `OK`,
+  `ActionsEnabled: true`, each with `awsds-sandbox-alerts` as its one alarm action, configuration updated
+  21:19:26Z. The topic reads `SubscriptionsConfirmed` 0, `SubscriptionsPending` 1,
+  `SubscriptionsDeleted` 1, and its one `email` subscription `PendingConfirmation`: the alarms reach a
+  person once the user confirms it.

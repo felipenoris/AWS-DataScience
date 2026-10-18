@@ -237,8 +237,9 @@ terraform-live/
 │   │                     #     awsds-sandbox-alerts (Stage 8 decision 5 gave one to each
 │   │                     #     deployment target's foundation/, and Sandbox is none), and the
 │   │                     #     80 % quota alarms on the SageMaker types in use and the VPC's
-│   │                     #     interface endpoints. Reads foundation/ and warehouse/; names
-│   │                     #     warehouse/'s two alarms by name
+│   │                     #     interface endpoints. Reads foundation/; builds warehouse/'s name
+│   │                     #     and its two alarms' as that slice does, since warehouse/ reads
+│   │                     #     this slice's alerts_topic_arn
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the

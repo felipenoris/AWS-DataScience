@@ -1,4 +1,4 @@
-# What this slice reads and does not own: the [P] states of the slices it watches.
+# What this slice reads and does not own: foundation/'s [P] state and Service Quotas' answers.
 
 data "aws_caller_identity" "current" {}
 
@@ -11,18 +11,6 @@ data "terraform_remote_state" "foundation" {
   config = {
     bucket = "awsds-${var.env}-tfstate"
     key    = "${var.account_folder}/foundation/terraform.tfstate"
-    region = var.region
-  }
-}
-
-# The warehouse's name, which is the namespace's and the workgroup's: the Redshift metrics carry it
-# as their dimension, and the [E] workgroup keeps it across every rebuild.
-data "terraform_remote_state" "warehouse" {
-  backend = "s3"
-
-  config = {
-    bucket = "awsds-${var.env}-tfstate"
-    key    = "${var.account_folder}/warehouse/terraform.tfstate"
     region = var.region
   }
 }
@@ -43,8 +31,13 @@ data "aws_servicequotas_service_quota" "alarmed" {
 }
 
 locals {
-  vpc_id    = data.terraform_remote_state.foundation.outputs.vpc_id
-  warehouse = data.terraform_remote_state.warehouse.outputs.namespace_name
+  vpc_id = data.terraform_remote_state.foundation.outputs.vpc_id
+
+  # The warehouse's name, the namespace's and the workgroup's, built as sandbox/warehouse/data.tf
+  # builds it: the Redshift metrics carry it as their dimension, and the [E] workgroup keeps it across
+  # every rebuild. Not read from that slice's state, which reads this slice's alerts_topic_arn: two
+  # slices reading each other cannot be planned in an account that holds neither.
+  warehouse = "awsds-${var.env}-warehouse"
 
   alarm_arn_prefix = "arn:${data.aws_partition.current.partition}:cloudwatch:${var.region}:${data.aws_caller_identity.current.account_id}:alarm:"
 
