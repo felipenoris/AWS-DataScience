@@ -1044,13 +1044,25 @@
   namespace can. The same page carries the metric list: `ComputeCapacity` (*"Average number of compute units
   allocated during the past 30 minutes"*), `ComputeSeconds`, `UsageLimitConsumed`/`UsageLimitAvailable`,
   `DataStorage`, `DatabaseConnections` and
-  `ExtraComputeForAutomaticOptimizationChargedSeconds`:
+  `ExtraComputeForAutomaticOptimizationChargedSeconds`; `ChargedSeconds`, which CloudWatch publishes for the
+  workgroup, is not on it (read 2026-10-18):
   <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html>.
   *Cross-database queries*: the page carries **both** *"When you query database objects on any other
   unconnected databases, you have read access only to those database objects"* and *"You can write from
   databases that you are connected to, and also write from any other database that you have permissions to"* —
   which is why D40 puts the two classes of database in two accounts rather than in one namespace:
   <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
+
+- **Redshift — where a query runs, and the serverless per-query limit (read 2026-10-18, for
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s owed reading of `max_query_execution_time`).**
+  *Leader node–only functions*: a query that references only `PG_` catalog tables, or no table, *"runs
+  exclusively on the leader node"*; one over user tables or `STL`/`SVV` views is distributed. The
+  2026-09-20 runaway read only `pg_attribute`:
+  <https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_functions_leader_node_only.html>.
+  *WLM query monitoring rules*: Serverless's `max_query_execution_time` is the query-execution-time
+  metric, and past it *"Amazon Redshift Serverless stops the query"*; the page says nothing about
+  leader-node queries or superusers:
+  <https://docs.aws.amazon.com/redshift/latest/dg/cm-c-wlm-query-monitoring-rules.html>.
 
 - **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
   [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the

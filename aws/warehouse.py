@@ -10,8 +10,9 @@
 #   writes:   aws/output/warehouse.txt   (untracked - see .gitignore)
 #   reads:    redshift-serverless Get*/List*, logs:DescribeLogGroups, cloudwatch
 #             DescribeAlarms + GetMetricStatistics, iam Get*/List*, secretsmanager
-#             DescribeSecret, datazone ListConnections - all reads. It also runs SELECT
-#             statements through redshift-data (see "the one call that is not a describe").
+#             DescribeSecret, datazone ListConnections + GetConnection + ListJobRuns - all
+#             reads. It also runs SELECT statements through redshift-data (see "the one call
+#             that is not a describe").
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # WHY THIS FILE EXISTS. The warehouse is the most expensive object per unit of time in this estate
@@ -71,7 +72,8 @@ CLASS_DB = {"sandbox": "sandbox", "prod": "governed"}
 
 # The namespace's own first database, which Redshift creates whether one is wanted or not, plus
 # `dev`, which it creates ANYWAY - naming db_name does not replace `dev`, it adds a database
-# beside it (measured 2026-09-20). Both are inert and both had PUBLIC revoked at 5b 1.6.
+# beside it (measured 2026-09-20). Both are inert: PUBLIC holds USAGE and no CREATE on their
+# `public` schema (read 2026-09-21), so no REVOKE ran in either.
 INERT_DBS = ("warehouse", "dev")
 
 # Where the authored map lives, read rather than carried: a script with its own copy of "which
@@ -90,6 +92,16 @@ DEFAULT_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-prod")
 PROJECTS_VAR_RE = re.compile(r'variable\s+"projects"\s*\{')
 PROJECTS_DEFAULT_RE = re.compile(r"\n\s*default\s*=\s*\{")
 ENTRY_RE = re.compile(r'"?(?P<id>[a-z0-9]+)"?\s*=\s*\{(?P<body>[^}]*)\}', re.S)
+
+# The SMUS domain the admitted projects belong to, from the same file: WH-9 lists each project's
+# connections in it.
+DOMAIN_VAR_RE = re.compile(r'variable\s+"datazone_domain_id"\s*\{')
+DOMAIN_DEFAULT_RE = re.compile(r'\n\s*default\s*=\s*"(dzd-[a-z0-9]+)"')
+
+# A lineage job run in one of these states completed or is running, so the connection's scheduled
+# sync is querying the warehouse on its meter (6h decision 3). A failed run is read in CloudTrail,
+# not here: whether it minted a database session is `GetCredentials` by the access role.
+LINEAGE_RAN = ("IN_PROGRESS", "SUCCESS", "PARTIALLY_SUCCEEDED")
 
 
 def authored_projects(path: Path) -> dict | None:
@@ -126,6 +138,18 @@ def authored_projects(path: Path) -> dict | None:
         fields = dict(re.findall(r'(\w+)\s*=\s*"([^"]+)"', m.group("body")))
         out[m.group("id")] = fields
     return out
+
+
+def authored_domain(path: Path) -> str | None:
+    """The `datazone_domain_id` variable's default, or None when the file does not carry one."""
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8")
+    var = DOMAIN_VAR_RE.search(text)
+    if not var:
+        return None
+    default = DOMAIN_DEFAULT_RE.search(text, var.end())
+    return default.group(1) if default else None
 
 
 def env_of(profile: str) -> str:
@@ -220,7 +244,93 @@ class Sql:
         ]
 
 
-def read_account(cli: AwsCli, env: str, want_sql: bool, authored: dict | None) -> dict:
+def read_connections(cli: AwsCli, domain: str | None, authored: dict | None) -> dict:
+    """Each admitted project's Redshift connections as the portal wrote them, keyed by project.
+
+    A value is a list of connections, `refused` when DataZone's own authorization layer turns this
+    identity away (it does so for a non-member of the project: `EXC-17`), `no domain` when the slice
+    names none, or None when a call failed for another reason and is in the failed calls.
+    """
+    out: dict = {}
+    for pid in authored or {}:
+        if not domain:
+            out[pid] = "no domain"
+            continue
+        res = cli.run(
+            "datazone",
+            "list-connections",
+            "--domain-identifier",
+            domain,
+            "--project-identifier",
+            pid,
+            "--type",
+            "REDSHIFT",
+            "--query",
+            "items[].connectionId",
+            "--output",
+            "text",
+            tolerate="not permitted|AccessDenied",
+        )
+        if res.tolerated:
+            out[pid] = "refused"
+            continue
+        if not res.ok:
+            out[pid] = None
+            continue
+        found = []
+        for cid in res.text.split():
+            got = cli.run(
+                "datazone",
+                "get-connection",
+                "--domain-identifier",
+                domain,
+                "--identifier",
+                cid,
+                "--output",
+                "json",
+            )
+            if not got.ok:
+                continue
+            conn = json.loads(got.stdout)
+            props = (conn.get("props") or {}).get("redshiftProperties") or {}
+            endpoint = (conn.get("physicalEndpoints") or [{}])[0]
+            lineage = props.get("lineageSync") or {}
+            runs: list | None = []
+            if lineage.get("enabled") and lineage.get("lineageJobId"):
+                jr = cli.run(
+                    "datazone",
+                    "list-job-runs",
+                    "--domain-identifier",
+                    domain,
+                    "--job-identifier",
+                    lineage["lineageJobId"],
+                    "--query",
+                    "items[].status",
+                    "--output",
+                    "text",
+                )
+                runs = jr.text.split() if jr.ok else None
+            found.append(
+                {
+                    "name": conn.get("name"),
+                    "workgroup": (props.get("storage") or {}).get("workgroupName"),
+                    "database": props.get("databaseName"),
+                    "access_role": (
+                        (endpoint.get("awsLocation") or {}).get("accessRole") or ""
+                    ).rsplit("/", 1)[-1],
+                    "host": endpoint.get("host") or "",
+                    "lineage": bool(lineage.get("enabled")),
+                    "schedule": (lineage.get("schedule") or {}).get("schedule"),
+                    "runs": runs,
+                }
+            )
+        out[pid] = found
+    return out
+
+
+def read_account(
+    cli: AwsCli, env: str, want_sql: bool, authored: dict | None, domain: str | None
+) -> dict:
     """Every reading for one account, as data. No checks are decided here."""
     name = NAME_TMPL.format(env=env)
     facts: dict = {"env": env, "name": name}
@@ -385,6 +495,10 @@ def read_account(cli: AwsCli, env: str, want_sql: bool, authored: dict | None) -
             "boundary": boundary,
             "attached": res.text.split() if res.ok and res.text.strip() else [],
         }
+
+    # THE CONNECTION, 6h 3.2's object. It needs no workgroup: it is DataZone metadata, readable
+    # while the [E] compute is down.
+    facts["connections"] = read_connections(cli, domain, authored if env == "sandbox" else {})
 
     res = cli.run(
         "cloudwatch",
@@ -866,25 +980,86 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 f"{boundary_name}",
             )
 
-    # ------------------------------- WH-9: the connection object, which this identity cannot read
+    # ------------------------------------------ WH-9: the connection object as the portal wrote it
     #
-    # A NOTE AND IT CAN ONLY EVER BE ONE. 6h 6.2 wanted this check to read the SMUS connection back
-    # and compare it to what the portal was asked for. `datazone list-connections` is refused to
-    # this account's InfrastructureAccess role - "User is not permitted to perform operation:
-    # ListConnections" - by DATAZONE'S OWN authorization layer, because that identity is not a
-    # project member, so no IAM policy reaches it (measured three times: 2026-09-21 with no
-    # connection, and twice on 2026-10-10 with one). There is no `aws sqlworkbench` CLI either.
+    # DataZone's own authorization layer decides whether this identity may list a project's
+    # connections, and no IAM policy reaches it. It refused three times while the identity was in no
+    # project (2026-09-21, twice on 2026-10-10) and answers since 2026-10-15, when a group was made
+    # contributor to both Sandbox projects (6h log, 2026-10-18). A refusal is therefore a note naming
+    # that cause, never a fail.
     #
-    # So the connection's fields are readable only by a project member in the portal, and this check
-    # exists to say that rather than to leave 6.2 looking unfinished. What CAN be checked without
-    # it: WH-7 reads layer 1's tags, WH-11 layer 2's policy and boundary, WH-12 and WH-14 layer 3.
-    checks.note(
-        "WH-9",
-        f"{tag} the connection object as the portal wrote it",
-        "UNREADABLE by this identity: `datazone list-connections` is refused by DataZone's own "
-        "authorization layer, not by IAM, because the infrastructure role is not a project member. "
-        "The connection's fields are a project member's reading, in the portal",
-    )
+    # What is compared: the workgroup and the host the connection names, and the access role, which
+    # must be the one sandbox/warehouse/ authors for that project - any other role is a database
+    # identity this repository did not write. `lineageSync` is the connection's scheduled query: the
+    # portal shows no toggle and creates it ENABLED (read 2026-10-18), so it is read here rather than
+    # assumed off. A run that completed fails the check; an enabled sync whose runs all failed is a
+    # note, because it costs nothing until one succeeds (EXC-17).
+    conns = (facts.get("connections") or {}) if env == "sandbox" else {}
+    what9 = f"{tag} the connection object as the portal wrote it"
+    if env != "sandbox":
+        checks.note(
+            "WH-9",
+            what9,
+            "no project is admitted to a warehouse outside Sandbox (D26), so no connection is expected",
+        )
+    elif not conns:
+        checks.note("WH-9", what9, "no project is admitted, so there is no connection to read")
+    else:
+        problems, notes, good = [], [], []
+        for pid, found in sorted(conns.items()):
+            if found == "refused":
+                notes.append(
+                    f"{pid}: `list-connections` refused by DataZone's own authorization layer - this "
+                    "identity is in no project, so the fields are a project member's reading (EXC-17)"
+                )
+            elif found == "no domain":
+                notes.append(f"{pid}: {PROJECTS_VARS} names no `datazone_domain_id`")
+            elif found is None:
+                notes.append(f"{pid}: unread, a call failed (see the failed calls)")
+            elif not found:
+                notes.append(
+                    f"{pid}: no Redshift connection - the portal half (6h 3.2) has not run, or the "
+                    "connection was removed"
+                )
+            for c in found if isinstance(found, list) else []:
+                role = f"{name}-access-{pid}"
+                if c["workgroup"] != name or not c["host"].startswith(f"{name}."):
+                    problems.append(f"{c['name']} names workgroup {c['workgroup']} at {c['host']}")
+                if c["access_role"] != role:
+                    problems.append(
+                        f"{c['name']}'s access role is {c['access_role'] or 'none'}, not {role} - "
+                        "a database identity this repository did not author"
+                    )
+                ran = [s for s in (c["runs"] or []) if s in LINEAGE_RAN]
+                if c["lineage"] and ran:
+                    problems.append(
+                        f"{c['name']}'s lineageSync ran ({', '.join(sorted(set(ran)))}) on "
+                        f"{c['schedule']} - a scheduled query on the warehouse's meter, which 6h "
+                        "decision 3 keeps off"
+                    )
+                elif c["lineage"]:
+                    runs = (
+                        "runs unread"
+                        if c["runs"] is None
+                        else f"{len(c['runs'])} run(s), none completed"
+                    )
+                    notes.append(
+                        f"{c['name']} (database {c['database']}): lineageSync ENABLED on "
+                        f"{c['schedule']}, {runs} - off is 6h decision 3, and the portal shows no "
+                        "toggle (EXC-17)"
+                    )
+                else:
+                    good.append(f"{c['name']} (database {c['database']}, lineageSync off)")
+        if problems:
+            checks.fail("WH-9", what9, "; ".join(problems))
+        elif notes:
+            checks.note("WH-9", what9, "; ".join(notes + good))
+        else:
+            checks.ok(
+                "WH-9",
+                what9,
+                "; ".join(good) + ": the authored workgroup and access role",
+            )
 
     # ------------------------------------------- the namespace role reaches nothing (5b 2.4/D13)
     if ns is None:
@@ -1086,6 +1261,7 @@ def main(argv: list) -> int:
     errors = ErrorLog()
     callers = profiles.preflight(wanted, errors, out_label=out_label)
     authored = authored_projects(ctx.repo_root / PROJECTS_VARS)
+    domain = authored_domain(ctx.repo_root / PROJECTS_VARS)
 
     checks = Checks()
     per_account = []
@@ -1093,7 +1269,7 @@ def main(argv: list) -> int:
         if not caller.live:
             continue
         cli = profiles.cli_for(caller.profile, errors)
-        facts = read_account(cli, env_of(caller.profile), want_sql, authored)
+        facts = read_account(cli, env_of(caller.profile), want_sql, authored, domain)
         per_account.append((caller, facts))
         judge(checks, facts, authored, want_sql)
 
@@ -1228,6 +1404,20 @@ stale copy.""")
                 "only way to admit more than one project is the wide tag, refused here, so "
                 "layer 1 admits exactly one project (6h decision 8)."
             )
+
+            conn_rows = [
+                f"{pid}\t{c['name']}\t{c['database']}\t{c['access_role']}\t"
+                f"{('ON ' + str(c['schedule'])) if c['lineage'] else 'off'}"
+                for pid, found in sorted((facts.get("connections") or {}).items())
+                for c in (found if isinstance(found, list) else [])
+            ]
+            if facts.get("connections"):
+                rep.h2("the connection - 6h 3.2")
+                rep.tabulate(
+                    ["PROJECT\tCONNECTION\tDATABASE\tACCESS ROLE\tLINEAGE SYNC"] + conn_rows
+                    if conn_rows
+                    else ["(no Redshift connection read - see WH-9)"]
+                )
 
             if facts.get("databases") is not None:
                 rep.h2("the databases, schemas and grants")
