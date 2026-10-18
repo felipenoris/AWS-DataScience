@@ -65,3 +65,50 @@ changed in AWS.
   is the module's next tag after it, read from `git ls-remote --tags origin` when it is tagged, and its
   `sandbox/sagemaker/` apply runs from the laptop. `TM-21` and `EXC-18` stay open until a snapshot
   reads the finding `RESOLVED`.
+
+## 2026-10-18 — `TM-21`: the finding read by `get-finding-v2`
+
+- **[user] The finding's detail**, read in Audit's CloudShell with the commands asked at 00:03:35 and
+  pasted in the thread at 00:18:51:
+
+  ```bash
+  ANALYZER=$(aws accessanalyzer list-analyzers --region us-west-2 --query "analyzers[?name=='awsds-org-external-access'].arn" --output text)
+  ID=$(aws accessanalyzer list-findings-v2 --region us-west-2 --analyzer-arn "$ANALYZER" --filter '{"resourceType":{"eq":["AWS::KMS::Key"]},"status":{"eq":["ACTIVE"]}}' --query 'findings[0].id' --output text)
+  aws accessanalyzer get-finding-v2 --region us-west-2 --analyzer-arn "$ANALYZER" --id "$ID" --query '[resource, findingDetails]' --output json
+  ```
+
+  The output, with the account id replaced by the account's name:
+
+  ```json
+  [
+      "arn:aws:kms:us-west-2:<Sandbox Account 1>:key/a81b1ef3-716f-4105-bb42-14184a6e2174",
+      [
+          {
+              "externalAccessDetails": {
+                  "action": [
+                      "kms:CreateGrant",
+                      "kms:Decrypt",
+                      "kms:GenerateDataKey"
+                  ],
+                  "condition": {},
+                  "isPublic": true,
+                  "principal": {
+                      "AWS": "*"
+                  },
+                  "resourceControlPolicyRestriction": "APPLICABLE"
+              }
+          }
+      ]
+  ]
+  ```
+
+- **[Claude] Both statements carry the finding.** Its three actions are the union of
+  `GrantKMSPermissionsForAllProjectRoles` (`kms:GenerateDataKey`, `kms:Decrypt`) and
+  `AllowCreateGrantForProjectRoles` (`kms:CreateGrant`), and its principal is theirs. The analyzer
+  reads the key as public (`isPublic: true`) and weighs neither statement's conditions as bounding
+  (`condition: {}`); `APPLICABLE` is the RCP present and left out of the evaluation. That an
+  `aws:PrincipalOrgID` condition on both statements resolves the finding is inferred: no AWS page read
+  here says how the analyzer weighs it on a key, and the snapshot after the apply decides it. AWS's key
+  permissions for the Tooling blueprint, the contract `kms.tf` adapts, give both statements without an
+  account or organization condition and do not mention Access Analyzer (read 2026-10-18). The change
+  now waits only on Stage 17's pass 1 (PR #157).

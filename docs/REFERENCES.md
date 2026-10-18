@@ -158,6 +158,11 @@
   list `condition.aws:PrincipalOrgID` and `condition.kms:CallerAccount` among a finding's fields, and
   do not say how a condition is weighed against the zone of trust:
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-reference-filter-keys.html>.
+  The Tooling blueprint's key permissions (read 2026-10-18, `TM-21`) give
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles` with
+  `"Principal": {"AWS": "*"}` and no account or organization condition, and name neither Access
+  Analyzer nor public access:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
 
 - IAM root user (including centralized root access management for member accounts): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html>.
 
