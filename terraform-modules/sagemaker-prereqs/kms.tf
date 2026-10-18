@@ -18,10 +18,11 @@
 # account; neither passes through delegate-to-IAM, which only reaches this account's own IAM
 # principals. The statements below are the documented contract for a CMK handed to the Tooling
 # blueprint (adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html),
-# adapted: our role names for the doc's console names, this Region for its us-east-1, and the
-# category-1 roster for its full menu. The Redshift and Airflow CreateGrant statements are
-# absent because the blueprints they serve, `RedshiftServerless` and `Workflows`, are category 3;
-# each joins in the same commit that enables its blueprint (Lesson 14).
+# adapted: our role names for the doc's console names, this Region for its us-east-1, the
+# category-1 roster for its full menu, and this organization's id on the doc's two statements
+# for every principal. The Redshift and Airflow CreateGrant statements are absent because the
+# blueprints they serve, `RedshiftServerless` and `Workflows`, are category 3; each joins in the
+# same commit that enables its blueprint (Lesson 14).
 locals {
   # The IAM-delegation root statement the default policy had - kept first, because losing it
   # would orphan the key from its own account's administration.
@@ -140,6 +141,9 @@ locals {
   # The project-role statements are scoped by the domain id in the encryption context and the
   # principal tag, so they cannot exist before the domain does - the same gate domain_id
   # already rides for the blueprint configurations.
+  # Both name every principal, as the doc's do, and aws:PrincipalOrgID holds them to this
+  # organization. The organization analyzer counts neither the encryption context nor the
+  # principal tag as a limit on who calls, so without it the key reads as public (TM-21).
   # (comprehension-with-filter rather than a ternary: [] and a tuple of objects do not unify)
   key_policy_smus_project_roles = [for st in [
     {
@@ -153,6 +157,7 @@ locals {
       Resource = "*"
       Condition = {
         StringEquals = {
+          "aws:PrincipalOrgID"                          = data.aws_organizations_organization.current.id
           "aws:PrincipalTag/AmazonDataZoneDomain"       = var.domain_id
           "kms:EncryptionContext:aws:datazone:domainId" = var.domain_id
           "kms:ViaService"                              = ["datazone.${var.region}.amazonaws.com"]
@@ -167,6 +172,7 @@ locals {
       Resource  = "*"
       Condition = {
         StringEquals = {
+          "aws:PrincipalOrgID"                          = data.aws_organizations_organization.current.id
           "kms:EncryptionContext:aws:datazone:domainId" = var.domain_id
         }
         StringLike = {
