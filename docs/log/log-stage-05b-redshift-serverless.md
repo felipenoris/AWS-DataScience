@@ -1018,3 +1018,48 @@ taken as *no trial* and the 9.4767 USD as billed. Neither reading settles the ot
 (its free-trial notice and credit balance), or the September invoice read in Management. Until then
 the stage's cost figures are `ComputeSeconds` figures, verification x cannot be read from the bill, and
 `WH-15` stays the instrument.
+
+## 2026-10-17 — the free trial is active, and the compute reconciles with it
+
+*The reading is the user's, in the Redshift Serverless console of `<Sandbox Account 1>`, Serverless
+dashboard, pasted verbatim in the project thread at 23:19Z. The reconciliation under it is Claude's, as
+`awsds-infra-sandbox-1` (permission set `InfrastructureAccess`), from CloudWatch.*
+
+**[user]**
+
+```
+Free trial credits remaining $287.90 out of $300.00
+Free trial expiration December 19, 2026
+```
+
+**[Claude] What it settles.**
+
+- **Verification xiii: the trial is active.** The Management credits page that showed no credit on
+  2026-09-20 does not carry this trial; the Redshift console does, as AWS's console page says
+  (*"Free trial – This section shows the free trial credits remaining in your AWS account"*). So none of
+  this stage's spend was billed, and Cost Explorer's missing Redshift line is the trial, as AWS writes.
+- **When the 90 days started (0.3a): at first use.** 2026-12-19 is 90 days after 2026-09-20, the day the
+  namespace and the first workgroup were created; no earlier act in this account touched the service.
+- **12.10 USD consumed, and `ComputeSeconds` accounts for 11.91 of it.** The metric's sum since
+  2026-09-19, by the hour, on `Workgroup=awsds-sandbox-warehouse` (the other dimension, `default`,
+  holds zero):
+
+  | UTC | RPU-seconds |
+  |---|---|
+  | 2026-09-20 06:00 → 13:59 (the runaway query of 5.3) | 94,767 |
+  | 2026-09-20 15:00 | 3 |
+  | 2026-09-21 03:00 (the admin's Data API session) | 9 |
+  | 2026-10-10 03:00 → 06:59 | 109 |
+  | 2026-10-10 16:00 → 18:59 | 24,220 |
+  | 2026-10-10 20:00 | 30 |
+  | **total** | **119,138 = 33.0939 RPU-hours = 11.9138 USD** |
+
+  The remaining 0.19 USD fits RMS storage, at most 1,596 MB for four weeks, and rounding (inferred). So
+  the console's balance and the metric agree within two percent, and `ComputeSeconds` stays the
+  instrument while the trial runs.
+- **Decision 9 is live again.** 287.90 USD and 63 days remain; the second window, Production's, opens
+  at that account's first use (Stage 9 pass 6), and its balance is read there before and after.
+- **What the bill will show after 2026-12-19** is the first Redshift line this estate pays; verification
+  x reads it then.
+
+The console page: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.

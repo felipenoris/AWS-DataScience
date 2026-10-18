@@ -627,7 +627,7 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 | ix | **Answered: no, read 2026-10-17.** Nothing reaches the groups while a workgroup exists, so no session through either door has been logged; the only user records are the admin's Data API sessions of 2026-09-21 (`EXC-16`) | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |
 | xi | Does anything at the domain level stop a project member creating a connection of their own? | 0.4 |
-| xii | What did the stage's queries cost, read from the bill rather than predicted? The 2026-10-10 reading, 100 RPU-seconds = 0.0100 USD, came from `ComputeSeconds`. Cost Explorer carries no Redshift line for Sandbox through 2026-10-17 ([5b](stage-05b-redshift-serverless.md) verification xiii), so the bill cannot answer while that stands | 6.4 |
+| xii | What did the stage's queries cost, read from the bill rather than predicted? **2026-10-10 burned 24,359 RPU-seconds = 2.44 USD by `ComputeSeconds`** (read by the hour on 2026-10-17): 109 in the morning session, whose 100 the log recorded as the day's, and 24,220 between 16:00Z and 18:59Z. The free trial absorbed it ([5b](stage-05b-redshift-serverless.md) verification xiii), so the bill can answer only after 2026-12-19 | 6.4 |
 | xv | **Answered 2026-10-17: yes.** All 148 `GetCredentials` of 2026-10-10 to 2026-10-16 carry one `sourceIdentity`, the data scientist's Identity Center user id: the portal's sessions, the space's project-role session and the chained `redshift-per-project` one, which carries it although §J passes none | 8a |
 
 ## Risks

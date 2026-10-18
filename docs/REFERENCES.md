@@ -1106,6 +1106,10 @@
   `ServerlessUsage` (RPU-Hr), `RMS:Serverless` (GB-Mo) and `PaidUniqueSnapshots:Serverless` (GB-Mo) — and **no
   endpoint-hour SKU**, so an idle workgroup's VPC attachment is not separately metered in any price list this
   project can read.
+- **Where the free trial is read (read 2026-10-17, for [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)
+  verification xiii).** The Redshift Serverless console's Serverless dashboard has a **Free trial** section that
+  *"shows the free trial credits remaining in your AWS account"*, covering compute, storage and snapshots; the
+  user read it there the same day: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
