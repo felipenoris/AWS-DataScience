@@ -584,3 +584,19 @@ caller's ARN and were not copied; no quoted line carries an account id or an e-m
   console wizard of `AmazonBedrockKnowledgeBase` (7.0a); decision 11. [Claude] The parser change that
   precedes decision 11's amendment, in the sitting of 7.4a. Waiting on the environment: the release of the
   image with the 72-entry literal, 1.4's `mlflow` group, and passes 2 to 7.
+
+## 2026-10-18 — when the Tooling data sources run
+
+*Provenance. Claude, in the side session of the orchestrating session that carries the cross-stage fixes
+(worktree `plan-propagation-1018-6f9a01`, at `origin/main` `46abfcf`), with the whole environment down, as
+the infrastructure user with `InfrastructureAccess` in `Data Governance` (`awsds-infra-data`). Reads only:
+`datazone list-data-sources`, `get-data-source` and `list-data-source-runs`. No quoted line carries an
+account id or an e-mail address. Times are UTC.*
+
+- **[Claude] Each project's `Tooling-default-sagemaker-modelpackagegroup-datasource`.**
+  `eighth-experimentation`'s, created 2026-08-23 at 17:32 on `cron(32 17 * * ? *)`, started its runs at
+  17:38:11 on each of 2026-10-14 to 2026-10-18, the newest `RUNNING` and the four before it `FAILED`.
+  `test-experimentation`'s, created 2026-10-15 at 06:06 on `cron(6 6 * * ? *)`, started its runs at 06:16:57
+  on 2026-10-16, 2026-10-17 and 2026-10-18, the newest `RUNNING` and the two before it `FAILED`. A run
+  starts 6 and 10 minutes after its cron's minute. Step 3.3 and the pass table named 17:32 UTC and "the
+  next day" for both sources; they now name the project's own source and both times.

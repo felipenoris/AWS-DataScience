@@ -124,7 +124,7 @@ for p in $(sed -n 's/^\[profile \(.*\)\]$/\1/p' /etc/awsds/aws-config); do
   echo "    $p: $(AWS_CONFIG_FILE=/etc/awsds/aws-config aws sts get-caller-identity --profile "$p" --query Arn --output text 2>&1 | sed -E 's/[0-9]{12}/<account>/g')"
 done
 
-echo "--- waiting for GitLab: a started host answers two to three minutes after its start"
+echo "--- waiting for GitLab: up to 60 tries, ten seconds apart"
 code=""
 for _ in $(seq 1 60); do
   code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
