@@ -547,4 +547,5 @@ is no fourth path"*, met from inside an app.
 | `./aws/dns-allowlist.py` | every name on every proxy plane, re-resolved — `DN-1`..`DN-4` | before adding a name, and when one stops working |
 | `./aws/vpn.py` | the tunnel host, the EIP, the world-open rule, no network condition on a permission set — `VP-1`..`VP-9` | any VPN question, `--on-host` for what the interface holds |
 | `./aws/egress.py` | the interface endpoints as deployed | while an `egress/` slice is up — it is vacuous otherwise |
+| `./aws/vending.py` | one Sandbox unit's share of this picture: its allocation, both peerings routed both ways, its child zone and the apex, its proxy plane and 3128 rule — `VN-2`..`VN-5` | before and after a vend (Stage 14); the hand-built unit is its baseline |
 | `./scripts/check-network-doc.py` | this file against the code | every commit; it decides the mechanical half only |

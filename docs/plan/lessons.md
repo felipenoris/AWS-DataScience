@@ -1767,6 +1767,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string` the same calls read
   the identity layer. Stage 6e 3.1a recorded the first shape as the organization verdict being unusable
   from a member account. Where: `log-stage-11`, 2026-10-18.
+- **`sso-admin list-account-assignments-for-principal` answers from the Identity Center delegated
+  administrator**, where its API reference says the action *"must be called from the management
+  account"* (measured 2026-10-18 as `InfrastructureAccess` in Identity, Stage 14: the shared
+  data-scientist group's three assignments). One call per principal replaces the walk over every
+  permission set and account that `./aws/list-identities.py` makes, and `./aws/vending.py` `VN-6`
+  rests on it: the day the page is enforced, that check fails on a refused call, never on an empty
+  list. Where: `log-stage-14-sandbox-vending.md`, 2026-10-18.
 
 ### Lake Formation and SageMaker Unified Studio
 
