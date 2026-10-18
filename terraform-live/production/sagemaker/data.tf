@@ -5,7 +5,8 @@
 #   1. this account's identity and partition -> every ARN this slice builds
 #   2. the Sandbox identity (aliased)         -> the account the read-status statement names
 #   3. foundation/'s state                    -> the two deploy roles the package groups name, and
-#                                                the alerts topic the debug alarm publishes to
+#                                                the alerts topic the debug alarm and the
+#                                                approval rule publish to
 #   4. registry/'s state                      -> the application repository the job role pulls
 #   5. data-governance/data/'s state          -> the drop-box, its prefix and the lake data key
 #   6. the production persona, by pattern     -> the only principal the debug role trusts

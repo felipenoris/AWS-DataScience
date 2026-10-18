@@ -431,7 +431,9 @@ terraform-live/
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume, its job log groups, and the
     │                     #     escape hatch awsds-prod-debug with its alarm (Stage 9 steps 3
-    │                     #     and 6, rank 46). No domain, no user profiles (D17)
+    │                     #     and 6, rank 46); the rule awsds-prod-model-approval on every
+    │                     #     model package's state change (Stage 10 step 5.3). No domain,
+    │                     #     no user profiles (D17)
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (12 since Stage 7: 6c
     │                     #     5.5's 13 plus secretsmanager, step 1.7, minus the SageMaker pair,
     │                     #     decision 9) - no NAT anywhere (D38; the NAT
