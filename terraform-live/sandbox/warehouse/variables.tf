@@ -114,8 +114,10 @@ variable "max_capacity" {
 # USD/month, argued as 29% of the D12 ceiling on the assumption that query time is scarce in a lab.
 # Then one forgotten statement ran 6 h 33 min at base capacity and reached **26.3 RPU-hours in an
 # afternoon**, two thirds of the way to a ceiling that was supposed to be generous. The limit was the
-# only guard that would have stopped it (max_query_execution_time did not, and make status read
-# 0.0000 USD/h throughout), and at 40 it would have let 14.40 USD through first.
+# guard meant to stop it (max_query_execution_time did not, and make status read 0.0000 USD/h
+# throughout), and at 40 it would have let 14.40 USD through first. Whether a breach stops a statement
+# already running is unmeasured: that statement read only catalog tables, ran on the leader node, and
+# kept running through the two minutes Stage 5b 5.1 held this limit breached (5b log, 2026-10-18).
 #
 # WHY A LOW LIMIT IS CHEAP HERE: `breach_action = deactivate`, so breaching costs an INTERRUPTION and
 # not money, and recovery is immediate on raising the amount - measured at Stage 5b 5.2, no wait for

@@ -2086,3 +2086,134 @@ sessions, 3.3 over `5439` and decision 8a's measurement among them, burned 24,22
 statement it was is not readable from the metric. The free trial absorbed all of it
 ([5b's log](log-stage-05b-redshift-serverless.md), 2026-10-17), so verification xii reads this figure
 and not the bill until 2026-12-19.
+
+## 2026-10-18 — the connection object is readable, its lineage sync is on, and 0.4's API half
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", with the environment down
+and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`), except the project-membership events, read as
+`awsds-infra-data` (account `<Data Governance Account>`, the same permission set) from the domain
+account's trail. All reads; the DataZone API model is the one the laptop's CLI carries, 2.37.12.*
+
+### `list-connections` answers, and a group explains why
+
+`datazone list-connections` answers this identity in both Sandbox projects: `eighth-experimentation`
+holds eleven connections, `redshift-serverless.redshift` among them, and `test-experimentation` nine,
+none of type `REDSHIFT`. It was refused three times before (2026-09-21, twice on 2026-10-10), and D41
+records it answering on 2026-10-15.
+
+The domain account's trail holds two `CreateProjectMembership` calls in the window, both by the domain
+execution role, which is how the portal's acts reach the API:
+
+| UTC, 2026-10-15 | Project | Member | Designation |
+|---|---|---|---|
+| 06:15:15 | `test-experimentation` | a DataZone group profile | `PROJECT_CONTRIBUTOR` |
+| 06:15:45 | `eighth-experimentation` | the same group | `PROJECT_CONTRIBUTOR` |
+
+The group's name is not readable to this identity: `GetGroupProfile` is refused by IAM, and
+`search-group-profiles` lists it with no name. Each project's other members are its owner, the data
+scientist, and its own project role. So that `InfrastructureAccess` reaches the projects through this
+group is an inference from the timing, the only membership change between the last refusal and the
+first answer.
+
+### The connection, field by field
+
+`get-connection` on `redshift-serverless.redshift`:
+
+| Field | Value |
+|---|---|
+| type, scope | `REDSHIFT`, `PROJECT` |
+| `environmentUserRole` | the project role |
+| access role | `awsds-sandbox-warehouse-access-<project>`, the one `sandbox/warehouse/` authors |
+| host, port, protocol | the workgroup's own host, `5439`, `JDBC` |
+| `databaseName` | **`dev`**, as the trail's `dbName` said on 2026-10-17; `jdbcUrl` and `jdbcIamUrl` end in `/dev` |
+| `redshiftTempDir` | `s3://awsds-sandbox-smus-projects/<domain>/<project>/dev/redshift-tmp/` |
+| `status` | `READY` |
+| `lineageSync` | **`enabled: true`**, schedule `cron(43 3 * * ? *)`, a lineage job of its own |
+
+**The form of 2026-09-21 showed no `lineageSync` toggle, and the object it wrote has the sync on.**
+`list-job-runs` on its job: eight runs, one a day from 2026-10-11 to 2026-10-18, each created at
+03:44:44Z and each `FAILED`, with no error text; `get-job-run` answers `ResourceNotFoundException` for
+every one of their ids. CloudTrail holds no `GetCredentials` at those times on any of the eight days,
+including 2026-10-16, when a workgroup existed from 01:55:53 to 04:23:30. The calls at 03:43:19 and
+03:44:35 on 2026-10-10 are the portal's own, with `dbName: dev`, before the first run. So the sync has
+minted no database session and cost nothing; the day a run succeeds it is a scheduled query on the
+warehouse's meter.
+
+**Decision 3 is re-opened, and it is the user's.** Switching the sync off is an `UpdateConnection` by a
+project member; keeping it means naming its cost. `EXC-17` is rewritten around the object rather than
+around its unreadability.
+
+### `WH-9` reads the connection
+
+`./aws/warehouse.py` lists each admitted project's `REDSHIFT` connections, reads each one and its
+lineage job's runs, and compares the workgroup, the host and the access role with what
+`sandbox/warehouse/` authors. It fails on a foreign access role or on a lineage run that completed,
+and notes a refused `list-connections` or a sync that is on with no run completed. Every branch was
+called with fabricated connections before the live run, as `WH-15`'s were:
+
+| Case | Verdict |
+|---|---|
+| `list-connections` refused | note |
+| no Redshift connection in the project | note |
+| the authored workgroup and access role, sync off | pass |
+| another access role | fail |
+| sync on, eight runs failed | note |
+| sync on, a run succeeded | fail |
+| sync on, runs unreadable | note |
+| Production | note: no project is admitted outside Sandbox |
+
+Live, 2026-10-18: **`note`**, *redshift-serverless.redshift (database dev): lineageSync ENABLED on
+cron(43 3 * * ? *), 8 run(s), none completed*.
+
+### 0.4 and verification xi — the API half
+
+Nothing at the domain level governs who creates a connection. Of DataZone's fourteen authorization
+policy types, the `--policy-type` values `list-policy-grants` accepts, none names a connection;
+`CreateDomain`, `UpdateDomain` and `CreateProjectProfile` carry no connection setting; and
+`CreateConnection` takes a `scope` of `DOMAIN` or `PROJECT`. 6f 1.1 read the policy grants that do
+exist on the root domain unit. A project owner created this connection; the user guide does not say
+whether a contributor may, and that is the portal half, the user's.
+
+### A second project exists
+
+`test-experimentation` (`4gqfau9xuo6e4w`) was created 2026-10-15 06:05:18Z, D41's `test` project, and
+is in no map: it holds no `REDSHIFT` connection, and the warehouse's tag names the first project only.
+So 5.1 and 5.2b can be run from it with the compute up, and decision 8 is live.
+
+### Validation 2-4, with the compute down
+
+| Instrument | Result |
+|---|---|
+| `./aws/studio.py` | `US-8` pass: *all 6 blueprint-provisioned role(s) bounded*. 16 pass, 2 notes; exit 1 only because five persona profiles hold no session |
+| `./aws/datalake.py` | `DL-5` and `DL-6` pass in both readings. 24 pass, 4 notes; exit 1 for the same profiles |
+| `./aws/warehouse.py`, without `--sql` | exit 0; Sandbox 7 pass, 9 notes, `WH-9` among the notes; Production 2 pass, 14 notes |
+
+`make check` is in the change that adds this entry.
+
+### The notebook door and an open transaction
+
+The 60-minute plateau of 2026-10-10, 17:57 to 18:56Z, began two minutes after a direct notebook
+session's `GetCredentials` and ended on no call, the length of the idle-session timeout (5b log, this
+date). The driver opens a transaction at the first statement, reads included (§J), and AWS bills an open
+transaction, so §J now says to end a cell's work with `commit()` or `rollback()` or to close the
+connection. Which session held the compute is not readable now.
+
+## 2026-10-18 — amendment: the group is Sandbox's `InfrastructureAccess` role
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", after the sessions "Stage
+6f: catalog readings and text" and "Stage 8: readings, NO_PROXY proposal, text fixes" reported the same
+group. The readings below are this session's own. It amends the entry above, whose "an inference from the
+timing" stays as written.*
+
+- `get-group-profile` on the group added on 2026-10-15 answers `awsds-infra-data` (account
+  `<Data Governance Account>`) and is refused to `awsds-infra-sandbox-1`. Its `rolePrincipalArn` is an
+  `AWSReservedSSO_InfrastructureAccess_<suffix>` role, and compared without printing either: the role's
+  account is `<Sandbox Account 1>` and its name is the role `awsds-infra-sandbox-1` signs in as, not Data
+  Governance's.
+- `list-connections` on `eighth-experimentation` as `awsds-infra-data`: *"User is not permitted to
+  perform operation: ListConnections"*.
+
+So the cause is read, not inferred: Sandbox's `InfrastructureAccess` role is a `PROJECT_CONTRIBUTOR` of
+both Sandbox projects, through a group profile, since 2026-10-15 06:15Z, and Data Governance's is still
+in no project. The stage file, `EXC-17`, the runbook and `WH-9`'s comment name the role.
