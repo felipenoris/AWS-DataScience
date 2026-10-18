@@ -150,7 +150,7 @@ flowchart LR
 | **0** | 0 | the readings, the instrument, the prices, the repository files, the forms | Claude; the user reads the space and the forms |
 | **1** | 1 | the MLflow App: the roster, the endpoint group, the app, the first run logged | Claude applies; the user creates and logs |
 | **2** | 2 | a model trained: the data, the job, the negatives, the JumpStart path | the user, from JupyterLab and the portal |
-| **3** | 3 | tracked and registered: the runs compared, the group, the version, the approval, the collection | the user; Claude reads `EXC-11`'s data source the next day |
+| **3** | 3 | tracked and registered: the runs compared, the group, the version, the approval, the collection | the user; Claude reads `EXC-11`'s data source after its next run (3.3) |
 | **4** | 4 | deployed and served: the endpoint, the invocations, the deletion, the transform, the serverless negative, the GPU negative | the user, from JupyterLab and the portal |
 | **5** | 5 | the pipeline: authored from the SDK, run, read back, the editor's forms | the user |
 | **6** | 6 | HyperPod and Partner AI apps, read | the user reads the pages; Claude reads the APIs |
@@ -334,9 +334,11 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   registered from the MLflow run through the registry's MLflow integration (`mlflow.register_model`, or
   the app's `ModelRegistrationMode` if 1.7 read it enabled), so both doors into the registry are read.
 - **3.3 — [Claude] `ML-4`**: the group, its versions, approval statuses, tags, the model data's
-  encryption; `CT-6` the next day after 17:32 UTC: whether `EXC-11`'s data source still fails on the RAM
-  share with an asset to ingest, or ingests the group into the catalog as an asset nobody chose (Lesson
-  17; verification v). Either reading changes `EXC-11`'s row.
+  encryption; `CT-6` after the next run of the exercised project's `Tooling` data source, whose cron
+  differs by project (read 2026-10-18: `eighth-experimentation`'s runs start about 17:38 UTC on
+  `cron(32 17 * * ? *)`, `test-experimentation`'s about 06:16 UTC on `cron(6 6 * * ? *)`): whether
+  `EXC-11`'s data source still fails on the RAM share with an asset to ingest, or ingests the group into
+  the catalog as an asset nobody chose (Lesson 17; verification v). Either reading changes `EXC-11`'s row.
 
 ### 4. Deployed and served
 
@@ -357,7 +359,7 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   decision 4 names, measured once in Sandbox.
 - **4.4 — [user] The serverless negative**, the reading Stage 9 3.7 named; Stage 9 took (b) without it on
   2026-10-16. Sandbox carries the boundary alone: `DenySageMakerServerlessInference` is in the
-  `Workloads` OU document, not on Sandbox's path. (a) A `CreateModel` with no
+  `Workloads` OU document (applied 2026-10-18), not on Sandbox's path. (a) A `CreateModel` with no
   `VpcConfig`, which a serverless endpoint requires: expected refused by `DenySageMakerJobsOffVpc`. (b) The
   model of 4.1, which carries a `VpcConfig`, named by a serverless endpoint configuration (1024 MB, no
   provisioned concurrency): expected refused by the service as a validation error. Both wordings go to
@@ -471,10 +473,12 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   `./aws/bedrock.py` read after the apply, and the battery with its Bedrock rows: those of 6e 7.5 and
   decision 15 are in `probes.py` since PR #159 (2026-10-17), and their allow rows invoke the image's
   pins, so this sitting adds one, an allow row of `invoke-model` on `amazon.titan-embed-text-v2:0` from
-  `Sandbox Account 1` with Titan's body (`{"inputText":"ping"}`). The amendment waits for Stage 9 pass 1's apply of the same
-  slice and the battery after it, neither run on 2026-10-17 (items 2 and 3 of the laptop list in
-  [its log](../../log/log-stage-09-deployment-targets.md)): an apply attaches every change pending in
-  the slice, and this one's plan changes `awsds-org-scp-ou-interactive.json` alone. Sync again:
+  `Sandbox Account 1` with Titan's body (`{"inputText":"ping"}`). The amendment waited for Stage 9 pass 1's
+  apply of the same slice and the battery after it: neither ran on 2026-10-17 (items 2 and 3 of the laptop
+  list in [its log](../../log/log-stage-09-deployment-targets.md)), and both ran on 2026-10-18, the
+  `Workloads` document applied at 19:54 UTC and the battery's after-half reading 39 as expected, 0
+  unexpected, 7 not measured. An apply attaches every change pending in the slice, and this one's plan
+  changes `awsds-org-scp-ou-interactive.json` alone. Sync again:
   expected `COMPLETE`, with the document count and the time. [Claude] `ML-8` reads the knowledge base,
   its role with the role's policies and boundary, the
   data source, the two Lambdas and their role, the store (which OpenSearch Serverless kind or which S3

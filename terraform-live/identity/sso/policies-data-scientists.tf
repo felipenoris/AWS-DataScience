@@ -82,9 +82,11 @@
 #
 # Still owed, and by whom:
 #   Stage 6  SageMaker Studio use against the blueprint-provisioned domain, including
-#            sagemaker:CreatePresignedDomainUrl scoped to that domain, and the iam:PassRole
-#            that goes with job submission - scoped by iam:PassedToService and by role ARN
+#            sagemaker:CreatePresignedDomainUrl scoped to that domain
 #   Stage 7  ecr pull on the dev-env repository in Production (D14)
+#
+# No iam:PassRole is owed: a job runs as the project role under the D13 boundary, and no set
+# in this slice grants a SageMaker create or start, so no persona passes a role.
 
 data "aws_iam_policy_document" "data_scientist" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf

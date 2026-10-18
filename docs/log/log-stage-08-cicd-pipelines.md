@@ -1857,3 +1857,64 @@ environment was down (`make status` 0.0000 USD/h, read by the orchestrating sess
   one without its volume key. A dev-env image by digest passes without `--image-repository`, a job with
   no volume key passes outside the promoted mode, and a clean rendered copy passes the promoted mode. No
   rule reads a `VersionId` or a release's manifest.
+
+## 2026-10-18 — the lint's options, the mirror's readers and members, and the runners' echo
+
+*Provenance. Claude, in the side session of the orchestrating session that carries the cross-stage fixes
+(worktree `plan-propagation-1018-6f9a01`, at `origin/main` `46abfcf`), with the whole environment down. The
+AWS calls were reads as the infrastructure user with `InfrastructureAccess`, `awsds-infra-data` in
+`Data Governance` and `awsds-infra-prod` in `Production`; nothing applied. No quoted line carries an
+account id or an e-mail address, and the group profile's role is named by its permission set. Times are
+UTC.*
+
+- **[Claude] The lint's options, offline.** `awsds-workflows` at `3c1708e` extracted with `git archive`
+  from the user's checkout into the scratchpad, its `lint_application` and `lint_definition` called from
+  a script run by the interpreter of the `checkov` tool, which carries PyYAML and `packaging`; the user's
+  installed tool, at `c9a4c20`, has no `lint` and answers `invalid choice: 'lint'`, and was not touched.
+  26 readings over scratch copies of `examples/app-etl/` with one edit each and over single definitions
+  rendered by hand, each as expected:
+
+  | Reading | Authoring, as `lint .` runs it | With the option |
+  |---|---|---|
+  | `examples/app-etl/` unmodified | no finding | |
+  | a literal `dev-env` image by digest | no finding | `imagem` under `image_repository` |
+  | a literal image by tag | `imagem` | |
+  | an `InstanceType` outside any list | no finding | `job` under `instance_types` |
+  | no `VolumeKmsKeyId` | no finding | `job` in the promoted mode |
+  | a training operator with isolation off | no finding | the processing operator reads `job` |
+  | a `schedule` on the DAG; a `retry_delay` of 600 | `datas`; `limites` | |
+  | a code input outside the manifest's folders | `codigo` | |
+  | `task_instance` in a template; `dag_run` | no finding; `templates` | |
+  | a placeholder as `ImageUri` | no finding | `imagem` and `projeto` in the promoted mode |
+  | an `AmazonDataZoneProject` tag; a code input outside `--prefix` | no finding | `projeto`; `codigo`, in the promoted mode |
+
+  A rendered copy of `app-etl`'s workflow with its CLI variables filled and nothing else is refused by
+  the promoted mode three times, `projeto`: the project tag, a `datazone-glue-network-connection-` name
+  and the `datazone-<project>-dev` log-group prefix. The command's code refuses `lint <folder> --promoted`:
+  the mode takes one rendered file and `--prefix`. No pipeline file in the repository passes `--promoted`,
+  `--image-repository` or `--instance-type`.
+- **[Claude] The infrastructure mirror's readers.** `grep -rn 'CI_JOB_TOKEN\|awsds/infrastructure\|git
+  clone' gitlab/ examples/app-etl ci-gates` finds one remark, in
+  `gitlab/awsds/dev-env/base/ca-certificates/README.md`, about a clone from a notebook, and no job.
+  Decision 2 holds open whether pass 4's promotion jobs read the mirror or it is retired.
+- **[Claude] The Sandbox projects' members** (`datazone list-project-memberships` and `get-group-profile`
+  as `awsds-infra-data`, about 21:07): `test-experimentation` and `eighth-experimentation` each list a
+  project owner (a user), a contributor (a user) and a contributor group profile, the same in both and
+  `ASSIGNED`, whose role principal is Sandbox's `AWSReservedSSO_InfrastructureAccess` role. No project lists
+  `awsds-deploy-sandbox-test`. INT-25 carries the reading.
+- **[Claude] `production/runners`**, `./scripts/gen-backend-hcl.py`, `./scripts/gen-tfvars.py`, `init` and
+  `plan -input=false` as `awsds-infra-prod`: `Plan: 10 to add, 0 to change, 0 to destroy`, the two roles,
+  their policies and the two instance profiles, then `Error: Unsupported attribute` at `main.tf` line 38,
+  `data.terraform_remote_state.egress.outputs.no_proxy`: `production/egress/` is down and its state holds
+  no outputs, so the three instances and their user data are not planned. The user data is read by
+  rendering the three templates with `templatefile()` and dummy values, before and after: one line
+  differs in each, the echo `a started host answers two to three minutes after its start` now `up to 60
+  tries, ten seconds apart`. The one timed start bounds a start at 3 min 36 s (Stage 7's log). Nothing
+  applied; the text reaches a host at the next `make gitlab-up`.
+- **[Claude] `scripts/slices.py`, the hub check under `--dry-run`.** `make up ENV=sandbox DRY=1` printed
+  `UNREADABLE` for the two hub hosts and `NOT READ - no session on the hub account` (the entry above
+  quotes that wording), though the reads were printed and none ran. It prints `not run (--dry-run)` and
+  `--dry-run printed the reads above and ran none, so this refusal is not evaluated`. Every branch of
+  `refuse_if_hub_down` exercised with stubbed reads: a dry run, a failed read (the old wording), both
+  hosts running, the proxy stopped and the proxy absent (refused), the tunnel stopped (proceeds), and
+  `make hub-up` itself (skipped).

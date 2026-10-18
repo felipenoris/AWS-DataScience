@@ -111,7 +111,7 @@ else
   echo "    NOT READ: $IMDS_PROBE did not pull"
 fi
 
-echo "--- waiting for GitLab: a started host answers two to three minutes after its start"
+echo "--- waiting for GitLab: up to 60 tries, ten seconds apart"
 code=""
 for _ in $(seq 1 60); do
   code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"

@@ -170,6 +170,10 @@ def instance_states(
 HUB_ENV = "production"
 HUB_SLICES = ("vpn", "proxy")
 EGRESS_SLICE = "proxy"
+# The two power states that say nothing about a host: a read that failed, and a read that
+# --dry-run printed and did not run. Neither is a finding, and neither is "running".
+UNREADABLE = "UNREADABLE"
+NOT_RUN = "not run (--dry-run)"
 
 
 def hub_state(dry: bool) -> list:
@@ -186,7 +190,7 @@ def hub_state(dry: bool) -> list:
         states = instance_states(HUB_ENV, name, dry)
         tag = instance_name(HUB_ENV, name)
         if states is None:
-            out.append((name, tag, "-", "UNREADABLE"))
+            out.append((name, tag, "-", NOT_RUN if dry else UNREADABLE))
         elif not states:
             out.append((name, tag, "-", "absent"))
         else:
@@ -207,6 +211,9 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
     a legitimate `make up ENV=sandbox` impossible for the person it is meant to protect. A read
     that fails is reported and waved through; a read that succeeds and says `stopped` stops the
     apply. The two nothings are told apart, and only one of them is a finding (Lesson 13).
+
+    Under --dry-run the reads are printed and none runs, so the rows read `not run` and the
+    refusal is not evaluated; UNREADABLE is reserved for a read that was attempted and failed.
     """
     if env == HUB_ENV and only and set(only) & set(HUB_SLICES):
         return True
@@ -215,9 +222,10 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
         " out, in another account:"
     )
     rows = hub_state(dry)
-    stopped = [r for r in rows if r[0] == EGRESS_SLICE and r[3] not in ("running", "UNREADABLE")]
+    unread = (UNREADABLE, NOT_RUN)
+    stopped = [r for r in rows if r[0] == EGRESS_SLICE and r[3] not in ("running", *unread)]
     for slice_name, tag, iid, state in rows:
-        if state in ("running", "UNREADABLE"):
+        if state in ("running", *unread):
             mark = ""
         elif slice_name == EGRESS_SLICE:
             mark = "  <-- this one"
@@ -225,7 +233,12 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
             mark = "  (the private network only - no refusal, D39)"
         print(f"    {tag:<22} {state} {iid}{mark}")
     if not stopped:
-        if any(r[3] == "UNREADABLE" for r in rows):
+        if any(r[3] == NOT_RUN for r in rows):
+            print(
+                "    NOT READ - --dry-run printed the reads above and ran none, so this refusal\n"
+                "    is not evaluated."
+            )
+        elif any(r[3] == UNREADABLE for r in rows):
             print(
                 "    NOT READ - no session on the hub account, so this refusal is waived rather\n"
                 "    than failed. `make hub-up` from an identity that has one if a spoke misbehaves."
