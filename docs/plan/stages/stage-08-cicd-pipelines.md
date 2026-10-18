@@ -927,9 +927,10 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   workflow `code` that is not a `.py`, `.sh` or `.zip` under a storage `include`.
 
   **Artifact class (2b), the operator code package, is D28's since 2026-10-13**, beside (2c), a Glue job's
-  script, whose rule is the lint's `glue`: the script of a `GlueJobOperator` and each file its
-  `--extra-py-files`, `--extra-jars` and `--extra-files` name lie under the prefixes the code input does,
-  and the scripts of the copied folders pass rule (a)'s patterns (Stage 10 step 2.3). (2b) is the
+  script, whose definition-side rule is the lint's `glue`: the script of a `GlueJobOperator` and each file
+  its `--extra-py-files`, `--extra-jars` and `--extra-files` name lie under the prefixes the code input
+  does, and the scripts of the copied folders pass rule (a)'s patterns; the slice-side rule, on the
+  script an application slice's `aws_glue_job` names, is Stage 10 step 2.3's. (2b) is the
   workflow's `Code` object: one `.py`, one `.sh` or
   a `.zip` of at most 250 MB, every dependency vendored at the archive root for Linux x86_64 and Python
   3.12, versioned by the service together with the definition. The

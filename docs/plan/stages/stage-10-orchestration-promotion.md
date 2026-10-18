@@ -276,7 +276,8 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   **This role is the caller of every `Create*Job` the workflow makes, so the job settings bind it** (Stage
   9 3.5, Lesson 66): each job carries `VpcConfig` with the job subnets, `EnableNetworkIsolation: true`,
   `EnableInterContainerTrafficEncryption: true` and a `VolumeKmsKeyId`, on an instance type inside the
-  ceiling, and the lint checks each (Stage 8 5.6), because a run-time refusal names the policy and never the
+  ceiling, and the lint checks each (Stage 8 5.6: the volume key only in the promoted mode, the instance
+  type only under `--instance-type`), because a run-time refusal names the policy and never the
   statement. **No `s3:*` on any lake bucket, no `lakeformation:GetDataAccess`** — the role orchestrates, the
   job role touches data. **A Python or Bash task runs with this role's credentials**, measured at 6i (the
   project role, session `AmazonMWAAServerless`), which is the second reason it holds no lake permission: a
@@ -411,19 +412,27 @@ ran in the lab on 2026-10-15 (D41).
   `python-to-yaml-dag-converter-mwaa-serverless` converts it (AWS-provider operators only, no dynamic task
   mapping), and what it warned about is verification (viii).
 - **2.3 — [Claude] Consume the D28 promotion lint — it is authored once, at Stage 8 step 5.6**, so there
-  is one copy. It runs on the rendered file (decision 6), never on the repository's YAML, whose CLI
-  variables are not values. It rejects a definition that references a domain resource (project connections,
+  is one copy. It runs on the rendered file (decision 6) in the promoted mode, `lint <file> --promoted
+  --prefix s3://<outputs bucket>/workflows/app-etl/<tag>/`, which refuses a CLI variable or a placeholder
+  left in the copy; the command refuses `--promoted` without a prefix and with a folder. The repository's
+  YAML is `app-etl`'s CI's, linted as a folder in the authoring mode, where the CLI variables are
+  translated and not refused. It rejects a definition that references a domain resource (project connections,
   portal-scoped ids), names a container by anything other than an **ECR URI and digest**, exceeds **50 KB**,
   hard-codes a `start_date` (rewritten at deploy time), uses an operator outside MWAA Serverless's
   supported list (the Amazon-provider operators, plus `PythonOperator` and `BashOperator`, which AWS
   added on 2026-08-17 by the guide's document history, the day after this stage's 2026-08-16 reading),
-  exceeds the **3600 s** task cap, or omits a pinned `DefinitionS3Location.VersionId`; for a workflow a
-  state machine starts, a `schedule` line is refused too (decision 13). **This stage needs one rule 5.6
-  does not list yet, for class 2c**: reading the application slice rather than the
-  definition, it refuses a Glue job whose script, or a file its arguments name, lies outside the release's
-  own prefix (decision 12), and it applies rule (a)'s project-scoped patterns to the scripts in `glue/`,
-  where a Visual ETL flow's connection names surface. Class 2d's rule is 5.6's (h): a processing job's
-  code input lies under the release's own prefix and matches the release's manifest. **The code package is what carries the no-internet
+  exceeds the **3600 s** task cap; for a workflow a state machine starts, a `schedule` line is refused
+  too (decision 13). It reads no `VersionId`, a field of the `CreateWorkflow` call and not of the YAML
+  (Stage 8 5.6 (d)): the pin is 2.4's. **Class 2c's rule is half in the lint**: its `glue` rule (5.6)
+  refuses a `GlueJobOperator` whose script, or a file its arguments name, lies outside the prefix it is
+  given, and applies rule (a)'s project-scoped patterns to the scripts in the application folder's
+  `glue/`, where a Visual ETL flow's connection names surface. **This stage still needs the other half**,
+  reading the application slice rather than the definition: a Glue job whose script, or a file its
+  arguments name, lies outside the release's own prefix (decision 12), since in Staging and Production
+  the slice's `aws_glue_job` names the script and the definition's task drops its creation arguments
+  (decision 6). Class 2d's rule is 5.6's (h): a processing job's code input lies under the release's own
+  prefix, which the lint reads; its match to the release's manifest has no rule at `3c1708e`. **The code
+  package is what carries the no-internet
   constraint now**: with no internet path in the worker subnets (1.2), a
   Python task's dependencies must be vendored into its package for Linux x86_64 and Python 3.12, so CI
   builds the package and imports every `python_callable` from it with networking off, which turns a
@@ -434,8 +443,8 @@ ran in the lab on 2026-10-15 (D41).
   2026-10-11): the folder `awsds-workflows package-job` builds
   ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1), the project plus the packages
   the house image lacks, given to the job as a code input with no network. A `ProcessingInput` names an
-  S3 prefix the job reads at each run, with no version to pin, so the lint's `VersionId` rule cannot
-  hold it, and what runs is whatever the prefix holds when the job starts: decision 7. Decision 7 is
+  S3 prefix the job reads at each run, with no version to pin, so no `VersionId` pin can hold it,
+  and what runs is whatever the prefix holds when the job starts: decision 7. Decision 7 is
   **taken by the user on 2026-10-15, as the alternative** (D41 item 7): the application image carries
   the dependencies alone, built from the lock, and the code input is the project's `src/` (D28 class
   2d), copied by the CLI in `dev` and `test` and written by the release job under the release's prefix,
@@ -805,7 +814,7 @@ item 7 presuppose them: the user confirms them before pass 1.
    ran the Sandbox path: the folder [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J1
    builds, as the job's code input (its verification xvi). The processing API pins no version on an
    input, so in Staging and Production that folder would run
-   whatever its prefix holds when the job starts, past the lint's `VersionId` rule. Recommended: **the job's
+   whatever its prefix holds when the job starts, past any version pin. Recommended: **the job's
    own image**: the project and its dependencies built into the application image by Stage 8 and named by
    digest, D28's class (1), the one pin the processing API honours, and the form the lint's container rule
    (2.3) requires. The alternative is the folder under the
