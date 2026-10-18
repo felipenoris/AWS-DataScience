@@ -193,7 +193,7 @@ parameters
 
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
-| blueprint | AWS | the service | the 23 in the table below (custom blueprints exist as a console feature; outside decision 5, so outside `US-3`'s allow-list) |
+| blueprint | AWS | the service | the 23 in the table below (custom blueprints are made with `CreateEnvironmentBlueprint`, and since 2026-10-09 one with the `TOOLING` category can be a profile's base, [`upstream-releases.md`](plan/upstream-releases.md); outside decision 5, so outside `US-3`'s allow-list; the domain held none on 2026-10-18) |
 | blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **eleven**, applied 2026-08-21 in Sandbox and in Development; Development's 22 objects — 11 configurations and their 11 grants — were destroyed 2026-09-06, so eleven stand, in one account |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
@@ -390,7 +390,8 @@ bump, in this order:
 
 The roster is measured. Read 2026-08-21 from the live domain `awsds-studio`,
 `datazone list-environment-blueprints --managed` returns **23**, and the console's *Blueprints* page
-lists **13**. How the two reconcile is why this table is keyed on the **API name**:
+lists **13**; re-read 2026-10-18, the same 23 names. How the two reconcile is why this table is keyed on
+the **API name**:
 
 - **`AmazonBedrockGenerativeAI` is a console grouping, not an API blueprint.** The console shows one
   entry — *"consists of multiple blueprints"* — and the API returns the **seven** `AmazonBedrock*`
@@ -430,7 +431,7 @@ can be diffed against this table directly.
 | `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* An automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
 | `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path; the RPU-hour rate is now measured (`PRICING.md` §5) and the base capacity this blueprint would pick is not | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake`. **D40 does not reach this row**: it admits a warehouse Terraform sizes, not a catalog a blueprint provisions on Redshift-managed storage | **3** |
 | `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage. **Measured 2026-10-12** in the `AmazonSageMaker` offer (`us-west-2`, published 2026-10-12T18:05:38Z): Small **0.60**, Medium **1.04**, Large **1.91** USD/h, storage 0.10 USD/GB-month (`PRICING.md` §8). Known floor under `VpcOnly`: its interface endpoint, +USD 0.010/h per account — the tracking server's service name is `aws.sagemaker.us-west-2.experiments`; `aws.sagemaker.us-west-2.mlflow` is the MLflow App's (read 2026-10-12) | a tracking need the MLflow App does not meet: [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 2 took the app over the server on 2026-10-12, the offering AWS's own MLflow page says to prefer (read 2026-10-12) | **2** |
-| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice**, and the pair was categorised together so enabling one would not quietly imply the other, until Stage 17 decision 2 took the app and left the server in category 2. Serverless: `CreateMlflowApp` makes `mlflow-app/<id>` with an S3 artifact store and a role, reached from a VPC through the `aws.sagemaker.<region>.mlflow` interface endpoint and from the portal through a presigned URL minted on `sagemaker.api` (read 2026-10-12) | **No usage type in the `AmazonSageMaker` offer of 2026-10-12** (the tracking-server sizes, its storage and the partner-app SKUs are there; nothing for the app), and AWS's launch post of 2025-12-02 says no additional cost beyond the artifact store. **Measured in the bill at [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 8.2** | **Fired: Stage 17 decision 2** (taken 2026-10-12, the app over the server). Pass 1's change was written 2026-10-17 (PR #157) and is **not applied**: the three roster copies (`sagemaker-prereqs-v0.5.0`, the profile, `US-3`) and the `mlflow` endpoint group (`vpc-egress-v0.18.0`, its decision 4); the checklist's template and wizard readings (steps 3 and 4) were made on 2026-10-18, with nothing to declare | **1** |
+| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice**, and the pair was categorised together so enabling one would not quietly imply the other, until Stage 17 decision 2 took the app and left the server in category 2. Serverless: `CreateMlflowApp` makes `mlflow-app/<id>` with an S3 artifact store and a role, reached from a VPC through the `aws.sagemaker.<region>.mlflow` interface endpoint and from the portal through a presigned URL minted on `sagemaker.api` (read 2026-10-12). `CreateMlflowApp` takes `KmsKeyId` since 2026-08-20, and an app made without it carries no customer-managed key; neither CloudFormation nor either provider has the field (read 2026-10-18) | **No usage type in the `AmazonSageMaker` offer of 2026-10-12** (the tracking-server sizes, its storage and the partner-app SKUs are there; nothing for the app), and AWS's launch post of 2025-12-02 says no additional cost beyond the artifact store. **Measured in the bill at [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 8.2** | **Fired: Stage 17 decision 2** (taken 2026-10-12, the app over the server). Pass 1's change was written 2026-10-17 (PR #157) and is **not applied**: the three roster copies (`sagemaker-prereqs-v0.5.0`, the profile, `US-3`) and the `mlflow` endpoint group (`vpc-egress-v0.18.0`, its decision 4); the checklist's template and wizard readings (steps 3 and 4) were made on 2026-10-18, with nothing to declare | **1** |
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 40-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
@@ -538,6 +539,8 @@ workflow a person authored in the portal on 2026-08-27.
   class (2c), Stage 10 step 2.2).
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
+- **A workflow's name and key are fixed at creation**: `AWS::MWAAServerless::Workflow` marks `Name` and
+  `EncryptionConfiguration` create-only (registry, read 2026-10-18), so a change of key is a new workflow.
 
 Measured at [6i](plan/stages/stage-06i-sandbox-orchestration.md), 2026-10-10/11, on Sandbox's private
 shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-workflows.md).
@@ -583,7 +586,10 @@ pre-deployment validation simulates the role's policies with no context keys, so
 on `aws:RequestedRegion` or `aws:ResourceOrgID` reads denied and the deploy runs with
 `--skip-validation`; `--no-events` keeps its `PutEvents` off the default bus; its boto3 ignores the
 `aws` CLI's SSO cache. Stage 8 step 5.6 writes the lint that enforces the difference, on the rendered
-file.
+file. 1.0.9 is still the latest release on 2026-10-18. When its identity cannot read a domain-scoped VPC
+connection or the Tooling environment's `privateSubnets`, `securityGroup` and `kmsKeyArn`, `workflow.create`
+omits the network and the key, prints one line and creates the workflow in the service's default worker
+network under a service-managed key (its `helpers/datazone.py`; [`upstream-releases.md`](plan/upstream-releases.md)).
 
 ## The catalog surface
 
@@ -715,6 +721,11 @@ only the API reaches it.
 corrects the premise of open question 13, where TIP is recorded as a profile-level switch whose cost is that
 remote access stops working. Unadopted either way; the correction is that the *grain* of the choice is finer
 than the question assumed.
+
+**DataZone also models `VPC` and `GIT` connections, scoped to the domain or to a project** (the API model the
+AWS CLI 2.37.12 ships, read 2026-10-18). A domain-scoped VPC connection is where the portal and the CI/CD CLI
+take a workflow's subnets and security group from before the Tooling environment's; `awsds-studio` held none
+on 2026-10-18. Since 2026-09-24 `CreateConnection` takes the project role in `iamProperties.roleArn`.
 
 ## S3 — the project's own storage, and where the lake is not
 
@@ -998,6 +1009,17 @@ attempts by the project role):
   through SQL Workbench without it (§S3 item 1b). The three requests were closed on 2026-09-24 07:49Z
   without an increase, and the applied values still read 0 on 2026-10-17 (6d log), so the Querybook
   has no capacity in this account until a new request.
+
+A DataZone notebook is of type `SQL`, the querybook, or `DATA`, the native notebook the user guide documents
+beside JupyterLab and Code Editor (the API model and the guide, read 2026-10-18). `L-DBBAE884` above reads 2,
+and its name makes it the `DATA` notebook's quota (inferred, unmeasured), so one may start here. The native
+notebook's kernels run in the
+domain-level VPC configuration (since 2026-04-23); Athena for Apache Spark is still its default Spark runtime
+and still outside any VPC (open question 12); and since 2026-08-19 its Athena, Redshift and EMR Serverless
+sessions carry the Identity Center identity in a project whose profile enables TIP, while Glue and EMR on EC2
+stay in compatibility mode. Remote space connections remain unsupported in such a profile, so Stage 6
+decision 2 holds. The SageMaker Data Agent these notebooks and the Query Editor offer stores prompts in the
+domain's Region and may infer in another.
 
 ### Custom images (BYOI) — and how they are named
 

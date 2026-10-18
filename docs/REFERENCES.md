@@ -273,6 +273,20 @@
   fills the cache one folder at a time on this reading:
   <https://developer.hashicorp.com/terraform/cli/config/config-file>.
 
+- Terraform and its providers, read 2026-10-18 for `docs/plan/upstream-releases.md`: Terraform's
+  releases `v1.15.9` to `v1.16.6` and `v1.17.0-rc2`, the PR adding `lifecycle { destroy = false }` and
+  1.16.6's checksums: <https://github.com/hashicorp/terraform/releases>,
+  <https://github.com/hashicorp/terraform/pull/38784>,
+  <https://releases.hashicorp.com/terraform/1.16.6/terraform_1.16.6_SHA256SUMS>; the `aws` provider's
+  releases `v6.61.0` to `v6.69.1` and the PR making `rotation_enabled` settable:
+  <https://github.com/hashicorp/terraform-provider-aws/releases>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49659>; the `awscc` provider's releases
+  `v1.99.0` to `v1.106.0`: <https://github.com/hashicorp/terraform-provider-awscc/releases>; the `aws`
+  provider's open MWAA Serverless issue and PRs: <https://github.com/hashicorp/terraform-provider-aws/issues/45254>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49927>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49929>; the `aws-ia` SMUS module at `v0.2.1`
+  (2026-08-17), which D26 does not consume: <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio/releases>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
@@ -1054,6 +1068,7 @@
     <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
 - Data across accounts in SageMaker Unified Studio (read 2026-10-17, for Stage 18 steps 2.2, 7.2 and 7.3, and the question whether a Sandbox project reads what production writes). The association's share and its RAM permission: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; a governance-first account layout, a data mesh over the catalog, and two cross-account walkthroughs that create a project in each account: <https://aws.amazon.com/blogs/big-data/navigating-multi-account-deployments-in-amazon-sagemaker-unified-studio-a-governance-first-approach/>, <https://aws.amazon.com/blogs/big-data/implement-a-data-mesh-pattern-with-amazon-sagemaker-catalog-without-making-changes-to-your-applications/>, <https://aws.amazon.com/blogs/big-data/cross-account-lakehouse-governance-with-amazon-s3-tables-and-sagemaker-catalog/>, <https://aws.amazon.com/blogs/big-data/govern-amazon-redshift-data-across-accounts-with-sagemaker-unified-studio/>. Publishing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-data.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/hybrid-mode.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/use-your-own-role.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/data-onboarding.html>. Subscribing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>, and the two managed policies that carry the cross-account calls: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneRedshiftManageAccessRolePolicy.html>. Lake Formation and Redshift with no DataZone: <https://docs.aws.amazon.com/lake-formation/latest/dg/crosss-account-how-works.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-permission-mode.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-add-catalog.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/consumer-account-setup.html>, <https://docs.aws.amazon.com/redshift/latest/dg/considerations.html>, <https://docs.aws.amazon.com/redshift/latest/dg/consumer-cluster-admin.html>, <https://docs.aws.amazon.com/id_id/sagemaker-unified-studio/latest/userguide/compute-prerequisite-athena.html>.
 - AWS's guidance on a non-production account reading production data (read 2026-10-17, for the same question): the ML platform whitepaper, which treats the data science account's copy as production data, the financial-services strategy, and three Well-Architected best practices, two of which ask for masked or sampled data outside production: <https://docs.aws.amazon.com/whitepapers/latest/build-secure-enterprise-ml-platform/aws-accounts.html>, <https://docs.aws.amazon.com/prescriptive-guidance/latest/strategy-unlock-value-data-financial-services/best-practices-ml-ops.html>, <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/best-practice-2.2---create-test-data-and-provision-staging-environment..html>, <https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/anti-patterns-for-test-environment-management.html>, <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/mlsec04-bp01.html>.
+- SageMaker Unified Studio's releases, read 2026-10-18 for `docs/plan/upstream-releases.md`. Custom Tooling blueprints, the announcement and the admin guide's template requirements: <https://aws.amazon.com/about-aws/whats-new/2026/10/sagemaker-custom-tooling-blueprints/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-custom-blueprints.html>. Trusted identity propagation from notebooks, and the three pages re-read the same day (the notebooks page now documents the native notebook experience and its TIP support; remote space connections are still unsupported in a TIP profile): <https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-sagemaker/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/trusted-identity-propagation.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/configuring-sagemaker-unified-studio-remote-access.html>. Notebook kernels in the domain-level VPC: <https://aws.amazon.com/about-aws/whats-new/2026/04/sagemaker-unified-studio-vpc/>. CI/CD notebook promotion and manifest generation: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-cicd-notebook-ai-manifest/>. ODBC for BI tools: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-unified-studio-odbc-power-bi/>. Iceberg REST Catalog connections: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-iceberg-rest-iam-documentdb/>. Python and Bash operators in Workflows: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-workflows-python-bash/>. Git in every project tool: <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-git/>. Identity and user management for both domain types: <https://aws.amazon.com/about-aws/whats-new/2026/05/smus-identity-user-management/>. Where the Data Agent stores and infers, and the native notebooks with the agent reaching Identity Center domains on 2026-04-23: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-data-storage.html>, <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-sagemaker-idc/>. The MLflow App's customer-managed key: <https://aws.amazon.com/about-aws/whats-new/2026/08/sagemaker-mlflow-custom-keys>. The admin guide's document history, with the managed-policy updates of 2026-08-24, 2026-09-14 and 2026-10-08: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>. AWS's post of 2026-08-06 on LF-TBAC grants to Identity Center groups through TIP: <https://aws.amazon.com/blogs/big-data/scaling-fine-grained-access-control-for-enterprise-lakehouse-using-sagemaker-unified-studio-and-aws-lake-formation/>. Instance preference lists for training and processing jobs: <https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-sagemaker-training-processing-instance-pref-lists/>, <https://docs.aws.amazon.com/sagemaker/latest/dg/train-instance-preferences.html>.
 
 ## Data platform
 
@@ -1369,6 +1384,18 @@
   the `aws-glue-service-resource` tag, which `awsds-prod-job-exec` copies without the policy's S3 and IAM
   reads (Stage 9 step 3.1):
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSGlueServiceRole.html>.
+
+- Read 2026-10-18 for `docs/plan/upstream-releases.md`: Redshift's system table integration with S3
+  Tables, its announcement and its guide: <https://aws.amazon.com/about-aws/whats-new/2026/08/redshift-long-term-system-table-retention/>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/system-table-s3-tables.html>; Glue 6.0's
+  announcement: <https://aws.amazon.com/about-aws/whats-new/2026/08/aws-glue-6-0-price-reduction-iceberg-v3>;
+  the offer files behind `docs/PRICING.md` §5's Glue 6.0 and S3 Tables rows, in both Regions:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/us-west-2/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/sa-east-1/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/sa-east-1/index.json>;
+  Lake Formation's row-level security operations in botocore's model:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
 
 ## Containers, CI/CD and orchestration
 
@@ -1852,6 +1879,23 @@
 - Upgrading Amazon DataZone domains to SageMaker unified domains - the `domainVersion` V1/V2 distinction: <https://docs.aws.amazon.com/datazone/latest/userguide/upgrade-domain.html>.
 
 - AWS Step Functions: <https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html>.
+
+- The CI/CD CLI and the workflow service, read 2026-10-18 for `docs/plan/upstream-releases.md`: the
+  CLI's releases and its PyPI history, where 1.0.9 is the latest, and its open issues and specification
+  PR: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/releases>,
+  <https://pypi.org/pypi/aws-smus-cicd-cli/json>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/318>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/355>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/289>; the 1.0.9 sdist, read for the
+  network and key fallback (`helpers/datazone.py`, `bootstrap/handlers/workflow_create_handler.py`,
+  `helpers/airflow_serverless.py`) and for `project.name` (`application/application_manifest.py`):
+  <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>; Step Functions' integration release history and
+  its post on integrations added with no announcement:
+  <https://docs.aws.amazon.com/step-functions/latest/dg/awssdk-release-history.html>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/06/aws-step-functions-integrations/>; MWAA
+  Serverless's model in botocore and the `AmazonMWAA` offer of 2026-09-11:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/mwaa-serverless/2024-07-26/service-2.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
 
 ## Security, monitoring and cost
 
@@ -2560,6 +2604,22 @@
   forty run from `3.9.13` to `4.5.2`, the last published 2026-10-07 for every maintained minor at once
   (`3.9.14`, `4.0.13` … `4.5.2`), and no `4.6`, `5.x` or `4.15` exists:
   <https://api.github.com/repos/aws/sagemaker-distribution/releases>.
+- The sources of `docs/plan/upstream-releases.md`, read 2026-10-18: AWS What's New through its
+  directory API, the list of releases since 2026-08-01:
+  <https://aws.amazon.com/api/dirs/items/search?item.directoryId=whats-new-v2&sort_by=item.additionalFields.postDateTime&sort_order=desc&size=100&item.locale=en_US&page=0>;
+  botocore's changelog and its PyPI upload dates, which date each API change:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>, <https://pypi.org/pypi/botocore/json>;
+  DataZone's model in botocore:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>; the
+  AWS CLI v2 changelog, where 2.38.0 turns the CRT S3 transfer client on:
+  <https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst>; the policy generator's catalogue of actions and
+  condition keys, where `airflow-serverless` carries only the tag keys and `sagemaker:InstanceTypes` is
+  SageMaker's only instance key: <https://awspolicygen.s3.amazonaws.com/js/policies.js>. Bedrock product
+  attributes in Cost Explorer and Budgets:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-bedrock-attributes-in-cost-explorer/>. GuardDuty
+  through Organizations policies: <https://aws.amazon.com/about-aws/whats-new/2026/10/guardduty-org-enablement-policies/>.
+  Network access controls for the Identity Store:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-identity-store-network-controls/>.
 
 ## Databricks
 

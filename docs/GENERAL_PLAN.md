@@ -199,5 +199,5 @@ repository against the question that sends you to it — `docs/plan/objectives.m
 `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md`,
 `docs/plan/cost-model.md`, `docs/plan/lessons.md`, `docs/plan/open-questions.md`,
 `docs/plan/institutional-delta.md`, `docs/plan/threat-model.md`, `docs/plan/waiting-on-the-user.md`,
-`docs/plan/history.md`,
+`docs/plan/upstream-releases.md`, `docs/plan/history.md`,
 `docs/plan/runbooks/`, `README.md`, `docs/GLOSSARY.md`, `docs/PRICING.md`, `docs/log/INDEX.md`.
