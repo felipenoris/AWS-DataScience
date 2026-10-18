@@ -464,3 +464,123 @@ applied.*
   console lists every role that trusts `datazone.amazonaws.com`).
 - **[Claude] What is owed before the apply**: 1.1's before, in the portal as the Data Scientist User;
   then the sitting decision 4 orders, the image first.
+
+## 2026-10-18 — the readings with the environment down, and the text they overtook
+
+*Provenance. Claude, in the session "Stage 17: readings and text", a side session of the orchestrating
+session, ran every command below from the worktree `stage-17-readings-7be400` at `origin/main` `2074b1b`,
+as the infrastructure user with `InfrastructureAccess` in `Sandbox` (`awsds-infra-sandbox-1`), with the
+whole environment down. Every call was a read: no plan, no apply, no module tag. The two reports print the
+caller's ARN and were not copied; no quoted line carries an account id or an e-mail address.*
+
+- **[Claude] `./aws/devenv.py`** (19:48:48 to 19:48:55 UTC, the report stamped `2026-10-18T19:48:55Z`):
+  `wrote aws/output/devenv.txt checks: 5 passed or noted, 1 FAILED`, exit 2, and section 7 `None. Every
+  call in this report returned successfully.`
+
+  ```
+  fail    DE-2  the account's list is readable                      the state holds neither `no_proxy_all_groups` nor `no_proxy`: the slice is DOWN (an [E] destroy leaves the object and removes the outputs). `make up ENV=sandbox` first - the comparison below is not a divergence, it is an absence
+  note    DE-3  the baked list is the account's list                not compared - one of the two sides was not read
+  note    DE-6  the last apply's list is inside the account's list  not compared - one of the two outputs was not read
+  pass    DE-1  the Dockerfile declares one NO_PROXY_LIST           70 entries, sha256 aafa08da98a61f5c
+  pass    DE-4  the proxy URL agrees across the repository          http://proxy.awsds.internal:3128
+  pass    DE-5  the registered image carries the account's list     version 9, sha256:b788dbd9c7cf...: 70 names, sha256 aafa08da98a61f5c
+  ```
+- **[Claude] What `DE-5` compared, read from the script.** `devenv.py` takes the account's list as `DE-5`'s
+  reference only when the egress state holds `no_proxy_all_groups`, and the Dockerfile's literal otherwise,
+  so the pass above is the image against the Dockerfile, 70 names each. `main` pins `vpc-egress-v0.18.0` on
+  `sandbox/egress`, so the first `make up ENV=sandbox` from it writes the 72-entry list (sha256
+  `6faf2e4761622508`, read from a plan on 2026-10-18 at 01:05 UTC), and `DE-3` and `DE-5` then fail with 2
+  names missing from the image (inferred from the script and that plan; no session has been up since).
+  Neither `Makefile` nor `scripts/slices.py` names `devenv`, so `make up` does not refuse on it: the
+  failure is a reading, not a gate.
+- **[Claude] `./aws/sandbox-ml.py`, third run** (19:49:01 to 19:51:30 UTC, the report stamped
+  `2026-10-18T19:51:29Z`): `wrote aws/output/sandbox-ml.txt (all checks passed)`, exit 0, and section 13
+  `None. Every call in this report returned successfully.` `ML-7`'s rows for the exercise's types:
+
+  ```
+  QUOTA                                                   VALUE  SOURCE   AWS DEFAULT  CODE        LATEST REQUEST
+  ml.m5.xlarge for training job usage                     20     applied  0            L-CCE2AFA6  increase to 1 requested 2026-10-17, CASE_OPENED
+  ml.m5.large for endpoint usage                          8      applied  0            L-614B09FD  increase to 1 requested 2026-10-17, CASE_OPENED
+  ml.m5.large for transform job usage                     8      applied  0            L-236AE59F  increase to 1 requested 2026-10-17, CASE_OPENED
+  ml.t3.medium for processing job usage                   10     applied  4            L-0CE343FE  no increase request
+  ```
+
+  The values and the requests are those of the second run (2026-10-18 at 01:01 UTC). The request history
+  of each quota (`list-requested-service-quota-change-history-by-quota`, read in the same sitting) gives
+  `CASE_OPENED`, a desired value of 1.0 and `ACCOUNT` as the level, filed at 21:45:32, 21:45:37 and
+  21:45:40 UTC on 2026-10-17 for `L-CCE2AFA6`, `L-614B09FD` and `L-236AE59F`. The first two were last
+  updated 13 and 12 seconds after filing; the transform quota's case was last updated at 00:23:33 UTC on
+  2026-10-18, the only movement any case shows, and the processing quota has no request. The applied
+  values rose between the first run (21:07 UTC on 2026-10-17: the three at zero, the processing quota at
+  4) and the second; the fields read do not say what raised them.
+- **[Claude] The other sections, as the second run read them.** `ML-1`: both project roles carry
+  `EnableSageMakerMLWorkloadsPermissions` `true`, the managed ML policy serves v45, the boundary
+  `awsds-sandbox-project-boundary` v2 holds its five statements and the ceiling's seven types, and
+  `awsds-sandbox-workflows` grants `AddTags` of `AmazonDataZoneProject` on `processing-job` alone (the gap
+  of decision 7); `enableNetworkIsolation` is `true` in both Tooling stacks. `ML-2` to `ML-6`: no MLflow
+  App, training job, model package group, endpoint, transform job or pipeline; the only `CreateTrainingJob`
+  events in the 90-day lookup are the six refusals of 2026-08-27 and 2026-09-10 by session
+  `AmazonMWAAServerless` on `Notebook-task-*` jobs, each `with an explicit deny in a permissions
+  boundary`. `ML-7`: no HyperPod cluster or Partner AI app; the MLflow quotas unchanged (3 apps, the
+  tracking servers 5, 5 and 1 with at most 10). `ML-8`: both roles carry `EnableAmazonBedrockPermissions`
+  `true` and no `EnableAmazonBedrockIDEPermissions`; the four project Bedrock roles carry the boundary and
+  their project's tag; no knowledge base, S3 vector bucket, agent, prompt, flow, guardrail or evaluation
+  job; the account's one Lambda function is Control Tower's; `amazon.titan-embed-text-v2:0` reads agreement
+  `AVAILABLE`, authorization `AUTHORIZED`, entitlement `AVAILABLE`, region `AVAILABLE`; the repository's
+  SCP admits `anthropic.claude-haiku-4-5-20251001-v1:0`, `anthropic.claude-opus-4-5-20251101-v1:0` and
+  `anthropic.claude-sonnet-4-5-20250929-v1:0` and not the embeddings model, so 7.4a's first sync is still
+  expected refused. `ML-9`, with the session down: no interface endpoint and no `awsds-sandbox-egress-allow`
+  list; the S3 gateway endpoint's `AllowAwsOwnedServiceBuckets` names `sagemaker-us-west-2` and
+  `jumpstart-cache-prod-us-west-2`; the `DE-5` note quotes this sitting's `devenv.py` run, `pass at
+  2026-10-18T19:48:55Z: version 9, sha256:b788dbd9c7cf...: 70 names, sha256 aafa08da98a61f5c`, where the
+  second run quoted a snapshot of 2026-10-12.
+- **[Claude] The coupling between step 1.3 and `TM-21`, read from the files.**
+  `terraform-live/sandbox/sagemaker/main.tf` pins `sagemaker-prereqs-v0.6.0` (`0dc159f`, PR #166) and
+  passes no `blueprint_names`, so the slice takes the module default, which ends in `MLflowApp` since
+  `v0.5.0`. The diff from `v0.5.0` to `v0.6.0` is `data.tf` (a lookup of the organization) and `kms.tf`
+  (`aws:PrincipalOrgID` in the `StringEquals` of the project key's `GrantKMSPermissionsForAllProjectRoles`
+  and `AllowCreateGrantForProjectRoles`). Any apply of the slice from `main` therefore creates the
+  `MLflowApp` configuration and grant and changes the key policy in place; neither goes without the other,
+  and both wait on 1.1's before, owed before any apply. No plan of `v0.6.0` has run: the `2 to add` of
+  the entry "pass 1's tags on origin, and its readings from the laptop" is `v0.5.0`'s, planned from
+  `fa20bfe`, and `2 to add, 1 to change` is an inference. This sitting did not plan the slice; its plan
+  belongs to [Stage 11](../plan/stages/stage-11-dlp.md)'s `TM-21`. That stage's log expects, once step 1.3
+  has applied first, a plan that changes the key policy alone; with the caller pinned at `v0.6.0`, `main`
+  has no apply at `v0.5.0`, so the two are one apply.
+- **[Claude] The entry of 2026-10-18 "decision 4 taken" is overtaken on one clause.** It says the image is
+  released in the sitting of the group's first apply and that "PR #157's merge goes with it". PR #157 merged
+  at 02:33:09 UTC (`e6dfc6a`), before any release, so `main` already pins `vpc-egress-v0.18.0`; the
+  entry "pass 1's tags on origin, and its readings from the laptop" records the merge. The stage file's
+  decision 4 now says so.
+- **[Claude] The text of the stage file this sitting corrected**, each against the file it cites:
+  - Status, decision 4 and the risk of the `no_proxy` literal: the merge before any release, and `DE-3`
+    and `DE-5` red in any session raised from `main`.
+  - The `sandbox/sagemaker` row, 1.2 and 1.3: the caller's `v0.6.0` pin, and the apply that carries
+    `TM-21`; `kms.tf` gains no `MLflowApp` statement, where it read "untouched".
+  - Steps 7.0a and 7.0b are new: no step carried `AmazonBedrockKnowledgeBase`'s promotion although
+    decision 1 is taken, and the roster copies, the template and key-permissions readings and the apply
+    are 1.2's and 1.3's shape. 7.2 read "after 1.3" for the knowledge base, which 1.3 does not carry; the
+    user's reading of the blueprint's console wizard is owed, as `MLflowApp`'s was. `docs/SMUS.md`'s row
+    read "in one change with `MLflowApp`", which PR #157 did not do.
+  - "Proves", the menu row, 4.4, decision 8 and the deliverables: [Stage 9](../plan/stages/stage-09-deployment-targets.md)
+    took 3.7 as (b) on 2026-10-16, as `DenySageMakerServerlessInference` in the `Workloads` OU document,
+    before this stage's reading; 4.4 stays as the Sandbox reading of the boundary and the service.
+  - Verification xxi: "three are zero" is the reading of 2026-10-17; the three read 20, 8 and 8 on
+    2026-10-18.
+  - Decision 11 and 7.4a: the instruments, below.
+- **[Claude] Decision 11's amendment reaches three instruments, read from the code and not run.**
+  `aws/awslib/bedrockscope.py` builds `pairs[model] = profiles_seen.get(model, "")` for every
+  `foundation-model` ARN of `DenyBedrockInvocationOutsideTheScopedModels` (lines 63 to 75), so the
+  embeddings model would read as a scoped model with an empty profile. `aws/bedrock-scope.py` then fails
+  `BS-2` (`sorted(set(declared.values()))` holds `""`, which is not an active profile) and `BS-7`
+  (`grant != declared`, the grant slice's map lacking the model), after calling `get-inference-profile`
+  with an empty identifier. `aws/bedrock.py` fails `BR-4` on the same empty profile (line 654).
+  `aws/bedrock-usage.py` filters empty profiles (line 306), `scripts/check-gitlab-mirror.py` `GM-8` tests
+  the pins against the declared profiles and the grant map, and `aws/sandbox-ml.py` `ML-8` tests
+  membership in the dictionary; none of the three fails. An earlier audit of the plan inferred `BS-2` and
+  `BS-7` from the same lines; reading them confirms both, and `BR-4` shares the cause.
+- **[Claude] What is owed.** [user] 1.1's before in the portal as the Data Scientist User, which needs no
+  environment and releases 1.3's apply and `TM-21`'s together; 1.5, 0.3 and 0.7 with a session; the
+  console wizard of `AmazonBedrockKnowledgeBase` (7.0a); decision 11. [Claude] The parser change that
+  precedes decision 11's amendment, in the sitting of 7.4a. Waiting on the environment: the release of the
+  image with the 72-entry literal, 1.4's `mlflow` group, and passes 2 to 7.
