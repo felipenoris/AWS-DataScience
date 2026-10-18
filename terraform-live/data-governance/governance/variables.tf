@@ -30,7 +30,7 @@ variable "environment_tag" {
 }
 
 variable "members" {
-  description = "The accounts a project profile may provision into (SMUS_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Staging and Production are absent by design (D28), not by omission."
+  description = "The accounts a project profile may provision into (SMUS_MEMBERS and SMUS_DEPLOYMENT_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision, and Stage 18's for the second). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Production is absent by design (D28), and Staging outside Stage 18's window."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }

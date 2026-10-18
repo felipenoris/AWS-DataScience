@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
 # cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
-# (protected, [E]) and its narrow instance role, the three deploy roles with their permissions
-# boundaries and single-principal trust (INT-08, INT-18), the misuse-alarm rules, the
+# (protected, [E]) and its narrow instance role, the deploy roles with their permissions
+# boundaries and single-principal trust (INT-08, INT-18, INT-25), the misuse-alarm rules, the
 # app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
 # side across the Interactive accounts (D17's identical-runtime claim), and the recent
 # AssumeRole events per deploy role - the record INT-08 exists for.
@@ -909,7 +909,7 @@ produced  : aws/cicd.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The deploy runner and its role, and the test runner (Production, [E])
-  3. The three deploy roles: boundary and trust (INT-08, INT-18)
+  3. The deploy roles: boundary and trust (INT-08, INT-18, INT-25)
   4. The misuse-alarm rules (step 4.6)
   5. The application repository: the grant, and the read from Staging (INT-07)
   6. The dev-env registrations, side by side (INT-17/INT-18, D17)
@@ -922,7 +922,7 @@ HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 8 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
   - AN ABSENT deploy runner is [E] working between sessions, not an outage.
-    `Staging` rows appear only once the account is vended and holds a profile.
+    Staging's read of the application repository is refused until step 3.0.
   - THIS IS A CONTROL-PLANE READING. Whether a pipeline actually schedules onto
     the protected runner, blocks on a finding, or dies in Staging is behavioural
     - the stage's own proofs (Lesson 20). INT-17's reconciliation-survival half
@@ -979,7 +979,7 @@ never a compliant one.
                 )
 
         # ==============================================================================
-        rep.h1("3. The three deploy roles: boundary and trust (INT-08, INT-18)")
+        rep.h1("3. The deploy roles: boundary and trust (INT-08, INT-18, INT-25)")
         if role_rows:
             rep.tabulate(
                 ["PROFILE\tROLE\tSTATE\tBOUNDARY\tTRUSTED PRINCIPAL(S)"]
@@ -1060,9 +1060,9 @@ What the checks are, and where each comes from:
         rep.h1("9. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 8 as a pass.
 
-  - `Staging` has no profile until the vend - sections 3-5 and 7 are then half
-    blind: the awsds-deploy-staging row, its alarm rule and the cross-account
-    read all appear only after 3.0.
+  - `Staging` holds its deploy role and alarm since step 4.1 (2026-10-12), and
+    no promotion has run: its rows in section 7 are the runner boots' own
+    assumptions, and its read in section 5 is refused until step 3.0.
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - the deploy-role
     map and section 6 must both grow with N (D35).
   - GitLab's objects (the three .gitlab-ci.yml files, protected tags, runner

@@ -1775,6 +1775,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   with no `UPDATE_IN_PROGRESS` and no `UpdateDomain`, so an attachment made by hand outside the template
   survives a reconciliation that leaves the domain's properties alone. Where: 6d step 2.4, INT-15,
   INT-17.
+- **A Redshift connection made in the portal carries `lineageSync` enabled, and the form shows no
+  toggle** (read 2026-10-18, Stage 6h). The same-account form of 2026-09-21 offered no lineage field;
+  `get-connection` on the connection it wrote reads `lineageSync.enabled: true` on
+  `cron(43 3 * * ? *)` with a lineage job of its own, which ran daily from 2026-10-11 and failed eight
+  times. A run that succeeds is a scheduled query on the warehouse's meter. Where: `log-stage-06h`,
+  2026-10-18, and `./aws/warehouse.py` `WH-9`.
 
 ### MWAA Serverless
 
@@ -2258,13 +2264,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   (none here; enabling them is permanent) the rule reaches everyone. So the live candidates are the
   exemption *after all*, or that **`max_query_execution_time` as a standalone `config_parameter` is not
   enforced at all** and a per-query ceiling exists only through `wlm_json_configuration` — Lesson 56 in
-  its purest form. **One test separates them**: the same query as a non-superuser. Until then the
-  parameter is **possibly inert**. The unit is not in doubt: **seconds**, from the 86,399-second service
-  maximum and the QMR examples' own wording; `statement_timeout` is the millisecond parameter and is
+  its purest form. A third: the statement read only catalog tables, which AWS runs *"exclusively on the
+  leader node"*, so it may sit outside what both guards govern. **The test that separates the three** is
+  a long query over a user table, as a non-superuser and as the admin. Until then the parameter is
+  **possibly inert**. The unit is not in doubt: **seconds**, from the 86,399-second service maximum and
+  the QMR examples' own wording; `statement_timeout` is the millisecond parameter and is
   not in the Serverless list. What stopped it:
-  `pg_terminate_backend(<session_id>)`, then destroying the workgroup. What would have stopped it
-  eventually: the `serverless-compute` usage limit, 3.4 hours later, at 14.40 USD. Where:
-  `log-stage-05b` the third amendment, and the comments on
+  `pg_terminate_backend(<session_id>)`, then destroying the workgroup. The `serverless-compute` usage
+  limit did not: the statement kept running through the two minutes 5.1 held it breached, while that
+  breach refused every query needing the compute. Where:
+  `log-stage-05b` the third amendment and the entry of 2026-10-18, and the comments on
   `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and `layers.py`'s `usd_per_hour`.
 
 - **A CloudWatch aggregate answers a question about its window, not about now — and the CLI makes the
