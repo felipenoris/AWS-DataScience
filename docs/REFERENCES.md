@@ -1454,6 +1454,14 @@
   two-apex rule); and access control is available in the Free tier
   (`gitlab_pages['access_control'] = true`): <https://docs.gitlab.com/administration/pages/>.
 
+- S3 Lifecycle, expiring objects (read 2026-10-18; Stage 7 step 8.2, the GitLab backups). In a
+  versioning-enabled bucket an `Expiration` action acts on current versions only and adds a delete
+  marker, which makes the current version noncurrent; `NoncurrentVersionExpiration` then deletes the
+  noncurrent versions for good; S3 may remove an object some time after its expiration date; and
+  `HeadObject` and `GetObject` return the date a current version expires (the `Expiration` header),
+  which is how the two backups were dated:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html>.
+
 - GitLab releases and the generic package registry (read 2026-10-15, Stage 8 decision 20). A release
   holds links, not files; the release fields page points a release's binaries at the generic package
   registry and advises against linking job artifacts, *"because artifacts are ephemeral and are used
