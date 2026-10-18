@@ -137,3 +137,48 @@ Account ids are replaced by the account's name in angle brackets.*
      `awsds-infra-sandbox-1`.
   5. `production/workloads-egress/` at the next Production `make up`, which plans it like any `[E]` slice.
   6. 3.4's registry proof and 6.3's window, by the user; `./aws/deploytargets.py` after each.
+
+## 2026-10-17 — the battery's Stage 9 rows, read before the apply
+
+*The run is the user's, on the laptop: `./aws/probes/scp-battery.py --phase ou`, for Stage 6e's rows
+([its log](log-stage-06e-claude-code-bedrock.md)), so the phase's Stage 9 rows ran too, in Production as
+`InfrastructureAccess` (`awsds-infra-prod`). The driver stamps the laptop's clock, about 23:21 UTC. Below
+are those rows, copied verbatim from the user's paste with the phase's stamp and totals, and one Workloads
+row of Stage 6b's for the policy id.*
+
+- **[user] The rows**, excerpt:
+
+  ```
+  SCP battery - 2026-10-17 20:21:03  (phase ou)
+    MARK PHASE    ACCOUNT   EXPECT OUTCOME       DETAIL                 PROBE
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: datazone:ListDomains
+    note ou       prod      allow  UNTESTED                             workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)
+    note ou       prod      deny   UNTESTED                             workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)
+    note ou       prod      deny   UNTESTED                             workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)
+    note ou       prod      deny   UNTESTED                             workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)
+    note ou       prod      deny   UNTESTED                             workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)
+    note ou       prod      deny   UNTESTED                             workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)
+    FAIL ou       prod      deny   ALLOWED       reached-authorization  workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)
+    ok   ou       prod      allow  ALLOWED       reached-authorization  workloads: instance-backed CreateEndpointConfig still authorized (3.7 contrast)
+  32 as expected, 1 unexpected, 13 not measured
+  ```
+
+- **[Claude] The rows ran before the apply.** The order of 2026-10-16 runs them at step 3, after
+  `identity/org-policies/` at step 2, which has not run: the `Workloads` document attached in Production
+  still carries its three statements (`AWS_STATE.md`), so this is each row's before half.
+
+- **[Claude] The serverless row is its statement's negative control.** A `create-endpoint-config` with a
+  `ServerlessConfig` reached authorization in Production: serverless inference is refused nowhere, as
+  `AWS_STATE.md` says, and the `FAIL` is that state. After the apply the row must read `DENY-SCP` naming
+  `p-83t232f4`, the id the `Workloads` rows already name. The instance-backed contrast reached
+  authorization, as it must on both sides of the apply.
+
+- **[Claude] The six processing-job rows did not reach their wording.** Each read `UNTESTED`:
+  `create-processing-job` answered neither `ValidationException` nor a deny, the compliant contrast
+  included. With no statement attached, a deny row that reached the validation would read `ALLOWED`, a
+  `FAIL` like the serverless row's, and none did. The compliant row is meant to read `ALLOWED` on both
+  sides of the apply, since it attributes the five denies and reads `sagemaker:VolumeKmsKey`, and it did
+  not. The report keeps only the table, so the reply is unread.
+  [inference] One cause would fit all six rows and spare both endpoint-configuration rows: a refusal after
+  authorization that a configuration call never meets, such as an instance quota of 0 for processing jobs
+  in Production. Reading that reply is owed before step 3 relies on the row.

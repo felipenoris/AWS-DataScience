@@ -248,6 +248,7 @@ This table is the only routing map; every other file points here rather than rep
 | What was done by hand in a stage | [`docs/log/INDEX.md`](docs/log/INDEX.md) first, then the one `log-stage-NN-*.md` |
 | What is deployed right now: accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md): read-only scripts and their snapshots in `aws/output/` (untracked). Regenerate rather than trust a stale file; never copy an account id or email out of one |
 | Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes. Read it whenever a snapshot is read |
+| A data-leakage channel, its control or its accepted residual (`TM-nn`), before a proxy plane is edited | [`docs/plan/threat-model.md`](docs/plan/threat-model.md) |
 | Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
 | Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md); open a decision file only for its reasoning |
 | Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
