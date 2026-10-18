@@ -161,7 +161,7 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   Pythons, R, Julia, the runtimes, the proxy list's digest and the imports. Then `scan-base` and
   `scan-dev-env`, informative; `release-gate`, manual and blocking; and `register` on the deploy runner,
   which clones the mirror `awsds/infrastructure` with the job token and runs `scripts/devenv-register.py
-  --pipeline` (deleted with decision 18, `21dc8d8`): each target's slice as its own deploy role, the registry's state through the runner's own
+  --pipeline` (the clone and the script both gone with decision 18, `21dc8d8`): each target's slice as its own deploy role, the registry's state through the runner's own
   profile (decision 14), with no guard (decision 17). `sandbox/dev-env/` accepts the `-<short sha>` suffix.
   The include stood at `gates-v0.2.0` until the release's merge request !1 moved it to `gates-v0.3.0`, which
   carries decision 15's accepted list; `scripts/devenv-register.py --dry-run` prints both paths' commands, and
@@ -1072,7 +1072,10 @@ Measured (`docs/PRICING.md`), us-west-2:
    `init`. The copy keeps what runs with a deploy role a GitLab act: a Maintainer of `awsds/infrastructure`
    pushes it, and a job token reads it only from a project on its allowlist, so a merge on GitHub reaches
    no deploy job until it is pushed (Lesson 67). It costs a push that can go stale, which the printed
-   commit shows, and the modules still come from GitHub, pinned by tag.
+   commit shows, and the modules still come from GitHub, pinned by tag. No job has read the mirror since
+   decision 18 (2026-10-15), whose `register` and `retire` clone nothing, so pass 4's promotion jobs are
+   its next reader: on 2026-10-18 no file under `gitlab/`, `examples/app-etl/` or `ci-gates/` cloned it
+   or used a job token.
 3. **The infrastructure pipeline's credentials** (6.2) — recommended: **none** — offline gates only;
    GitHub OIDC is possible (the RCP excludes `AssumeRoleWithWebIdentity`) and declined while `plan`/`apply`
    are deliberate by-hand acts under the runbook. **Taken by the user 2026-10-12, as recommended.**
@@ -1523,7 +1526,8 @@ Record every answer, including the ones that come out fine.
   block everything or pass everything (decision 1). Measured 2026-10-14: two days of the vulnerability
   source put 593 `linux-libc-dev` findings past the baseline, and the user made the gate informative.
 - **A stale infrastructure mirror deploys yesterday's slice** — the printed SHA (6.1) makes it visible in
-  the pipeline evidence; the dual-push sits in the same sitting as the change.
+  the pipeline evidence; the dual-push sits in the same sitting as the change. No job reads the mirror
+  until pass 4's promotion jobs (decision 2).
 - **A stopped proxy reads as a hang on the pipeline path**: the hub check is waived from the runner, so
   3.1's own check is what turns a blackhole into a named failure.
 - **A half-failed promotion leaves Staging burning** — 3.4 runs in `after_script`; `./aws/egress.py` §6 at
