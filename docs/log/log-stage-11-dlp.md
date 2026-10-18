@@ -149,3 +149,105 @@ changed in AWS.
   its step 1.3 applied first, this version's plan should change only the key's policy, in place
   (inferred: no plan has run). `TM-21` and `EXC-18` stay open until a snapshot reads the finding
   `RESOLVED`.
+
+## 2026-10-18 — `TM-21`: `sandbox/sagemaker/` planned, not applied
+
+Written by Claude, session "Stage 11: pass 0 readings and the data cells filters", as the
+infrastructure user (`InfrastructureAccess`, profile `awsds-infra-sandbox-1`), between 19:45 and 20:40Z.
+Account ids are replaced by the account's name.
+
+- **[Claude] The plan**, `-input=false`, to a file outside the repository: `Plan: 2 to add, 1 to change,
+  0 to destroy.` The change is the project key's policy in place, `aws:PrincipalOrgID` added to the
+  `StringEquals` of `GrantKMSPermissionsForAllProjectRoles` and of `AllowCreateGrantForProjectRoles`,
+  six statements unchanged. The adds are Stage 17's: the `MLflowApp` blueprint configuration and its
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant.
+- **[Claude] Not applied.** The same apply would create `MLflowApp` before Stage 17's step 1.1 reads the
+  portal without it. The apply waits on that reading, or on the user accepting its loss.
+
+## 2026-10-18 — pass 0's readings
+
+Written by Claude, same session and identity, profiles `awsds-infra-data`, `awsds-infra-sandbox-1`,
+`awsds-infra-prod`, `awsds-infra-staging` and `awsds-infra-identity`.
+
+- **[Claude] 2.1.5's key half, `alias/awsds-data-data`**: four statements, no grant.
+  `EnableIamPolicyDelegationInThisAccount` (the `<Data Governance Account>` root, `kms:*`);
+  `AllowDropBoxWritersViaS3` (the `<Sandbox Account 1>` root narrowed to `DataScientistAccess`,
+  `GenerateDataKey` and `Decrypt` through S3); `AllowCloudWatchLogsEncryptionForGlue` (the logs service,
+  `/aws-glue/*`); `AllowProductionPickupDecryptViaS3` (the `<Production Account>` root narrowed to
+  `awsds-prod-job-exec`, `Decrypt` through S3). `simulate-principal-policy` over every Data Governance role
+  that is not service-linked: `kms:Decrypt` allowed to `InfrastructureAccess`, `AWSPowerUserAccess`,
+  `AWSControlTowerExecution`, `aws-controltower-AdministratorExecutionRole`,
+  `awsds-data-catalog-maintenance` and `awsds-data-lf-registration`; implicit deny for
+  `GovernanceManagerAccess`, `AWSReadOnlyAccess`, `AWSOrganizationsFullAccess`, the two domain roles and
+  the other Control Tower roles. `awsds-prod-job-exec` exists since 2026-10-18T19:59:03Z (read at
+  20:36:57Z), created by Stage 9's `production/sagemaker` apply.
+- **[Claude] RAM on the lake shares**: `LakeFormation-V4-AZCTDXPPCJ`, `LakeFormation-V4-1KCIGTUIUW` and
+  `DataZone-EXTENDED_ACCESS-<domain>-ORG-ONLY` are `ACTIVE`, `allowExternalPrincipals: False`, each with one
+  principal, `<Sandbox Account 1>`, `external: False`.
+- **[Claude] `TM-17`'s identity half.** The first simulation of every Sandbox role returned `explicitDeny`,
+  `AllowedByOrganizations: false`, for `sns:Publish` to an outside account and to this one alike; with
+  `aws:RequestedRegion=us-west-2` in the context both read the identity layer, and `glue:GetDatabases`
+  moved from `explicitDeny` to `implicitDeny` the same way. The Control Tower Region ceiling,
+  `CT.MULTISERVICE.PV.1`, is the only SCP on the path conditioned on that key over every action. With
+  the key, against resources in `<an account outside the organization>`, AWS's documentation example: `sns:Publish`,
+  `sqs:SendMessage`, `events:PutEvents`, `lambda:InvokeFunction`, `kinesis:PutRecord` and
+  `firehose:PutRecord` are implicit deny for every Sandbox role but `InfrastructureAccess`,
+  `AWSPowerUserAccess`, `AWSControlTowerExecution` and `aws-controltower-AdministratorExecutionRole`.
+  Reading the policies of both project roles found what the generic names missed:
+  `SageMakerStudioProjectUserRolePolicy` v75's `AirflowSqsActions` allows `sqs:SendMessage` on
+  `arn:aws:sqs:*:*:airflow-celery-*` under `StringNotEquals aws:ResourceAccount ${aws:PrincipalAccount}`,
+  simulated `allowed` for a queue of that name in that outside account (SCP and boundary allowing) and
+  `implicitDeny` for the same name in this account; and `InvokeFunctionForAmazonBedrockIDE` and
+  `LambdaInvokeFunctionViaBedrock` allow `lambda:InvokeFunction` on any account's `amazon-bedrock*`
+  functions under `aws:CalledViaFirst = bedrock.amazonaws.com` and the project tag. No persona set in
+  Sandbox, `Production`, `Staging` or `Data Governance` carries an Allow for any of these actions, and
+  every other Sandbox role's Lambda statement is bound to its own account. Sandbox holds no endpoint but
+  the S3 and DynamoDB gateways while the environment is down, and `vpc-egress` names no SQS group.
+  `DenyProvisionedMwaa` is in the root baseline (read 20:36:57Z).
+- **[Claude] The Stage 5a and 6 outcomes step 11 consumes**, collected: the classification scheme and the
+  live LF-Tags, `classification` (`public`, `internal`, `restricted`, `personal`) and `layer` (`raw`,
+  `curated`, `dropbox`), `businessunit` absent; the derived zone is `awsds-sandbox-smus-projects`, and
+  Sandbox holds three buckets, `awsds-sandbox-lake`, `awsds-sandbox-smus-projects` and
+  `awsds-sandbox-tfstate`; Stage 5a decision 4's Athena outcome is the closed hole, `DenyUserCompute` on
+  the `Data` OU naming `athena:StartQueryExecution`; `sample_trades` carries its 12 rows of 2026-08-20,
+  whose values are recorded nowhere; D5's comparison is withdrawn by D38, the raw-address row closed by
+  route and its proxy half `TM-01`; the grain is decision 6's, roles and projects; the remote-access
+  residual is `TM-08`. Stage 9's producer path is not built: no `production/data/`, and decision 3's map
+  has no `Production` row.
+- **[Claude] The lake's Lake Formation grants**, read for step 2: 28 permission rows in Data Governance, of
+  which the `<Sandbox Account 1>` account holds the two TBAC rows of the register and nothing more; no
+  data cells filter exists; in Sandbox only `DataScientistAccess` holds lake regrants (the two links, the
+  two TBAC expressions), and no project role holds any. `DataLakeSettings`: `CROSS_ACCOUNT_VERSION 4` and
+  `SET_CONTEXT TRUE` in both accounts; Sandbox's administrators are `InfrastructureAccess`,
+  `awsds-sandbox-smus-manage-access` and `awsds-sandbox-smus-provisioning`.
+- **[Claude] Validation 1's before-run, `./aws/dlp.py`** on the six infrastructure profiles,
+  2026-10-18T20:12:34Z, exit 0: `DP-1`, `DP-2`, `DP-3`, `DP-5`, `DP-6` and `DP-7` notes, no failure, `DP-4`
+  not emitted (no trail). Macie disabled in both members and no delegated administrator; no detector in
+  any of the six accounts; `DenyCloudTrailKill` absent. The run over every profile exits 1 only because
+  seven persona and Control Tower profiles hold no SSO token, none of them DLP-scoped.
+
+## 2026-10-18 — 5.6's instrument, `DP-8`
+
+Written by Claude, same session and identity.
+
+- **[Claude] `get-model-invocation-logging-configuration`**, by hand first: an empty answer in `us-west-2`,
+  and in `us-east-1`, `us-east-2` and `eu-west-1` `AccessDeniedException ... with an explicit deny in a
+  service control policy`. The Region ceiling's 92 `NotAction` entries include six Bedrock actions, and
+  neither logging-configuration action is among them.
+- **[Claude] `./aws/dlp.py` with `DP-8`**, 2026-10-18T20:16:10Z, exit 0: `DP-8 pass`, no configuration in
+  `us-west-2` in any of the six accounts, `us-east-1` and `us-east-2` denied by the ceiling in each.
+
+## 2026-10-18 — pass 1 written, stopped before the apply
+
+Written by Claude, same session and identity.
+
+- **[Claude] `data-governance/data/`**, plan with the filters and grants written and `filter_shares`
+  empty: `No changes.` The same plan with Sandbox named for both filters, saved outside the repository and
+  discarded: `Plan: 4 to add, 0 to change, 0 to destroy.`, the two filters and two `SELECT` grants with the
+  grant option to `<Sandbox Account 1>`.
+- **[Claude] `sandbox/data/` against the local module**, `data_cells_filter_grants` empty: `No changes.`
+  With a project role and the persona as sample readers: `Plan: 3 to add`, `DESCRIBE` on the `curated`
+  link for the project role alone. The pin was reverted to `consumer-data-v0.6.0` and the slice
+  re-initialised.
+- **[Claude] Nothing applied.** No principal the plan names can be filtered without a choice the stage file
+  does not settle, so the apply, the module tag and the caller's pin wait on Stage 11 decision 12.

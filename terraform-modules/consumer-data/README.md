@@ -22,6 +22,7 @@ What lands in **each** consumer account when this module applies:
 | the account's data CMK | `alias/awsds-<env>-data` — since `v0.6.0` with **no persona statement**: its consumers arrive only through `additional_data_key_policy_statements` (today in Sandbox alone: the sandbox lake's access role through S3, and any principal whose IAM allows it through Redshift Serverless; Staging's copy was destroyed with `development/data/` at Stage 6b step 2.4) |
 | the account's own Lake Formation seat | `aws_lakeformation_data_lake_settings` — admins, `parameters`, the cleared create-defaults |
 | the shared lake, made addressable | 2 resource links (`raw`, `curated`) + 4 re-grants |
+| the filtered re-grants (Stage 11 step 2.1b) | one `SELECT` per entry of `data_cells_filter_grants`, plus `DESCRIBE` on the link for a reader that is not the persona; none while the caller passes nothing, which `sandbox/data/` does |
 | ~~the derived zone~~ | ~~`awsds-<env>-derived`~~ — **removed at `v0.6.0`, 2026-08-26** |
 | ~~the enforced query path~~ | ~~workgroup `awsds-<env>-athena`~~ — **removed at `v0.6.0`, 2026-08-26**; the query surface is the SMUS project workgroup |
 
@@ -155,6 +156,13 @@ the first.
 | `link_describe` (×2) | `DataScientistAccess` | `DESCRIBE` on each **link** | Makes the local link **visible** in the catalog. Without it the persona sees no database at all, even holding every permission on the target |
 | `shared_databases` | idem | `DESCRIBE` over `layer ∈ {raw, curated}`, on the **producer's** catalog id | The container, metadata only. **No `classification` gate**: `curated`'s database carries no classification (fail-closed by absence, decision 1), so an expression naming it would not match — and a database that does not match cannot be read through its link |
 | `shared_tables` | idem | `SELECT` + `DESCRIBE` over `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | The rows. Two `expression` blocks in one grant is an **AND**; two grants would be an OR and would hand back the drop-box the `layer` gate excludes. `restricted` and `personal` are absent **by enumeration**, which is what makes this also the column proof: `curated.sample_trades.counterparty` is expected to be missing from this persona's **column list** (verification x — read as a column list, the table having been applied empty) |
+| `filter_select` (one per entry) | the entry's `principal_arn` | `SELECT` through a data cells filter, addressed on the **producer's** catalog id | The second hop of an explicit `restricted` grant: the lake grants the filter to the account with the grant option (`data-governance/data/filters.tf`), this passes it to one principal. Addressed on the target table because Lake Formation supports no cell-level security on a resource link. A row filter granted to the account and regranted here intersects with any predicate granted to the principal directly (AWS) |
+| `filter_link_describe` (one per reader × database) | an entry's `principal_arn`, when it is not `DataScientistAccess` | `DESCRIBE` on the link | A reader with no link permission sees no database. Skipped for the persona, which holds `link_describe`: a second resource for the same triple would revoke it for both on destroy |
+
+**A row filter narrows nothing for a reader that also holds an unfiltered `SELECT` on the table**: AWS
+documents the all-rows grant as prevailing. `DataScientistAccess` holds `shared_tables`, so a row filter
+regranted to it changes no row it sees. Who reads a filter is the caller's choice and its README row's
+record; `sandbox/data/` passes nothing until the user makes it (Stage 11 log, 2026-10-18).
 
 Two properties hold across every grant above. **The value lists are literal**, exactly as on the producer
 side and for the same reason: they are a **subset**, and a `layer` or `classification` value added to the
