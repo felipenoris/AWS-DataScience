@@ -171,13 +171,17 @@ expiry of December 19, 2026 on 2026-10-17, and Cost Explorer carries no Amazon R
 October 17 (`docs/PRICING.md` §5, Stage 5b verification xiii). After that date the warehouse bills at the
 rates above.
 
-Two guards did not catch the runaway. `max_query_execution_time` did not stop the query, and two
-explanations are live, neither favoured: Redshift exempts a superuser from the rule, or the standalone
-parameter is not enforced at all; the test that separates them is the same query run as a non-superuser
-([Stage 5b's log](../log/log-stage-05b-redshift-serverless.md), *The superuser hypothesis is no longer the
-leading one*). And `make status` read `0.0000 USD/h` throughout, because the slice's authored
-`usd_per_hour` was 0.0; it is **1.44** since 2026-09-20, a ceiling rather than an average. The usage limit
-in force then, 40 RPU-hours, would have capped the runaway at 14.40 USD, 3.4 hours later.
+Three guards did not catch the runaway. `max_query_execution_time` did not stop the query, and three
+explanations are live: Redshift exempts a superuser from the rule, the standalone parameter is not
+enforced at all, or the statement, which read catalog tables alone, ran on the leader node and never
+entered WLM, so neither the per-query limit nor the usage limit's refusal reached it. The test that
+separates the three is a long query over a user table, run as a non-superuser and as the admin
+([Stage 5b's log](../log/log-stage-05b-redshift-serverless.md), 2026-10-18, *A third candidate for the
+runaway*). The usage limit is the second guard, and it did not stop the statement either: it kept
+running through the two minutes the workgroup was breached on 2026-09-20, while the breach refused
+every query that needed the compute. And `make status` read `0.0000 USD/h` throughout, because the
+slice's authored `usd_per_hour` was 0.0; it is **1.44** since 2026-09-20, a ceiling rather than an
+average.
 
 **The warehouse's storage has its own ceiling, and it is not small.** A sandbox schema carries a **1 TB**
 quota (`objectives.md`, 2026-09-20), which at 0.024 USD/GB-month is **24.58 USD a month if filled — 49% of

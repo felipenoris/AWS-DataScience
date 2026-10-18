@@ -620,8 +620,12 @@ than intended.
   default group, **`/aws/sagemaker/studio`, 13.6 MB with no retention at all** — the never-expiring group
   6a's step exists to avoid — with streams named `<domain>/<space>/<app type>/default` and `PostStartup`
   and `ServerExtension` children. And **no running-app metric exists to alarm on**: CloudWatch lists no
-  SageMaker namespace in Sandbox. The repair is a decision rather than a reading — **decision due 12** —
-  and it is `AWS_STATE.md` `EXC-10` until then.
+  SageMaker namespace in Sandbox. That reading looked at the `AWS/SageMaker` namespace alone:
+  `AWS/Usage` `ResourceCount` (`Service=SageMaker`) counts running apps per type (Stage 12 1.1, read
+  2026-10-18), and since that day `sandbox/observability/` alarms at 80 % of the quotas for JupyterLab on
+  `ml.t3.medium` and `ml.t3.large`, Code Editor on `ml.t3.large` and processing on `ml.t3.medium`. The
+  log-group repair is a decision rather than a reading — **decision due 12** — and it is `AWS_STATE.md`
+  `EXC-10` until then.
 - **6.2 — [Claude] Finish the log groups**: confirm the named group receives the apps' output and that a
   running-app metric exists to alarm on; `9.1` created the groups and never read one.
 - **6.3 done 2026-09-18.** [`docs/SMUS.md`](../../SMUS.md)'s preamble block of corrections is
@@ -1636,7 +1640,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    §7 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
    **`NO_PROXY` as a dated literal** — Sandbox's, 50 entries and sha256 `856bc57bb…` when first written,
    70 entries and `aafa08da98a61f5c` from 2026-10-10 through version 9 (`default-v0.8.0`), the output
-   `no_proxy_all_groups` verbatim — and
+   `no_proxy_all_groups` verbatim, and 72 entries and `6faf2e4761622508` in the copy under `gitlab/`
+   since PR #172 (2026-10-18), a proposal for the next release — and
    the command that refreshes it in the comment beside it; the `ARG` stays as its default, so another account
    overrides it at build time without editing the file, and an empty override still **fails** the
    build, because an image carrying a proxy and no bypass list works while losing the perimeter.
@@ -1668,8 +1673,9 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     Adopt the default group into `sandbox/sagemaker/` with the retention the empty group carries, and stop
     creating the empty one — an import and a plan, reversible. **(b)** Set retention on it by hand — one
     write, which the next reader cannot see from any slice (Lesson 35). **Recommended: (a).** Neither gives
-    an alarm on running apps, because no native metric counts them; the cost half of that alarm is 6e
-    step 8.3's budget notification, and a count needs a signal this estate does not yet have. **The
+    an alarm on running apps, and neither is needed for one: `AWS/Usage` `ResourceCount` counts them per
+    type, and Stage 12's `sandbox/observability/` alarms on it since 2026-10-18 (step 6.2); the cost half
+    of that alarm is 6e step 8.3's budget notification. **The
     subject is a family, not one group**: `AWS_STATE.md` `EXC-10` counts 14 never-expiring groups in
     Sandbox on 2026-10-17 (this one, `/aws/sagemaker/ProcessingJobs`, eight `/aws/mwaa-serverless/`
     groups and each project's `datazone-<project>-dev/error` and `/output`) and asks for one decision
