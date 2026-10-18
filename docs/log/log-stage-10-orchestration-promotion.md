@@ -110,3 +110,12 @@ infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, the pla
   the rule, and `./aws/deploytargets.py`'s `DT-3` and `DT-5` (Validation 3).
 - **[Claude] Verifications iii and xiii marked** with this file's 0.3 and 4.3 readings; no call was made for
   them.
+- **[Claude] Three gaps of the pinned lint, given to this stage.** The orchestrating session relayed the
+  Stage 8 task's reading of `awsds-workflows` at `3c1708e` (PR #186, open, whose Stage 8 5.6 table names an
+  owner for each clause the template's line leaves off), and each was read again in that commit's code
+  through `gh api`. `cli.py`'s `lint` hands `--instance-type` and `--image-repository` to a rendered file's
+  checks only when given, so 2.3's promoted command passes the template's two options; `lint.py`'s
+  processing and code-input checks return on any operator but `SageMakerProcessingOperator`, and its image
+  rule reads `ImageUri` keys, so 5.1's training task is unchecked, and 1.3's "the lint checks each" now
+  says a processing job's; and no rule compares a code input with the release's manifest, so 2.4's release
+  job reads `src/` back against it.

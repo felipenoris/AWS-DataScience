@@ -276,9 +276,9 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   **This role is the caller of every `Create*Job` the workflow makes, so the job settings bind it** (Stage
   9 3.5, Lesson 66): each job carries `VpcConfig` with the job subnets, `EnableNetworkIsolation: true`,
   `EnableInterContainerTrafficEncryption: true` and a `VolumeKmsKeyId`, on an instance type inside the
-  ceiling, and the lint checks each (Stage 8 5.6: the volume key only in the promoted mode, the instance
-  type only under `--instance-type`), because a run-time refusal names the policy and never the
-  statement. **No `s3:*` on any lake bucket, no `lakeformation:GetDataAccess`** — the role orchestrates, the
+  ceiling, and the lint checks each on a processing job (Stage 8 5.6: the volume key only in the promoted
+  mode, the instance type only under `--instance-type`, and no other operator, 5.1), because a run-time
+  refusal names the policy and never the statement. **No `s3:*` on any lake bucket, no `lakeformation:GetDataAccess`** — the role orchestrates, the
   job role touches data. **A Python or Bash task runs with this role's credentials**, measured at 6i (the
   project role, session `AmazonMWAAServerless`), which is the second reason it holds no lake permission: a
   Python task is orchestration code, never a data path. An S3 operator task, a sensor and a delete on a
@@ -414,7 +414,12 @@ ran in the lab on 2026-10-15 (D41).
 - **2.3 — [Claude] Consume the D28 promotion lint — it is authored once, at Stage 8 step 5.6**, so there
   is one copy. It runs on the rendered file (decision 6) in the promoted mode, `lint <file> --promoted
   --prefix s3://<outputs bucket>/workflows/app-etl/<tag>/`, which refuses a CLI variable or a placeholder
-  left in the copy; the command refuses `--promoted` without a prefix and with a folder. The repository's
+  left in the copy; the command refuses `--promoted` without a prefix and with a folder. It also passes
+  the two options the `app-etl` template's `test` job passes since 2026-10-18 (Stage 8 5.6's table):
+  `--image-repository` with the application's repository, and one `--instance-type` per type of the
+  ceiling, the seven `allowed_instance_types` of `terraform-modules/sagemaker-denies`. Without them the
+  promoted mode refuses neither a `dev-env` image nor an instance type outside the ceiling: `3c1708e`'s
+  `lint` hands both to the definition's checks only when given. The repository's
   YAML is `app-etl`'s CI's, linted as a folder in the authoring mode, where the CLI variables are
   translated and not refused. It rejects a definition that references a domain resource (project connections,
   portal-scoped ids), names a container by anything other than an **ECR URI and digest**, exceeds **50 KB**,
@@ -463,7 +468,10 @@ ran in the lab on 2026-10-15 (D41).
   makes the intent explicit). When the workflow has Python or Bash tasks, the code package the tag pipeline
   built from `code/`, which the bundle carries, goes beside it and its `VersionId` is recorded the same
   way; the processing task's `src/` goes to `workflows/app-etl/<tag>/src/`, the job's input (D28 class 2d,
-  decision 7, taken). The scripts in `glue/` go to `workflows/app-etl/<tag>/glue/`, where the application
+  decision 7, taken). The release job then reads that prefix back against the release's manifest, the
+  one it writes there, and fails on any object that differs: the pinned lint has no rule comparing a
+  processing job's code input with that manifest (Stage 8 5.6 (h)), so this read is the check. The
+  scripts in `glue/` go to `workflows/app-etl/<tag>/glue/`, where the application
   slice's Glue jobs name them; Glue reads them at every run and pins no version, so what keeps them from
   changing is decision 12. **The release job writes from the deploy runner**, in `VPC-SharedServices`,
   whose gateway endpoint the perimeter leaves out by name (Stage 9 1.1), and under a key that delegates
@@ -632,6 +640,10 @@ registration is the pipeline's act, after graduation through git).
   *required* for cross-account deployment, and the Staging read of 5.4 fails without it. The job carries the
   settings 1.3 lists, on an instance type inside the ceiling, and reads its training data from a prefix of
   `awsds-prod-outputs` a Glue step wrote first: a SageMaker job reads no governed data (Stage 9 3.1).
+  **The lint does not check this task**: at `3c1708e` it reads the job settings of a
+  `SageMakerProcessingOperator` alone (Stage 8 5.6 (f)), and its image rule reads `ImageUri` keys, while a
+  training job names its image as `AlgorithmSpecification.TrainingImage`. Stage 8 5.6's table gives this
+  step the gap.
 - **5.2 — [Claude] Write the registration/approval jobs in the promotion pipeline** (under
   `awsds-deploy-prod`): `CreateModelPackage` into `awsds-prod-model-app-etl` with
   `PendingManualApproval`, carrying what D28 item 6 asks recorded — `ModelMetrics` from the evaluation,

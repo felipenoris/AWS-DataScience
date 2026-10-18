@@ -258,10 +258,12 @@ AWS write, and neither change below was applied.*
   bump, and that stage's log of today leaves it to its pass 2. `app-etl` carries a `Code` object
   (`code/app-etl.zip`, for `summarize`), and 5.1's `demo-python-operator` imports `demo_tasks.run` from its
   archive.
-- **[Claude] The sitting.** `./scripts/slices.py up --env staging --dry-run` lists two `[E]` slices,
-  `staging/egress` and `staging/probes`, whose header says not to run it as written; `make up` passes
-  `ONLY=` to `--only` (Stage 8 step 4.4). The Prerequisites now say `make up ENV=staging ONLY=egress`, name
-  the two changes above for 4.4, and 4.4 waits on both.
+- **[Claude] The sitting.** `./scripts/slices.py up --env staging --dry-run` at `28f340c` lists two `[E]`
+  slices, `staging/egress` and `staging/probes`, whose header says not to run it as written; `make up`
+  passes `ONLY=` to `--only` (Stage 8 step 4.4). PR #186, open on 2026-10-18, retires `staging/probes/`,
+  after which `staging/egress` is the account's only `[E]` slice. The Prerequisites now say `make up
+  ENV=staging ONLY=egress`, which holds either way, name the two changes above for 4.4, and 4.4 waits on
+  both.
 - **[Claude] Stale text corrected.** The Prerequisites and the risk "The `Workloads` document" said Stage 9
   pass 1's job statements were merged and not attached. They were attached at 19:54Z today, the battery's
   `ou` phase reading them after ([Stage 9's log](log-stage-09-deployment-targets.md)), and this stage's 0.3
