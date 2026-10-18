@@ -1945,6 +1945,32 @@
     notebook instance's, so `OB-5` finds those by name and reads every name back:
     <https://aws.amazon.com/blogs/machine-learning/best-practices-for-viewing-and-querying-amazon-sagemaker-service-quota-usage>.
 
+- The pages Stage 12's observability slices were written against, read 2026-10-18:
+  - The same *Notifying users on alarm changes* page, whose confused-deputy example, `ArnLike` on
+    `aws:SourceArn` with the account's alarms and `StringEquals` on `aws:SourceAccount`, is the shape of
+    `CloudWatchAlarmsOfThisAccount` on both alerts topics:
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Notify_Users_Alarm_Changes.html>.
+  - `PutCompositeAlarm`: a rule names the alarms "that you have created", by name or ARN, up to 100
+    children; the page says nothing of another account's alarms (step 2.2):
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutCompositeAlarm.html>.
+  - The dashboard body: a metric widget may carry one alarm annotation and no `metrics` array, an
+    `alarm` widget takes 1-100 alarm ARNs, and a `log` widget's query starts with `SOURCE '<group>'`:
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html>.
+  - Squid's `logformat` codes behind the proxy log's fields: `%<st` "Total size of reply sent to client
+    (after adaptation)", `%>st` the request received from the client:
+    <https://www.squid-cache.org/Doc/config/logformat/>.
+  - IAM Access Analyzer pricing: unused access at 0.20 per IAM role or user analyzed a month, "charges
+    occur once during setup, and then monthly on the first day of the month" (step 7.1):
+    <https://aws.amazon.com/iam/access-analyzer/pricing/>.
+  - Control Tower's AWS Backup integration, a landing-zone setting, and the resources it creates in a
+    Central Backup account and a Backup Administrator account of the Security OU (step 8.1):
+    <https://docs.aws.amazon.com/controltower/latest/userguide/backup.html> and
+    <https://docs.aws.amazon.com/controltower/latest/userguide/backup-resources.html>.
+  - The Price List offers for step 1's rows: `AmazonCloudWatch` for `us-west-2`, `sa-east-1` and the
+    global `aws-other` region (dashboards), and `AWSCostExplorer`, through the region index:
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/region_index.json> and
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>.
+
 - Track alerts through Amazon SNS in AWS Control Tower (the topics the landing zone creates, and the fact that the Audit account e-mail is subscribed to `aws-controltower-AggregateSecurityNotifications` by default): <https://docs.aws.amazon.com/controltower/latest/userguide/sns.html>.
 
 - Compliance notifications by SNS in the audit account (why those topics are too noisy to carry a break-glass alarm): <https://docs.aws.amazon.com/controltower/latest/controlreference/receive-notifications.html>.

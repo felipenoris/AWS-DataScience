@@ -232,6 +232,14 @@ terraform-live/
 │   │                     #     runner assumes for the CI/CD CLI's test deploy (INT-25), on the
 │   │                     #     deploy-role module with its own ceiling: the supply chain's
 │   │                     #     second write path into Sandbox, after dev-env/'s
+│   ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the account dashboard
+│   │                     #     awsds-sandbox-environment, the account's alerts topic
+│   │                     #     awsds-sandbox-alerts (Stage 8 decision 5 gave one to each
+│   │                     #     deployment target's foundation/, and Sandbox is none), and the
+│   │                     #     80 % quota alarms on the SageMaker types in use and the VPC's
+│   │                     #     interface endpoints. Reads foundation/; builds warehouse/'s name
+│   │                     #     and its two alarms' as that slice does, since warehouse/ reads
+│   │                     #     this slice's alerts_topic_arn
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -442,6 +450,13 @@ terraform-live/
     │                     #     foundation/'s container, pushing with its instance profile and
     │                     #     holding no deploy permission; the buildbox (rank 55) retired
     │                     #     into it at Stage 7 step 6.5
+    ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the hub dashboard
+    │                     #     awsds-prod-hub, which carries Production's own panels too (the free
+    │                     #     tier holds three dashboards, counted once per bill); the proxy access
+    │                     #     log's two metric filters and the refusal alarm; the VPCs-per-Region
+    │                     #     quota alarm. The alarms notify foundation/'s awsds-prod-alerts.
+    │                     #     Reads foundation/, networking/ and workloads/; names the [D] hosts'
+    │                     #     alarms by name and never reads a [D] state (Lesson 4)
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration
