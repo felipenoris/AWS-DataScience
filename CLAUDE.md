@@ -219,10 +219,11 @@ per laptop, never one per session.
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
-  message began. Its auto-mode classifier refused to hand an SCP apply to a started session
-  (*Protected-Scope IaC Apply*), refused one session's apply of a new slice carrying an e-mail
-  subscription, and refused one session's `git push` (*Out-of-Place Publication*); the orchestrating
-  session ran each itself on the user's authorization in its own chat. Sessions told not to edit
+  message began: a turn begun right after `/compact` is refused, and so is a request the user sends
+  mid-turn, so the session is proposed as a card the user starts. Its auto-mode classifier refused to
+  hand an SCP apply to a started session (*Protected-Scope IaC Apply*), refused one session's apply of
+  a new slice carrying an e-mail subscription, and refused one session's `git push` (*Out-of-Place
+  Publication*); the orchestrating session ran each itself on the user's authorization in its own chat. Sessions told not to edit
   `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
   conflict on adjacent lines. Their notes land in
