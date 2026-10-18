@@ -600,3 +600,8 @@ account id or an e-mail address. Times are UTC.*
   on 2026-10-16, 2026-10-17 and 2026-10-18, the newest `RUNNING` and the two before it `FAILED`. A run
   starts 6 and 10 minutes after its cron's minute. Step 3.3 and the pass table named 17:32 UTC and "the
   next day" for both sources; they now name the project's own source and both times.
+- **[Claude] The live `Workloads` document** (`organizations describe-policy` as `awsds-infra-identity`,
+  `InfrastructureAccess` in `Identity`, read-only): `awsds-org-scp-ou-workloads`, 2,499 bytes, nine
+  statements, the last `DenySageMakerServerlessInference`, as Stage 9's log of the same day records for
+  its apply at 19:54. 7.4a and 4.4 say so. The plan of `sandbox/sagemaker/` on `main`'s pin that step 1.2
+  quotes (2 to add, 1 to change, 0 to destroy, not applied) is Stage 11's reading, in its log.
