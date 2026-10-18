@@ -201,20 +201,20 @@ terraform-live/
 │   │                     #     ceiling, for even one plan cycle, is the window a mistake costs
 │   │                     #     1.44 USD/h in. make down destroys it; RMS storage keeps billing,
 │   │                     #     which is the price of keeping the data and is warehouse/'s row
-│   ├── warehouse/        # [P] the Redshift Serverless warehouse (D40, Stage 5b, rank 53):
-│   │                     #     namespace + workgroup awsds-sandbox-warehouse at base_capacity 4,
-│   │                     #     under alias/awsds-sandbox-data (read from data/), in the PRIVATE
-│   │                     #     tier's two subnets in two AZs - not the isolated tier, which
-│   │                     #     carries no peering route and no client. [P] because a workgroup
-│   │                     #     THE DATA HALF ONLY: the namespace, its Secrets-Manager admin
-│   │                     #     credential, its three audit log groups (pre-created with a
+│   ├── warehouse/        # [P] the Redshift Serverless warehouse's data half (D40, Stage 5b,
+│   │                     #     rank 53): the namespace awsds-sandbox-warehouse under
+│   │                     #     alias/awsds-sandbox-data (read from data/), its Secrets-Manager
+│   │                     #     admin credential, its three audit log groups (pre-created with a
 │   │                     #     retention period, or Redshift makes them Never Expire), the
 │   │                     #     namespace IAM role, the workgroup's security group and the
 │   │                     #     alarms. [P] because the namespace holds every database, schema,
 │   │                     #     table, database user, role and GRANT - state no plan re-creates,
-│   │                     #     which is 5.1 rule 2. The compute is warehouse-compute/ above.
-│   │                     #     Holds the `sandbox` database, its themed schemas and the tags
-│   │                     #     Stage 6h's connections need. No Lake Formation object: the
+│   │                     #     which is 5.1 rule 2; the `sandbox` database and its themed
+│   │                     #     schemas are SQL inside it. The compute is warehouse-compute/
+│   │                     #     above, in the PRIVATE tier's two subnets in two AZs - not the
+│   │                     #     isolated tier, which carries no peering route and no client.
+│   │                     #     Per admitted project: the tag, the IAM policy and the access
+│   │                     #     role Stage 6h's connection needs. No Lake Formation object: the
 │   │                     #     sandbox class is outside it by design, like lake/ beside it
 │   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
 │   │                     #     Claude models and one attachment per SMUS project role. The

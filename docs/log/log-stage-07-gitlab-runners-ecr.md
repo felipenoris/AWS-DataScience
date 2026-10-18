@@ -607,3 +607,115 @@ the up half.*
 `SC-7`, the consumers' cross-account reads, prints no verdict when only the Production profile is
 named. 8.3's up half is the same run with GitLab up and the runner registered, every consumer profile
 included: only timestamps and instance state may move.
+
+## 2026-10-18 — 8.4's remainder: `SC-11` reads the deployed proxy configuration
+
+*Written by Claude, session `stage-07-supplychain`, with the environment down (the hub hosts and GitLab
+stopped, `production/egress/` and `production/runners/` destroyed). Every AWS call was a read, as the
+infrastructure user through `awsds-infra-prod` (account `<Production>`, permission set
+`InfrastructureAccess`) and `awsds-infra-sandbox-1` (`<Sandbox>`, the same permission set). Nothing was
+applied.*
+
+- **[Claude, session stage-07-supplychain] `config/gitlab.rb` read from S3 with GitLab stopped.**
+  `s3://awsds-prod-gitlab-objects/config/gitlab.rb`, 103 lines, answered to the infrastructure user (the
+  object is under `alias/awsds-prod-gitlab`, so `kms:Decrypt` answered as well). It holds four
+  `<component>['env']` blocks, `gitlab_rails`, `gitaly`, `gitlab_workhorse` and `gitlab_pages`, each with the
+  six variables `http_proxy`, `https_proxy`, `HTTP_PROXY`, `HTTPS_PROXY`, `no_proxy` and `NO_PROXY`. The four
+  proxy variables read `http://proxy.awsds.internal:3128` in every block, and the two bypass variables carry
+  one list in all four, equal to the literal in `terraform-live/production/tooling/main.tf` after
+  `REGION` becomes `us-west-2`: 56 entries, sha256 `0f80372bf880bb16` (the digest convention of
+  `aws/awslib/devenvrecipe.py`, recomputed here from the file). The object holds no secret: the lines that
+  match `secret` are the bypass list's `secretsmanager` name, and the SAML values are public metadata.
+- **[Claude, session stage-07-supplychain] `./aws/supplychain.py` extended.** `SC-11` keeps its comparison of
+  the literal with `egress/`'s output (a note while `egress/` is down) and gains three readings. (1) The
+  deployed object's four env blocks must each tell the contracted proxy in the four variables, and
+  `tooling/main.tf`'s `proxy_url` must say the same: `GitLab's proxy target`. (2) The blocks must carry one
+  bypass list in both spellings, equal to the literal in the code, so an object older than the code is a
+  fail with the missing and extra names: `GitLab's deployed bypass list`. (3) A runner's rendered user
+  data, `ec2:DescribeInstanceAttribute` `userData` decoded: the `PROXY` and `NOPROXY` assignments, `NOPROXY`
+  equal to `egress/`'s `no_proxy` (the output `runners/` reads, not the all-groups list), and the six
+  `--env` flags of `gitlab-runner register`, each referring to the assignment of its kind. Between sessions
+  that reading is a note, naming `runners/main.tf`'s `proxy_url` as the code's side. Also fixed: the block
+  comment of the ACM read (nothing is imported, decision 1), section 9's line about `Staging` (it has the
+  profile `awsds-infra-staging`; it is not measured because decision 7 left it out of the consumer map),
+  and section 4's title, which now names the proxy lines it already carried.
+- **[Claude, session stage-07-supplychain] The extension exercised before it was believed (Lesson 54).**
+  The run of 2026-10-18 20:09 UTC, `./aws/supplychain.py awsds-infra-prod awsds-infra-sandbox-1`, exit 0,
+  *all checks passed*: 21 passes, 2 notes, 0 fails. The `SC-11` rows: a note (the bypass literal is not
+  compared, `production/egress` is down), a note (*no runner instance*, with `runners/main.tf` saying
+  `http://proxy.awsds.internal:3128`), a pass for `GitLab's proxy target` (*4 env blocks (gitaly,
+  gitlab_pages, gitlab_rails, gitlab_workhorse) tell http://proxy.awsds.internal:3128 in 4 variables each, as
+  terraform-live/production/tooling/main.tf does*) and a pass for `GitLab's deployed bypass list` (*56
+  entries, sha256 0f80372bf880bb16, one list in the 4 blocks, equal to the literal in
+  terraform-live/production/tooling/main.tf*). Thirty-one assertions ran offline on real payloads and
+  mutated copies of them: the deployed object (another proxy in two blocks, a block removed, a second bypass
+  list, a variable removed, a fifth block holding no proxy); the stopped GitLab host's real user data,
+  whose `PROXY` and `NOPROXY` assignments parse (it has no register call, so exactly the six job-variable
+  problems come back); and offline renderings of the three runner templates, clean as rendered and
+  named correctly when `PROXY` is changed, a job variable points at the wrong assignment or is missing, or
+  `NOPROXY` is not egress's. Two negative controls in the working copy, each restored: the `proxy_url` of
+  `tooling/` and of `runners/` set to `http://10.31.0.1:3128` and one bypass entry changed (`127.0.0.1` to
+  `127.0.0.2`) in the literal gave three fails and exit 2, the second naming `missing 1 (127.0.0.2),
+  extra 1 (127.0.0.1)`; the contract constant moved to port 3129 in the script gave two fails, 17
+  findings on `GitLab's proxy target` (16 in the object, 1 in the code) and the runners' proxy, and exit 2.
+  **Unexercised: a runner's up path against a real instance**, which waits for a session with
+  `production/runners/` applied; the decode is the one the stopped host's user data went through.
+- **[Claude, session stage-07-supplychain] The identity pair, read from the entries above (the deliverable
+  of the stage file).** Nothing was signed into. After the refresh that put the SAML provider on the host
+  (the entry *step 3.2, the SAML block delivered*), the persona signed in through the Identity Center
+  button and GitLab created the account (verification iii), and the local administrator `felipenoris`, the
+  account renamed from `root`, edited that persona's membership of `awsds/data-scientists` "in the UI, as
+  the administrator" (the user's entry), and authorized GitLab Pages as the administrator (*step 4.2*).
+  The persona's session had replaced the administrator's in the same Chrome profile, so the membership edit
+  followed a fresh administrator sign-in (inference: no entry names the sign-in form or the browser
+  profile). Both halves of the pair are answered by the record: an Identity Center user with no local
+  account created by hand, and the kept local account in use after SAML went live. The three other
+  personas' memberships (3.5) stay owed.
+
+## 2026-10-18 — the backups' expiry, the house image's spaces, and text read against the record
+
+- **[Claude, session stage-07-supplychain] The two backups' expiry, dated by S3.** The backup bucket
+  `awsds-prod-gitlab-backup` is versioned and holds three lifecycle rules: `expire-current-versions` (30
+  days, prefix empty, so the whole bucket), `expire-noncurrent-versions` (7 days) and
+  `abort-incomplete-multipart-uploads` (7 days). `HeadObject`'s `Expiration` header on the two objects:
+  `1791860449_2026_10_13_19.4.2_gitlab_backup.tar` (931,840 bytes) `expiry-date="Fri, 13 Nov 2026 00:00:00 GMT"`;
+  `1792033259_2026_10_15_19.4.2_gitlab_backup.tar` (9,953,280 bytes) `expiry-date="Sun, 15 Nov 2026 00:00:00 GMT"`,
+  rule `expire-current-versions` on both. In a versioned bucket the expiry adds a delete marker and the
+  noncurrent rule deletes the version 7 days later (the S3 page, `docs/REFERENCES.md`). The timer writes a
+  backup at 03:00 UTC only while the host runs, so with GitLab down past 2026-11-13 the bucket holds no current
+  backup and `SC-13` reads a note. The DLM policy kept going with the host stopped: six snapshots of the
+  50 GiB data volume, 2026-10-13 to 2026-10-18, each taken between 03:48 and 03:57 UTC, the last two after
+  the host stopped on 2026-10-16. No runbook procedure restores from a snapshot. 8.2 opens with
+  `gitlab-backup create`, so the rehearsal is unaffected; the stage file's 8.2 carries the record.
+- **[Claude, session stage-07-supplychain] The Sandbox spaces and the house image's versions, read for
+  INT-09 and INT-19.** `awsds-infra-sandbox-1` lists two SageMaker AI domains, `d-lfgbdrjncmsu` and
+  `d-p6gthxc82ckg` (one per project), each `InService` with the image `awsds-sandbox-dev-env` attached to
+  JupyterLab and to the Code Editor, no version number. Each domain has one space,
+  `default-28f1b390-0041-7068-8cc7-9ccef94277d1` (created 2026-10-15 in the first and 2026-08-23 in the
+  second), and both run AWS's `sagemaker-distribution-cpu` at alias `4.5`: **no space uses the house
+  image**. The image has versions 7, 8 and 9, all `CREATED` (2026-10-14, 2026-10-15 and 2026-10-16 local
+  time); 6 and the earlier ones no longer exist. The space `jup-house-image`, started on version 7 on
+  2026-10-15 (Stage 8's log), was deleted, and no entry of any log records a clone of GitLab from a
+  notebook, so verifications x and xi keep the notebook surface owed.
+- **[Claude, session stage-07-supplychain] Text corrected against the record, each item read first.**
+  *The stage file's status* said pass 2 "nearly closed" while the plan core and the project notes said
+  "closed"; both are one fact, pass 2 closed but for 3.5's three persona memberships, which wait for each
+  persona's first sign-in. *`saml.auto.tfvars`* lives in the project folder's `secrets/` since 2026-10-13
+  (its existence was checked, never its content). *The bypass literal* in `tooling/main.tf` holds 56
+  entries, sha256 `0f80372bf880bb16`, recomputed; the 60-entry digest `f8bc1df99d224181` is the literal
+  before decision 9. *`production/egress/`* lists no SageMaker endpoint: the module's core eight, the Session
+  Manager trio and `secretsmanager` make the 12. *5.1 to 5.4 and 6.1 and 6.2* read "apply owed" and
+  "unapplied" next to the entries that record their applies. *D8* holds no boot time: the "3-5 minutes"
+  appears only in the stage file and this log, and conventions §5.1 rule 7 moves a `[D]` service to `[E]`
+  when it proves cheap to rebuild and an `[E]` one to `[D]` when its rebuild proves slow, so a slow start of
+  a `[D]` host re-opens nothing. Verification vi had been answered with the first boot, a fresh install;
+  the one timed start (host started 15:59:24 UTC on 2026-10-12, the sign-in page `200` read at 16:03)
+  bounds a start at 3 min 36 s. *Verification x*: the image's smoke test read GitLab through the image's
+  own trust on 2026-10-12, so only the notebook is left. *Runbook §I step 6*: sign-up was kept open by the
+  user, and no entry in this log or in Stage 8's records an act on Auto DevOps or on the restricted
+  visibility level, so both are owed. *Runbook §M*: since Stage 8 decision 18 the dev-env pipeline's `register` and `retire` call the SageMaker API from
+  `release/versions.py` and clone nothing; no file under `gitlab/` or `examples/app-etl/` clones
+  `awsds/infrastructure` or uses a job token, which leaves the mirror with no reader in this repository
+  (whether Stage 8 keeps it for the promotion jobs is that stage's). *INT-09's fallback* named a second
+  peering and Development's commits, both gone with 6b, and a mirror decision 4 left unbuilt; *INT-19's
+  owed clause* named image version 6; *`docs/PRICING.md`'s key row* said `production/pki/` does not exist.

@@ -38,6 +38,8 @@
 #         data source on a cron nobody wrote is Lesson 17's shape; one whose completed runs have all
 #         failed is EXC-11's, and the live `status` field does not show it - a run's stoppedAt is its
 #         successor's startedAt, so a daily source reads RUNNING however long it has been failing.
+#         The exception is by name and each project's Tooling environment creates one source, so
+#         the note prints how many sources it covered.
 #   CT-7  no SMUS-managed principal holds a grant on a lake database, a lake table or an LF-Tag.
 #         The design reads the lake through TBAC re-grants to a persona (GOVERNANCE.md §Grants),
 #         so a project role or a conditioned IAMPrincipals entry reaching `raw`, `curated` or
@@ -47,10 +49,13 @@
 #   CT-9  nobody may override a project owner or a domain unit owner. The owner project's approval
 #         is the control on the catalog road; an override grant removes it.
 #
-# What it cannot see (0.6, measured 2026-09-13): DataZone refuses GetAsset and GetDataProduct to
-# InfrastructureAccess, so the asset behind a listing is read through GetListing or not at all.
-# ListPolicyGrants is refused for two policy types on the same ceiling; those cells read DENIED
-# rather than empty, because an empty listing and a refused read are different facts.
+# What it cannot see (0.6, measured 2026-09-13 and again 2026-10-18): DataZone refuses GetAsset and
+# GetDataProduct to InfrastructureAccess in Data Governance, the session this script reads the
+# domain with, so the asset behind a listing is read through GetListing or not at all. The refusal
+# is the project-membership check: the Sandbox session, a contributor of both projects since
+# 2026-10-15, is answered. ListPolicyGrants is refused for two policy types on the same ceiling;
+# those cells read DENIED rather than empty, because an empty listing and a refused read are
+# different facts.
 
 from __future__ import annotations
 
@@ -97,12 +102,14 @@ DOMAIN_UNIT_POLICY_TYPES = (
     "OVERRIDE_PROJECT_OWNERS",
 )
 
-# A scheduled data source already known to fail, with the exception that records it. CT-6 reports
-# these as a note and fails on anything else, so the check stays readable while the exception stands
-# (Lesson 50). Remove a row here when its exception is closed, and CT-6 turns red the same day.
+# A scheduled data source already known to fail, with the exception that records it. The exemption is
+# by name, so it covers every source of that name, and each project's Tooling environment creates one:
+# CT-6 prints how many sources it covered, and the project of each. CT-6 reports these as a note and
+# fails on anything else, so the check stays readable while the exception stands (Lesson 50). Remove
+# a row here when its exception is closed, and CT-6 turns red the same day.
 FAILING_BY_EXCEPTION = {
     "Tooling-default-sagemaker-modelpackagegroup-datasource": (
-        "EXC-11, since 2026-08-24: the Tooling blueprint's own source, tracking an asset type this "
+        "EXC-11: the Tooling blueprint's own source, one per project, tracking an asset type this "
         "estate has never produced; it bills nothing and creates nothing"
     ),
 }
@@ -435,18 +442,20 @@ def main(argv: list) -> int:
     # daily failures because the data source's own `status` read RUNNING (EXC-11). What decides the
     # verdict is the run history: a scheduled source whose COMPLETED runs all failed is a failure,
     # however healthy the live status looks.
-    scheduled = [(n, s, d) for _, n, _, _, _, s, _, _, d in sources if s != "-"]
+    scheduled = [(p, n, s, d) for p, n, _, _, _, s, _, _, d in sources if s != "-"]
     failing = []
-    for n, s, dsid in scheduled:
+    for p, n, s, dsid in scheduled:
         by_status = runs.get(dsid, {})
         done = {k: v for k, v in by_status.items() if k != "RUNNING"}
         if done and all(k == "FAILED" for k in done):
-            failing.append((n, s, sum(done.values())))
-    # The discriminator (Lesson 50). One source is failing by a recorded exception, so reporting it
+            failing.append((p, n, s, sum(done.values())))
+    # The discriminator (Lesson 50). A source is failing by a recorded exception, so reporting it
     # as a failure every run would leave this check permanently red and teach the reader to skip it.
-    # It reads as a note naming EXC-11; anything ELSE failing is the finding this check exists for.
-    excepted = [f for f in failing if f[0] in FAILING_BY_EXCEPTION]
-    unexpected = [f for f in failing if f[0] not in FAILING_BY_EXCEPTION]
+    # It reads as a note naming EXC-11, with the number of sources the name covered, because the
+    # exemption is by name and every new project adds one; anything ELSE failing is the finding
+    # this check exists for.
+    excepted = [f for f in failing if f[1] in FAILING_BY_EXCEPTION]
+    unexpected = [f for f in failing if f[1] not in FAILING_BY_EXCEPTION]
     if not scheduled:
         checks.ok(
             "CT-6",
@@ -457,16 +466,22 @@ def main(argv: list) -> int:
         checks.fail(
             "CT-6",
             "every scheduled run is one somebody chose, and succeeds",
-            "; ".join(f"{n} on {s}: every completed run FAILED ({c})" for n, s, c in unexpected)
+            "; ".join(
+                f"{n} in {p} on {s}: every completed run FAILED ({c})" for p, n, s, c in unexpected
+            )
             + " - a service-created source on a service-chosen cron, failing unwatched (Lesson 17)",
         )
     elif excepted:
+        covered: dict = {}
+        for p, n, s, c in excepted:
+            covered.setdefault(n, []).append(f"{p} on {s}, {c} runs")
         checks.note(
             "CT-6",
             "every scheduled run is one somebody chose, and succeeds",
             "; ".join(
-                f"{n} on {s}: {c} completed runs, all FAILED - {FAILING_BY_EXCEPTION[n]}"
-                for n, s, c in excepted
+                f"{n}: {len(rows)} source(s), every completed run FAILED ({'; '.join(rows)})"
+                f" - {FAILING_BY_EXCEPTION[n]}"
+                for n, rows in covered.items()
             ),
         )
     else:
@@ -474,8 +489,8 @@ def main(argv: list) -> int:
             "CT-6",
             "every scheduled run is one somebody chose, and succeeds",
             "; ".join(
-                f"{n} on {s} ({', '.join(f'{v} {k}' for k, v in sorted(runs.get(d, {}).items())) or 'no run'})"
-                for n, s, d in scheduled
+                f"{n} in {p} on {s} ({', '.join(f'{v} {k}' for k, v in sorted(runs.get(d, {}).items())) or 'no run'})"
+                for p, n, s, d in scheduled
             )
             + " - a blueprint-created source arrives with a cron nobody wrote (Lesson 17)",
         )
@@ -700,11 +715,12 @@ def main(argv: list) -> int:
 
         rep.h1("8. What this report cannot see")
         rep.text(
-            "DataZone refuses GetAsset and GetDataProduct to InfrastructureAccess (Stage 6f 0.6), so\n"
-            "the asset behind a listing is read through GetListing or not at all, and a DENIED cell in\n"
-            "section 4 is the permission ceiling rather than an empty policy. Whether a fulfilment\n"
-            "grant would land where CT-7 looks is unmeasured until one is made: no subscription or\n"
-            "Share has ever run here."
+            "DataZone refuses GetAsset and GetDataProduct to InfrastructureAccess in Data Governance\n"
+            "(Stage 6f 0.6), the session this report reads the domain with, so the asset behind a\n"
+            "listing is read through GetListing or not at all, and a DENIED cell in section 4 is the\n"
+            "permission ceiling rather than an empty policy. The Sandbox session is answered, as a\n"
+            "contributor of both projects. Whether a fulfilment grant would land where CT-7 looks is\n"
+            "unmeasured until one is made: no subscription or Share has ever run here."
         )
 
         rep.h1("9. Calls that failed")

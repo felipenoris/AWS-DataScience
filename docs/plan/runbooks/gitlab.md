@@ -19,7 +19,7 @@
 | the root CA, the two leaves, their keys in `awsds-prod-tls-gitlab` / `awsds-prod-tls-pages`, the certificates in `/datascience/prod/pki/*-pem` and `s3://awsds-prod-gitlab-objects/pki/` | `production/pki/` | `[P]`, never destroyed |
 | the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/` |
 | the deploy runner `awsds-prod-runner-deploy` and the test runner `awsds-prod-runner-test`, two `t3a.small` | the same | `[E]` `production/runners/`; their token containers in `production/foundation/` |
-| the `secretsmanager` endpoint beside 6c's thirteen | `production/egress/` | `[E]` |
+| the `secretsmanager` endpoint beside 6c's eleven, its thirteen less the SageMaker pair (Stage 7 decision 9) | `production/egress/` | `[E]` |
 
 Everything reaches the internet through `proxy.awsds.internal:3128` and nothing else: there is no default route in the VPC (D38). Everything reaches AWS through the VPC's endpoints and the S3 gateway, which is what the bypass list says.
 
@@ -59,7 +59,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
+5. `https://gitlab.awsds.internal` answered within four minutes of the one start that was read (2026-10-12: started 15:59 UTC, the sign-in page `200` at 16:03; a start reconfigures nothing, and Stage 7 8.1 owes the timed figure); the runner appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
 
 **Down**, in the reverse order:
 
@@ -163,7 +163,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
    sudo awsds-gitlab-refresh
    ```
 
-6. **The instance settings**, once. **Admin area → Settings → General → New user account restrictions → Allow new user accounts** off (the home page's *"allows anyone to register"* banner is this), since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3), kept on by the user through pass 1 (2026-10-12); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it; **Admin area → Settings → CI/CD → Auto DevOps → Default to Auto DevOps pipeline for all projects** off, or a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists. The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays.
+6. **The instance settings**, once. **Admin area → Settings → General → New user account restrictions → Allow new user accounts** off (the home page's *"allows anyone to register"* banner is this), since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3), kept on by the user through pass 1 (2026-10-12); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it; **Admin area → Settings → CI/CD → Auto DevOps → Default to Auto DevOps pipeline for all projects** off, or a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists. The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays. Of the three settings only the first has a recorded act, the user keeping sign-up on (2026-10-12); Auto DevOps read `instance enabled` that day and no entry records the other two, so both wait for the next session with GitLab up.
 
 7. **The namespace, the groups and the repositories** (Stage 7 steps 3.4-3.6): the group `awsds/`; inside it the four persona groups `data-scientists`, `deployment-managers`, `governance-managers` and `dev-env-stewards`, whose membership mirrors the Identity Center groups by hand and whose names are deliberately bare; the repositories `awsds/app-etl` and `awsds/dev-env`, created empty and private. On `dev-env`, **Manage → Members → Invite a group**: `awsds/data-scientists` as Developer and `awsds/dev-env-stewards` as Maintainer; **Settings → Repository → Protected tags → Add tag**: the wildcard `*-v*` (the image tag convention `<flavour>-v<semver>`; `v*` would match nothing this repository tags), allowed to create **Maintainers**, which in CE is the whole of the release gate. Done 2026-10-12.
 
@@ -235,7 +235,7 @@ Python's `requests` and `botocore` read `certifi`, not the keychain; for a sessi
 
 ## B. Backup and restore
 
-A daily `gitlab-backup create` runs at 03:00 UTC while the host is up (`awsds-gitlab-backup.timer`) and uploads to `awsds-prod-gitlab-backup`, where every object expires after 30 days. The data volume is snapshotted daily by DLM besides. `gitlab-secrets.json` is **not** in the backup by GitLab's design: it is in `awsds-prod-gitlab-secrets`, pushed by the first boot, and a fresh boot restores it from there before the first reconfigure (step 1.5).
+A daily `gitlab-backup create` runs at 03:00 UTC while the host is up (`awsds-gitlab-backup.timer`) and uploads to `awsds-prod-gitlab-backup`, where every object expires after 30 days: `aws s3api head-object` reports a backup's date in its `Expiration` header (2026-11-13 and 2026-11-15 for the backups of 2026-10-13 and 2026-10-15), and a host kept down past it leaves the bucket with no current backup until its next `gitlab-backup create`. The data volume is snapshotted daily by DLM besides, host stopped or not. `gitlab-secrets.json` is **not** in the backup by GitLab's design: it is in `awsds-prod-gitlab-secrets`, pushed by the first boot, and a fresh boot restores it from there before the first reconfigure (step 1.5).
 
 A backup by hand, in the shell:
 
@@ -545,7 +545,7 @@ A finding enters a baseline the same way: a commit to this project whose message
 
 ## M. The image projects, and the infrastructure mirror
 
-Two copies, in opposite directions. The image recipes live in GitLab since Stage 8 decision 16, `awsds/dev-env` and `awsds/deploy-image`, and this repository keeps a copy of each under `gitlab/` ([`gitlab/README.md`](../../../gitlab/README.md)). The infrastructure repository lives on GitHub, and `awsds/infrastructure` is the copy the dev-env pipeline's registration job clones (decision 2).
+Two copies, in opposite directions. The image recipes live in GitLab since Stage 8 decision 16, `awsds/dev-env` and `awsds/deploy-image`, and this repository keeps a copy of each under `gitlab/` ([`gitlab/README.md`](../../../gitlab/README.md)). The infrastructure repository lives on GitHub, and `awsds/infrastructure` is the copy Stage 8 decision 2 made for the deploy jobs; the dev-env pipeline's `register` and `retire` clone nothing since Stage 8 decision 18.
 
 ### The copies under `gitlab/`
 
@@ -584,7 +584,7 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
 ### The infrastructure mirror
 
 1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
-2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job clones with its job token, which carries the permissions of whoever ran the release gate. `awsds/deployment-managers` joins at pass 4.
+2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job cloned with its job token, which carries the permissions of whoever ran the release gate (`register` and `retire` clone nothing since Stage 8 decision 18). `awsds/deployment-managers` joins at pass 4.
 3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`.
 4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
 
@@ -598,7 +598,7 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
    git push gitlab main
    ```
 
-   The registration job prints the commit it cloned, so a stale mirror shows in its log.
+   A job that clones the mirror prints the commit it cloned, so a stale mirror shows in its log; `register` and `retire` clone nothing since Stage 8 decision 18.
 
 ### Stage 8 pass 3's session, in order
 
@@ -651,7 +651,7 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 
 | Instrument | Reads |
 |---|---|
-| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`), the newest backup's release against `gitlab_ce_version` (`SC-13`) |
+| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`: the bypass literal against `egress/`'s list, the deployed `gitlab.rb`'s four env blocks, a runner's bootstrap while one exists), the cache's first pull (`SC-12`), the newest backup's release against `gitlab_ce_version` (`SC-13`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
 | `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy and test runners 0.0188 each |
 | the help page | the release the host runs now, with no GitLab sign-in: `https://gitlab.awsds.internal/help` publishes `gon.revision` to an anonymous visitor, matched against `gitlab-foss`'s tag on gitlab.com (`ecff27ae760` is `v19.4.2`, read 2026-10-16); `SC-13`'s reading is as old as the newest backup |

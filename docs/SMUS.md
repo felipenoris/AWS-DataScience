@@ -421,7 +421,7 @@ can be diffed against this table directly.
 | `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | **1** |
-| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps: a Bedrock knowledge base, its data source and execution role, an OpenSearch Serverless collection and two Lambdas (the index and the ingestion trigger) with their role, per AWS's blueprint page (read 2026-10-12); the IDE's form also offers S3 Vectors and Neptune Analytics as the store | **Per use plus the store**: the embeddings are token-billed (Titan Text Embeddings V2 **0.00002 USD per 1K tokens**, `AmazonBedrock` offer of 2026-10-10) and the vector store is the shape that can bill while idle — **measured 2026-10-12**: OpenSearch Serverless **0.24 per OCU-hour** plus 0.024 per GB-month (a classic collection holds 1-2 OCU, 5.76-11.52 a day; a next-generation one scales to zero), S3 Vectors **0.06 per GB-month** plus requests (`PRICING.md` §5) | **[Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 7, decision 1 taken 2026-10-12**: a chat agent over the repository's runbooks, S3 Vectors the recommended store (its decision 12) and the embeddings model admitted at the SCP (its decision 11); the category-2 checklist in one change with `MLflowApp`. It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
+| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps: a Bedrock knowledge base, its data source and execution role, an OpenSearch Serverless collection and two Lambdas (the index and the ingestion trigger) with their role, per AWS's blueprint page (read 2026-10-12); the IDE's form also offers S3 Vectors and Neptune Analytics as the store | **Per use plus the store**: the embeddings are token-billed (Titan Text Embeddings V2 **0.00002 USD per 1K tokens**, `AmazonBedrock` offer of 2026-10-10) and the vector store is the shape that can bill while idle — **measured 2026-10-12**: OpenSearch Serverless **0.24 per OCU-hour** plus 0.024 per GB-month (a classic collection holds 1-2 OCU, 5.76-11.52 a day; a next-generation one scales to zero), S3 Vectors **0.06 per GB-month** plus requests (`PRICING.md` §5) | **[Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 7, decision 1 taken 2026-10-12**: a chat agent over the repository's runbooks, S3 Vectors the recommended store (its decision 12) and the embeddings model admitted at the SCP (its decision 11); the category-2 checklist at its step 7.0a, a commit and a tag of its own after pass 1's `MLflowApp` (PR #157 carried that blueprint alone), applied at 7.0b. It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
 | `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | **1** |
 | `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5a built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
@@ -591,13 +591,22 @@ The business catalog over this domain is [Stage 6f](plan/stages/stage-06f-data-g
 subject and [`GOVERNANCE.md`](GOVERNANCE.md) holds the model. What belongs here is what the SMUS
 objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/catalog.py).
 
-- **A project's Tooling environment creates a data source nobody asked for.**
+- **A project's Tooling environment creates a data source nobody asked for, and it fails.**
   `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`
-  and runs on a **daily cron**, `cron(32 17 * * ? *)`, created with the environment. It publishes
-  nothing (`publishOnImport: false`) and had found no asset when read, but it is a scheduled run this
+  and runs on a **daily cron** the environment chooses, `cron(32 17 * * ? *)` for the first project and
+  `cron(6 6 * * ? *)` for the second. Every completed run has failed since 2026-08-24 on the RAM-share
+  validation error (`EXC-11`; 57 failed runs across the two sources on 2026-10-18). It publishes
+  nothing (`publishOnImport: false`), finds no asset and bills nothing, but it is a scheduled run this
   repository did not write (Lesson 17). The Glue data source a person creates in the portal carries no
-  schedule and **`enableBusinessNameGeneration: true`**, which sends table and column names to a
-  generative model — 6f decision 3.
+  schedule and **`enableBusinessNameGeneration: true`**, which sends the asset's metadata (table and
+  column names, producer-supplied metadata) to a Bedrock model in the Region and has never run here —
+  6f decision 3.
+- **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
+  `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), and the blueprint
+  configuration carries no lineage field. The Redshift connection's `lineageSync` is the separate
+  meter below, and it is enabled (`cron(43 3 * * ? *)`, read 2026-10-18): its eight daily runs since
+  2026-10-11 all failed, the newest on *"Redshift endpoint doesn't exist in this region"* while the
+  workgroup was down, and that run processed no query.
 - **The domain offers 23 managed asset types**, `GlueTableAssetType` among them, all owned by the
   domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone
