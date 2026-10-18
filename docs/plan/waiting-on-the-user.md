@@ -34,7 +34,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Decisions 1, 5 and 12 confirmed (taken decisions presuppose them); 2-4, 8, 9 and 11 | Stage 10 | passes 1 and 2 |
 | The job role's name for Staging and Production; decision 20's optional `If-None-Match` deny; `awsds/infrastructure` kept as the promotion jobs' next reader or retired | [Stage 8](stages/stage-08-cicd-pipelines.md) 2.5, decision 20; decision 2 for the mirror | pass 4's manifest variables and Stage 10 decision 6 |
 | Decisions due 2 (its formal close), 3, 4, 6's residual name, 9, 10, 12 and 13 | [6d](stages/stage-06d-unified-studio-remainder.md) | step 10, the Amazon Q door, `EXC-10`'s scope |
-| When to spend the Redshift free trial; how a second project is admitted to the warehouse | [5b](stages/stage-05b-redshift-serverless.md) decision 9, 6h decision 8 | 6h step 5's negatives 5.1 and 5.2b |
+| When to spend the Redshift free trial; how a second project is admitted to the warehouse | [5b](stages/stage-05b-redshift-serverless.md) decision 9, 6h decision 8 | 6h step 5's negatives 5.1 and 5.2b; decision 8 (a)'s layer-2 argument is gone, AWS's managed project policy granting `GetCredentials` to every project under the wide tag (PR #187) |
 | The four Anthropic direct-API names on the compute plane: remove them, or accept with a trigger | `TM-04`, 6e | a session can run outside every Bedrock control |
 | `EXC-10`'s repair; conformance packs; AWS Backup and its Vault Lock | Stage 12 3.1, 6.2, 8.x | the rest of Stage 12 |
 | GuardDuty's decisions 1-3 | [Stage 15](stages/stage-15-guardduty.md) | the whole stage, and Stage 11 step 4 |
@@ -52,6 +52,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | The three persona memberships in GitLab; Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
+| 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Push `examples/app-etl/.gitlab-ci.yml` and its README to GitLab's `awsds/app-etl` at a GitLab session, so GitLab's pipeline runs the lint with its two options (PR #186) | [Stage 8](stages/stage-08-cicd-pipelines.md) 5.6 |
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
 | The knowledge-base enable-wizard read in the console, before the roster commit that tags `sagemaker-prereqs-v0.7.0` (`docs/SMUS.md`'s order) | Stage 17 7.0a |

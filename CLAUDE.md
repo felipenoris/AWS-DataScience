@@ -314,7 +314,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
   account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation, due by 2026-10-20 01:59:59Z, fails with
-  the workgroup down and does not retry. SQL from a notebook is `redshift-connection.md` §J.
+  the workgroup down and does not retry. SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
+  every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
+  any workgroup through `sqlworkbench`, and the secrets tagged with its project or
+  `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
   writes the domain). The house image is `awsds-sandbox-dev-env` version 9, `default-v0.8.0-7c59998c`
   (2026-10-16); its `NO_PROXY` literal holds 70 names, while main's `vpc-egress-v0.18.0` makes 72 and the
@@ -325,7 +328,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
   `claude-sonnet-5` are refused for this account (`EXC-08`).
 - **Stage 6f in progress**: `CT-7` says the catalog road has not reached the lake, and decision 1
-  recommends (c); each project's `Tooling` data source fails daily (`EXC-11`). **6g** owes 2.4's Athena
+  recommends (c); no IAM condition key reaches business-name generation, decision 3's last input (PR #187); each
+  project's `Tooling` data source fails daily (`EXC-11`). **6g** owes 2.4's Athena
   read, refused as written, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
   the revert is `runbooks/security-hub.md` §R.
