@@ -555,8 +555,8 @@ per-region entries — one price everywhere the service exists):
 |---|---|---|
 | Metadata requests | 10.00 | per 100 000 requests |
 | Metadata storage | 0.40 | per GiB-month |
-| Compute units (metadata generation, data quality) | 1.776 | per compute unit |
-| AI recommendations — input / output | 0.015 / 0.075 | per 1 000 tokens |
+| Compute units (ingestion, business-name generation, data quality) | 1.776 | per compute unit; 0.2 free a month, per completed job (pricing page, 2026-10-18) |
+| AI recommendations for descriptions — input / output | 0.015 / 0.075 | per 1 000 tokens |
 
 At lab scale the domain itself is **cents per month**: a single user cannot produce 100k metadata requests
 by hand, and the metadata for a lake this size is megabytes. The cost of Unified Studio is what the

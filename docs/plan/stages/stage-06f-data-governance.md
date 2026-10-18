@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **In progress: step 1 is done and no access act has run.** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`, twelve SMUS grants, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint created a **second data source on a daily cron** (Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run. **Step 3.1 is read on both halves the same day, and decision due 1's recommendation moved to (c)**: shape (d) needs a custom asset type, because *managed* is a property of the asset type and `GlueTableAssetType` is one; and shape (a) **writes Lake Formation grants at creation**, over every table in the database named, before any subscription exists. **Steps 6.2, 8.1 and 9.1 are done the same day**: lineage's automatic half is switched on in the **blueprint** (Terraform here), with the MWAA-Serverless question handed to Stage 10 step 3.3; the warehouse row is in `institutional-delta.md`; and a vend adds a **domain unit**, written into Stage 14. **Step 5.1 is not closed** — the AI switch reads on, and the page saying where the generation runs and what it sends was not found |
-| **Prerequisites** | **None that block.** Stage 5a's lake and its TBAC shares, 6a's domain and association, and one live project (`eighth-experimentation`) holding a published asset and a published data product. Step 2 creates the second project it needs |
+| **Status** | **In progress: step 1 is done, 5.1 and 6.1 are read, and no access act has run.** ([log](../../log/log-stage-06f-data-governance.md)). 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`: twelve SMUS grants, fourteen on 2026-10-18 with the second project's, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint's own data source runs on a daily cron nobody wrote and has failed every run since 2026-08-24 (`EXC-11`, Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run. **Step 3.1 is read on both halves the same day, and decision due 1's recommendation moved to (c)**: shape (d) needs a custom asset type, because *managed* is a property of the asset type and `GlueTableAssetType` is one; and shape (a) **writes Lake Formation grants at creation**, over every table in the database named, before any subscription exists. **Steps 6.2, 8.1 and 9.1 are done the same day**: lineage arrives by three routes, with the MWAA-Serverless question handed to Stage 10 step 3.3; the warehouse row is in `institutional-delta.md`; and a vend adds a **domain unit**, written into Stage 14. **2026-10-18, read-only, the environment down**: 5.1 is closed from AWS's pages (generation runs on Bedrock in the Region, from the asset's metadata, and has never run here); 6.1 is answered (the two publish-time nodes link an asset to its listing and nothing else); 6.2's blueprint setting is corrected (the Glue sync is a property of each project's connections, `true` in both projects, and no Terraform declares lineage); decision due 5's DataZone half is read (each project role is a DataZone user and a contributor of its own project); and `EXC-11` counts two failing `Tooling` data sources, one per project. Steps 2.1-2.6 are the user's portal acts |
+| **Prerequisites** | **None that block.** Stage 5a's lake and its TBAC shares, 6a's domain and association, and two live projects: `eighth-experimentation`, holding a published asset and a published data product, and `test-experimentation`, created 2026-10-15 as D41's `test` project. Step 2.1 names the consumer: the second project exists, so a third is created only if the user prefers one |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-23](../integrations.md) (new): a catalog access act becomes a Lake Formation grant in the account that owns the table |
 
@@ -42,8 +42,10 @@ control is the owner project's approval; on the register road, the tag and the e
    beside it (D26: *"co-locating the business catalog with the technical catalog makes every approval
    local"*). `US-3` fails on any blueprint configuration in `Data Governance`; step 3 measures whether
    publishing the lake needs one. The revision trigger on `DenyDataZoneEntirely` stands as written.
-2. **Redshift and the Glue Data Catalog connect in both directions, and neither is built here**
-   (`RedshiftServerless` is excluded by D26/D12). Redshift reads Data Catalog tables through the
+2. **Redshift and the Glue Data Catalog connect in both directions, and this stage builds neither.**
+   The Sandbox warehouse exists since 2026-09-20 ([D40](../decisions/D40-redshift-warehouse.md),
+   [Stage 5b](stage-05b-redshift-serverless.md), built by hand); the `RedshiftServerless` blueprint
+   stays excluded by D26/D12. Redshift reads Data Catalog tables through the
    auto-mounted `awsdatacatalog` database, read-only. A Redshift namespace or cluster registered to the
    Data Catalog becomes a federated catalog: its schemas and tables are governed by Lake Formation and
    queried by Iceberg engines such as Athena and EMR. The SageMaker Catalog publishes Redshift tables and
@@ -88,6 +90,11 @@ control is the owner project's approval; on the register road, the tag and the e
   documents.
 - **0.6 IAM administration does not open a project's inventory.** `InfrastructureAccess` in
   `Data Governance` is refused `GetAsset` and `GetDataProduct` by DataZone, and `search-listings` answers.
+  The refusal is DataZone's project-membership check, not IAM. Since 2026-10-15 (the portal's
+  `CreateProjectMembership` at 06:15Z, as the data scientist user) the Sandbox `InfrastructureAccess`
+  role is a contributor of both projects through a role group profile, and its session reads `GetAsset`,
+  `ListConnections` and `GetConnection` (2026-10-18), while the `Data Governance` session is refused the
+  same calls.
 - **0.7 No project reads the lake today.** The project role's `glue:GetDatabase` on `raw` and `curated`
   is refused for want of a Lake Formation `DESCRIBE`.
 - **0.8 The approval verbs are in `GovernanceManagerAccess`** (`OwnTheDataZoneDomain`), while DataZone
@@ -123,8 +130,11 @@ control is the owner project's approval; on the register road, the tag and the e
     reached the lake. **`CT-1` had to be rewritten**: `list-domains` in an associated member account
     returns the shared domain, so the draft read the association as a second domain — the
     discriminator is `managedAccountId`. Two readings the step did not ask for: a second data source
-    the `Tooling` blueprint created on a **daily cron** (`CT-6`, Lesson 17), and `enableBusinessName
-    Generation: true` on the Glue source, which is decision due 3's first measurement.
+    the `Tooling` blueprint created on a daily cron nobody wrote, which has failed every run since
+    2026-08-24 (`CT-6`, `EXC-11`, Lesson 17), and `enableBusinessNameGeneration: true` on the Glue
+    source, which is decision due 3's first measurement. The run of 2026-10-18 passes and notes the
+    same checks with fourteen SMUS grants (the second project's `default` entry and `dev/` location)
+    and two `Tooling` sources of that name, one per project, 57 failed runs in all.
 - **1.1 [Claude] Map DataZone's authorization model**: domain units and their authorization policies
   (project creation and membership, glossary, metadata-form and asset-type creation), owner-project
   approval, and whether any domain or unit policy restricts a direct Share. Source: the DataZone
@@ -142,7 +152,13 @@ control is the owner project's approval; on the register road, the tag and the e
 
 The same-account half of INT-23, and the reading open question 24 still owes.
 
-- **2.1 [user] Create a consumer project** from the `experimentation` profile. Start no space.
+- **2.1 [user] Name the consumer project**: `test-experimentation` (D41's `test`, which exists), or a
+  new one from the `experimentation` profile. Start no space. **The requester must not be a member of
+  `eighth-experimentation`.** AWS's approval page (read 2026-10-18) approves a request at creation
+  when the requester is an owner or contributor of both projects, and the two live projects share
+  their owner (the data scientist user) and a contributor (the Sandbox `InfrastructureAccess` role,
+  since 2026-10-15), so a request made as either identity is approved with nothing to approve, and 2.2
+  would read the auto-approved path. Who requests is the user's choice.
 - **2.2 [user] Subscribe to `house-price` from the consumer project and approve it from
   `eighth-experimentation`.** [Claude] reads the grant written (principal, condition, permissions), the
   role that wrote it, what appears in the subscriber's catalog, the subscription grant's status, and the
@@ -240,16 +256,46 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 ### 5. AI-generated metadata
 
-- **5.1 [Claude] Read where business-name and description generation run**, what they send (table and
-  column names, sample values), and the rate already in `PRICING.md` §5 (AI recommendations, USD 0.015
-  input and 0.075 output per 1,000 tokens). Compare with 6e's retention posture and D1.
+- **5.1 is read, 2026-10-18, from AWS's pages** ([`REFERENCES.md`](../../REFERENCES.md); the log has the
+  detail): the two `autodoc` guides, DataZone's and SageMaker Unified Studio's.
+  - **Where it runs.** On Amazon Bedrock models the service chooses and does not name, and the pages say
+    it inherits Bedrock's controls. `US West (Oregon)` is a supported Region and its requests use the
+    in-Region endpoint: the pages route through Bedrock's cross-Region endpoint for `US East (Ohio)`
+    alone (names and descriptions) and, on the Unified Studio page, for glossary-term generation in
+    every supported Region. Name and description generation therefore stays in `us-west-2` (D1);
+    glossary-term generation, which nothing here uses, would not.
+  - **What it sends.** The asset's metadata: table and column names, optional producer-supplied
+    metadata and, for a custom asset type, the relational-table form's schema. AWS's launch post says
+    it does not read the table's rows unless the user puts them in the metadata. No page says whether
+    sample values are ever sent.
+  - **What no page says.** Whether the service's calls obey 6e's retention posture, a setting of this
+    account's own Bedrock use (`none` in all 17 Regions). Bedrock's per-model retention exceptions (the
+    abuse-detection page, read again 2026-10-18: Fable 5 and 5.1, and the classifier-flagged traffic of
+    most OpenAI models) cannot be ruled in or out for a model nobody here chooses.
+  - **Cost.** Descriptions bill by token and business names as compute, USD 1.776 per unit with 0.2
+    free a month (the pricing page, read 2026-10-18); the quota is 50,000 name generations a month.
+  - **Measured here.** Nothing has generated: the Glue source has no run, `CreateAsset` at publish
+    carried no `predictionConfiguration`, and 90 days of the trail hold no `StartDataSourceRun`.
 - **5.2 Decision due 3.**
 
 ### 6. Lineage
 
-- **6.1 — `list-lineage-events` is empty, 2026-09-18.** The two nodes 0.4 recorded were written by the
-  publish itself; no OpenLineage event has ever been posted, so 6.2's engine list starts from zero.
-- **6.1 [Claude] Read the two nodes the publish created** and what they link.
+- **6.1 is answered, 2026-10-18.** `list-lineage-events` is empty (read 2026-09-18 and again
+  2026-10-18) and 90 days of both trails hold no `PostLineageEvent`, so the two nodes 0.4 recorded were
+  written by the publish itself and 6.2's engine list starts from zero. `GetLineageNode` is open to
+  every domain user (the lineage page), so `InfrastructureAccess` in `Data Governance` reads both nodes
+  where it is refused `GetAsset` (0.6). Both are `amazon.datazone.DatasetLineageNodeType`, created by
+  `SYSTEM` on 2026-09-13:
+  - `69dcbz6ii1j6hc` is the **asset** `house-price` (`amazon.datazone.asset/dbund4fvvvt05s`): no
+    upstream node, the listing node downstream, two versions, no name and no forms.
+  - `58w6xmloxbpvkg` is the **listing** (`amazon.datazone.listing/cetyru4cvy1bio`, revision 2, owned by
+    `eighth-experimentation`): the asset node upstream, nothing downstream. It carries the listing, the
+    dataset and the schema forms (13 columns) and a column lineage form that maps each listing column
+    to the same-named asset column.
+
+  So the publish links an asset to its listing, column by column, and nothing outside the catalog: no
+  job, no run, no source table and no S3 object. The graph starts at the asset.
+- **6.1 [Claude] Read the two nodes the publish created** and what they link: done above.
 - **6.2 answered 2026-09-18, and the switch is not where the step assumed.** Lineage is
   OpenLineage-compatible, and it arrives by three routes: **automatic capture from AWS Glue and
   Amazon Redshift databases** when they are added to the domain; **Spark ETL job runs in AWS Glue
@@ -258,13 +304,19 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   Glue, and other services"*. Two node types carry it: a **dataset node**, auto-generated with a Glue
   or Redshift icon for published assets and created by hand for everything else, and a **job (run)
   node** with its run history.
-  - **The automatic half is configured on the blueprint, not per data source**: *"domain
-    administrators can configure lineage while setting up data lake and data warehouse built-in
-    blueprints, which ensures that all data source runs created from those resources are enabled for
-    automatic lineage capture"*. In this estate the eleven blueprint configurations are **Terraform**
-    (`US-3`), so enabling lineage is a code change to `sandbox/sagemaker/`, reviewed and applied —
-    not a console toggle. That is consistent with `list-lineage-events` reading **empty**: the two
-    nodes the publish created came from the publish, and nothing has ever posted an event.
+  - **The automatic half is a property of each project's connections, and the blueprint
+    configuration does not carry it.** The lineage page says *"domain administrators can configure
+    lineage while setting up data lake and data warehouse built-in blueprints"* and documents a
+    console option on the blueprint's Region (*Import data lineage*). On this domain (read
+    2026-10-18) the `DataLake` blueprint configuration holds the provisioning and manage-access role
+    ARNs, the boundary, the Region and its parameters, and no lineage field; no `.tf` file in
+    `terraform-live` or `terraform-modules` names lineage; and the Glue sync is
+    `glueLineageSyncEnabled: true` on `project.default_lakehouse` (`LAKEHOUSE`) and `project.iam`
+    (`IAM`) in both projects, with no `UpdateConnection` in 90 days of either trail. The Redshift
+    connection's `lineageSync` is enabled too, on `cron(43 3 * * ? *)`: its eight daily runs since
+    2026-10-11 all failed, the newest on a missing Redshift endpoint (the workgroup is `[E]` and
+    down) and processing no query (`SMUS.md`). So no code change is owed to turn lineage on, and
+    an empty `list-lineage-events` says that nothing emitted, not that the setting is off.
   - **What the page does not say is whether MWAA Serverless emits anything**, which is the engine
     this estate actually orchestrates with (D7). Carried into [Stage 10](stage-10-orchestration-promotion.md)
     rather than recorded only here (Lesson 34).
@@ -287,7 +339,7 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 - **8.1 [Claude] Write the `institutional-delta.md` row**: the warehouse registered to the Glue Data
   Catalog as a federated catalog, Lake Formation over the lake and the warehouse, the SageMaker Catalog
   publishing both asset types, and data scientists reading governed schemas and writing only their own.
-  Nothing is built.
+  None of that pattern is built: the Sandbox warehouse (D40) stands outside it.
 
 ### 9. Domain units and business units
 
@@ -337,9 +389,18 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
    Manager and granted by Terraform.
-3. **AI metadata generation**: on, off per data source, or denied.
-4. **Whether a deployment target is ever associated.** Recommended: no. Production publishes through the
-   lake, and `DenyDataZoneEntirely` stands with its revision trigger.
+3. **AI metadata generation**: on, off per data source, or denied. 5.1's readings are the inputs:
+   the generation runs in `us-west-2` from the asset's metadata, bills names as compute (USD 1.776 per
+   unit, 0.2 free a month) and descriptions by token, has never run here, and the Glue source carries
+   the switch on. Off per data source is the source's *automated business name generation* field in
+   the portal, or the `predictionConfiguration` flag at `CreateAsset`; whether an IAM condition can
+   target either is unread.
+4. **Whether a deployment target is ever associated.** Recommended: no, as a standing association.
+   Production publishes through the lake, and `DenyDataZoneEntirely` stands with its revision trigger.
+   [Stage 18](stage-18-staging-deployment-project.md) (written 2026-10-17, not started) associates
+   `Staging Account` once, carves it out of `DenyDataZoneEntirely` for the length of one measurement
+   and unwinds both at its pass 8 ([D26](../decisions/D26-unified-studio.md) records it). The
+   recommendation is about a standing association, which D26 still excludes.
 5. **Whether a direct Share is allowed**, and where its control lives: DataZone's authorization, a deny on
    the domain execution role, or detection by `catalog.py`. A reading of 2026-10-17
    ([Stage 17's log](../../log/log-stage-17-sandbox-machine-learning.md)) adds the project role to the
@@ -347,7 +408,24 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    `datazone:CreateSubscriptionRequest`, `RevokeSubscription`, `CreateListingChangeSet`, `Get*`,
    `*Agent*` and `*DataApp*` on `*`, which the D13 boundary does not narrow, so code running as a project
    role holds the IAM half of a subscription request, a revocation and a publication. DataZone's own
-   authorization is the other half, unread.
+   authorization is the other half, read 2026-10-18 without a call as the project role:
+   - **The project role is a DataZone user.** Each `datazone_usr_role_*` has an `IAM` user profile
+     (`ACTIVATED`), and in both live projects it is a `PROJECT_CONTRIBUTOR` beside the owner, the data
+     scientist user, and the Sandbox `InfrastructureAccess` role's group profile.
+   - **AWS's pages put the checks on membership.** Publishing needs the owner or contributor
+     designation; a subscription request, membership of a project; approving, rejecting and revoking,
+     membership of the owning project. A publisher may switch subscription approval off for an asset it
+     owns, and every request to it is then approved at creation.
+   - **The IAM half, simulated** with the Region context key (`iam simulate-principal-policy`): v45
+     allows `CreateSubscriptionRequest`, `RevokeSubscription`, `CreateListingChangeSet` and `CreateAsset`
+     for both project roles, and no policy of either allows `AcceptSubscriptionRequest`,
+     `RejectSubscriptionRequest`, `CreateSubscriptionGrant` or `AddPolicyGrant`.
+   - **So both halves admit** a project role to publish its own project's assets, with approval off if
+     it chooses, and to request a subscription for its own project. They do not admit it to approve or
+     to widen the domain's policies. No call as a project role appears in 90 days of either trail, so
+     the call itself is unmeasured: it is a write, run from a space (the environment up) and the user's
+     to authorize. The lake is outside both halves today: no lake table is published (decision 1 is
+     open) and `CT-7` reads no SMUS grant on it.
 
 ## Cost
 
@@ -355,14 +433,17 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   this scale.
 - The consumer project: its Tooling environment bills nothing hourly without an app, and step 2 starts
   none.
-- AI recommendations, if decision 3 keeps them: USD 0.015 input and 0.075 output per 1,000 tokens.
+- AI generation, if decision 3 keeps it: descriptions at USD 0.015 per 1,000 input tokens and 0.075 per
+  1,000 output tokens; business names as compute, USD 1.776 per unit with 0.2 free a month, billed per
+  completed job (the pricing page, read 2026-10-18).
 - Athena: USD 5.00 per TB scanned; step 2's queries scan kilobytes.
 - Layers: projects, listings, glossaries and grants are `[P]` metadata, free at rest. The stage creates no
   `[E]` resource.
 
 ## What this stage does not do
 
-- Build Redshift (D26, D12).
+- Build a warehouse or enable the `RedshiftServerless` blueprint: Stage 5b built the Sandbox warehouse
+  by hand under D40, and the blueprint stays excluded by D26 and D12.
 - Grant per person: trusted identity propagation stays unadopted (open question 13).
 - Decide when the crawlers run (open question 19), what expires in the projects bucket (open question 25),
   or how code reaches Production (open question 26).
