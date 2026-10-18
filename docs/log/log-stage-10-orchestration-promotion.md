@@ -60,3 +60,53 @@ Stages 9 e 10 e a bateria de SCP depois de cada um". The environment was down th
   `staging/foundation/` to `vpc-v0.4.0` is pass 2's, and it would open the S3 gateway endpoint to the
   service's code bucket with no consumer yet. Pass 1 and pass 2 run with Stage 8's pass 4, after Stage 9
   (Stage 8 decision 23).
+
+## 2026-10-18 — verification xxvii's first clause offline, and step 5.3 written and planned
+
+*Claude's hand, in a task the orchestrating session ran on the laptop (branch
+`claude/stages-09-10-18-readings`), with the environment down. The calls are reads and plans, as the
+infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, the plan also reading as
+`awsds-infra-data` and `awsds-infra-sandbox-1`; nothing was applied. Times are UTC.*
+
+- **[Claude] Verification xxvii, the first clause: `bundle` offline.** The CLI is the laptop's
+  `aws-smus-cicd-cli` 1.0.9, a uv tool; nothing was downloaded. Over a copy of `examples/app-etl/` at
+  `28f340c`, with `code/app-etl.zip` built as `build-task-code` builds it (`python3 -m zipfile`, 1,246
+  bytes), no AWS credential (`AWS_CONFIG_FILE` and `AWS_SHARED_CREDENTIALS_FILE` on missing paths, the
+  proxy variables on a closed port) and fabricated values for the manifest's shell variables, `bundle
+  --manifest manifest.yaml --targets test`, the call `test-deploy` makes, at 22:28:58: three `ERROR` lines on
+  the domain lookup (*"Unable to locate credentials"*), each of the five storage items bundled *"from local
+  files"*, and *"Bundle created: ./artifacts/app-etl.zip (6988 bytes)"*, seven files: `code/app-etl.zip`,
+  `glue/transform.py`, `samples/trades.csv`, three under `src/app_etl/` and `workflows/app-etl.yaml`. The
+  size is 20 bytes above Stage 8's offline run of 2026-10-16, before PR #156 added the `process` task's
+  `VolumeKmsKeyId` line to the YAML [inferred].
+- **[Claude] What the bundle carries.** Every file equals its source, and `workflows/app-etl.yaml` is
+  byte-identical to the checkout's (sha256 `d367ab291ddc…`): its 25 CLI variables stand unresolved,
+  `{proj.connection.default.s3_shared.s3Uri}` 9 times, `{proj.id}` 6, `{proj.iam_role_arn}` 2,
+  `{env.SUBNET_AZ1}` 2, `{env.SUBNET_AZ2}` 2, and `{env.PROJECT_SG}`, `{env.PROJECT_KEY_ARN}`,
+  `{env.JOB_IMAGE_URI}` and `{domain.region}` once each, beside the two Airflow templates; no fabricated
+  value reached it, and no `{env.*}` became a `{{ params.* }}`, which `workflow.create` writes at deploy
+  (2.2). The branch is `commands/bundle.py` line 201: a storage item that names a `connectionName` is
+  downloaded from the stage's project, one that names none is copied from the manifest's folder (lines
+  232-261), and `app-etl`'s `content.storage` items name none. The connection clause and `deploy`'s clause
+  need a project and are unread.
+- **[Claude] 5.3, read for what holds it.** The pass table puts step 5 in pass 3. The stage orders pass 1
+  before pass 2 (the snapshot) and Stage 18's verdict before pass 2, and gives pass 3 no dependency of its
+  own; the open decisions (1 to 5, 8, 9, 11 and 12) concern other steps. The rule needs
+  `production/sagemaker/`, applied today (Stage 9 3.4), and `awsds-prod-alerts`, whose policy admits this
+  account's EventBridge rules (`EventBridgeRulesOfThisAccount`). What it watches first appears at 5.2, and
+  until then it costs nothing. So it was written ahead of its pass.
+- **[Claude] 5.3 written.** `production/sagemaker/registry.tf` gains `awsds-prod-model-approval`, state
+  `ENABLED` (`OR-4` fails any other), its pattern source `aws.sagemaker` and detail-type `SageMaker Model
+  Package State Change` with no group named, tagged `CostCenter` `stage-10`; and its target `alerts-topic`,
+  `awsds-prod-alerts` read from `foundation/`'s state as `debug.tf`'s targets are, through an input
+  transformer naming the time, the group, the version, the two statuses, the package ARN and the event id,
+  none of them free text a caller writes. The field names are the example event's on AWS's page, read again
+  today (`docs/REFERENCES.md`). `conventions.md` §6 names the rule in the slice's row.
+- **[Claude] 5.3 planned**, `-input=false`, as `awsds-infra-prod`. Before the edit, the baseline: *"No
+  changes. Your infrastructure matches the configuration."* (22:34Z). After it, 22:35:10-22:35:22: *"Plan: 2
+  to add, 0 to change, 0 to destroy."*, `aws_cloudwatch_event_rule.model_approval` and
+  `aws_cloudwatch_event_target.model_approval`, nothing else, the plan saved outside the repository. The
+  apply is the orchestrating session's; owed after it are the re-plan, `./aws/orchestration.py`'s `OR-4` on
+  the rule, and `./aws/deploytargets.py`'s `DT-3` and `DT-5` (Validation 3).
+- **[Claude] Verifications iii and xiii marked** with this file's 0.3 and 4.3 readings; no call was made for
+  them.
