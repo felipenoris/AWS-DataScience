@@ -112,3 +112,40 @@ changed in AWS.
   permissions for the Tooling blueprint, the contract `kms.tf` adapts, give both statements without an
   account or organization condition and do not mention Access Analyzer (read 2026-10-18). The change
   now waits only on Stage 17's pass 1 (PR #157).
+
+## 2026-10-18 — `TM-21`: the narrowing tagged `sagemaker-prereqs-v0.6.0`
+
+Written by Claude in the cloud session of the project thread, with no AWS identity, in PR #166; nothing
+changed in AWS.
+
+- **[Claude] The module change** (`0dc159f`, on `main` after PR #157 merged as `e6dfc6a`):
+  `aws:PrincipalOrgID` in the `StringEquals` of `GrantKMSPermissionsForAllProjectRoles` and of
+  `AllowCreateGrantForProjectRoles`, the id read from the data source
+  `aws_organizations_organization.current` as `vpc` and `vpc-egress` read it. Checked in the cloud
+  session: `terraform fmt -check`; `init -backend=false` and `validate` with the providers
+  `sandbox/sagemaker/`'s lock file pins (aws 6.61.0, awscc 1.98.0); a scratch `terraform test` with
+  mocked providers, in which both statements rendered with the organization id when `domain_id` is set
+  and neither rendered without it; `make check` OK; the offline gates green on the commit.
+- **[user] The tag**, pushed from the laptop because the cloud session's tag pushes are refused, and
+  pasted in the thread at 06:10:04:
+
+  ```text
+  git fetch origin claude/project-thread-yrm4u1
+  git log --oneline -1 0dc159f
+  git tag sagemaker-prereqs-v0.6.0 0dc159f
+  git push origin sagemaker-prereqs-v0.6.0
+  git ls-remote --tags origin sagemaker-prereqs-v0.6.0
+  From github.com:felipenoris/AWS-DataScience
+   * branch            claude/project-thread-yrm4u1 -> FETCH_HEAD
+  Total 0 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+  To github.com:felipenoris/AWS-DataScience.git
+   * [new tag]         sagemaker-prereqs-v0.6.0 -> sagemaker-prereqs-v0.6.0
+  0dc159f5a6a034b3ac80d39ee4fbbc981b840866	refs/tags/sagemaker-prereqs-v0.6.0
+  ```
+
+- **[Claude] The caller.** `terraform-live/sandbox/sagemaker/` points at `sagemaker-prereqs-v0.6.0`,
+  not planned and not applied. The slice also carries Stage 17's pass 1 (`v0.5.0`, `MLflowApp`), not
+  applied either, whose step 1.2 reads the slice's plan as one configuration and one grant added. With
+  its step 1.3 applied first, this version's plan should change only the key's policy, in place
+  (inferred: no plan has run). `TM-21` and `EXC-18` stay open until a snapshot reads the finding
+  `RESOLVED`.
