@@ -602,7 +602,7 @@ tried.
   *"the environment is torn down"* to an **absence** check — `airflow list-environments` empty in every
   account — and the price stays in `PRICING.md` as the record of why. **Applied 2026-10-18** as the
   baseline's thirteenth statement; the battery's `root` row, run in Production, read `DENY-SCP`, and
-  `OR-6` passes in six accounts.
+  `OR-6` passes in every account it read.
 
 ### 5. The model chain — registry consumed, approval gated, served through Staging (D17, D20, D28 item 6)
 
