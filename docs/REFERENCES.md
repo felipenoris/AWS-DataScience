@@ -1120,6 +1120,10 @@
   `ServerlessUsage` (RPU-Hr), `RMS:Serverless` (GB-Mo) and `PaidUniqueSnapshots:Serverless` (GB-Mo) — and **no
   endpoint-hour SKU**, so an idle workgroup's VPC attachment is not separately metered in any price list this
   project can read.
+- **Where the free trial is read (read 2026-10-17, for [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)
+  verification xiii).** The Redshift Serverless console's Serverless dashboard has a **Free trial** section that
+  *"shows the free trial credits remaining in your AWS account"*, covering compute, storage and snapshots; the
+  user read it there the same day: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
@@ -1768,6 +1772,47 @@
 - AWS Backup Vault Lock (Stage 12): <https://docs.aws.amazon.com/aws-backup/latest/devguide/vault-lock.html>.
 
 - AWS Service Quotas: <https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html>.
+
+- The pages `./aws/observability.py` (Stage 12 step 10) was written against, read 2026-10-17:
+  - CloudWatch's *Notifying users on alarm changes*: the topic policy statement that lets
+    `cloudwatch.amazonaws.com` call `SNS:Publish`, narrowed by `aws:SourceArn` and
+    `aws:SourceAccount`; the page says nothing about an encrypted topic (`OB-3`):
+    <https://docs.aws.amazon.com/en_en/AmazonCloudWatch/latest/monitoring/Notify_Users_Alarm_Changes.html>.
+  - re:Post's article on an alarm whose SNS notification never arrives: "The default AWS KMS key
+    policy for Amazon SNS doesn't allow CloudWatch to perform kms:Decrypt and kms:GenerateDataKey API
+    operations", so an alarm's topic is unencrypted or under a customer managed key that grants both
+    (`OB-3`): <https://www.repost.aws/knowledge-center/cloudwatch-receive-sns-for-alarm-trigger>.
+  - AWS Backup's `BackupSelection`: `Conditions` combine with AND, `ListOfTags` with OR and accepts
+    only `StringEquals`, `NotResources` excludes (`OB-4`):
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/API_BackupSelection.html>.
+  - AWS Backup's *Assign resources with AWS CLI*: "those in "Resources" combined using a Boolean OR
+    and those in "Conditions" combined with a Boolean AND", `NotResources` by OR; the page does not
+    say how `ListOfTags` combines with the other fields, so `OB-4` reads it beside `Resources`:
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/assigning-resources-json.html>.
+  - AWS Organizations' backup policies, step 8.1's mechanism: the effective plan "appears in the AWS
+    Backup console as an immutable plan" in each member account:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html>.
+  - AWS Backup's cross-account page: "For backup plans that are managed by Organizations, the resource
+    opt-in settings in the management account override the settings in a member account for that
+    particular backup plan", which is why `OB-4` does not gate such a plan on Production's opt-in:
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/manage-cross-account.html>.
+  - A re:Post question that shows a policy-made plan in a member account, its id `orgs/<uuid>` and a
+    selection by `ListOfTags` with empty `Resources`; the prefix `OB-4` reads is this page's, named by
+    no AWS page found:
+    <https://repost.aws/questions/QUoPwDLg6uTVGxqzYQ68L9YA/backup-plan-created-from-organizations-backup-policy-does-not-include-s3-buckets>.
+  - re:Post's article on a backup policy that creates no jobs: a role or vault missing in the member
+    account, the opt-in off in the management account, the policy attached at the wrong level:
+    <https://repost.aws/knowledge-center/backup-policy-no-jobs-created>.
+  - Route 53's `GetAccountLimit`: `MAX_HOSTED_ZONES_BY_OWNER`, the response's `Count` and
+    `Limit.Value` (`OB-5`): <https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html>.
+  - The PrivateLink quotas: "Interface and Gateway Load Balancer endpoints per VPC", 50, `L-29B6F2EB`,
+    one quota for both types; "Gateway VPC endpoints per Region", 20, `L-1B52E74A` (`OB-5`):
+    <https://docs.amazonaws.cn/en_us/vpc/latest/privatelink/vpc-limits-endpoints.md>.
+  - A re:Post question naming the Elastic IP quota "EC2-VPC Elastic IPs", `L-0263D0A3` (`OB-5`):
+    <https://www.repost.aws/questions/QU0kIyNc3sSMGsk4VLYhlOiQ/cant-get-more-than-6-elastic-public-ip-addresses>.
+  - AWS's blog on viewing SageMaker quota usage, which names no Studio app or job quota beyond a
+    notebook instance's, so `OB-5` finds those by name and reads every name back:
+    <https://aws.amazon.com/blogs/machine-learning/best-practices-for-viewing-and-querying-amazon-sagemaker-service-quota-usage>.
 
 - Track alerts through Amazon SNS in AWS Control Tower (the topics the landing zone creates, and the fact that the Audit account e-mail is subscribed to `aws-controltower-AggregateSecurityNotifications` by default): <https://docs.aws.amazon.com/controltower/latest/userguide/sns.html>.
 

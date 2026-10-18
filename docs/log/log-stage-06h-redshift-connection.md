@@ -2063,3 +2063,26 @@ Two more readings ride on the same events:
 an explicit `Deny` on `redshift-serverless:GetCredentials` and the `redshift-data:` statement calls,
 written at 5b. So the persona's refusal is an explicit deny in an identity-based policy, not the
 implicit one 5.4 expected. The stage text is corrected; the live call is still the user's.
+
+## 2026-10-17 — amendment: 2026-10-10 burned 24,359 RPU-seconds, not 100
+
+*Written by Claude, from `ComputeSeconds` by the hour (`Workgroup=awsds-sandbox-warehouse`, as
+`awsds-infra-sandbox-1`), read the evening the user found the free trial active. It amends the entry
+of 2026-10-10 headed "3.3 done: the project wrote a table", whose "Day's burn for the whole session:
+100 RPU-seconds = 0.0100 USD" stays as written.*
+
+| UTC, 2026-10-10 | RPU-seconds |
+|---|---|
+| 03:00 → 06:59, the morning session | 109 |
+| 16:00 | 9,521 |
+| 17:00 | 966 |
+| 18:00 | 13,733 |
+| 20:00 | 30 |
+| **the day** | **24,359 = 6.7664 RPU-hours = 2.44 USD** |
+
+The 100 was right for the session it named and was carried forward as the day's. The afternoon's
+sessions, 3.3 over `5439` and decision 8a's measurement among them, burned 24,220, and the hour from
+18:00Z ran at about 3.8 RPU sustained, which only a query running most of that hour produces. Which
+statement it was is not readable from the metric. The free trial absorbed all of it
+([5b's log](log-stage-05b-redshift-serverless.md), 2026-10-17), so verification xii reads this figure
+and not the bill until 2026-12-19.
