@@ -399,7 +399,7 @@ own, so a VPC check that ran before authorization would read as a validation err
 
 | Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | Statement it answers |
 |---|---|---|
-| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` (authorized) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
+| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized). The service checks the instance quota after authorization and before the role, and Production's processing quotas read 0 (2026-10-18) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
 | the same, without `VpcConfig` | `AccessDenied` naming the policy | `DenySageMakerJobsOffVpc` |
 | the same, on `ml.m5.2xlarge` | `AccessDenied` | `DenySageMakerInstanceCeiling` |
 | the same, `EnableNetworkIsolation: false` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation` |
