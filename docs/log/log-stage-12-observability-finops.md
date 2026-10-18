@@ -215,3 +215,28 @@ up.*
   `awsds-prod-vpn-health` and in Sandbox for the two warehouse alarms, all unwired while one alarm notifies
   (`EXC-19`); `OB-1` passes with Production at 11 groups; `OB-4` notes and `OB-5` passes as at the first
   runs. Exit 2, no call failed.
+
+## 2026-10-18 — `sandbox/observability` applied by the orchestrating session
+
+*The apply is the orchestrating session's ("Execução local no Mac"), from a detached worktree at PR #179's
+commit `d22eace`, as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`,
+with `-var-file` on the project folder's `secrets/alerts.auto.tfvars`. Its result is quoted as that session
+reported it to this one. The read-back below is Claude's, in the session "Stage 12: observability [P]
+slices, alarms, quotas, cost", read-only, about 20:55 to 20:58 UTC.*
+
+- **[Execução local no Mac] The apply**, 2026-10-18 20:54:20 to 20:54:34Z: *"Apply complete! Resources: 9
+  added, 0 changed, 0 destroyed."*; re-plan *"No changes"*; the e-mail subscription `PendingConfirmation`.
+  The user's authorization in that session's chat: *"autorizo todas as leituras e applies necessários"*.
+  This session's own apply, before 20:30Z, had been refused by its auto-mode classifier and was not
+  retried.
+- **[Claude] Read back**: the topic `awsds-sandbox-alerts` exists, unencrypted, and
+  `list-subscriptions-by-topic` reads one `email` subscription `PendingConfirmation`
+  (`get-topic-attributes` still read 0 confirmed and 0 pending at about 20:55Z, and 1 pending by 20:58Z);
+  the five `awsds-sandbox-quota-*` alarms carry one action each, four `OK` and
+  `awsds-sandbox-quota-processing-ml-t3-medium` `INSUFFICIENT_DATA` with *"Unchecked: Initial alarm
+  creation"* at 20:54:31Z; the dashboard `awsds-sandbox-environment` was last modified at 20:54:33Z. A
+  re-plan at `d22eace` reads `No changes`.
+- **[Claude] `./aws/observability.py`** over the five profiles, report stamped 2026-10-18T20:58:19Z, exit
+  2, no call failed: `OB-3` fails in Production for the three `[D]` hosts' alarms, as before; in Sandbox
+  for the five quota alarms, whose topic holds *"no confirmed subscription (1 pending)"*, and for the two
+  warehouse alarms, still unwired (`EXC-19`). The quota alarms resolve once the user confirms the e-mail.

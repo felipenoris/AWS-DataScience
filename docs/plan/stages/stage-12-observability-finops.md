@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` is written and planned** (9 to add) and its apply is the user's: the auto-mode classifier refused it in the session. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the five older alarms are wired (`EXC-19`). Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription waiting on the user's confirmation. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the five older alarms are wired (`EXC-19`). Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -43,7 +43,7 @@ of every other account's session. **Explanation:** the panels are chosen so that
 - **1.1 — [Claude] Write the per-environment dashboard**: SageMaker app and job hours, Athena bytes
   scanned against the workgroup limit, GitLab instance and EBS, the `[E]` endpoint count, and — replacing
   the NAT panels that no longer have a resource — **the DNS Firewall query count** for that VPC.
-  **Written 2026-10-18**: `awsds-sandbox-environment` in `sandbox/observability/` (planned, apply owed)
+  **Written 2026-10-18**: `awsds-sandbox-environment` in `sandbox/observability/` (applied the same day)
   and Production's panels inside `awsds-prod-hub` (1.2), one dashboard for both because CloudWatch's free
   tier holds three, counted once per bill (inferred, `docs/PRICING.md` §6); Staging gets its own with Stage 9's
   runtime, the third. **App and job hours have a source**: `AWS/Usage` `ResourceCount`, `Service=SageMaker`,
@@ -257,8 +257,9 @@ way to learn a limit. **Explanation:** the candidates are the ones this estate h
   and gateway-endpoint quotas carry no usage metric.
 - **9.2 — [Claude⚡] Set CloudWatch alarms** on each at 80 %, pointing at the request-increase path.
   **Applied in Production 2026-10-18**: `awsds-prod-quota-vpcs-per-region`, the one quota of 9.1 here with
-  a usage metric and a measured approach. **Written and planned in Sandbox**: five alarms, the three Studio
-  types, the processing type and the VPC's interface endpoints, apply owed with the slice. Each alarm
+  a usage metric and a measured approach. **Applied in Sandbox the same day** by the orchestrating
+  session: five alarms, the three Studio types, the processing type and the VPC's interface endpoints.
+  Each alarm
   reads its quota back from Service Quotas by code (Lesson 38), takes the quota's own usage metric and
   divides by `SERVICE_QUOTA()`, so an increase needs no apply. An 80 % alarm cannot see a quota of 0,
   which refuses the first use before any datapoint: reading the quota before a stage's first use is the
@@ -299,6 +300,9 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
   by `CloudWatchAlarmsOfThisAccount`, no key), and **fails** in Production and Sandbox for the five alarms
   that still notify nobody, the half-built state Lesson 50 asks the check to name (`EXC-19`). Exit 2, no
   call failed.
+- **After the Sandbox apply, 2026-10-18T20:58:19Z**: Sandbox's five quota alarms read `broken`, their
+  topic holding *"no confirmed subscription (1 pending)"* until the user confirms the e-mail; the two
+  warehouse alarms and Production's three `[D]` hosts' still notify nobody. Exit 2, no call failed.
 
 ---
 
