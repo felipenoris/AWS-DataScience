@@ -108,3 +108,129 @@ Account ids are replaced by the account's name in angle brackets.*
     `SageMakerProcessingOperator` that runs `deploy_model.py --endpoint-name`
     (`end-to-end-data-ml-pipeline/examples/mlops-pipeline/workflows/deploy_pipeline.yaml:9`, `:24`,
     `:37-41`), a script the sdist does not carry.
+
+## 2026-10-18 — pass 0's readings from the laptop and 2.3 written, the environment down
+
+*Every entry below is Claude's, session "Stage 18: readings and the deployment-members list".*
+
+- **[Claude] The session's terms.** Started by the orchestrating session ("Execução local no Mac") on
+  the user's instruction of 2026-10-18 to run every step that needs neither the environment up nor the
+  user, with reads as the infrastructure user and the Terraform applies those steps need. This stage's
+  share named no apply, and none ran. Every call below is the infrastructure user's, permission set
+  `InfrastructureAccess`, through the `awsds-infra-*` profiles; the environment was down (0.0000 USD/h,
+  read by the orchestrating session at about 19:45 UTC).
+- **[Claude] 0.2, read 19:50 to 20:05 UTC.** `./aws/studio.py` at 19:50:25Z: 0 checks failed; two
+  SageMaker AI domains in Sandbox, both `VpcOnly`, idle 60 min under a 120 min ceiling; 11 blueprint
+  configurations; the profile `experimentation`; `test-experimentation` and `eighth-experimentation`,
+  both `ACTIVE`. Each project's `Tooling` environment is the stack `DataZone-Env-<environment>`,
+  created by `awsds-sandbox-smus-provisioning` with `datazone.amazonaws.com` as the source (CloudTrail's
+  `CreateStack` for `test` at 2026-10-15 06:05:33Z), no stack role, termination protection off. The two
+  stacks hold the same 14 resources, and their parameters differ only in the two ids:
+  - `ToolingUserRole`, `datazone_usr_role_<project>_<environment>`: trusted by `datazone.amazonaws.com`
+    and `auth.datazone.amazonaws.com`, by fourteen service principals (`airflow-serverless`,
+    `sagemaker`, `glue`, `lakeformation`, `scheduler` and `access-grants.s3` among them) under
+    `aws:SourceAccount`, by Redshift's two under an `sts:ExternalId` on the account's database users,
+    and by the provisioning role; the two trusts are identical up to order. Boundary
+    `awsds-sandbox-project-boundary`, sessions of one hour. Attached: `SageMakerStudioProjectUserRolePolicy`,
+    `SageMakerStudioProjectRoleMachineLearningPolicy` and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`,
+    plus this estate's `awsds-sandbox-workflows` on both, and `awsds-sandbox-bedrock-assistant` and
+    `awsds-sandbox-warehouse-project-<project>` on `eighth`. Tags include
+    `RedshiftDbUser=user-project@<project>` and the project's `SageMakerSpacesDomainId`.
+  - `BedrockServiceRole` (trusted by `bedrock.amazonaws.com` under source account and ARN; four
+    AWS-managed Bedrock service policies) and `BedrockLambdaExecutionRole` (trusted by
+    `lambda.amazonaws.com`; `AWSLambdaBasicExecutionRole` and two Bedrock function policies), both
+    under the boundary.
+  - `SageMakerSpacesDefaultDomain`, the project's SageMaker AI domain; `ToolingSecurityGroup`
+    `datazone-<project>-dev`, all traffic in from itself and all traffic out to `0.0.0.0/0`; two
+    `GlueNetworkConnection`s, one per private subnet; the Athena workgroups
+    `workgroup-<project>-<environment>` and `sagemaker-studio-spark-workgroup-<project>`; the prefix
+    `awsds-sandbox-smus-projects/<domain>/<project>/dev` registered in Lake Formation under the project
+    role, hybrid access off; the log group `datazone-<project>-dev`, 731 days, under the project key; the
+    schedule group `SageMakerUnifiedStudio-<project>-dev`; `CDKMetadata`.
+  - The parameters a deployment profile would turn: `enableSpaces`, `enableScheduling`, `enableAthena`,
+    `enableAthenaSparkWorkgroup`, `enableGlueNetworkConnection`, `enableEmrEc2Blueprint`,
+    `enableNetworkIsolation`, `enableRolesWithoutBoundary` and the four Bedrock switches `true`;
+    `sagemakerDomainNetworkType` `VpcOnly`; `ec2InstanceTypes` `ml.t3.medium`; `logGroupRetention` `731`.
+  - Outside the stack, read as `awsds-infra-data`, which DataZone answers on both projects: each
+    project's `Tooling-default-sagemaker-modelpackagegroup-datasource` runs at the project's creation
+    minute, `cron(32 17 * * ? *)` for `eighth` (55 `FAILED`, 1 `RUNNING`) and `cron(6 6 * * ? *)` for
+    `test`, created 2026-10-15 06:06:40Z (2 `FAILED`, 1 `RUNNING`), every failure
+    `VALIDATION_EXCEPTION`: `EXC-11`'s shape on a second project. `eighth` also holds a Glue data source
+    with no schedule, and each project one `CREATE_FAILED` DataLake environment whose stack was deleted
+    about 30 s after its creation. Each project has `datazone-<project>-dev/error` and `/output` log
+    groups with no retention, outside the stack. Sandbox's Lake Formation admins are
+    `awsds-sandbox-smus-manage-access`, `awsds-sandbox-smus-provisioning` and `InfrastructureAccess`,
+    with `CROSS_ACCOUNT_VERSION` 4.
+- **[Claude] 0.3, read 19:50 to 20:07 UTC.** `US-6` passes for Staging. CloudTrail's
+  `datazone.amazonaws.com` events in Staging from 2026-09-18 to 2026-10-18: 7, each `ListDomains` by
+  `InfrastructureAccess` refused `AccessDenied` (2026-09-19, 09-20, 10-11, 10-15, 10-17, and two at
+  19:49Z on 10-18, during this session's `studio.py` run); no other principal and no other call. The
+  `Workloads` document, read after the orchestrating session's apply of 19:54Z: nine statements
+  (`DenyInteractiveSageMakerSurface`, `DenyDataZoneEntirely`, `DenyAthenaSparkStartSession`,
+  `DenySageMakerJobsOffVpc`, `DenySageMakerInstanceCeiling`, `DenySageMakerJobsWithoutNetworkIsolation`,
+  `DenySageMakerJobsWithoutInterContainerEncryption`, `DenySageMakerJobsWithoutVolumeEncryption`,
+  `DenySageMakerServerlessInference`), attached to the OU `Workloads` alone, 2,499 characters, its
+  content equal to the file on `origin/main` at `2074b1b`; `DenyDataZoneEntirely` is `datazone:*` with
+  no condition. Staging's Lake Formation settings: no admin, no read-only admin, no default
+  permission on new databases or tables, `CROSS_ACCOUNT_VERSION` 1, no registered location; this is
+  what 8.6 reads back. `awsds-deploy-staging`: trusted by `awsds-prod-runner-deploy` alone, ceiling
+  `awsds-staging-deploy-boundary` at v1, inline `apply-egress` (EC2 reads, its VPC's interface
+  endpoints, Route 53 zone association, the DNS Firewall and its query log) and `state` (its state
+  prefixes and key). `awsds-deploy-sandbox-test`, written from the CLI's 158 events in `test`, allows
+  34 actions (`datazone` 12, `airflow-serverless` 9, `s3` 5, `kms` 4, `logs` 2, `ec2` 1, `iam` 1), and
+  `awsds-deploy-staging` holds one of them, `ec2:DescribeVpcEndpoints`. Its ceiling denies none of the
+  other 33: its denies cover role changes outside `awsds-staging-app-boundary`, the deploy identities
+  and the ceilings, never `iam:PassRole` [inferred from the documents; nothing ran as the role].
+- **[Claude] 0.4's reads, 20:08 UTC; the run is owed.** `list-project-memberships` on
+  `test-experimentation` answered both `awsds-infra-data` and `awsds-infra-sandbox-1`: an Identity
+  Center user, the data scientist, as `PROJECT_OWNER`, and the project role's IAM user profile and one
+  group as `PROJECT_CONTRIBUTOR`. No member is the `InfrastructureAccess` role, and DataZone answers
+  this read to it while it refuses `list-connections` (`EXC-17`). As that non-member,
+  `mwaa-serverless list-workflows` returns six workflows, the CLI's
+  `houseprice_etl_test_experimentation_houseprice_etl` and `houseprice_etl_eighth_experimentation_houseprice_etl`
+  among them, and `get-workflow` reads the first: execution role the `test` project role, security
+  groups and subnets, a customer-managed key, `manual_only`, the log group
+  `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, and the tags `Pipeline=houseprice-etl`,
+  `Target=test-experimentation`, `STAGE=TEST`, `CreatedBy=SMUS-CICD`, `AmazonDataZoneDomain` and
+  `AmazonDataZoneProject`, which 0.1 read in the code. Question vii's finding half is answered by IAM
+  alone; `start-workflow-run` and the run wait on `make hub-up` and `make up ENV=sandbox`.
+- **[Claude] 0.5, cited.** The battery's phase `ou` ran once, by the orchestrating session after its
+  `identity/org-policies/` apply, started 19:55:13 UTC: *"39 as expected, 0 unexpected, 7 not
+  measured"*, recorded in Stage 9's log (commit `22f3422` on that session's branch). Its file
+  `scp-battery-20261018T165513.txt` reads Staging's `datazone:ListDomains` `DENY-SCP` under the
+  `Workloads` policy and Sandbox's `ListDomains` succeeding. It is 1.3's before; no second battery ran.
+- **[Claude] 2.3 written, no row.** `scripts/tfhygiene/backend.py` gains `SMUS_DEPLOYMENT_MEMBERS`,
+  empty, beside `SMUS_ASSOCIATED`, and a guard that refuses at import an account in both it and
+  `SMUS_MEMBERS`; `governance/`'s `members` map and `profiles_enabled` read both lists, and the four
+  other readers read `SMUS_MEMBERS` alone. `governance/`'s three comments that named `SMUS_MEMBERS`
+  alone name both, and the comment on `APP_REGISTRY_CONSUMERS` drops Stage 8's retired by-hand run.
+  Every slice's generated tfvars, laptop and pipeline (36 slices), and refusal 8's answers for the four
+  deploy profiles are identical before and after. A simulated `staging` row, never written, changes
+  `governance/`'s emission alone, `profiles_enabled` `true` after its `SMUS_ASSOCIATED` row and `false`
+  before it. The re-plans, `-input=false`: `sandbox/foundation/` as `awsds-infra-sandbox-1`,
+  `No changes` (20:03:11Z); `production/tooling/` as `awsds-infra-prod` with the SAML var-file,
+  `No changes` (20:03:37Z); `staging/foundation/` as `awsds-infra-staging` with the alerts var-file,
+  `No changes` (20:04:14Z); `data-governance/governance/` as `awsds-infra-data`, `Plan: 0 to add, 1 to
+  change, 0 to destroy` (20:04:45Z), the change being `awscc_datazone_project_profile.this["experimentation"]`
+  gaining the `MLflowApp` environment configuration: Stage 17 pass 1's unapplied edit (PR #157),
+  nothing of 2.3's.
+- **[Claude] 5.4's quotas, read 20:00 to 20:15 UTC.** DataZone in Staging and Sandbox, each AWS's
+  default: `Environments in a domain` 1,000, `Data source runs/data source/day` 25, `Assets` 1,000,000,
+  `Asset Types` 1,000; Service Quotas lists no project quota. MWAA Serverless in both, each the
+  default: 100 workflows per account, 50 versions per workflow, 100 concurrent runs, 76,800 MB of code
+  storage, 50 KB per definition, 100 KB of XCom, and a task timeout of 60, for which Service Quotas
+  gives no unit. SageMaker: `Total domains`
+  10 in Staging and 500 in Sandbox against a default of 2; Studio spaces 50 and 6,000 (default 6);
+  user profiles 50 and 6,000 (default 2); SageMaker Projects 500 in both. Neither account's request
+  history names these codes; Sandbox's holds Stage 17's three open requests. A `Tooling` base creates
+  one SageMaker AI domain per project (0.2), so it admits ten projects in Staging [inferred]. Staging
+  admits 4 `ml.t3.medium` processing jobs (the default), the type `app-etl`'s `process` task names;
+  `ml.m5.large` and `ml.m5.xlarge` read 0 (Sandbox 10, 8 and 8). Decision 6 is the user's.
+- **[Claude] 7.3's record.** 7.3 was written 2026-10-17 by the cloud session that wrote the stage,
+  from AWS's pages that `docs/REFERENCES.md` lists under "Data across accounts in SageMaker Unified
+  Studio" (read 2026-10-17); no AWS call ran for it, Staging having no warehouse, and this session did
+  not read the pages again.
+- **[Claude] Amends the 2026-10-17 entry's "0.2 and 0.4 can run from the laptop".** 0.2 did, today.
+  0.4's calls go from the laptop, but its run's tasks need `sandbox/egress`'s `[E]` endpoints (6i's
+  prerequisites), so the run waits on a raised session; the step says so now, under the profile
+  `awsds-infra-sandbox-1`, the one that exists.

@@ -536,10 +536,13 @@
   Redshift databases when added to Amazon DataZone"*; from *"Spark ETL job runs in AWS Glue (v5.0 and
   higher) console or notebooks"* configured to send events; and through the OpenLineage-compatible
   APIs for *"transformations in Amazon S3, AWS Glue, and other services"*. **The automatic half is
-  switched on in the blueprint**: *"domain administrators can configure lineage while setting up data
-  lake and data warehouse built-in blueprints which ensures that all data source runs created from
-  those resources are enabled for automatic lineage capture"* — Terraform here, never a console
-  toggle. Two node types, **dataset** (auto-generated with a Glue or Redshift icon for published
+  configured with the blueprints** on the page's account: *"domain administrators can configure lineage
+  while setting up data lake and data warehouse built-in blueprints which ensures that all data source
+  runs created from those resources are enabled for automatic lineage capture"*, a console option on
+  the blueprint's Region (*Import data lineage*). On this domain the setting is the connection's
+  `glueLineageSyncEnabled` (read 2026-10-18), not a field of the blueprint configuration. The page
+  also says `GetLineageNode` and `ListLineageNodeHistory` are open to every domain user and that
+  `PostLineageEvent` is authorized by IAM at the API Gateway layer. Two node types, **dataset** (auto-generated with a Glue or Redshift icon for published
   assets, created by hand for anything else) and **job (run)**, keyed by a `sourceIdentifier` whose
   shape is given per type. The page names no orchestrator, so whether MWAA Serverless emits anything
   is unanswered and is [Stage 10](plan/stages/stage-10-orchestration-promotion.md) step 3.3:
@@ -563,6 +566,47 @@
   `SELECT GRANTABLE` on the table:
   <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>.
 - Amazon DataZone concepts and managed-asset fulfilment (read 2026-09-13, for Stage 6f). The concepts page: *"An AWS account can be associated with one or more Amazon DataZone domain"*; an approved subscription is fulfilled *"by creating the necessary grants in AWS Lake Formation or Amazon Redshift"*, automatically only for managed assets (Glue tables, Redshift tables and views), with an EventBridge event for the rest; project members are owners, contributors, consumers, stewards and viewers: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>. The Glue-asset page: *"Access management for the AWS Glue Data Catalog assets using the AWS Lake Formation LF-TBAC method is not supported"*, cross-Region sharing is not supported, the table *"must be Lake Formation-managed"*, and the manage-access role needs `DESCRIBE` and `DESCRIBE GRANTABLE` on the database and `DESCRIBE`, `SELECT` and both grantable on the table: <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>. The SageMaker Unified Studio subscription page says a project is subscribed *"when the publisher approves your request"*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
+
+- Amazon DataZone and SageMaker Unified Studio, AI recommendations for names and descriptions (read
+  2026-10-18, for Stage 6f step 5.1; the page is `autodoc` in both guides). The feature is powered by
+  Amazon Bedrock and inherits its controls and automated abuse detection. US West (Oregon) is a
+  supported Region, and the pages use Bedrock's cross-Region endpoint for US East (Ohio) alone, plus,
+  on the Unified Studio page, for glossary-term generation in every supported Region. Business names
+  are switched on per data source (*automated business name generation*) or by the
+  `predictionConfiguration` flag of `CreateAsset`; the quotas are 50,000 name and 10,000 description
+  generations a month; a custom asset type takes the feature through the relational-table form; and a
+  suggestion nobody accepts stays out of a published asset:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/autodoc.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/autodoc.html>. The inputs are
+  in the launch post (AWS Big Data blog, 2024-04-02): the asset's table names, column names and the
+  producer's optional metadata, and no table rows unless the user puts them in the metadata; the model
+  is not named and the service manages the choice:
+  <https://aws.amazon.com/blogs/big-data/ai-recommendations-for-descriptions-in-amazon-datazone-for-enhanced-business-data-cataloging-and-discovery-is-now-generally-available/>.
+  The custom-asset post (2025-07-01) shows a table name, columns and types as the input of a custom
+  structured asset:
+  <https://aws.amazon.com/blogs/big-data/introducing-genai-powered-business-description-recommendations-for-custom-assets-in-amazon-sagemaker-catalog/>.
+  The pricing page prices descriptions by token (USD 0.015 input, 0.075 output per 1,000) and business
+  names as compute (USD 1.776 per unit, 0.2 free a month, per completed job):
+  <https://aws.amazon.com/datazone/pricing/>. Bedrock's abuse-detection page, read again, lists Claude
+  Fable 5 and 5.1 and most OpenAI models as the retention exceptions, and puts retained inputs of a
+  cross-Region request in the destination Regions:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/abuse-detection.html>.
+- Amazon DataZone authorization for the catalog calls (read 2026-10-18, for Stage 6f decision 5). Each
+  authenticated context maps to a user profile, IAM roles included, and the project designation (owner,
+  contributor, viewer) decides the action:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/security-authorization.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/user-management-portal.html>. Publishing needs
+  the owner or contributor designation, and the publisher may switch subscription approval off for an
+  asset: <https://docs.aws.amazon.com/datazone/latest/userguide/publishing-data-asset.html>. A request
+  needs membership of a project:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/subscribe-to-data-assets-managed-by-datazone.html>.
+  Approving, rejecting and revoking need membership of the owning project, and a request is approved at
+  creation when the requester is an owner or contributor of both the owning and the requesting project:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/approve-reject-subscription-request.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/revoke-subscription.html>. The connection
+  property behind the Glue lineage sync, which the API reference describes as lineage sync for tables
+  managed by Glue crawlers:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_LakehousePropertiesOutput.html>.
 
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.
 
@@ -1044,13 +1088,25 @@
   namespace can. The same page carries the metric list: `ComputeCapacity` (*"Average number of compute units
   allocated during the past 30 minutes"*), `ComputeSeconds`, `UsageLimitConsumed`/`UsageLimitAvailable`,
   `DataStorage`, `DatabaseConnections` and
-  `ExtraComputeForAutomaticOptimizationChargedSeconds`:
+  `ExtraComputeForAutomaticOptimizationChargedSeconds`; `ChargedSeconds`, which CloudWatch publishes for the
+  workgroup, is not on it (read 2026-10-18):
   <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html>.
   *Cross-database queries*: the page carries **both** *"When you query database objects on any other
   unconnected databases, you have read access only to those database objects"* and *"You can write from
   databases that you are connected to, and also write from any other database that you have permissions to"* —
   which is why D40 puts the two classes of database in two accounts rather than in one namespace:
   <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
+
+- **Redshift — where a query runs, and the serverless per-query limit (read 2026-10-18, for
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s owed reading of `max_query_execution_time`).**
+  *Leader node–only functions*: a query that references only `PG_` catalog tables, or no table, *"runs
+  exclusively on the leader node"*; one over user tables or `STL`/`SVV` views is distributed. The
+  2026-09-20 runaway read only `pg_attribute`:
+  <https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_functions_leader_node_only.html>.
+  *WLM query monitoring rules*: Serverless's `max_query_execution_time` is the query-execution-time
+  metric, and past it *"Amazon Redshift Serverless stops the query"*; the page says nothing about
+  leader-node queries or superusers:
+  <https://docs.aws.amazon.com/redshift/latest/dg/cm-c-wlm-query-monitoring-rules.html>.
 
 - **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
   [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the
@@ -1453,6 +1509,14 @@
   needed only for custom domains); the Pages domain must not be a subdomain of `external_url` (D36's
   two-apex rule); and access control is available in the Free tier
   (`gitlab_pages['access_control'] = true`): <https://docs.gitlab.com/administration/pages/>.
+
+- S3 Lifecycle, expiring objects (read 2026-10-18; Stage 7 step 8.2, the GitLab backups). In a
+  versioning-enabled bucket an `Expiration` action acts on current versions only and adds a delete
+  marker, which makes the current version noncurrent; `NoncurrentVersionExpiration` then deletes the
+  noncurrent versions for good; S3 may remove an object some time after its expiration date; and
+  `HeadObject` and `GetObject` return the date a current version expires (the `Expiration` header),
+  which is how the two backups were dated:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html>.
 
 - GitLab releases and the generic package registry (read 2026-10-15, Stage 8 decision 20). A release
   holds links, not files; the release fields page points a release's binaries at the generic package
