@@ -591,13 +591,20 @@ The business catalog over this domain is [Stage 6f](plan/stages/stage-06f-data-g
 subject and [`GOVERNANCE.md`](GOVERNANCE.md) holds the model. What belongs here is what the SMUS
 objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/catalog.py).
 
-- **A project's Tooling environment creates a data source nobody asked for.**
+- **A project's Tooling environment creates a data source nobody asked for, and it fails.**
   `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`
-  and runs on a **daily cron**, `cron(32 17 * * ? *)`, created with the environment. It publishes
-  nothing (`publishOnImport: false`) and had found no asset when read, but it is a scheduled run this
+  and runs on a **daily cron** the environment chooses, `cron(32 17 * * ? *)` for the first project and
+  `cron(6 6 * * ? *)` for the second. Every completed run has failed since 2026-08-24 on the RAM-share
+  validation error (`EXC-11`; 57 failed runs across the two sources on 2026-10-18). It publishes
+  nothing (`publishOnImport: false`), finds no asset and bills nothing, but it is a scheduled run this
   repository did not write (Lesson 17). The Glue data source a person creates in the portal carries no
-  schedule and **`enableBusinessNameGeneration: true`**, which sends table and column names to a
-  generative model — 6f decision 3.
+  schedule and **`enableBusinessNameGeneration: true`**, which sends the asset's metadata (table and
+  column names, producer-supplied metadata) to a Bedrock model in the Region and has never run here —
+  6f decision 3.
+- **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
+  `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), the blueprint
+  configuration carries no lineage field, and the Redshift connection's `lineageSync` is the separate
+  meter below.
 - **The domain offers 23 managed asset types**, `GlueTableAssetType` among them, all owned by the
   domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone

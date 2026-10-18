@@ -525,3 +525,158 @@ began as a re-run of the instruments and turned up something no instrument was r
 
 - **[Claude] The report's data-source table gained a `RUNS` column**, so the contrast that hid this —
   `STATUS RUNNING` beside `25 FAILED, 1 RUNNING` — is on one line.
+
+## 2026-10-18 — readings with the environment down: the lineage nodes, 5.1, decision 5's DataZone half and `EXC-11` counted
+
+*Claude's sitting (session `stage06f-readings`, started by the orchestrating session on the user's
+instruction of the day to run the steps that need no environment), read-only throughout, as
+`awsds-infra-data` and `awsds-infra-sandbox-1`, from about 19:45Z. Nothing was applied. The environment
+was down (`make status` read 0.0000 USD/h). Vendor pages were read with the web fetch tool and are
+paraphrased here; [`REFERENCES.md`](../REFERENCES.md) lists them. Times are UTC.*
+
+### The instrument, re-run, and `EXC-11` counted
+
+- **[Claude] `./aws/catalog.py` at 19:47Z: exit 0.** `CT-1`, `CT-2`, `CT-4`, `CT-7`, `CT-8` and `CT-9`
+  pass; `CT-3`, `CT-5` and `CT-6` are notes. The domain has two projects, `eighth-experimentation` and
+  `test-experimentation`; two listings, zero subscriptions, requests and grants; fourteen SMUS grants
+  (twelve on 2026-09-18), all on project-owned objects, the two new ones being the second project's
+  `default` entry and its `dev/` data location; seven `IAMPrincipals` entries (five), every one with the
+  project condition. The domain's policy grants are as 2026-09-18: only
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` names a group, `ADD_TO_PROJECT_MEMBER_POOL` is
+  `allUsersGrantFilter`, both override types are empty.
+- **[Claude] `CT-6` exempts by name, and the name now covers two sources.** The run printed both in one
+  sentence and never said there were two. Per project, from `list-data-sources`, `get-data-source` and
+  `list-data-source-runs`: `eighth-experimentation`'s, created 2026-08-23 on `cron(32 17 * * ? *)`, has
+  **55 `FAILED` runs and one `RUNNING`**, the oldest 2026-08-24 (25 on 2026-09-19);
+  `test-experimentation`'s, created 2026-10-15 06:06Z with its Tooling environment on
+  `cron(6 6 * * ? *)`, has **2 `FAILED` and one `RUNNING`**, the oldest 2026-10-16. That is 57 failed
+  runs, every one `SCHEDULED`, `lastRunAssetCount` 0. The newest failed run of each carries
+  `VALIDATION_EXCEPTION` and the RAM-share message of 2026-09-19, word for word. Each project's
+  Tooling environment creates one, so a third project adds a third.
+- **[Claude] `catalog.py` now says how many.** The `CT-6` note groups the excepted sources by name and
+  prints their number with each project and cron; an unexcepted failing source still fails the check and
+  now names its project. Re-run once, `ruff` clean.
+
+### 5.1 and verification viii — where the AI generation runs
+
+- **[Claude] The page was `autodoc`.** The four slug guesses of 2026-09-18 missed it; a search for the
+  feature's own name found it in the DataZone guide and in the Unified Studio guide. Both say the feature
+  is powered by Bedrock and inherits its controls and automated abuse detection; both list US West
+  (Oregon) among the supported Regions; both use Bedrock's cross-Region endpoint for US East (Ohio) alone
+  for names and descriptions, and the Unified Studio page adds glossary-term generation, which uses it in
+  every supported Region. Business names are switched on per data source or by `predictionConfiguration`
+  at `CreateAsset`; the quotas are 50,000 name and 10,000 description generations a month.
+- **[Claude] What it sends comes from AWS's launch post, not from the pages.** The post (2024-04-02)
+  says table names, column names and the producer's optional metadata, and no table rows unless the user
+  puts them in the metadata. It does not name the model (the service manages the choice and may change
+  it) and says nothing about storage, training or opting out. The 2025-07-01 post for custom assets
+  shows a table name, columns and types as the input and is silent on sample rows.
+- **[Claude] The pricing page puts business names under compute.** Descriptions bill by token as
+  `PRICING.md` has them (USD 0.015 input, 0.075 output per 1,000); names bill as compute, USD 1.776 per
+  unit with 0.2 free a month, per completed ingestion or name-generation job.
+- **[Claude] Against 6e and D1.** For `us-west-2` the pages use the in-Region endpoint, so D1 holds for
+  names and descriptions; glossary-term generation would leave the Region and nothing here uses it. 6e's
+  retention mode is a setting of the account's own Bedrock use, and no page says it reaches the service's
+  calls. The model is not named, so the per-model exceptions on Bedrock's abuse-detection page (read
+  again: Fable 5 and 5.1 retain all traffic up to 30 days, most OpenAI models retain the traffic a
+  classifier flags) can be neither ruled in nor out for it.
+- **[Claude] Nothing has generated here.** The Glue source (`CreateDataSource` at 2026-09-13 04:06:38Z,
+  `enableBusinessNameGeneration: true`, `publishOnImport: false`) has no run; `CreateAsset` at 04:06:41Z
+  carries no `predictionConfiguration`; 90 days of Data Governance's trail hold no `StartDataSourceRun`;
+  and the only `bedrock.amazonaws.com` events in that window, in either account, are AWS Config's own list
+  calls. The service's calls would not appear there, so the last reading is not evidence.
+
+### 6.1 and verification ix — the two publish-time nodes
+
+- **[Claude] The trail named them.** The publish's two `CreateLineageNode` calls (04:06:44Z and
+  04:06:53Z, `invokedBy datazone.amazonaws.com`, `requestParameters` null) carry the node in
+  `additionalEventData`: `69dcbz6ii1j6hc`, source `amazon.datazone.asset/dbund4fvvvt05s`, and
+  `58w6xmloxbpvkg`, source `amazon.datazone.listing/cetyru4cvy1bio`, both
+  `amazon.datazone.DatasetLineageNodeType`. Three `CreateLineageNodeVersion` and three
+  `UpdateLineageNode` calls follow. No other lineage event is in 90 days of either trail, no
+  `PostLineageEvent` either, and `list-lineage-events` returns `items: []`.
+- **[Claude] `GetLineageNode` was not refused.** As `awsds-infra-data`, where `GetAsset` is refused,
+  both nodes read; the lineage page says the two read operations are open to every domain user. The
+  persona's read is therefore not owed.
+- **[Claude] What they link.** The asset node has no name and no forms, `upstreamNodes: []`,
+  `downstreamNodes: [58w6xmloxbpvkg]` and two versions in `list-lineage-node-history`. The listing node,
+  named `house-price`, has the asset upstream, nothing downstream, one version and four forms:
+  `ListingLineageForm` (asset revision 1, listing revision 2, owner `eighth-experimentation`,
+  `GlueTableAssetType`, `ACTIVE`), `DatasetSchemaForm` (13 columns), `DatasetForm` (`datasetType`
+  `LISTING`) and `ColumnLineageForm`, which makes each listing column's source the same-named asset
+  column. So the publish links an asset to its listing, column by column, and nothing outside the
+  catalog: no job, no run, no source table and no S3 object.
+
+### 6.2's blueprint claim, corrected
+
+- **[Claude] No lineage field exists where the stage looked.** `get-environment-blueprint-configuration`
+  for `DataLake` in Sandbox returns the provisioning and manage-access role ARNs, the boundary, the Region
+  and its parameters (AZs, subnets, VPC) and no lineage field; the installed CLI's help for
+  `create-data-source` and `put-environment-blueprint-configuration` does not mention lineage; and
+  `terraform-live` and `terraform-modules` hold no file that does.
+- **[Claude] The Glue sync is a connection property, and it is on.** The DataZone service model carries
+  `glueLineageSyncEnabled` on the IAM and lakehouse connection properties and `lineageSync` on Redshift's
+  and Snowflake's. `ListConnections` as `awsds-infra-sandbox-1` returns, in both projects,
+  `project.default_lakehouse` (`LAKEHOUSE`) and `project.iam` (`IAM`) with `glueLineageSyncEnabled: true`.
+  Neither trail holds an `UpdateConnection` in 90 days, so the value is the creation default. The stage's
+  *switched on in the blueprint (Terraform here)* was wrong twice: the setting is not in the blueprint,
+  and no Terraform declares it. An empty `list-lineage-events` says that nothing emitted.
+
+### Who can read what: a membership dated 2026-10-15
+
+- **[Claude] `ListConnections`, `GetConnection` and `GetAsset` answer in Sandbox and are refused in Data
+  Governance.** `list-connections` as `awsds-infra-sandbox-1` returned 11 connections for
+  `eighth-experimentation` and 9 for `test-experimentation`; as `awsds-infra-data` it returns
+  *"User is not permitted to perform operation: ListConnections"*. `get-asset` of `dbund4fvvvt05s` is
+  refused in Data Governance (0.6, reproduced) and answers in Sandbox. The 6h log records
+  `ListConnections` refused to `awsds-infra-sandbox-1` on 2026-09-21 and twice on 2026-10-10.
+- **[Claude] What changed is a membership.** Each project lists three members: `PROJECT_OWNER`, the data
+  scientist user; `PROJECT_CONTRIBUTOR`, the project's own role, an `IAM` user profile; and
+  `PROJECT_CONTRIBUTOR`, a group profile whose `rolePrincipalArn` is the Sandbox `InfrastructureAccess`
+  role. Data Governance's trail holds the two `CreateProjectMembership` calls for that group, as
+  `awsds-data-studio-domain-execution` with the data scientist user's session name: 06:15:15Z on
+  2026-10-15 for `test-experimentation` and 06:15:45Z for `eighth-experimentation`, a portal act. The
+  refusals are DataZone's project-membership check, not IAM, and the Data Governance session is still
+  not a member. The 6h session was told the same day.
+
+### Decision due 5 — DataZone's half
+
+- **[Claude] The project role is a DataZone user and a contributor of its own project.**
+  `search-user-profiles` lists an `IAM` profile, `ACTIVATED`, for each of six `datazone_usr_role_*`
+  roles (four belong to deleted projects) and for the `InfrastructureAccess` role of three accounts;
+  `list-project-memberships` and `get-user-profile` put the two live project roles at
+  `PROJECT_CONTRIBUTOR`.
+- **[Claude] AWS's pages put the checks on membership**, read the same day: publishing needs owner or
+  contributor and lets the publisher switch approval off; a request needs a project; approving,
+  rejecting and revoking need the owning project; a request is approved at creation when the requester
+  is owner or contributor of both projects.
+- **[Claude] The IAM half, simulated, and the simulator's trap.** `iam simulate-principal-policy` on both
+  project roles, with no context key: every action reads `explicitDeny` with
+  `AllowedByOrganizations: False`, `glue:GetTable`, `datazone:GetDomain` and `bedrock:InvokeModel`
+  among them, because the Region ceiling SCP tests `aws:RequestedRegion` and the key is absent. With
+  `aws:RequestedRegion=us-west-2` supplied, `CreateSubscriptionRequest`, `RevokeSubscription`,
+  `CreateListingChangeSet` and `CreateAsset` read `allowed` (`SageMakerStudioProjectRoleMachineLearningPolicy`
+  v45 matched) and `AcceptSubscriptionRequest`, `RejectSubscriptionRequest`, `CreateSubscriptionGrant` and
+  `AddPolicyGrant` read `implicitDeny`. The boundary `awsds-sandbox-project-boundary` v2 holds no
+  `datazone:` statement. `SageMakerStudioProjectUserRolePolicy` v75 grants `datazone:PostLineageEvent`
+  on the domain by principal tag, and the lineage page puts that write's authorization at IAM alone.
+- **[Claude] No call as a project role exists to read.** The trail's `CreateListingChangeSet` (2),
+  `CreateAsset` (1) and `CreateDataProduct` (1) are the portal calls of 2026-09-13; none of
+  `CreateSubscriptionRequest`, `RevokeSubscription`, `AcceptSubscriptionRequest` and
+  `CreateSubscriptionGrant` is in either trail. The call itself is a write from a space, owed with the
+  environment up and the user's authorization.
+
+### What the approval page changes for step 2
+
+- **[Claude] A request by a member of both projects is approved at creation.** The two live projects
+  share their owner and the `InfrastructureAccess` group, so a request as the data scientist user from
+  `test-experimentation` to `house-price` would be approved with nothing to approve, and 2.2 would read
+  the auto-approved path. Step 2.1 of the stage file now says so.
+
+### Recorded the same sitting
+
+- **[Claude]** The stage file (status, prerequisites, 0.6, 1.3, 2.1, 5.1, 6.1, 6.2, decisions 3 to 5,
+  cost, boundary item 2, 8.1 and the closing list), `GOVERNANCE.md` (the catalog row, the recorded-in
+  cell, three sentences that still called 4.1 and decision 1 open or `(d)` recommended), `AWS_STATE.md`
+  `EXC-11`, `SMUS.md`'s catalog-surface section, `REFERENCES.md`, `PRICING.md`'s compute row,
+  `aws/INDEX.md` and `catalog.py`.

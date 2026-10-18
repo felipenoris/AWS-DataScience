@@ -335,12 +335,13 @@ where each stands here:
 | Data product | a set of assets published and subscribed as one | `my-data-product`, 2026-09-13 |
 | Subscription | a consumer project requests, the owner project approves, DataZone fulfils: a Lake Formation grant in the table's account for a managed asset (INT-23), an EventBridge event for an unmanaged one, whose owner grants | unexercised; Stage 6f step 2 |
 | Direct Share | the owner gives an asset (S3, Glue, QuickSight) to chosen projects, users or groups; for S3, without a subscription request | decision due 5 |
-| Lineage | OpenLineage nodes from instrumented engines and from publishing (§Data lineage) | two nodes measured 2026-09-13 |
+| Lineage | OpenLineage nodes from instrumented engines and from publishing (§Data lineage) | two nodes, an asset and its listing, written by the publish of 2026-09-13; no event posted by any engine (Stage 6f 6.1) |
 | Domain units and authorization policies | who may create projects, glossaries and forms, and where; one unit per business data domain in the institutional pattern | Stage 6f step 9, `institutional-delta.md` |
 
 What it does not do: grant by an LF-Tag. DataZone documents no LF-TBAC support for the Glue assets it
 manages, and its grant is a named-resource grant (§Access control). Publishing wrote nothing to Lake
-Formation (measured 2026-09-13), and whether a published asset shows its tags is Stage 6f 4.1. The
+Formation (measured 2026-09-13), and a published asset showed no tag on 2026-09-18, though it had none
+to show (Stage 6f 4.1). The
 lake's entitlement stays in the register; the catalog carries discovery, ownership, the request record
 and the projects' own assets (Stage 6f decision due 1).
 
@@ -443,7 +444,7 @@ named-resource grant on a lake table is an exception under §Grants (Stage 6f de
 | Written by | Terraform: `data-governance/data/` and the consumer slices | the SMUS provisioning role at project creation (measured); DataZone at fulfilment, through the manage-access role (documented, unexercised) |
 | Governs here | the lake, `raw` and `curated` | a project's own databases and its `dev/` scope in Sandbox |
 | The control | the tag and the expression | the project id on the session, which DataZone sets (which sessions carry it is unmeasured); for a subscription, the owner project's approval |
-| Recorded in | the grant register, `AWS_STATE.md` | nowhere yet: `DL-14` reads the registrations, and `./aws/catalog.py` (Stage 6f 1.3) is to read the grants |
+| Recorded in | the grant register, `AWS_STATE.md` | no register row: `DL-14` reads the registrations, and `./aws/catalog.py` `CT-7` and `CT-8` read the grants a SMUS principal holds (14 on 2026-10-18, all on project-owned objects) |
 
 ## Grants
 
@@ -693,9 +694,10 @@ flowchart LR
   groups assets under one listing. Neither touches Glue, Lake Formation or S3 (measured 2026-09-13).
 - **Business metadata is the owner project's.** Business names and descriptions, glossary terms,
   metadata forms and the README are edited on the asset by the project that owns it; a glossary is owned
-  by the project that creates it and visible to the domain (Stage 6f 4.2). Whether an asset shows its
-  LF-Tags is Stage 6f 4.1; until then `classification` in the catalog is description for people, and
-  the tag is the control (Lesson 5).
+  by the project that creates it and visible to the domain (Stage 6f 4.2). A published asset showed no
+  LF-Tag on 2026-09-18, though that asset had none to show (Stage 6f 4.1); until a lake table is
+  published, `classification` in the catalog is description for people, and the tag is the control
+  (Lesson 5).
 - **Access between projects is the catalog's own.** A consumer project subscribes, the owner project
   approves, and DataZone writes the grant for a managed asset (documented; INT-23, unexercised). For a
   project's own tables this is the designed mechanism, since the register does not reach them. The Governance Manager approves as a member of the owner
@@ -752,7 +754,7 @@ and nothing else on the catalog (Stage 9 2.3).
 | The product is designed, in Sandbox | the table's schema and its proposed classification, column overrides included, go into a merge request on the versioned schema source (Stage 9 decision 3) | Data Scientist | the merge request |
 | Before the promotion that first writes the table | the table and its tags are declared in `data-governance/data/` (`aws_glue_catalog_table`, `aws_lakeformation_resource_lf_tags`) from that source, and Staging's mirror takes the same definition (Stage 9 4.1) | the Governance Manager approves the classification; the infrastructure user applies as `awsds-infra-data`, inside `DL-5`'s bracket, and as `awsds-infra-staging` | the producer README, a row per tag assignment, in the same sitting; the grant register when a grant changes |
 | The promotion | the job writes the rows, and no grant changes | the pipeline, behind the Deployment Manager's gate | the pipeline run |
-| After the first write | the table is published in the SageMaker Catalog with its business metadata (Stage 6f step 7, decision due 1) | the owner project Stage 6f 3.1 names, with the Governance Manager among its members | the catalog |
+| After the first write | the table is published in the SageMaker Catalog with its business metadata, in the shapes of Stage 6f decision due 1 that publish the lake (step 7; not under the recommended (c)) | the owner project Stage 6f 3.1 names, with the Governance Manager among its members | the catalog |
 | Any later time | reclassification, a tag change in the register under the same approval. A table moved to `restricted` leaves the default share at the apply, with no grant edited | the Governance Manager approves; the infrastructure user applies | the producer README |
 
 Who may open a merge request on the schema source is not decided; Stage 9 decision 3 recommends keeping
@@ -772,7 +774,8 @@ What changes in the infrastructure, per new curated table:
 - **In Production, nothing** while Stage 9 2.1's write grant covers `curated`'s tables as a set; a grant
   naming tables would take a row per product.
 - **In the catalog, no infrastructure** for publishing and business metadata. Under Stage 6f decision
-  due 1 (d), an approved request for a lake table becomes a register change of the kinds above.
+  due 1 (c), the recommendation, no lake table is published and no request for one exists; under (d),
+  which needs a custom asset type, an approved request becomes a register change of the kinds above.
 
 The Governance Manager's place in the cycle is the taxonomy and the tags (this section), the approval
 of every tag and data grant in the register, and the approvals in the catalog (`docs/ORGANIZATION.md`
