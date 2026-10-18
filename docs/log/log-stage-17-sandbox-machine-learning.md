@@ -308,3 +308,11 @@ nothing below is a measurement of AWS and nothing was applied.*
   `gitlab/awsds/dev-env/dev-env/Dockerfile`), and `sagemaker-mlflow` 0.5.0 sends an app's calls to
   `mlflow.sagemaker.<region>.app.aws`, a family no compute plane admits, so a space whose literal lacks
   the host gets the proxy's 403 whether or not the endpoint exists. The choice is the user's.
+
+## 2026-10-18 — decision 4 taken
+
+- **[user] Decision 4** (00:04 UTC, on the project thread's decision card "Escolher quando sobe o
+  grupo mlflow: depois da imagem nova ou já?"): "Imagem antes", the recommended (b). The image
+  carrying the next `NO_PROXY` literal is released in the sitting of the `mlflow` group's first apply,
+  and PR #157's merge goes with it. Nothing follows yet: the literal comes from the first plan of
+  `sandbox/egress` at `vpc-egress-v0.18.0`, which waits on the two tags reaching origin.
