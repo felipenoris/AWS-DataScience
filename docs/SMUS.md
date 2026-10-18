@@ -602,9 +602,11 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   column names, producer-supplied metadata) to a Bedrock model in the Region and has never run here —
   6f decision 3.
 - **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
-  `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), the blueprint
-  configuration carries no lineage field, and the Redshift connection's `lineageSync` is the separate
-  meter below.
+  `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), and the blueprint
+  configuration carries no lineage field. The Redshift connection's `lineageSync` is the separate
+  meter below, and it is enabled (`cron(43 3 * * ? *)`, read 2026-10-18): its eight daily runs since
+  2026-10-11 all failed, the newest on *"Redshift endpoint doesn't exist in this region"* while the
+  workgroup was down, and that run processed no query.
 - **The domain offers 23 managed asset types**, `GlueTableAssetType` among them, all owned by the
   domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone

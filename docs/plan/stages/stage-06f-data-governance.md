@@ -313,8 +313,10 @@ The same-account half of INT-23, and the reading open question 24 still owes.
     `terraform-live` or `terraform-modules` names lineage; and the Glue sync is
     `glueLineageSyncEnabled: true` on `project.default_lakehouse` (`LAKEHOUSE`) and `project.iam`
     (`IAM`) in both projects, with no `UpdateConnection` in 90 days of either trail. The Redshift
-    side is the connection's `lineageSync` (`SMUS.md`). So no code change is owed to turn lineage on,
-    and an empty `list-lineage-events` says that nothing emitted, not that the setting is off.
+    connection's `lineageSync` is enabled too, on `cron(43 3 * * ? *)`: its eight daily runs since
+    2026-10-11 all failed, the newest on a missing Redshift endpoint (the workgroup is `[E]` and
+    down) and processing no query (`SMUS.md`). So no code change is owed to turn lineage on, and
+    an empty `list-lineage-events` says that nothing emitted, not that the setting is off.
   - **What the page does not say is whether MWAA Serverless emits anything**, which is the engine
     this estate actually orchestrates with (D7). Carried into [Stage 10](stage-10-orchestration-promotion.md)
     rather than recorded only here (Lesson 34).

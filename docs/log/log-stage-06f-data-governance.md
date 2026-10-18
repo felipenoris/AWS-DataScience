@@ -621,6 +621,14 @@ paraphrased here; [`REFERENCES.md`](../REFERENCES.md) lists them. Times are UTC.
   Neither trail holds an `UpdateConnection` in 90 days, so the value is the creation default. The stage's
   *switched on in the blueprint (Terraform here)* was wrong twice: the setting is not in the blueprint,
   and no Terraform declares it. An empty `list-lineage-events` says that nothing emitted.
+- **[Claude] The Redshift side, told by the 6h session and read again.** The 6h session
+  (`warehouse-5b-6h`) answered the note about the membership with the state of the Redshift connection's
+  lineage sync, which it had not recorded. `get-connection` on `redshift-serverless.redshift` returns
+  `lineageSync` with `enabled: true`, `cron(43 3 * * ? *)` and a lineage job; `list-job-runs` on that job
+  returns eight runs, one a day from 2026-10-11, **all `FAILED`**; `get-job-run` on the newest returns
+  zero queries processed and a `RedshiftData` status 400, *"Redshift endpoint doesn't exist in this
+  region."*, the workgroup being `[E]` and down. The Glue sync on, the Redshift sync on and failing,
+  and no event in the domain are the same reading: nothing has emitted yet.
 
 ### Who can read what: a membership dated 2026-10-15
 
