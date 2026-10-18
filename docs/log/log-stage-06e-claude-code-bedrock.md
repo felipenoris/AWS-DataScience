@@ -1483,6 +1483,77 @@ presence was asked, and answered nothing).
   file. 98 refusals in one session is the measured cost of that coupling, and the reason the same
   file holds the provider switch and the suppression key is worth naming when either is edited.
 
+## 2026-10-11 — Sonnet 4.5 retired by the provider, and decision 17
+
+*Written by Claude in the sitting. The trigger is an AWS Health notice the user received; the readings
+are Claude's own, read-only, from `awsds-infra-sandbox-1` (`Sandbox Account 1`, permission set
+`InfrastructureAccess`), `aws-cli/2.37.12`. The decision is the user's. No AWS write.*
+
+### The notice, and what it reaches here
+
+- **[user] AWS Health, event `AWS_BEDROCK_PLANNED_LIFECYCLE_EVENT`, `us-west-2`**: the account used
+  `anthropic.claude-sonnet-4-5-20250929-v1:0` in the past 30 days, and the model is in the Legacy state
+  from 2026-10-08, extended access from 2027-01-08, end of life 2027-04-08.
+- **[Claude] `get-foundation-model` carries the same dates**, which no instrument here read:
+
+  ```
+  "status": "LEGACY",
+  "startOfLifeTime": "2025-09-29T00:00:00+00:00",
+  "endOfLifeTime": "2027-04-08T08:00:00+00:00",
+  "legacyTime": "2026-10-08T08:00:00+00:00",
+  "publicExtendedAccessTime": "2027-01-08T08:00:00+00:00"
+  ```
+
+  Opus 4.5 and Haiku 4.5 read `ACTIVE` with no dates. `us.anthropic.claude-sonnet-4-5-20250929-v1:0`
+  still reads `ACTIVE` in `list-inference-profiles`, which is why `bedrock-scope.py` `BS-2` stayed green:
+  the lifecycle is on the foundation model, not on the profile.
+- **[Claude] The lifecycle page adds two rules the notice does not state**: public extended access comes
+  at a higher price the provider sets, and existing customers may lose access to a Legacy model after
+  15 days of inactivity.
+- **[Claude] This account has been idle on Sonnet 4.5 since 2026-09-12.** CloudTrail since 2026-09-01:
+  21 events, all `InvokeModelWithResponseStream` with no `errorCode`, all by the project role, the last
+  at **2026-09-12T22:02:32Z**. `bedrock-usage.py` over 2026-09-10 → 2026-10-11: Sonnet 4.5 21
+  invocations (USD 0.4184), Opus 4.5 23 (0.8219), Haiku 4.5 15 (0.0617). The account was 26 days idle
+  when the Legacy state began. Whether access was cut is not readable: `get-foundation-model-availability`
+  reads `AVAILABLE / AUTHORIZED / AVAILABLE / AVAILABLE`, which `EXC-08` already showed is no evidence.
+
+### The successor generation
+
+- **[Claude] The catalogue carries a 5.5 generation that `EXC-08`'s list did not have**:
+  `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5`, each
+  `ACTIVE`, `INFERENCE_PROFILE` only, with `us.` and `global.` profiles `ACTIVE`. Each `us.` profile
+  routes to `us-east-1`, `us-east-2`, `us-west-2`, so `EXC-07`, the Region statement and `INV-18` hold.
+  Availability: `NOT_AVAILABLE / AUTHORIZED / AVAILABLE / AVAILABLE` for all three, so no agreement
+  exists. The ids have the clean shape `EXC-08` found refused.
+- **[Claude] The rates, two sources agreeing** (agreement rate card and the Pricing API, `us-west-2`,
+  `us.` standard, USD per 1M tokens, input / output / cache read / cache write 5 min): Opus 5.5
+  4.40 / 22.00 / 0.22 / 5.50; Sonnet 5.5 2.20 / 11.00 / 0.11 / 2.75; Haiku 5.5 0.11 / 0.55 / 0.011 /
+  0.1375, plus a long-context tier at five times that. Offers `offer-7sp77cpl4rveu`,
+  `offer-5fu2rhus3byrs`, `offer-u3aih6zr7uw5u`.
+- **[Claude] The abuse-detection page, re-read**: the Claude models it names as retaining are Fable 5
+  and Fable 5.1 alone, so 7.5's `DenyInvokingModelsThatRetain` needs no change.
+
+### Decision 17, and the code it lands in
+
+- **[user] Decision 17: move the scoped set to Opus 5.5, Sonnet 5.5 and Haiku 5.5.**
+- **[Claude] The order is fixed by two facts.** The running image (`default-v0.5.0`) pins the 4.5
+  three, so removing them from the SCP before a new image is the domain default refuses every space at
+  the first prompt. And decision 15's `NotResource` denies the 5.5 ids before the commercial gate is
+  reached, so the gate cannot be measured until the SCP names them. So the SCP and the grant add the
+  5.5 six beside the 4.5 six; the pins move only after one M6 call per model answers.
+- **[Claude] Authored, not applied**: `awsds-org-scp-ou-interactive.json` `NotResource` 6 → 12 ARNs
+  (1362 characters minified, against 5120); `sandbox/bedrock/` `models` 3 → 6;
+  `bedrock-scope.py` gains `BS-8` over `modelLifecycle`; `POLICIES.md`, `PRICING.md`, `AWS_STATE.md`
+  (`EXC-07`, `EXC-08`, a section C row), the runbook's M4 and the stage's decision table follow. The
+  image pins are untouched.
+- **[Claude] `bedrock-scope.py` against the authored SCP**: `BS-1` 6 models, `BS-2` 6 profiles
+  `ACTIVE`, `BS-3`/`BS-4` the same three Regions, `BS-6` 17 Regions `none`, `BS-7` agree; **`BS-5`
+  fails** on the three 5.5 agreements, and **`BS-8` notes** Sonnet 4.5 `LEGACY` with its three dates.
+  `bedrock.py`: `BR-4` 6 of 6, exit 0.
+- **[Claude] Plans, read-only**: `identity/org-policies` `0 to add, 1 to change, 0 to destroy` (`awsds-org-scp-ou-interactive` in place, the six 5.5 ARNs and nothing else); `sandbox/bedrock` `0 to add, 1 to change, 0 to destroy` (`awsds-sandbox-bedrock-assistant`, a new policy version, the attachment untouched).
+- **Next, in order**: the three agreements (user, M4); the SCP apply; one M6 invocation per 5.5 model
+  as the infrastructure user; then, only if all three answer, the grant apply and the image release.
+
 ## 2026-10-17 — decision 13's evidence over five weeks, and the data plane silent since 2026-09-12
 
 *Written by Claude in a session with the environment down, at the user's request to advance what needs

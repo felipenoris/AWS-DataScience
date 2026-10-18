@@ -750,7 +750,20 @@
   <https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html>. *Data protection* carries
   the deployment-account argument — *"Because the model providers don't have access to those accounts,
   they don't have access to Amazon Bedrock logs or to customer prompts and completions"*:
-  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>. **Abuse detection
+  re-read 2026-10-11** for Stage 6e decision 17: the Claude models it names as retaining are still
+  Fable 5 and Fable 5.1 alone, so Opus, Sonnet and Haiku 5.5 are outside 7.5's deny.
+
+- **Amazon Bedrock model lifecycle**, the pages Stage 6e decision 17 is written from (read
+  2026-10-11). The page for models launched before 2026-09-07 carries the table with Claude Sonnet 4.5's
+  dates (legacy 2026-10-08, public extended access 2027-01-08, end of life 2027-04-08), the higher price
+  the provider sets during public extended access, and the rule that existing customers may lose
+  access to a Legacy model after 15 days of inactivity:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html>. The page for
+  later models replaces the extended-access phase with a per-model EOL floor on the model card:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html>. `GetFoundationModel`
+  returns the same dates in `modelLifecycle` (`legacyTime`, `publicExtendedAccessTime`,
+  `endOfLifeTime`), which is what `./aws/bedrock-scope.py` `BS-8` reads.
 
 - **Amazon Bedrock: the endpoints, the logging and the CloudTrail shape** (read 2026-09-11). The
   PrivateLink page gives the interface endpoint service names — `com.amazonaws.<region>.bedrock` and

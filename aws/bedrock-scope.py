@@ -8,9 +8,10 @@
 #   run:      ./aws/bedrock-scope.py                       # sandbox
 #             ./aws/bedrock-scope.py awsds-infra-staging   # any awsds-* profile
 #   writes:   aws/output/bedrock-scope.txt   (untracked - see .gitignore)
-#   reads:    bedrock:ListInferenceProfiles, GetInferenceProfile, GetFoundationModelAvailability,
-#             GetAccountDataRetention; account:ListRegions; sts:GetCallerIdentity. Every one is a
-#             read: this script creates nothing, changes nothing and invokes no model.
+#   reads:    bedrock:ListInferenceProfiles, GetInferenceProfile, GetFoundationModel,
+#             GetFoundationModelAvailability, GetAccountDataRetention; account:ListRegions;
+#             sts:GetCallerIdentity. Every one is a read: this script creates nothing, changes
+#             nothing and invokes no model.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # WHY THIS FILE EXISTS. Stage 6e's scoped set is ONE LIST WITH SEVERAL CONSUMERS, and two of the
@@ -25,6 +26,9 @@
 #   - WHETHER A MODEL IS STILL ENABLED. A model is invocable only while the account holds an
 #     agreement for it. An agreement can be deleted, and a model can be gated commercially with
 #     every other reading still green (AWS_STATE.md EXC-08).
+#   - WHEN A MODEL IS RETIRED. The provider moves a model to LEGACY and AWS publishes the dates on
+#     the foundation model, while its `us.` profile keeps reading ACTIVE - so BS-2 stays green.
+#     Sonnet 4.5 went LEGACY on 2026-10-08 and the only signal was an AWS Health e-mail.
 #
 # THE DECLARATION IS THE SCP, NOT THIS SCRIPT. terraform-live/identity/org-policies/policies/
 # awsds-org-scp-ou-interactive.json carries both halves in the two statements Stage 6e decision 15
@@ -47,10 +51,17 @@
 #         nothing refuses, the prompt is simply retained under the vendor's default.
 #   BS-7  the four consumers disagree -> the list drifted. Which one is wrong is a reading, not a
 #         verdict: this script reports the difference and names both sides.
+#   BS-8  a scoped model is past ACTIVE -> a note while it is LEGACY, a failure once its public
+#         extended access begins (the provider sets a higher price) or it is EOL. A LEGACY model
+#         may also stop answering an account that has not called it for 15 days, which no reading
+#         shows (model-lifecycle-legacy page, read 2026-10-11). Repair: Stage 6e decision 17's
+#         order - add the successor to the SCP and the grant, release the image, then remove.
 
 from __future__ import annotations
 
+import json
 import sys
+from datetime import UTC, datetime
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog
@@ -106,6 +117,7 @@ def main(argv: list) -> int:
     live_profiles = {}
     routed: dict[str, list] = {}
     agreements: dict[str, str] = {}
+    lifecycles: dict[str, dict] = {}
 
     res = cli.run(
         "bedrock",
@@ -147,6 +159,18 @@ def main(argv: list) -> int:
             "text",
         )
         agreements[model] = res.text.strip() if res.ok else "(unreadable)"
+        res = cli.run(
+            "bedrock",
+            "get-foundation-model",
+            "--model-identifier",
+            model,
+            "--query",
+            "modelDetails.modelLifecycle",
+            "--output",
+            "json",
+        )
+        if res.ok and res.stdout.strip():
+            lifecycles[model] = json.loads(res.stdout) or {}
 
     # BS-2 - every declared profile exists and is ACTIVE.
     bad = [
@@ -270,6 +294,50 @@ def main(argv: list) -> int:
                 f"SCP, {GRANT_VARS.split('/')[-3]}/{GRANT_VARS.split('/')[-2]} and the image pins",
             )
 
+    # BS-8 - every scoped model is ACTIVE; a LEGACY one is a note until its extended access begins.
+    now = datetime.now(UTC)
+    legacy, retired = [], []
+    for model in sorted(declared):
+        lc = lifecycles.get(model)
+        if lc is None:
+            continue
+        status = lc.get("status", "(none)")
+        if status == "ACTIVE":
+            continue
+        dates = ", ".join(
+            f"{label} {lc[key][:10]}"
+            for label, key in (
+                ("legacy", "legacyTime"),
+                ("extended access", "publicExtendedAccessTime"),
+                ("EOL", "endOfLifeTime"),
+            )
+            if lc.get(key)
+        )
+        extended = lc.get("publicExtendedAccessTime")
+        past_extended = extended is not None and datetime.fromisoformat(extended) <= now
+        entry = f"{model} {status} ({dates or 'no dates published'})"
+        if status == "LEGACY" and not past_extended:
+            legacy.append(entry)
+        else:
+            retired.append(entry)
+    unread = sorted(set(declared) - set(lifecycles))
+    if retired:
+        checks.fail(
+            "BS-8",
+            "every scoped model is ACTIVE",
+            "; ".join(retired) + " - past the price change or the end; move the set (decision 17)",
+        )
+    elif legacy:
+        checks.note(
+            "BS-8",
+            "every scoped model is ACTIVE",
+            "; ".join(legacy) + " - a LEGACY model may refuse an account idle for 15 days",
+        )
+    elif unread:
+        checks.note("BS-8", "every scoped model is ACTIVE", f"unreadable: {', '.join(unread)}")
+    else:
+        checks.ok("BS-8", "every scoped model is ACTIVE", f"{len(lifecycles)} model(s)")
+
     # ------------------------------------------------------------------------------ the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -314,7 +382,17 @@ trusting a stale copy.""")
             )
         rep.tabulate(rows)
         rep.line()
-        rep.tabulate(["MODEL\tAGREEMENT"] + [f"{m}\t{s}" for m, s in sorted(agreements.items())])
+        rows = ["MODEL\tAGREEMENT\tLIFECYCLE\tLEGACY\tEXTENDED ACCESS\tEOL"]
+        for m, s in sorted(agreements.items()):
+            lc = lifecycles.get(m, {})
+            rows.append(
+                f"{m}\t{s}\t{lc.get('status', '(unreadable)')}\t"
+                + "\t".join(
+                    (lc.get(k) or "-")[:10]
+                    for k in ("legacyTime", "publicExtendedAccessTime", "endOfLifeTime")
+                )
+            )
+        rep.tabulate(rows)
 
         rep.h1("3. The data retention mode, region by region")
         if retention:
