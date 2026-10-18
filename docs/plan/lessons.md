@@ -1521,6 +1521,45 @@ and a running host that bills while registered as nothing. Each failure is also 
 silent: the race loses some sessions, the version drifts with no commit, and the replacement arrives
 inside a plan written for something else.
 
+## Lesson 69 — two stages' unapplied changes to one slice become one apply the moment both are on main
+
+**What happened.** 2026-10-18, `sandbox/sagemaker/`. Stage 17's pass 1 put `MLflowApp` into
+`sagemaker-prereqs-v0.5.0` and waited on its 1.1, a portal reading the user takes before the blueprint
+exists. Stage 11's `TM-21` put the project key's organization condition into `v0.6.0`, built on `v0.5.0`,
+and its threat-model row said it applies "unless Stage 17's step 1.3 applies first". Both PRs merged; the
+caller pins `v0.6.0` and takes the module's default roster, so the slice's only possible plan is `2 to add,
+1 to change`, and the security fix waits on a portal reading of another stage.
+
+**Why it is a class rather than a slip.** A tag is cut from the commit before it, so a later version carries
+every earlier one; each stage's text describes its own half and stays true on its branch. The coupling
+appears only on main, where nothing reads the two stages together.
+
+**The rule.** Before tagging a module whose previous version is unapplied in a caller, read who waits on that
+version and say it in both stages: the apply is shared, and so is the condition each one waits on. Where the
+two must land apart, cut the second change from the version that is applied, not from the newest tag.
+
+**What makes it expensive.** The plan is the only reader that shows it, and nobody plans a slice whose change
+is waiting.
+
+## Lesson 70 — a refusal attributed to the identity's class was a membership, and memberships change in a portal nobody watches
+
+**What happened.** `datazone list-connections` refused `InfrastructureAccess` three times (2026-09-21 to
+2026-10-10), and 6h recorded it as a property of the identity: the infrastructure user is not a project
+member, so `WH-9` became a permanent note and `EXC-17` an object no instrument reads. On 2026-10-15 a
+portal act added a group profile whose role is Sandbox's `InfrastructureAccess` as a contributor of both
+projects, and on 2026-10-18 the same call answered from Sandbox's profile and stayed refused from Data
+Governance's.
+
+**Why it is a class rather than a slip.** A service with its own permission layer decides on state it holds
+(Lesson 28's second grant), and that state is edited in a console, by a person, with no plan and no diff. A
+refusal read as "what this identity is" outlives the state that produced it.
+
+**The rule.** Record such a refusal with the state it depends on ("not a member of the project, read
+<date>"), and give the note a revision trigger the instrument can read, here the projects' memberships.
+
+**What makes it expensive.** The change is silent in both directions: nothing announces the new access, and a
+permanent note stops anyone from re-trying the call that would show it.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -1773,6 +1812,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   times. A run that succeeds is a scheduled query on the warehouse's meter. Where: `log-stage-06h`,
   2026-10-18, and `./aws/warehouse.py` `WH-9`.
 
+### MWAA, provisioned
+
+- **`airflow:CreateEnvironment` authorizes before it validates the network configuration** (measured
+  2026-10-18, Stage 10 4.3). A call naming two subnets of Production, a security group, a role and a
+  bucket that do not exist read the root baseline's `DenyProvisionedMwaa` with the policy id, so the deny
+  is attributable without a valid environment. Where: the Stage 10 log.
+
 ### MWAA Serverless
 
 - **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
@@ -1852,6 +1898,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   xvi). `msgspec`'s `_core.cpython-313-x86_64-linux-gnu.so` loaded from `/opt/ml/processing/code`, which
   SageMaker had downloaded from S3 with the prefix's folder markers. No page says whether the input
   volume admits executable mappings. Where: `runbooks/serverless-workflows.md` §J1.
+
+- **`CreateProcessingJob` checks the instance quota after authorization and before the role** (measured
+  2026-10-17 and read in CloudTrail on 2026-10-18, Stage 9). In Production, where the processing quotas of
+  `ml.m5.large` and `ml.m5.2xlarge` read 0, six calls naming a role that does not exist answered
+  `ResourceLimitExceeded`, never `ValidationException`; after the `Workloads` document's apply the same
+  calls answered the SCP's deny. So a quota of 0 hides the validation a probe relies on, and reads as
+  authorized. Where: the Stage 9 log, `aws/probes/probes.py` `_JOB_AUTHORIZED`.
 
 ### Athena
 

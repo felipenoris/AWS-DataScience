@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **pass 1 written 2026-10-16 (PR #144), not applied** ([the log](../../log/log-stage-09-deployment-targets.md)): `production/sagemaker/`, the `Workloads` OU document's job settings and serverless deny with their battery rows, `production/workloads-egress/`'s six endpoints and DNS Firewall, and `DT-11`; decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Pass 0's readings and every apply wait on a laptop session. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
-| **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Nothing waits on a quota: 5b 0.4 read 25 namespaces and 25 workgroups per account |
+| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s six endpoints and DNS Firewall planned (15 to add) and raised by the next Production `make up`. Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Owed in pass 1: 3.4's registry proof and 6.3's window, the user's. **Production's and Staging's SageMaker processing quotas read 0** (2026-10-18), so no job runs in either account until a quota request is granted. Pass 2 waits on decision 3. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
+| **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Redshift waits on no quota (5b 0.4 read 25 namespaces and 25 workgroups per account); SageMaker does: the processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging (2026-10-18). [Stage 18](stage-18-staging-deployment-project.md) depends on this stage too: it needs pass 1's `Workloads` document and its battery (its 0.3 and 0.5), runs before pass 5, and adds Staging to the `readers` of `production/sagemaker/` (its 2.3) |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** (the two read shares are Stage 5a's); [INT-05](../integrations.md) (the Production branch, anchored on `VPC-Workloads`, and the persona's principal branch); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part**, the model-registry read half, which absorbed INT-04 at 6b (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** (the writer and maintenance halves are Stage 5a's); [INT-24](../integrations.md), a Sandbox project reading a governed Redshift table that lives in Production |
 
@@ -13,8 +13,9 @@
 
 **Objective:** what Staging and Production need in order to run promoted artifacts, and the governed write
 path through which Production becomes the lake's **only** producer (D22). Stage 8 built the promotion
-*machinery* against an application that touches no data; this stage gives it something real to deploy
-against, and its end is the first fully meaningful promotion. **Scope (D14):** Production's networking went
+*machinery* (its passes 1-3) against an application that touches no data, and runs the promotion itself,
+its pass 4, once this stage's platforms exist (its decision 23); this stage gives it something real to
+deploy against, and its end is the first fully meaningful promotion. **Scope (D14):** Production's networking went
 to Stage 3 and 6c, the registries to Stage 7, and the deploy credential layer is Stage 8's. What remains here
 is the data platform, the SageMaker runtime and the sharing model.
 
@@ -26,11 +27,11 @@ is the data platform, the SageMaker runtime and the sharing model.
 | `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third); the trusted-network list's Production entry read from `production/workloads/` (1.4); the first curated table and its LF-Tags, declared before its first write (2.1) | `[P]` |
 | `production/data/` (new) | the `consumer-data` call (account data CMK, LF settings, resource links, re-grants) and, beside it, what `consumer-data-v0.6.0` does not supply: the outputs bucket, the results bucket `awsds-prod-derived` and the enforced workgroup `awsds-prod-athena` (decision 11) | `[P]` |
 | `staging/data/`, `staging/sagemaker/` (new) | the catalog mirror with sampled/synthetic content, its results location and workgroup (decision 11); job execution roles and nothing else. Staging has no SMUS (D17/D28) | `[P]` |
-| `production/workloads-egress/` (amended), `staging/egress/` (amended) | the endpoints a job needs where there is no default route (3.3a, 4.3a), on `vpc-egress` v0.17.0 (both slices pin v0.11.1 today), with the DNS Firewall in both | `[E]` |
+| `production/workloads-egress/` (amended), `staging/egress/` (amended) | the endpoints a job needs where there is no default route (3.3a, 4.3a), on `vpc-egress` v0.17.0 (`production/workloads-egress/` since PR #144; `staging/egress/` still pins v0.11.1), with the DNS Firewall in both | `[E]` |
 | `production/warehouse/` (new, rank 53, step 9) | **the data half** of D40's governed warehouse: the namespace `awsds-prod-warehouse` under `alias/awsds-prod-data`, its admin secret, its three audit log groups, the namespace role, the security group, the alarms, and the first governed schema, written by `awsds-prod-job-exec` and put under Lake Formation by decision 5's shape | `[P]` |
 | `production/warehouse-compute/` (new, rank 54, step 9) | **the compute half**: the workgroup at `base_capacity = 4` in `VPC-Workloads`' private tier and its usage limit, in one apply. `[E]` for Sandbox's reason: Redshift Serverless has no pause, so *powered off* means *does not exist*. RMS storage bills while it is down | `[E]` |
 | `production/workloads-egress/` (amended again) | the `redshift` endpoint group (`redshift-serverless`, in the module since `vpc-egress-v0.15.0`) where a job inside the VPC calls the Redshift API. `redshift-data` is not in the group; it is added only if a job inside the VPC uses the Data API | `[E]` |
-| `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows (the workgroup, the named prefixes, the debug-role assumption), the two Redshift denies `DataScientistAccess` carries and this set lacks, and the registry read decision 10 picks | `[P]` |
+| `identity/sso/` (amended) | `DataScientistProdAccess`'s owed allows (the workgroup, the named prefixes, the debug-role assumption), the two Redshift denies `DataScientistAccess` carries and this set lacks. Decision 10 adds no registry read here: both Sandbox readers' own-side allows already exist | `[P]` |
 | `identity/org-policies/` (amended) | the job settings in the `Workloads` OU document if decision 9 takes (a), and the serverless-inference deny (3.7), each with its battery rows | `[P]` |
 | `scripts/` | `backend.py`/`layers.py` rows: `production/data/`, `production/sagemaker/`, `staging/data/`, `staging/sagemaker/` and `production/warehouse/` are `[P]`, refused by `make up`/`down`; `production/warehouse-compute/` is `[E]`, with `usd_per_hour = 1.44` as its ceiling | — |
 
@@ -80,7 +81,7 @@ flowchart LR
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
 | **[user]** | behavioural proofs run from a laptop session, approvals, and every log entry |
 | **[Claude reads, user decides]** | a measurement Claude takes and a choice only the user can make, in the same sitting |
-| **[pipeline]** | Stage 8's chain re-run in pass 5 — triggered by the user's tag, credentialed by Stage 8 step 4 |
+| **[pipeline]** | Stage 8's chain run in pass 5, which is Stage 8's own pass 4 (its decision 23) — triggered by the user's tag, credentialed by Stage 8 step 4 |
 
 Hand applies run as the **infrastructure user**: `awsds-infra-data` (the grantor half),
 `awsds-infra-prod` (the Production slices), `awsds-infra-staging`, `awsds-infra-identity`
@@ -351,7 +352,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   roles, scoped by `iam:PassedToService`.
 - **3.2 — [Claude] Write the package groups and their resource policies**: one group per application or
   model family — `awsds-prod-model-app-etl` first (D28 item 6). Policy, three statements: **register and
-  approve** (`sagemaker:CreateModelPackage`, `UpdateModelPackage`) for `awsds-deploy-prod` alone; **read
+  approve** (`sagemaker:CreateModelPackage`, `UpdateModelPackage`) for `awsds-deploy-prod` alone, among
+  the principals outside this account (inside it a resource policy constrains nobody an identity policy
+  admits, so the infrastructure user can approve too, `registry.tf`); **read
   approved** (`DescribeModelPackage`, `ListModelPackages`) for `awsds-deploy-staging`; and **read status**
   for the Sandbox readers decision 10 names. A data scientist reaches AWS from Sandbox as two principals:
   the persona's reserved SSO role (`AWSReservedSSO_DataScientistAccess_*`) from a laptop or the console,
@@ -360,7 +363,8 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   alone refuses a notebook's call. The account comes from the D35 map in `backend.py` and the role is
   matched by `aws:PrincipalArn`; the statement carries no `arn:aws:iam::*:`, so
   `./scripts/check-iam-wildcards.py` has nothing to whitelist. When the registry first holds a version,
-  re-read `EXC-11` (`./aws/catalog.py` `CT-6`), whose trigger is the Model Registry being used.
+  re-read nothing for `EXC-11`: its trigger is the Sandbox registry's first version (Stage 17 3.2), and
+  this registry is Production's, in an account the domain does not know.
 - **3.3 — [Claude] Write the escape hatch** (step 6's resources — same slice, same apply).
 - **3.3a — [Claude] Complete `production/workloads-egress/`.** `VPC-Workloads` is where Production's jobs
   and Stage 10's workers run, and 6c created the slice empty, with `core_services = []`. Bump it from
@@ -373,7 +377,8 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   plane's proxy list refuses everything by decision, an application image built `FROM base` carries no proxy
   variable, and an isolated job container has no network at all. A worker reaching for a name the firewall
   blocks fails at resolution in about 2 s (`errno 16`, 6i); without the firewall the same reach resolves and
-  hangs.
+  hangs. **Planned 2026-10-18, read-only, the slice's first plan**: 15 to add, the six endpoints and the
+  firewall's nine pieces; the next Production `make up` applies it.
 - **3.5 — [Claude reads, user decides] Enforce the job settings where `Create*Job` is called (decision
   9).** `terraform-modules/sagemaker-denies/` holds five statements: `DenySageMakerJobsOffVpc` (`VpcConfig`
   present, `CreateModel` included, which is how batch transform is bound), `DenySageMakerInstanceCeiling`
@@ -395,12 +400,14 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
     without it.
 
   **Recommended: (a)**: a condition attached to every submitter by hand will be missing from one
-  (Lesson 14).
+  (Lesson 14). **Applied 2026-10-18** with 3.7's deny, at 19:54Z, as `awsds-infra-identity`; the battery's
+  `ou` phase after the apply read each Stage 9 row as expected (the log).
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read
   with `get-role`, never `list-roles`, which omits `PermissionsBoundary` by documented contract (the trap
-  `US-8` exists for).
+  `US-8` exists for). **Read 2026-10-18**: `DT-11` passes, the document attached and its six job Sids
+  present.
 - **3.7 — [Claude reads, user decides] Settle serverless inference, which has no VPC configuration at
   all.** An endpoint configuration in serverless mode takes no `VpcConfig`. Two honest shapes: **(a)** a
   named exception with its own row in `docs/AWS_STATE.md` and a trigger to revisit; **(b)** deny
@@ -417,7 +424,8 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   `VpcConfig`" cannot be written, since `CreateEndpointConfig` carries no VPC field and no VPC condition
   key, so the deny keys on `sagemaker:ServerlessMemorySize` being present (the log).
 - **3.4 — [Claude⚡] Apply as `awsds-infra-prod`** (after 3.5-3.7, so the enforcement is in place before any
-  role can submit a job), then **[user] prove the registry gate** with the reader decision 10 picked:
+  role can submit a job). **Applied 2026-10-18 at 19:59Z**: 16 added, re-plan `No changes`, `DT-3`, `DT-4`
+  and `DT-9` passing. Then **[user] prove the registry gate** with the reader decision 10 picked:
   `DescribeModelPackageGroup` answers while `CreateModelPackage` and `UpdateModelPackage` are denied; an
   approval succeeds under `awsds-deploy-prod` and under nothing else. Read the wordings — the denial must
   name the resource policy's absence of a grant, not a network condition.
@@ -435,8 +443,11 @@ production-shaped volume, generate it; if it needs production *values*, the test
 behind the approval gate.
 
 - **4.0 — [Claude] Read what 6b and Stage 8 already delivered, and build only the gap**: 6b brought the
-  bootstrap, `foundation/`, `egress/`, the tree and the SSO assignment; Stage 8 step 3.0 brought
-  `awsds-deploy-staging` and the INT-07 image grant. **This stage owns two things nobody else does** — the
+  bootstrap, `foundation/`, `egress/`, the tree and the SSO assignment; Stage 8 step 4.1 brought
+  `awsds-deploy-staging`. The INT-07 image grant is Stage 8 step 3.0's and has not run:
+  `APP_REGISTRY_CONSUMERS` names Sandbox alone (`backend.py`). Read 2026-10-18: the AZ mapping is
+  identical in the six profiled accounts, and account-level Block Public Access has all four flags in
+  each, Staging's included. **This stage owns two things nobody else does** — the
   account data CMK `alias/awsds-staging-data` (created here, under its own name; 6b destroyed the old
   `dev`-named key rather than renaming it) and the `staging/{data,sagemaker}/` slices below. Run
   `./aws/AZs.py` and `./aws/account-bpa.py` once as the standing post-conversion readings.
@@ -457,7 +468,10 @@ behind the approval gate.
   `DataScientistStagingAccess` carries no Athena at all (Stage 2 wrote it that way: a query writes its result
   somewhere, and this set writes nothing). An enforced workgroup cannot exist without an output location,
   which nothing supplies since `consumer-data-v0.6.0`.
-- **4.3 — [Claude] Write `staging/sagemaker/`**: `awsds-staging-job-exec`, 3.1's shape and permissions,
+- **4.3 — [Claude] Write `staging/sagemaker/`** with a `backend.py` row of its own: today
+  `elif slice_name == "sagemaker"` hands any `sagemaker` slice the blueprint prerequisites' inputs, and
+  Staging is not in `DATA_PRODUCERS` (read 2026-10-18 by the Stage 18 session). The slice holds
+  `awsds-staging-job-exec`, 3.1's shape and permissions,
   no registry, no domain — the approved model version is read from Production's registry — and the
   SageMaker job log groups pre-created with a retention, as 3.1 does. The job settings bind whoever submits
   the job (3.5), so this role carries nothing of them; under decision 9's (a) the `Workloads` OU SCP covers
@@ -545,7 +559,8 @@ detective — the alarm, and CloudTrail.
   role exists and is unassumable at rest. `max_session_duration` 1 hour.
 - **6.2 — [Claude] Write the alarm**: an EventBridge rule `awsds-prod-debug-assume` on the CloudTrail
   `AssumeRole` event for this role — **every** assumption, not just misuse — to the target Stage 8
-  decision 5 settles: the Stage 1b topic lives in the Management account, and no member account has one.
+  decision 5 settled: `awsds-prod-alerts`, one topic per member account (the Stage 1b topic lives in the
+  Management account).
   A refused `AssumeRole` records no `roleArn` in CloudTrail, so the rule sees the successful assumptions
   only; a refused attempt is read from the trail by its `errorCode`.
 - **6.3 — [user] Operate it as designed, once, to prove it**: the deployment manager approves in
@@ -564,9 +579,12 @@ exist — ECR decrypts pulls through the grants it holds on the repository key, 
 target its decision 5 settled, and the INT-07 image grant as the model 4.6 follows.
 
 - **7.1 — [Claude] Run `./aws/cicd.py`**: CI-2/CI-3 green (the two roles exist with boundary and
-  single-principal trust) before pass 1 writes policies that name them.
+  single-principal trust) before pass 1 writes policies that name them. **Read 2026-10-18: green**, for
+  the four deploy roles.
 - **7.2 — [Claude] Run `./aws/datalake.py`**: `DL-5` green (the INT-11 parameters intact) before pass 2
   touches the grantor account; the drop-box statement and key grant read back with the 3.1 role name.
+  **Read 2026-10-18**: `DL-5` green, and the drop-box policy names `awsds-prod-job-exec` in
+  `AllowProductionPickupReadDelete` and `AllowProductionPickupList`.
 - **7.3 — [Claude] Record the ECR non-grant**: one line in the log — cross-account pulls need the
   repository policy only, no key grant — so nobody "fixes" the absence later (Lesson 5's inverse: an
   absence that is correct, written down).
@@ -594,7 +612,7 @@ read every denial by its wording, never its exit code.
 - **8.4 — [user] From a Staging session as the data scientist** (`DataScientistStagingAccess`, which 6b
   assigned): everything readable, nothing writable — including the buckets the pipeline writes to; the
   wording names `DenyEveryWrite`.
-- **8.5 — [pipeline] The end-to-end**: re-run Stage 8's promotion against the real catalogs — the
+- **8.5 — [pipeline] The end-to-end**: run Stage 8's promotion against the real catalogs, its first run (Stage 8 pass 4, decision 23) — the
   integration tests now query `staging/data/`'s mirror, the artifact lands in Production, and the pandas
   test still fails everywhere it should. It is the stage's closing proof and the first fully meaningful
   promotion.
@@ -808,8 +826,8 @@ where decision 9 put them (`DT-11`). The behavioural proofs are the stage's own 
   denied.
 - **The pickup (INT-10):** the drop-box read, curated, and emptied by the job, `EXC-02`'s objects with it;
   the writer still cannot read back what it wrote.
-- **The registry gate (INT-07):** approval only under `awsds-deploy-prod`; the Sandbox reader decision 10
-  named reads status and nothing else; the Staging deploy role reads an approved version.
+- **The registry gate (INT-07):** approval only under `awsds-deploy-prod` among the principals outside this
+  account; the Sandbox reader decision 10 named reads status and nothing else; the Staging deploy role reads an approved version.
 - **The workgroup boundary:** a client-requested result location is overridden into the enforced one;
   the scan limit cancels.
 - **The job settings:** a `Create*Job` without them is refused from a role that is not the job's own, naming
@@ -854,7 +872,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 | Athena queries | 5 USD/TB scanned — the workgroup limit is the guard | metered |
 | The endpoints of `production/workloads-egress/` and `staging/egress/` while a session needs them | 0.010/h each, single-AZ | `[E]` |
 | Staging's own account overhead (Config recorder etc.) | ~USD 0.5-1/month, already being paid — the account exists | — |
-| **`production/warehouse-compute/`** (step 9) | **0.00/h at rest · 1.44 USD/h while a query runs** at `base_capacity = 4`, 2.88 at `max_capacity = 8` (0.36/RPU-h, 60-second minimum). The most expensive item in this stage by an order of magnitude: one Sandbox statement nobody cancelled billed 9.4767 USD, 26.32 RPU-hours, 19% of the D12 ceiling in one sitting. No free trial was found for Sandbox, so none is assumed here | `[E]` |
+| **`production/warehouse-compute/`** (step 9) | **0.00/h at rest · 1.44 USD/h while a query runs** at `base_capacity = 4`, 2.88 at `max_capacity = 8` (0.36/RPU-h, 60-second minimum). The most expensive item in this stage by an order of magnitude: one Sandbox statement nobody cancelled billed 9.4767 USD, 26.32 RPU-hours, 19% of the D12 ceiling in one sitting, absorbed by Sandbox's free trial (USD 300 for 90 days from first use, 287.90 left on 2026-10-17; `docs/PRICING.md`). Production's window is its own and opens at its first use: step 9 reads its balance in the console before and after (5b decision 9) | `[E]` |
 | Redshift Managed Storage for the governed schema | 0.024 USD/GB-month, billed with the workgroup down | `[P]` |
 | Its admin secret + three log groups | ~0.40 USD/secret-month + cents | `[P]` |
 | **The managed Redshift cluster AWS Glue creates** if 9.5's Iceberg-engine switch is enabled | **unpriced and unsized** — a *cluster*, always-on in shape, which is the item that could break this stage's cost profile on its own. Priced before the switch is enabled, never after (Lesson 6); decision 5's recommendation is the shape that avoids it | — |
@@ -868,7 +886,9 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
    settles it (one data CMK per account), which gives `alias/awsds-prod-data`. What remains to decide
    here is only **dedicated versus reusing `foundation/`'s key**. Recommended: **dedicated** (D31): the
    deny that matters — Staging and the approvers cannot read outputs — is only expressible on a key
-   nothing else uses.
+   nothing else uses. **A contradiction to settle with it**: 4.6 grants Staging read on
+   `awsds-prod-outputs` and its key, and Stage 10 steps 5.1 and 5.4 need that read, while this sentence
+   denies it; a `models/`-only scoping that would reconcile the two is stated nowhere.
 2. **The scan limit** (1.2) — recommended: **10 GB per query** to start, revised against real queries at
    Stage 12 rather than set high and forgotten.
 3. **The mirror mechanism** (4.1) — recommended: **both catalogs instantiated from one versioned schema
@@ -935,15 +955,15 @@ Record every answer, including the ones that come out fine.
 | v | Is the registry gate real — the Sandbox reader decision 10 named reads status only, and an approval lands only under `awsds-deploy-prod` (INT-07)? | 3.4 |
 | vi | Does the enforced workgroup override a client-requested result location, and does the scan limit cancel (the documented behaviour, observed)? | 5.4 |
 | vii | Are the Production negatives denied naming the **set's** deny — `CreateTrainingJob`, `StartJobRun`, `redshift-data:ExecuteStatement` (D18)? | 5.4 |
-| viii | Does `DataScientistStagingAccess` read back with `DenyEveryWrite` and no Athena, and is its assignment the one 6b made (Lesson 22)? | 5.2 |
+| viii | Does `DataScientistStagingAccess` read back with `DenyEveryWrite` and no Athena, and is its assignment the one 6b made (Lesson 22)? **Answered 2026-10-18 for the policy**: `DT-10` reads `DenyEveryWrite` and no Athena allow; the assignment half is unread | 5.2 |
 | ix | Does INT-05 hold from both directions — the `VPC-Workloads` branch for workloads and the principal branch for the persona from any network, with every other principal refused off the endpoint, `VPC-SharedServices` included? | 1.4, 8.3 |
 | x | What fraction of the S3 console works for the persona under 1.1's principal branch (INT-06, open question 8) — and is `README.md` told? | 8.2 |
 | xi | Is the escape hatch closed at rest, open only in the window, alarmed on every successful assumption — and does a `CreateSpace` under it die on the OU policy? | 6.3 |
 | xii | Does the Staging role read an approved model version (INT-07's registry half)? | 4.6 |
 | xiii | Does the end-to-end promotion pass against the real catalogs — and does a schema drift planted in the mirror fail the integration tests, not the deploy? | 8.5 |
 | xiv | In **each** of the two accounts this stage gives a `DataLakeSettings` (Production, then Staging): do `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` read `[]` **before** the slice's first catalog object exists, and does no database in that account carry an `IAMAllowedPrincipals` grant afterwards? — the reading the two-step exists to produce, and the only moment it can be taken | 1.3, 1.5, 4.1 |
-| xv | Does a `Create*Job` without the five settings fail when submitted by a role other than the job's own (a deploy role, a workflow execution role), naming the policy decision 9 chose — and does `DT-11` read the enforcement back? | 3.5, 3.6 |
-| xvi | Which shape did serverless inference take (3.7) — a named exception, the SCP deny, or a refusal 3.5's `CreateModel` deny already produces — and is the choice written into `AWS_STATE.md` either way? | 3.7 |
+| xv | Does a `Create*Job` without the five settings fail when submitted by a role other than the job's own (a deploy role, a workflow execution role), naming the policy decision 9 chose — and does `DT-11` read the enforcement back? **Answered 2026-10-18 for the infrastructure user**: each `Create*Job` row read `DENY-SCP` naming the `Workloads` document, and `DT-11` passes. A deploy role and a workflow execution role are unread until a pipeline submits a job | 3.5, 3.6 |
+| xvi | Which shape did serverless inference take (3.7) — a named exception, the SCP deny, or a refusal 3.5's `CreateModel` deny already produces — and is the choice written into `AWS_STATE.md` either way? **Answered 2026-10-18**: the SCP deny, applied and probed (`DENY-SCP` after, `ALLOWED` before), and `AWS_STATE.md` section C records it | 3.7 |
 | xvii | Does a Staging or Production job reach `sagemaker.runtime` from a subnet in the AZ its single-AZ endpoint is not in — the vendor's affinity sentence, measured? | 4.3a |
 | xviii | Does the governed namespace read back at `base_capacity = 4` with its usage limit, `max_capacity = 8`, `price_performance_target` disabled, the `DataStorage` alarm and **no project tag** — and do its three log groups carry a retention period, so `EXC-10` stays at one? | 9.1 |
 | xix | Does the Lake Formation object 9.5 created (a federated catalog or a federated database) carry `IAMAllowedPrincipals` after creation — the Recipe D reading, third instance — and did the two-step prevent it? | 9.5 |

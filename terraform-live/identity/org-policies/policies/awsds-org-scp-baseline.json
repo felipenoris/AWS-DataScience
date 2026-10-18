@@ -136,6 +136,12 @@
           "aws:PrincipalArn": "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*"
         }
       }
+    },
+    {
+      "Sid": "DenyProvisionedMwaa",
+      "Effect": "Deny",
+      "Action": "airflow:CreateEnvironment",
+      "Resource": "*"
     }
   ]
 }

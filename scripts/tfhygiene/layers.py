@@ -557,15 +557,15 @@ SLICES = [
     # right after an expensive query under-reads it.
     #
     # The other guards, and what each one turned out to be worth on 2026-09-20:
-    #   the usage limit    WORKED, and was not tight: breach_action = deactivate at the 40 RPU-hours
-    #                      then in force would have capped that runaway at 14.40 USD, 3.4 hours later.
-    #                      The user lowered it to 10 the same day - 3.60 USD/month - because a guard
-    #                      that lets two thirds of the damage through first is sized for the wrong
-    #                      failure.
+    #   the usage limit    UNPROVEN against this statement: breach_action = deactivate refused every
+    #                      query needing the compute during 5.1's two minutes of breach, and the
+    #                      runaway, a catalog query that runs on the leader node alone, kept running
+    #                      through them (log-stage-05b, 2026-10-18). The user lowered the limit from
+    #                      40 to 10 RPU-hours the same day - 3.60 USD/month.
     #   max_query_execution_time  DID NOT STOP IT. It was 1800 s, read back as 1800, and the query
-    #                      ran 23,601 s. The leading explanation is that it ran as a superuser and
-    #                      Redshift exempts the superuser queue from query-monitoring rules - a
-    #                      hypothesis, not a measurement (log-stage-05b, the third amendment).
+    #                      ran 23,601 s. Three candidates stand: a superuser exempt from the
+    #                      query-monitoring rules, a ceiling that binds nobody, or a leader-node
+    #                      statement no WLM limit reaches (log-stage-05b, owed item 3).
     #   `make down`        WORKED, and is the only guarantee that is not a setting: no pause exists,
     #                      so destroying the workgroup is what stops the meter.
     Slice(

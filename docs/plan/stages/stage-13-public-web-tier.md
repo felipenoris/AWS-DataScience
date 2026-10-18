@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started. The public tier lands in **`VPC-Networking`'s public tier**, the estate's only internet-facing tier ([D38](../decisions/D38-single-egress-hub.md)), with IP targets reaching the backend in `VPC-Workloads` over the peering. The ALB becomes the **second enumerated listener** there (the WireGuard endpoint is the first), and `docs/AWS_STATE.md` carries that enumeration — a world-open rule anywhere else is a finding. The public DNS half (D15 phase 2) still needs the domain name from the user |
-| **Prerequisites** | [6c](stage-06c-networking-hub.md) (the hub and its public tier; the Networking↔Workloads peering), [Stage 9](stage-09-deployment-targets.md) (a backend to front). **The domain name from the user** — this is the only stage that needs it, and the only blocking input left in the whole plan |
+| **Status** | not started. The public tier lands in **`VPC-Networking`'s public tier**, the estate's only internet-facing tier ([D38](../decisions/D38-single-egress-hub.md)), with IP targets reaching the backend in `VPC-Workloads` over the peering. The ALB becomes the **second world-open listener** in the estate (the WireGuard endpoint's UDP/51820 is the first). The gate that counts them is `./aws/vpn.py` `VP-3`, *exactly one world-open ingress rule in the whole estate*, which the ALB fails until 2.4 teaches it the second; `docs/AWS_STATE.md` names the WireGuard rule in prose and carries no enumeration row yet. The public DNS half (D15 phase 2) still needs the domain name from the user |
+| **Prerequisites** | [6c](stage-06c-networking-hub.md) (the hub and its public tier; the Networking↔Workloads peering), [Stage 9](stage-09-deployment-targets.md) (a backend to front). **The domain name from the user** — this is the only stage that needs it. It is not the plan's only blocking input: Stage 14 waits on the account quota |
 | **Consumes** | [D15](../decisions/D15-tls-internal.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | that the ingress enumeration of 6c step 1.4 survives its first real addition — the only stage that tests it |
 
@@ -61,9 +61,10 @@ exists it bills.
 - **2.2 — [Claude⚡] Issue the public ACM certificate** against 1.2's zone. **For a CloudFront variant it
   must be issued in `us-east-1`** — which is what `acm:*` is exempted from the region control for.
 - **2.3 — [Claude⚡] Create the ALB with WAF** in the hub's public tier, HTTPS only, HTTP redirecting.
-- **2.4 — [Claude] Add the listener to the ingress enumeration** in `docs/AWS_STATE.md` — the **second**
-  row, after the WireGuard endpoint's UDP/51820. It is what keeps 6c's invariant true, and
-  `./aws/networking.py`'s no-public-address gate (6c step 1.5) fails without it.
+- **2.4 — [Claude] Add the listener to the ingress enumeration** in `docs/AWS_STATE.md` — a row for each
+  world-open listener, the WireGuard endpoint's UDP/51820 first, which the file today describes only in
+  prose — and teach `./aws/vpn.py` `VP-3` the second, since it fails on any world-open rule beyond the
+  first. `./aws/networking.py` lists world-open rules without failing on them, so it is not the gate.
 
 ### 3. Put the application behind it, in `VPC-Workloads`
 

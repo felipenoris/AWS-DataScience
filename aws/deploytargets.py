@@ -51,7 +51,8 @@
 #     pickup emptying the letterbox, the console fraction (INT-06) - are the stage's own
 #     (Lesson 20).
 #   - Whether the write share works is 2.4's job run; this file only shows it was granted.
-#   - `Staging` rows appear only once the account is vended and holds a profile.
+#   - `Staging` rows need the `awsds-infra-staging` profile; the account is the renamed
+#     `Development` (Stage 6b), so no vend is owed.
 
 from __future__ import annotations
 
@@ -1290,7 +1291,9 @@ with an error that names S3 and means KMS or a typo (2.5, D25).""")
         # ==============================================================================
         rep.h1("7. The Staging mirror, and the absence that is a control (D20)")
         if not staging_live:
-            rep.line(f"{STAGING_PROFILE} has no profile until the vend - the whole section waits.")
+            rep.line(
+                f"{STAGING_PROFILE} did not answer - the whole section waits for a session on it."
+            )
         else:
             if staging_links_to_data:
                 rep.tabulate(

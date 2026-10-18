@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | not started, **blocked on the account quota** (2026-09-05) and scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
-| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
+| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — `sandbox/data/` pins v0.6.0 on 2026-10-18, and a vend pins whatever tag is current then — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
@@ -113,6 +113,17 @@ pool stays open across units, and that is the first reading the second vend take
    **Composition, not new resources** — if this module needs a resource type that
    Stage 3 or Stage 5a did not already build, that is a signal the earlier stage was written for a singleton
    and should be fixed there instead.
+
+   **What a unit's account owes Bedrock, which no module carries** ([Stage 6e](stage-06e-claude-code-bedrock.md),
+   recorded at this receiving end, Lesson 34): the model-access use-case form, submitted per account while
+   6e step 2.1 keeps it in `Sandbox` alone (the form from `Management`, which extends to child accounts, is
+   that step's named alternative for the day a second account needs one); one agreement per scoped model
+   and account ([`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md) M4), the act that
+   actually enables a model; the retention mode `none` in every enabled Region, per account and Region and
+   set by hand (6e decision 16); and the grant, which is `sandbox/bedrock/`'s per-project policy today and,
+   at the second unit, 6e's shape (c), a dedicated role the project role chains into, once a measurement
+   says whether a same-account `sts:AssumeRole` needs an identity grant on the calling role or the trust
+   policy alone suffices.
 2. **The account request itself, and the rung to use (D34).** The account is still created by **Account
    Factory**, because an account created any other way is not enrolled in Control Tower and is ungoverned
    while looking correct. What changes is who fills in the form:

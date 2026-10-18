@@ -217,9 +217,7 @@ bring the aws/ folder, whose awslib package sits beside this script). Record eac
 answer in docs/log/log-stage-01c-preventive-policies.md by hand - a CloudShell run
 cannot write into this snapshot.
 
-ALSO NOT HERE, and none of the three is a gap:
-  - `Staging` - not vended. It gets BPA AT THE VEND, with everything else deferred
-    there (Stage 1a, "What the deferral leaves owed").
+ALSO NOT HERE, and neither is a gap:
   - Every Sandbox beyond the first - no profile until Stage 14 vends it one, which
     is the stage that owes a BPA step of its own.
   - EXC-01, the SUSPENDED `Sandbox` at the organization root - not this project

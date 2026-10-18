@@ -182,3 +182,77 @@ row of Stage 6b's for the policy id.*
   [inference] One cause would fit all six rows and spare both endpoint-configuration rows: a refusal after
   authorization that a configuration call never meets, such as an instance quota of 0 for processing jobs
   in Production. Reading that reply is owed before step 3 relies on the row.
+
+## 2026-10-18 — pass 0 read and pass 1 applied, from the laptop
+
+*Claude's hand, in the session "Execução local no Mac", as the infrastructure user (`InfrastructureAccess`).
+The user's authorization, in that chat: "Você está autorizado a utilizar leituras com usuário sso infra e
+realizar os applies necessários de terraform", and, for this pass's document, "Autorizo os applies de SCP em
+identity/org-policies das Stages 9 e 10 e a bateria de SCP depois de cada um". The app refused to hand the
+SCP apply to a parallel session, so it ran here.*
+
+- **[Claude] 7.1.** `./aws/cicd.py awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`: every check
+  passed. `CI-2` reads a boundary on each of the four deploy roles and `CI-3` every trust naming
+  `awsds-prod-runner-deploy` with `sts:AssumeRole` only.
+- **[Claude] 7.2.** `./aws/datalake.py`: 0 checks failed. `DL-5` reads `CROSS_ACCOUNT_VERSION=4`,
+  `SET_CONTEXT=TRUE`, and the drop-box policy names `awsds-prod-job-exec` in
+  `AllowProductionPickupReadDelete` and `AllowProductionPickupList`.
+- **[Claude] The six `UNTESTED` replies of 2026-10-17 are quota refusals.** CloudTrail in Production holds
+  six `CreateProcessingJob` events between 23:21:12 and 23:21:18 UTC, each `ResourceLimitExceeded`: *"The
+  account-level service limit 'ml.m5.large for processing job usage' is 0 Instances"*, and
+  `ml.m5.2xlarge` for the ceiling row. The inference of 2026-10-17 holds: the service checks the quota after
+  authorization and before the role. Production and Staging both read 0 for `ml.m5.large` (`L-8541302D`),
+  `ml.m5.xlarge` (`L-0307F515`) and `ml.m5.2xlarge` (`L-1D84B9D2`) for processing job usage, so no
+  processing job runs in either account until a quota request is granted. `aws/probes/probes.py` now reads
+  `ResourceLimitExceeded` as authorized on the six rows (`_JOB_AUTHORIZED`), and the runbook's compliant row
+  says so.
+- **[Claude] 3.5 and 3.7 applied.** `identity/org-policies/` as `awsds-infra-identity`: plan 0 to add,
+  1 to change, 0 to destroy, `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]` (`p-83t232f4`)
+  in place, content and description, `policy_document_bytes` 640 → 2499. Apply 19:54:06-19:54:15 UTC,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-plan *"No changes."*;
+  `describe-policy` reads nine statements, `DenyInteractiveSageMakerSurface`, `DenyDataZoneEntirely`,
+  `DenyAthenaSparkStartSession`, `DenySageMakerJobsOffVpc`, `DenySageMakerInstanceCeiling`,
+  `DenySageMakerJobsWithoutNetworkIsolation`, `DenySageMakerJobsWithoutInterContainerEncryption`,
+  `DenySageMakerJobsWithoutVolumeEncryption`, `DenySageMakerServerlessInference`. Every peer session was
+  told before the apply, and the session holding PR #108 confirmed its branch carries the same document.
+- **[Claude] The battery's after-half**, `./aws/probes/scp-battery.py --phase ou`, started 19:55:13 UTC (the
+  driver stamps the laptop's clock), the Stage 9 rows verbatim with the phase's totals:
+
+  ```
+  SCP battery - 2026-10-18 16:55:13  (phase ou)
+    MARK PHASE    ACCOUNT   EXPECT OUTCOME       DETAIL                 PROBE
+    ok   ou       prod      allow  ALLOWED       reached-authorization  workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)
+    ok   ou       prod      allow  ALLOWED       reached-authorization  workloads: instance-backed CreateEndpointConfig still authorized (3.7 contrast)
+  39 as expected, 0 unexpected, 7 not measured
+  ```
+
+  Each Stage 9 row is as expected, and both halves of each statement are now read: the 2026-10-17 run is
+  the before half. The seven not measured are the phase's standing notes (Athena's denies name no policy;
+  Data Governance and Identity hold no subnet). The *must still succeed* trio in Production answered:
+  `sts get-caller-identity`, `s3 ls` and `ec2 describe-vpcs` (three VPCs).
+- **[Claude] 3.6.** `./aws/deploytargets.py`: `DT-11` passes, *"attached, the 6 job Sids present"*.
+- **[Claude] 3.4 applied.** The pre-reads: no log group under `/aws/sagemaker/` or `/aws-glue/` in
+  Production, so nothing to import, and one `AWSReservedSSO_DataScientistProdAccess_*` role.
+  `production/sagemaker/` as `awsds-infra-prod`: plan 16 to add, 0 to change, 0 to destroy (the two roles
+  and their inline policies, the package group and its policy, the two rules and their targets, the six job
+  log groups). Apply 19:58:55-19:59:07 UTC, *"Apply complete! Resources: 16 added, 0 changed, 0 destroyed."*;
+  re-plan *"No changes."*. `./aws/deploytargets.py` after it: `DT-3` (the group's policy, 3 statements),
+  `DT-4` (glue and sagemaker service principals only; no S3 allow reaches a lake bucket, the drop-box
+  excepted), `DT-7`, `DT-9` (the window closed, ending 2026-01-01T00:00:00Z; both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`) and `DT-11` pass; `DT-1` notes `alias/awsds-prod-data`
+  absent, pass 3's.
+- **[Claude] 3.3a planned, read-only.** `production/workloads-egress/`'s first plan: 15 to add, the six
+  endpoints (`sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`) and the DNS Firewall's nine
+  pieces. Nothing applied: the slice is `[E]`, and the next Production `make up` raises it.
+- **[Claude] 4.0 and 5.2.** `./aws/AZs.py`: six accounts, mappings identical. `./aws/account-bpa.py`: all four
+  flags `true` in the six measured accounts, Staging included. `DT-10` reads `DataScientistStagingAccess`
+  with `DenyEveryWrite` and no Athena allow (verification viii, the policy half).
+- **[Claude] Owed after this pass.** 3.4's registry proof and 6.3's window are the user's; pass 2 waits on
+  decision 3; the processing-job quotas in Production and Staging are a quota request, the user's, before any
+  job runs there (Stage 10's processing step included).
