@@ -335,8 +335,8 @@ REGISTRY_CONSUMERS = ["sandbox"]
 
 # The accounts that pull an APPLICATION image (`awsds-prod-ecr-app-*`): Stage 8's app-consumer entry,
 # authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
-# (Lesson 51). Sandbox runs the image by hand while the application is engineered (step 2.4); Staging
-# joins at step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
+# (Lesson 51). Sandbox's projects pull it when their workflows run (Stage 8 decision 21); Staging joins
+# at Stage 8 step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
 APP_REGISTRY_CONSUMERS = ["sandbox"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
@@ -362,10 +362,11 @@ REGISTRY_HOME = ["production"]
 # yet" from "this account was never meant to be a member" (D28: Staging and Production never
 # are).
 #
-#   SMUS_MEMBERS     the accounts that are meant to be associated - D26/D35's answer, and the
-#                    map the project profiles' environment configurations are built from. It
-#                    is also what the aliased providers in data-governance/governance/ resolve
-#                    account ids through, so it must be populated from the first apply.
+#   SMUS_MEMBERS     the accounts people work in that are meant to be associated - D26/D35's
+#                    answer. With SMUS_DEPLOYMENT_MEMBERS it makes the map the project profiles'
+#                    environment configurations are built from, which is also what the aliased
+#                    providers in data-governance/governance/ resolve account ids through, so it
+#                    must be populated from the first apply.
 #   SMUS_ASSOCIATED  the accounts whose association has actually been accepted. The account
 #                    association is console-only - there is no public associate-account API
 #                    (Stage 6 step 1.3) - so a row is added after the invitation is accepted in
@@ -417,6 +418,16 @@ SMUS_MEMBERS = ["sandbox"]
 # the configurations are destroyed - necessarily, since only the member can delete them and only
 # while the association still exists.
 SMUS_ASSOCIATED: list = ["sandbox"]
+# The associated accounts no person works in: a deployment project's account (Stage 18 step 2.3).
+# Apart from SMUS_MEMBERS because four readers of that list mean "an account people work in"
+# (Lesson 51): PERSONA_VENDING_ACCOUNTS, interactive_private_cidrs(), production/sagemaker/'s
+# `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
+# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does.
+SMUS_DEPLOYMENT_MEMBERS: list = []
+if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
+    raise ValueError(
+        "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"
+    )
 
 # ------------------------------------------------- the persona's project-storage vending policy
 #
@@ -895,10 +906,11 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # a SMUS_ASSOCIATED reading over the same members, so the profiles cannot be written before
     # the blueprints they name are configured.
     if account == "data-governance" and slice_name == "governance":
+        domain_members = SMUS_MEMBERS + SMUS_DEPLOYMENT_MEMBERS
         values["members"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in domain_members
         }
-        values["profiles_enabled"] = bool(SMUS_MEMBERS) and set(SMUS_MEMBERS) <= set(
+        values["profiles_enabled"] = bool(domain_members) and set(domain_members) <= set(
             SMUS_ASSOCIATED
         )
         # The directory read (grants.tf): who may create a project from which profile is
