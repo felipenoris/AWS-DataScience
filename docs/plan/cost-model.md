@@ -52,7 +52,7 @@ exists on 2026-10-18 at the measured rates, so it is arithmetic over readings ra
 | S3, DataZone, CloudWatch, snapshots | | 0.11 | 0.16 | 0.10 | ~0.2 | CloudWatch inside its free tiers; Stage 12's alarms add 0.40-0.70 |
 | **Floor, the accounts read** | | **9.90** | **32.47** | **21.79** | **~31** | |
 
-**Not billing yet**: the Redshift warehouse, inside its free trial until 2026-12-19 (§ the warehouse below),
+**Not billing yet**: the Redshift warehouse, inside its free trial until 2026-12-19 (*The warehouse*, below),
 GuardDuty (Stage 15) and AWS Backup (Stage 12 step 8). August's floor is a partial month: most of it was
 built during the month.
 
@@ -95,7 +95,7 @@ Each line names the invoice line that corrected it (Stage 12 validation 3).
   Staging held none.
 - **The KMS row** read ~13 for a year-one set; `us-west-2-KMS-Keys` billed 11.13 in September.
 - **The warehouse's first bill.** This file said no free trial absorbed its 9.48 USD; the Redshift
-  Serverless trial did, and no Amazon Redshift line appears through October 17 (§ the warehouse).
+  Serverless trial did, and no Amazon Redshift line appears through October 17 (*The warehouse*).
 
 ### The projection, from the bill
 
