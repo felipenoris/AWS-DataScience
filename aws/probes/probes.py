@@ -254,6 +254,20 @@ probe("root", "canary", "deny", None, "blocked",
        "--usage-limit-id", "00000000-0000-0000-0000-000000000000",
        "--region", "us-west-2"])
 
+# --- DenyProvisionedMwaa (Stage 10 step 4.3). Measured in Production rather than the canary: the
+#     call names two subnets, and the canary has none. `blocked`: the execution role, the source
+#     bucket and the security group exist nowhere, so an authorized call fails validation and
+#     creates nothing. A validation that ran before authorization reads UNTESTED, never a pass.
+probe("root", "prod", "deny", None, "blocked",
+      "airflow:CreateEnvironment (no such role, bucket or security group)",
+      ["mwaa", "create-environment", "--name", "awsds-canary-probe",
+       "--execution-role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
+       "--source-bucket-arn", "arn:aws:s3:::awsds-canary-probe-nonexistent",
+       "--dag-s3-path", "dags",
+       "--network-configuration",
+       '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
+       "--region", "us-west-2"])
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])

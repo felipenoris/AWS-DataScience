@@ -148,7 +148,7 @@ locals {
   # for is about `content` and `type`. The repository is the source of truth instead, and the
   # four are named above so the plan is read rather than approved.
   policy_descriptions = {
-    "awsds-org-scp-baseline"        = "Stage 1c step 7.5 - organization baseline: LeaveOrganization, IAM users, account BPA (carve-out), snapshot and AMI sharing, ecr-public, GuardDuty, datazone outside Data OU. Stage 6e step 7.5 - the Bedrock data retention mode must be none, and the models that retain cannot be invoked."
+    "awsds-org-scp-baseline"        = "Stage 1c step 7.5 - organization baseline: LeaveOrganization, IAM users, account BPA (carve-out), snapshot and AMI sharing, ecr-public, GuardDuty, datazone outside Data OU. Stage 6e step 7.5 - the Bedrock data retention mode must be none, and the models that retain cannot be invoked. Stage 5b step 3 - no provisioned Redshift cluster, the serverless cost guard to InfrastructureAccess. Stage 10 step 4.3 - no provisioned MWAA environment."
     "awsds-org-scp-perimeter"       = "Stage 1c step 7.5 - trusted resources: deny S3 object writes and ECR layer/image pushes to resources outside this organization."
     "awsds-org-scp-tag-enforcement" = "Stage 1c step 7.8 - Environment and Project required on ec2:RunInstances, one statement per key, scoped to instance/*."
     "awsds-org-scp-ou-workloads"    = "Stage 1c step 7.6 - Workloads OU: no interactive SageMaker surface, no DataZone. Stage 6b step 3.8 - no Athena Spark session. Stage 9 step 3.5 - SageMaker jobs only in a VPC, network-isolated, encrypted and inside the instance ceiling; step 3.7 - no serverless inference."
