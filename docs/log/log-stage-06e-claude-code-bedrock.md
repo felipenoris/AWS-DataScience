@@ -1654,3 +1654,28 @@ with each phase's stamp and totals; the other rows are left out.*
   stages: the `ou` phase's one `FAIL` and six of its `note` rows are Stage 9's, whose statements are
   written and not applied ([its log](log-stage-09-deployment-targets.md)); four `note` rows are `EXC-03`'s
   Athena rows and three are the standing `no subnet in us-west-2` rows in Data Governance and Identity.
+
+## 2026-10-18 — 3.1a's simulator reading, re-measured with the Region in context
+
+*Written by Claude, read-only, from `awsds-infra-sandbox-1` (`Sandbox Account 1`, `InfrastructureAccess`),
+`aws-cli/2.37.12`. Prompted by the Stage 11 session's lessons entry of the same day.*
+
+- **[Claude] `simulate-principal-policy` on the project role**, `glue:GetDatabases` and
+  `sts:GetCallerIdentity`, resource `*`:
+
+  ```
+  without aws:RequestedRegion
+  glue:GetDatabases       explicitDeny    False
+  sts:GetCallerIdentity   allowed         True
+  with aws:RequestedRegion = us-west-2
+  glue:GetDatabases       implicitDeny    True
+  sts:GetCallerIdentity   allowed         True
+  ```
+
+  The 2026-09-11 entry's *"cannot evaluate this organization from a member account"* was Control Tower's
+  Region ceiling evaluated against a key the simulator does not invent; with the key, the organization
+  layer reads `true` and the decision falls to the identity layer. `bedrock:InvokeModel` on the Haiku 4.5
+  profile now reads `allowed / True` with or without the key, since the Region control has exempted
+  `bedrock:InvokeModel` since 2026-09-12, so it no longer separates the two shapes. Stage 6e 3.1a and its
+  row in *What the documentation changed* now say this; 3.1 stays a reading, because `simulate-custom-policy`
+  still caps each policy at 2,000 characters and `InfrastructureAccess` still cannot produce the principal.

@@ -264,14 +264,16 @@ deny list, which must not catch any of the three.
   **The boundary is not the constraint**: nine statements, ceiling `Allow * on *`, and no `bedrock:`
   action — 0.7 confirmed by reading rather than carried forward.
 
-- **3.1a — Neither IAM simulator can answer this, and one of them answers wrongly.**
-  `simulate-principal-policy` from Sandbox returned `explicitDeny` with
-  `AllowedByOrganizations false` for `bedrock:InvokeModel*`; the negative control is
-  `glue:GetDatabases`, which this role performs in the portal daily and which comes back identically,
-  while `sts:GetCallerIdentity` comes back `allowed / true`. **Its organization verdict is unusable
-  from a member account, and the top-level decision inherits it** (Lesson 30).
-  `simulate-custom-policy` caps each input policy at **2,000 characters** against SMUS documents of
-  4,720 and 54,912 bytes, so the identity layer cannot be isolated either. And the role's trust
+- **3.1a — `simulate-principal-policy` answers only with `aws:RequestedRegion` in its context, and
+  `simulate-custom-policy` cannot answer.** Run from Sandbox without context, the first returned
+  `explicitDeny` with `AllowedByOrganizations false` for `bedrock:InvokeModel*` and for the negative
+  control `glue:GetDatabases`, which this role performs in the portal daily, while the global
+  `sts:GetCallerIdentity` came back `allowed / true`. That shape is Control Tower's Region ceiling
+  evaluated against a key the simulator does not invent, not a verdict a member account cannot read:
+  with `--context-entries ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string`
+  `glue:GetDatabases` reads `AllowedByOrganizations true` (Stage 11, 2026-10-18; reproduced on this
+  role the same day). `simulate-custom-policy` caps each input policy at **2,000 characters**
+  against SMUS documents of 4,720 and 54,912 bytes, so the identity layer cannot be isolated. And the role's trust
   policy admits only service principals and `awsds-sandbox-smus-provisioning`, so
   `InfrastructureAccess` cannot produce the principal: **3.1 is a reading, and 3.4's rule stands —
   the proof is step 6's call** (Lesson 22).
@@ -986,7 +988,7 @@ asserted before it was measured.
 | `{"mode": "inherit"}` and the enum's own wording (7.2) | the account has **declared nothing**, so 7.5 needs the call that sets `none` before the deny that freezes it |
 | no shape matching `allowed` in eight `bedrock*` service models (7.2) | the step's load-bearing reading has **no control-plane route**, which this file gave it |
 | nine `aws_bedrock_*` resources and 29 registry types (7.5a) | the retention mode is a hand-managed account setting, and the **use-case form is a Terraform resource** whose single field is an opaque blob (2.5) |
-| `glue:GetDatabases` as a negative control (3.1a) | `simulate-principal-policy`'s organization verdict is unusable from a member account, and `simulate-custom-policy` caps a policy at 2,000 characters — neither simulator can answer this |
+| `glue:GetDatabases` as a negative control (3.1a) | `simulate-principal-policy` reads the organization layer only when its context names `aws:RequestedRegion`, which the first run omitted (Stage 11, 2026-10-18), and `simulate-custom-policy` caps a policy at 2,000 characters, so the identity layer cannot be isolated |
 | `bedrock:DataRetentionMode` accepted, a bogus key rejected (7.5) | the condition key 7.5 rests on exists, measured with the instrument's own negative control |
 | `get-inference-profile` on all three (0.2) | the residency exception of 7.3 is the **set's**, not Opus 5's |
 | `list-foundation-model-agreement-offers` (0.4) | the rates hold against a second source, and a batch tier exists on the `us.` profile too |
