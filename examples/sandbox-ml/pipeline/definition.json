@@ -1,0 +1,312 @@
+{
+  "Version": "2020-12-01",
+  "Metadata": {},
+  "Parameters": [
+    {
+      "Name": "AucThreshold",
+      "Type": "Float",
+      "DefaultValue": 0.75
+    }
+  ],
+  "Steps": [
+    {
+      "Name": "Prepare",
+      "Type": "Processing",
+      "Arguments": {
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceType": "ml.t3.medium",
+            "InstanceCount": 1,
+            "VolumeSizeInGB": 10,
+            "VolumeKmsKeyId": "arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>"
+          }
+        },
+        "AppSpecification": {
+          "ImageUri": "<JOB_IMAGE_URI>",
+          "ContainerEntrypoint": [
+            "/bin/bash",
+            "-c"
+          ],
+          "ContainerArguments": [
+            "sudo -n chown \"$(id -u)\" /opt/ml/processing/output/train /opt/ml/processing/output/validation /opt/ml/processing/output/test && exec /opt/awsds/venv/bin/python /opt/ml/processing/code/prepare.py --input /opt/ml/processing/input --output /opt/ml/processing/output"
+          ]
+        },
+        "RoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>",
+        "ProcessingInputs": [
+          {
+            "InputName": "code",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/pipeline/code/prepare.py",
+              "LocalPath": "/opt/ml/processing/code",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated"
+            }
+          },
+          {
+            "InputName": "raw",
+            "AppManaged": false,
+            "S3Input": {
+              "S3Uri": "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/data/raw/",
+              "LocalPath": "/opt/ml/processing/input",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File",
+              "S3DataDistributionType": "FullyReplicated"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "train",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "train"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/train",
+                "S3UploadMode": "EndOfJob"
+              }
+            },
+            {
+              "OutputName": "validation",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "validation"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/validation",
+                "S3UploadMode": "EndOfJob"
+              }
+            },
+            {
+              "OutputName": "test",
+              "AppManaged": false,
+              "S3Output": {
+                "S3Uri": {
+                  "Std:Join": {
+                    "On": "/",
+                    "Values": [
+                      "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/pipeline",
+                      {
+                        "Get": "Execution.PipelineExecutionId"
+                      },
+                      "test"
+                    ]
+                  }
+                },
+                "LocalPath": "/opt/ml/processing/output/test",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ],
+          "KmsKeyId": "arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>"
+        },
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 1200
+        },
+        "NetworkConfig": {
+          "EnableNetworkIsolation": true,
+          "EnableInterContainerTrafficEncryption": true,
+          "VpcConfig": {
+            "Subnets": [
+              "<SUBNET_AZ1>",
+              "<SUBNET_AZ2>"
+            ],
+            "SecurityGroupIds": [
+              "<PROJECT_SG>"
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "AmazonDataZoneProject",
+            "Value": "<PROJECT_ID>"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "Train",
+      "Type": "Training",
+      "Arguments": {
+        "AlgorithmSpecification": {
+          "TrainingImage": "<XGBOOST_IMAGE_URI>",
+          "TrainingInputMode": "File"
+        },
+        "RoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>",
+        "HyperParameters": {
+          "objective": "binary:logistic",
+          "eval_metric": "auc",
+          "num_round": "200",
+          "max_depth": "5",
+          "eta": "0.2",
+          "subsample": "0.8"
+        },
+        "InputDataConfig": [
+          {
+            "ChannelName": "train",
+            "ContentType": "text/csv",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri": {
+                  "Get": "Steps.Prepare.ProcessingOutputConfig.Outputs['train'].S3Output.S3Uri"
+                },
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            }
+          },
+          {
+            "ChannelName": "validation",
+            "ContentType": "text/csv",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri": {
+                  "Get": "Steps.Prepare.ProcessingOutputConfig.Outputs['validation'].S3Output.S3Uri"
+                },
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            }
+          }
+        ],
+        "OutputDataConfig": {
+          "S3OutputPath": {
+            "Std:Join": {
+              "On": "/",
+              "Values": [
+                "s3://<PROJECTS_BUCKET>/<DOMAIN_ID>/<PROJECT_ID>/shared/ml-demo/pipeline",
+                {
+                  "Get": "Execution.PipelineExecutionId"
+                },
+                "model"
+              ]
+            }
+          },
+          "KmsKeyId": "arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>"
+        },
+        "ResourceConfig": {
+          "InstanceType": "ml.m5.xlarge",
+          "InstanceCount": 1,
+          "VolumeSizeInGB": 30,
+          "VolumeKmsKeyId": "arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<PROJECT_KEY_ID>"
+        },
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 600
+        },
+        "VpcConfig": {
+          "Subnets": [
+            "<SUBNET_AZ1>",
+            "<SUBNET_AZ2>"
+          ],
+          "SecurityGroupIds": [
+            "<PROJECT_SG>"
+          ]
+        },
+        "EnableNetworkIsolation": true,
+        "EnableInterContainerTrafficEncryption": true,
+        "Tags": [
+          {
+            "Key": "AmazonDataZoneProject",
+            "Value": "<PROJECT_ID>"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "CheckAuc",
+      "Type": "Condition",
+      "Arguments": {
+        "Conditions": [
+          {
+            "Type": "GreaterThanOrEqualTo",
+            "LeftValue": {
+              "Get": "Steps.Train.FinalMetricDataList['validation:auc'].Value"
+            },
+            "RightValue": {
+              "Get": "Parameters.AucThreshold"
+            }
+          }
+        ],
+        "IfSteps": [
+          {
+            "Name": "Register",
+            "Type": "RegisterModel",
+            "Arguments": {
+              "ModelPackageGroupName": "ml-demo-xgboost",
+              "ModelPackageDescription": "from the pipeline ml-demo-pipeline",
+              "InferenceSpecification": {
+                "Containers": [
+                  {
+                    "Image": "<XGBOOST_IMAGE_URI>",
+                    "ModelDataUrl": {
+                      "Get": "Steps.Train.ModelArtifacts.S3ModelArtifacts"
+                    }
+                  }
+                ],
+                "SupportedContentTypes": [
+                  "text/csv"
+                ],
+                "SupportedResponseMIMETypes": [
+                  "text/csv"
+                ],
+                "SupportedRealtimeInferenceInstanceTypes": [
+                  "ml.m5.large"
+                ],
+                "SupportedTransformInstanceTypes": [
+                  "ml.m5.large"
+                ]
+              },
+              "ModelApprovalStatus": "PendingManualApproval",
+              "Tags": [
+                {
+                  "Key": "AmazonDataZoneProject",
+                  "Value": "<PROJECT_ID>"
+                }
+              ]
+            }
+          }
+        ],
+        "ElseSteps": [
+          {
+            "Name": "AucBelowThreshold",
+            "Type": "Fail",
+            "Arguments": {
+              "ErrorMessage": {
+                "Std:Join": {
+                  "On": " ",
+                  "Values": [
+                    "validation:auc is below the threshold",
+                    {
+                      "Get": "Parameters.AucThreshold"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
