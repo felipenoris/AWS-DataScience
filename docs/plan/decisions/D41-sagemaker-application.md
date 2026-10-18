@@ -118,8 +118,10 @@ Claude project's library, `laboratorio/leituras/2026-10-15-cli-houseprice-etl-de
 
 - `list-connections` answers `InfrastructureAccess` in both projects, and `describe --connect` lists
   each project's connections. `EXC-17` records three refusals of that call to the same identity, as
-  a non-member of the project; whether the user has since added the identity to the projects is
-  unanswered, so the cause `EXC-17` names is re-read before it is relied on.
+  a non-member of the project. Read 2026-10-18: the identity has been a contributor of both projects
+  since 06:15 UTC on 2026-10-15, before the lab ran, a group profile whose role is Sandbox's `InfrastructureAccess`, added
+  through the portal (`CreateProjectMembership` by the domain execution role in the domain account's
+  CloudTrail).
 - `deploy` copies the manifest's content (`aws s3 sync`, no `--delete`) and creates no workflow; the
   workflow is born by the `bootstrap` action `workflow.create`, which every stage that must show it
   needs. The action resolves the YAML's `{proj.*}` variables, writes the resolved copy at the same
@@ -152,9 +154,10 @@ Claude project's library, `laboratorio/leituras/2026-10-15-cli-houseprice-etl-de
   in the definition file, where the CLI never wrote them (it tagged by `TagResource`), so a save
   from the portal would drop them, a reading no save has measured. After the tab closed the
   service returned the same `WorkflowVersion` and `ModifiedAt`, and `dev/workflows/` held no copy.
-- Still owed: `run`, `monitor` and `logs` with the Sandbox up and the input file in place; `bundle` and the deploy to `test`; the actions the CLI's identity
-  needs beyond AWS's example policy, which lists no `airflow-serverless` action (the lab's identity
-  is an administrator and measures none); a Python or Bash task's `Code` through the CLI; the
+- Read in the lab on 2026-10-16: `bundle` and the deploy to `test`, whose 158 CloudTrail events
+  gave the actions the CLI's identity needs beyond AWS's example policy, which lists no
+  `airflow-serverless` action ([Stage 8](../stages/stage-08-cicd-pipelines.md) decision 19).
+- Still owed: `run`, `monitor` and `logs` with the Sandbox up and the input file in place; a Python or Bash task's `Code` through the CLI; the
   project role's pull of the application image; and the chain layer's readings (Stage 10
   verifications xxii to xxvi).
 

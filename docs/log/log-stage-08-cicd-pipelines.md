@@ -1759,3 +1759,101 @@ records the 22:26 apply and verification xxvii, as the infrastructure user throu
   `DE-2` FAILED because `sandbox/egress` is down and its state holds neither output, the absence the
   check itself names, with `DE-3` and `DE-6` noted as not compared. The exit 2 reads the
   environment's state, not the image's; the two comparisons wait for a `make up ENV=sandbox`.
+
+## 2026-10-18 — readings with the environment down, and the next `NO_PROXY` literal
+
+Written by Claude, session "Stage 8: readings, NO_PROXY proposal, text fixes", as the infrastructure
+user through `awsds-infra-prod`, `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-data`
+and `awsds-infra-identity` (`InfrastructureAccess`), reads and plans only; nothing applied. The whole
+environment was down (`make status` 0.0000 USD/h, read by the orchestrating session). Every time is UTC.
+
+- **[Claude] `./aws/cicd.py`** (19:48:13 to 19:48:52): exit 1 on every profile, from the seven persona
+  and Control Tower profiles with no SSO token; on the three infrastructure profiles (19:49:08 to
+  19:49:40) exit 0, 11 pass, 5 notes, 0 FAILED. `CI-2` passes `awsds-deploy-sandbox-test` with
+  `awsds-sandbox-deploy-test-boundary`, `CI-3` reads every principal `awsds-prod-runner-deploy` and
+  `sts:AssumeRole` only, `CI-8` 54 assumptions, every caller the deploy runner; `CI-1` and `CI-9` note
+  both runners absent, `CI-6` version 9's `sha256:b788dbd9…1b87`.
+- **[Claude] The policy simulator on `awsds-deploy-sandbox-test`** (19:50:41 to 19:51:33), with
+  `aws:RequestedRegion`, `aws:PrincipalOrgID` and `aws:ResourceOrgID` as context, each call asked for
+  the `test` project (`4gqfau9xuo6e4w`) and for the `dev` project (`avhvbqn37ty7m8`):
+
+  | Calls | `test` | `dev` |
+  |---|---|---|
+  | `airflow-serverless:` `StartWorkflowRun`, `UpdateWorkflow`, `GetWorkflow`, `GetWorkflowRun`, `ListWorkflowRuns`, `TagResource`, by `aws:ResourceTag/AmazonDataZoneProject`; `CreateWorkflow` by `aws:RequestTag/AmazonDataZoneProject` | allowed, `workflows` | implicitDeny |
+  | `s3:GetObject`, `PutObject`, `DeleteObject` under `<domain>/<project>/shared/`; `s3:ListBucket` with that `s3:prefix` | allowed, `storage` | implicitDeny |
+  | `iam:PassRole` of the project's role to `airflow-serverless.amazonaws.com` | allowed, `workflows` | explicitDeny, `awsds-sandbox-deploy-test-boundary` |
+  | `logs:CreateLogGroup`, `FilterLogEvents` on `/aws/mwaa-serverless/<domain>-<project>/*` | allowed, `workflows` | implicitDeny |
+
+  `DeleteWorkflow` on a `test` workflow reads `explicitDeny` from the same ceiling; `TagResource` and
+  `UpdateWorkflow` on a `test` workflow with the `dev` id as request tag, `CreateWorkflow` with no request
+  tag and `StartWorkflowRun` with no resource tag read `implicitDeny`. `AllowedByOrganizations` is true
+  on every row.
+- **[Claude] What the role has called, in Sandbox's CloudTrail**: `lookup-events` by `ResourceName`,
+  with the role's name or its ARN, returned nothing since 2026-10-16, while the `AssumeRole` events name
+  the role in their resources; filtering `AssumeRole` from 2026-10-16T17:00Z to 2026-10-18T20:00Z found
+  three, at 17:43:14, 21:12:32 and 22:29:51 on 2026-10-16, each by the deploy runner's role from the
+  boots of `i-0cf719f584e9bdfcd`, `i-0cc9c1b95621c5be2` and `i-069d264f327b93700`. Looked up by its
+  access key, each session made one call, `GetCallerIdentity`, in the second of its assumption. The
+  role has run no deploy.
+- **[Claude] Verification vii's third half**, after 6d's reading of 2026-10-17: in Sandbox, one
+  `UpdateStack` since 2026-10-11, `DataZone-Env-5hkjdsy3umpi1c` at 22:05:48 that day by
+  `awsds-sandbox-smus-provisioning`, invoked by `datazone.amazonaws.com`. Ten `UpdateDomain` events since
+  2026-10-11 (19:52:44), every one the infrastructure user's through `aws-cli/2.37.12`, the last on
+  `d-lfgbdrjncmsu` at 2026-10-16 00:31:25; none invoked by a service and none after. Before the
+  reconciliation, the first domain's last write was 2026-10-10 20:51:38, naming
+  `awsds-sandbox-dev-env:5`. Both domains' `CustomImages` name `awsds-sandbox-dev-env` on JupyterLab and
+  Code Editor with no `ImageVersionNumber`, `LastModifiedTime` 2026-10-15 06:14:06 and 2026-10-16
+  00:31:26.
+- **[Claude] Decision 19's premise**, the membership (19:53:39 to 19:53:45): `datazone
+  list-project-memberships` and `list-connections` answer `InfrastructureAccess` from Sandbox on both
+  projects; `dev` holds 11 connections, `redshift-serverless.redshift` among them, and `test` 9. Each
+  project's members: one SSO user as `PROJECT_OWNER`, the same in both; the project's own role, an IAM
+  user profile, as `PROJECT_CONTRIBUTOR`; and the group profile `839bcde8-f8b8-4ada-936a-1441352db302`
+  as `PROJECT_CONTRIBUTOR` in both. `get-group-profile` is refused from Sandbox ("no resource-based
+  policy allows the datazone:GetGroupProfile action") and answers from Data Governance: `ASSIGNED`,
+  `rolePrincipalArn` Sandbox's `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`. Data Governance's
+  CloudTrail holds two `CreateProjectMembership` for that group, `PROJECT_CONTRIBUTOR`, on 2026-10-15 at
+  06:15:15 (`4gqfau9xuo6e4w`) and 06:15:45 (`avhvbqn37ty7m8`), by `awsds-data-studio-domain-execution`
+  with a browser's user agent, and no `CreateGroupProfile` since 2026-09-01. `awsds-deploy-sandbox-test`
+  is no member.
+- **[Claude] Validation 2, `./aws/egress.py`** on the five infrastructure profiles (19:54:53 to
+  19:55:42): exit 0; section 6 reads 0 interface endpoints, 0 NAT gateways and 0.000 USD/h in every
+  account; `EG-1` and `EG-4` pass on the gateway endpoints, `EG-5` notes no metered egress.
+- **[Claude] Refusal 8, dry** (19:56:50 to 19:57:12): `scripts/slices.py` runs every command through
+  `run()`, which prints and returns under `--dry-run`, the reads included. `make up ENV=sandbox
+  ONLY=dev-env PROFILE=awsds-deploy-devenv-sandbox DRY=1` and `ONLY=workflows
+  PROFILE=awsds-deploy-sandbox-test` refuse both slices by refusal 1, `[P]`, and apply nothing; `make up
+  ENV=sandbox PROFILE=awsds-deploy-sandbox-test DRY=1` and `make down ENV=sandbox
+  PROFILE=awsds-deploy-devenv-sandbox DRY=1` refuse `egress`, `warehouse-compute` and `probes` by
+  refusal 8, and the nine others by 1 and 4; `make up ENV=staging ONLY=egress
+  PROFILE=awsds-deploy-staging DRY=1` prints `staging/egress/`'s generators, `init` and `apply` as that
+  profile. The hub check, its reads printed and not run, says "NOT READ - no session on the hub
+  account". The simulator (19:57:36 to 19:57:48) reads both Sandbox deploy roles `implicitDeny` on
+  `s3:GetObject` and `PutObject` of `sandbox/dev-env/` and `sandbox/workflows/` state in
+  `awsds-sandbox-tfstate`, on `s3:ListBucket` with either prefix, and on `kms:Decrypt` with
+  `alias/awsds-sandbox-tfstate`'s key.
+- **[Claude] The next `NO_PROXY` literal**: `./scripts/check-gitlab-mirror.py --plan` (19:58:12 to
+  19:58:33), a plan of `sandbox/egress` on `vpc-egress-v0.18.0` with `-refresh=false`, exit 2:
+
+  ```
+    only in the account : .mlflow.sagemaker.us-west-2.app.aws
+    only in the account : mlflow.sagemaker.us-west-2.app.aws
+  fail    GM-4  the literal is the account's list          2 name(s) only in the account, 0 only in the image
+  pass    GM-2  the Dockerfile declares one NO_PROXY_LIST  70 entries, sha256 aafa08da98a61f5c
+  pass    GM-3  the account's list is readable             72 entries, sha256 6faf2e4761622508, from a plan of terraform-live/sandbox/egress
+  ```
+
+  The written line replaced `ARG NO_PROXY_LIST` in `gitlab/awsds/dev-env/dev-env/Dockerfile`, its
+  comment dated, two names added and none removed; the second run (19:59:39 to 19:59:55) exit 0, `GM-1`
+  to `GM-8` pass, `GM-4` 72 names, `6faf2e4761622508` on both sides. A proposal: GitLab holds 70 until
+  the user's merge request.
+- **[Claude] Verification xiv**, offline: `awsds-workflows` at `3c1708e` (2026-10-16 13:39, "O lint de
+  uma aplicação da CLI de CI/CD (#21)"), installed from its archive into a scratch virtual environment,
+  the user's own tool untouched; `main`'s head, `d2b33ca`, changes documents only. Over scratch copies of
+  `examples/app-etl/`, which itself reads `ok: 6 arquivo(s)`, 40 deliberate violations each exit 1 under
+  their rule: `projeto` 8, `datas` 3, `operador` 2, `limites` 4, `imagem` 2, `job` 5, `templates` 2,
+  `codigo` 1, `glue` 2 and `manifest` 8 in the authoring mode, and in the promoted mode `projeto` on a
+  rendered copy left with CLI variables and on one with a `datazone-<project>-dev` prefix, and `job` on
+  one without its volume key. A dev-env image by digest passes without `--image-repository`, a job with
+  no volume key passes outside the promoted mode, and a clean rendered copy passes the promoted mode. No
+  rule reads a `VersionId` or a release's manifest.
