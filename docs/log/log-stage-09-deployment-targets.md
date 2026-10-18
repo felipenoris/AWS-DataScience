@@ -256,3 +256,35 @@ SCP apply to a parallel session, so it ran here.*
 - **[Claude] Owed after this pass.** 3.4's registry proof and 6.3's window are the user's; pass 2 waits on
   decision 3; the processing-job quotas in Production and Staging are a quota request, the user's, before any
   job runs there (Stage 10's processing step included).
+
+## 2026-10-18 — verification viii's assignment half, and text the stage had overtaken
+
+*Claude's hand, in a task the orchestrating session ran on the laptop (branch
+`claude/stages-09-10-18-readings`), with the environment down. Every call is a read, as the infrastructure
+user (`InfrastructureAccess`) through `awsds-infra-identity`; nothing was applied.*
+
+- **[Claude] Verification viii, the assignment half.** `./aws/list-identities.py`, report stamped
+  2026-10-18T22:20:57Z, section 6 empty: `Staging Account` carries seven assignments, the seven of 6b's
+  last reading ([its log](log-stage-06b-development-becomes-staging.md), 2026-09-06):
+  `AWSAdministratorAccess` to the infrastructure user (`USER`, re-asserted by the Control Tower account
+  update of 6b step 3.5, D32), the landing zone's `AWSOrganizationsFullAccess`, `AWSPowerUserAccess` and
+  `AWSReadOnlyAccess` to their groups, `DataScientistStagingAccess` to `sso-group-data-scientists`,
+  `DeploymentManagerAccess` to `sso-group-deployment-managers` and `InfrastructureAccess` to
+  `sso-group-infrastructure`. `DataScientistStagingAccess` is assigned in no other account.
+- **[Claude] The assignment's provenance, from CloudTrail.** `lookup-events` in the Identity account,
+  `us-west-2`, since 2026-08-20: one `CreateAccountAssignment`, at 2026-09-06T04:35:35Z, by
+  `InfrastructureAccess`, no error code, permission set `DataScientistStagingAccess`, principal type
+  `GROUP` with the id of `sso-group-data-scientists`, target `Staging Account`; and two
+  `DeleteAccountAssignment` in the same account at 04:35:25Z, `DataScientistAccess` and
+  `DevEnvStewardAccess`. Those three are 6b step 2.1's apply, *"1 added, 0 changed, 2 destroyed"*, and no
+  call has touched the assignment since. With `DT-10`'s reading of the policy, verification viii is
+  answered: yes to both halves.
+- **[Claude] 7.3 carried no marker** though this file's first entry records it (2026-10-16); the step now
+  says so.
+- **[Claude] Two sentences the estate had overtaken.** The Prerequisites said Stage 18 adds Staging to the
+  `readers` of `production/sagemaker/`: `readers` is `SMUS_MEMBERS` (`scripts/tfhygiene/backend.py`), and
+  Stage 18 step 2.3 (PR #174) gave a deployment account a list of its own, `SMUS_DEPLOYMENT_MEMBERS`,
+  which `readers` does not read. And 9.1's alarms bullet said neither alarm notifies anyone: Sandbox's two
+  publish to `awsds-sandbox-alerts` since 21:19Z today (PR #181, [the 5b log](log-stage-05b-redshift-serverless.md)),
+  and `awsds-prod-alerts` admits CloudWatch since PR #179 (`CloudWatchAlarmsOfThisAccount`,
+  [the Stage 12 log](log-stage-12-observability-finops.md)), so the copies publish there.

@@ -145,7 +145,7 @@ finding on any of these types on 2026-10-17.
 | EBS volume snapshots | yes: a space's volume, copied whole | `DenySnapshotAndImageSharing` and `DenyImageAndSnapshotExport` on the root (1c 7.5), unconditional, the builder included; snapshot block public access at `block_all_sharing` blocks the public case beside them. The EC2 snapshot action is attached and unexercised (`POLICIES.md`) | the perimeter's only detective half: no RCP stands behind the SCP, so a finding is a share past it, made while the document was detached or by a principal no SCP binds, the management account's or a service-linked role |
 | RDS DB and DB-cluster snapshots | yes, whole databases; no RDS database exists in the estate | the same two statements, the RDS pair | the same |
 | Lambda functions and layers | not as storage. No function is written in Terraform (read 2026-10-17), and Stage 17 7.4a would create the knowledge base's two | nothing: no SCP in `Sandbox` (`TM-12`) | the only control on a function's resource policy: a finding is an invoke grant to a principal outside the organization |
-| SNS topics | no: the alarm and alert topics carry notifications (`production/foundation`, `staging/foundation`) | nothing | the only control on a topic's policy, read like any other finding |
+| SNS topics | no: the alarm and alert topics carry notifications (`production/foundation`, `staging/foundation`, and `sandbox/observability`'s `awsds-sandbox-alerts` since 2026-10-18, whose policy admits CloudWatch alone, from this account's alarms) | nothing | the only control on a topic's policy, read like any other finding |
 | EFS file systems | no: none exists since the NFS requirement's withdrawal (2026-08-17, D24) | nothing needed | commentary |
 
 ## What this file waits on

@@ -448,8 +448,14 @@ São Paulo as in Oregon.
 | S3 PUT/COPY/POST/LIST (USD per 1 000) | 0.007 | 0.005 | 1.40 |
 | S3 GET and all others (USD per 10 000) | 0.0056 | 0.004 | 1.40 |
 | S3 Access Grants requests (USD per 1 000) — `GetDataAccess`, `ListCallerAccessGrants` and every other non-delete AG call; deletes are 0.00. The public pages say nothing (pricing page, user guide, FAQ — all read 2026-08-23); the Price List offer file is where the meter is written | 0.03 | 0.03 | **1.00** |
-| **Glue** ETL (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
-| Glue Flex ETL (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
+| **S3 Tables** storage, first 50 TB (USD/GB-mo; `AmazonS3` offer of 2026-10-15, read 2026-10-18) — where Redshift's system table integration writes (`docs/plan/upstream-releases.md`) | 0.0466 | 0.0265 | 1.76 |
+| S3 Tables monitoring (USD per 1 000 objects-mo) | 0.025 | 0.025 | **1.00** |
+| S3 Tables compaction (USD per 1 000 objects · per GB processed) | 0.0028 · 0.005 | 0.002 · 0.005 | 1.40 · 1.00 |
+| S3 Tables requests (USD per 1 000: PUT, COPY, POST, LIST · GET and others) | 0.007 · 0.00056 | 0.005 · 0.0004 | 1.40 |
+| **Glue** ETL, before Glue 6.0 (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
+| Glue Flex ETL, before Glue 6.0 (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
+| Glue ETL and interactive sessions, **Glue 6.0 and later** (USD/DPU-h; usage types `ETL-DPU-Hour-Gen2` and `GlueInteractiveSession-DPU-Hour-Gen2`, `AWSGlue` offer of 2026-10-12, read 2026-10-18). `app-etl`'s job is 6.0 | 0.483 | **0.308** | 1.57 |
+| Glue Flex ETL, Glue 6.0 and later (USD/DPU-h) | 0.315 | 0.203 | 1.55 |
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Iceberg compaction / optimization (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
 | Glue catalog statistics (USD/DPU-h) | 0.44 | 0.44 | **1.00** |

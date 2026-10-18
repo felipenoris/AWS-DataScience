@@ -605,3 +605,19 @@ account id or an e-mail address. Times are UTC.*
   statements, the last `DenySageMakerServerlessInference`, as Stage 9's log of the same day records for
   its apply at 19:54. 7.4a and 4.4 say so. The plan of `sandbox/sagemaker/` on `main`'s pin that step 1.2
   quotes (2 to add, 1 to change, 0 to destroy, not applied) is Stage 11's reading, in its log.
+
+## 2026-10-18 — what raised the three quotas, read in the trail
+
+*Claude, the orchestrating session of 2026-10-18's third round, from the laptop as the infrastructure
+user (`awsds-infra-sandbox-1`, `InfrastructureAccess` in `Sandbox Account 1`), read-only, about 22:20 UTC.*
+
+- **[Claude] The requests**: `cloudtrail lookup-events` by `EventName=RequestServiceQuotaIncrease` from
+  2026-10-15 returns three calls, 2026-10-17 21:45:32Z, 21:45:37Z and 21:45:40Z, as
+  `InfrastructureAccess`, each for `desiredValue` 1.0 (`L-CCE2AFA6`, `L-614B09FD`, `L-236AE59F`), each
+  answered `PENDING`. `list-requested-service-quota-change-history` reads all three `CASE_OPENED`.
+- **[Claude] The values**: `list-service-quotas` reads `L-CCE2AFA6` 20, `L-236AE59F` 8 and `L-614B09FD` 8,
+  as at 19:51 UTC.
+- **[Claude] Nothing in the account records the raise**: by `EventSource=servicequotas.amazonaws.com`
+  from 2026-10-17 21:00Z to 2026-10-18 21:00Z the only writes are those three requests (the rest are
+  `List*` and `Get*` reads), and `support.amazonaws.com` returns no event. AWS applied values above the
+  ones asked for, on its side, with the cases still open. Verification xxi says so.

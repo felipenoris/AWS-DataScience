@@ -86,6 +86,10 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   aws guardduty enable-organization-admin-account --admin-account-id <Audit> --region us-west-2
   ```
 
+  **Read 2026-10-18** (the upstream readings, PR #189): GuardDuty enablement can be an Organizations
+  policy since 2026-10-01, a declarative alternative to this act and step 2's; whether
+  `aws_organizations_policy` accepts the type is unread.
+
   Three properties of this one call, all documented and all consequential. **It is per-Region** (the
   same-account rule above). **It enables GuardDuty in Audit** and registers `guardduty.amazonaws.com`
   for trusted access in one act — that is what step 6's INV-09 restatement records; **delegating IS
@@ -126,7 +130,9 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   account by design): an EventBridge rule on GuardDuty findings → SNS → e-mail. Decision 2 below;
   record the topic name and who subscribes. It is not the project's first notification: the break-glass
   topic `awsds-org-break-glass-alerts` in Management (Stage 1a) and Stage 8 decision 5's
-  `awsds-<env>-alerts` topics already reach a person; this is the first for threat findings. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
+  `awsds-prod-alerts` and `awsds-staging-alerts` already reach a person (one confirmed subscription each,
+  read 2026-10-18), while Stage 12's `awsds-sandbox-alerts` waits on the user's confirmation; this is the
+  first for threat findings. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
   and this is measured, not assumed: the `Security` OU's Control Tower SCP was read from the Identity
   profile on 2026-08-18 and carries three SNS statements, all excluding only `AWSControlTowerExecution`.
   `GRSNSSUBSCRIPTIONPOLICY` denies `sns:Subscribe`/`Unsubscribe` on

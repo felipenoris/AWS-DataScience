@@ -352,18 +352,12 @@ SLICES = [
     # t4g.nano at 0.0042/h (docs/PRICING.md 8); no IAM principal is created by either row. They
     # are on Graviton, with their own AMI data source, and a probe pays the ~20% Graviton
     # discount for measuring exactly what an x86 one would.
-    # They are ordered: production/probes is the target, so it applies before the two source
-    # rows, which find it by name in the awsds.internal apex. rank 60 puts all three after
-    # egress/, whose S3 gateway policy the perimeter probe measures.
+    # They are ordered: production/probes is the target, so it applies before the source row,
+    # which finds it by name in the awsds.internal apex. rank 60 puts both after egress/, whose
+    # S3 gateway policy the perimeter probe measures. Staging has no probe slice: it peers with
+    # VPC-Networking alone, so it cannot reach the target in VPC-SharedServices.
     Slice("production", "probes", EPHEMERAL, "peering target: 1 host, 2 ENIs, 2 A records", 0.0042),
     Slice("sandbox", "probes", EPHEMERAL, "perimeter probe (isolated) + peering probe", 0.0084),
-    Slice(
-        "staging",
-        "probes",
-        EPHEMERAL,
-        "INT-09 reachability + the DNS half Sandbox cannot answer",
-        0.0042,
-    ),
     # Stage 4 pass 1 (step 1.3), the repository's first [D] row. usd_per_hour is the t3.nano row
     # of docs/PRICING.md 3, measured us-west-2 (Lesson 6): t4g.nano's 0.0042 until 2026-08-20,
     # when the host moved to amd64 and the baseline it prices moved with it, the same shape on

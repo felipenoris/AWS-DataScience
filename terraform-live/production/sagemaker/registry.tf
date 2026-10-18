@@ -88,3 +88,59 @@ resource "aws_sagemaker_model_package_group_policy" "this" {
     ]
   })
 }
+
+# -------------------------------------------------- the approval notification (Stage 10 step 5.3)
+#
+# Every state change of a model package in this account, to the account's alerts topic (Stage 8
+# decision 5): a registration, an approval, a rejection. The pattern names no group, so a package
+# registered outside this slice's groups is heard too. SageMaker sends its own events to the
+# default bus, which a rule in the ENABLED state receives (OR-4 reads that state), and it may send
+# several for one change (AWS's page on SageMaker's EventBridge events), so duplicates are expected.
+# Stage 10 step 3.6 adds the serving chain's state machine as a second target when that chain exists.
+resource "aws_cloudwatch_event_rule" "model_approval" {
+  name        = "awsds-${var.env}-model-approval"
+  description = "Every SageMaker Model Package State Change in this account (Stage 10 step 5.3, D28 item 6)"
+  state       = "ENABLED"
+
+  event_pattern = jsonencode({
+    source        = ["aws.sagemaker"]
+    "detail-type" = ["SageMaker Model Package State Change"]
+  })
+
+  tags = {
+    Name       = "awsds-${var.env}-model-approval"
+    CostCenter = "stage-10"
+  }
+}
+
+# The message names the package and its two statuses and leaves the record in the registry. No path
+# below is free text the caller chooses (ApprovalDescription is), because EventBridge does not escape
+# an extracted value.
+resource "aws_cloudwatch_event_target" "model_approval" {
+  rule      = aws_cloudwatch_event_rule.model_approval.name
+  target_id = "alerts-topic"
+  arn       = data.terraform_remote_state.foundation.outputs.alerts_topic_arn
+
+  input_transformer {
+    input_paths = {
+      time     = "$.time"
+      group    = "$.detail.ModelPackageGroupName"
+      version  = "$.detail.ModelPackageVersion"
+      approval = "$.detail.ModelApprovalStatus"
+      status   = "$.detail.ModelPackageStatus"
+      package  = "$.detail.ModelPackageArn"
+      event_id = "$.id"
+    }
+    input_template = chomp(<<-EOT
+      "<aws.events.rule-name>: a model package changed state."
+      "When: <time>"
+      "Group: <group>, version <version>"
+      "Approval status: <approval>"
+      "Package status: <status>"
+      "Package: <package>"
+      "Event id: <event_id>"
+      "The full record stays in the registry (DescribeModelPackage)."
+    EOT
+    )
+  }
+}

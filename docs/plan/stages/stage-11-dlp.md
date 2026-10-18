@@ -183,6 +183,10 @@ people is Lesson 5 with a `WHERE` clause.
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
   `./aws/dlp.py` (`DP-2`).
+  Lake Formation's row-level security policies (API of 2026-10-13: `CreateRLSPolicy`, then
+  `AttachRLSPolicy` to a resource for a principal, with an optional condition or as the default) are a
+  second mechanism for the row half; no CloudFormation type or Terraform resource carries them (read
+  2026-10-18, PR #189), so the filters stay `aws_lakeformation_data_cells_filter` and decision 12 weighs both.
 > **What pass 4 measured on 2026-08-19 constrains this whole step.** The `restricted`
 > column does not cross the account line **at all** under the default share: read as its own
 > `InfrastructureAccess`, `curated.sample_trades` shows six columns in Data Governance and **five** in
@@ -393,11 +397,11 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
 - **4.2 — [user] Enable org-wide from Audit** — `AWS Control Tower Admin`, GuardDuty console →
   protection plans: auto-enable **`ALL`** for both features (new and existing members, up to 24 h to
   propagate).
-- **4.3 — [user] Unblock Audit's own detector by the recorded path** (decision 4): **Stage 15 already met
-  this deny in the opposite direction and settled the carve-out question** (its step 5: GuardDuty creates
-  only the service-linked role, so there is no administration role to name — its decision 1 chose the
-  detach/re-attach procedure and recommended against the carve-out). **Reuse whatever its log records as
-  the exercised path**; failing that, detach `awsds-org-scp-baseline`
+- **4.3 — [user] Unblock Audit's own detector by the recorded path** (decision 4): **Stage 15 meets this
+  deny first, in the opposite direction** (its step 5: GuardDuty creates only the service-linked role, so
+  there is no administration role to name), and its decision 1 recommends the detach/re-attach procedure
+  and argues against the carve-out; Stage 15 has not started, so no path is exercised yet (read
+  2026-10-18). **Reuse whatever its log records as the exercised path**; failing that, detach `awsds-org-scp-baseline`
   from the root, make the change, re-attach, and re-run phases 1-3
   ([`docs/plan/runbooks/scp-battery.md`](../runbooks/scp-battery.md)) — **the re-attach is not done until
   the probes have run**, and the sitting is not closed before the re-attach.
@@ -622,9 +626,9 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
    same per-resource price);
    **`awsds-prod-outputs` joins when Stage 9's producer path first carries real data** — the one
    genuinely open addition. One map, one variable, consumed by all three (Lesson 14).
-4. **The step 4 unblock path** (4.3) — Stage 15 settled the carve-out question (no administration role
-   exists; its decision 1 chose detach/re-attach and recommended against the carve-out), so the default
-   here is the same procedure. Recommended: **whichever the Stage 15 log answers** — a carve-out written against a
+4. **The step 4 unblock path** (4.3) — Stage 15 meets the question first (no administration role
+   exists; its decision 1, still due, recommends detach/re-attach and argues against the carve-out), so
+   the default here is the procedure that stage exercises. Recommended: **whichever the Stage 15 log answers** — a carve-out written against a
    role that already exists is the one shape this plan trusts (D27).
 5. **Malware Protection for S3 on the drop-box** (4.5) — recommended: **off**, priced (USD 0.09/GB +
    0.000215/object). Its revisit condition, a file arriving from outside the tunnel, is met by D39: the

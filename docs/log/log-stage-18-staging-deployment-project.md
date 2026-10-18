@@ -234,3 +234,37 @@ Account ids are replaced by the account's name in angle brackets.*
   0.4's calls go from the laptop, but its run's tasks need `sandbox/egress`'s `[E]` endpoints (6i's
   prerequisites), so the run waits on a raised session; the step says so now, under the profile
   `awsds-infra-sandbox-1`, the one that exists.
+
+## 2026-10-18 — what 4.4's run needs from other stages, read in the code
+
+*Claude's hand, in a task the orchestrating session ran on the laptop (branch
+`claude/stages-09-10-18-readings`), with the environment down. Repository reads and one `--dry-run`; no
+AWS write, and neither change below was applied.*
+
+- **[Claude] The application image's pull grant.** `app-etl`'s `process` task names its image as
+  `{env.JOB_IMAGE_URI}`, the release's `awsds-prod-ecr-app-etl` by digest, and a processing job pulls it as
+  the job's role through the service (6i). In `production/registry/`, that repository's pull principals
+  are `local.app_consumer_account_arns`, built from `APP_REGISTRY_CONSUMERS`, `["sandbox"]` in
+  `scripts/tfhygiene/backend.py`; the slice holds one aliased provider, `sandbox`, and
+  `account_id_by_folder` one key, so a `staging` row fails the plan on the index until a `staging` alias
+  and identity read join it. That is Stage 8 step 3.0's first half, which Stage 8's decision 23 places in
+  its pass 4, after Stage 9.
+- **[Claude] The code bucket on Staging's S3 gateway endpoint.** `staging/foundation/` calls `vpc` at
+  `vpc-v0.3.1` with no `s3_endpoint_allowed_bucket_names`, so the endpoint carries the module's default
+  list. Between `vpc-v0.3.1` and `vpc-v0.4.0` the module's one change in code is
+  `mwaa-serverless-code-files-*-<region>-prod` in that list (`git diff`; the rest is comments and
+  descriptions). 6i decision 7 measured a workflow with a `Code` object failing at environment preparation
+  without it, and left Staging on `vpc-v0.3.1` until such a workflow runs there; Stage 10 step 1.2 makes the
+  bump, and that stage's log of today leaves it to its pass 2. `app-etl` carries a `Code` object
+  (`code/app-etl.zip`, for `summarize`), and 5.1's `demo-python-operator` imports `demo_tasks.run` from its
+  archive.
+- **[Claude] The sitting.** `./scripts/slices.py up --env staging --dry-run` at `28f340c` lists two `[E]`
+  slices, `staging/egress` and `staging/probes`, whose header says not to run it as written; `make up`
+  passes `ONLY=` to `--only` (Stage 8 step 4.4). PR #186, open on 2026-10-18, retires `staging/probes/`,
+  after which `staging/egress` is the account's only `[E]` slice. The Prerequisites now say `make up
+  ENV=staging ONLY=egress`, which holds either way, name the two changes above for 4.4, and 4.4 waits on
+  both.
+- **[Claude] Stale text corrected.** The Prerequisites and the risk "The `Workloads` document" said Stage 9
+  pass 1's job statements were merged and not attached. They were attached at 19:54Z today, the battery's
+  `ou` phase reading them after ([Stage 9's log](log-stage-09-deployment-targets.md)), and this stage's 0.3
+  read the attached document.
