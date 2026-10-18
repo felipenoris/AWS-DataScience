@@ -419,3 +419,48 @@ carries an account id or an e-mail address.*
   the app is 1.5's *Create MLflow App*).
 - **[Claude] What is owed before the apply**: the checklist's step 4, the console's enable-wizard fields
   for `MLflowApp` in Sandbox, read by the user and cancelled, then the sitting decision 4 orders.
+
+## 2026-10-18 — the `MLflowApp` enable wizard read, and cancelled
+
+*Provenance. The cloud session wrote the route at 18:02 UTC: the infrastructure user with
+`InfrastructureAccess` in `Sandbox`, `us-west-2`, the console at `console.aws.amazon.com/datazone`,
+**Associated domains**, `awsds-studio`, the **Blueprints** tab, the row "Creates an MLflow App for SageMaker
+Unified Studio.", **Enable**, every field noted, out by **Cancel**. The user opened the form at 18:11 UTC, a
+session with access to the user's Chrome read it, and the user posted the reading on the project thread at
+18:25 UTC. The cloud session compared it with the module and wrote this entry. Nothing was enabled or
+applied.*
+
+- **[user] The form**, posted in Portuguese and translated here; every label, value and option is as
+  posted. One screen, two sections, the buttons **Cancel** and **Enable blueprint**, and no field marked
+  optional:
+  - **Permissions and resources → Provisioning role**, a radio. The default, *Create and use a new
+    service role*, creates `AmazonSageMakerProvisioning-<domainAccountId>`, trusted entity
+    `datazone.amazonaws.com`, managed policy
+    `arn:aws:iam::aws:policy/service-role/SageMakerStudioProjectProvisioningRolePolicy`, with a trust
+    policy of `sts:AssumeRole` alone under `StringEquals aws:SourceAccount = {{domain_account}}`. *Use an
+    existing service role* offers four: `awsds-sandbox-smus-manage-access`,
+    `awsds-sandbox-smus-provisioning`, `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw` and
+    `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`.
+  - **Authorized domain units (1)**, filled with `awsds-studio` (Root domain), Cascade On and the action
+    Remove. **Add** opens "Select domain unit", which lists one unit, `awsds-studio`, already checked,
+    and the toggle "Cascade to all child domain units", on.
+  - No field for Regions, a manage access role or parameters.
+- **[user] Cancel.** `MLflowApp` still reads **Disabled** on `awsds-studio`'s **Blueprints** tab.
+- **[Claude] The form against `sagemaker-prereqs-v0.6.0`: the checklist's step 4 closes with no change.**
+  The provisioning role `blueprints.tf` names, `awsds-sandbox-smus-provisioning` (`roles.tf`), is one of
+  the four offered, and carries the default's managed policy and its `aws:SourceAccount` condition on the
+  domain's account; its trust adds `cloudformation.amazonaws.com`. The authorized domain unit is
+  `grants.tf`'s `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on the root unit, with
+  `include_child_domain_units = false` against the form's Cascade On: the file justifies it by a domain
+  with no subunit, and the form's own list holds only the root, so the two grant the same projects. The
+  form has no regional parameter, so nothing joins `blueprints.tf`'s.
+- **[Claude] What the configuration sends that the form does not**: the manage-access role and the D13
+  boundary, and the `VpcId`, `Subnets` and `AZs` that `blueprints.tf` gives every blueprint, three
+  regional parameters the template does not declare (its six, read at 1.2's step 3 from the laptop the
+  same day). The environment's deploy at 1.5 is where they meet the template; a refusal there that names
+  them points at this configuration, not at the form (inferred).
+- **[Claude] What the form adds**: the existing-role list holds both project user roles beside the two
+  module roles, so an enable by hand could make a project's own role the provisioning role (inferred: the
+  console lists every role that trusts `datazone.amazonaws.com`).
+- **[Claude] What is owed before the apply**: 1.1's before, in the portal as the Data Scientist User;
+  then the sitting decision 4 orders, the image first.
