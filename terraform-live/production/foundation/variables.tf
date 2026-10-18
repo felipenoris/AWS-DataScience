@@ -106,3 +106,30 @@ variable "peerings" {
   }))
   nullable = false
 }
+
+# Stage 8 step 4 - the deploy credential layer, generated from DEPLOY_ROLES in
+# scripts/tfhygiene/backend.py and never authored here (deploy-anchors.tf).
+variable "deploy_role_name" {
+  description = "This account's deploy role - a contract with ./aws/cicd.py."
+  type        = string
+  nullable    = false
+}
+
+variable "deploy_targets" {
+  description = "The deploy roles outside this account, keyed by the account folder each lives in, with the profile an aliased provider resolves that account's id from: the account's own role, in its foundation/, and in other_roles the roles its other slices hold (Stage 8 decision 19: sandbox/workflows/'s awsds-deploy-sandbox-test)."
+  type        = map(object({ profile = string, env = string, role = string, other_roles = list(string) }))
+  nullable    = false
+
+  validation {
+    condition     = toset(keys(var.deploy_targets)) == toset(["staging", "sandbox"])
+    error_message = "deploy_targets must name exactly staging and sandbox, the aliases deploy-anchors.tf declares: Terraform cannot for_each a provider, so a vended unit's alias is written there before its row reaches DEPLOY_ROLES."
+  }
+}
+
+# Stage 8 decision 5 - who awsds-<env>-alerts reaches. Never committed and never generated: the user
+# writes it into an untracked alerts.auto.tfvars.
+variable "alert_email" {
+  description = "The address awsds-<env>-alerts sends to. Unset, the topic exists with no subscriber, which a check block reports on every plan."
+  type        = string
+  default     = null
+}

@@ -4,8 +4,8 @@
 # D13, the model package groups with their resource policies), the Lake Formation settings
 # in every account that has any (DT-5), the write share with its links and invitations
 # (INT-03), the drop-box contract from both sides (INT-10), the Staging mirror and the
-# absence that is a control (D20), the escape hatch with its alarm, and the persona sets'
-# owed allows read back through the delegated admin.
+# absence that is a control (D20), the escape hatch with its alarm, the persona sets' owed
+# allows read back through the delegated admin, and the job settings on the Workloads OU (DT-11).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -21,13 +21,16 @@
 #             get-role-policy, lakeformation get-data-lake-settings/list-permissions,
 #             glue get-databases/get-tables, ram get-resource-share-invitations,
 #             events list-rules, cloudtrail lookup-events, sso-admin (reads only),
-#             sts get-caller-identity. It never creates, updates or deletes anything.
+#             organizations list-roots/list-organizational-units-for-parent/
+#             list-policies-for-target/describe-policy, sts get-caller-identity. It never
+#             creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # The subject is the producer path between accounts, so this script is multi-profile: the
 # lake and the drop-box live in Data Governance while the only principal allowed to write
 # them lives in Production (D22, D25), Staging's value is what it does not reach (D20), and
-# the persona allows live in Identity. Section 1 prints the caller ARN of every profile.
+# the persona allows and the OU documents are read from Identity, the delegated administrator.
+# Section 1 prints the caller ARN of every profile.
 #
 # The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - the job role is awsds-prod-job-exec (step 3.1 - the name Stage 5a step 1.4's drop-box
@@ -37,8 +40,11 @@
 #     zone arrives with the consumer-data call, so its policy is module-shaped: TLS-only
 #     plus the presigned cap, no perimeter branches - those belong to the lake and outputs)
 #   - the package groups match awsds-prod-model-* (step 3.2)
-#   - the debug role is awsds-prod-debug, its rule awsds-prod-debug-assume (step 6)
+#   - the debug role is awsds-prod-debug, its rules awsds-prod-debug-assume and
+#     awsds-prod-debug-assume-console, in the state that receives AssumeRole (step 6)
 #   - Staging's job role is awsds-staging-job-exec (step 4.3)
+#   - the Workloads OU carries awsds-org-scp-ou-workloads, holding sagemaker-denies' five Sids
+#     and DenySageMakerServerlessInference (steps 3.5, 3.7)
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the LF write landing, the direct PutObject dying, the
@@ -68,6 +74,9 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 JOB_ROLE = "awsds-prod-job-exec"
 DEBUG_ROLE = "awsds-prod-debug"
 DEBUG_RULE_SUBSTR = "debug-assume"
+# EventBridge classes STS AssumeRole as a read-only management event, and a rule in plain ENABLED
+# state receives none: only this state delivers it (cicd.py CI-7, the same reading).
+ALARM_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 PROD_WG = "awsds-prod-athena"
 STAGING_WG = "awsds-staging-athena"
 STAGING_JOB_ROLE = "awsds-staging-job-exec"
@@ -85,6 +94,18 @@ DROPBOX_SUBSTR = "dropbox"
 LAKE_BUCKET_SUBSTR = "awsds-data-"
 MIRROR_DBS = ("raw", "curated")  # the lake databases the Staging catalog mirrors (4.1)
 SETS_READ = ("DataScientistProdAccess", "DataScientistStagingAccess")
+WORKLOADS_OU = "Workloads"
+WORKLOADS_DOC = "awsds-org-scp-ou-workloads"
+# terraform-modules/sagemaker-denies' Sids, which the Workloads document carries (decision 9,
+# shape (a)), and step 3.7's own deny beside them.
+JOB_DENY_SIDS = (
+    "DenySageMakerJobsOffVpc",
+    "DenySageMakerInstanceCeiling",
+    "DenySageMakerJobsWithoutNetworkIsolation",
+    "DenySageMakerJobsWithoutInterContainerEncryption",
+    "DenySageMakerJobsWithoutVolumeEncryption",
+    "DenySageMakerServerlessInference",
+)
 LOOKUP_MAX = 50
 
 # The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
@@ -598,6 +619,7 @@ def main(argv: list) -> int:
     debug_window = "-"
     debug_window_open = False
     debug_trust_ok = False
+    debug_region_pinned = False
     debug_session_max = "-"
     debug_rules: list = []  # (rule, state)
     debug_events: list = []  # (time, caller tail)
@@ -629,6 +651,8 @@ def main(argv: list) -> int:
                 if when and "DataScientistProdAccess" in principals:
                     debug_trust_ok = True
                     debug_window = when
+                    pinned = (st.get("Condition") or {}).get("StringEquals") or {}
+                    debug_region_pinned = pinned.get("aws:RequestedRegion") == context.REGION
                     try:
                         end = _dt.datetime.fromisoformat(when.replace("Z", "+00:00"))
                         debug_window_open = end > _dt.datetime.now(_dt.timezone.utc)
@@ -747,6 +771,60 @@ def main(argv: list) -> int:
                     f"athena allow: {'ABSENT (correct)' if 'athena:StartQueryExecution' not in staging_inline else 'PRESENT - forbidden'}",
                 )
             )
+
+    # ------------------- 10. the job settings on the Workloads OU (step 3.5, decision 9)
+    workloads_attached = False
+    workloads_sids: list = []
+    if identity_live:
+        cli = cli_for(IDENTITY_PROFILE)
+        note(f"measuring {IDENTITY_PROFILE} (the {WORKLOADS_OU} OU document) ...")
+        res = cli.run("organizations", "list-roots", "--query", "Roots[0].Id", "--output", "text")
+        root_id = (res.stdout or "").strip() if res.ok else ""
+        ou_id = ""
+        if root_id:
+            res = cli.run(
+                "organizations",
+                "list-organizational-units-for-parent",
+                "--parent-id",
+                root_id,
+                "--query",
+                f"OrganizationalUnits[?Name=='{WORKLOADS_OU}'].Id | [0]",
+                "--output",
+                "text",
+            )
+            ou_id = (res.stdout or "").strip() if res.ok else ""
+        policy_id = ""
+        if ou_id and ou_id != "None":
+            res = cli.run(
+                "organizations",
+                "list-policies-for-target",
+                "--target-id",
+                ou_id,
+                "--filter",
+                "SERVICE_CONTROL_POLICY",
+                "--query",
+                f"Policies[?Name=='{WORKLOADS_DOC}'].Id | [0]",
+                "--output",
+                "text",
+            )
+            policy_id = (res.stdout or "").strip() if res.ok else ""
+        if policy_id and policy_id != "None":
+            workloads_attached = True
+            res = cli.run(
+                "organizations",
+                "describe-policy",
+                "--policy-id",
+                policy_id,
+                "--query",
+                "Policy.Content",
+                "--output",
+                "text",
+            )
+            try:
+                content = json.loads(res.stdout or "{}") if res.ok else {}
+            except ValueError:
+                content = {}
+            workloads_sids = [str(st.get("Sid") or "") for st in _stmts(content)]
 
     built = (
         job_role_state == "present"
@@ -992,6 +1070,14 @@ def main(argv: list) -> int:
                 )
             else:
                 checks.ok("DT-9", f"window on {DEBUG_ROLE}", f"closed (ends {debug_window})")
+            if debug_trust_ok and not debug_region_pinned:
+                checks.fail(
+                    "DT-9",
+                    f"trust on {DEBUG_ROLE}",
+                    f"the window does not pin aws:RequestedRegion to {context.REGION}: an "
+                    "assumption through the global STS endpoint is logged in us-east-1, where no "
+                    "rule watches (6.1).",
+                )
             if debug_session_max not in ("-",) and int(debug_session_max) > 3600:
                 checks.fail(
                     "DT-9",
@@ -1004,10 +1090,17 @@ def main(argv: list) -> int:
                 )
             else:
                 for rname, state in debug_rules:
-                    if state != "ENABLED":
-                        checks.fail("DT-9", f"rule {rname}", f"state {state} - not watching.")
+                    if state == ALARM_RULE_STATE:
+                        checks.ok("DT-9", f"rule {rname}", state)
+                    elif state == "ENABLED":
+                        checks.fail(
+                            "DT-9",
+                            f"rule {rname}",
+                            "state ENABLED - it receives no AssumeRole, which EventBridge classes "
+                            f"as a read-only management event; {ALARM_RULE_STATE} does.",
+                        )
                     else:
-                        checks.ok("DT-9", f"rule {rname}", "ENABLED")
+                        checks.fail("DT-9", f"rule {rname}", f"state {state} - not watching.")
 
     # DT-10: the persona halves, read through the delegated administrator (step 5).
     for set_name, finding in set_rows:
@@ -1019,6 +1112,30 @@ def main(argv: list) -> int:
             checks.note("DT-10", set_name, finding + ".")
         else:
             checks.ok("DT-10", set_name, finding)
+
+    # DT-11: the job settings bind whoever calls Create*Job in Staging and Production (step 3.5,
+    # decision 9 shape (a), verification xv), and serverless inference is refused there (3.7).
+    if identity_live:
+        missing = [sid for sid in JOB_DENY_SIDS if sid not in workloads_sids]
+        if not workloads_attached:
+            checks.fail(
+                "DT-11",
+                f"{WORKLOADS_DOC} on {WORKLOADS_OU}",
+                "not attached - the OU documents are 1c's and never come off.",
+            )
+        elif missing:
+            (checks.fail if built else checks.note)(
+                "DT-11",
+                f"{WORKLOADS_DOC} on {WORKLOADS_OU}",
+                f"missing {', '.join(missing)} - "
+                + ("apply step 3.5 (battery first)." if built else "expected before 3.5's apply."),
+            )
+        else:
+            checks.ok(
+                "DT-11",
+                f"{WORKLOADS_DOC} on {WORKLOADS_OU}",
+                f"attached, the {len(JOB_DENY_SIDS)} job Sids present",
+            )
 
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -1040,9 +1157,10 @@ SECTIONS
   7. The Staging mirror, and the absence that is a control (D20)
   8. The escape hatch: role, alarm, assumptions (step 6)
   9. The persona sets' owed allows (step 5)
- 10. CHECKS
- 11. The accounts nothing here is measuring
- 12. Calls that failed
+ 10. The job settings on the Workloads OU (step 3.5)
+ 11. CHECKS
+ 12. The accounts nothing here is measuring
+ 13. Calls that failed
 
 HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 9 RUNS - each such reading
@@ -1222,7 +1340,9 @@ the app - DataScientistStagingAccess holds no Athena at all (Stage 2).""")
 Closed at rest is the design: the DateLessThan default sits in the past, an
 approval is a recorded apply, and EVERY assumption alarms (not just misuse).
 The read-only-by-API shape is imposed by the Workloads OU SCP - a session
-under this role cannot become a notebook (6.3 proves it once).""")
+under this role cannot become a notebook (6.3 proves it once). The events above
+are API AssumeRole calls only: a console switch records a sign-in SwitchRole
+event, which the second rule watches and 6.3 locates.""")
 
         # ==============================================================================
         rep.h1("9. The persona sets' owed allows (step 5)")
@@ -1239,7 +1359,27 @@ role at 5.1; the Staging set gains NOTHING here - DenyEveryWrite present and no
 Athena allow is that set read back correct (5.2, Lesson 22).""")
 
         # ==============================================================================
-        rep.h1("10. CHECKS")
+        rep.h1("10. The job settings on the Workloads OU (step 3.5)")
+        if not identity_live:
+            rep.line(f"{IDENTITY_PROFILE} was not measured - nothing to show.")
+        else:
+            rep.line(
+                f"{WORKLOADS_DOC} on {WORKLOADS_OU}: "
+                f"{'attached' if workloads_attached else '(not attached)'}"
+            )
+            rep.tabulate(
+                ["SID\tPRESENT"]
+                + [f"{sid}\t{'yes' if sid in workloads_sids else 'NO'}" for sid in JOB_DENY_SIDS]
+            )
+            rep.text("""
+The five job settings bind the caller of Create*Job, never the role the job runs
+as (Lesson 66), so they sit on the OU, where they reach Stage 10's execution
+roles, the deploy roles and any role a pipeline creates. Presence by Sid only:
+identity/org-policies compares the document with sagemaker-denies on every plan,
+and the SCP battery's Stage 9 rows measure each deny (scp-battery.md).""")
+
+        # ==============================================================================
+        rep.h1("11. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -1255,12 +1395,15 @@ What the checks are, and where each comes from:
   DT-6   the write share granted, no pending invitation (2.1-2.2, INT-03/INT-11)
   DT-7   the drop-box statement and key both name awsds-prod-job-exec (2.5, INT-10)
   DT-8   no Staging link to Data Governance; the mirror agrees (4.1, D20)
-  DT-9   the escape hatch: windowed trust, closed at rest, <=1h, alarmed (6.1-6.2)
-  DT-10  the persona halves read back through the delegated admin (5.1-5.2)""")
+  DT-9   the escape hatch: windowed trust pinned to the Region, closed at rest, <=1h,
+         alarmed by rules that receive AssumeRole (6.1-6.2)
+  DT-10  the persona halves read back through the delegated admin (5.1-5.2)
+  DT-11  the Workloads OU document attached, with the five job settings and the
+         serverless-inference deny (3.5-3.7, decision 9, verification xv)""")
 
         # ==============================================================================
-        rep.h1("11. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 10 as a pass.
+        rep.h1("12. The accounts nothing here is measuring")
+        rep.text("""Read this BEFORE reading section 11 as a pass.
 
   - `Staging` HAS a profile since 2026-09-06 and this text used to say it would
     not until a vend. That vend was refused; Stage 6b made the account by
@@ -1274,7 +1417,7 @@ What the checks are, and where each comes from:
     lives there.""")
 
         # ==============================================================================
-        rep.h1("12. Calls that failed")
+        rep.h1("13. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/deploytargets.py")
@@ -1283,10 +1426,10 @@ What the checks are, and where each comes from:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 12)")
+        note(f"wrote {out_label} (some calls FAILED - see section 13)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 10)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 11)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

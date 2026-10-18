@@ -19,6 +19,13 @@
 # user-data literal. Each session's new instance registers as a new runner manager under the same
 # token.
 #
+# How a job pushes: the role's credentials reach a job container through the metadata service (hop
+# limit 2, below), and ECR's credential helper turns them into the registry login. The boot installs
+# the helper at a pinned digest and the runner mounts it read-only into every job, because the build
+# image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own. Every job
+# also carries `ECR_REGISTRY`. The helper adds no reach: any job on this host can already read the
+# role's credentials, which is why the runner is a protected project runner (runbook K).
+#
 # Every layer of the runner is a proxy client (6.2), because none of them inherits it: the boot
 # script, the runner service, the docker daemon, the job containers and the build itself. The
 # bypass list is egress/'s generated `no_proxy` (data.tf), never written by hand.
@@ -36,16 +43,22 @@ locals {
     "arn:${data.aws_partition.current.partition}:ecr:${var.region}:${data.aws_caller_identity.current.account_id}:repository/${p}/*"
   ]
 
+  ecr_registry = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com"
+
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
-    proxy_url           = local.proxy_url
-    no_proxy            = local.no_proxy
-    region              = var.region
-    gitlab_url          = local.gitlab_url
-    gitlab_host         = local.gitlab_host
-    ca_root_param       = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
-    runner_token_secret = data.terraform_remote_state.foundation.outputs.runner_token_secret_arn
-    concurrent_jobs     = var.concurrent_jobs
-    name_tag            = "awsds-${var.env}-runner"
+    proxy_url             = local.proxy_url
+    no_proxy              = local.no_proxy
+    region                = var.region
+    gitlab_url            = local.gitlab_url
+    gitlab_host           = local.gitlab_host
+    ca_root_param         = data.terraform_remote_state.pki.outputs.ca_root_parameter_name
+    runner_token_secret   = data.terraform_remote_state.foundation.outputs.runner_token_secret_arn
+    concurrent_jobs       = var.concurrent_jobs
+    name_tag              = "awsds-${var.env}-runner"
+    ecr_registry          = local.ecr_registry
+    ecr_helper_version    = var.ecr_credential_helper.version
+    ecr_helper_sha256     = var.ecr_credential_helper.sha256
+    gitlab_runner_version = var.gitlab_runner_version
   })
 }
 
@@ -87,8 +100,8 @@ module "role" {
           Action   = "ecr:GetAuthorizationToken"
           Resource = "*"
         },
-        # Push and pull on the three repositories this estate builds. `DescribeImageScanFindings`
-        # is what Stage 8's gate reads after a push.
+        # Push and pull on every image repository this estate builds, the deploy image's among them.
+        # `DescribeImageScanFindings` is what Stage 8's gate reads after a push.
         {
           Sid    = "PushAndPullTheImageRepositories"
           Effect = "Allow"
@@ -126,6 +139,30 @@ module "role" {
       ]
     })
 
+    # The release store (Stage 8 decision 20): the tag's store-bundle job puts the bundle `test` ran
+    # under <application>/<tag>/ and deletes nothing, which the bucket's policy refuses anyway. The
+    # data key comes from the registry key through S3.
+    "releases" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid      = "PutABundle"
+          Effect   = "Allow"
+          Action   = ["s3:PutObject", "s3:AbortMultipartUpload"]
+          Resource = "${data.terraform_remote_state.registry.outputs.releases_bucket_arn}/*"
+        },
+        {
+          Sid      = "EncryptItUnderTheRegistryKey"
+          Effect   = "Allow"
+          Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+          Resource = data.terraform_remote_state.registry.outputs.registry_key_arn
+          Condition = {
+            StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
+          }
+        },
+      ]
+    })
+
     "boot" = jsonencode({
       Version = "2012-10-17"
       Statement = [
@@ -155,7 +192,7 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_instance" "runner" {
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same session buys nothing - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_88:no public address is set here and none is inherited - the subnet is the private tier, which has no default route
-  ami           = data.aws_ssm_parameter.al2023.value
+  ami           = data.aws_ssm_parameter.al2023.insecure_value
   instance_type = var.instance_type
   ebs_optimized = true
 
@@ -168,6 +205,10 @@ resource "aws_instance" "runner" {
   # The user data is the whole installation and runs at first boot only, so a change to it must
   # produce a new host rather than an attribute nobody applied. Cheap here: the slice is [E].
   user_data_replace_on_change = true
+
+  # The boot's first read needs the role's inline policies, and the instance profile waits for the
+  # role alone.
+  depends_on = [module.role]
 
   metadata_options {
     http_endpoint = "enabled"
@@ -189,5 +230,10 @@ resource "aws_instance" "runner" {
   # and `./aws/egress.py` 6 is where a forgotten one shows up as this stage's likeliest leak.
   tags = {
     Name = "awsds-${var.env}-runner"
+  }
+
+  lifecycle {
+    # The AMI is the parameter's value when the host is created (data.tf, Stage 8 decision 25).
+    ignore_changes = [ami]
   }
 }

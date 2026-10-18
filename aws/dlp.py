@@ -63,9 +63,9 @@ DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 
-# The DLP-scoped accounts (decision 3's map at N=1): the lake account plus the two Interactive
-# accounts whose projects buckets D19 puts in scope. Production joins when decision 3 adds
-# awsds-prod-outputs; every sandbox ordinal is in scope (D35).
+# The DLP-scoped accounts (decision 3's map at N=1): the lake account, every sandbox ordinal
+# (D35), whose projects bucket D19 puts in scope, and Staging, which the data-event trails reach
+# (step 5.1). Production joins when decision 3 adds awsds-prod-outputs.
 def env_token(profile: str) -> str | None:
     if profile.startswith("awsds-infra-sandbox"):
         return "sandbox"
@@ -83,6 +83,10 @@ LOGS_BUCKET = "awsds-data-logs"
 FILTER_PREFIX = "awsds-flt-"
 TAMPER_SID = "DenyCloudTrailKill"
 BASELINE_POLICY = "awsds-org-scp-baseline"
+
+# Macie's member set is narrower than the trails' (step 1.2): nothing governed sits in Staging, so
+# DP-1 reads Macie only where step 1.2 enables it.
+MACIE_ENVS = ("data", "sandbox")
 
 # The two detector features step 4 enables (Stage 15 step 3 switches them off by name;
 # they arrive ON - that stage's step 0).
@@ -110,7 +114,7 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------------ Macie, per account
     macie_rows: list = []  # (profile, status: ENABLED/PAUSED/disabled/(call failed))
-    for p in scoped:
+    for p in [p for p in scoped if env_token(p) in MACIE_ENVS]:
         cli = cli_for(p)
         note(f"measuring {p} ...")
         res = cli.run(

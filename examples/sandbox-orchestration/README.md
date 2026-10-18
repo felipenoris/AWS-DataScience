@@ -118,7 +118,9 @@ The exercise, `operators/bash/demo-bash-operator.yaml`, which replaced the probe
 uv run python -m unittest discover -s examples/sandbox-orchestration/awsds-demo-job/tests
 ```
 
-`awsds-demo-deps` runs in its own environment, CPython 3.13 with the locked dependencies:
+`awsds-demo-deps` runs in its own environment, CPython 3.12 with the locked dependencies: the house
+environment's Python from `default-v0.7.0`. 6i packaged it for 3.13, the house environment up to
+`default-v0.6.0`, and an extension module built for one does not import in the other:
 
 ```bash
 uv run --directory examples/sandbox-orchestration/awsds-demo-deps python -m unittest discover -s tests

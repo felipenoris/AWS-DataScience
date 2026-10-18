@@ -1196,9 +1196,9 @@ stale copy.""")
                 "The metric lands per 30-minute interval, so the newest few minutes are never in it."
             )
             rep.line(
-                "THERE IS NO FREE TRIAL ON THIS ACCOUNT (the Management credits page, read "
-                "2026-09-20): every figure here is billed in full. Cost Explorer cannot cross-check "
-                "the same day - it returns zero groups for every service until its data lands."
+                "The free trial is active in Sandbox until 2026-12-19 (287.90 of 300 USD left on "
+                "2026-10-17, the Redshift console's Free trial section; 5b verification xiii): these "
+                "figures are absorbed by it, not billed, and the bill shows them only after it ends."
             )
 
             rep.h2("the audit groups")

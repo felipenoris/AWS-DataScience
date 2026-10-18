@@ -1082,7 +1082,11 @@ can be recognised without opening this file; the reasoning that makes each one u
     another (`peer_vpc_ids` consumed by a `zone_peer` local). The test: name each consumer and ask
     whether a row could ever be true for one and false for the other. If yes, the list is two lists
     whether or not it has diverged yet; *"a DNS association is not a path"* is the sentence that
-    made this one obvious.
+    made this one obvious. Second instance, 2026-10-12: `production/registry/`'s output
+    `ecr_repository_arns` fed both the build runner's push statement and Sandbox's SageMaker image
+    role. Stage 7 step 5.b added `awsds-prod-ecr-app-etl` for the runner, and the next plan of
+    `sandbox/dev-env/` proposed granting the image role read on it; the role now names its two
+    repositories by key.
 
 52. **A wait whose only exit is success waits forever once the thing it waits on is gone — and its
     silence is indistinguishable from patience.** Stage 6c step 4.8 polled two `until` loops for a
@@ -1149,6 +1153,19 @@ can be recognised without opening this file; the reasoning that makes each one u
     (Lesson 65), and past that the space had no CPython 3.13 that uv could find. A sentence naming an
     environment is a claim about that environment until a run there makes it a reading.
 
+    Stage 8, 2026-10-15, adds a job that cannot run before the release it gates. `awsds/dev-env`'s
+    `release-gate` runs only on a protected tag, after a steward starts it by hand. GitLab's CI Lint, the
+    offline check and every branch pipeline were green, and the job's first run was the release
+    `default-v0.7.0`, after a 16-minute build: bash stopped on an apostrophe inside
+    `${BASE_DIGEST:-...}`, and the registration behind it was skipped. The fix needed a new tag and a new
+    build. A lint reads the YAML and no shell, so `check-gitlab-ci.py` now reads every script item with
+    `bash -n`; a job that only a release can start is read offline, or its first run is the release.
+    The same release met a configuration proven by the wrong reader. The deploy runner's boot checked
+    its own AWS profile with the AWS CLI, which ignores a `credential_source` that has no `role_arn`,
+    while the registration reads it through Terraform, which refuses that shape. A run of Terraform on
+    the laptop found it before the gate. A file read by two clients is proven only for the client that
+    read it.
+
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real.**
     [Lesson 42](#) separates a permission failure, which is a response, from a network failure,
     which is the absence of one. This is its mirror and the harder case: there is a response, and
@@ -1210,7 +1227,10 @@ can be recognised without opening this file; the reasoning that makes each one u
     is a deny-list over an open default; the paraphrase dropped the shape and kept the word. Before
     implementing a step that restates a requirement, open the requirement. The tell is a step that
     explains why rather than only what: an explanation is a paraphrase, and a paraphrase of a
-    specification is a fork of it.
+    specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
+    creation role *"must be provided when using repository tags and/or KMS in the template"*;
+    `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1442,6 +1462,65 @@ taken.
 **What makes it expensive.** The mistaken control reads as stricter than the right one, since it sits on the
 role closest to the data, and nothing refuses: the job that should have been denied simply runs.
 
+## Lesson 67 — whoever can make a machine run code holds the machine's role
+
+**What happened.** Stage 7's runbook created the build runner as a GitLab **instance runner**. The runner's
+instance role pushes to the three image repositories, and any job on the host reads that role's
+credentials through the metadata service, at the hop limit a containerised push needs. With sign-up open,
+any account that could reach GitLab could register itself, create a project, run a job on the instance
+runner and push an image into `awsds-prod-ecr-dev-env`, around the protected tag `*-v*` that Stage 8's
+release gate rests on. Caught on 2026-10-12, before the runner existed: it became a **protected project
+runner** of `awsds/app-etl`, linked to `awsds/dev-env` and locked to those two projects.
+
+**Why it is a class rather than a slip.** A machine credential is held by every piece of code the machine
+will run, so its real principal set is decided by whatever schedules work onto the machine. For a runner
+that is GitLab: the runner's scope (instance, group, project), whether it is protected, who can push a
+protected ref in the projects it serves, and who can create projects there. None of those settings is IAM,
+and none appears in a policy, an access analysis or a plan. The same shape holds for Stage 8's deploy
+runner and its three deploy roles, for a SageMaker space and its project role, and for an MWAA worker.
+
+**The rule.** For every host that carries a role, write down who can make it run code, and treat that set
+as the role's principals. A gate in the scheduler (a protected tag, a protected branch) controls the role
+only if no unprotected path reaches the same host.
+
+**What makes it expensive.** The gate keeps working: the tag stays protected and its settings page reads
+correctly, while the credential it was meant to guard is reachable around it, and nothing refuses.
+
+## Lesson 68 — an `[E]` host's first boot runs every session, so what it reads unpinned is a release and what it reads without waiting is a race
+
+**What happened.** Stage 8, 2026-10-16, `production/runners/`: three defects in one day, all in the first
+boot of hosts that `make gitlab-up` creates and `make gitlab-down` destroys. The test runner, created in
+the same apply as its role and instance profile, read the CA root 28 s later and met `NoCredentials`;
+its boot stopped there, the apply had already reported success, and runner #4 never registered, which
+its serial console showed that evening. The deploy runner installed `gitlab-runner` 19.4.1 on
+2026-10-13 and 19.5.0 on 2026-10-16 from an unchanged line, against a 19.4.2 server. And an Amazon
+Linux release moved the AMI parameter at 20:01 UTC, so the next plan, written to replace one runner,
+replaced three.
+
+**Why it is a class rather than a slip.** A `[P]` or `[D]` host boots once per build: the person building
+it meets its races, and its versions are fixed on the day it was built and then held (`production/tooling/`
+installed CE 19.4.2 on 2026-10-12 and holds its AMI and user data with `ignore_changes`). The hold keeps
+the host, never the template: the next first boot is a rebuild, and for GitLab the rebuild is the restore,
+which GitLab refuses unless it installs the backup's release (Stage 7 decision 10, read 2026-10-16 while
+CE 19.5.0 was the newest). D11 makes an
+`[E]` host's first boot a recurring event, and each session's boot meets a new package index, a new
+image and a new IAM timing with the same template. A boot that passed once is one sample. Its reads
+come in three kinds, each failing its own way: a dependency it must wait for (its own role, the GitLab
+it registers with) loses a race some sessions; a version it installs (a package's newest) moves with no
+diff in the repository; and an input the plan resolves (the AMI parameter) turns every plan of the
+slice into a release.
+
+**The rule.** For each read in an `[E]` host's boot, name its kind. Wait for a dependency with a
+deadline that fails loudly, the host's own identity included. Pin a version the host's behaviour
+depends on, with the coupling it must keep written beside the pin (here, the server's major.minor; for
+GitLab itself, the release its backups were made by).
+Hold an input that only ages, so it is read when the host is created and never by an unrelated plan.
+
+**What makes it expensive.** The apply's verdict is about the instance, not its boot: `Apply complete`
+and a running host that bills while registered as nothing. Each failure is also intermittent or
+silent: the race loses some sessions, the version drifts with no commit, and the replacement arrives
+inside a plan written for something else.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -1490,6 +1569,15 @@ starting at a state nobody named. Each entry carries the stage that found it.
   that reads like a policy problem and is a naming one. Measured at Stage 2's Validation,
   2026-08-16; the rule and this project's `/datascience/<env>/…` names live in `conventions.md`. The
   undocumented half is the error text.
+- **A public AMI parameter answers only its current value** (measured 2026-10-16 as
+  `InfrastructureAccess` in Production, Stage 8 decision 25). On
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, `GetParameterHistory` is
+  refused with `AccessDeniedException: Cannot access/update data for the restricted parameter`, and
+  `GetParameter` with a version selector answers `ParameterVersionNotFound` for every version, the
+  current one (194) included. A pin by parameter version is therefore unavailable, and which image the
+  parameter named at a past moment is read from `describe-images` (owner `amazon`, name and
+  `CreationDate`), never from Parameter Store. Neither the EC2 page that recommends the parameter nor
+  Parameter Store's page on public parameters says so (both read the same day).
 
 ### ECR, S3 and the NAT
 
@@ -1617,7 +1705,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   vendor says the form in the detach page and nowhere near the attach page: *"you will need to leave
   `CustomImages` blank, such that `"CustomImages": []`"*. What survives of Lesson 60 here is the
   discipline, not the mechanism: send the block back as read, and clear a list explicitly. Where:
-  `runbooks/dev-env.md` §B step 2.
+  `runbooks/dev-env.md` §C6 and §X step 1.
 
 - **SMUS appoints itself a Lake Formation administrator** when the first project is created: two
   service roles nobody chose, in an account whose `admins` list a later
@@ -1733,6 +1821,19 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   account as `HIDDEN_DUE_TO_SECURITY_REASONS`. The announcement names S3 and never says "gateway".
   Where: `log-stage-06i`'s 4.2a reading.
 
+- **A role's own account records a caller from another account with no ARN, and an absent field fails
+  EventBridge's `anything-but`** (measured 2026-10-13, Stage 8 step 4.6). Staging's copy of the deploy
+  runner's `AssumeRole` reads `userIdentity.type` `AWSAccount`, a `principalId` of `<role unique
+  id>:<session name>`, the caller's `accountId` and a `sharedEventID`, and no `arn`; an SSO session's reads
+  `AssumedRole`, still with no `arn`. `TestEventPattern`
+  answered `false` for a pattern exempting the runner by `userIdentity.arn` on that record with another
+  account's role in it, so the rule could never fire on a caller from outside. The operators page says
+  `anything-but` matches *"anything except what's specified"* and speaks of absence only under `exists`.
+  The role's account does deliver that copy to its event bus: a misuse from Production fired Staging's
+  rule (verification xvi). A refused cross-account `AssumeRole` is recorded in the caller's account only,
+  with `requestParameters` null and the role named in `errorMessage` alone. Where: `log-stage-08`'s
+  2026-10-13 entries, `deploy-role-v0.2.0`.
+
 ### SageMaker processing jobs
 
 - **A processing job reads `Completed` minutes after it ends, and the operator bills the wait**
@@ -1830,13 +1931,39 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   domain, an existing space still named version 3, which the same apply had destroyed
   (`aws_sagemaker_image_version` is force-new on `base_image`). AWS's own images are referenced by a
   mutable **alias** instead, which survives a bump. **An app started against the destroyed version
-  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B step
-  6, `AWS_STATE.md` `EXC-09`, Lesson 63.
+  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B,
+  *Moving a space*, `AWS_STATE.md` `EXC-09`, Lesson 63.
 - **`describe-app` still returns the `ResourceSpec` of an app that has been deleted** (measured
   2026-09-12), so the image a removed space ran can be attributed after the fact. A space deleted
   within the hour read `sagemaker-distribution-cpu`, alias `4.3`, with `Status: Deleted` — the
   evidence that it had been created on AWS's image rather than this estate's, which is what its
   missing proxy variables had looked like a defect of. Where: `dev-env.md` §C7.
+- **`UpdateDomain` changes `CustomImages` with apps running, whatever the vendor's page says**
+  (measured 2026-10-15 on a probe image, Stage 8 decision 7). The detach page reads *"Before you can
+  update the custom images, you must delete all of the applications in your domain"*, and four
+  `update-domain` calls changing the list were accepted with apps `InService`, one removing an entry
+  while two apps ran on that image. Each read back identical, and the running apps were untouched.
+  Where: `dev-env.md` §C6.
+- **A `CustomImage` with no `ImageVersionNumber` offers every version of the image** (measured
+  2026-10-15). The portal's picker listed each version, newest first, as `<display name> v<n>`,
+  including one created after the attach and one no space named, and the portal's `CreateSpace` pinned
+  the chosen version's ARN into the new space. The API reference says only that the field is optional.
+  Where: `dev-env.md` §C6 and §B.
+- **`VendorGuidance ARCHIVED` hides nothing from the portal, and an archived version still starts**
+  (measured 2026-10-15). With a version `TO_BE_ARCHIVED` and then `ARCHIVED`, the picker kept offering
+  it under the same label, `list-image-versions` kept listing it, and a space pinned to it started and
+  pulled it by digest. Deleting it is what took it out of the picker. Where: `dev-env.md` §B, *The
+  retirement*.
+- **A custom image's alias works in a space's spec, and the portal reads it as the SageMaker
+  Distribution's** (measured 2026-10-15). `update-space` accepted `SageMakerImageVersionAlias` with the
+  version ARN cleared by `"None"`; the app resolved the alias at each start and followed it to another
+  version; and the portal then bannered the space as running an *outdated SageMaker Distribution image*.
+  The same `update-space`, sent the whole live block, left `SpaceManagedResources: ENABLED` out of the
+  read afterwards. Where: `dev-env.md` §B, *Moving a space*.
+- **Opening a project's *Spaces* page in the portal starts its default space** (read 2026-10-15).
+  CloudTrail recorded a `CreateApp` on the default space, by the project role in the data scientist's
+  portal session and on AWS's distribution by alias, as the page loaded, and the app ran until its idle
+  shutdown. Where: `dev-env.md` §C7.
 - **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
   2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
   blanket deny on the action. **A condition key being in a service's catalogue and a key being
@@ -1867,22 +1994,20 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unchanged, because a database user is created when credentials are used rather than when they are
   minted. Where: `log-stage-06h` (2026-10-10).
 
-- **The Redshift audit groups carry an internal heartbeat and no user activity, and the two halves of
-  that claim have different strengths** (measured 2026-09-20 and 2026-10-10). Configuration is not the
-  explanation: the namespace exports all three groups and the live workgroup reads
-  `enable_user_activity_logging true`.
-  **Firm:** a marker query left on 2026-09-20 is **absent** from `useractivitylog`, which holds events
-  *after* it — no lag explains that. And `connectionlog`'s 155 records are **every one `rdsdb`**: not one
-  user connection, by any path, ever.
-  **Not firm, and the correction matters:** today's 142 portal queries were also absent, but
-  `connectionlog`'s internal heartbeat fires only every ~2h25m and its last entry preceded that
-  activity — so a lag of tens of minutes fits the reading, and the first write-up overstated it.
-  `useractivitylog`'s 19-day silence is likewise explainable: the parameter lives on the **workgroup**,
-  and the `[E]` workgroup did not exist for most of that window.
-  **The reading to carry** is that an absence here needs a presence of the *same kind* to be evidence —
-  an internal event does not vouch for a user event (Lesson 62, applied to the half that fails it).
-  Stage 11 must not rest a DLP feed on these groups until a re-read settles it.
-  Where: `log-stage-06h` (2026-10-10), `log-stage-05b`, Stage 11.
+- **The Redshift Serverless audit export carries nothing while a workgroup exists** (measured
+  2026-10-17 over the groups' 30-day retention). Configuration is not the explanation: the namespace
+  exports all three groups, unchanged since its creation. After the first day no record of any kind
+  arrived during any of seven workgroup lifetimes, and the namespace's own `rdsdb` sessions arrive in a
+  `default` stream, about 29,000 a day, only while no workgroup exists, from about a day after a delete
+  until two minutes after the next create. The one window of user activity is the admin's Data API
+  sessions of 2026-09-21, 23 minutes long: 36 of the 268 Data API calls CloudTrail holds for those two
+  days, and no session through any other door.
+  **The reading of 2026-10-10 was a sampler's** (inference): 155 records at a ~2h25m cadence fit one
+  record per 1 MB `FilterLogEvents` page over the 444,502 records the group held, so the *heartbeat* was
+  the pager's, and the *stop* at 03:09:06 was that day's first create silencing the stream. **The
+  reading to carry**: before an absence or a cadence in a log group is evidence, count it with an
+  aggregate (Logs Insights `stats count(*) by bin(1h)`), not by paging events (Lesson 62's wrong path).
+  Stage 11 must not rest a DLP feed on these groups. Where: `log-stage-06h` (2026-10-10, 2026-10-17), `log-stage-05b`, Stage 11.
 
 - **A Redshift schema shared by a role shares nothing IN it, and `pg_default_acl` cannot tell you**
   (measured 2026-10-10, on the first table a project ever wrote). A role holding
@@ -2097,8 +2222,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `>`, so the ASCII arrow `->` that reads naturally in a rule description is refused while `to`
   passes. The wording differs by object (`Invalid security group description` against `Invalid rule
   description`) and both arrive **at apply**, after every other resource in the plan has been
-  created and with `validate`, `fmt` and `tflint` all green — the apply is the only validator.
-  Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3.
+  created and with `validate`, `fmt` and `tflint` all green. `validate` holds the set only on an
+  inline `ingress`/`egress` block and on `aws_security_group_rule` (hashicorp/aws 6.68.0, measured
+  2026-10-14); `./scripts/check-sg-descriptions.py` holds every description's literal text to it,
+  in `make check` and the commit gate. Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3,
+  `log-stage-08` 2.4.
 
 - **The Redshift Data API does not cancel a statement when its client stops polling, and
   `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A

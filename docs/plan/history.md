@@ -717,6 +717,88 @@ which did not exist before the tag turned out to be single-valued. **Provisioned
 Sandbox namespace and workgroup, one key-policy statement, two SCP statements, one permission-set document,
 one module tag.
 
+- **2026-10-15 — D41: the SageMaker application is the deployable unit, and design B is built above the
+  workflows.** The user decided, between 04:40 and 15:43 UTC, that an application is a repository holding
+  `manifest.yaml`, its workflows in the CI/CD CLI's notation and its code; that the CLI deploys it from
+  the repository into the `dev` and `test` Sandbox projects and makes the bundle; that the pipeline
+  deploys the bundle to Staging and Production, where one Step Functions state machine per chain starts
+  the workflows and one EventBridge Scheduler schedule starts the machine, the shape of
+  `terraform-reference/`'s `modules/orchestration/`; that the application image carries the dependencies
+  alone and the code is the job's input (Stage 10 decision 7, taken as the alternative); that the
+  application slice owns the Glue job; and that an S3 operator task writes the result. The first CLI
+  deploy into a project ran in the lab the same day, with `--skip-validation`. D7, D26 and D28 are amended
+  in place; Stage 10 gains steps 3.4-3.7, decisions 13-16 (taken the same day) and verifications
+  xxii-xxvi, Stage 8 step 2.5 and decision 19; INT-14's terminal rung is the `CreateWorkflow` call
+  from the release job, design B having left the ladder.
+
+- **2026-10-15 — The plan read against D41.** A review the user asked for after D41 merged corrected what
+  the decision left inconsistent. The `test` deploy and the bundle move onto the release tag, after the
+  image is built and before the Staging leg, the bundle packed from the checkout and the same checkout
+  deployed to `test`, since the CLI's 1.0.9 code reads a connection-less `content.storage` item from the
+  manifest's folder in both commands and `deploy` never takes it from the bundle (D41 item 3, Stage 8
+  step 2.5, Stage 10 step 2.2). The user proposed that evening that the tag pipeline end in a GitLab
+  release linking to the bundle, the file Staging and Production receive: the pipeline builds what the
+  application needs built before `bundle`, which builds nothing, the `test` deploy reads the same
+  folders, and a release job checks the downloaded bundle's SHA256 before it writes from it (Stage 8
+  steps 2.5 and 3, Stage 10 step 2.4), Stage 8 decision 20, taken the same night, storing the file in
+  `awsds-prod-releases`, a versioned bucket of Production's `registry/` slice whose policy refuses a
+  deletion to all but `InfrastructureAccess`: the user first took the application project's GitLab
+  package registry and replaced it once GitLab's page showed that any Developer of the project can delete
+  a package there. Each release job checks the SHA256 the pipeline computed, never a record kept beside
+  the file, and Stage 7 keeps GitLab's packages feature off. D41 item 1's `${VAR}` becomes `{env.VAR}`:
+  the CLI leaves a `${VAR}` in a workflow's YAML as written and fills an `{env.VAR}` only in a run it
+  starts. D28 gains class (2d), a processing task's code under the release's `src/` prefix, which the
+  lint's new rule (h) checks against the release's manifest. The execution role's S3 writes of D41 item
+  10 and the release job's copy, whose runner sits in a VPC the outputs bucket's perimeter does not
+  trust, need statements in that bucket's policy and its key's, which delegates nothing to IAM (Stage 10
+  steps 1.3, 2.4). The bridge rule gets a role of its own, `awsds-<env>-chain-events`. Decision 13 takes
+  the standalone workflow's cron and pause out of step 6.1, verification v and `orchestration.py`, whose
+  `OR-1` now fails on a workflow's cron. D7, D26, `conventions.md` and `architecture.md` lose wording
+  from before 6b and 6i. Stage 10 decision 6 now recommends a copy per account, rendered through a
+  translation table, and decision 10 the inbox consume on the execution role, decisions 17 (Staging's
+  outputs bucket) and 18 (a second workflow for the chain proofs) are new, and verifications xxvii to
+  xxix join Stage 10 and xix to xxii Stage 8, whose decision 19 now says that refusal 8 cannot hold a CLI
+  job and whose decision 20 is new. Nothing in AWS changed.
+
+- **2026-10-16 — The review's decisions taken.** The user took the decisions the review left, one at a
+  time between 23:54 UTC on 2026-10-15 and 00:02 UTC: Stage 8 decision 19 as recommended, the CLI's
+  `test` deploy running as `awsds-deploy-sandbox-test`, a Sandbox role only the deploy runner assumes,
+  with D21 recording the exception to its surviving objection while refusal 8 keeps every slice apply out
+  of Sandbox; D41 item 1's `{env.VAR}`; Stage 10 decisions 6, 10 and 17 as recommended, a rendered copy
+  per account, the execution role emptying its own inbox and `awsds-staging-outputs` as Staging's home,
+  so that `OR-5` reads each account's own outputs bucket; decision 18 as the alternative, the chain's
+  order and verification xxv waiting for a second application; and `src/` as the release's prefix for a
+  processing task's code, decision 7's. Nothing in AWS changed.
+
+- **2026-10-16 — The executed stages read against D41.** A review the user asked for found sentences that
+  Stage 8's decisions 1, 18 and 19 left stale, and a gap the second project opens. Stage 8 no longer
+  describes refusal 8 with the `sandbox/dev-env/` exemption decision 18 removed, the dev-env release as
+  domain writes, or the ECR scan as a gate that stops an image; the runner's assume list and the risks
+  name the CLI's `test` deploy (INT-25). `glue/` joins `app-etl` at Stage 8 step 2.5, whose workflow runs
+  a Glue job. `test-experimentation`, created 2026-10-15 as D41's `test` project, carried the blueprint's
+  three policies alone when read on 2026-10-16, so `sandbox/workflows/` lists its role, unapplied: without
+  it the `test` deploy's processing task meets the refusals 6i measured. Three decisions stay the user's:
+  whether `sandbox/app/app-etl/` retires, which identity runs `deploy --targets dev`, and when Stage 8's
+  pass 4 runs against Stages 9 and 10. Nothing in AWS changed.
+
+- **2026-10-16 — What D41 leaves open, written where Stage 8 step 2.5 and Stage 10 meet it.** The same
+  review's gaps, each read in the file that holds it. The user's three questions are Stage 8 decisions
+  21 to 23, each with a recommendation and none taken: retire `sandbox/app/app-etl/`, whose request runs
+  code D41 item 7 takes out of the image; run `deploy --targets dev` from a space as the project role,
+  since no persona set holds an `airflow-serverless:` action; and run pass 4 after Stage 9, together
+  with Stage 10's passes 1 and 2, since the promotion now needs the outputs buckets, the job role and
+  the workflow slice. Step 2.5 gains its preconditions: Sandbox's `[E]` session, which no pipeline
+  identity raises, checked by the `test` job in seconds; the `test` prefix, which `aws s3 sync` never
+  empties; the deploy image, which carries neither the CLI nor `glab`; the job role's three names; the
+  workflow versions a deploy may spend; and the gates' include, still at `gates-v0.2.0`. Decision 19's
+  role needs more than IAM: probably a membership of the `test` project, a ceiling admitting the
+  `PassRole` that Sandbox's `DenyEveryRoleChange` refuses and that the `deploy-role` module's one ceiling
+  per account cannot carry, and a second Sandbox row in a map that holds one. Step 3.0 makes
+  `awsds-<env>-app-boundary` a `[P]` precondition of the infrastructure user, since the deploy role may
+  neither change nor delete it, and Stage 10's execution and chain roles carry it. The workflows
+  runbook says a workflow the CLI made is never saved or run from the portal. Verifications xxiii to
+  xxvi join Stage 8. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

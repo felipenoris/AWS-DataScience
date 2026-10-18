@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress - pass 1 closed and pass 2 nearly so, 2026-10-12** ([log](../../log/log-stage-07-gitlab-runners-ecr.md)): `foundation/`'s anchors (`18 added`), `egress/` at v0.17.0 with `secretsmanager` (`14 added`), `pki/` (`20 added`; the root's fingerprint in the log), `tooling/` (`17 added`; the first boot deadlocked on Omnibus's unit ordering and the host was replaced the same day with the fix, `3 added, 4 changed, 3 destroyed`; the second boot's reconfigure took 5 min 03 s), `registry/` 5.b (`8 added, 6 changed`, the Staging cut included); every slice re-planned `No changes`. 1.8's first sign-in done by the user (the administrator is `felipenoris`, local). The root is trusted on the user's laptop; verifications i, x (the laptop) and xiii are answered; the first `gitlab-down`/up cycle ran. **Pass 1 is closed.** Pass 2 has begun: 3.4, 3.5 and 3.6 done (the namespace, the persona groups, the two repositories with `dev-env`'s roles and protected tag), 3.1 and 3.2 done, the SAML round-trip proven by the user (verification iii); the data-scientist persona is a Developer in `awsds/data-scientists` (the user); the other three personas join their subgroups at their first sign-in, and Pages (4.2) waits for the first pipeline. **Pass 3 is not started**: the runner token (§K), `make gitlab-up` with `runners/`, 6.4's pipeline, 2.6's `default-v0.6.0`, 6.5's buildbox retirement, then 8.x. `saml.auto.tfvars` lives only in the session's worktree (runbook §A). Decisions 1, 5 and 8 taken as recommended; 6 and 7 taken by the user as recommended, in chat; 9 opened by the user's reading of the first `gitlab-down`, recommendation stated, not taken. Three implementation choices departed from the text below and are recorded where they land: the published certificates and `config/gitlab.rb` sit in the objects bucket (the only pre-existing bucket was the state bucket), the root volume (12 GiB) is separate from the 50 GiB data volume, and the cache's creation templates use AES256. Everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16), on the **build plane, which is `open`**: any public name answers through the proxy and is logged, so an unlisted host is not a 403 here. The names are in the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call. The **buildbox retires into the build runner** after six hand builds (`default-v0.1.0` to `default-v0.5.0`, on an `m8i.xlarge`). **CodeArtifact, applied at 6a, has no consumer**: every installer in the estate reads public PyPI through the proxy (decision 6). Three readings from the executed stages shape the build: `make up`/`down ENV=production` starts and stops the hub with GitLab, so GitLab gets targets of its own (1.6); a `[D]` host's rendered user data is a replacement in waiting (Lesson 64), so GitLab's configuration travels outside it (1.3); and Pages is not resolvable from a Sandbox notebook, by design (4.2). One GitLab group `awsds/` is the shared namespace. **Pass 0 is applied**: step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
+| **Status** | **in progress - pass 1 closed and pass 2 nearly so, 2026-10-12** ([log](../../log/log-stage-07-gitlab-runners-ecr.md)): `foundation/`'s anchors (`18 added`), `egress/` at v0.17.0 with `secretsmanager` (`14 added`), `pki/` (`20 added`; the root's fingerprint in the log), `tooling/` (`17 added`; the first boot deadlocked on Omnibus's unit ordering and the host was replaced the same day with the fix, `3 added, 4 changed, 3 destroyed`; the second boot's reconfigure took 5 min 03 s), `registry/` 5.b (`8 added, 6 changed`, the Staging cut included); every slice re-planned `No changes`. 1.8's first sign-in done by the user (the administrator is `felipenoris`, local). The root is trusted on the user's laptop; verifications i, x (the laptop) and xiii are answered; the first `gitlab-down`/up cycle ran. **Pass 1 is closed.** Pass 2 has begun: 3.4, 3.5 and 3.6 done (the namespace, the persona groups, the two repositories with `dev-env`'s roles and protected tag), 3.1 and 3.2 done, the SAML round-trip proven by the user (verification iii); the data-scientist persona is a Developer in `awsds/data-scientists` (the user); the other three personas join their subgroups at their first sign-in, and Pages (4.2) waits for the first pipeline. **Pass 3 is nearly done (2026-10-12)**: the runner applied (`6 added`) and registered in 1 min 42 s as a protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked; the first pipeline is green (verifications vii and viii yes, the immutable tag refused a second push, INT-21 on both halves); Pages serve and read back from the laptop and the runner (4.2); `default-v0.6.0` was built by a pipeline of `awsds/dev-env` in about 16 minutes and registered as Sandbox's image version 6 (2.6). Decision 3 taken. The buildbox is retired (6.5, in the repository alone; nothing was left in AWS). Owed: INT-09's clone from a notebook, then pass 4 (8.x). The session ended with every host stopped or destroyed, 0.0000 USD/h. `saml.auto.tfvars` lives only in the session's worktree (runbook §A). Decisions 1, 5 and 8 taken as recommended; 2, 3, 4, 6, 7 and 9 taken by the user as recommended, in chat, 9 having been opened by the user's reading of the first `gitlab-down`. Decision 10, the `gitlab-ce` release pinned at 19.4.2, taken by the user as recommended. Three implementation choices departed from the text below and are recorded where they land: the published certificates and `config/gitlab.rb` sit in the objects bucket (the only pre-existing bucket was the state bucket), the root volume (12 GiB) is separate from the 50 GiB data volume, and the cache's creation templates use AES256 and carry no tags. Everything lands in **`VPC-SharedServices`** (Production's 10.30.0.0/16), on the **build plane, which is `open`**: any public name answers through the proxy and is logged, so an unlisted host is not a 403 here. The names are in the **`awsds.internal` family**; **there is no NAT anywhere**, so every outbound call is an explicit-proxy call. The **buildbox retired into the build runner** after six hand builds (6.5, 2026-10-12) (`default-v0.1.0` to `default-v0.5.0`, on an `m8i.xlarge`). **CodeArtifact, applied at 6a, has no consumer**: every installer in the estate reads public PyPI through the proxy (decision 6). Three readings from the executed stages shape the build: `make up`/`down ENV=production` starts and stops the hub with GitLab, so GitLab gets targets of its own (1.6); a `[D]` host's rendered user data is a replacement in waiting (Lesson 64), so GitLab's configuration travels outside it (1.3); and Pages is not resolvable from a Sandbox notebook, by design (4.2). One GitLab group `awsds/` is the shared namespace. **Pass 0 is applied**: step 5.a ran inside 6a on 2026-08-21 (`14 added`) |
 | **Prerequisites** | **[6c](stage-06c-networking-hub.md) passes 1-4 — met 2026-09-06**: `VPC-SharedServices` exists under its new name, `awsds.internal` resolves in all five VPCs, the Sandbox↔SharedServices peering carries routes both ways, and the proxy answers on `proxy.awsds.internal:3128`. **[6d](stage-06d-unified-studio-remainder.md)** for one deliverable only — the INT-09 clone needs a live Sandbox project. **`production/registry/` exists**: step 5.a was applied at 6a, so this stage starts with the two ECR repositories and CodeArtifact already there and **`production/pki/` not yet written** |
 | **Consumes** | [D8](../decisions/D08-gitlab-hosting.md), [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D15](../decisions/D15-tls-internal.md), [D20](../decisions/D20-staging-account.md), [D35](../decisions/D35-sandbox-cardinality.md), [D36](../decisions/D36-internal-pki.md), **[D38](../decisions/D38-single-egress-hub.md)** |
 | **Proves** | [INT-09](../integrations.md) (the `git clone` from a **Sandbox** project over the SharedServices peering), [INT-13](../integrations.md) (CodeConnections against a private GitLab — expected to fail; the manual `git remote add` is the accepted path), [INT-19](../integrations.md) (the CA root on **four** client surfaces — the laptop, the `dev-env` image, the runner and GitLab itself), and [INT-21](../integrations.md) for GitLab and the runners, which the buildbox first exercised at 6c 5.8. **Supplies** [INT-02](../integrations.md)'s provider half — already applied at 6a. INT-08 is **not** here: the deploy roles are Stage 8's |
@@ -29,7 +29,7 @@ costs nothing), unless stated.
 | `production/registry/` (amended — **5.b only**) | the pull-through cache and the per-application repositories, and the consumer map decision 7 settles. **5.a is applied** | `[P]` |
 | `production/tooling/` (new) | the GitLab instance, EBS, the DLM snapshot policy, the instance role, the rendered `gitlab.rb` as an object the host fetches, the two DNS records | `[D]` — stopped, never destroyed |
 | `production/runners/` (new) | the build runner and its role — **and the retired buildbox's job** | `[E]` |
-| `production/egress/` (amended) | **13 endpoints today** (6c 5.5: the core 8 — `sts`, `logs`, `kms`, `ecr.api`, `ecr.dkr`, `athena`, `glue`, `lakeformation` — plus `sagemaker.api`, `sagemaker.runtime` and the SSM trio), on `vpc-egress-v0.11.1`. This stage bumps it to v0.17.0 (`no_proxy_all_groups`, 1.3) and adds `secretsmanager`; CodeArtifact's two only with decision 6 | `[E]` |
+| `production/egress/` (amended) | **13 endpoints today** (6c 5.5: the core 8 — `sts`, `logs`, `kms`, `ecr.api`, `ecr.dkr`, `athena`, `glue`, `lakeformation` — plus `sagemaker.api`, `sagemaker.runtime` and the SSM trio), on `vpc-egress-v0.11.1`. This stage bumps it to v0.17.0 (`no_proxy_all_groups`, 1.3) and adds `secretsmanager`; decision 9 drops the SageMaker pair, so 12; CodeArtifact's two only with decision 6 | `[E]` |
 | Identity Center console, by hand | the custom SAML 2.0 application | — |
 | GitLab itself, by hand | the `awsds/` group, the four persona groups, the repositories, the protected release tags | — |
 | `scripts/`, `Makefile` | `layers.py`: `tooling` `[D]`, `runners` `[E]`; `make gitlab-up`/`gitlab-down`, and `ENV=production` leaving the hub to `hub-up`/`hub-down` (1.6); `slices.py`: `-input=false` on every apply and destroy (Lesson 47) | — |
@@ -78,6 +78,11 @@ What the vendor documentation says and what the executed stages measured, each w
 | CodeArtifact behind a gateway endpoint | the **service** fetches from the external connection, one connection per repository (why `pypi` and `crates` are two); a client downloads package assets from an AWS-owned `assets-<account>-<region>` bucket through the S3 gateway, *"not needed when using Python or Swift"* — so `crates` needs that bucket in the gateway policy and `pypi` does not | CodeArtifact documentation | 5.3 |
 | Pages on a wildcard domain | behind the Omnibus nginx proxy, **no secondary IP** is required (a second address is for custom domains); Pages **access control is a Free-tier feature** | GitLab documentation | 4.1 |
 | Pages and the spokes | `awsds-pages.internal` is associated with `VPC-SharedServices` and `VPC-Networking` only: Pages is reached from the tunnel and the runners, never from a spoke's compute | `production/foundation/peers.tf`, `NETWORK.md` | 4.2 |
+| **A runner's scope decides who holds its role** | any job reads the instance role through the metadata service (hop limit 2), and an instance runner serves every project on the instance, a self-registered account's included while sign-up is open; the runner is a protected project runner of `app-etl`, linked to `dev-env` (GitLab 19.4 labels the action "Link") and locked. Read 2026-10-12, before the runner existed | the runbook's first draft, Lesson 67 | 6.1, 6.4 |
+| **`moby/buildkit:rootless` runs as UID 1000** | `apk add` fails inside it, so a job cannot install the client that mints its registry login; Amazon's ECR credential helper, a static binary pinned by digest, is mounted from the host into every job beside `ECR_REGISTRY` | BuildKit's Dockerfile, 2026-10-12 | 6.1, 6.3 |
+| **A creation template with tags needs a creation role** | without one ECR creates the cache's repository as `AWSServiceRoleForECRTemplate`, which holds `ecr:CreateRepository` alone; the tags were refused `ecr:TagResource` and every first pull read `not found`. The templates carry no tags since 2026-10-12. A pull imports every platform of a multi-architecture index, Windows images included (`pause:3.10`: 270 and 308 MB) | CloudTrail, the ECR pages, the log | 5.2 |
+| **The distribution through the cache** | the build pulls `sagemaker-distribution` by its digest pin through `ecr-public/`: about 35 MB/s through the endpoint, against about 27 minutes through the proxy on the buildbox; `default-v0.6.0` built and pushed in about 16 minutes | the log, 2026-10-12 | 2.6 |
+| **Pages access control asks for an OAuth consent** | a browser's first visit to a private project's site authorizes GitLab's own Pages application, scope `api`, once per user; for an administrator GitLab warns that the application can then act as one | the log, 2026-10-12 | 4.2 |
 
 ## Who executes each action
 
@@ -181,6 +186,12 @@ lives in `[P]` slices.
 
   The instance role gets S3 on the two buckets, `GetSecretValue` on the two leaf secrets,
   `PutSecretValue`/`GetSecretValue` on 1.1's GitLab secret, and nothing else.
+- **1.3 — The GitLab release pinned, written 2026-10-16** (decision 10). The bootstrap installed
+  `gitlab-ce` with no release; it now installs `gitlab-ce-<gitlab_ce_version>-ce.0.amazon2023`, `19.4.2`,
+  the release the host runs, and `rpm -q` logs it. The rendered user data grows by 293 bytes, to about
+  11.0 KB of EC2's 16 KB. The read-only plan as `awsds-infra-prod` (22:47 UTC) reads `No changes`,
+  since `ignore_changes` holds the user data: the pin reaches the host at its next rebuild, and 8.2's
+  rehearsal is the first.
 - **1.4 — Done 2026-10-12**: both records read back carrying the host's primary private address.
 - **1.4 — [Claude] Create the two DNS records in `tooling/`**: `gitlab.awsds.internal` and
   `*.awsds-pages.internal` → the instance's **primary private IPv4**, documented to survive stop/start and
@@ -256,9 +267,10 @@ the whole CA is one pass. The fourth trust surface is GitLab itself, which needs
   image (2.6); the runner (step 6's user data); and **GitLab itself** — `/etc/gitlab/trusted-certs/*.crt`
   followed by `gitlab-ctl reconfigure`, which rehashes them into the embedded bundle. The four-surface
   proof is this stage's INT-19 deliverable.
+- **2.6 — Built and registered 2026-10-12**: pipeline #4 of GitLab's `awsds/dev-env` (`images/build.gitlab-ci.yml`, the recipe cloned at `e885dcd`) pushed `base:default-v0.6.0` `sha256:94359041…1975` and `dev-env:default-v0.6.0` `sha256:43079013…5518` in about 16 minutes, the distribution pulled through the cache; the smoke test read GitLab with curl, git and both Pythons through the image's own trust (`base` section 5 now points OpenSSL, `requests`, curl and Node at the system bundle). Registered the same evening by `dev-env.md` §B (version 6, `ContainerImage` the pushed digest, re-attached at 19:48:45 UTC, no space stranded); INT-09's clone from a notebook is owed.
 - **2.6 — [user] Rebuild and repush the images with the root**: the recipe carries an **empty CA-install
   layer** in `base` (§5: the copy, the count assertion and `update-ca-certificates`, with `ARG
-  CA_ROOTS_EXPECTED=0`), filled here from 2.3's one source. Drop the PEM into `images/base/ca-certificates/`
+  CA_ROOTS_EXPECTED=0`), filled here from 2.3's one source. Drop the PEM into `gitlab/awsds/dev-env/base/ca-certificates/`
   with a `.crt` extension and build with **`--build-arg CA_ROOTS_EXPECTED=1`**, so a forgotten file fails the
   build instead of shipping a trusting-nothing image; fix the layer's comments, which still name
   `gitlab.prod.internal` and `*.pages.internal`, in the same commit. **The tag is `default-v0.6.0`**, the
@@ -272,8 +284,8 @@ the whole CA is one pass. The fourth trust surface is GitLab itself, which needs
   conda, `git` and `curl` each carry a bundle of their own, while uv already reads the system store
   (`UV_SYSTEM_CERTS=true`). The layer points each at the system bundle it fills, or appends the root to each
   bundle, and the smoke test is a `git clone` and a `requests` call against `gitlab.awsds.internal` from both
-  Pythons. **Making it selectable is [`dev-env.md`](../runbooks/dev-env.md) §B's six steps**, not a
-  repointing: delete the apps, detach, apply (`1 to add, 1 to destroy`), read the new version's
+  Pythons. **Making it selectable was then [`dev-env.md`](../runbooks/dev-env.md) §B's six steps**, not a
+  repointing (a version and no domain write since Stage 8 decisions 7 and 18): delete the apps, detach, apply (`1 to add, 1 to destroy`), read the new version's
   `ContainerImage` against the pushed digest, re-attach, and sweep every existing space, which keeps the
   version number it was created with and does not start once that version is gone (`EXC-09`, Lesson 63);
   `./aws/devenv.py` `DE-3` before the build, `DE-5` after. It runs on the build runner of step 6, so 2.6 is
@@ -332,7 +344,7 @@ shape is `when: manual` under `rules:` on a protected tag.
 - **3.6 — [user] Create the repositories**: `app-etl` (conventions §6's template) and `dev-env`, the latter
   writable by `data-scientists` with its **release tag protected** so only `dev-env-stewards` can push it —
   the CE shape of Stage 8 step 1's gate. `dev-env` starts empty: the recipe lives in this repository's
-  `images/` until Stage 8 decision 6.
+  `images/` until Stage 8 decision 16 moves it there (2026-10-14).
 
 ### 4. Publish docs on GitLab Pages (D36)
 
@@ -349,6 +361,7 @@ control is a **Free-tier** feature.
   `pages_nginx['ssl_certificate']`/`ssl_certificate_key`, and `gitlab_pages['access_control'] = true` — a
   page visit then requires a GitLab session on top of the VPN, and the docs stop being readable by anything
   that merely reaches the network.
+- **4.2 — Done 2026-10-12**: `app-etl`'s `pages` job published `https://app-etl-ffa1fa.awsds-pages.internal` (a unique domain, GitLab's default); the runner read it back with `http=302 ssl_verify=0` against the CA root, and the laptop rendered it after a one-time OAuth consent to GitLab's own Pages application (scope `api`, authorized by the user as the administrator) (the log).
 - **4.2 — [user] Prove it end to end**: a docs build published by a pipeline (pass 3) serves at
   `https://<project>.awsds-pages.internal` from the laptop through the tunnel, and the runner's job that
   published it reads the page back — two of INT-19's four surfaces exercised by one URL. A notebook cannot
@@ -409,6 +422,12 @@ this is a second apply of one folder. Everything is `[P]` and free at rest excep
 - **5.5 — Done 2026-10-12**: `egress/` at 06:33 UTC (`14 added`, through `slices.py`) and `registry/` at
   14:11 UTC (`8 added, 6 changed, 0 destroyed`, after the morning's attempt died on an expired SSO token),
   both re-planned `No changes`. `SC-12` reads red until 6.4's first pull (the log).
+- **5.2 — Read 2026-10-12, at 6.4's first pipeline**: the first pull through each rule succeeded with no
+  route (verification vii), once a fourth trap was cleared. Without a creation role ECR creates the cache's
+  repositories as `AWSServiceRoleForECRTemplate`, which holds `ecr:CreateRepository` alone, so a template
+  carrying tags is refused `ecr:TagResource` and the pull reads `not found`; the templates carry no tags
+  since 18:34 UTC (`0 added, 3 changed`, the user's option (a)). A pull imports every platform of a
+  multi-architecture index, Windows images included (the log).
 - **5.5 — [Claude⚡] Apply `registry/` (5.b) and the amended `egress/`** as `awsds-infra-prod`. The
   cross-account pull proof is 6d's (INT-01); `./aws/supplychain.py` §§5-7 keep the mechanical half readable.
 
@@ -425,6 +444,8 @@ runner pushes by itself, so the control moves to who can run a job on it (protec
 and to the immutable tags.
 
 - **6.1, 6.2 — Written 2026-10-12, unapplied** (`production/runners/`): the role, the host, the five proxy layers in the user data, registration from the token container, the CA root from the parameter at `/etc/gitlab-runner/certs/gitlab.awsds.internal.crt` and mapped into every job as `/etc/gitlab-runner/certs/ca.crt`. `seccomp=unconfined` on the docker executor is the trade BuildKit rootless asks for; verification viii measures it.
+- **6.1, 6.2 — Applied 2026-10-12** through `make gitlab-up` (`6 added`); the first boot registered in 1 min 42 s. Before the apply the boot gained Amazon's ECR credential helper, pinned by digest and mounted read-only into every job beside `ECR_REGISTRY` (`moby/buildkit:rootless` runs as UID 1000 and cannot install a registry client), and a wait for GitLab's sign-in page. The runner is a **protected project runner** of `awsds/app-etl`, not an instance runner: any job reads the role's credentials, and sign-up is open (runbook §K). `make gitlab-up RUNNERS=0` raises GitLab without it.
+- **6.4 — The first pipeline ran 2026-10-12** (runbook §K's three files): the push to `awsds-prod-ecr-app-etl`, the retry refused by the immutable tag, the cache's three rules each pulled through once, the proxy pair's job half. 2.6 is next.
 - **6.1 — [Claude] Write `production/runners/`**: instance `Name` tag **`awsds-prod-runner`** (the script's
   contract), **`amd64`** — the images are `amd64` and the laptop is not, which was the buildbox's whole
   reason to exist. The shape is the buildbox's, measured: **`m8i.xlarge`** (4 vCPU, 16 GiB, 0.2117 USD/h) in
@@ -465,9 +486,17 @@ and to the immutable tags.
 - **6.4 — [Claude⚡] Apply through `make gitlab-up`**, and **[user]** run the first pipeline: a
   `.gitlab-ci.yml` on `app-etl` that builds and pushes an image. Then run **2.6** here — the image rebuild
   now has a host that can do it.
+- **6.5 — Done 2026-10-12, in the repository alone**: the slice's state held no resource and AWS no
+  security group, role, instance profile or instance of it (read that evening), so nothing was destroyed.
+  Deleted: the slice, its `layers.py` row (rank 55) and slice entry, its `backend.py` `NETWORK_SLICES` entry, `scripts/buildbox.py`, the runbook's
+  procedures (the page stays as a pointer, since two stage logs link to it and a log entry is never
+  rewritten), the tracked size file's `.gitignore` exception and its `check-tfvars-shape.py` row. The ledger moved to
+  [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases*, with `default-v0.6.0` added; every live
+  reference was repointed, and executed stages and logs keep theirs as records. The empty state object
+  `production/buildbox/terraform.tfstate` stays in the versioned state bucket.
 - **6.5 — [Claude⚡] Retire the buildbox in the same sitting**: destroy `production/buildbox/` if it is up
   (`[E]`), then delete the slice, its `layers.py` row (rank 55), `scripts/buildbox.py` and
-  [`docs/plan/runbooks/buildbox.md`](../runbooks/buildbox.md). **Move its §P first**: it is the only complete
+  `docs/plan/runbooks/buildbox.md`. **Move its §P first**: it is the only complete
   ledger of the six hand-built tags, and `docs/SMUS.md` points at it; the ledger moves to `images/README.md`.
   Then every live reference goes with the files — `grep -rn 'buildbox'` names them, about fifteen today
   (`CLAUDE.md`, the `Makefile`, `aws/devenv.py`, `scripts/slices.py`, `docs/SMUS.md`, `docs/NETWORK.md`,
@@ -482,6 +511,9 @@ can reach a VPN-only GitLab at all. **Why:** Stage 8 step 6 needs the mirroring 
 infrastructure pipeline, and INT-13 is answered at the first moment GitLab exists. **Explanation:** both are
 recordings, not builds.
 
+- **7.1 — Done 2026-10-12** (decision 4, the user): no standing mirror. GitLab hosts the application repositories,
+  this repository stays on GitHub, and a per-repository push mirror is added only if INT-09's fallback needs it;
+  Stage 8 step 6.1's dual-push for the deploy jobs is that stage's own decision.
 - **7.1 — [user] Decide the mirror** (decision 4; recommended: none standing — GitLab hosts the application
   repositories, this infrastructure repository stays on GitHub, and a per-repository **push mirror** — a
   Free-tier feature; pull mirroring is Premium — is added only if INT-09's fallback needs it). **If a mirror
@@ -507,7 +539,8 @@ rehearsal happens now, while the instance holds throwaway content.
   restores it. Measure the boot to first HTTPS answer (verification vi) — D8 assumed 3-5 minutes; much worse
   re-opens the layer choice.
 - **8.2 — [user] Rehearse the restore, once**: `gitlab-backup create` to the backup bucket, destroy
-  `tooling/`, re-apply, let 1.5's flow restore `gitlab-secrets.json`, `gitlab-backup restore`, and prove a
+  `tooling/`, re-apply (the boot installs `gitlab_ce_version`, which must be the release in the backup's
+  name: decision 10), let 1.5's flow restore `gitlab-secrets.json`, `gitlab-backup restore`, and prove a
   pre-backup repository clones cleanly. Record the measured time; the backup schedule (a cron entry the
   bootstrap installs, daily while the instance runs) is set in the same sitting.
 - **8.3 — [Claude] Diff `./aws/supplychain.py` across the cycle** — only timestamps and instance state may
@@ -520,6 +553,13 @@ rehearsal happens now, while the instance holds throwaway content.
   header, which still describes imported ACM leaves and a "TLS triple", is brought to the nginx option and the
   four surfaces. `SC-9` (the CA root parameter) and `SC-10` (the runner's presence) keep their meanings.
   `./aws/proxy.py` `PX-3` already compares all five planes, the SharedServices one included.
+- **8.4 — `SC-13` and `check-gitlab-pins.py`, written 2026-10-16** (decision 10). `./aws/supplychain.py`
+  `SC-13` compares the release in the newest backup's name with `gitlab_ce_version`; its first run as
+  `awsds-infra-prod` (23:04 UTC) passed on `1792033259_2026_10_15_19.4.2_gitlab_backup.tar`, and with the
+  variable set to 19.5.0 in the working copy it failed and exited 2. `scripts/check-gitlab-pins.py`, in
+  `make check` and the commit gate, fails while `gitlab_ce_version`'s major.minor and
+  `gitlab_runner_version`'s differ: `OK` on 19.4.2 and 19.4.1, `FAILED` on a copy with the runner at
+  19.5.0.
 
 ---
 
@@ -555,7 +595,8 @@ and 8.4's two new checks. The behavioural proofs are the stage's own (Lesson 20)
 
 ## Validation
 
-1. Run `./aws/supplychain.py` — all `SC-*` pass, including 8.4's `SC-11`/`SC-12`; diff two runs across
+1. Run `./aws/supplychain.py` — all `SC-*` pass, including 8.4's `SC-11`/`SC-12` and decision 10's
+   `SC-13`; diff two runs across
    8.1's cycle.
 2. Run `./aws/proxy.py` — `PX-1`..`PX-4` pass (`PX-5` is retired at Stage 6g); `PX-3` covers the build plane
    already.
@@ -577,7 +618,7 @@ Measured (`docs/PRICING.md`), `us-west-2`:
 | ECR storage | 0.10/GB-month. One release is 10.7 GB compressed across `base` and `dev-env`, and the lifecycle keeps 30 tagged images per repository; read the real figure from the bill, which deduplicates layers, rather than from image sizes, which do not | `[P]` |
 | CodeArtifact | 0.05/GB-month + 0.05/10k requests — nothing stored and nothing requested while it has no consumer | `[P]` |
 | Build runner `m8i.xlarge` while up | 0.2117/h, measured on the buildbox — it replaces the buildbox's line, not adds to it | `[E]` |
-| SharedServices interface endpoints | 0.010/h each while `egress/` is up; 14 after this stage, 16 if decision 6 adds CodeArtifact's two | `[E]` |
+| SharedServices interface endpoints | 0.010/h each while `egress/` is up; 12 since decision 9 (14 before it), 14 if a consumer ever brings CodeArtifact's two | `[E]` |
 | **A NAT gateway in this VPC, only if 5.2 forces it** | 0.045/h + 0.005/h for the address | contingency |
 | Enhanced scanning (deferred, decision 2) | 0.09/image + 0.01/re-scan | Stage 11's |
 
@@ -602,11 +643,14 @@ awkward, and it would land in `production/egress/`.
    scanned to **identical** counts (CRITICAL 30, HIGH 430, all inherited from the SageMaker Distribution), so
    everything `dev-env` adds over `base` produced zero findings. The Julia/R residual is **accepted rather
    than deferred**, with the Dev Env Steward's review of a pinned text manifest as its named control; the
-   acceptance lives in `institutional-delta.md`.
+   acceptance lives in `institutional-delta.md`. **Taken by the user 2026-10-12, as recommended**: basic
+   scan-on-push stays, and it ran on `default-v0.6.0`'s push.
 3. **The pull-through cache, after 5.2's reading** — recommended: keep the credential-free three if the
    first pull succeeds through the proxy or from the hub's public tier; if it needs a route, prefer fallback
-   (a) — measured at 6c 5.8 — or (b) over standing up this estate's first NAT gateway.
-4. **The mirroring policy** (7.1) — recommended: no standing mirror.
+   (a) — measured at 6c 5.8 — or (b) over standing up this estate's first NAT gateway. **Read 2026-10-12**:
+   the first pull needed no route at all (verification vii). **Taken by the user 2026-10-12: the three stay.**
+4. **The mirroring policy** (7.1) — recommended: no standing mirror. **Taken by the user 2026-10-12, as
+   recommended.**
 5. **Runner shape** (6.1) — **taken 2026-10-12 as written**: **one `[E]` `amd64` instance, `m8i.xlarge` as measured on the
    buildbox, docker executor**, rebuilt per session. The docker-autoscaler/fleeting path is adopted when a
    measured queue wait justifies it.
@@ -640,7 +684,34 @@ awkward, and it would land in `production/egress/`.
    `CreateModelPackage`/`UpdateModelPackage` as `awsds-deploy-prod`, are control-plane calls the proxy carries
    as public calls on this `open` plane, so the stage that makes them declares `sagemaker.api` here if it wants
    them private. Nothing in any stage invokes an inference endpoint from this VPC, so `sagemaker.runtime` has no
-   future caller here.
+   future caller here. **Taken by the user 2026-10-12, as recommended**: the pair left `production/egress/`'s
+   extras (the plan reads `12 to add`), `no_proxy_all_groups` fell to 56 entries (sha256 `0f80372bf880bb16`, the
+   four SageMaker names gone) and `tooling/`'s literal was re-copied; the running host took it on 2026-10-12,
+   the user's `sudo awsds-gitlab-refresh` ending `gitlab Reconfigured!`.
+10. **Which `gitlab-ce` release the host installs** (1.3, 8.2; Stage 8 decision 24). The bootstrap ran
+    `dnf -y -q install gitlab-ce` with no release, so a host took packages.gitlab.com's newest at its first
+    boot. The host runs **CE 19.4.2, read 2026-10-16** without signing in: the help page publishes
+    `gon.revision` `ecff27ae760` to an anonymous visitor, the commit of `gitlab-foss`'s tag `v19.4.2`
+    (`ecff27ae76032d42…`), and both backups in `awsds-prod-gitlab-backup` carry the release in their names,
+    the newest `1792033259_2026_10_15_19.4.2_gitlab_backup.tar`. The `amazon/2023` `aarch64` index carries
+    `19.5.0` since 2026-10-15, so an unpinned rebuild that day installs 19.5.0. GitLab restores a backup
+    only into *"exactly the same version and type"* that created it, and `gitlab-backup restore` stops on
+    `GitLab version mismatch`: 8.2's rehearsal and a recovery from a lost host would each stop at the
+    restore, and the runners' pin (Stage 8 decision 24) would trail the server by a minor.
+    Recommended: **pin the release in `production/tooling/variables.tf`,
+    `gitlab_ce_version = "19.4.2"`**, installed as `gitlab-ce-19.4.2-ce.0.amazon2023`, the form GitLab's
+    upgrade page gives for Amazon Linux 2023; a release the repository lacks stops the boot at dnf. The
+    variable names the release the host runs, so an upgrade on the host moves it and
+    `gitlab_runner_version` in the same sitting (`gitlab.md` §P); `scripts/check-gitlab-pins.py` fails
+    `make check` while their major.minor differ. Its costs: the pin binds a rebuild and never the running
+    host, since the user data is held (decision 8), so every value plans `No changes`, and an upgrade made
+    in a shell leaves the variable behind with no diff, visible only in the next backup's name, which
+    `./aws/supplychain.py` `SC-13` compares with the variable; and a recovery from a backup older than
+    the last upgrade rebuilds at the backup's release, then upgrades again (`gitlab.md` §B). The
+    alternative, no pin: each rebuild installs the newest CE, a restore needs a downgrade by hand before
+    `gitlab-backup restore`, and the runners' pin follows a server release no file holds.
+    **Taken by the user 2026-10-16 (by 23:43 UTC), as recommended**; written in PR #151, its checks in
+    PR #154; the plan reads `No changes` (1.3).
 
 ## Verifications to answer while executing
 
@@ -654,14 +725,15 @@ Record every answer, including the ones that come out fine.
 | iv | The edition check: are protected environments / deployment approval rules absent on this CE instance? **Absent, 2026-10-12** (CE v19.4.2, the test project's CI/CD settings read through the user's browser): Stage 8's gates take the protected-tag shape | 3.3 |
 | v | Does backup → destroy → restore reproduce a working instance, and in how long? | 8.2 |
 | vi | Is the boot inside D8's assumed 3-5 minutes? **No, 2026-10-12**: launch 14:11:09 UTC, `gitlab Reconfigured!` 14:19:53 (8 min 44 s: the package through the proxy, then 5 min 03 s of Chef), cloud-init done 14:25:03 after the probe's five minutes | 8.1 |
-| vii | **Does the first pull through a cache rule succeed with no route to the internet?** If not, which fallback was taken, and does the cached copy then pull cleanly? | 5.2 |
-| viii | Does the runner register through the authentication-token flow from the Secrets Manager token on a fresh instance, and does BuildKit rootless build and push without privileged mode? | 6.1, 6.3 |
+| vii | **Does the first pull through a cache rule succeed with no route to the internet?** If not, which fallback was taken, and does the cached copy then pull cleanly? **Yes, 2026-10-12, on all three rules and no fallback**: ECR fetched the upstreams itself, as `AWSServiceRoleForECRPullThroughCache`, once the creation templates stopped carrying tags (5.2) | 5.2 |
+| viii | Does the runner register through the authentication-token flow from the Secrets Manager token on a fresh instance, and does BuildKit rootless build and push without privileged mode? **Yes on both, 2026-10-12**: registered at first boot in 1 min 42 s; `moby/buildkit:rootless` under `seccomp=unconfined` built and pushed `awsds-prod-ecr-app-etl:v0.1.0-0817e161`, its registry login from the mounted ECR credential helper | 6.1, 6.3 |
 | ix | Can a CodeConnections host be created toward `gitlab.awsds.internal` from the no-VPC domain account (INT-13 — expected: no)? | 7.2 |
-| x | Do GitLab and `https://<project>.awsds-pages.internal` validate against the CA on every surface that resolves them (INT-19)? **The laptop, 2026-10-12**: the served chain verifies against the published root (`openssl s_client`, `curl --cacert`), failed against the system store until the root was added, and Chrome accepts it since runbook §C's two commands (the user). The image, the runner and Pages are the other surfaces | 2.5, 4.2 |
+| x | Do GitLab and `https://<project>.awsds-pages.internal` validate against the CA on every surface that resolves them (INT-19)? **The laptop, 2026-10-12**: the served chain verifies against the published root (`openssl s_client`, `curl --cacert`), failed against the system store until the root was added, and Chrome accepts it since runbook §C's two commands (the user). The image, the runner and Pages are the other surfaces. **The runner and Pages, 2026-10-12**: the runner's clones verify GitLab's leaf through the helper, and its `pages-readback` job read `https://app-etl-ffa1fa.awsds-pages.internal` with `ssl_verify=0`, as did the laptop; the image (2.6) is the surface left | 2.5, 4.2 |
 | xi | Does a Sandbox project clone and push over the SharedServices peering (INT-09)? | deliverables |
 | xii | **Does `gitlab-ctl reconfigure` complete without reaching the ACME server** once `letsencrypt['enable'] = false` is set? **Yes, 2026-10-12**: the second boot's reconfigure completed (529/1346 resources, 5 min 03 s) with no `letsencrypt` or ACME line in the console | 1.3 |
 | xiii | Does a change to `gitlab.rb` reach the running host through 1.3's path, with the plan proposing no replacement of the instance? **The plan half, 2026-10-12**: adding `ci_catalog_bundles` to the object store planned `0 to add, 1 to change, 0 to destroy`, the S3 object alone, applied 14:22 UTC; the host half, the first `sudo awsds-gitlab-refresh` in 1.8's session, ended in `gitlab Reconfigured!` (the user, 2026-10-12): **yes on both halves** | 1.3 |
-| xiv | Does `make gitlab-down` leave both hub hosts running, and does `make down ENV=production` refuse them by name? **The first half yes, 2026-10-12**: after the first `gitlab-down`, `awsds-prod-vpn` and `awsds-prod-proxy` read `running` and the burn 0.0156 USD/h; the second half is unexercised | 1.6, 8.1 |
+| xiv | Does `make gitlab-down` leave both hub hosts running, and does `make down ENV=production` refuse them by name? **The first half yes, 2026-10-12**: after the first `gitlab-down`, `awsds-prod-vpn` and `awsds-prod-proxy` read `running` and the burn 0.0156 USD/h. **The second half yes, 2026-10-12**, read with `DRY=1`, which runs nothing: both hub hosts are refused by name (refusal 6) and `awsds-prod-gitlab` is the only `[D]` host the target stops | 1.6, 8.1 |
+| xv | Does a rebuild install `gitlab-ce-19.4.2-ce.0.amazon2023` (the boot log's `rpm -q` line), and does `gitlab-backup restore` take the 19.4.2 backup with no version mismatch? | 8.2, decision 10 |
 
 ## Risks
 

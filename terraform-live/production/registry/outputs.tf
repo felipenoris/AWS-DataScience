@@ -20,13 +20,29 @@ output "ecr_app_etl_repository_url" {
   value       = module.ecr_app_etl.repository_url
 }
 
+output "ecr_deploy_repository_url" {
+  description = "The push/pull target for the deploy image, the deploy runner's job image (Stage 8 steps 3.1 and 4.3)."
+  value       = module.ecr_deploy.repository_url
+}
+
 output "ecr_repository_arns" {
-  description = "The three ARNs - what a consumer-side IAM statement names, and what the runner's push statement names (Stage 7 step 6.1)."
+  description = "The image repositories' ARNs, keyed by image - what a consumer-side IAM statement names by key, and what the build runner's push statement names whole (Stage 7 step 6.1)."
   value = {
     base    = module.ecr_base.repository_arn
     dev-env = module.ecr_dev_env.repository_arn
     app-etl = module.ecr_app_etl.repository_arn
+    deploy  = module.ecr_deploy.repository_arn
   }
+}
+
+output "releases_bucket_arn" {
+  description = "The release store (Stage 8 decision 20) - what the build runner's put statement names."
+  value       = module.releases_bucket.bucket_arn
+}
+
+output "releases_bucket_name" {
+  description = "The release store's name, awsds-<env>-releases - what a pipeline's `aws s3 cp` names."
+  value       = module.releases_bucket.bucket_name
 }
 
 output "pull_through_cache_prefixes" {

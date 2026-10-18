@@ -1,0 +1,100 @@
+# {"transform":{"x":120,"y":200},"process":{"x":420,"y":200},"summarize":{"x":720,"y":200},"write_result":{"x":1020,"y":200}}
+app-etl:
+  dag_id: app-etl
+  tasks:
+    transform:
+      operator: airflow.providers.amazon.aws.operators.glue.GlueJobOperator
+      job_name: app-etl-{proj.id}
+      job_desc: The Glue job of the application app-etl, created and updated by the workflow
+      script_location: "{proj.connection.default.s3_shared.s3Uri}app-etl/glue/transform.py"
+      iam_role_arn: "{proj.iam_role_arn}"
+      region_name: "{domain.region}"
+      update_config: true
+      script_args:
+        "--SOURCE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/inbox/"
+        "--TARGET_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/work/glue/trades.csv"
+      create_job_kwargs:
+        Command:
+          Name: glueetl
+          ScriptLocation: "{proj.connection.default.s3_shared.s3Uri}app-etl/glue/transform.py"
+          PythonVersion: "3"
+        GlueVersion: "6.0"
+        WorkerType: G.1X
+        NumberOfWorkers: 2
+        Timeout: 50
+        Connections:
+          Connections:
+            - datazone-glue-network-connection-{env.SUBNET_AZ1}-{proj.id}-dev
+            - datazone-glue-network-connection-{env.SUBNET_AZ2}-{proj.id}-dev
+        DefaultArguments:
+          "--custom-logGroup-prefix": datazone-{proj.id}-dev
+        Tags:
+          AmazonDataZoneProject: "{proj.id}"
+      retries: 0
+    process:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerProcessingOperator
+      dependencies: [transform]
+      retries: 0
+      config:
+        ProcessingJobName: "app-etl-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+        RoleArn: "{proj.iam_role_arn}"
+        AppSpecification:
+          ImageUri: "{env.JOB_IMAGE_URI}"
+          ContainerEntrypoint:
+            - /bin/bash
+            - -c
+          ContainerArguments:
+            - 'sudo -n chown "$(id -u)" /opt/ml/processing/output && cd /opt/ml/processing/code && exec python -m app_etl --input /opt/ml/processing/input --output /opt/ml/processing/output'
+        ProcessingResources:
+          ClusterConfig:
+            InstanceCount: 1
+            InstanceType: ml.t3.medium
+            VolumeSizeInGB: 10
+            VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+        NetworkConfig:
+          EnableNetworkIsolation: true
+          EnableInterContainerTrafficEncryption: true
+          VpcConfig:
+            Subnets: ["{env.SUBNET_AZ1}", "{env.SUBNET_AZ2}"]
+            SecurityGroupIds: ["{env.PROJECT_SG}"]
+        ProcessingInputs:
+          - InputName: code
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-etl/src/"
+              LocalPath: /opt/ml/processing/code
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+          - InputName: input
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/glue/"
+              LocalPath: /opt/ml/processing/input
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+        ProcessingOutputConfig:
+          Outputs:
+            - OutputName: output
+              S3Output:
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/job/"
+                LocalPath: /opt/ml/processing/output
+                S3UploadMode: EndOfJob
+        StoppingCondition:
+          MaxRuntimeInSeconds: 1800
+        Tags:
+          - Key: AmazonDataZoneProject
+            Value: "{proj.id}"
+    summarize:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [process]
+      python_callable: app_etl_tasks.summarize
+      op_kwargs:
+        outputs: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/job/"
+      retries: 0
+    write_result:
+      operator: airflow.providers.amazon.aws.operators.s3.S3CreateObjectOperator
+      dependencies: [summarize]
+      s3_key: "{proj.connection.default.s3_shared.s3Uri}app-etl/outbox/report.json"
+      data: "{{ ti.xcom_pull(task_ids='summarize') }}"
+      replace: true
+      retries: 0

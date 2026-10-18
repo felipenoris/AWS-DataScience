@@ -24,13 +24,13 @@ output "interface_endpoint_ids" {
 # - so a copied list is wrong for the estate's busiest path, and wrong silently, since a bypass
 # entry that matches nothing merely sends the call to Squid.
 #
-# `images/base` may not consume it. Every application image inherits from that one and runs as a
-# Production job behind endpoints, so an `ENV HTTP_PROXY`/`ENV NO_PROXY` baked there would travel
-# into a VPC whose list is different, and a wrong entry sends S3 and STS out through the proxy as
-# public calls, past every `aws:SourceVpc` condition.
+# `gitlab/awsds/dev-env/base` may not consume it. Every application image inherits from that one and
+# runs as a Production job behind endpoints, so an `ENV HTTP_PROXY`/`ENV NO_PROXY` baked there would
+# travel into a VPC whose list is different, and a wrong entry sends S3 and STS out through the
+# proxy as public calls, past every `aws:SourceVpc` condition.
 #
-# `images/dev-env` consumes the third output, `no_proxy_all_groups`, since 6d decision 8
-# (2026-09-10): that image runs in exactly one account, and both API-side mechanisms were measured
+# `gitlab/awsds/dev-env/dev-env` consumes the third output, `no_proxy_all_groups`, since 6d decision
+# 8 (2026-09-10): that image runs in exactly one account, and both API-side mechanisms were measured
 # unable to carry the value - ContainerEnvironmentVariables caps each value at 256 characters, and a
 # lifecycle configuration cannot be updated in place. The image serves every session whatever
 # `GROUPS=` it names, so its list is the one with every optional group's names, which no apply's
@@ -49,6 +49,6 @@ output "no_proxy_entries" {
 }
 
 output "no_proxy_all_groups" {
-  description = "NO_PROXY with every optional endpoint group's names, whatever GROUPS= this apply named - the list images/dev-env/Dockerfile section 7 carries, and the one ./aws/devenv.py compares it with."
+  description = "NO_PROXY with every optional endpoint group's names, whatever GROUPS= this apply named - the list gitlab/awsds/dev-env/dev-env/Dockerfile section 7 carries, and the one ./aws/devenv.py compares it with."
   value       = module.egress.no_proxy_all_groups
 }

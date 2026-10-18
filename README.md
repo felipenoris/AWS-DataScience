@@ -27,10 +27,11 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     `client-vpn-proxy-configuration.md`, the one a device's owner follows (the session up and down, the
     `.conf` with its four checks, the proxy on macOS and Linux); `sg-proxy.md`, the proxy inside a SageMaker
     space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed; plus
-    `buildbox.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
+    `gitlab.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
-    `docs/plan/institutional-delta.md`, `docs/plan/history.md`.
+    `docs/plan/institutional-delta.md`, `docs/plan/threat-model.md` (the data-leakage channels and the
+    `TM-nn` ledger of accepted residuals), `docs/plan/history.md`.
 - `docs/GLOSSARY.md` — every acronym the plan uses, plus its notation and the IAM condition keys it quotes.
 - `docs/ORGANIZATION.md` — the account map (one section per account, and the axis each sits on), the two
   families of IAM role, and the entitlement plane above them: the SSO users, the seven permission sets,
@@ -59,19 +60,22 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
   `sandbox/sagemaker/` (the `sagemaker-prereqs` module; `development/sagemaker/` went with the account at
-  Stage 6b), and the `[E]` `production/buildbox/`, moved there from Sandbox at 6c step 5.8.
+  Stage 6b), and the `[E]` build host, which moved to Production at 6c step 5.8 and retired into Stage 7's
+  build runner (`production/runners/`) at its step 6.5.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5a's. `wireguard` has called `iam-role` by
   tag since Stage 4, and `consumer-data` is the first module a *slice pair* applies twice. The current
   roster is `terraform-modules/README.md`'s.
-- `images/` — the build code for the two container images the estate runs on: `base/`, the common
-  ancestor every application image and the notebook image descend from (D17), and `dev-env/`, the
-  SageMaker Unified Studio custom image (BYOI) carrying the Julia, R and Rust that CodeArtifact cannot
-  deliver. Not infrastructure code — `terraform-live/production/registry/` owns the ECR repositories, this
-  owns what goes in them. Built by hand exactly once, at Stage 6 step 5.0, and replaced by Stage 8's
-  pipeline building the same files from a GitLab repository the data scientist writes to. `images/README.md`
-  carries that seam and the three constraints that shape both files.
+- `gitlab/` — copies of the GitLab projects whose source of truth is the private GitLab (Stage 8
+  decision 16). `awsds/dev-env` is the build code for the two container images the estate runs on:
+  `base/`, the common ancestor every application image and the notebook image descend from (D17), and
+  `dev-env/`, the SageMaker Unified Studio custom image (BYOI) carrying the Julia, R and Rust that
+  CodeArtifact cannot deliver; `awsds/deploy-image` is the image the deploy runner's jobs run in. Not
+  infrastructure code — `terraform-live/production/registry/` owns the ECR repositories, these own what
+  goes in them. `scripts/gitlab-mirror.py` writes each copy from its project's last commit, and
+  `scripts/check-gitlab-mirror.py` reads the recipe's `NO_PROXY` literal and Bedrock settings against
+  the estate; `gitlab/README.md` is the procedure.
 - `s3-read-write/` — an independent Python library (`uv`, boto3 the only runtime dependency): a data
   scientist's laptop, from any network, reading, writing and listing the S3 storage of its SMUS project by
   **vending the project role** through S3 Access Grants — the surface SMUS itself provisions (merged
@@ -85,9 +89,17 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   configuration, and each workflow's definition after each pass. Every account-scoped value is a
   placeholder, which [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) `render` fills on
   screen from read-only calls ([`serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md) §T).
+  `app-etl/` is [Stage 8](docs/plan/stages/stage-08-cicd-pipelines.md) step 2.2's: the application
+  template's first content, pushed to GitLab's `awsds/app-etl`, which holds it since.
+- `ci-gates/` — the security gates every GitLab pipeline includes (Stage 8 step 5, decision 10):
+  Secret Detection, `pip-audit`, `checkov` and the ECR scan gate, with the baselines of accepted findings
+  beside them. Reviewed here, pushed to the GitLab project `awsds/ci-gates`, included at a commit.
 - `.pre-commit-config.yaml` and `.tflint.hcl` — the repository's Terraform gates (Stage 2 step 6):
   `terraform fmt`, `terraform validate`, `tflint` and `checkov` as a *required* check, since a policy gate
   that can be skipped is a policy suggestion.
+- `.github/workflows/offline-gates.yml` — the CI (Stage 8 step 6.2): on every pull request, every
+  pre-commit hook over every file and `make check`, on a GitHub-hosted runner with the pinned tool
+  versions, no AWS credential and no `terraform plan`.
 - `aws/AWS-CLI.md` — the `aws` recipes run by hand, and which identity runs each of them.
 - `aws/` — read-only scripts that photograph what is actually deployed, one text snapshot per script under
   the untracked `aws/output/`. `aws/INDEX.md` says which script writes which file and which section of it
@@ -122,12 +134,22 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   tracked, the roster assigns nothing but public halves, and a `host-key.auto.tfvars` fails by name.
   `check-identifiers.py` is the ninth, and it fails on a different kind of mistake: a real AWS account id
   or a personal e-mail address reaching git, which is undone by rewriting history rather than by an edit.
+  `check-gitlab-ci.py` reads every tracked `*.gitlab-ci.yml` with its includes: a job named after a
+  GitLab CI global keyword fails, and so does a `needs:` or `dependencies:` entry naming no job of its
+  pipeline, mistakes GitLab otherwise reports only when it creates the pipeline, behind the VPN.
+  `check-sg-descriptions.py` reads every security group and rule description in the Terraform trees: a
+  character outside the set EC2 accepts fails it, a mistake `validate` catches only on inline rules and
+  EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
+  two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
+  `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
+  with the server's.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
   standalone — and `make clean` returns a clone to its just-cloned state: it removes `aws/output/`,
-  `.venv/` and the caches, by name, and never touches `secrets/`. There is no CI yet — GitLab is Stage 7 —
-  and Stage 8 adds a third caller rather than a rewrite. It also carries **D11's lifecycle** since Stage 2
+  `.venv/` and the caches, by name, and never touches `secrets/`. The third caller is the CI,
+  [`.github/workflows/offline-gates.yml`](.github/workflows/offline-gates.yml) (Stage 8 step 6.2), which runs
+  every hook and `make check` on each pull request with no AWS credential. It also carries **D11's lifecycle** since Stage 2
   step 8: `make slices` prints which slice is `[P]`, `[D]` or `[E]`; `make up ENV=<account-folder>` applies
   the ephemeral ones and starts the dormant ones; `make down ENV=…` reverses it; `make status` says what is
   up and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
@@ -146,7 +168,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   scripts that exist *only* for CloudShell — `aws/cloudshell/management-quotas.sh` and
   `aws/cloudshell/audit-iam-analyser.sh`, the readings of the accounts no profile reaches — stay shell:
   standalone single files, needing no environment, writing `aws/output/cloudshell/`. `ruff` (dev-only)
-  lints and formats the tree through `pre-commit`. A fresh clone needs no setup step: the first script
+  lints and formats the tree through `pre-commit`, and PyYAML (dev-only) parses the GitLab CI files for
+  `check-gitlab-ci.py`. A fresh clone needs no setup step: the first script
   invocation bootstraps everything — `uv run` fetches the pinned interpreter if it is absent, creates
   `.venv/` and installs the packages — so `uv sync` only does the same thing ahead of time.
 
@@ -359,7 +382,8 @@ instance — is a promotion path that bypasses the approval gate, and is therefo
 The split is not free, and the plan accepts the cost:
 
 - one AWS Config recorder per governed account — every account except Management, so this cost grows with
-  the account count;
+  the account count and with each `make up`/`make down` cycle of an account's endpoints
+  (`docs/plan/cost-model.md`);
 - a duplicated network layer per account — interface VPC endpoints are the largest hourly line item in this
   project, and they exist on every side of the boundary;
 - cross-account integrations that each have to be *proven* rather than assumed: Studio pulling a custom image

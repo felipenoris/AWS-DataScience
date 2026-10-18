@@ -1,0 +1,161 @@
+#!/bin/bash
+set -euo pipefail
+exec > >(tee /var/log/awsds-runner-boot.log) 2>&1
+echo "=== awsds test runner first boot: $(date -Is) ==="
+
+PROXY="${proxy_url}"
+NOPROXY="${no_proxy}"
+REGION="${region}"
+GITLAB_URL="${gitlab_url}"
+GITLAB_HOST="${gitlab_host}"
+CA_ROOT_PARAM="${ca_root_param}"
+TOKEN_SECRET="${runner_token_secret}"
+CONCURRENT="${concurrent_jobs}"
+NAME_TAG="${name_tag}"
+RUNNER_VERSION="${gitlab_runner_version}"
+
+export http_proxy="$PROXY" https_proxy="$PROXY"
+export HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"
+export no_proxy="$NOPROXY" NO_PROXY="$NOPROXY"
+export AWS_DEFAULT_REGION="$REGION"
+
+echo "--- proxy (1/4): /etc/environment"
+cat >> /etc/environment <<ENVEOF
+http_proxy=$PROXY
+https_proxy=$PROXY
+HTTP_PROXY=$PROXY
+HTTPS_PROXY=$PROXY
+no_proxy=$NOPROXY
+NO_PROXY=$NOPROXY
+ENVEOF
+
+# The boot's first AWS call. IAM is eventually consistent, so it can meet NoCredentials or
+# AccessDenied while this host's instance profile and its role's policies propagate: this runner's
+# did on 2026-10-16, 28 s after its role and profile were created, and its boot stopped there. The
+# read is retried, the wait doubling up to 32 s, for five minutes; then the boot stops with the
+# call's last error.
+echo "--- the CA root, from its one source, once the instance's role answers"
+deadline=$((SECONDS + 300))
+delay=2
+until err="$(aws ssm get-parameter --name "$CA_ROOT_PARAM" --query Parameter.Value --output text 2>&1 >/etc/pki/ca-trust/source/anchors/awsds-root.crt)"; do
+  [ "$SECONDS" -lt "$deadline" ] || { echo "FATAL: the CA root unread after five minutes: $(echo "$err" | tail -n 1)" >&2; exit 1; }
+  echo "    not yet, again in $delay s: $(echo "$err" | tail -n 1)"
+  sleep "$delay"
+  delay=$((delay < 32 ? delay * 2 : 32))
+done
+update-ca-trust
+mkdir -p /etc/gitlab-runner/certs
+cp /etc/pki/ca-trust/source/anchors/awsds-root.crt "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
+chmod 644 "/etc/gitlab-runner/certs/$GITLAB_HOST.crt"
+
+echo "--- packages: docker and git (S3 repositories, no proxy)"
+dnf -y -q install docker git
+
+echo "--- gitlab-runner $RUNNER_VERSION, from its repository, proxied per repository"
+cat > /etc/yum.repos.d/runner_gitlab-runner.repo <<'REPOEOF'
+[runner_gitlab-runner]
+name=runner_gitlab-runner
+baseurl=https://packages.gitlab.com/runner/gitlab-runner/amazon/2023/$basearch
+repo_gpgcheck=1
+gpgcheck=1
+enabled=1
+gpgkey=https://packages.gitlab.com/gpgkey/gpg.key
+       https://packages.gitlab.com/gpgkey/runner/49F16C5CC3A0F81F.pub.gpg
+       https://packages.gitlab.com/gpgkey/runner/4C80FB51394521E9.pub.gpg
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+REPOEOF
+echo "proxy=$PROXY" >> /etc/yum.repos.d/runner_gitlab-runner.repo
+# The release is variables.tf's pin. The package requires gitlab-runner-helper-images of its own
+# release, so dnf installs both at it, and a release the repository lacks stops the boot here.
+dnf -y -q install "gitlab-runner-$RUNNER_VERSION"
+rpm -q gitlab-runner gitlab-runner-helper-images
+
+echo "--- proxy (2/4): the docker daemon"
+mkdir -p /etc/systemd/system/docker.service.d
+cat > /etc/systemd/system/docker.service.d/http-proxy.conf <<DOCKEREOF
+[Service]
+Environment="HTTP_PROXY=$PROXY"
+Environment="HTTPS_PROXY=$PROXY"
+Environment="NO_PROXY=$NOPROXY"
+DOCKEREOF
+
+echo "--- proxy (3/4): the runner service"
+mkdir -p /etc/systemd/system/gitlab-runner.service.d
+cat > /etc/systemd/system/gitlab-runner.service.d/http-proxy.conf <<RUNNEREOF
+[Service]
+Environment="HTTP_PROXY=$PROXY"
+Environment="HTTPS_PROXY=$PROXY"
+Environment="NO_PROXY=$NOPROXY"
+Environment="http_proxy=$PROXY"
+Environment="https_proxy=$PROXY"
+Environment="no_proxy=$NOPROXY"
+RUNNEREOF
+systemctl daemon-reload
+systemctl enable --now docker
+usermod -aG docker gitlab-runner
+
+# The control this host exists for, read on every boot: the metadata service answers the host and no
+# container. Hop limit 1 drops the token's response at the docker bridge, so a job reads no AWS identity.
+echo "--- the metadata service from a container (must not answer)"
+IMDS_PROBE="public.ecr.aws/amazonlinux/amazonlinux:2023"
+if docker pull -q "$IMDS_PROBE" >/dev/null 2>&1; then
+  if docker run --rm "$IMDS_PROBE" curl -s -o /dev/null -w '%%{http_code}' --max-time 5 --noproxy '*' \
+       -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token >/dev/null 2>&1; then
+    echo "    FAIL: a container obtained a metadata token - the hop limit is not 1"
+  else
+    echo "    no token from a container: the jobs hold no AWS identity"
+  fi
+else
+  echo "    NOT READ: $IMDS_PROBE did not pull"
+fi
+
+echo "--- waiting for GitLab: a started host answers two to three minutes after its start"
+code=""
+for _ in $(seq 1 60); do
+  code="$(curl -s -o /dev/null -w '%%{http_code}' --max-time 10 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
+  [ "$code" = "200" ] && break
+  sleep 10
+done
+echo "    $GITLAB_URL/users/sign_in -> $code"
+[ "$code" = "200" ] || { echo "FATAL: GitLab did not answer in ten minutes - is awsds-prod-gitlab running?" >&2; exit 1; }
+
+echo "--- registering with the authentication token from Secrets Manager"
+INSTANCE_ID="$(curl -s -H "X-aws-ec2-metadata-token: $(curl -s -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)" http://169.254.169.254/latest/meta-data/instance-id)"
+TOKEN="$(aws secretsmanager get-secret-value --secret-id "$TOKEN_SECRET" --query SecretString --output text)"
+[ -n "$TOKEN" ] || { echo "FATAL: the test runner token container is empty - create the runner in GitLab and put-secret-value first (Stage 8 decision 11)" >&2; exit 1; }
+gitlab-runner register \
+  --non-interactive \
+  --url "$GITLAB_URL" \
+  --token "$TOKEN" \
+  --name "$NAME_TAG-$INSTANCE_ID" \
+  --executor docker \
+  --docker-image "public.ecr.aws/docker/library/alpine:latest" \
+  --docker-pull-policy if-not-present \
+  --docker-volumes "/etc/gitlab-runner/certs/$GITLAB_HOST.crt:/etc/gitlab-runner/certs/ca.crt:ro" \
+  --env "HTTP_PROXY=$PROXY" \
+  --env "HTTPS_PROXY=$PROXY" \
+  --env "NO_PROXY=$NOPROXY" \
+  --env "http_proxy=$PROXY" \
+  --env "https_proxy=$PROXY" \
+  --env "no_proxy=$NOPROXY"
+unset TOKEN
+sed -i "s/^concurrent = .*/concurrent = $CONCURRENT/" /etc/gitlab-runner/config.toml
+systemctl restart gitlab-runner
+gitlab-runner verify 2>&1 | tail -n 3
+
+echo "--- proxy (4/4): an allowed name over https, then a PRIVATE destination over http"
+echo "    pypi.org over https (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" https://pypi.org/ || true)"
+echo "    10.31.0.1 over http, a PRIVATE address (must be 403): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --proxy "$PROXY" http://10.31.0.1/ || true)"
+echo "    $GITLAB_HOST direct, the sign-in page (must be 200): $(curl -s -o /dev/null -w '%%{http_code}' --max-time 20 --noproxy '*' "$GITLAB_URL/users/sign_in" || true)"
+
+cat > /etc/profile.d/awsds-runner.sh <<'BANNER'
+echo
+echo "  awsds test runner - [E], destroyed by make gitlab-down. Unprotected, tag awsds-test only."
+echo "  Its jobs read no AWS identity: the metadata hop limit is 1, so a token never crosses the bridge."
+echo "  first-boot log: /var/log/awsds-runner-boot.log     config: /etc/gitlab-runner/config.toml"
+echo
+BANNER
+
+echo "=== awsds test runner first boot done: $(date -Is) ==="

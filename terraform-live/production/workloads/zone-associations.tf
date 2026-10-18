@@ -6,6 +6,9 @@
 # or `staging.` - a deployment target has no business resolving another environment's private
 # names, and INT-22's matrix says so by omission rather than by a rule.
 #
+# While production/workloads-egress/ is up, its DNS Firewall answers NXDOMAIN for every name in
+# both zones: its allow-list carries AWS's namespaces only (Stage 9 step 3.3a).
+#
 # Both VPCs are in this account, so the VPC owner simply associates: the
 # authorization/association pair is a cross-account protocol and there is nothing to authorize
 # here.

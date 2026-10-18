@@ -26,6 +26,9 @@ docs/PRICING.md 3 with the row named - prices are measured, never reasoned (Less
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+
+from . import backend
 
 PERSISTENT = "P"
 DORMANT = "D"
@@ -205,33 +208,15 @@ RANKS = {
     # VPC-Workloads' own [E] endpoint slice (Stage 6c step 1.3a). 51 rather than 50 only so the
     # two Production egress slices have a defined order between them; both sit above `proxy`.
     "workloads-egress": 51,
-    # Stage 6 step 5.0's build host. Above `vpn` (40) and below `probes` (60):
-    #
-    #   vpn      a dependency, and a hard one. This slice's single route points at the
-    #            WireGuard host's ENI and the host must be running, or the route is a
-    #            blackhole rather than an error. `up` ascends rank, so the [D] hook starts the
-    #            tunnel first.
-    #   egress   a hard prerequisite since 6c step 5.8. The build host moved to
-    #            `production/buildbox/`, its default route is gone, and its shell is an
-    #            interface endpoint - `ssm`/`ssmmessages`/`ec2messages`, put in
-    #            VPC-SharedServices by step 5.5 one step ahead of it. Without `egress/` there
-    #            is no way into the host at all, so the ordering is load-bearing and 0.130
-    #            USD/h is a cost of a build session rather than a cost avoided.
-    #   proxy    is in a different account: the internet arrives as an explicit proxy over the
-    #            SharedServices <-> Networking peering. A rank cannot express a cross-account
-    #            dependency, which is why ./scripts/buildbox.py checks it - a rank is not a
-    #            control (Lesson 5).
-    #   probes   no longer conflicts. The exclusion existed because `sandbox/probes/`'s
-    #            perimeter probe measures the Sandbox isolated tier's absence of a default
-    #            route while this slice's mechanism was adding one there; this slice creates no
-    #            route anywhere now and is not in that account.
-    "buildbox": 55,
-    # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor. Above `egress` (50): it
-    # needs the SSM endpoints for its only door and reads `egress/`'s `no_proxy` output at apply
-    # time, which a destroyed slice fails by name. Above `buildbox` (55) only because the two
-    # coexist until 6.5 retires the buildbox, and a defined order between two [E] hosts in one VPC
-    # costs nothing.
+    # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor (the buildbox, rank 55,
+    # retired at 6.5). Above `egress` (50): it needs the SSM endpoints for its only door and reads
+    # `egress/`'s `no_proxy` output at apply time, which a destroyed slice fails by name.
     "runners": 57,
+    # Stage 8 step 2.4 - an application slice, one folder further down (conventions 6:
+    # terraform-live/<env>/app/<app>/), [E] in every account. Above `egress` (50), so `down` destroys
+    # the application before the endpoints its jobs log through; Stage 10's `orchestration` ranks
+    # above it, so `down` removes a workflow before the application the workflow starts.
+    "app/app-etl": 58,
     "probes": 60,
 }
 
@@ -321,9 +306,9 @@ SLICES = [
     # column is hourly only, so it cannot show the axis that decides the comparison.
     #
     # None of the three includes 5.3's optional groups: `bedrock-base` and `bedrock-agent` add
-    # 0.020 each, `emr` 0.070 and `redshift` 0.010, only for an apply that names them, and a static
-    # rate that assumed them would over-report every session that does not. `make status` quotes
-    # this column; the flag's cost is in `make help`.
+    # 0.020 each, `emr` 0.070, `mlflow` and `redshift` 0.010 each, only for an apply that names
+    # them, and a static rate that assumed them would over-report every session that does not.
+    # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
     Slice(
         "staging",
@@ -332,20 +317,26 @@ SLICES = [
         "11 interface endpoints (8.3) - no NAT",
         0.110,
     ),
-    # 14 since Stage 7 step 1.7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager`, which the GitLab
-    # host's bootstrap reads its leaf keys and gitlab-secrets.json through, and the runner its
-    # registration token.
-    Slice("production", "egress", EPHEMERAL, "14 interface endpoints (5.5, 7 1.7) - no NAT", 0.140),
-    # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, written empty and egress_mode "B" from
-    # birth: zero NAT (D38) and no endpoint until Stage 9/10 names one, so usd_per_hour is 0.0
-    # and true rather than 0.0 and pending. It exists now because an [E] slice that arrives
-    # after the teardown target was last read is how a bill starts.
+    # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
+    # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
+    # registration token, minus the SageMaker pair nothing in this VPC calls (decision 9).
+    Slice(
+        "production",
+        "egress",
+        EPHEMERAL,
+        "12 interface endpoints (5.5, 7 1.7, 7 dec 9) - no NAT",
+        0.120,
+    ),
+    # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
+    # its six endpoints: sts, logs, kms and glue of the core, sagemaker.api and secretsmanager. The
+    # DNS Firewall bills per query and per domain list, never by the hour, so it adds nothing to
+    # this column.
     Slice(
         "production",
         "workloads-egress",
         EPHEMERAL,
-        "VPC-Workloads endpoints - empty until St.9/10",
-        0.0,
+        "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
+        0.060,
     ),
     # Stage 3's Deliverables, as slices rather than as a script. These are instruments: created,
     # read from the serial console, destroyed in the same sitting - `make down` is why they are
@@ -413,25 +404,6 @@ SLICES = [
         "Squid explicit proxy - the estate's only internet exit",
         0.0104,
     ),
-    # Stage 6 step 5.0 - the amd64 build host, [E]. usd_per_hour is the m8i.xlarge row of
-    # docs/PRICING.md 8, measured us-west-2 (Lesson 6), and unlike the WireGuard row above it
-    # this figure does follow the tracked tfvars, because the default and the assignment agree
-    # by design (the slice's own instance_type.auto.tfvars says why). The 64 GiB gp3 is
-    # ~0.007/h on top and is not in this column: it is billed per GB-month and this slice is
-    # [E], so it exists only while the host does.
-    #
-    # 6c step 5.8 moved it to Production, account and tier both, at the same rate and in the
-    # same [E] layer. The host has two prerequisites it cannot express, `production/egress/` in
-    # its own account (the SSM endpoints that are its only door) and `production/proxy/` in the
-    # hub (the only way to the internet), so a build session costs this row plus 0.130 plus
-    # 0.0104.
-    Slice(
-        "production",
-        "buildbox",
-        EPHEMERAL,
-        "amd64 build host for the dev-env image (St.6 5.0)",
-        0.2117,
-    ),
     # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer
     # (config free; runs metered per DPU-hour, docs/PRICING.md 5).
@@ -482,14 +454,16 @@ SLICES = [
         0.0672,
     ),
     # Stage 7 step 6.1 - the build runner, [E], and the buildbox's successor on the same measured
-    # shape (m8i.xlarge, docs/PRICING.md 8). Destroyed by `make gitlab-down` and by `make down
-    # ENV=production`; a forgotten one is this stage's likeliest leak, at 0.2117/h.
+    # shape (m8i.xlarge 0.2117/h, docs/PRICING.md 8); Stage 8 step 4.3 adds the deploy runner
+    # (t3a.small 0.0188/h) once deploy_image_digest is set, and decision 11 the test runner (t3a.small
+    # 0.0188/h). Destroyed by `make gitlab-down` and by `make down ENV=production`; a forgotten set is
+    # this stage's likeliest leak, at 0.2493/h.
     Slice(
         "production",
         "runners",
         EPHEMERAL,
-        "the build runner, m8i.xlarge + 64 GiB (Stage 7 step 6.1)",
-        0.2117,
+        "the build, deploy and test runners (St.7 6.1, St.8 4.3 and decision 11)",
+        0.2493,
     ),
     # Stage 6 pass 0 - Stage 7 step 5.a, applied one stage early because Stage 6 step 5.0
     # pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK (key-month,
@@ -509,6 +483,13 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
+    # Stage 9 step 3 - the same slice name in a deployment target, and a different content: the
+    # job role, the Model Registry's package groups, the debug role and its alarm, the job log
+    # groups (D17's runtime half). [P] and free at rest: roles, rules and empty groups cost
+    # nothing. Rank 46 sits above foundation/ and registry/, whose states it reads; the first apply
+    # also precedes production/data/ (45), whose key and bucket policies name the two roles, the
+    # inversion the sso/data row above describes and for the same reason no order acts on it.
+    Slice("production", "sagemaker", PERSISTENT, "job role, model registry, debug role + alarm"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
     # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). No compute lives here and none may: US-2 measures that, and Stage 6
@@ -628,6 +609,16 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # Refusal 5 is enforced in is_refused() below rather than as a set, because it is a property of
 # the layer and not of a named slice.
 #
+# Refusal 6 is the hub's and lives in slices.py (Stage 7 step 1.6): ENV=production leaves the hub
+# pair to hub-up and hub-down.
+#
+# Refusal 7 - Stage 8 step 2.4. `up` never applies an application or orchestration slice: its applier
+# is the pipeline, which passes the release it promotes. A `make up` for an unrelated session would
+# deploy the recorded release outside it, and an orchestration slice's schedule would start firing.
+# `down` destroys both normally (Stage 10 step 1.4 relies on it).
+APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
+APPLICATION_PARENT = "app"
+#
 # A [D] slice is refused by both targets, and the power state is handled by the dormant hook
 # instead. Without the refusal a [D] row falls into the same list as the [E] ones, the one
 # `down` runs `terraform destroy` over, and `make down ENV=sandbox` destroys the tunnel
@@ -640,6 +631,43 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # SSM-resolved AMI, and a moved AL2023 release replaces the instance (Stage 4 step 1.1), a
 # silent rebuild of the VPN host on a routine start. Creating and changing a [D] slice is a
 # deliberate `terraform apply`, read first.
+
+
+def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
+    """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
+
+    A pipeline profile is a deploy role's (backend.DEPLOY_ROLES and DEPLOY_ROLES_BY_SLICE; the deploy
+    runner names each profile after its role). In an Interactive account it applies no slice: CI
+    never applies into Sandbox (D21's surviving objection), and the two flows that write where people
+    work create their objects through the API - the dev-env release its image versions (step 1.6,
+    decision 18), the test deploy its workflow (decision 19). Neither deploy role holds state access,
+    which refuses the same writes in IAM; this says so before anything runs.
+    """
+    deploy_profiles = set(backend.DEPLOY_ROLES.values()) | set(
+        backend.DEPLOY_ROLES_BY_SLICE.values()
+    )
+    if profile not in deploy_profiles or account not in backend.SMUS_MEMBERS:
+        return None
+    return (
+        f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
+        "into the account people work in; the dev-env release creates image versions and the test "
+        "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
+    )
+
+
+# A slice folder sits under its account folder, or one level further down under one of these parents
+# (conventions 6). Every reader of the tree discovers slices here, so `make check`, the lock check and
+# the network-doc check see a nested slice alike.
+NESTED_SLICE_PARENTS = (APPLICATION_PARENT,)
+
+
+def slice_dirs_on_disk(live: Path) -> dict:
+    """(account, slice name) -> the folder, for every slice folder under `live` holding a .tf file."""
+    found = {(p.parent.parent.name, p.parent.name): p.parent for p in live.glob("*/*/*.tf")}
+    for parent in NESTED_SLICE_PARENTS:
+        for p in live.glob(f"*/{parent}/*/*.tf"):
+            found[(p.parents[2].name, f"{parent}/{p.parent.name}")] = p.parent
+    return found
 
 
 def all_slices() -> list:
@@ -665,6 +693,13 @@ def is_refused(sl: Slice, action: str) -> str | None:
         return f"refusal 4: {sl.name}/ is unreachable from up and down - it holds its own state"
     if action == "down" and (sl.account, sl.name) in NEVER_DESTROY:
         return "refusal 3: D36 - production/pki/ is excluded from every down path"
+    if action == "up" and (
+        sl.name.startswith(f"{APPLICATION_PARENT}/") or sl.name in APPLIED_BY_THEIR_OWN_HAND
+    ):
+        return (
+            "refusal 7: up never applies an application or orchestration slice - the pipeline "
+            "applies it with the release it runs (Stage 8 step 2.4)"
+        )
     if sl.layer == PERSISTENT:
         return "refusal 1: [P] slices are never touched by up or down (D11)"
     if sl.layer == DORMANT:

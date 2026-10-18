@@ -2,27 +2,27 @@
 #
 # Three objects, and the boundary between them is what the rest of the design leans on:
 #
-#   image          the named thing a domain attaches. Account-scoped, versionless
-#   image version  one immutable pointer at one container image in ECR. Numbered by the service,
-#                  1 upwards, and force-new here because base_image cannot be updated in place
+#   image          the named thing a domain attaches. Account-scoped, versionless. This slice's
+#   image version  one immutable pointer at one container image in ECR, numbered by the service from 1
+#                  upwards. The release pipeline's since Stage 8 decision 18
 #   app image      how a space starts that container: the entrypoint, the arguments and the
 #   configuration  environment. One per app type, because a JupyterLab space and a Code Editor
-#                  space read different fields of the domain's user settings
+#                  space read different fields of the domain's user settings. This slice's
 #
-# What is not here is the fourth object, and it is deliberate: the domain's CustomImages. That field
-# lives on the SageMaker AI domain the Tooling blueprint provisions for the project, an object this
-# repository does not author and must not adopt (Lesson 17 - a service that sets itself up creates
-# principals and objects nobody chose, and Terraform would then be racing its author). The attach is
-# a hand step and its recipe, its full-replace hazard and its reconciliation reading are
+# What is not here is deliberate. The image versions are the release pipeline's (below). The domain's
+# CustomImages lives on the SageMaker AI domain the Tooling blueprint provisions for the project, an
+# object this repository does not author and must not adopt (Lesson 17 - a service that sets itself up
+# creates principals and objects nobody chose, and Terraform would then be racing its author). The
+# attach is a hand step and its recipe, its full-replace hazard and its reconciliation reading are
 # docs/plan/runbooks/dev-env.md.
 #
-# The layer is [P]: an image, a version and two configurations are metadata and cost nothing at
+# The layer is [P]: an image, its versions and two configurations are metadata and cost nothing at
 # rest. What costs is a space started on them, which is [E] and dies with `make down`.
 
 resource "aws_sagemaker_image" "dev_env" {
   image_name   = "awsds-${var.env}-dev-env"
   display_name = "AWS-DataScience dev-env"
-  description  = "The house image: the SageMaker Distribution ancestor plus this project's Python, Julia, R and Rust layer (images/dev-env/Dockerfile)."
+  description  = "The house image: the SageMaker Distribution ancestor plus this project's Python, Julia, R and Rust layer (dev-env/Dockerfile of the GitLab project awsds/dev-env)."
   role_arn     = module.image_role.role_arn
 
   tags = {
@@ -30,19 +30,19 @@ resource "aws_sagemaker_image" "dev_env" {
   }
 }
 
-# The version. `base_image` is force-new: SageMaker image versions are immutable, so a tag bump
-# destroys version N and creates version N+1 rather than editing one. That is the intended shape -
-# Stage 8 step 1's pipeline takes this slice over and its only input is the approved digest - and it
-# is also why the attachment's version number is a decision rather than a detail (the runbook's
-# "Attaching the image to the domain").
+# The versions are not this slice's (Stage 8 decision 18). A version is a release artifact: awsds/dev-env's
+# register job creates one per approved release with `create-image-version`, by digest and with the
+# release's semver as an alias, and its retire job deletes every version past the newest 10 that no space
+# names. The domain attaches this image with no version number, so the portal offers every version and a
+# new space pins the one it is created on (decision 7, dev-env.md §B).
 #
-# Version N is named in two places an apply does not reach: the domain's CustomImages, and the
-# DefaultResourceSpec of every space created while N was current. A space keeps that copy and it
-# overrides the domain default, so after the destroy its app does not start (AWS_STATE.md EXC-09).
-# No alias is set, which is what would let a space follow a bump; dev-env.md §B step 6 is the sweep.
-resource "aws_sagemaker_image_version" "dev_env" {
-  image_name = aws_sagemaker_image.dev_env.image_name
-  base_image = local.base_image
+# Version 7, the last one Terraform created, leaves the state and stays in the account.
+removed {
+  from = aws_sagemaker_image_version.dev_env
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 # ---------------------------------------------------------------- how a space starts it
@@ -51,11 +51,11 @@ resource "aws_sagemaker_image_version" "dev_env" {
 # Dockerfile, and the domain reads the two from different fields of its user settings
 # (JupyterLabAppSettings and CodeEditorAppSettings). A space names no configuration - CustomImages
 # lives on the domain default or a user profile, never on SpaceSettings - though it does name an image
-# and a version, in its own DefaultResourceSpec (see the version above).
+# and a version, in its own DefaultResourceSpec, written when the space is created (dev-env.md §B).
 #
 # No file_system_config in either: the defaults are already this image's shape - uid 1000, gid 100,
 # and the space's EBS volume mounted at /home/sagemaker-user, a path the platform owns and that
-# images/README.md forbids moving.
+# gitlab/awsds/dev-env/README.md forbids moving.
 #
 # The environment this configuration cannot carry, measured 2026-09-10 at this slice's first apply.
 # 6c step 5.6's six proxy variables were written here as ContainerEnvironmentVariables, which is
@@ -74,10 +74,10 @@ resource "aws_sagemaker_image_version" "dev_env" {
 #
 # So these configurations bind an app type to the image and carry no environment. The delivery was
 # decided by the user on 2026-09-10 (6d decision 8): the six variables are ENV in
-# images/dev-env/Dockerfile, the bypass list a dated literal there with the command that refreshes it
-# beside it. What that costs - the image is shaped by one VPC's endpoint list, and a change to it is a
-# rebuild, a tag, a version and a re-attach - is docs/plan/runbooks/dev-env.md E, which also carries
-# the staleness reading.
+# gitlab/awsds/dev-env/dev-env/Dockerfile, the bypass list a dated literal there with the command
+# that refreshes it beside it. What that costs - the image is shaped by one VPC's endpoint list, and
+# a change to it is a rebuild, a tag and a version - is docs/plan/runbooks/dev-env.md
+# E, which also carries the staleness reading.
 
 resource "aws_sagemaker_app_image_config" "jupyterlab" {
   app_image_config_name = "awsds-${var.env}-dev-env-jupyterlab"

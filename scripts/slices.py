@@ -31,9 +31,15 @@
 #                                       ENV=production` that stopped the proxy would blackhole
 #                                       every peer session's spoke; GitLab's session (`make
 #                                       gitlab-up`/`gitlab-down`) is `--only tooling,egress,runners`
+#   7. up never applies an application  layers.is_refused on the slice name: the pipeline applies
+#      or orchestration slice           it with the release it runs (Stage 8 step 2.4)
+#   8. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
+#      sandbox/ slice                   CI never applies into the account people work in (2.4,
+#                                       decision 18)
 #
-# How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES, and no
-# credential is ever exported into this process's environment. A borrowed session outlives the
+# How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
+# (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this
+# process's environment. A borrowed session outlives the
 # command that needed it and every later error names the wrong account (Lesson 25). --dry-run
 # prints the exact commands and runs none of them, which is also how the Validation reads the
 # plan instead of trusting the target list.
@@ -67,7 +73,7 @@ def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bo
     return subprocess.run(cmd, env=env)
 
 
-def prepare(sl: layers.Slice, dry: bool) -> bool:
+def prepare(sl: layers.Slice, dry: bool, profile: str | None = None) -> bool:
     """The two generated files and `init`. Both generators read one table (step 2.6)."""
     for gen in ("gen-tfvars.py", "gen-backend-hcl.py"):
         res = run([f"./scripts/{gen}", sl.account, sl.name], dry=dry, capture=True)
@@ -76,7 +82,7 @@ def prepare(sl: layers.Slice, dry: bool) -> bool:
             return False
     res = run(
         ["terraform", f"-chdir={sl.path}", "init", "-backend-config=backend.hcl", "-input=false"],
-        env_extra={"AWS_PROFILE": backend.profile(sl.account)},
+        env_extra={"AWS_PROFILE": profile or backend.profile(sl.account)},
         dry=dry,
     )
     return dry or res.returncode == 0
@@ -105,7 +111,9 @@ def instance_name(env: str, slice_name: str) -> str:
     return f"awsds-{backend.env_token(env)}-{slice_name}"
 
 
-def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
+def instance_states(
+    env: str, slice_name: str, dry: bool, profile: str | None = None
+) -> list | None:
     """[(instance id, power state)] for one [D] slice, found by Name tag - or None.
 
     None means nothing was read, and the caller can tell the two causes apart because it
@@ -129,7 +137,7 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
             "--output",
             "text",
         ],
-        env_extra={"AWS_PROFILE": backend.profile(env)},
+        env_extra={"AWS_PROFILE": profile or backend.profile(env)},
         dry=dry,
         capture=True,
     )
@@ -156,8 +164,7 @@ def instance_states(env: str, slice_name: str, dry: bool) -> list | None:
 #        Production's [E] endpoints - hence `--only`, and `make hub-up` / `make hub-down`.
 #   7.2  a spoke's `make up` must refuse while the PROXY is down, naming it. Left alone a stopped
 #        proxy is a blackhole rather than an error: the apply succeeds, and every symptom
-#        afterwards is a timeout that looks like a broken mirror or a broken package index. That
-#        is the failure `runbooks/buildbox.md` documented for one tier, now estate-wide. The
+#        afterwards is a timeout that looks like a broken mirror or a broken package index. The
 #        tunnel is reported beside it and never refuses: since D39 nothing a spoke applies, and
 #        no session it opens, needs the private network (6g decision due 2).
 HUB_ENV = "production"
@@ -233,7 +240,9 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
     return False
 
 
-def dormant(env: str, action: str, dry: bool, only: list | None = None) -> None:
+def dormant(
+    env: str, action: str, dry: bool, only: list | None = None, profile: str | None = None
+) -> None:
     """[D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body.
 
     The instances are found by Name tag, not by state file (instance_name above), with two
@@ -265,14 +274,14 @@ def dormant(env: str, action: str, dry: bool, only: list | None = None) -> None:
         print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
         return
 
-    profile = backend.profile(env)
+    profile = profile or backend.profile(env)
     verb, wanted, ready = (
         ("start", "running", "stopped") if action == "up" else ("stop", "stopped", "running")
     )
 
     for sl in declared:
         name = instance_name(env, sl.name)
-        found = instance_states(env, sl.name, dry)
+        found = instance_states(env, sl.name, dry, profile)
         if found is None:
             if dry:  # the command above was printed and not run
                 print(f"    would {verb} whatever is tagged {name} and currently {ready}")
@@ -378,7 +387,7 @@ def cmd_check(args) -> int:
     """Table vs. disk, in both directions - the two-list shape of step 9.3."""
     failures = []
 
-    on_disk = {(p.parent.parent.name, p.parent.name) for p in LIVE.glob("*/*/*.tf")}
+    on_disk = set(layers.slice_dirs_on_disk(LIVE))
     declared = {(s.account, s.name) for s in layers.SLICES}
 
     for account, name in sorted(on_disk - declared):
@@ -448,9 +457,25 @@ def cmd_updown(args) -> int:
             return 2
         take = [sl for sl in take if sl.name in only]
 
+    # --profile (Stage 8 step 4.4): the deploy runner names the role it acts as, since its AWS
+    # configuration holds the deploy roles' profiles and none of backend.PROFILES. Refusal 8 is read
+    # before anything runs.
+    profile = getattr(args, "profile", None)
+    if profile:
+        kept = []
+        for sl in take:
+            reason = layers.pipeline_refusal(sl.account, sl.name, profile)
+            if reason:
+                skipped.append((sl, reason))
+            else:
+                kept.append(sl)
+        take = kept
+
     print(f"{BOLD}make {action} ENV={args.env}{RESET}")
     if only:
         print(f"  --only {','.join(only)} - every other slice in this env is untouched")
+    if profile:
+        print(f"  --profile {profile} - every command in this env runs as it")
     print(f"\n  refused ({len(skipped)}), and the reason is printed rather than implied:")
     for sl, reason in skipped:
         print(f"    - {sl.path}: {reason}")
@@ -476,7 +501,7 @@ def cmd_updown(args) -> int:
     # has to decide which side of that loop the hook sits on too.
     def run_dormant() -> None:
         print("\n  dormant [D] (step 8.2):")
-        dormant(args.env, action, args.dry_run, only=only)
+        dormant(args.env, action, args.dry_run, only=only, profile=profile)
 
     # The hub check goes before the [D] hook and before the first apply (step 7.2), because a
     # refusal after either would leave the env half-raised, which is worse than not starting.
@@ -493,7 +518,7 @@ def cmd_updown(args) -> int:
         print("    none - every [E] slice in this env is refused above, so this half is a NO-OP.")
     for sl in take:
         print(f"\n  --- {sl.path}")
-        if not prepare(sl, args.dry_run):
+        if not prepare(sl, args.dry_run, profile):
             print(f"    init failed for {sl.path}", file=sys.stderr)
             return 1
         # -input=false makes an unset variable an immediate error, not a prompt that waits on stdin
@@ -508,7 +533,9 @@ def cmd_updown(args) -> int:
         ]
         if args.auto_approve:
             cmd.append("-auto-approve")
-        res = run(cmd, env_extra={"AWS_PROFILE": backend.profile(sl.account)}, dry=args.dry_run)
+        res = run(
+            cmd, env_extra={"AWS_PROFILE": profile or backend.profile(sl.account)}, dry=args.dry_run
+        )
         if res is not None and res.returncode != 0:
             # The host is left running on purpose when a destroy fails: the fix may need the
             # private network, or the monitored profile's route to AWS, and this hook would close
@@ -653,6 +680,12 @@ def main(argv: list) -> int:
             "Narrows only: a slice this env refuses stays refused. `make hub-up` is "
             "`up --env production --only vpn,proxy`; `make gitlab-up` is "
             "`up --env production --only tooling,egress,runners` (Stage 7 step 1.6).",
+        )
+        p.add_argument(
+            "--profile",
+            help="the AWS profile every command in this env runs as, instead of backend.PROFILES' "
+            "(Stage 8 step 4.4): the deploy runner's profiles are its deploy roles. A deploy-role "
+            "profile meets refusal 8 in an Interactive account.",
         )
         p.set_defaults(fn=cmd_updown, action=action)
     p = sub.add_parser("status")

@@ -72,6 +72,34 @@ variable "root_volume_size" {
   }
 }
 
+variable "ecr_credential_helper" {
+  description = "Amazon's ECR credential helper, fetched by the boot through the proxy and mounted read-only into every job: the registry login a rootless build job cannot install for itself. Pinned by version and by the SHA256 its release page publishes (v0.12.0, 2026-02-27); a mismatch fails the boot. The upstream build is static (CGO_ENABLED=0), so it runs in Alpine and glibc images alike."
+  type = object({
+    version = string
+    sha256  = string
+  })
+  default = {
+    version = "0.12.0"
+    sha256  = "a22ab6d59dbac777b8fb31984709461da00a4c778b6ae14c8d3729e8d5ded1a6"
+  }
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{64}$", var.ecr_credential_helper.sha256))
+    error_message = "ecr_credential_helper.sha256 must be a 64-character lowercase hex digest."
+  }
+}
+
+variable "gitlab_runner_version" {
+  description = "The gitlab-runner release all three runners install, from packages.gitlab.com's amazon/2023 repository (Stage 8 decision 24). GitLab keeps a runner's major.minor with the server's, so it follows production/tooling/'s gitlab_ce_version, 19.4.2 (Stage 7 decision 10): 19.4.1, the newest 19.4 in the repository on 2026-10-16, whose newest release is 19.5.0. A GitLab upgrade moves both in the same sitting; a release the repository lacks stops the boot at dnf."
+  type        = string
+  default     = "19.4.1"
+
+  validation {
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.gitlab_runner_version))
+    error_message = "gitlab_runner_version must be a release such as 19.4.1."
+  }
+}
+
 variable "concurrent_jobs" {
   description = "How many jobs the runner manager runs at once. Two: a docs build beside an image build; a third would contend for the same four vCPUs."
   type        = number
@@ -94,4 +122,40 @@ variable "cost_center" {
   description = "CostCenter tag - the stage that created the resource."
   type        = string
   default     = "stage-07"
+}
+
+# Stage 8 step 4.3 - the deploy runner. It exists only once its job image is pinned here: the digest
+# awsds/deploy-image's pipeline printed, committed, so the approved image is a reviewed line in this
+# repository and never only a fact inside an [E] host (Lesson 4).
+variable "deploy_image_digest" {
+  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.2.0: built 2026-10-16 from b064ba80, with the SageMaker CI/CD CLI 1.0.9 in /opt/smus-cli, on python:3.14-slim through the cache."
+  type        = string
+  default     = "sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac"
+
+  validation {
+    condition     = var.deploy_image_digest == null || can(regex("^sha256:[0-9a-f]{64}$", var.deploy_image_digest))
+    error_message = "deploy_image_digest must be sha256: followed by 64 lowercase hex characters, or null."
+  }
+}
+
+variable "deploy_runner_instance_type" {
+  description = "The deploy runner's size (Stage 8 decision 4): t3a.small, 2 GiB, 0.0188 USD/h (docs/PRICING.md 8). x86_64, the deploy image's architecture; its jobs run terraform and tests, never an image build."
+  type        = string
+  default     = "t3a.small"
+
+  validation {
+    condition     = contains(["t3a.small", "t3.small", "t3a.medium"], var.deploy_runner_instance_type)
+    error_message = "deploy_runner_instance_type must be an x86_64 burstable type: t3a.small, t3.small or t3a.medium."
+  }
+}
+
+variable "test_runner_instance_type" {
+  description = "The test runner's size (Stage 8 decision 11): t3a.small, 2 GiB, 0.0188 USD/h (docs/PRICING.md 8), two jobs at a time. x86_64, so a test runs on the architecture the application image does."
+  type        = string
+  default     = "t3a.small"
+
+  validation {
+    condition     = contains(["t3a.small", "t3.small", "t3a.medium"], var.test_runner_instance_type)
+    error_message = "test_runner_instance_type must be an x86_64 burstable type: t3a.small, t3.small or t3a.medium."
+  }
 }

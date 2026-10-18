@@ -328,7 +328,11 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    derive and whose meaning no other tooling shares. (c) writes no grant at all and costs only
    discoverability in the catalog. **Recommendation: (c), with (d) as the shape to revisit** if
    discoverability of the lake turns out to matter more than keeping every lake grant in the
-   register — the two are the only shapes that leave the TBAC model intact.
+   register — the two are the only shapes that leave the TBAC model intact. A reading of 2026-10-17
+   ([Stage 18](stage-18-staging-deployment-project.md) step 7.2) weighs on (a): the troubleshooting
+   page says SageMaker Unified Studio *"does not support subscriptions to resource links"*, so
+   what a data source over `raw` and `curated` publishes could not be subscribed to, which no run
+   has tested.
 2. **How a fulfilment grant enters the grant register**, and whether `restricted` and `personal` tables
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
@@ -337,7 +341,13 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 4. **Whether a deployment target is ever associated.** Recommended: no. Production publishes through the
    lake, and `DenyDataZoneEntirely` stands with its revision trigger.
 5. **Whether a direct Share is allowed**, and where its control lives: DataZone's authorization, a deny on
-   the domain execution role, or detection by `catalog.py`.
+   the domain execution role, or detection by `catalog.py`. A reading of 2026-10-17
+   ([Stage 17's log](../../log/log-stage-17-sandbox-machine-learning.md)) adds the project role to the
+   question: v45 of its `SageMakerStudioProjectRoleMachineLearningPolicy` grants
+   `datazone:CreateSubscriptionRequest`, `RevokeSubscription`, `CreateListingChangeSet`, `Get*`,
+   `*Agent*` and `*DataApp*` on `*`, which the D13 boundary does not narrow, so code running as a project
+   role holds the IAM half of a subscription request, a revocation and a publication. DataZone's own
+   authorization is the other half, unread.
 
 ## Cost
 

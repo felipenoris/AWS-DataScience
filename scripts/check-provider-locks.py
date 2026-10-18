@@ -45,6 +45,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from tfhygiene import layers
+
 LIVE = Path("terraform-live")
 
 # Step 6.3's list, as a constant so the count below and the fix message cannot disagree.
@@ -64,15 +66,8 @@ AWS_CONSTRAINT_RE = re.compile(
 
 
 def slices() -> list[tuple[str, str, Path]]:
-    """(account, name, dir) for every folder under terraform-live with a .tf file in it."""
-    out = []
-    for path in sorted(LIVE.glob("*/*")):
-        if not path.is_dir() or path.name == ".terraform":
-            continue
-        if not any(path.glob("*.tf")):
-            continue
-        out.append((path.parent.name, path.name, path))
-    return out
+    """(account, name, dir) for every slice folder under terraform-live, nested ones included."""
+    return [(a, n, d) for (a, n), d in sorted(layers.slice_dirs_on_disk(LIVE).items())]
 
 
 def lock_blocks(lock: Path) -> dict[str, tuple[str, int]]:

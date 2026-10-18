@@ -19,6 +19,10 @@
   dependency of the uv project; `pre-commit` runs it through `uv run`, so the gate binds to the locked
   version rather than to whatever is on PATH.
 
+- PyYAML: <https://pypi.org/project/PyYAML/>. Parses the GitLab CI files for
+  `scripts/check-gitlab-ci.py`, a dev-only dependency like `ruff`, locked at 6.0.3 on 2026-10-14. Its safe
+  loader refuses an unknown tag, so GitLab's `!reference` gets a constructor of its own.
+
 - `pre-commit`: <https://pre-commit.com/>. The hook collection the repository configures is
   `antonbabenko/pre-commit-terraform`: <https://github.com/antonbabenko/pre-commit-terraform>. The
   `terraform_validate` argument is `--tf-init-args=`, not `--init-args=` (Stage 2 step 6.4).
@@ -141,6 +145,25 @@
   organization, resources by exact ARN (S3 bucket ARNs only, no prefixes):
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-create-internal.html>.
 
+- IAM Access Analyzer and the RCPs (read 2026-10-17, Stage 11 2.1.1, `TM-21`). An external finding's
+  `resourceControlPolicyRestriction` reads `APPLICABLE` where *"There is an RCP present in the
+  organization but IAM Access Analyzer does not include it in the evaluation of effective
+  permissions"*, and of `APPLIED` the page says *"This restriction is not currently available for
+  external access findings"*, so a finding stands where an RCP denies the access:
+  <https://docs.aws.amazon.com/access-analyzer/latest/APIReference/API_ExternalAccessDetails.html>.
+  For a KMS key the analyzer *"analyzes the key policies and grants applied to a key"* and reports a
+  `kms:CallerAccount` condition naming an account other than the zone of trust; the page says nothing
+  of `aws:PrincipalOrgID` on a key:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-resources.html>. The filter keys
+  list `condition.aws:PrincipalOrgID` and `condition.kms:CallerAccount` among a finding's fields, and
+  do not say how a condition is weighed against the zone of trust:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-reference-filter-keys.html>.
+  The Tooling blueprint's key permissions (read 2026-10-18, `TM-21`) give
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles` with
+  `"Principal": {"AWS": "*"}` and no account or organization condition, and name neither Access
+  Analyzer nor public access:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
+
 - IAM root user (including centralized root access management for member accounts): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html>.
 
 - IAM permissions boundaries: <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html>.
@@ -182,6 +205,28 @@
   <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
   <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
 
+- The IAM, KMS and STS readings behind Stage 9 pass 1's roles and alarm (read 2026-10-16):
+  - *KMS alias authorization*: `kms:ResourceAliases` controls access to a key by its aliases, and an
+    alias change can take up to five minutes to affect authorization, which bounds how soon after pass 3
+    the job role's alias-matched key statement works:
+    <https://docs.aws.amazon.com/kms/latest/developerguide/alias-authorization.md>; the KMS condition
+    keys, `kms:ViaService` among them:
+    <https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.md>.
+  - *The confused-deputy problem*, `aws:SourceAccount` in a service role's trust:
+    <https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html>; AWS Support's answer quoted
+    in a Prowler issue, that Glue sends no such key when it assumes a role, the reason
+    `awsds-prod-job-exec`'s Glue statement carries no condition:
+    <https://github.com/prowler-cloud/prowler/issues/2810>.
+  - *STS endpoints*: a call to the global endpoint is recorded in `us-east-1`, the reason the debug
+    role's trust pins `aws:RequestedRegion`:
+    <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_region-endpoints.html>.
+  - *A console role switch in CloudTrail*: the sign-in service's `SwitchRole` event and its
+    `additionalEventData.SwitchTo`, from two published rules, neither read against this estate:
+    <https://blog.serverworks.co.jp/how-to-set-up-eventbridge-for-switchrole-notifications> and
+    <https://aws.amazon.com/blogs/security/how-to-audit-cross-account-roles-using-aws-cloudtrail-and-amazon-cloudwatch-events/>;
+    IAM's page on the permissions to switch roles:
+    <https://docs.aws.eu/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html>.
+
 ## Terraform
 
 - Terraform S3 backend (including native state locking): <https://developer.hashicorp.com/terraform/language/backend/s3>.
@@ -197,17 +242,27 @@
   `removed { from = <address>  lifecycle { destroy = false } }`, which removes the resource from state
   and leaves it alone: <https://developer.hashicorp.com/terraform/language/block/removed>.
 
-- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, not measured). The apply page
+- `-input=false` on `terraform apply` and `destroy` (read 2026-10-11, measured 2026-10-12). The apply page
   says the flag also prevents the approval prompt, so a run without `-auto-approve` fails:
   <https://developer.hashicorp.com/terraform/cli/commands/apply>. The 1.15.8 source says otherwise. An
   S3-backend apply runs in the local backend, which asks for approval whenever `-auto-approve` is
   absent and the plan has changes, and reads stdin without consulting the flag; the flag gates only the
-  prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` and
-  `scripts/buildbox.py` pass the flag on every apply and destroy on this reading:
+  prompts for unset variables, which come after the state lock is taken. `scripts/slices.py` (and
+  `scripts/buildbox.py` until the buildbox retired) pass the flag on every apply and destroy on this reading.
+  Measured on a local `terraform_data` resource: `apply -input=false` with no `-auto-approve` printed
+  *"Only 'yes' will be accepted to approve"* and, given no answer, *"error asking for approval: EOF"*,
+  applying nothing; so the source is right and a `make` target run without `AUTO=1` asks for a yes:
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_apply.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/backend/local/backend_local.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/meta_backend.go>,
   <https://github.com/hashicorp/terraform/blob/v1.15.8/internal/command/ui_input.go>.
+
+- The provider plugin cache (read 2026-10-12, for Stage 8 step 6.2): *"The plugin cache directory is not
+  guaranteed to be concurrency safe. The provider installer's behavior in environments with multiple
+  `terraform init` calls is undefined."* By default a cached package is used only if it matches a
+  checksum in the lock file, so a module folder, which commits none, downloads its providers. The CI
+  fills the cache one folder at a time on this reading:
+  <https://developer.hashicorp.com/terraform/cli/config/config-file>.
 
 ## Networking and access
 
@@ -391,6 +446,24 @@
   (`runbooks/client-vpn-proxy-configuration.md` §4.1):
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
+- Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
+  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>.
+
+- Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
+  IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and
+  such a name resolves to the private address inside its VPC and to the public one from anywhere else, so
+  the compute plane's `.amazonaws.com` entry names hosts any AWS account controls and a lookup from the
+  hub returns an address `to_private` does not catch (read 2026-10-17, `threat-model.md`'s `TM-03`):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hostname-types.html>. The VPC side of the same
+  split-horizon rule: <https://docs.aws.amazon.com/vpc/latest/userguide/AmazonDNS-concepts.html>.
+
+- Amazon API Gateway: invoking a REST API — the default endpoint is
+  `https://<api-id>.execute-api.<region>.amazonaws.com/<stage>/`, callable without a signature when the
+  API's owner allows it (read 2026-10-17, `TM-03`):
+  <https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html>.
+
 ## SageMaker and shared storage
 
 - SageMaker Studio notebooks and internet access: <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html>.
@@ -418,6 +491,8 @@
 - Custom project profile — the console fields a profile fixes (blueprint set, pinned account/Region or account pools, Tooling deployment settings, S3-or-Git files storage, authorization, readiness) and the "Projects do not provide strong security isolation" sentence `docs/SMUS.md` quotes: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/custom.html>. Read 2026-08-19.
 
 - Enable Tooling blueprint (SMUS admin guide) — the console flow's **Authorized domain units** field is the half `PutEnvironmentBlueprintConfiguration` does not perform: the API creates the configuration, the console also authorizes it, which is why step 1.4's API-enabled blueprints authorized nobody (the `Caller is not authorized to create environment using blueprintId` rollback): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-tooling-blueprint.html>. Read 2026-08-22.
+
+- Enable or disable blueprints (SMUS admin guide) — the console path to a blueprint's **Enable**: **View domains**, the domain, the **Blueprints** tab, a radio, **Enable** or **Disable**. It names none of the enable form's fields, which Stage 17 step 1.2 read in the console on 2026-10-18: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-disable-blueprints.html>. Read 2026-10-18.
 
 - Manage blueprint authorization, and the domain-unit policy list (SMUS admin guide) — a blueprint's **Authorization** tab (add/remove domain units, the cascade toggle) and the authorization policies a domain unit carries; the DataZone user guide names the blueprint configuration's two grantable policies: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/domain-units.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/assign-authorization-policies-in-blueprint-config.html>. Read 2026-08-22.
 
@@ -563,8 +638,9 @@
   image from your domain before deleting the image from the SageMaker AI image store. If not, you may
   experience errors while viewing your domain information or attaching new custom images to your
   domain"* — a deferred failure rather than a refusal, and it lands on the re-attach — and *"Before you
-  can update the custom images, you must delete all of the applications in your domain"*, which makes a
-  running app a precondition on both the detach and the re-attach:
+  can update the custom images, you must delete all of the applications in your domain"*, which made a
+  running app a precondition on both the detach and the re-attach, until four writes with apps running
+  were accepted on 2026-10-15 (Stage 8 decision 7):
   <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-detach-from-domain.html>,
   reached from
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-clean-up.html>.
@@ -584,6 +660,21 @@
   `ContainerEnvironmentVariables` is *"Map Entries: … Maximum number of 25 items"* with *"Key Length
   Constraints: … Maximum length of 256"* and the same cap on each value, which no BYOI page mentions:
   <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ContainerConfig.html>.
+
+- Image versions, their aliases and their lifecycle — Stage 8 decisions 7 and 18 (read 2026-10-14). A
+  domain's `CustomImage` names an image, an optional version number and a configuration, with no alias:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CustomImage.html>. A space's
+  `ResourceSpec` takes a semver-shaped `SageMakerImageVersionAlias`, and a version ARN outranks an image
+  ARN: <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ResourceSpec.html>. A version is
+  created with aliases and a `VendorGuidance`, and both change in place later (`TO_BE_ARCHIVED` archives a
+  custom version after three months):
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateImageVersion.html> and
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_UpdateImageVersion.html>. Neither launch
+  page says what the image picker lists for a custom image with several versions:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-byoi-how-to-launch.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/byoi-launch-custom-image.html>.
+  Provider 6.64.0's resource, keyed by name and version number:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.64.0/internal/service/sagemaker/image_version.go>.
 
 - VS Code's own two pages, consumed by Stage 6d step 7.8 (read 2026-09-11). **UI versus workspace
   extensions** is what decides where an extension installs — *"These extensions contribute to the VS Code
@@ -734,6 +825,195 @@
   mints a **one-year** OAuth token for environments without a browser, which is the long-lived credential
   principle 2 admits nowhere in this estate, so it is refused here for the same reason
   `AWS_BEARER_TOKEN_BEDROCK` is.
+
+- **The AI/ML menu of a SageMaker Unified Studio project** (read 2026-10-12 for Stage 17): the user
+  guide's machine-learning section, one page per entry of the portal's menu — the overview
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker.html>; JumpStart's *Discover models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-discover-models.html>; *Build models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-build-models.html>; *Train models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-train-models.html>; *Register models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-register-models.xml.html>; *Deploy models*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-deploy-models.html>; *Pipelines*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-pipelines.html>; *HyperPod clusters*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-hyperpods.html>; *Partner AI apps*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-partner-apps.html>; *Experiments* (MLflow)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>; the XGBoost recipe, whose dataset is a CSV fetched from
+  `raw.githubusercontent.com` (Stage 17 decision 3's choice, taken 2026-10-12) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+  the Bedrock IDE's getting-started page, where the Generative AI menu's app kinds are listed (prompt,
+  guardrail, chat agent, flow, evaluation, knowledge base, function) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/getting-started-use-amazon-bedrock-ide.html>;
+  Identity Center domains <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-identity-center-based-domains.html>; the guide's table of
+  contents <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/toc-contents.json>.
+
+- **The admin guide pages Stage 17 reads against** (read 2026-10-12): the capabilities list
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/all-capabilities.html>; the supported blueprints (`MLExperiments` an OnDemand MLflow tracking
+  server, `MLflowApp` an MLflow App) <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>; project profiles
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/project-profiles.html>; the Tooling blueprint's parameters, among them `enableNetworkIsolation`,
+  documented as network isolation for training and deployed inference containers
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>; the key permissions a project's provisioned resources need, which
+  name no MLflow statement <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>; the
+  admin guide's table of contents <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/toc-contents.json>.
+
+- **SageMaker with MLflow** (read 2026-10-12): the overview, which says to prefer MLflow Apps over tracking
+  servers <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>; the app setup <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup.html>, whose *create app* and
+  *prerequisites* pages returned only their headings that day, in `.html` and `.md`, so the parameters
+  were read on the API reference <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup-create-app.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app-setup-prerequisites.md> (the China-partition mirror of the create-app page was tried
+  for the same reason <https://docs.amazonaws.cn/en_us/sagemaker/latest/dg/mlflow-app-setup-create-app.html>);
+  the interface endpoint pages, where the tracking server's service name is
+  `aws.sagemaker.<region>.experiments`, the MLflow App's is `aws.sagemaker.<region>.mlflow`, and the
+  presigned URL travels through the SageMaker API endpoint <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-interface-endpoint.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-interface-endpoint-create.html>; `CreateMlflowApp` (`Name`, `ArtifactStoreUri`, `RoleArn`,
+  `ModelRegistrationMode`, `AccountDefaultStatus`, `DefaultDomainIdList`, `WeeklyMaintenanceWindowStart`,
+  `Tags`) <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateMlflowApp.html>; the launch
+  post of 2025-12-02, which prices the serverless MLflow at no additional cost beyond the artifact store
+  <https://aws.amazon.com/blogs/aws/accelerate-ai-development-using-amazon-sagemaker-ai-with-serverless-mlflow>.
+
+- **The project role's managed policy** `SageMakerStudioProjectRoleMachineLearningPolicy` (read
+  2026-10-12: v44, last edited 2026-09-14): `SageMakerCreatePermissions` is conditioned on the principal
+  tag `EnableSageMakerMLWorkloadsPermissions = true` and on the resource's project tag matching the
+  caller's; `SageMakerTagPermissions` lets `AddTags` write only `ProjectUserTag*`, `sagemaker*`,
+  `sm-jumpstart*` and `endpoint-has-jumpstart-model`, never `AmazonDataZone*`;
+  `SageMakerMlflowServerlessPermission` admits `CreateMlflowApp` on the project's tag; no statement names
+  `lambda:` or `bedrock:`:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- **The same policy's documentation, re-read 2026-10-17** after Stage 17's first run read v45 in Sandbox:
+  the reference page above still showed v44, last edited 2026-09-14, with `SageMakerCreatePermissions`
+  at 14 actions, `SageMakerTagPermissions` at 2 and `SageMakerMlflowServerlessPermission` at 6; the admin
+  guide's table of managed-policy updates, whose newest row for this policy is 2026-06-25 (Feature Store,
+  the public model hub, pipeline schedules):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-updates.html>.
+  Read again the same evening against the user's `diff` of v44 and v45, still at v44:
+  `DataZoneUserPermissions` holds nine actions ending in `datazone:*Compute*` on `Resource` `*`, and
+  `ConsumerS3AGPermission` holds `s3:GetAccessGrantsInstanceForPrefix`, `s3:GetDataAccess`,
+  `s3:ListCallerAccessGrants` and `ram:GetResourceShareInvitations` (the Stage 17 log names the change).
+- **The quota requests' missing output** (read 2026-10-17): AWS CLI v2 sends its output through `less`,
+  with the `FRX` flags only when `LESS` is unset, and `--no-cli-pager`, `cli_pager` or `AWS_PAGER` turn
+  it off <https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-pagination.html>; oh-my-zsh sets
+  `LESS=-R` when it is unset <https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/lib/misc.zsh>.
+- **The MLflow App's door, for Stage 17 pass 1** (read 2026-10-17): the interface endpoint pages above,
+  re-read, name the service `aws.sagemaker.<region>.mlflow` and no hostname; an endpoint policy may be
+  attached to the MLflow endpoints, and an MLflow App's calls are authorized as
+  `sagemaker:CallMlflowAppApi` on `mlflow-app/*`
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-private-link-policy.html>. The client's
+  hostname is read in `sagemaker-mlflow` 0.5.0's `_get_endpoint`: `https://mlflow.sagemaker.<region>.app.aws`
+  for an `mlflow-app` ARN and `https://<region>.experiments.sagemaker.aws` for a tracking server, unless
+  `SAGEMAKER_MLFLOW_CUSTOM_ENDPOINT` names another (the wheel listed below).
+
+- **SageMaker AI pricing** (read 2026-10-12): the public page <https://aws.amazon.com/sagemaker/ai/pricing/>,
+  and the `AmazonSageMaker` offer file for `us-west-2`, published `2026-10-12T18:05:38Z`, which gave
+  `PRICING.md` §8's rows of that date — the `ml.m5.large` instance rows, the MLflow tracking-server sizes
+  and storage, the HyperPod `Cluster:` and `PartnerApp-*` SKUs, and no usage type for the MLflow App:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSageMaker/current/us-west-2/index.json>.
+- **The Bedrock IDE's knowledge base and chat agent** (read 2026-10-12 for Stage 17 pass 7): the
+  component's page, with its configuration (the embeddings model, the vector store created on the user's
+  behalf among OpenSearch Serverless, S3 Vectors and Neptune Analytics, chunking, parsing)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/creating-a-knowledge-base-component.html>;
+  its sources: local files (PDF, Markdown, text, Office, HTML and CSV at 50 MB a file and 50 files)
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document.html>,
+  a web crawler of up to ten seed URLs under `robots.txt`
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-document-web-crawler.html>,
+  and the project's S3 prefix, Redshift tables and Lakehouse catalog, read with the project user role
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-project.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-sources.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>;
+  the manual sync <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-sync.html>
+  and the project as the component's boundary
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kb-security-boundaries.html>;
+  the chat agent app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app.html>,
+  its components <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app-with-components.html>,
+  the knowledge base as its *Data*
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-chat-app.html>,
+  its deploy, aliases and versions <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy.html>,
+  and its share, which deploys a snapshot, publishes the app to the catalog and cannot be withdrawn
+  without deleting the app <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>;
+  the prompts page <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/explore-prompts.html>.
+
+- **Amazon Bedrock Knowledge Bases** (read 2026-10-12): the setup page
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-setup.html> and the supported
+  models and stores, the embeddings models (`amazon.titan-embed-text-v2:0` at 256, 512 or 1024
+  dimensions, `amazon.titan-embed-text-v1`, Cohere's two) and the vector stores (OpenSearch Serverless
+  and managed, S3 Vectors, Aurora, Neptune Analytics, Pinecone, Redis, MongoDB Atlas)
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>.
+
+- **Amazon S3 Vectors** (read 2026-10-12), which names Amazon Bedrock in SageMaker Unified Studio
+  knowledge bases among its uses <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html>.
+
+- **OpenSearch Serverless capacity** (read 2026-10-12): the scaling page, where a classic collection holds
+  a minimum of 1 OCU in dev/test and 2 in production and a next-generation collection scales to zero after
+  ten idle minutes <https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-scaling.html>;
+  the pricing page, which gives no Oregon figure by itself <https://aws.amazon.com/opensearch-service/pricing/>.
+
+- **The offer files behind `PRICING.md` §5's knowledge-base rows** (read 2026-10-12): `AmazonBedrock`
+  (published `2026-10-10T18:22:42Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/us-west-2/index.json>,
+  `AmazonES` (`2026-09-27T12:24:24Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonES/current/us-west-2/index.json> and
+  `AmazonS3` (`2026-10-12T17:53:18Z`)
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
+
+- **What Stage 17 pass 0's scripts were written against** (read 2026-10-17):
+  - The XGBoost recipe, re-read: `image_uris.retrieve(framework="xgboost", region=region,
+    version="1.7-1")`, the SDK 2.x `Estimator` on `ml.m5.xlarge` with the hyperparameters step 2.2 names,
+    `ml.m5.large` for the endpoint, `mlflow.register_model` on the job's `model.tar.gz` with no
+    `log_model`, and `%pip install --upgrade sagemaker` unpinned
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+    its CSV, fetched that day (7,043 rows, 970,457 bytes)
+    <https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv>.
+  - The interface endpoints' metrics, which `ML-5` and `ML-9` read: the namespace
+    `AWS/PrivateLinkEndpoints`, `BytesProcessed` among five metrics, published only for a minute with
+    traffic, the dimensions `Endpoint Type`, `Service Name`, `Subnet Id`, `VPC Endpoint Id` and `VPC Id` in
+    two combinations, no unit stated
+    <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-cloudwatch-metrics.html>.
+  - Unread that day: the SageMaker registry paths for `us-west-2`, a server error twice
+    <https://docs.aws.amazon.com/sagemaker/latest/dg-ecr-paths/ecr-us-west-2.html>; AWS's XGBoost
+    algorithm pages, refused by the session's proxy
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-previous-versions.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-how-it-works.html>; and the container's
+    source, outside the session's GitHub scope <https://github.com/aws/sagemaker-xgboost-container>.
+  - The wheels read in place of those pages: `sagemaker-core` 2.21.0, whose image table puts `xgboost`
+    `1.7-1`, `3.0-5` and `3.2-0` in the repository `sagemaker-xgboost` under one `us-west-2` registry
+    <https://pypi.org/project/sagemaker-core/2.21.0/>; `sagemaker-mlflow` 0.5.0, which takes an
+    `mlflow-app` ARN as the tracking URI and registers the `arn` model registry store and a presigned S3
+    artifact repository <https://pypi.org/project/sagemaker-mlflow/0.5.0/>; and `xgboost` 1.7.6 and 3.0.5
+    and `xgboost-cpu` 3.3.0, installed in scratch environments for the model-format probe
+    <https://pypi.org/project/xgboost/>, <https://pypi.org/project/xgboost-cpu/>.
+
+- **Visual ETL in an Identity Center domain** (read 2026-10-13; documentation, nothing measured): a flow
+  is authored on AWS Glue interactive sessions, Glue 4.0, 5.0 or 5.1
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/visual-etl.html>; the editor
+  shows the code it generates and can convert the flow to a notebook
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/visual-etl-identity-center-domains.html>;
+  *Save to project* shares the job with the project's members, and its compute runs in
+  `project.spark.fineGrained` or `project.spark.compatibility` mode
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/identity-center-getting-started-visual-etl.html>.
+  A saved flow is the file `<name>.vetl` in the project's repository, under `src/dataflows/` by default,
+  and two routes schedule it: the editor's schedule, which needs scheduling enabled in the Tooling
+  blueprint's parameters, and a workflow DAG whose `NOTEBOOK_PATH` names the `.vetl`, "the dataflow's
+  notebook file"
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/identity-center-schedule-visual-etl.html>.
+  The editor's schedule is an EventBridge Scheduler schedule whose target is `CreateTrainingJob`, the
+  training job running the flow, and a project role under a permissions boundary needs an explicit allow
+  for `GetScheduleGroup` (AWS Big Data Blog, 2025-04-30)
+  <https://aws.amazon.com/blogs/big-data/unified-scheduling-for-visual-etl-flows-and-query-books-in-amazon-sagemaker-unified-studio/>.
+
+- The SageMaker readings behind Stage 9 pass 1 (read 2026-10-16):
+  - *The Service Authorization Reference for SageMaker AI*: the job creates list
+    `sagemaker:VolumeKmsKeyArn`, where `terraform-modules/sagemaker-denies/` names
+    `sagemaker:VolumeKmsKey`, the key 6i populated; `CreateEndpointConfig` lists
+    `sagemaker:ServerlessMemorySize` and no VPC key, which is what step 3.7's deny keys on. Read on
+    docs.amazonaws.cn in HTML and in its Markdown rendition, and on the zh_tw page:
+    <https://docs.amazonaws.cn/en_us/service-authorization/latest/reference/list_amazonsagemaker.html>,
+    <https://docs.amazonaws.cn/en_us/service-authorization/latest/reference/list_amazonsagemaker.md> and
+    <https://docs.aws.amazon.com/zh_tw/service-authorization/latest/reference/list_amazonsagemaker.html>.
+  - *Model Registry cross-account deployment*, re-read for step 3.2's three statements:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-deploy.md>.
+  - *The project role's managed policy*: `SageMakerCrossAccountPermissions` (v44) admits
+    `DescribeModelPackage`, `DescribeModelPackageGroup` and `ListModelPackages` on another account's
+    resources, decision 10's project-role half:
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- Data across accounts in SageMaker Unified Studio (read 2026-10-17, for Stage 18 steps 2.2, 7.2 and 7.3, and the question whether a Sandbox project reads what production writes). The association's share and its RAM permission: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; a governance-first account layout, a data mesh over the catalog, and two cross-account walkthroughs that create a project in each account: <https://aws.amazon.com/blogs/big-data/navigating-multi-account-deployments-in-amazon-sagemaker-unified-studio-a-governance-first-approach/>, <https://aws.amazon.com/blogs/big-data/implement-a-data-mesh-pattern-with-amazon-sagemaker-catalog-without-making-changes-to-your-applications/>, <https://aws.amazon.com/blogs/big-data/cross-account-lakehouse-governance-with-amazon-s3-tables-and-sagemaker-catalog/>, <https://aws.amazon.com/blogs/big-data/govern-amazon-redshift-data-across-accounts-with-sagemaker-unified-studio/>. Publishing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-data.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/hybrid-mode.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/use-your-own-role.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/data-onboarding.html>. Subscribing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>, and the two managed policies that carry the cross-account calls: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneRedshiftManageAccessRolePolicy.html>. Lake Formation and Redshift with no DataZone: <https://docs.aws.amazon.com/lake-formation/latest/dg/crosss-account-how-works.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-permission-mode.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-add-catalog.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/consumer-account-setup.html>, <https://docs.aws.amazon.com/redshift/latest/dg/considerations.html>, <https://docs.aws.amazon.com/redshift/latest/dg/consumer-cluster-admin.html>, <https://docs.aws.amazon.com/id_id/sagemaker-unified-studio/latest/userguide/compute-prerequisite-athena.html>.
+- AWS's guidance on a non-production account reading production data (read 2026-10-17, for the same question): the ML platform whitepaper, which treats the data science account's copy as production data, the financial-services strategy, and three Well-Architected best practices, two of which ask for masked or sampled data outside production: <https://docs.aws.amazon.com/whitepapers/latest/build-secure-enterprise-ml-platform/aws-accounts.html>, <https://docs.aws.amazon.com/prescriptive-guidance/latest/strategy-unlock-value-data-financial-services/best-practices-ml-ops.html>, <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/best-practice-2.2---create-test-data-and-provision-staging-environment..html>, <https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/anti-patterns-for-test-environment-management.html>, <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/mlsec04-bp01.html>.
 
 ## Data platform
 
@@ -910,6 +1190,10 @@
   `ServerlessUsage` (RPU-Hr), `RMS:Serverless` (GB-Mo) and `PaidUniqueSnapshots:Serverless` (GB-Mo) — and **no
   endpoint-hour SKU**, so an idle workgroup's VPC attachment is not separately metered in any price list this
   project can read.
+- **Where the free trial is read (read 2026-10-17, for [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)
+  verification xiii).** The Redshift Serverless console's Serverless dashboard has a **Free trial** section that
+  *"shows the free trial credits remaining in your AWS account"*, covering compute, storage and snapshots; the
+  user read it there the same day: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
@@ -1012,6 +1296,11 @@
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
+- `AWSGlueServiceRole` (read 2026-10-16): v5's EC2 statements, the describes, the network interfaces and
+  the `aws-glue-service-resource` tag, which `awsds-prod-job-exec` copies without the policy's S3 and IAM
+  reads (Stage 9 step 3.1):
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSGlueServiceRole.html>.
+
 ## Containers, CI/CD and orchestration
 
 - Amazon ECR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html>.
@@ -1031,6 +1320,99 @@
   <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
 
 - Amazon ECR image scanning: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>.
+
+- `aws ecr describe-images` (read 2026-10-12, Stage 8 pass 0): *"The new version of Amazon ECR Basic
+  Scanning doesn't use the ImageDetail$imageScanFindingsSummary and ImageDetail$imageScanStatus
+  attributes from the API response to return scan results. Use the DescribeImageScanFindings API
+  instead."* Measured the same day, the response carried neither attribute for 14 scanned images:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/describe-images.html>. Its waiter polls every
+  5 s and exits 255 after 60 checks, shorter than the 442 s one `dev-env` scan took:
+  <https://docs.aws.amazon.com/cli/latest/reference/ecr/wait/image-scan-complete.html>.
+
+- The GitHub Actions the offline gates use (Stage 8 step 6.2, read 2026-10-12: each release's date and
+  commit from the GitHub API, each `action.yml`'s inputs at that commit):
+  <https://github.com/actions/checkout> (v7.0.1), <https://github.com/actions/cache> (v6.1.0),
+  <https://github.com/astral-sh/setup-uv> (v10.2.0), <https://github.com/hashicorp/setup-terraform>
+  (v4.0.1), <https://github.com/terraform-linters/setup-tflint> (v6.3.1).
+
+- IAM role principals in a trust policy (read 2026-10-12, for Stage 8 step 4.3): *"If your `Principal`
+  element in a role trust policy contains an ARN that points to a specific IAM role, then that ARN
+  transforms to the role's unique principal ID when you save the policy"*, and a role deleted and
+  re-created *"has a new principal ID that does not match the ID stored in the trust policy"*. The deploy
+  runner's role is `[P]` on this reading:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html>.
+
+- EventBridge and read-only management events (read 2026-10-12, for Stage 8 step 4.6): a rule in state
+  `ENABLED` matches every event *"except for read-only AWS management events delivered through
+  CloudTrail"*; `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS` matches those too, and the page's own
+  example is a rule for STS `AssumeRole`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail-management.html>.
+  The list of read-only events not named `Describe`, `Get` or `List` carries STS `AssumeRole`,
+  `AssumeRoleWithSAML` and `AssumeRoleWithWebIdentity`:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-management-event-list.html>. The
+  AWS provider's `aws_cloudwatch_event_rule` takes the state in its `state` argument:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/cloudwatch_event_rule.html.markdown>.
+  Its price page (read 2026-10-12): *"AWS management events are ingested by the event bus for free"*, so
+  the misuse rules cost nothing to receive what they match: <https://aws.amazon.com/eventbridge/pricing/>.
+- CloudTrail's record of a cross-account `AssumeRole` in the role's own account (read 2026-10-13, for Stage 8
+  step 4.6): *"CloudTrail logs AssumeRole calls in the role-owning account (the account being accessed)"*,
+  with `userIdentity` of type `AWSAccount`, the caller's `principalId` and `accountId`, and no `arn`; the
+  post is dated 2016-11-16:
+  <https://aws.amazon.com/blogs/security/aws-cloudtrail-now-tracks-cross-account-activity-to-its-origin/>.
+  EventBridge's comparison operators (read 2026-10-13): `anything-but` *"matches anything except what's
+  specified in the rule"*, and only `exists` speaks of an absent field:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html>.
+  EventBridge's input transformation (read 2026-10-13, for the misuse alert's message): a variable whose
+  path the event lacks is dropped from the output, extracted values are not escaped, and a multi-line
+  string template is one quoted string per line:
+  <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html>.
+- The pins and behaviours Stage 8 pass 2 read (2026-10-13, for steps 2.2 and 5.1-5.4):
+  - GitLab v19.4.2's Secret Detection template: `secret_detection` extends `.secret-analyzer`, which sets
+    `allow_failure: true`, and runs in a branch pipeline when `CI_COMMIT_BRANCH` is set; its analyzer is
+    `secrets:$SECRETS_ANALYZER_VERSION`, `"7"` by default:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/templates/Jobs/Secret-Detection.gitlab-ci.yml>.
+    The analyzer's registry: `7` and `7.40.0` are one image created 2026-10-10, `7.39.0` was created
+    2026-09-10: <https://registry.gitlab.com/v2/security-products/secrets/tags/list>.
+  - `pip-audit` 2.10.1, uploaded 2026-06-10: <https://pypi.org/pypi/pip-audit/json>. Its README at that
+    tag: `--disable-pip` *"can only be used with hashed requirements files or if the `--no-deps` flag has
+    been provided"*, the vulnerability service defaults to `pypi` (`osv` the alternative), exit code 1
+    means a vulnerability was found, and each JSON `vulns` entry carries `fix_versions`:
+    <https://raw.githubusercontent.com/pypa/pip-audit/v2.10.1/README.md>.
+  - The SageMaker Distribution's v4.5 template appends `ALL ALL=(ALL) NOPASSWD: ALL` to `/etc/sudoers`,
+    the passwordless sudo a job's `sudo -n chown` relies on (decision 8):
+    <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/template/v4/v4.5/Dockerfile>.
+  - uv's images: `0.12.17-python3.12-bookworm-slim` answers `MANIFEST_UNKNOWN`, and the `0.12.17` Python
+    3.12 tags are alpine, trixie and dhi, so the gates run `0.12.17-python3.12-trixie-slim`:
+    <https://ghcr.io/v2/astral-sh/uv/tags/list>.
+  - The AWS CLI image the scan gate runs, `2.37.12`, by its digest:
+    <https://public.ecr.aws/v2/aws-cli/aws-cli/manifests/2.37.12>.
+  - BuildKit's rootless tags: `rootless` and `v0.34.0-rootless` are one digest, pushed 2026-10-07:
+    <https://hub.docker.com/v2/repositories/moby/buildkit/tags?page_size=50&name=rootless&ordering=last_updated>.
+  - PyPI's upload dates for `app-etl`'s newest dependencies: pyarrow 26.0.0 and ruff 0.17.0 on 2026-10-09,
+    iniconfig 2.3.1 on 2026-10-06, which `exclude-newer = "2026-09-29T00:00:00Z"` keeps out of the lock
+    (it holds 25.0.1, 0.16.9 and 2.3.0): <https://pypi.org/pypi/pyarrow/26.0.0/json>, the same path for
+    each package.
+- The GitLab CI rules `scripts/check-gitlab-ci.py` encodes (read 2026-10-14, after pipeline #12 of
+  `awsds/app-etl`; Stage 8 step 6.4):
+  - The YAML reference: the global keywords are `default`, `include`, `stages`, `variables` and
+    `workflow`, with `image`, `services`, `cache`, `before_script` and `after_script` deprecated at the
+    top level; the job keywords; an `include:local` path is relative to the project root; a missing need
+    without `optional` fails the pipeline; `pages` as a job name is deprecated:
+    <https://docs.gitlab.com/ci/yaml/>.
+  - Includes: nested includes merge first, a later include wins over an earlier one and the including
+    file over both; `configs/*.yml` matches one folder and `configs/**.yml` its subfolders too; a file
+    included twice takes effect where it was last included: <https://docs.gitlab.com/ci/yaml/includes/>.
+  - `Entry::Root` at v19.4.2: `ALLOWED_KEYS` holds the ten global keywords and eight carry `reserved:
+    true`; `filter_jobs!` takes any other top-level key as a job, and `default` or `workflow` too when
+    its mapping matches a job type, which `Entry::Job` decides by `script` or `run` and `Entry::Bridge` by
+    `trigger` or `needs`:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/root.rb>,
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/job.rb>,
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/config/entry/bridge.rb>.
+  - The YAML processor at v19.4.2: an undefined need or dependency raises `<job> job: undefined need:
+    <name>`, an `optional` need returns before that check, each `rules:` entry's `needs` is validated
+    the same way, and a duplicated need and a need in a later stage are refused separately:
+    <https://gitlab.com/gitlab-org/gitlab/-/raw/v19.4.2-ee/lib/gitlab/ci/yaml_processor.rb>.
 
 - Amazon ECR private image replication (cross-account — the fallback if SageMaker custom images cannot be pulled cross-account from Production): <https://docs.aws.amazon.com/AmazonECR/latest/userguide/replication.html>.
 
@@ -1085,6 +1467,40 @@
   two-apex rule); and access control is available in the Free tier
   (`gitlab_pages['access_control'] = true`): <https://docs.gitlab.com/administration/pages/>.
 
+- GitLab releases and the generic package registry (read 2026-10-15, Stage 8 decision 20). A release
+  holds links, not files; the release fields page points a release's binaries at the generic package
+  registry and advises against linking job artifacts, *"because artifacts are ephemeral and are used
+  to pass data in the same pipeline"*:
+  <https://docs.gitlab.com/user/project/releases/release_fields/>. Generic packages are in the Free
+  tier and on Self-Managed; a job publishes and downloads with its `CI_JOB_TOKEN`; GitLab stores each
+  file's SHA256 (`file_sha256` in the package files API, `X-Checksum-SHA256` on a download object
+  storage does not redirect); and a package published again under an existing name and version gains
+  the new files unless the group's "Allow duplicates" for Generic, on by default and changed by an
+  Owner, is turned off: <https://docs.gitlab.com/user/packages/generic_packages/>. Protection rules
+  cover generic packages since GitLab 18.2, and with none *"By default, any user with the Developer,
+  Maintainer, or Owner role can create, edit, and delete packages"*; the delete protection arrived in
+  17.10 behind the feature flag `packages_protected_packages_delete`, off by default:
+  <https://docs.gitlab.com/user/packages/package_registry/package_protection_rules/>.
+  `glab release create --use-package-registry` uploads the files to the project's generic package
+  registry and links them to the release, and in a job `CI_JOB_TOKEN` signs it in when
+  `GLAB_ENABLE_CI_AUTOLOGIN=true`: <https://docs.gitlab.com/cli/release/create/>.
+
+- GitLab's `cli` image, the one the `release` keyword runs `glab` from, pinned by digest in
+  `examples/app-etl/.gitlab-ci.yml` (read 2026-10-16, Stage 8 step 2.5). The registry's token:
+  <https://gitlab.com/jwt/auth?service=container_registry&scope=repository:gitlab-org/cli:pull>; the
+  tags: <https://registry.gitlab.com/v2/gitlab-org/cli/tags/list>; a tag's manifest, whose digest the
+  job pins: <https://registry.gitlab.com/v2/gitlab-org/cli/manifests/v1.120.0>; the releases and
+  their dates (v1.120.0 on 2026-09-29, v1.119.0 on 2026-09-22, v1.123.0 on 2026-10-13):
+  <https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases>.
+
+- Amazon S3 conditional writes enforced by a bucket policy (read 2026-10-15, Stage 8 decision 20's
+  optional deny). The condition keys `s3:if-none-match` and `s3:if-match` enforce conditional writes
+  in a general purpose bucket; the enforcement covers `PutObject` and `CompleteMultipartUpload`, the
+  multipart calls that take no conditional header are exempted through `s3:ObjectCreationOperation`,
+  and a `CopyObject` into the bucket then fails, *"with a `403 Access Denied` error"* without the
+  header and *"with a `501 Not Implemented` response"* with it:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes-enforce.html>.
+
 - AWS CodeArtifact external connections (read 2026-09-05; what makes design B work for packages): the
   service fetches from the public repository, so a client with no internet still resolves a package
   that has never been cached. Each repository can have only one external connection, which is why
@@ -1098,6 +1514,12 @@
   Python or Swift package formats"* — `crates` needs it, `pypi` does not. `describe-domain` returns the
   domain's `s3BucketArn`:
   <https://docs.aws.amazon.com/codeartifact/latest/ug/create-s3-gateway-endpoint.html>.
+
+- AWS CodeArtifact generic packages (read 2026-10-15, Stage 8 decision 20): `publish-package-version`
+  uploads one asset per call with its SHA256 (`--asset-sha256`), *"used as an integrity check to
+  verify that the file contents have not changed after they were originally sent"*, and a version
+  published without `--unfinished` is `Published` and takes no further asset:
+  <https://docs.aws.amazon.com/codeartifact/latest/ug/publishing-using-generic-packages.html>.
 
 - AWS CodeArtifact (package proxy for egress design B; check the supported formats page for Cargo, and note that Julia and CRAN are not covered): <https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html>.
 
@@ -1162,8 +1584,26 @@
   - *ECR repository creation templates* (read 2026-10-12, Stage 7 step 5.2): a template matches new
     repositories by prefix and sets tag mutability, encryption, lifecycle and repository policies at
     creation only; the cache's templates say `MUTABLE`, since immutability *"will prevent Amazon ECR from
-    updating images using the same tag"*:
+    updating images using the same tag"*. Re-read the same day after the first pull failed: the creation
+    role *"must be provided when using repository tags and/or KMS in the template, otherwise the
+    repository creation will fail"*; without one, ECR creates as `AWSServiceRoleForECRTemplate`, whose
+    `ECRTemplateServiceRolePolicy` grants `ecr:CreateRepository` alone (read with `aws iam
+    get-policy-version`):
     <https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-creation-templates.html>.
+  - *ECR pull-through cache, the multi-architecture rule* (read 2026-10-12, after `pause:3.10` stored two
+    Windows images of 270 and 308 MB): *"the manifest list and each image referenced in the manifest list
+    are pulled to the Amazon ECR repository. If you only want to pull a specific architecture, you can
+    pull the image using the image digest or tag associated with the architecture"*:
+    <https://docs.aws.amazon.com/AmazonECR/latest/userguide/pull-through-cache.html>.
+  - *Amazon ECR Docker Credential Helper* (read 2026-10-12, Stage 7 step 6.1): v0.12.0 (2026-02-27), the
+    `linux-amd64` binary and its `.sha256` in the release bucket the release page links, built with
+    `CGO_ENABLED=0` (`scripts/build_binary.sh`), so it runs in Alpine and glibc images alike. `runners/`
+    pins version and digest and mounts it into every job, where `credHelpers` in `~/.docker/config.json`
+    turns the instance role into the registry login:
+    <https://github.com/awslabs/amazon-ecr-credential-helper/releases/tag/v0.12.0>.
+  - *BuildKit's Dockerfile, the `rootless` stage* (read 2026-10-12): it ends in `USER 1000:1000`, so
+    `apk add` fails inside `moby/buildkit:rootless` and a job cannot install a registry client there:
+    <https://github.com/moby/buildkit/blob/master/Dockerfile>.
   - *The GitLab package repositories for Amazon Linux 2023* (read 2026-10-12, Stage 7 steps 1.5 and 6.2):
     the `.repo` files the install scripts download, `baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/$basearch`
     and `.../runner/gitlab-runner/amazon/2023/$basearch`, with their three GPG keys each. Both hosts write
@@ -1171,6 +1611,35 @@
     the AL2023 repositories, which come through the S3 gateway, at the proxy (6c 5.8):
     <https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/amazon/2023/config_file.repo> and
     <https://packages.gitlab.com/install/repositories/runner/gitlab-runner/amazon/2023/config_file.repo>.
+  - *GitLab Runner versions, and one release installed by name* (read 2026-10-16, Stage 8 decision 24): a
+    runner's major.minor should stay in sync with the server's; minor updates are backward compatible,
+    and a version difference can leave features unavailable:
+    <https://docs.gitlab.com/runner/#gitlab-runner-versions>. A release is installed by its name, the
+    RHEL example being `gitlab-runner-17.2.0-1`: <https://docs.gitlab.com/runner/install/linux-repository/>.
+    The `amazon/2023` index lists every release, each `gitlab-runner` requiring
+    `gitlab-runner-helper-images` of its own version and release (19.4.1 on 2026-09-24, 19.5.0 on
+    2026-10-15): <https://packages.gitlab.com/runner/gitlab-runner/amazon/2023/x86_64/repodata/repomd.xml>.
+  - *GitLab CE, one release installed by name* (read 2026-10-16, Stage 7 decision 10): the upgrade page
+    gives `gitlab-ce-<version>-ce.0.amazon2023` for a release on Amazon Linux 2023:
+    <https://docs.gitlab.com/update/package/>. The restore page restores a backup only into the version
+    and edition that created it and names the `GitLab version mismatch` error:
+    <https://docs.gitlab.com/administration/backup_restore/restore_gitlab/>. The zero-downtime page says
+    `/etc/gitlab/skip-auto-reconfigure` keeps an upgrade from running `gitlab-ctl reconfigure`:
+    <https://docs.gitlab.com/update/zero_downtime/>. The `amazon/2023` `aarch64` index lists every CE
+    release (19.4.2 built 2026-10-07, 19.5.0 on 2026-10-15):
+    <https://packages.gitlab.com/gitlab/gitlab-ce/amazon/2023/aarch64/repodata/repomd.xml>. gitlab.com's
+    API names a tag's commit, against which the help page's `gon.revision` is read (`ecff27ae760` is
+    `v19.4.2`):
+    <https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-foss/repository/tags/v19.4.2>.
+  - *Terraform's `ignore_changes`* (read 2026-10-16, Stage 8 decision 25): the listed attributes are
+    considered when a create is planned and ignored when an update is; the page says nothing of a
+    replacement, which a `terraform_data` stand-in measured the same day (the configuration's value):
+    <https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle>.
+  - *The AMI public parameters* (read 2026-10-16, Stage 8 decision 25): the EC2 page that recommends
+    `/aws/service/ami-amazon-linux-latest/…` and Parameter Store's page on public parameters, neither
+    saying that the history and the version selectors are refused (`lessons.md`, Systems Manager):
+    <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami-parameter-store.html> and
+    <https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters.html>.
   - *GitLab Runner with a self-signed or private CA* (read 2026-10-12, Stage 7 step 6.1): the runner reads
     `/etc/gitlab-runner/certs/<gitlab host>.crt` on its own, passes it to the helper as
     `CI_SERVER_TLS_CA_FILE` for the clone and the artifacts, and a job's own scripts see it only through a
@@ -1196,6 +1665,10 @@
     in-practice half stays at Stage 6): <https://docs.aws.amazon.com/codeartifact/latest/ug/configure-use-cargo.html>.
   - *Custom SAML 2.0 applications in IAM Identity Center* — the ACS URL / SAML audience fields and
     attribute mappings Stage 7 step 3.1 names: <https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html>.
+  - *GitLab Pages, the `pages` job keyword* (read 2026-10-12, Stage 7 step 4.2): a job with `pages: true`
+    *"publishes the default public directory"*, and *"every new project uses Pages unique domains"*, which is
+    why `app-etl`'s site is `app-etl-ffa1fa.awsds-pages.internal` and `$CI_PAGES_URL` is the way a job finds it:
+    <https://docs.gitlab.com/user/project/pages/>.
   - *CodeConnections hosts for self-managed GitLab* — a host needs network reach to the instance, which the
     no-VPC domain account does not have (INT-13's expected failure, Stage 7 step 7.2):
     <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-host.html>.
@@ -1256,7 +1729,8 @@
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 
 - Stage 10's documentation pass (read 2026-08-16):
-  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
+  - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>. **Re-read 2026-10-13**: `SageMakerNotebookOperator` "provides artifact execution functionality" for Unified Studio workflows, and `GlueJobOperator` "creates an AWS Glue job".
+  - *The Amazon provider at 9.32.0, the version the worker pre-installs* (read 2026-10-13): `GlueJobOperator` runs `GlueJobHook.initialize_job`, which calls `get_job` on the named job before `start_job_run`, and `create_job` when the job is absent (`update_config` defaults to false); `has_job` treats only `EntityNotFoundException` as absent: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>. `SageMakerNotebookOperator` describes itself as Jupyter notebook artifact execution for Unified Studio workflows, and its hook calls the `sagemaker_studio` SDK's `execution_client.start_execution`: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker_unified_studio.py> and <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker_unified_studio.py>.
   - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
@@ -1264,6 +1738,8 @@
   - *MWAA Serverless networking* — `NetworkConfiguration` optional; absent, tasks run in the service's VPC; set, ECS workers land in the customer's private subnets (≥ 2 AZs, self-referencing SG), with VPC endpoints for each service the tasks call under private routing: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/networking.html>.
   - *MWAA Serverless execution role* — trust `airflow-serverless.amazonaws.com`, one role per workflow, `logs:CreateLogStream`/`PutLogEvents` required: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>; the service-linked role `AWSServiceRoleForAmazonMWAAServerless`, auto-created at the first `CreateWorkflow` (Lesson 17): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/using-service-linked-roles.html>.
   - *MWAA Serverless observability* — run/task APIs, per-task log streams, the auto-created `/aws/mwaa-serverless/<id>/` group when none is named: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/observe-with-cloudwatch.html>; EventBridge events since 2026-06 (source `aws.airflow-serverless`, 15 detail types): <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-airflow-serverless.html> and <https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-mwaa-serverless-eventbridge/>.
+  - *The actions, resources and condition keys of MWAA Serverless* (service prefix `airflow-serverless`; read 2026-10-16, for Stage 8 decision 19's role): one resource type, `workflow`, `arn:${Partition}:airflow-serverless:${Region}:${Account}:workflow/${WorkflowId}`, with `aws:ResourceTag/${TagKey}`; `ListWorkflows` and `CreateWorkflow` take no resource type, and `CreateWorkflow` the keys `aws:RequestTag` and `aws:TagKeys`; the workflow-scoped actions take `aws:ResourceTag`; `CreateWorkflow` and `UpdateWorkflow` need `iam:PassRole` with `iam:PassedToService = airflow-serverless.amazonaws.com`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_mwaa-serverless.html>. A third-party listing of the same actions, read first: <https://www.awsfundamentals.com/iam/airflow-serverless>.
+  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>.
   - *The Python→YAML converter* — `python-to-yaml-dag-converter-mwaa-serverless` (dag-factory 1.0 target; AWS-provider operators only; no dynamic task mapping): <https://github.com/awslabs/python-to-yaml-dag-converter-mwaa-serverless>.
   - *Serverless workflows in SageMaker Unified Studio* — and the two-way sync ("create workflows in either platform and access them from both"): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-workflows.html> and <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows.html>.
   - *The OnDemand Workflows blueprint* — the provisioned-MWAA flavour of the Studio's Workflows tool, refused at Stage 10 step 0.4: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/modify-on-demand-workflows-blueprint.html>.
@@ -1286,6 +1762,15 @@
 - `terraform-aws-sagemaker-unified-studio` - the official aws-ia module for provisioning SageMaker Unified Studio (domain + IAM via the aws provider, project profiles/blueprints/projects via awscc) (D26): <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio>.
 
 - Announcement of Terraform support for SageMaker Unified Studio (2026-07): <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-terraform/>.
+
+- The SageMaker Unified Studio CI/CD CLI, `aws-smus-cicd-cli` (read 2026-10-13): a `manifest.yaml` names an application (`applicationName`), its content (`storage`, `git`, `workflows`, `quicksight`) and its stages, each stage one SMUS project whose `{proj.connection...}` placeholders resolve at deploy time; `bundle` packages an immutable artifact, `deploy` writes it to a stage and `test` validates it; Identity Center domains need extra one-time setup: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Announced 2026-04-23: <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-smus-ci-cd-cli/>. The manifest schema at commit `3418ae1` (2026-10-05): `applicationName` and `stages` are the required fields, the name "not a SMUS resource"; `content` is optional, and the minimal manifest is a `storage` entry of code alone, with no workflow: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/manifest-schema.md>. The manifest guide separates content from activation, "how to run it (workflows, events, etc.)": <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/manifest.md>. The README's core concepts make an application the workload deployed and a workflow the orchestration that executes it, at deploy time or at run time: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/README.md>. The guide's activation section supports workflows and tests today, with events, CloudFormation and custom methods listed as future. The CLI is the manifest's only reader: `deploy` loads it, uploads the content to the project's S3, creates the workflows in MWAA Serverless and runs the bootstrap actions, so after a deploy no AWS service holds an application: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/architecture.md>. `test` runs the Python tests of a folder against the deployed bundle, and `run` starts a workflow: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/cli-commands.md>. A bootstrap action runs a workflow (`workflow.run`) or emits EventBridge events whose consumer the manifest does not define: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/bootstrap-actions.md>.
+- The SageMaker Unified Studio CI/CD feature's own pages (read 2026-10-13 to 2026-10-15, for D41): the overview, the key concepts (an application, its stages as projects, the bundle), the prerequisites, the deployment modes, the current limitations and the sample IAM policy, which lists no `airflow-serverless` action: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-key-concepts.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-prerequisites.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-deployment-modes.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-current-limitations.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-sample-iam-policy.html>. The manifest schema and guide at `main`, the versions the lab's 1.0.9 reads: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest-schema.md> and <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest.md>. Adding a member to a project, the step that lets an identity call the CLI against it: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-project-members.html>; the Identity Center domain's project setup in the administrator guide: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/setup-projects-idc-based-domains.html>. AWS's blog on AIOps with Unified Studio projects, part 2, the CLI in a pipeline: <https://aws.amazon.com/blogs/machine-learning/automate-aiops-with-sagemaker-unified-studio-projects-part-2-technical-implementation/>.
+- The CI/CD CLI's 1.0.9 wheel, read in its code (2026-10-15, for Stage 10 step 2.2): `bundle` reads a `content.storage` item from the manifest's folder when the item names no connection and downloads it from the stage's project storage when it names one, and `--local` only changes the default stage's name (`smus_cicd/cli.py`, `smus_cicd/commands/bundle.py`); `deploy` takes a connection-less item from the manifest's folder and reads a bundle archive only for an item that names a connection, a `git` source, a catalog export or notebooks (`smus_cicd/commands/deploy.py`, `smus_cicd/helpers/bundle_storage.py`); a workflow's `{env.VAR}` is written as `{{ params.VAR }}`, filled only by the `OverrideParameters` of a run the CLI starts from the stage's `environment_variables`, and a `${VAR}` in a workflow's YAML is left as written (`smus_cicd/helpers/context_resolver.py`, `smus_cicd/workflows/operations.py`); `bundle` builds nothing, copying each `include` path and only warning when one is missing, adds no `manifest.yaml` of its own, defaults to the `DEV` stage, and looks up the stage's project in DataZone even for local items, going on without its connections when the lookup fails (`smus_cicd/commands/bundle.py`, `smus_cicd/helpers/utils.py`): <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
+- The CI/CD CLI's 1.0.9 code and pages, read again 2026-10-17 for Stage 18's step 0.1 and its questions viii and ix: `run` starts the named workflow in every stage it targets, all of them when `--targets` names none, `destroy` removes what the manifest declares and, with `project.create: true`, the project, and `workflow.create` scans the project's whole storage root (`smus_cicd/commands/run.py`, `smus_cicd/helpers/destroy_validator.py`, `smus_cicd/helpers/project_manager.py`, `smus_cicd/commands/deploy.py`); the repository's README, which lets a project host one application or several, its quickstarts, which deploy several into one project, and its rollback guide, which calls `project.create: false` the typical production setup: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. The user guide's pages on the CLI's commands, on stages in other Regions and accounts, on its integrations and resources, and on a project: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cli-commands.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cross-region-cross-account.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-integration.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-additional-resources.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/projects.html>. AWS's Big Data blog of 2026-05-21, *"Each stage must map to a separate SageMaker Unified Studio project"*: <https://aws.amazon.com/blogs/big-data/automate-deployment-of-data-and-ai-applications-with-amazon-sagemaker-unified-studio-ci-cd-cli/>.
+- The quotas that bound applications in one account (read 2026-10-17, for Stage 18 step 5.4): SageMaker Unified Studio's, per account and Region, 1,000 projects and 1,000 environments: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/service-quotas.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/quotas.html>; DataZone's, 1,000 environments and 500 domain units per domain and 5 Git connections per project: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-limits.html>, <https://docs.aws.amazon.com/general/latest/gr/datazone.html>; MWAA's endpoints and quotas page, which lists no MWAA Serverless quota: <https://docs.aws.amazon.com/general/latest/gr/mwaa.html>.
+- Models and endpoints in a SageMaker Unified Studio project (read 2026-10-17, for Stage 18's question ix): a registered model deployed from a notebook, a foundation model's sample notebook, and MLflow in a project: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-registered-models.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploy-foundation-models.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>; an MLflow model deployed to an endpoint through Model Builder, in the SageMaker AI guide: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-model-deployment.html>; AWS's ModelOps series, part 1 (one project per use case, three SDLC workspaces each) under its old and its new address, and part 2's sample repository (the endpoint provisioned by CDK from a GitHub Actions workflow): <https://aws.amazon.com/blogs/machine-learning/automate-aiops-with-amazon-sagemaker-unified-studio-projects-part-1-solution-architecture/>, <https://aws.amazon.com/blogs/machine-learning/automate-modelops-with-amazon-sagemaker-unified-studio-projects-part-1-solution-architecture/>, <https://github.com/aws-samples/sample-smus-aiops>.
+- MWAA Serverless's API, the calls a chain's state machine and the release job make (read 2026-10-15, for D41 and Stage 10 steps 3.5 and 4.2): `CreateWorkflow`, `StartWorkflowRun`, which takes a `ClientToken`, a `WorkflowVersion` and `OverrideParameters`, and the run detail with its `Status`: <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_CreateWorkflow.html>, <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_StartWorkflowRun.html>, <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_WorkflowRunDetail.html>. Provisioned workflows in the Unified Studio guide, the shape the estate denies: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/provisioned-workflows.html>. The PrivateLink support list, where MWAA Serverless has no endpoint, so a worker reaches no API: <https://docs.aws.amazon.com/vpc/latest/privatelink/aws-services-privatelink-support.html>. The launch post: <https://aws.amazon.com/blogs/big-data/introducing-amazon-mwaa-serverless/>. A hands-on reading of the management UI, and two updates, the EventBridge events and the new operators with the workflow trigger: <https://dev.classmethod.jp/articles/amazon-mwaa-serverless-management-ui-hands-on/>, <https://dev.classmethod.jp/articles/update-amazon-mwaa-serverless-eventbridge-events/>, <https://dev.classmethod.jp/en/articles/update-amazon-mwaa-serverless-new-operators-workflow-trigger/>. The Amazon provider's MWAA Serverless operators and their announcement: <https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/operators/mwaa_serverless.html>, <https://aws.amazon.com/about-aws/whats-new/2026/07/apache-airflow-operators-amazon-sagemaker-unified-studio-workflows/>.
+- The chain layer's pieces (read 2026-10-15, for Stage 10 steps 3.4-3.7): Step Functions' SDK integrations, the form a state machine calls `startWorkflowRun` in: <https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html>; EventBridge Scheduler's universal targets, the form a schedule starts a machine in: <https://docs.aws.amazon.com/scheduler/latest/UserGuide/managing-targets-universal.html>; EventBridge's targets, which list no MWAA Serverless workflow, and the custom bus's subscribers and universal targets, with the post on the enhanced custom buses: <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html>, <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-custom-bus-subscribers.html>, <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-custom-bus-universal-targets.html>, <https://aws.amazon.com/blogs/aws/introducing-enhanced-custom-event-buses-in-amazon-eventbridge-for-enterprise-scale-event-driven-applications/>. AWS's prescriptive guidance on data engineering in the platform perspective and on automation and access control, read for the layer's shape: <https://docs.aws.amazon.com/prescriptive-guidance/latest/aws-caf-platform-perspective/data-eng.html>, <https://docs.aws.amazon.com/prescriptive-guidance/latest/modern-data-centric-use-cases/automation-access-control.html>.
 
 - Upgrading Amazon DataZone domains to SageMaker unified domains - the `domainVersion` V1/V2 distinction: <https://docs.aws.amazon.com/datazone/latest/userguide/upgrade-domain.html>.
 
@@ -1357,6 +1842,47 @@
 - AWS Backup Vault Lock (Stage 12): <https://docs.aws.amazon.com/aws-backup/latest/devguide/vault-lock.html>.
 
 - AWS Service Quotas: <https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html>.
+
+- The pages `./aws/observability.py` (Stage 12 step 10) was written against, read 2026-10-17:
+  - CloudWatch's *Notifying users on alarm changes*: the topic policy statement that lets
+    `cloudwatch.amazonaws.com` call `SNS:Publish`, narrowed by `aws:SourceArn` and
+    `aws:SourceAccount`; the page says nothing about an encrypted topic (`OB-3`):
+    <https://docs.aws.amazon.com/en_en/AmazonCloudWatch/latest/monitoring/Notify_Users_Alarm_Changes.html>.
+  - re:Post's article on an alarm whose SNS notification never arrives: "The default AWS KMS key
+    policy for Amazon SNS doesn't allow CloudWatch to perform kms:Decrypt and kms:GenerateDataKey API
+    operations", so an alarm's topic is unencrypted or under a customer managed key that grants both
+    (`OB-3`): <https://www.repost.aws/knowledge-center/cloudwatch-receive-sns-for-alarm-trigger>.
+  - AWS Backup's `BackupSelection`: `Conditions` combine with AND, `ListOfTags` with OR and accepts
+    only `StringEquals`, `NotResources` excludes (`OB-4`):
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/API_BackupSelection.html>.
+  - AWS Backup's *Assign resources with AWS CLI*: "those in "Resources" combined using a Boolean OR
+    and those in "Conditions" combined with a Boolean AND", `NotResources` by OR; the page does not
+    say how `ListOfTags` combines with the other fields, so `OB-4` reads it beside `Resources`:
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/assigning-resources-json.html>.
+  - AWS Organizations' backup policies, step 8.1's mechanism: the effective plan "appears in the AWS
+    Backup console as an immutable plan" in each member account:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html>.
+  - AWS Backup's cross-account page: "For backup plans that are managed by Organizations, the resource
+    opt-in settings in the management account override the settings in a member account for that
+    particular backup plan", which is why `OB-4` does not gate such a plan on Production's opt-in:
+    <https://docs.aws.amazon.com/aws-backup/latest/devguide/manage-cross-account.html>.
+  - A re:Post question that shows a policy-made plan in a member account, its id `orgs/<uuid>` and a
+    selection by `ListOfTags` with empty `Resources`; the prefix `OB-4` reads is this page's, named by
+    no AWS page found:
+    <https://repost.aws/questions/QUoPwDLg6uTVGxqzYQ68L9YA/backup-plan-created-from-organizations-backup-policy-does-not-include-s3-buckets>.
+  - re:Post's article on a backup policy that creates no jobs: a role or vault missing in the member
+    account, the opt-in off in the management account, the policy attached at the wrong level:
+    <https://repost.aws/knowledge-center/backup-policy-no-jobs-created>.
+  - Route 53's `GetAccountLimit`: `MAX_HOSTED_ZONES_BY_OWNER`, the response's `Count` and
+    `Limit.Value` (`OB-5`): <https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html>.
+  - The PrivateLink quotas: "Interface and Gateway Load Balancer endpoints per VPC", 50, `L-29B6F2EB`,
+    one quota for both types; "Gateway VPC endpoints per Region", 20, `L-1B52E74A` (`OB-5`):
+    <https://docs.amazonaws.cn/en_us/vpc/latest/privatelink/vpc-limits-endpoints.md>.
+  - A re:Post question naming the Elastic IP quota "EC2-VPC Elastic IPs", `L-0263D0A3` (`OB-5`):
+    <https://www.repost.aws/questions/QU0kIyNc3sSMGsk4VLYhlOiQ/cant-get-more-than-6-elastic-public-ip-addresses>.
+  - AWS's blog on viewing SageMaker quota usage, which names no Studio app or job quota beyond a
+    notebook instance's, so `OB-5` finds those by name and reads every name back:
+    <https://aws.amazon.com/blogs/machine-learning/best-practices-for-viewing-and-querying-amazon-sagemaker-service-quota-usage>.
 
 - Track alerts through Amazon SNS in AWS Control Tower (the topics the landing zone creates, and the fact that the Audit account e-mail is subscribed to `aws-controltower-AggregateSecurityNotifications` by default): <https://docs.aws.amazon.com/controltower/latest/userguide/sns.html>.
 
@@ -1931,6 +2457,48 @@
   forty run from `3.9.13` to `4.5.2`, the last published 2026-10-07 for every maintained minor at once
   (`3.9.14`, `4.0.13` … `4.5.2`), and no `4.6`, `5.x` or `4.15` exists:
   <https://api.github.com/repos/aws/sagemaker-distribution/releases>.
+
+## Databricks
+
+The pages behind [`DATABRICKS.md`](DATABRICKS.md), grouped by the section of the Databricks on AWS docs they come from.
+
+- **Platform, runtime and feature release notes** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/release-notes/product/2026/march>; <https://docs.databricks.com/aws/en/release-notes/product/2026/july>; <https://docs.databricks.com/aws/en/release-notes/product/2025/june>; <https://docs.databricks.com/aws/en/release-notes/product/2025/november>; <https://docs.databricks.com/aws/en/release-notes/product/2024/december>; <https://docs.databricks.com/aws/en/release-notes/product/2025/february>; <https://docs.databricks.com/aws/en/release-notes/product/2026/june>; <https://docs.databricks.com/aws/en/release-notes/product/2024/june>; <https://docs.databricks.com/aws/en/release-notes/runtime>; <https://docs.databricks.com/aws/release-notes/runtime/databricks-runtime-ver>; <https://docs.databricks.com/aws/en/release-notes/runtime/17.3lts-ml>; <https://docs.databricks.com/aws/en/release-notes/runtime/16.4lts>; <https://docs.databricks.com/aws/en/release-notes/runtime/17.3lts>; <https://docs.databricks.com/aws/en/release-notes/runtime/19>; <https://docs.databricks.com/aws/en/release-notes/runtime/18.0>; <https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/>; <https://docs.databricks.com/aws/en/release-notes/product/2026/may>; <https://docs.databricks.com/release-notes/product/>; <https://docs.databricks.com/aws/en/release-notes/product/2025/january>; <https://docs.databricks.com/aws/en/release-notes/product/2025/march>; <https://docs.databricks.com/aws/en/release-notes/product/2025/april>; <https://docs.databricks.com/aws/en/release-notes/product/2025/may>; <https://docs.databricks.com/aws/en/release-notes/product/2025/july>; <https://docs.databricks.com/aws/en/release-notes/product/2025/august>; <https://docs.databricks.com/aws/en/release-notes/product/2025/september>; <https://docs.databricks.com/aws/en/release-notes/product/2025/october>; <https://docs.databricks.com/aws/en/release-notes/product/2025/december>; <https://docs.databricks.com/aws/en/release-notes/product/2026/january>; <https://docs.databricks.com/aws/en/release-notes/product/2026/february>; <https://docs.databricks.com/aws/en/release-notes/product/2026/april>; <https://docs.databricks.com/aws/en/release-notes/runtime/18lts>; <https://docs.databricks.com/aws/en/release-notes/product/>; <https://docs.databricks.com/aws/en/release-notes/product/2026/october>; <https://docs.databricks.com/aws/en/release-notes/unity-gateway>; <https://docs.databricks.com/aws/release-notes/dev-tools/bundles>; <https://docs.databricks.com/aws/en/release-notes/lakebase>; <https://docs.databricks.com/aws/en/release-notes>; <https://docs.databricks.com/aws/en/release-notes/product/2026/august>; <https://docs.databricks.com/aws/en/release-notes/product/2026/september>; <https://docs.databricks.com/aws/en/release-notes/dev-tools>; <https://docs.databricks.com/aws/en/release-notes/runtime/19ml>; <https://docs.databricks.com/aws/en/release-notes/release-types>.
+
+- **Notebooks, Git folders and workspace files** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/notebooks/>; <https://docs.databricks.com/notebooks/new-cell-ui-orientation.html>; <https://docs.databricks.com/en/notebooks/notebook-ui.html>; <https://docs.databricks.com/aws/en/notebooks/basic-editing>; <https://docs.databricks.com/aws/en/notebooks/notebooks-code>; <https://docs.databricks.com/aws/en/notebooks/notebook-format>; <https://docs.databricks.com/aws/en/notebooks/notebook-export-import>; <https://docs.databricks.com/aws/notebooks/ipython-kernel>; <https://docs.databricks.com/aws/en/notebooks/run-notebook>; <https://docs.databricks.com/en/notebooks/notebook-assistant-faq>; <https://docs.databricks.com/aws/en/notebooks/code-assistant>; <https://docs.databricks.com/aws/notebooks/use-databricks-assistant>; <https://docs.databricks.com/aws/en/notebooks/ds-agent>; <https://docs.databricks.com/aws/en/repos/what-happened-repos>; <https://docs.databricks.com/aws/repos>; <https://docs.databricks.com/aws/en/repos/git-folders-concepts>; <https://docs.databricks.com/aws/repos/repos-setup>; <https://docs.databricks.com/aws/en/repos/git-operations-with-repos>; <https://docs.databricks.com/aws/en/repos/limits>; <https://docs.databricks.com/aws/en/repos/supported-artifact-types>; <https://docs.databricks.com/aws/en/repos/ci-cd>; <https://docs.databricks.com/aws/files/workspace>; <https://docs.databricks.com/aws/en/files/workspace-interact>.
+
+- **Developer tools: the CLI, Declarative Automation Bundles, Databricks Connect, the VS Code extension, the SSH tunnel and CI/CD** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/dev-tools/bundles/faqs>; <https://docs.databricks.com/aws/en/dev-tools/ssh-tunnel>; <https://docs.databricks.com/aws/en/dev-tools/remote-development>; <https://docs.databricks.com/aws/en/dev-tools/cli/reference/ssh-commands>; <https://docs.databricks.com/aws/en/dev-tools/ide-tools>; <https://docs.databricks.com/dev-tools/databricks-connect-ref.html>; <https://docs.databricks.com/aws/en/dev-tools/databricks-connect/requirements>; <https://docs.databricks.com/aws/dev-tools/vscode-ext>; <https://docs.databricks.com/aws/en/dev-tools/vscode-ext/databricks-connect>; <https://docs.databricks.com/en/dev-tools/vscode-ext/dev-tasks/notebooks.html>; <https://docs.databricks.com/dev-tools/databricks-connect/python/jupyterlab.html>; <https://docs.databricks.com/aws/dev-tools/databricks-connect/python/jupyter-notebook>; <https://docs.databricks.com/dev-tools/pycharm.html>; <https://docs.databricks.com/aws/dev-tools/databricks-connect/python/pycharm>; <https://docs.databricks.com/aws/en/dev-tools/bundles/resources>; <https://docs.databricks.com/aws/en/dev-tools/terraform/>; <https://docs.databricks.com/aws/en/dev-tools/bundles/resources#dashboards>; <https://docs.databricks.com/aws/en/dev-tools/bundles>; <https://docs.databricks.com/aws/en/dev-tools/databricks-apps/>; <https://docs.databricks.com/aws/en/dev-tools/databricks-apps/key-concepts>; <https://docs.databricks.com/aws/en/dev-tools/databricks-apps/deploy>; <https://docs.databricks.com/aws/en/dev-tools/bundles/mlops-stacks>; <https://docs.databricks.com/en/dev-tools/bundles/settings.html>; <https://docs.databricks.com/aws/en/dev-tools/bundles/reference>; <https://docs.databricks.com/aws/dev-tools/bundles/resources>; <https://docs.databricks.com/aws/dev-tools/bundles/deployment-modes>; <https://docs.databricks.com/en/dev-tools/cli/bundle-commands.html>; <https://docs.databricks.com/aws/en/dev-tools/bundles/work-tasks>; <https://docs.databricks.com/aws/en/dev-tools/bundles/migrate-resources>; <https://docs.databricks.com/aws/en/dev-tools/bundles/templates>; <https://docs.databricks.com/aws/dev-tools/bundles/workspace-deploy>; <https://docs.databricks.com/aws/dev-tools/ci-cd/github>; <https://docs.databricks.com/aws/en/dev-tools/ci-cd/azure-devops>; <https://docs.databricks.com/aws/en/dev-tools/ci-cd/jenkins>; <https://docs.databricks.com/aws/en/dev-tools/ci-cd>; <https://docs.databricks.com/aws/en/dev-tools/bundles/authentication>; <https://docs.databricks.com/aws/en/dev-tools/auth/oauth-federation>; <https://docs.databricks.com/aws/en/dev-tools/ci-cd/flows>; <https://docs.databricks.com/aws/en/dev-tools/terraform>; <https://docs.databricks.com/aws/en/dev-tools/databricks-apps/cicd-github-actions>; <https://docs.databricks.com/aws/en/dev-tools/bundles/apps-tutorial>; <https://docs.databricks.com/aws/en/developers/best-practices>.
+
+- **Compute: classic and serverless, policies, libraries, init scripts, Container Services and the runtimes** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/compute/simple-form>; <https://docs.databricks.com/aws/compute/serverless>; <https://docs.databricks.com/aws/compute/web-terminal>; <https://docs.databricks.com/en/compute/configure>; <https://docs.databricks.com/aws/en/compute/serverless/sandbox>; <https://docs.databricks.com/aws/en/compute/serverless/sandbox-usage-guide>; <https://docs.databricks.com/aws/en/compute/serverless/dependencies>; <https://docs.databricks.com/aws/en/compute/environments-mode>; <https://docs.databricks.com/aws/compute/custom-containers>; <https://docs.databricks.com/aws/en/compute/custom-containers-standard>; <https://docs.databricks.com/compute/serverless/limitations.html>; <https://docs.databricks.com/aws/en/compute/use-compute>; <https://docs.databricks.com/aws/en/compute/pool-index>; <https://docs.databricks.com/aws/compute/access-mode-limitations>; <https://docs.databricks.com/aws/en/compute/serverless/limitations>; <https://docs.databricks.com/aws/en/compute/sql-warehouse/real-time-pricing>; <https://docs.databricks.com/aws/en/compute/serverless/gpu>; <https://docs.databricks.com/compute/instance-profiles.html>; <https://docs.databricks.com/aws/en/serverless-compute/>; <https://docs.databricks.com/aws/en/init-scripts/>; <https://docs.databricks.com/aws/en/init-scripts/global>; <https://docs.databricks.com/aws/en/libraries/index.html>; <https://docs.databricks.com/aws/libraries/notebooks-python-libraries>; <https://docs.databricks.com/aws/en/libraries/cluster-libraries>; <https://docs.databricks.com/aws/en/runtime/photon>.
+
+- **Lakeflow Jobs** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/jobs/compute>; <https://docs.databricks.com/aws/en/jobs/index.html>; <https://docs.databricks.com/aws/en/jobs/how-to/use-airflow-with-jobs>; <https://docs.databricks.com/jobs/configure-task>; <https://docs.databricks.com/en/jobs/control-flow>; <https://docs.databricks.com/aws/en/jobs/tasks/run-job>; <https://docs.databricks.com/aws/en/jobs/triggers>; <https://docs.databricks.com/aws/en/jobs/trigger-table-update>; <https://docs.databricks.com/en/jobs/settings.html>; <https://docs.databricks.com/aws/en/jobs/repair-job-failures>; <https://docs.databricks.com/aws/en/jobs/notifications>; <https://docs.databricks.com/aws/jobs/run-serverless-jobs>; <https://docs.databricks.com/aws/en/jobs/monitor>; <https://docs.databricks.com/aws/en/jobs/tasks/dbt>; <https://docs.databricks.com/aws/en/jobs/tasks/dbt-platform>; <https://docs.databricks.com/aws/en/jobs/tasks/dashboard>; <https://docs.databricks.com/aws/en/jobs/tasks/powerbi>; <https://docs.databricks.com/aws/en/jobs/create-run-jobs>; <https://docs.databricks.com/aws/en/jobs/git>; <https://docs.databricks.com/en/jobs/advanced.html>.
+
+- **ETL and storage: Lakeflow pipelines, Designer, Photon, data quality, Delta and Iceberg tables, volumes, DBFS and predictive optimization** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/ldp/concepts/where-is-dlt>; <https://docs.databricks.com/aws/en/ldp/best-practices>; <https://docs.databricks.com/en/ldp/concepts/>; <https://docs.databricks.com/aws/en/ldp/concepts/pipelines>; <https://docs.databricks.com/aws/en/ldp/expectations>; <https://docs.databricks.com/aws/en/ldp/multi-file-editor>; <https://docs.databricks.com/en/ldp/serverless>; <https://docs.databricks.com/aws/en/designer/what-is-lakeflow-designer>; <https://docs.databricks.com/aws/en/designer>; <https://docs.databricks.com/aws/en/data-engineering>; <https://docs.databricks.com/aws/en/data-quality-monitoring>; <https://docs.databricks.com/aws/en/data-quality-monitoring/anomaly-detection/>; <https://docs.databricks.com/aws/en/delta/uniform>; <https://docs.databricks.com/aws/en/delta/iceberg-reads>; <https://docs.databricks.com/aws/en/delta/clustering>; <https://docs.databricks.com/aws/en/lakehouse-architecture/deployment-guide/iac>; <https://docs.databricks.com/aws/en/lakehouse-architecture/deployment-guide/storage>; <https://docs.databricks.com/aws/en/lakehouse-architecture/deployment-guide/network>; <https://docs.databricks.com/aws/iceberg>; <https://docs.databricks.com/aws/tables/managed>; <https://docs.databricks.com/aws/tables/row-and-column-filters>; <https://docs.databricks.com/aws/en/tables/compatibility-mode>; <https://docs.databricks.com/aws/en/volumes/volume-files>; <https://docs.databricks.com/aws/en/volumes>; <https://docs.databricks.com/aws/volumes/managed-vs-external>; <https://docs.databricks.com/aws/en/dbfs/>; <https://docs.databricks.com/aws/en/dbfs/dbfs-root>; <https://docs.databricks.com/aws/en/storage/default-storage>; <https://docs.databricks.com/aws/optimizations/predictive-optimization>.
+
+- **Ingestion: Lakeflow Connect, Auto Loader, COPY INTO, Zerobus and the streaming sources** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/ingestion/overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/saas-overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/cdc-overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/query-based-overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/zerobus-overview>; <https://docs.databricks.com/aws/en/ingestion/zerobus-ingest>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/zerobus-limits>; <https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/index.html>; <https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/file-detection-modes>; <https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/file-notification-mode>; <https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/copy-into/>; <https://docs.databricks.com/aws/en/ingestion/file-upload>; <https://docs.databricks.com/aws/ingestion/lakeflow-connect>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/workday-overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/mysql-overview>; <https://docs.databricks.com/aws/en/ingestion/lakeflow-connect/sql-server-overview>; <https://docs.databricks.com/aws/en/connect/streaming/kinesis>; <https://docs.databricks.com/aws/connect/unity-catalog/cloud-storage/external-locations>; <https://docs.databricks.com/aws/connect/storage/amazon-s3>; <https://docs.databricks.com/aws/connect/unity-catalog/cloud-storage/s3/s3-external-location-manual>; <https://docs.databricks.com/aws/en/connect/unity-catalog/managed-storage>; <https://docs.databricks.com/aws/connect/external-systems>; <https://docs.databricks.com/connect/unity-catalog/storage-credentials.html>; <https://docs.databricks.com/aws/en/connect/storage/tutorial-s3-instance-profile>; <https://docs.databricks.com/aws/en/connect/streaming/kafka-authentication>; <https://docs.databricks.com/aws/en/structured-streaming/kafka.html>.
+
+- **Lakehouse Federation, OpenSharing and the Marketplace** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/query-federation/>; <https://docs.databricks.com/query-federation/catalog-federation/>; <https://docs.databricks.com/aws/en/query-federation/database-federation>; <https://docs.databricks.com/aws/en/query-federation/hms-federation-concepts>; <https://docs.databricks.com/aws/query-federation/hms-federation-glue>; <https://docs.databricks.com/aws/en/query-federation/redshift>; <https://docs.databricks.com/aws/en/query-federation/jdbc>; <https://docs.databricks.com/aws/en/delta-sharing/>; <https://docs.databricks.com/aws/delta-sharing/recipient>; <https://docs.databricks.com/aws/delta-sharing/share-data-open>; <https://docs.databricks.com/en/marketplace/>.
+
+- **Unity Catalog: the metastore, privileges, ABAC, governed tags, classification, lineage, system tables, external access and Discover** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-lineage.html>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/best-practices>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/enable-workspaces>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/create-metastore>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/privileges-reference>; <https://docs.databricks.com/aws/data-governance/unity-catalog>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/hive-metastore>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/permissions-concepts>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges.html>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/requirements>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/tags>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-classification>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/external-lineage>; <https://docs.databricks.com/aws/en/data-governance/unity-catalog/hms-federation/>; <https://docs.databricks.com/aws/en/catalogs/binding>; <https://docs.databricks.com/aws/en/uc-semantics>; <https://docs.databricks.com/aws/en/uc-semantics/metric-views/>; <https://docs.databricks.com/aws/en/external-access/iceberg>; <https://docs.databricks.com/aws/en/external-access/integrations>; <https://docs.databricks.com/aws/en/external-access/compatibility-mode>; <https://docs.databricks.com/aws/en/discover/>; <https://docs.databricks.com/aws/en/catalog-explorer/>; <https://docs.databricks.com/aws/en/comments/ai-comments>.
+
+- **AI/BI dashboards, Genie, Databricks SQL and the BI partners** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/dashboards/>; <https://docs.databricks.com/aws/en/dashboards/tutorials/workspace-dashboard-api>; <https://docs.databricks.com/aws/en/dashboards/tutorials/create-dashboard>; <https://docs.databricks.com/aws/en/dashboards/manage/data-modeling/datasets>; <https://docs.databricks.com/aws/en/dashboards/limits>; <https://docs.databricks.com/aws/en/dashboards/parameters>; <https://docs.databricks.com/aws/en/dashboards/share>; <https://docs.databricks.com/aws/en/dashboards/tutorials/dashboard-crud-api>; <https://docs.databricks.com/aws/dashboards/admin>; <https://docs.databricks.com/aws/dashboards/schedule-subscribe>; <https://docs.databricks.com/aws/en/dashboards/share/embedding/>; <https://docs.databricks.com/aws/en/dashboards/genie-spaces>; <https://docs.databricks.com/aws/en/dashboards/automate>; <https://docs.databricks.com/aws/dashboards/clone-legacy-to-aibi>; <https://docs.databricks.com/aws/en/dashboards/tutorials>; <https://docs.databricks.com/aws/en/ai-bi/release-notes/2026>; <https://docs.databricks.com/aws/en/ai-bi/release-notes/2024>; <https://docs.databricks.com/aws/en/ai-bi/release-notes/>; <https://docs.databricks.com/aws/en/ai-bi/release-notes/2025>; <https://docs.databricks.com/aws/ai-bi/tools>; <https://docs.databricks.com/aws/en/genie-agents/>; <https://docs.databricks.com/aws/en/genie-agents/concepts>; <https://docs.databricks.com/aws/en/genie-ui/genie>; <https://docs.databricks.com/aws/en/sql/user/sql-editor/write-queries>; <https://docs.databricks.com/sql/get-started/concepts.html>; <https://docs.databricks.com/aws/en/sql/user/dashboards/>; <https://docs.databricks.com/aws/sql/language-manual/sql-ref-privileges>; <https://docs.databricks.com/aws/en/partner-connect/>; <https://docs.databricks.com/aws/en/partner-connect/ingestion>; <https://docs.databricks.com/en/partners/bi/power-bi.html>; <https://docs.databricks.com/aws/en/partners/ingestion/fivetran>; <https://docs.databricks.com/aws/en/partners/ingestion/>.
+
+- **Generative AI: Foundation Model APIs, external models, Unity Gateway, the Playground, AI Functions, agents and AI Search** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/agents/>; <https://docs.databricks.com/aws/en/agents/legacy/>; <https://docs.databricks.com/aws/en/agents/deploy>; <https://docs.databricks.com/aws/en/agents/deploy/agent-runtime>; <https://docs.databricks.com/aws/en/agents/query-llms>; <https://docs.databricks.com/aws/en/agents/concepts>; <https://docs.databricks.com/aws/en/agents/custom-agents/agent-bricks-cli>; <https://docs.databricks.com/aws/en/agents/custom-agents/author-agent>; <https://docs.databricks.com/aws/en/agents/mcp-tools/>; <https://docs.databricks.com/aws/en/agents/agent-bricks/knowledge-assistant>; <https://docs.databricks.com/aws/en/agents/agent-bricks/multi-agent-supervisor>; <https://docs.databricks.com/aws/en/agents/agent-bricks/custom-llm>; <https://docs.databricks.com/aws/en/agents/agent-bricks/info-extraction>; <https://docs.databricks.com/aws/en/agents/agent-bricks/key-info-extraction>; <https://docs.databricks.com/aws/en/ai-gateway/overview-serving-endpoints>; <https://docs.databricks.com/aws/en/ai-gateway/model-provider-services>; <https://docs.databricks.com/aws/en/ai-gateway/configure-ai-gateway-endpoints>; <https://docs.databricks.com/aws/en/ai-gateway/index/>; <https://docs.databricks.com/aws/en/ai-gateway/rate-limits>; <https://docs.databricks.com/aws/en/ai-gateway/configure-traffic-splitting>; <https://docs.databricks.com/aws/en/ai-gateway/usage-tracking>; <https://docs.databricks.com/aws/en/ai-gateway/inference-tables>; <https://docs.databricks.com/aws/en/ai-gateway/budgets>; <https://docs.databricks.com/aws/en/ai-gateway/model-services>; <https://docs.databricks.com/aws/en/ai-gateway/overview-beta>; <https://docs.databricks.com/aws/en/unity-gateway/model-region-availability>; <https://docs.databricks.com/aws/en/unity-gateway/concepts>; <https://docs.databricks.com/aws/en/large-language-models/foundation-model-training>; <https://docs.databricks.com/aws/en/large-language-models/ai-playground>; <https://docs.databricks.com/aws/large-language-models/ai-functions>; <https://docs.databricks.com/aws/en/large-language-models/batch-inference-pipelines>; <https://docs.databricks.com/aws/en/generative-ai/external-models>; <https://docs.databricks.com/aws/en/ai-search/ai-search>; <https://docs.databricks.com/aws/en/ai-search/cost-management>; <https://docs.databricks.com/aws/en/vector-search/create-vector-search>.
+
+- **Machine learning: the ML Runtime, AutoML, Feature Store, MLflow, Model Serving and AI Runtime** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/machine-learning/model-serving/>; <https://docs.databricks.com/machine-learning/foundation-models/>; <https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/priority-mode>; <https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/deploy-prov-throughput-foundation-model-apis>; <https://docs.databricks.com/aws/en/machine-learning/foundation-models/supported-models>; <https://docs.databricks.com/aws/en/machine-learning/model-serving/foundation-model-overview>; <https://docs.databricks.com/aws/en/machine-learning/foundation-models/external-models/>; <https://docs.databricks.com/aws/en/machine-learning/ai-runtime/overview>; <https://docs.databricks.com/aws/en/machine-learning/train-model>; <https://docs.databricks.com/aws/en/machine-learning/ai-runtime/guides>; <https://docs.databricks.com/aws/en/machine-learning/databricks-runtime-ml>; <https://docs.databricks.com/aws/machine-learning/automl/>; <https://docs.databricks.com/aws/en/machine-learning/feature-store/>; <https://docs.databricks.com/aws/en/machine-learning/manage-model-lifecycle/>; <https://docs.databricks.com/aws/en/machine-learning/model-serving/custom-models>; <https://docs.databricks.com/aws/en/machine-learning/model-serving/model-serving-limits>; <https://docs.databricks.com/aws/en/machine-learning/model-serving/model-serving-intro>; <https://docs.databricks.com/aws/machine-learning/mlops/mlops-workflow>; <https://docs.databricks.com/machine-learning/mlops/deployment-patterns/>; <https://docs.databricks.com/aws/en/machine-learning/mlops/mlops-stacks>; <https://docs.databricks.com/aws/en/machine-learning/mlops/ci-cd-for-ml>; <https://docs.databricks.com/aws/en/mlflow/>; <https://docs.databricks.com/aws/en/mlflow3/genai/eval-monitor/>; <https://docs.databricks.com/aws/en/mlflow3/genai/agent-observability-and-quality>.
+
+- **Lakebase** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/oltp/about>; <https://docs.databricks.com/aws/en/oltp/>; <https://docs.databricks.com/aws/en/oltp/projects/about>; <https://docs.databricks.com/aws/en/oltp/projects/manage-projects>.
+
+- **Security and networking: the deployment architectures, PrivateLink, IP access lists, serverless network policies, customer-managed keys and authentication** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/security/network/classic>; <https://docs.databricks.com/aws/security/auth/entitlements>; <https://docs.databricks.com/aws/en/security/auth>; <https://docs.databricks.com/aws/en/security/network/deployment-architecture/>; <https://docs.databricks.com/aws/security/network/serverless-network-security>; <https://docs.databricks.com/aws/en/security/network/classic/customer-managed-vpc.html>; <https://docs.databricks.com/aws/security/keys/customer-managed-keys>; <https://docs.databricks.com/aws/en/security/network/deployment-architecture/managed-security>; <https://docs.databricks.com/aws/en/security/network/classic/privatelink>; <https://docs.databricks.com/aws/en/security/network>; <https://docs.databricks.com/aws/en/security/network/front-end/ip-access-list>; <https://docs.databricks.com/aws/en/security/network/serverless-network-security/network-policies>; <https://docs.databricks.com/aws/en/security/network/serverless-network-security/pl-aws-resources>; <https://docs.databricks.com/aws/en/security/privacy/enhanced-security-compliance>; <https://docs.databricks.com/aws/en/security/privacy/security-profile>; <https://docs.databricks.com/aws/en/security/privacy>.
+
+- **Account and workspace administration, tiers and getting started** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/admin/clusters/policy-definition>; <https://docs.databricks.com/aws/en/admin/workspace-settings/base-environment>; <https://docs.databricks.com/admin/clusters/policies>; <https://docs.databricks.com/aws/en/admin/clusters/policy-families>; <https://docs.databricks.com/aws/en/admin/sql/serverless>; <https://docs.databricks.com/en/admin/sql/warehouse-types.html>; <https://docs.databricks.com/aws/en/admin/system-tables/billing.html>; <https://docs.databricks.com/aws/en/admin/admin-concepts>; <https://docs.databricks.com/aws/en/admin/users-groups>; <https://docs.databricks.com/aws/en/admin/users-groups/scim/>; <https://docs.databricks.com/aws/admin/system-tables/billing>; <https://docs.databricks.com/aws/admin/account-settings/standard-tier>; <https://docs.databricks.com/aws/en/admin/workspace/serverless-workspaces>; <https://docs.databricks.com/aws/admin/sql/data-access-configuration>; <https://docs.databricks.com/aws/en/admin/system-tables>; <https://docs.databricks.com/aws/en/workspace/navigate-workspace>; <https://docs.databricks.com/en/workspace/unified-nav.html>; <https://docs.databricks.com/aws/en/workspace/databricks-one>; <https://docs.databricks.com/aws/en/getting-started/free-edition>; <https://docs.databricks.com/aws/en/getting-started/free-trial-vs-free-edition>; <https://docs.databricks.com/aws/en/getting-started/free-edition-limitations>; <https://docs.databricks.com/aws/getting-started/community-edition-limitations>; <https://docs.databricks.com/aws/getting-started/concepts>; <https://docs.databricks.com/aws/en/getting-started/high-level-architecture>; <https://docs.databricks.com/aws/getting-started/overview>; <https://docs.databricks.com/aws/en/resources/feature-region-support>.
+
+- **Archived, GCP and localized copies of pages** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://docs.databricks.com/aws/en/archive/connectors/jdbc>; <https://docs.databricks.com/aws/archive/admin-guide/assume-role>; <https://docs.databricks.com/aws/en/archive/legacy/external-access-iceberg>; <https://docs.databricks.com/gcp/dev-tools/databricks-connect/cluster-config>; <https://docs.databricks.com/gcp/en/dev-tools/databricks-connect/python/limitations>; <https://docs.databricks.com/gcp/en/genie-one/>; <https://docs.databricks.com/gcp/compute/serverless/dependencies>; <https://docs.databricks.com/gcp/en/workspace/databricks-one>; <https://docs.databricks.com/gcp/en/release-notes/runtime/18lts>; <https://docs.databricks.com/gcp/en/admin/system-tables/billing>; <https://docs.databricks.com/gcp/en/developers/best-practices>; <https://docs.databricks.com/aws/ja/release-notes/product/2026/june>; <https://docs.databricks.com/aws/pt/release-notes/product/2025/december>; <https://docs.databricks.com/data/metastores/aws-glue-metastore.html>.
+
+- **Databricks product, pricing, press and developer pages, and the Unity Catalog project** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://databricks.com/blog/next-generation-databricks-notebooks-simple-and-powerful>; <https://www.databricks.com/it/blog/announcing-pycharm-integration-databricks>; <https://www.databricks.com/company/newsroom/press-releases/databricks-unveils-lakeflow-designer-data-analysts-build-reliable>; <https://www.databricks.com/product/pricing/jobs>; <https://developers.databricks.com/docs/lakehouse/jobs.md>; <https://answers.databricks.com/delta-live-tables-evolution-spark-declarative-pipelines>; <https://www.databricks.com/company/newsroom/press-releases/databricks-donates-declarative-pipelines-apache-sparktm-open-source>; <https://www.databricks.com/blog/announcing-lakeflow-designer-no-code-etl>; <https://www.databricks.com/product/pricing/databricks-sql>; <https://www.databricks.com/product/business-intelligence/databricks-one>; <https://www.databricks.com/blog/announcing-public-preview-databricks-one>; <https://www.databricks.com/product/pricing>; <https://answers.databricks.com/does-serverless-pricing-work>; <https://www.databricks.com/product/pricing/datascience-ml>; <https://www.databricks.com/product/pricing/product-pricing/instance-types?57336c35_page=6>; <https://developers.databricks.com/docs/unity-gateway/overview>; <https://developers.databricks.com/docs/agents/overview.md>; <https://www.databricks.com/company/newsroom/press-releases/databricks-launches-agent-bricks-new-approach-building-ai-agents>; <https://www.databricks.com/blog/introducing-databricks-assistant-data-science-agent>; <https://www.databricks.com/blog/introducing-databricks-one>; <https://www.databricks.com/en/blog/announcing-public-preview-databricks-one>; <https://www.databricks.com/br/training/catalog/automated-deployment-with-declarative-automation-bundles-portuguese-br-3915>; <https://www.databricks.com/product/unity-catalog>; <https://www.databricks.com/product/aws-pricing>; <https://www.databricks.com/company/newsroom>; <https://www.databricks.com/product/pricing/platform-addons>; <https://www.databricks.com/product/data-engineering/lakeflow-connect/zerobus-ingest>; <https://www.databricks.com/product/marketplace>; <https://www.databricks.com/company/newsroom/press-releases/databricks-open-sources-unity-catalog-creating-industrys-only-open>; <https://www.unitycatalog.io/>.
+
+- **Databricks community and knowledge-base articles, the Azure copies of pages the AWS docs lack, and third-party pages (JetBrains, the Airflow provider, dbt, the Terraform provider, InfoQ, Medium)** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://learn.microsoft.com/en-us/Azure/databricks/ai-bi/release-notes/2026>; <https://kb.databricks.com/clusters/azure-ssh-cluster-driver-node>; <https://community.databricks.com/t5/community-articles/beyond-notebooks-why-ssh-access-to-the-databricks-driver-matters/td-p/146540>; <https://blog.jetbrains.com/pycharm/2024/08/introducing-the-pycharm-databricks-integration/>; <https://plugins.jetbrains.com/plugin/24359-databricks>; <https://community.databricks.com/t5/community-articles/databricks-free-edition-the-announcement-from-data-ai-summit/m-p/129013>; <https://community.databricks.com/t5/announcements/psa-community-edition-retires-on-january-1-2026-move-to-the-free/td-p/141888>; <https://learn.microsoft.com/en-us/azure/databricks/dev-tools/databricks-connect/python/jupyterlab>; <https://medium.com/databricks-community/databricks-genie-code-signals-a-bigger-shift-6dab0f752bb7>; <https://learn.microsoft.com/en-us/azure/databricks/release-notes/runtime/18lts>; <https://community.databricks.com/t5/databricks-university-alliance/announcing-databricks-free-edition/m-p/125692>; <https://airflow.apache.org/docs/apache-airflow-providers-databricks/7.4.0/operators/workflow.html>; <https://www.infoq.com/news/2025/07/databricks-declarative-pipelines>; <https://cloud.getdbt.com>; <https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/dashboard>; <https://azure.microsoft.com/en-us/pricing/details/databricks/>; <https://kb.databricks.com/unity-catalog/iam-role-access-denied-on-cross-account-s3-buckets-in-unity-catalog>; <https://community.databricks.com/t5/data-engineering/compatibility-mode-for-aws-redshift/td-p/168495>.
+
+- **AWS on reading Databricks tables through Glue's catalog federation, and Databricks reading Glue Iceberg tables** (read 2026-10-16, for the comparison with SageMaker Unified Studio in [`DATABRICKS.md`](DATABRICKS.md)): <https://aws.amazon.com/about-aws/whats-new/2025/11/aws-glue-catalog-federation-remote-apache-iceberg-catalogs>; <https://aws.amazon.com/blogs/big-data/introducing-catalog-federation-for-apache-iceberg-tables-in-the-aws-glue-data-catalog/>; <https://aws.amazon.com/blogs/big-data/access-databricks-unity-catalog-data-using-catalog-federation-in-the-aws-glue-data-catalog/>; <https://aws.amazon.com/blogs/big-data/access-amazon-s3-iceberg-tables-from-databricks-using-aws-glue-iceberg-rest-catalog-in-amazon-sagemaker-lakehouse>.
 
 ## Books
 

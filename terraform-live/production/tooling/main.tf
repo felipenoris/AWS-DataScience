@@ -42,6 +42,10 @@
 # replaced GitLab moves its address and loses its first boot's state. The data volume would survive
 # (it is a separate resource, re-attached to the new instance) and the records would follow; what
 # would not is the two volumes' consistency, so a replacement is a decision taken by tainting.
+#
+# The user data pins the GitLab release (var.gitlab_ce_version, Stage 7 decision 10). The hold
+# keeps the running host; the pin decides what a rebuild installs, and a restore refuses every
+# release but the backup's.
 # ------------------------------------------------------------------------------------------
 
 locals {
@@ -51,12 +55,13 @@ locals {
   proxy_url   = "http://proxy.awsds.internal:3128"
 
   # The bypass list (1.3): copied 2026-10-12 from `terraform plan` on production/egress at
-  # vpc-egress-v0.17.0, 60 entries, sha256 f8bc1df99d224181 with the region filled in. The region is a
+  # vpc-egress-v0.17.0 after decision 9 dropped the SageMaker pair, 56 entries, sha256
+  # 0f80372bf880bb16 with the region filled in. The region is a
   # placeholder here because a .tf file may carry no region literal (D1, check-tf-conventions),
   # and `replace()` below puts var.region back; ./aws/supplychain.py SC-11 does the same before
   # comparing this with egress's output. Refresh: plan egress, read `no_proxy_all_groups`, replace
   # the string with the region swapped for REGION, apply tooling/, `sudo awsds-gitlab-refresh`.
-  no_proxy_literal_regionless = ".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.REGION.amazonaws.com,.dkr-ecr.REGION.on.aws,.dkr.ecr.REGION.amazonaws.com,.elasticmapreduce-services.REGION.amazonaws.com,.emrappui-prod.REGION.amazonaws.com,.emrappui.REGION.on.aws,.livy.emr-serverless-services.REGION.amazonaws.com,.s.emr-serverless-services.REGION.amazonaws.com,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.REGION.amazonaws.com,api.sagemaker.REGION.amazonaws.com,api.sagemaker.REGION.api.aws,athena.REGION.amazonaws.com,athena.REGION.api.aws,bedrock-agent-runtime.REGION.amazonaws.com,bedrock-agent.REGION.amazonaws.com,bedrock-runtime.REGION.amazonaws.com,bedrock.REGION.amazonaws.com,dashboard.emr-serverless.REGION.amazonaws.com,dkr-ecr.REGION.on.aws,dkr.ecr.REGION.amazonaws.com,dynamodb.dualstack.REGION.amazonaws.com,dynamodb.REGION.amazonaws.com,ec2messages.REGION.amazonaws.com,ecr.REGION.api.aws,elasticmapreduce-services.REGION.amazonaws.com,elasticmapreduce.REGION.amazonaws.com,elasticmapreduce.REGION.api.aws,emr-serverless.REGION.amazonaws.com,emrappui-prod.REGION.amazonaws.com,emrappui.REGION.on.aws,glue.REGION.amazonaws.com,glue.REGION.api.aws,kms.REGION.amazonaws.com,kms.REGION.api.aws,lakeformation.REGION.amazonaws.com,lakeformation.REGION.api.aws,livy.emr-serverless-services.REGION.amazonaws.com,localhost,logs.REGION.amazonaws.com,logs.REGION.api.aws,redshift-serverless.REGION.amazonaws.com,runtime.sagemaker.REGION.amazonaws.com,runtime.sagemaker.REGION.api.aws,s.emr-serverless-services.REGION.amazonaws.com,s3.dualstack.REGION.amazonaws.com,s3.REGION.amazonaws.com,secretsmanager.REGION.amazonaws.com,ssm.REGION.amazonaws.com,ssm.REGION.api.aws,ssmmessages.REGION.amazonaws.com,ssmmessages.REGION.api.aws,streaming-logs.REGION.amazonaws.com,streaming-logs.REGION.api.aws,sts.REGION.amazonaws.com,sts.REGION.api.aws"
+  no_proxy_literal_regionless = ".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.REGION.amazonaws.com,.dkr-ecr.REGION.on.aws,.dkr.ecr.REGION.amazonaws.com,.elasticmapreduce-services.REGION.amazonaws.com,.emrappui-prod.REGION.amazonaws.com,.emrappui.REGION.on.aws,.livy.emr-serverless-services.REGION.amazonaws.com,.s.emr-serverless-services.REGION.amazonaws.com,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.REGION.amazonaws.com,athena.REGION.amazonaws.com,athena.REGION.api.aws,bedrock-agent-runtime.REGION.amazonaws.com,bedrock-agent.REGION.amazonaws.com,bedrock-runtime.REGION.amazonaws.com,bedrock.REGION.amazonaws.com,dashboard.emr-serverless.REGION.amazonaws.com,dkr-ecr.REGION.on.aws,dkr.ecr.REGION.amazonaws.com,dynamodb.dualstack.REGION.amazonaws.com,dynamodb.REGION.amazonaws.com,ec2messages.REGION.amazonaws.com,ecr.REGION.api.aws,elasticmapreduce-services.REGION.amazonaws.com,elasticmapreduce.REGION.amazonaws.com,elasticmapreduce.REGION.api.aws,emr-serverless.REGION.amazonaws.com,emrappui-prod.REGION.amazonaws.com,emrappui.REGION.on.aws,glue.REGION.amazonaws.com,glue.REGION.api.aws,kms.REGION.amazonaws.com,kms.REGION.api.aws,lakeformation.REGION.amazonaws.com,lakeformation.REGION.api.aws,livy.emr-serverless-services.REGION.amazonaws.com,localhost,logs.REGION.amazonaws.com,logs.REGION.api.aws,redshift-serverless.REGION.amazonaws.com,s.emr-serverless-services.REGION.amazonaws.com,s3.dualstack.REGION.amazonaws.com,s3.REGION.amazonaws.com,secretsmanager.REGION.amazonaws.com,ssm.REGION.amazonaws.com,ssm.REGION.api.aws,ssmmessages.REGION.amazonaws.com,ssmmessages.REGION.api.aws,streaming-logs.REGION.amazonaws.com,streaming-logs.REGION.api.aws,sts.REGION.amazonaws.com,sts.REGION.api.aws"
   no_proxy                    = var.no_proxy != "" ? var.no_proxy : replace(local.no_proxy_literal_regionless, "REGION", var.region)
 
   objects_bucket = data.terraform_remote_state.foundation.outputs.gitlab_objects_bucket
@@ -93,6 +98,7 @@ locals {
     leaf_gitlab_secret_arn    = data.terraform_remote_state.pki.outputs.leaf_key_secret_arns["gitlab"]
     leaf_pages_secret_arn     = data.terraform_remote_state.pki.outputs.leaf_key_secret_arns["pages"]
     gitlab_secrets_secret_arn = data.terraform_remote_state.foundation.outputs.gitlab_secrets_secret_arn
+    gitlab_ce_version         = var.gitlab_ce_version
   })
 }
 
@@ -120,8 +126,8 @@ data "aws_subnet" "private" {
 #                                on the runner's group every session.
 #
 # No port 22: Session Manager is the shell, and the one SSH surface this design admits anywhere is
-# none. No port 80: the records carry https:// and nothing redirects. A rule description refuses
-# `'` and `>`, and only at apply (Stage 3).
+# none. No port 80: the records carry https:// and nothing redirects. EC2 refuses `'` and `>` in a
+# description (Stage 3, Stage 6h); scripts/check-sg-descriptions.py refuses both before a plan.
 resource "aws_security_group" "gitlab" {
   # checkov:skip=CKV_AWS_382:egress is unrestricted by design - this tier has no default route, the internet is the explicit proxy, and its 3128-only group plus the absent route are the bound (the buildbox's argument, 6c 5.8)
   name        = "awsds-${var.env}-gitlab"

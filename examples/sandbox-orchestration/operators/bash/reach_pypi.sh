@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # The PyPI negative of demo-bash-operator (Stage 6i step 5). The worker has no route to the
-# internet, so both reaches are expected to fail within seconds. The exit status is the
+# internet, so both reaches are expected to fail: within seconds here, where the DNS Firewall
+# refuses the name, and after the connect timeouts where the name resolves (errno 101 after
+# 43 s and 64 s outside this lab, 2026-10-12). The exit status is the
 # reading: 1 when nothing answered, the expected outcome, and 0 when something did. Each
 # failure prints its cause on one line, since a resolver error and a timeout are different
 # readings. demo-bash-operator.probe.yaml runs the same commands inline, with no Code object.

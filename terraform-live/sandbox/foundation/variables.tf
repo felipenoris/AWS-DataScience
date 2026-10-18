@@ -103,3 +103,22 @@ variable "peerings" {
   }))
   nullable = false
 }
+
+# Stage 8 step 4 - the deploy credential layer, generated from DEPLOY_ROLES in
+# scripts/tfhygiene/backend.py and never authored here (deploy-role.tf).
+variable "deploy_role_name" {
+  description = "This account's deploy role - a contract with ./aws/cicd.py."
+  type        = string
+  nullable    = false
+}
+
+variable "deploy_runner" {
+  description = "The deploy runner's home, keyed by account folder, with the profile the alias in deploy-role.tf resolves its account id from: the trust names awsds-<env>-runner-deploy there."
+  type        = map(object({ profile = string, env = string }))
+  nullable    = false
+
+  validation {
+    condition     = length(var.deploy_runner) == 1
+    error_message = "One deploy runner home (D14): the trust names one role in one account."
+  }
+}

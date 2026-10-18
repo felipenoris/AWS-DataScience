@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started. **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over. **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
+| **Status** | **Pass 0 in progress: step 3's skeleton is written and 2.1.1 is read** (2026-10-17). [`threat-model.md`](../threat-model.md) drafts 3.1 to 3.7 and 2.1.2's resource types as entries `TM-01`..`TM-20`; the user's Audit snapshot of that evening fills the reachability table's outside column, and its one active finding beyond `INV-16`'s shape, the Sandbox project key, is `TM-21` and `EXC-18`, open until the key policy's narrowing is applied: the user chose it on 2026-10-18, and `sagemaker-prereqs-v0.6.0` carries it (PR #166). The inside column and the residuals of steps 4 to 6 are pending. Re-reading 3.1 opened two entries nothing had weighed: the proxy's own half of the raw-address row below, a `dstdomain` without `-n` matching an address by its reverse name (`TM-01`), and the hosts third parties control under the compute plane's `.amazonaws.com` entry (`TM-03`). **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over. **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
 | **Prerequisites** | Stages 5a, 6, 9 — by named input: Stage 5a's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5a's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5a decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
@@ -157,7 +157,8 @@ discount, not a measurement window).
   lands on a level, or the scheme gains one — a finding that fits nowhere is a scheme defect, not a Macie
   defect. The mapping is a threat-model input (step 3).
 - **1.6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in `docs/AWS_STATE.md`
-  (nine trusted-access principals — `macie` delegated to Audit; §C predicts it), re-run
+  (`macie` delegated to Audit; the count is the row's, ten principals and four delegations on
+  2026-10-17, one more of each after whichever of this stage and Stage 15 lands first), re-run
   `./aws/org-trusted-access-services.py`, and run `./aws/dlp.py` (`DP-1`). **[user]** Record 1.1-1.4 in
   the stage log.
 
@@ -178,7 +179,7 @@ people is Lesson 5 with a `WHERE` clause.
 - **2.1a — [Claude] Write the filters in `data-governance/data/`** — `aws_lakeformation_data_cells_filter`
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
-  `./aws/dlp.py` (`DP-3`).
+  `./aws/dlp.py` (`DP-2`).
 > **What pass 4 measured on 2026-08-19 constrains this whole step.** The `restricted`
 > column does not cross the account line **at all** under the default share: read as its own
 > `InfrastructureAccess`, `curated.sample_trades` shows six columns in Data Governance and **five** in
@@ -240,6 +241,11 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   trusting the directory's SAML provider) is the expected whole set; anything else is a row in the threat
   model — answered, or explicitly accepted. **An accepted finding is archived individually and recorded;
   an archive *rule* stays forbidden** (INV-10 — a rule suppresses future findings silently).
+  **Read 2026-10-17** ([`log-stage-11`](../../log/log-stage-11-dlp.md)): 49 findings, 46 `ACTIVE`. 45 are
+  the INV-16 shape, A.1's rows plus the nine persona assignments and Staging's direct one; the 46th is
+  the Sandbox project key, `TM-21` and `EXC-18`, which the user chose to narrow. The three `RESOLVED`
+  findings are Staging's, two roles 6b step 2.1 unassigned and a key inferred to be the destroyed
+  Development project key.
 - **2.1.2 — [Claude] Read the five no-RCP resource types as perimeter, not as commentary** — Lambda, SNS,
   EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS (`docs/plan/architecture.md` §4.2): for the
   data-bearing ones (the snapshots — closed preventively by 1c 7.5's unconditional denies), the external
@@ -268,6 +274,13 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   the catalog — precisely the bypass D13 closes — and says nothing about LF-Tag entitlements; and **KMS
   keys are not an internal-access resource type**, so D31's "who can decrypt the derived CMK" is verified
   by reading the key policy's enumerated `Decrypt` list (Lesson 22's shape), not by the analyzer.
+  **Read ahead on 2026-10-17** (`alias/awsds-sandbox-project`, by key id): `kms:Decrypt` is enumerated to
+  `datazone.amazonaws.com` with the domain execution role, to `emr-serverless.amazonaws.com` under this
+  account's applications, to `awsds-sandbox-smus-provisioning`, and to any principal carrying the
+  domain's `AmazonDataZoneDomain` tag through DataZone with the domain's encryption context. Neither the
+  persona nor the approver is named. But the first statement grants `kms:*` to the account root, which
+  delegates to IAM, so whether a persona can decrypt is decided by its identity policy, and the reading
+  here is half of D31's answer.
 - **2.1.6 — [user] Delete the analyzer once the findings are recorded** (decision 3; the reading is
   repeatable — recreate it at any later audit for another month's USD 9/resource). **[user]** Record
   create, read and delete in the stage log.
@@ -332,6 +345,16 @@ control at all. A threat model that lists a control nobody implemented is worse 
   as a `Sandbox` residual, it needs its own row: what is stored and where, that the content is not used to
   improve the service in SageMaker Studio but may be at the Free tier in a third-party IDE, and what a user
   may not paste. Closed, the row records the decision and the deny that keeps it closed.
+- **3.7 — [Claude] Write the Lambda row: no control keeps a function inside the perimeter.** Read
+  2026-10-12 for [Stage 17](stage-17-sandbox-machine-learning.md) decision 10: no SCP, boundary statement
+  or persona deny names `lambda:` in `Sandbox`, so a function created from the Bedrock IDE's *Function*
+  entry runs outside every VPC, with the internet a function has by default and nothing of D38's hub on
+  its path — no proxy, no DNS Firewall, no flow log. The row names the control that would close it, a deny
+  on `lambda:CreateFunction` and `lambda:UpdateFunctionConfiguration` unless `lambda:VpcIds` names a VPC
+  of the account, and whether it was written; until it is, Stage 17 does not create that entry (its
+  decision 10, Lesson 34). The same row names the two Lambdas the `AmazonBedrockKnowledgeBase` blueprint
+  creates, the OpenSearch index and the ingestion trigger (AWS's blueprint page, read 2026-10-12), which
+  Stage 17 7.4a does create and its `ML-8` reads for where they run.
 
 ### 4. GuardDuty's two paid features, decided against a real bill
 
@@ -543,7 +566,7 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 |---|---|---|
 | Macie bucket inventory | USD 0.0033/bucket-day (~0.10/bucket-month) | ~10-15 buckets across the three members — ~USD 1-1.50/month; 30-day free trial per account |
 | Macie discovery job | USD 1.00/GB inspected | the sampling depth (decision 1) is the lever; lab-scale lake ≈ cents per run |
-| Internal-access analyzer | **USD 9.00/resource-month, charged at setup** | 4 resources = USD 36 for the one month it lives (2.1.6 retires it) |
+| Internal-access analyzer | **USD 9.00/resource-month, charged at setup** | 5 resources = USD 45 for the one month it lives (2.1.3's map; 2.1.6 retires it) |
 | GuardDuty S3 Protection | USD 0.80/1M S3 data events | 30-day free trial; the real driver is job read volume |
 | GuardDuty Malware Protection for EC2 | USD 0.03/GB EBS scanned | scans on findings — near zero in quiet months |
 | CloudTrail data events | USD 0.10/100k events | reads logged on purpose; a heavy Spark job ≈ tens of thousands of events ≈ cents |
@@ -568,7 +591,9 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
    project path took its place) — the derived zone's Macie and data-event scope is pre-declared
    ([`GOVERNANCE.md`](../../GOVERNANCE.md) §Derived zone, practice (iv) of six), consumed here rather than
    re-decided. **Production's and Staging's join the map the day Stage 9 decides where their results
-   land, which is no longer automatic**: neither account has SMUS, so neither inherits the new zone;
+   land, which is no longer automatic**: neither account has SMUS, so neither inherits the new zone
+   (read 2026-10-17: the map's five buckets exist, and no `*-derived` or `*-outputs` bucket exists in
+   Sandbox, Staging, Production or Data Governance);
    **`awsds-sandbox-lake` is on the map** (Stage 16, Lesson 34 — the permanent per-group store names this
    scope as one of its compensations, and for 2.1.3's analyzer it is one more enumerated bucket ARN at the
    same per-resource price);
@@ -596,7 +621,8 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 10. **INT-16's choice** — closed by D39, which removed the requirement the portal's ingress deviated from;
     3.4 writes the premise that replaced it.
 11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)
-    step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`). Recommended: **on in
+    step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`, and still absent on
+   2026-10-17). Recommended: **on in
     `Sandbox` only, to S3 with the account's CMK and a lifecycle**, inside decision 3's map — the
     assistant is the one channel where a model sees governed data and nothing today can say what it saw.
     If the answer is off, the threat model carries the residual by name rather than by silence.

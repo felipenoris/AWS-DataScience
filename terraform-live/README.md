@@ -123,14 +123,17 @@ lake, and the local re-grants without which a held share cannot be used by anybo
   Production and Staging at Stage 9.
 
 **Checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, Stage 4's, `check-identifiers.py`
-(2026-08-17) and `check-provider-locks.py` (2026-08-21) — and there is no CI to run them in.** Until
-Stage 8 puts them in a pipeline the surfaces are `pre-commit` and the repository's `Makefile`, both
-calling the same scripts:
+(2026-08-17), `check-provider-locks.py` (2026-08-21), `check-sg-descriptions.py` (2026-10-14) and
+`check-gitlab-pins.py` (2026-10-16).**
+The surfaces are `pre-commit`, the repository's `Makefile` and the CI,
+[`.github/workflows/offline-gates.yml`](../.github/workflows/offline-gates.yml) (Stage 8 step 6.2),
+which runs the other two on every pull request; all three call the same scripts:
 
 ```bash
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
                 #          bootstrap parity, slice layers, tracked tfvars shape, the policy index,
-                #          account ids and e-mails, provider locks
+                #          account ids and e-mails, provider locks, security group descriptions,
+                #          the GitLab release pins
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
 
@@ -167,22 +170,15 @@ masquerade rules, which is what let an `[E]` `amd64` build host reach the intern
 anywhere: **the capability was `[D]` and the reach was `[E]`**, since a masquerade rule matches nothing
 until a route table sends traffic at it. D38 ended it — there is no default route anywhere in the estate,
 and the WireGuard host now lives in `VPC-Networking`, where **a route in another VPC cannot point at its
-ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host is
-[`production/buildbox/`](production/buildbox/README.md) and reaches the internet **as a client of the
-explicit proxy**, so `egress/` is a hard prerequisite of a build session (its SSM endpoints are the only
-door into the host) rather than a slice a build could avoid.
+ENI**. `vpc_nat_cidrs` went with `wireguard-v0.5.0`; the build host became `production/buildbox/`, **a
+client of the explicit proxy**, and retired into the build runner [`production/runners/`](production/runners/)
+at Stage 7 step 6.5 (2026-10-12). Either way `egress/` is a hard prerequisite of a build (its SSM
+endpoints are the only door into the host) rather than a slice a build could avoid.
 
-**`buildbox/` is raised by [`scripts/buildbox.py`](../scripts/buildbox.py), not by `make up` — by
-convention, not by refusal.** It is `[E]` with a row and no refusal in `layers.py`, so `make status` sees
-it, `make down ENV=production` destroys it, **and `make up ENV=production` applies it** with the account's
-other four `[E]` slices — `egress/`, `workloads-egress/`, `probes/`, `runners/` — at 0.2117/h for an `m8i.xlarge` a
-Sandbox session never needs. It retires into `runners/` at Stage 7 step 6.5. The script exists for the reverse case: a build needs `egress/` and this slice
-and neither of the other two, so it raises this one alone, checks the two prerequisites a rank cannot
-express, syncs the context, opens the shell and tears down.
-**Its two refusals** read the **`ssmmessages` endpoint** before applying — without it the apply
-succeeds and the host is unreachable, which looks exactly like a slow boot — and **start the proxy host**,
-because under design B there is no route to fail over to. Both are code in the helper rather than sentences
-here (Lesson 5).
+**`runners/` is raised by `make gitlab-up`**, with GitLab and `egress/` (`RUNNERS=0` leaves it out), and
+destroyed by `make gitlab-down`; `make up ENV=production` applies it too, with the account's other `[E]`
+slices. Its first boot waits for GitLab and registers from the token container
+([`docs/plan/runbooks/gitlab.md`](../docs/plan/runbooks/gitlab.md) §K).
 
 **The `[D]` slices are where the layer decides the folder rather than the topic.** The hub's durable
 things — the WireGuard Elastic IP (**transferred** from Sandbox at 6c step 4.3, so no client `.conf`
@@ -221,7 +217,8 @@ export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 
 **The by-hand change procedure is [`docs/plan/runbooks/terraform-changes.md`](../docs/plan/runbooks/terraform-changes.md)** —
 the recipes, the two-commit tag order a module change requires, and the table of what to do when a hook
-blocks the commit. Until Stage 8 there is no CI: that runbook *is* the pipeline.
+blocks the commit. The CI runs the offline gates and never plans or applies, so for `plan` and `apply`
+that runbook *is* the pipeline.
 
 **[`identity/sso/`](identity/sso/README.md) is the entitlement plane**, written 2026-08-16 (Stage 2
 step 5). The **six persona permission sets**, their inline policies, and every **group→account
@@ -271,7 +268,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   CodeArtifact, the slice's own key, and the consumer policies built from the D35 map. **5.b** (Stage 7,
   2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
   `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
-  blocks the cache's own update, and AES256 for a public upstream's bytes.
+  blocks the cache's own update, and AES256 for a public upstream's bytes. **Stage 8 decision 20**
+  (written 2026-10-16, unapplied) adds `awsds-prod-releases`, the bucket each application release's
+  bundle is stored in, under the slice's key, versioned, with its deletes and its versioning and
+  lifecycle changes denied to every principal but `InfrastructureAccess`.
 - **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
   (`gitlab.awsds.internal`, `*.awsds-pages.internal`) in the `tls` provider's state, under the account's
   **second** state key; the certificates published as three SSM parameters under `/datascience/prod/pki/`
@@ -289,6 +289,12 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
   to the three image repositories with its own instance profile and pulling through the cache - and no
   deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
+  Since Stage 8 pass 1 (2026-10-13) the slice also holds the **deploy runner** `awsds-prod-runner-deploy`,
+  protected and project-locked, whose role assumes only the deploy roles (`awsds-deploy-sandbox-test` the
+  fourth, Stage 8 decision 19, written 2026-10-16) and whose AWS config carries one profile per role,
+  rendered from `production/foundation/`'s `deploy_role_arns_by_name`; since pass 2 the **test runner**,
+  with no AWS identity reachable from its jobs; and since decision 20 the build runner's role also writes
+  `awsds-prod-releases`.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
   AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
   per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
@@ -313,7 +319,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
-  written by hand after a project exists.
+  written by hand after a project exists. Since Stage 8 decision 19 (written 2026-10-16, unapplied) the
+  slice also holds `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (INT-25), on the
+  `deploy-role` module with its own ceiling `awsds-sandbox-deploy-test-boundary`, trusted by the deploy
+  runner's role alone and confined to the `test` project's storage prefix, key, log groups and workflows.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 
@@ -328,7 +337,10 @@ list whose rows are **measurements, not intentions**.
 
 1. **Which account?** → the top-level folder. The account is the only hard boundary AWS offers
    ([`README.md`](../README.md), "Account segregation"), so it is the first cut.
-2. **Which slice?** → the sub-folder. A slice is one Terraform state and one `apply`. The seam between two
+2. **Which slice?** → the sub-folder, or for an application one folder further down,
+   `<account>/app/<app>/` (Stage 8 decision 12): `layers.slice_dirs_on_disk` is the one reader of that
+   shape, so `make check`, the lock check and the network-doc check see such a slice, and `make up` never
+   applies one (refusal 7). A slice is one Terraform state and one `apply`. The seam between two
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
    because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and

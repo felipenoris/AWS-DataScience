@@ -19,6 +19,20 @@ import re
 from pathlib import Path
 
 SCP_PATH = "terraform-live/identity/org-policies/policies/awsds-org-scp-ou-interactive.json"
+GRANT_VARS = "terraform-live/sandbox/bedrock/variables.tf"
+
+# The keys of the house image's managed settings that pin a model, read by settings_pins().
+PIN_KEYS = (
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+)
+
+# `default = { "model" = "profile" ... }` inside the models block of the grant slice. Anchored on
+# the variable name so another map in the same file cannot be picked up by accident.
+MODELS_RE = re.compile(r'variable\s+"models"\s*\{.*?default\s*=\s*\{(?P<body>.*?)\}', re.S)
+PAIR_RE = re.compile(r'"(?P<model>[^"]+)"\s*=\s*"(?P<profile>[^"]+)"')
 
 SID_MODELS = "DenyBedrockInvocationOutsideTheScopedModels"
 SID_REGIONS = "DenyBedrockReadsOutsideTheRoutedRegions"
@@ -73,3 +87,24 @@ def scp_declaration(path: Path) -> tuple[dict | None, list | None, str]:
     missing = [s for s, present in ((SID_MODELS, pairs), (SID_REGIONS, regions)) if not present]
     why = f"{SCP_PATH} carries no {', '.join(missing)}" if missing else ""
     return (pairs or None), regions, why
+
+
+def grant_models(path: Path) -> dict | None:
+    """The grant slice's `models` map, model id -> inference profile id, or None when unreadable."""
+    if not path.is_file():
+        return None
+    match = MODELS_RE.search(path.read_text(encoding="utf-8"))
+    if not match:
+        return None
+    return {m.group("model"): m.group("profile") for m in PAIR_RE.finditer(match.group("body"))}
+
+
+def settings_pins(path: Path) -> dict | None:
+    """The profile ids the image's managed settings pin, by key, or None when unreadable."""
+    if not path.is_file():
+        return None
+    try:
+        env = json.loads(path.read_text(encoding="utf-8")).get("env", {})
+    except json.JSONDecodeError:
+        return None
+    return {k: env[k] for k in PIN_KEYS if k in env}

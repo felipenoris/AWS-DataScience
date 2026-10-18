@@ -37,8 +37,9 @@ resource "aws_vpc_security_group_ingress_rule" "project_5439" {
   from_port                    = 5439
   to_port                      = 5439
   ip_protocol                  = "tcp"
-  # `to` rather than an arrow: EC2 refuses a rule description containing `>`. The permitted set is
-  # `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator (measured 2026-09-21).
+  # `to` rather than an arrow: EC2 refuses a rule description containing `>`, at apply (measured
+  # 2026-09-21). The permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`; validate does not check it
+  # on this resource, and scripts/check-sg-descriptions.py does.
   description = "SMUS project ${each.key} app ENIs to Redshift 5439 (Stage 6h step 3.3)"
 }
 

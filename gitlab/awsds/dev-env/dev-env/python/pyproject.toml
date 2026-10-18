@@ -1,0 +1,189 @@
+# The dev-env image's own Python environment - the one the "Python (awsds)" kernel runs.
+#
+# It is NOT the SageMaker Distribution's environment and never touches it. The base image's
+# interpreter, its packages and its default kernel are left exactly as the distribution ships them
+# (the user's decision, 2026-09-10): a space's Launcher offers two Python kernels, the distribution's
+# and this one, and only this one is ours to curate. The environment is built by uv, from this file,
+# on a uv-managed CPython under /opt/awsds - so nothing here is installed by conda.
+#
+# SHARING THE DISTRIBUTION'S PACKAGES WAS CONSIDERED AND REFUSED (2026-09-10, the user). A venv
+# inherits site-packages from the interpreter that created it, and this one's interpreter is not the
+# distribution's, so `--system-site-packages` inherits nothing. Reaching across by hand - a `.pth` or
+# PYTHONPATH pointing at /opt/conda/lib/python3.12/site-packages - imports fine until two trees hold
+# the same package: the distribution's pandas is compiled against the distribution's numpy, and with
+# ours first on the path it loads ours and fails as `numpy.dtype size changed` or as a segfault, in a
+# notebook, at runtime. Running this environment on the distribution's Python minor, as it does since
+# 2026-10-14, makes the extension modules loadable and does not fix that: two copies of numpy on one
+# path still meet.
+#
+# So the two environments do not share, and the price is paid in disk: whatever is listed below
+# exists twice in the image. The lever on that price is this list, not the mechanism - `uv sync`
+# installs everything named here regardless of what any other environment holds.
+#
+# WHY A pyproject.toml AND NOT A requirements.txt. `uv sync` writes uv.lock beside this file: the
+# exact resolution, every package and every hash, for every platform the lock covers. That lock is
+# committed and is what the build installs, so two builds of one commit are the same environment -
+# which a requirements.txt of loose constraints cannot promise. It is also the shape the rest of this
+# repository already uses for its own tooling (the root pyproject.toml + uv.lock).
+#
+# HOW TO CHANGE THE PACKAGE SET, and it is two steps, never one:
+#
+#   1. edit `dependencies` below
+#   2. `uv lock --directory dev-env/python` and commit BOTH files
+#
+# A dependency added without re-locking is not installed: the build runs `uv sync --frozen`, which
+# refuses a lock that does not match this file rather than resolving something nobody reviewed.
+#
+# THE PYTHON VERSION IS 3.12, THE DISTRIBUTION'S. One minor across every environment the estate runs
+# Python code in (the user's decision, 2026-10-14, Stage 8 decision 13): the distribution's /opt/conda,
+# this environment, an application image built FROM base, the MWAA Serverless worker and the shared
+# gates' image. The shared pip-audit gate exports this lock only because of it - `uv export` needs an
+# interpreter `requires-python` admits, and the gate's image carries 3.12 with downloads off - and a
+# module built here imports on a worker. The ceiling is TensorFlow: 2.21.0 publishes cp310-cp313 and
+# nothing past it (resolved against CPython 3.14 on 2026-09-10), and this environment ran 3.13 from
+# default-v0.2.0 to default-v0.6.0. Moving it is `requires-python` here, PYTHON_VERSION in the
+# Dockerfile and `uv lock`, and TensorFlow is the row to check first.
+#
+# WHAT IS DELIBERATELY ABSENT. The distribution's server-side half - the JupyterLab extensions, the
+# Jupyter AI/scheduler/activity-monitor packages, supervisor, the SQL and Code Editor extensions -
+# belongs to the base environment, which runs the UI this kernel talks to. `ipykernel` is the one
+# server-facing package this environment asks for by name, and it is not optional: it is how the
+# kernel starts.
+#
+# `jupyterlab`, `notebook` and `jupyter-server` ARE here all the same, and not by choice: measured
+# 2026-09-10, `aws-glue-sessions` depends on `notebook`, and `sagemaker-studio-dataengineering-sessions`
+# reaches the same place through `sparkmagic`. They are files on disk that nothing starts - the server
+# a space runs is the base environment's, and this environment is only ever a kernel - so the cost is
+# image size and the risk is a reader believing two servers compete. They do not.
+#
+# THE COST OF THIS LIST IS THE IMAGE, and it was measured from the lock rather than guessed
+# (2026-09-10, summing the linux x86_64 / cp313 wheels the lock names): **about 1.6 GiB** of wheels -
+# 1.35 GiB carried in the lock's own `size` fields, plus torch and torchvision, whose index publishes
+# none. TensorFlow alone is 546 MiB of that; 460 packages resolve in all. The first resolution of this list, before the two CPU
+# choices at the end of this file, was **4.7 GiB**. A space pulls the whole image before it starts and
+# that pull crosses an account boundary (INT-01), so trimming is editing lines here and re-locking -
+# cheaper than discovering the size in a build. The heavy rows are tensorflow, catboost, ray and
+# llvmlite.
+
+[project]
+name = "awsds-dev-env"
+version = "0.1.0"
+description = "The Python environment behind the dev-env image's own Jupyter kernel."
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # The kernel. Without it there is no "Python (awsds)" entry in the Launcher.
+    "ipykernel",
+    "ipywidgets",
+
+    # The data stack the distribution carries.
+    "numpy",
+    "pandas",
+    "scipy",
+    "pyarrow",
+    "scikit-learn",
+
+    # Plotting, as the distribution has it.
+    "matplotlib",
+    "seaborn",
+    "altair",
+
+    # AWS, in a notebook rather than in the server: boto3 for the plain API, s3fs for the
+    # pandas/pyarrow path, and the SageMaker SDKs - `sagemaker-studio` is the SMUS library that
+    # resolves a project's connections (docs/REFERENCES.md, the S3 Access Grants rows).
+    "boto3",
+    "s3fs",
+    "sagemaker",
+    "sagemaker-studio",
+
+    # The Redshift driver, DECLARED rather than inherited. It was already importable in a space on
+    # 2026-10-10, but transitively - through one of the SageMaker packages above - which means a new
+    # notebook's `import redshift_connector` worked by accident and a resolution change could remove
+    # it without a line of this file moving (Lesson 63's shape). The requirement is that a data
+    # scientist opens a notebook and `import redshift_connector, boto3` works, so both are named here.
+    # The connection recipe is runbooks/redshift-connection.md section J.
+    "redshift-connector",
+
+    # The SageMaker CI/CD CLI, pinned: an application's `deploy --targets dev` runs from a space as the
+    # project role (AWS-DataScience's Stage 8 decision 22, D41), so a CLI version is a release of this
+    # image. The deploy image pins the same version by hash.
+    "aws-smus-cicd-cli==1.0.9",
+
+    # The ML frameworks.
+    "tensorflow",
+    "torch",
+    "torchvision",
+    "keras",
+    # xgboost-cpu, not xgboost: the PyPI wheel of the latter depends on nvidia-nccl (241 MiB,
+    # measured 2026-09-10) for GPU training this image cannot do. Same import name.
+    "xgboost-cpu",
+    "mlflow",
+    "ray",
+    "autogluon",
+
+    # LangChain, with the two integrations the distribution names.
+    "langchain",
+    "langchain-openai",
+    "langchain-aws",
+
+    # The web and database odds the distribution ships, kept because a notebook does use them.
+    "fastapi",
+    "uvicorn",
+    "pyhive",
+
+    # The distribution's kernel-side integrations, added 2026-09-10 after the comparison against its
+    # own cpu.env.in. Each is something that works in the distribution's kernel and would silently
+    # not work in this one - which is the worst shape a difference between two kernels can have.
+    #
+    #   aws-s3-access-grants-boto3-plugin  the plugin that makes S3 Access Grants transparent to
+    #                                      boto3 - this estate's vending path for the Sandbox lake
+    #                                      (Stage 16), so without it a notebook here reaches the
+    #                                      bucket by a different door than the default kernel does
+    #   amazon-sagemaker-sql-magic         %%sql in a cell
+    #   sagemaker-studio-dataengineering-sessions   the project's connection magics
+    #   sagemaker-kernel-wrapper           what SMUS wraps a kernel with
+    #   sagemaker-headless-execution-driver  running the notebook as a job
+    #   aws-glue-sessions                  the Glue interactive-session magics
+    #   sagemaker-studio-cli               the Studio CLI inside a session
+    "aws-s3-access-grants-boto3-plugin",
+    "amazon-sagemaker-sql-magic",
+    "sagemaker-studio-dataengineering-sessions",
+    "sagemaker-kernel-wrapper",
+    "sagemaker-headless-execution-driver",
+    "aws-glue-sessions",
+    "sagemaker-studio-cli",
+
+    # The agent SDKs the distribution carries. mcp stays on its 1.x line from 1.30.0, that line's fix
+    # for CVE-2026-59951 (GHSA-84m7-p3x7-pcfv): strands-agents requires mcp<2.2 (1.55.1 to 1.61.1,
+    # read 2026-10-16), so 2.2.0, the 2.x line's fix, cannot resolve. The bound goes when strands
+    # admits mcp 2.2.
+    "mcp>=1.30.0,<2",
+    "strands-agents",
+    "strands-agents-tools",
+    "strands-agents-mcp-server",
+]
+
+# torch and torchvision come from PyTorch's CPU index, not from PyPI's default wheel.
+#
+# Measured 2026-09-10: the default wheel depends on the CUDA runtime, and locking it pulled 17
+# `nvidia-*` packages, 3.03 GiB of them, into an image whose base is `sagemaker-distribution:<v>-cpu`
+# and whose spaces run `ml.t3`/`ml.m5`. That is a GPU stack nothing here can use.
+#
+# The flavour axis is where a GPU build belongs (docs/SMUS.md, the tag rule): a `gpu-` image
+# descends from the `-gpu` distribution and would point these two rows at the CUDA index instead.
+# `explicit = true` keeps every other package on PyPI - only the two named below are taken from here.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# The lock covers one platform, because the image is one platform.
+#
+# Without this the resolution is universal - macOS, Windows and aarch64 wheels for 460 packages, none
+# of which this image can run - and the lock is 1.3 MB.
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

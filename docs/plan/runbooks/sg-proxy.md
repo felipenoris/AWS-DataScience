@@ -4,7 +4,7 @@
 > **Who this is for.** Everything below is the by-hand path, and it is what a space on the **stock
 > image** — or on `default-v0.1.1` and earlier — needs. `default-v0.2.0` (2026-09-11) is the first
 > `dev-env` that carries the environment itself. 6d decision 8 puts the six
-> variables in the house image itself (`ENV` in `images/dev-env/Dockerfile`, the bypass list a dated
+> variables in the house image itself (`ENV` in `gitlab/awsds/dev-env/dev-env/Dockerfile`, the bypass list a dated
 > literal there), together with `/etc/apt/apt.conf.d/01proxy` and a sudoers
 > `env_keep`, so on a space running that image none of the exports below is needed and `sudo apt` works
 > unqualified. The image that carries it is the one whose `/opt/awsds-proxy.txt` matches the current
@@ -31,8 +31,10 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 **70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10), and the
 value of `no_proxy_all_groups` in the authoring plan of `vpc-egress-v0.17.0` the same day: every
-optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`). `no_proxy` names only the
-groups its last apply enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
+optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`); the `mlflow` group of
+`vpc-egress-v0.18.0` (Stage 17, not applied) is not in it, and reaches a space with the image that
+carries the next literal (Stage 17 decision 4). `no_proxy` names only the groups its last apply
+enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
 names, and the day that group is on its calls leave through the proxy as public calls. It was 28 until
 2026-09-09: the generator read the service's one canonical name and now reads every name the endpoint
 answers for. A copy with 28 entries lacks `datazone.us-west-2.api.aws` among twenty-three others, and
@@ -86,7 +88,7 @@ Three things decide whether that line measures the network at all:
 image build's channel, and a solver run inside a space would move the SageMaker Distribution's own pins.
 The compiled half of CRAN is refused by arithmetic rather than by policy — CRAN serves source packages,
 so anything with C or Fortran needs a toolchain the image does not carry;
-[`images/dev-env/r/conda-packages.txt`](../../../images/dev-env/r/conda-packages.txt) stays the delivery
+[`gitlab/awsds/dev-env/dev-env/r/conda-packages.txt`](../../../gitlab/awsds/dev-env/dev-env/r/conda-packages.txt) stays the delivery
 path for those.
 
 **A refusal here reads misleadingly.** R reports `cannot open URL '…/src/contrib/PACKAGES'` and then
@@ -175,8 +177,8 @@ The decisions in it:
 - **`http.noProxy` is not optional.** `http.proxySupport` defaults to `override`, which patches the
   extension host's HTTP stack, so an extension's AWS SDK calls would leave by the proxy instead of the
   VPC endpoint: bytes paid for that the gateway endpoint carries free, and arrival without
-  `aws:SourceVpce`, which is a deny wherever a policy conditions on it. The buildbox carries the same
-  hazard one layer down.
+  `aws:SourceVpce`, which is a deny wherever a policy conditions on it. A docker client's `proxies`
+  block carries the same hazard one layer down.
 - **The list is generated, and the syntax is not the environment's.** Its source is `terraform output
   -raw no_proxy_all_groups` on `sandbox/egress` — the value at the top of this file — never a
   transcription. The array above is a snapshot of the 50-entry `no_proxy` of 2026-09-09, from an apply

@@ -1934,3 +1934,155 @@ is the same day: the `BrokenPipe` attempt it compares against was committed at 0
 hours earlier. The entries stay as written. The documents that had copied the date — the stage file,
 `docs/AWS_STATE.md`, `docs/plan/lessons.md`, `runbooks/redshift-connection.md`, `aws/warehouse.py`,
 `CLAUDE.md` and this log's index row — are corrected in the change that adds this entry.
+
+---
+
+## 2026-10-17 — the audit export carries nothing while a workgroup exists, and CloudTrail names the person on every door
+
+*Written by Claude in a session with the environment down, at the user's request to advance what needs
+no environment. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`), and every call is a read: CloudWatch Logs Insights over the three
+audit groups, `filter-log-events`, `describe-log-streams` and CloudTrail `lookup-events`. Insights
+scanned about 0.6 GB in all, under 0.01 USD.*
+
+### `EXC-16` — what the three groups hold over their retention
+
+Logs Insights over each group's whole 30-day retention, read between 21:10Z and 21:46Z:
+
+| Group | Records | Stream: first → last event (records) |
+|---|---|---|
+| `connectionlog` | 533,001 | `awsds-sandbox-warehouse`: 2026-09-20 06:03:52 → 06:16:11 (737); 2026-09-21 03:00:05 → 05:43:33 (3,511). `default`: 2026-09-23 05:50:33 → 06:25:12 (880); 2026-09-25 00:56:43 → 2026-10-10 03:09:06 (439,374); 2026-10-12 23:28:07 → 2026-10-16 01:58:00 (88,499) |
+| `useractivitylog` | 11,213 lines | `awsds-sandbox-warehouse` only: 2026-09-20 06:03:54 → 06:16:11; 2026-09-21 03:00:05 → 05:43:33 |
+| `userlog` | 1 | 2026-09-21 03:03:40: the `create` of `IAMR:datazone_usr_role_<project>_<env>` |
+
+The workgroup's lifetimes over the same window, from CloudTrail `CreateWorkgroup` and the first
+`DeleteWorkgroup` of each teardown:
+
+| Created | Deleted |
+|---|---|
+| 2026-09-20 06:02:59 | 2026-09-20 06:12:45 |
+| 2026-09-20 06:14:21 | 2026-09-20 13:48:19 |
+| 2026-09-20 15:34:21 | 2026-09-21 04:37:15 |
+| 2026-09-23 16:25:21 | 2026-09-23 22:13:46 |
+| 2026-10-10 03:06:43 | 2026-10-10 06:42:12 |
+| 2026-10-10 16:03:33 | 2026-10-10 21:08:09 |
+| 2026-10-10 23:57:58 | 2026-10-11 06:22:53 |
+| 2026-10-11 20:19:02 | 2026-10-12 00:07:59 |
+| 2026-10-16 01:55:53 | 2026-10-16 04:23:30 |
+| 2026-10-16 16:36:38 | 2026-10-16 21:17:32 |
+
+No `UpdateNamespace` appears since `CreateNamespace` at 2026-09-20 06:00:44, so `logExports` is the
+configuration the namespace was born with.
+
+What the two tables say together:
+
+- **The `default` stream carries the namespace's own `rdsdb` sessions, and only while no workgroup
+  exists.** One `[local]` session every ~12 s, about 29,000 records a day. A run starts about a day after
+  a delete (26.7 h after 2026-09-23 22:13:46, 23.3 h after 2026-10-12 00:07:59) and stops two minutes
+  after a create (03:09:06 against 03:06:43 on 2026-10-10, 01:58:00 against 01:55:53 on 2026-10-16). At
+  21:46Z today, 24.5 h after the last delete, it had not resumed. The run of 2026-09-23 05:50 → 06:25
+  fits neither edge.
+- **While a workgroup exists, nothing reaches any group after 2026-09-21 05:43:33**: no user record and
+  no `rdsdb` record, across seven lifetimes and every session of 2026-10-10 and 2026-10-16, both doors
+  included. So the export did not stop on 2026-10-10 at 03:09:06. It carries nothing while there is
+  compute, which is all of the time a user can reach the database.
+- **User sessions reached the groups once, 2026-09-21 03:00:23 → 03:23:32.** `connectionlog` holds 180
+  records of `dbadmin` sessions through the Data API (password authentication from `127.0.0.1`,
+  `application_name` *Amazon Redshift Data API - <statement id>*, databases `dev`, `sandbox` and
+  `warehouse`), and `useractivitylog` holds their 108 statements, for example
+  `select usename, usesuper, usecreatedb from pg_user order by 1` and `select role_name from svv_roles
+  order by 1`. So the Data API path can be logged, which answers
+  [5b](../plan/stages/stage-05b-redshift-serverless.md) 6.1's open half — and mostly was not.
+  CloudTrail holds 268 `redshift-data` `ExecuteStatement` calls by the infrastructure user over those
+  two days. Matched by statement id, which the Data API writes into `application_name`, 36 are in the
+  groups, called between 2026-09-21 02:59:53 and 03:23:32, and 232 are not: 231 on 2026-09-20 between
+  06:18:01, after that day's window closed at 06:16:11, and 17:22:05, and one at 2026-09-21 02:59:18.
+- **`AUDITMARKER20260920` is in no record of the window** (Insights, 0 matched). Every Data API call of
+  2026-09-20 ran after 06:18:01, so the marker ran outside the only window that day.
+
+The three groups keep 30 days, so the 2026-09-20 and 2026-09-21 records leave them on 2026-10-20 and
+2026-10-21. After that the groups hold no user record at all, and nothing in them shows that one was
+ever written.
+
+### The reading of 2026-10-10 was a sampling artifact (inference)
+
+The entries of 2026-10-10 counted **155 connection records**, every one `rdsdb`'s, and an internal
+heartbeat every ~2h25m. The group held 444,502 records then (the runs above that end on or before
+2026-10-10 03:09:06), and 444,502 over 155 is 2,868 records apart, which at the measured ~1,207 records
+an hour is 2 h 23 min. A `FilterLogEvents` page holds at most 1 MB, which these records fill at roughly
+2,500 to 3,000 a page. So the 155 records at a ~2h25m cadence fit one record per response page. This is
+an inference from the arithmetic; the command that produced the 155 is not in this log. Read that way,
+the 180 `dbadmin` records of 2026-09-21 sit inside the first pages and were never seen, and the cadence
+was the pager's.
+
+### What the re-read changes
+
+- `EXC-16` is rewritten in `docs/AWS_STATE.md`: an export that carries nothing while compute exists,
+  rather than one that stopped on a date.
+- [Stage 11](../plan/stages/stage-11-dlp.md) still must not rest its DLP feed on these groups, now
+  because the measured window of user activity is 23 minutes in a month.
+- 3.6 and verification ix are restated, and `docs/plan/lessons.md`'s bullet on these groups is
+  corrected.
+- Owed: the mechanism, unread. AWS's documentation describes the export, not this behaviour, and the
+  configuration did not change.
+
+### Verification xv — CloudTrail names the person on every door
+
+`lookup-events` for `GetCredentials` since 2026-09-19: 148 events from `redshift-serverless`, between
+2026-10-10 03:43:19 and 2026-10-16 19:48:54.
+
+| Caller role | Session name | Calls | Door | `dbName` |
+|---|---|---|---|---|
+| the access role | `<Identity Center user id>@<environment id>` | 10 | public addresses | `dev` |
+| the access role | the same | 128 | `sqlworkbench.amazonaws.com` | none (`durationSeconds: 3600`) |
+| the project role | `SageMaker` | 5 | the proxy (`Boto3/1.43.92`, the house image's environment) | `sandbox` |
+| the project role | `SageMaker` | 2 | `vpce-01b97415541ae0c2d` (`Boto3/1.43.75`, AWS's image) | `sandbox` |
+| the access role | `redshift-per-project` | 1 | the proxy, 2026-10-10 20:25:53 | `sandbox` |
+| the access role | `<Identity Center user id>@<environment id>` | 2 | public, 2026-10-15 03:02:16 and 04:42:39, `ResourceNotFoundException` | none |
+
+**All 148 carry the same `sessionContext.sourceIdentity`**, one value: the data scientist's Identity
+Center user id, the same id the portal's session names begin with. The chained `redshift-per-project`
+session carries it although §J's `assume_role` passes no `SourceIdentity`: SMUS sets it on the space's
+session of the project role, and it follows that session into the chain, which the access role's trust
+statement `TheSessionCarriesTheUsersIdentity` admits (`sts:SetSourceIdentity` from the project role,
+`terraform-live/sandbox/warehouse/iam.tf`). So the person is named on the notebook door too, and
+decision 8a's cost is in-database attribution alone (`IAMR:<project role name>`), not the trail's.
+
+Two more readings ride on the same events:
+
+- **The connection names database `dev`**: the portal's own ten calls carry `dbName: dev`, which is
+  what `EXC-17`'s dropdown offered. This is a reading from the trail, not from the connection object,
+  which only a project member can read.
+- **The two refused calls of 2026-10-15** are the portal asking for a session while the `[E]` workgroup
+  did not exist (it was created 2026-10-16 01:55:53): `ResourceNotFoundException`, the shape a
+  connection to a destroyed workgroup takes.
+
+### Step 5.4 and verification viii — the expected refusal is an explicit deny
+
+`terraform-live/identity/sso/policies-data-scientists.tf` carries `DenyMintingARedshiftDatabaseSession`,
+an explicit `Deny` on `redshift-serverless:GetCredentials` and the `redshift-data:` statement calls,
+written at 5b. So the persona's refusal is an explicit deny in an identity-based policy, not the
+implicit one 5.4 expected. The stage text is corrected; the live call is still the user's.
+
+## 2026-10-17 — amendment: 2026-10-10 burned 24,359 RPU-seconds, not 100
+
+*Written by Claude, from `ComputeSeconds` by the hour (`Workgroup=awsds-sandbox-warehouse`, as
+`awsds-infra-sandbox-1`), read the evening the user found the free trial active. It amends the entry
+of 2026-10-10 headed "3.3 done: the project wrote a table", whose "Day's burn for the whole session:
+100 RPU-seconds = 0.0100 USD" stays as written.*
+
+| UTC, 2026-10-10 | RPU-seconds |
+|---|---|
+| 03:00 → 06:59, the morning session | 109 |
+| 16:00 | 9,521 |
+| 17:00 | 966 |
+| 18:00 | 13,733 |
+| 20:00 | 30 |
+| **the day** | **24,359 = 6.7664 RPU-hours = 2.44 USD** |
+
+The 100 was right for the session it named and was carried forward as the day's. The afternoon's
+sessions, 3.3 over `5439` and decision 8a's measurement among them, burned 24,220, and the hour from
+18:00Z ran at about 3.8 RPU sustained, which only a query running most of that hour produces. Which
+statement it was is not readable from the metric. The free trial absorbed all of it
+([5b's log](log-stage-05b-redshift-serverless.md), 2026-10-17), so verification xii reads this figure
+and not the bill until 2026-12-19.

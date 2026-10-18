@@ -31,6 +31,111 @@
         "athena:StartCalculationExecution"
       ],
       "Resource": "arn:aws:athena:*:*:workgroup/*"
+    },
+    {
+      "Sid": "DenySageMakerJobsOffVpc",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:CreateHyperParameterTuningJob",
+        "sagemaker:CreateAutoMLJob",
+        "sagemaker:CreateAutoMLJobV2",
+        "sagemaker:CreateModel"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Null": {
+          "sagemaker:VpcSubnets": "true"
+        }
+      }
+    },
+    {
+      "Sid": "DenySageMakerInstanceCeiling",
+      "Effect": "Deny",
+      "NotAction": [
+        "sagemaker:CreateApp",
+        "sagemaker:CreateSpace",
+        "sagemaker:UpdateSpace"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ForAnyValue:StringNotEquals": {
+          "sagemaker:InstanceTypes": [
+            "ml.t3.medium",
+            "ml.t3.large",
+            "ml.t3.xlarge",
+            "ml.m5.large",
+            "ml.m5.xlarge",
+            "ml.c5.large",
+            "ml.c5.xlarge"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DenySageMakerJobsWithoutNetworkIsolation",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:CreateHyperParameterTuningJob",
+        "sagemaker:CreateAutoMLJob",
+        "sagemaker:CreateAutoMLJobV2",
+        "sagemaker:CreateModel"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "BoolIfExists": {
+          "sagemaker:NetworkIsolation": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenySageMakerJobsWithoutInterContainerEncryption",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:CreateHyperParameterTuningJob",
+        "sagemaker:CreateAutoMLJob",
+        "sagemaker:CreateAutoMLJobV2"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "BoolIfExists": {
+          "sagemaker:InterContainerTrafficEncryption": "false"
+        }
+      }
+    },
+    {
+      "Sid": "DenySageMakerJobsWithoutVolumeEncryption",
+      "Effect": "Deny",
+      "Action": [
+        "sagemaker:CreateTrainingJob",
+        "sagemaker:CreateProcessingJob",
+        "sagemaker:CreateHyperParameterTuningJob",
+        "sagemaker:CreateAutoMLJob",
+        "sagemaker:CreateAutoMLJobV2",
+        "sagemaker:CreateTransformJob"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Null": {
+          "sagemaker:VolumeKmsKey": "true"
+        }
+      }
+    },
+    {
+      "Sid": "DenySageMakerServerlessInference",
+      "Effect": "Deny",
+      "Action": "sagemaker:CreateEndpointConfig",
+      "Resource": "*",
+      "Condition": {
+        "Null": {
+          "sagemaker:ServerlessMemorySize": "false"
+        }
+      }
     }
   ]
 }

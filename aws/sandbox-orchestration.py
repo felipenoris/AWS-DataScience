@@ -89,8 +89,10 @@ CODE_DIRS = {
         "/opt/ml/processing/code",
     ),
 }
-# An extension module in a code input must be built for the house environment's interpreter,
-# CPython 3.13 on x86_64 Linux (images/dev-env/Dockerfile), or carry the stable ABI.
+# An extension module in a code input must be built for the interpreter of the house environment the
+# job's image carries, or carry the stable ABI. 6i's workflows run default-v0.5.0, whose house
+# environment is CPython 3.13 on x86_64 Linux; an image from default-v0.7.0 carries 3.12 (Stage 8
+# decision 13), and a folder packaged for it moves this suffix with it.
 JOB_EXTENSION_SUFFIXES = (".cpython-313-x86_64-linux-gnu.so", ".abi3.so")
 # demo-bash-operator has two versions, told apart by a task id. The probe runs inline commands
 # and must carry no Code object, or it is no control for decision 7; the exercise runs the

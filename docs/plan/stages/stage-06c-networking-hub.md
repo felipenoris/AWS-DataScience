@@ -796,7 +796,7 @@ premise (no public egress) becomes true.
   **Rendered, not merely validated** (Lesson 54), on all four slices: Sandbox **26** entries, Staging
   **19**, `VPC-SharedServices` **21**, `VPC-Workloads` **8** — the fixed half alone, which is the
   right answer for a VPC with no interface endpoint and two `[P]` gateways. Three **output
-  preconditions** carry the three silent failures: no `*`, no `/`, no `:`. The `images/base` rule is
+  preconditions** carry the three silent failures: no `*`, no `/`, no `:`. The `gitlab/awsds/dev-env/base` rule is
   recorded in the slices' own `outputs.tf`, where a consumer meets it.
   *The original step follows:*
 - **5.6 — [Claude] Generate `NO_PROXY` per VPC, from that VPC's endpoint list**: not a blanket
@@ -810,7 +810,7 @@ premise (no public egress) becomes true.
   silently ignored by the clients that matter, and an entry must never carry a port, which GitLab
   documents as breaking DNS resolution for repository mirroring. Intranet reach is expressed as name
   suffixes, and any literal address that must bypass the proxy is listed literally.
-  **Never an `ENV HTTP_PROXY` in `images/base`** — every application image inherits from it and runs as a
+  **Never an `ENV HTTP_PROXY` in `gitlab/awsds/dev-env/base`** — every application image inherits from it and runs as a
   Production job behind endpoints, where a wrong `NO_PROXY` would send S3 and STS out through the proxy as
   a public address. Build time is a BuildKit `--build-arg`; runtime in a Studio space is
   `ContainerEnvironmentVariables` on the app image configuration, or a JupyterLab lifecycle configuration —

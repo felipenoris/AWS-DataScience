@@ -1,4 +1,5 @@
-# The workflows grant for SMUS project roles (Stage 6i decision 6).
+# The workflows grant for SMUS project roles (Stage 6i decision 6; the Glue statement, Stage 10
+# decision 12, user 2026-10-16).
 #
 # SageMakerProcessingOperator describes the job name it proposes before it creates the job, and
 # counts only a ValidationException as "absent" (Amazon provider 9.32.0, the MWAA Serverless
@@ -65,6 +66,30 @@ data "aws_iam_policy_document" "workflows" {
       test     = "ForAllValues:StringEquals"
       variable = "aws:TagKeys"
       values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # GlueJobOperator reads the job it names with glue:GetJob before it creates or updates it, and
+  # counts only an EntityNotFoundException as "absent" (Amazon provider 9.32.0). The blueprint's
+  # SageMakerStudioProjectUserRolePolicy grants GetJob only on a job tagged with the caller's
+  # project, and a name not yet taken carries no tag, so the project role is refused before any job
+  # exists (measured 2026-10-16, the CI/CD CLI's run u4AFogXA74olkqo). This statement allows GetJob
+  # on a job that carries no project tag and whose name ends with the caller's project id, the name
+  # an application gives its job (<app>-<project id>, D41): another project's job stays out of reach
+  # by its tag, and an untagged job of any other name by its name. The create that follows is the
+  # blueprint's own GlueCreateAndTagPermissions, exercised by the first run after this grant: the
+  # operator read EntityNotFoundException and created the job with the project tag (2026-10-16, run
+  # JO9MJ2BMRo7RL1Z).
+  statement {
+    sid       = "GetAGlueJobNoProjectHolds"
+    effect    = "Allow"
+    actions   = ["glue:GetJob"]
+    resources = [local.glue_jobs_named_for_the_caller]
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["true"]
     }
   }
 }

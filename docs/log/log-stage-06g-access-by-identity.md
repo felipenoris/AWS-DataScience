@@ -131,3 +131,13 @@ The `AWSReservedSSO_*` suffixes, the addresses, the instance ids and the error w
 
 *Owed at the close of these sittings: 2.4's Athena read from a Sandbox space, which needs a running
 space.*
+
+## 2026-10-17 — decision 1's replacement, still pending
+
+*Written by Claude in a session with the environment down. One reading, as `awsds-infra-prod` (account
+`<Production>`, permission set `InfrastructureAccess`).*
+
+`ec2 describe-instances` on `awsds-prod-proxy`: `i-0d42d0393c39eefdb`, the instance 2026-09-17's apply
+left, `stopped` (a user shutdown at 2026-10-16 23:33:56Z), last launched 2026-10-16 16:31:16Z, private
+`10.31.160.140`, no public address while stopped. So the host decision 1 left to be replaced has not
+been replaced; `make hub-up` starts it and never applies the slice.

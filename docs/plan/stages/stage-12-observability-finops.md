@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started, and scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
+| **Status** | not started but for step 10, whose `./aws/observability.py` was written 2026-10-17 and first run 2026-10-18 ([log](../../log/log-stage-12-observability-finops.md)): `OB-1`, `OB-2` and `OB-5` pass, `OB-3` and `OB-4` read `note` until steps 2 and 8; scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, which is what separates this stage from a projection |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -60,6 +60,10 @@ quietly. **Explanation:** each alarm names the runbook that answers it, or it is
   spend curve in hand rather than a guess.
 - **2.2 — [Claude] Alarm the hub**: either hub host stopped while a spoke session is up, and the proxy's
   403 rate over a threshold. Both point at [`runbooks/vpn.md`](../runbooks/vpn.md) and `./aws/proxy.py`.
+  **Read 2026-10-18**: `awsds-prod-proxy-status-check` is in `ALARM` whenever the hub is stopped, its
+  missing data `breaching` by design (`production/proxy/main.tf`), so an action on it as it stands
+  would notify at every `make hub-down` (inferred); a hub host stopped while a spoke session is up is
+  not the condition that alarm reads.
 - **2.3 — [Claude] Alarm the pipelines and GitLab**: a failed promotion, a GitLab health-check failure, an
   unusual Athena scan volume.
 - **2.4 — [Claude⚡] Apply, then [user] provoke one alarm of each class once** — an alarm that has never
@@ -72,7 +76,10 @@ quietly. **Explanation:** one retention in this estate is floored by a complianc
 wrong is unrecoverable rather than merely expensive.
 
 - **3.1 — [Claude] Set retention on every group this project creates**, including the proxy access log and
-  the DNS query logs.
+  the DNS query logs. **Read ahead on 2026-10-17**: every group the code names has a retention
+  (`/awsds/prod/proxy` 365 days); the never-expiring ones are the services' own, 14 in Sandbox and 27.4 MB
+  in all (`/aws/sagemaker/studio`, `ProcessingJobs`, each project's `datazone-<project>-dev` pair and eight
+  `mwaa-serverless` groups, `EXC-10`), and none in Production, Staging, Data Governance or Identity.
 - **3.2 — [Claude] Do not shorten the organization CloudTrail bucket's lifecycle below 90 days.** Its
   objects carry S3 Object Lock in **compliance** mode at 90 days (Stage 1d step 9), and its lifecycle rule
   expires versions at 365. **Shortening it below 90 makes the landing zone's own expirations start failing
@@ -112,7 +119,9 @@ that is up so often it may as well be `[D]`.
 **Action:** re-read Stage 1d step 10's decision with a bill. **Why:** the recorder was left alone on an
 estimate of ~USD 0.5/month, and Management was deliberately left unrecorded. **Explanation:** a Config
 conformance pack on top of the Control Tower guardrails is the natural next step **only if** the recorder's
-real cost supports it.
+real cost supports it. The first bill reading, 2026-10-14 (`docs/PRICING.md` §2), is USD 10.88 for
+September, almost all of it `[E]` cycles at USD 0.36-0.87 per Sandbox `make up` + `make down`: the EC2/ENI
+churn Stage 1d decision 4 named as its revision signal.
 
 - **6.1 — [Claude] Read the recorder's actual line** from the invoice.
 - **6.2 — [Claude reads, user decides] Add conformance packs, or record why not.**
@@ -137,7 +146,14 @@ exists"; this is where the widening is paid back.
 Stage 7 step 8.2 applies to GitLab.
 
 - **8.1 — [Claude] Write the org-wide backup plan** through an Organizations backup policy, covering the
-  EBS volumes of the `[D]` instances (GitLab, both hub hosts).
+  EBS volumes of the `[D]` instances (GitLab, both hub hosts). **Read ahead on 2026-10-17**: a plan a
+  backup policy makes follows the management account's resource opt-in, not the member's ([AWS Backup's
+  cross-account page](https://docs.aws.amazon.com/aws-backup/latest/devguide/manage-cross-account.html)),
+  so EBS and EC2 are opted in in Management, which `./aws/observability.py` cannot read. **Read
+  2026-10-18** (`OB-4`): Production holds no backup plan, and its own opt-in reads EBS and EC2 on; the
+  `[D]` hosts' volumes are four, 78 GiB of `gp3` in all (`production/vpn` and `production/proxy` 8 GiB
+  each, `production/tooling` 50 GiB of data and 12 GiB of root), and the only snapshots are DLM's of
+  the GitLab data volume.
 - **8.2 — [Claude⚡] Apply Vault Lock on the backup vault**, so a compromised administrator cannot delete
   the backups. **Read the lock's own irreversibility before applying it** — this is the second
   compliance-mode object in the estate, and 3.2's lesson applies.
@@ -152,7 +168,13 @@ account quota that forced the 2026-09-05 re-scope was discovered by being refuse
 way to learn a limit. **Explanation:** the candidates are the ones this estate has actually approached.
 
 - **9.1 — [Claude] Read the current utilisation** for SageMaker instance limits, **Elastic IPs (the default
-  is five per Region and the hub now holds two)**, VPC endpoints per VPC, and hosted zones.
+  is five per Region and the hub holds one, the WireGuard host's, since the proxy took its instance's own
+  address at 6g)**, VPC endpoints per VPC, and hosted zones. **Read ahead on 2026-10-17, environment
+  down**: Elastic IPs 1 of 5 in Production; interface endpoints 0 of 50 in every VPC, so the reading that
+  matters is taken with the environment up; hosted zones 3 of 500 in Production and 1 in Sandbox and in
+  Staging. SageMaker instance quotas were not read. **`OB-5`, 2026-10-18, environment down**: the
+  highest use is gateway endpoints, 6 of 20 in Production and 2 of 20 in Sandbox and in Staging; the
+  reading with the environment up is still owed.
 - **9.2 — [Claude⚡] Set CloudWatch alarms** on each at 80 %, pointing at the request-increase path.
 
 ### 10. Write `./aws/observability.py`
@@ -168,6 +190,23 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
   under 80 % of its limit.
 - **10.2 — [Claude] Add it to [`aws/INDEX.md`](../../../aws/INDEX.md)** with its profile and its snapshot
   path, in the same commit as the script.
+- **10.1, 10.2 — Written 2026-10-17**, from a cloud session with no AWS credentials:
+  [`aws/observability.py`](../../../aws/observability.py), its row, its question table and its section in
+  `aws/INDEX.md`. `OB-1` reads the project's groups (the `/awsds/` and `awsds-` namespace, or the
+  `Project` tag) apart from the services' own, whose never-expiring groups, 3.1's reading, are a note
+  (`EXC-10`). `OB-2` is decided only by the `-` run in Log Archive's CloudShell, where the bucket is, and
+  also holds the lifecycle to the lock's own retention. `OB-3` resolves each SNS action to a topic of the
+  same account and Region with a confirmed subscription, a policy that admits CloudWatch and a key
+  CloudWatch can use. `OB-3` and `OB-4` read `note` until steps 2 and 8 wire their first alarm or write
+  their first backup plan, then `fail` per alarm or volume left out (Lesson 50); `OB-4` takes 8.1's plan,
+  whose id starts `orgs/`, on its selection alone, since Management's opt-in governs it. `OB-5` adds the
+  gateway endpoints' Regional quota to 9.1's list and reads each quota code's name back (Lesson 38).
+- **First runs, 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)): the user's `-` run
+  in Log Archive's CloudShell passed `OB-2`, the bucket as `INV-14` records it, and a laptop session's
+  run over the five `awsds-infra-*` profiles, the environment down, gave every verdict predicted:
+  `OB-1` and `OB-5` pass, `OB-3` a note for Production's three alarms and Sandbox's two, none with an
+  action, and `OB-4` a note for the `[D]` hosts' four volumes. No call failed. Validation 4 waits on
+  steps 2 and 8.
 
 ---
 
@@ -185,7 +224,8 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
 1. Provoke one alarm per class and confirm the notification arrives (2.4).
 2. Restore one backup of each kind (8.4) — a restore that has never run is not a backup.
 3. Diff `cost-model.md` before and after 4.2; every changed row names the invoice line that changed it.
-4. Run `./aws/observability.py` — `OB-1`..`OB-5` pass.
+4. Run `./aws/observability.py`, and `python3 aws/observability.py -` in Log Archive's CloudShell for
+   `OB-2` — `OB-1`..`OB-5` pass.
 
 ## Risks
 

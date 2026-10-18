@@ -421,7 +421,7 @@ can be diffed against this table directly.
 | `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | **1** |
-| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps | **Per use** — token-billed **plus** whatever vector store it stands up; the storage half is **not measured** and is the one shape here that can bill while idle | a project concretely needs retrieval over its own data — and **the vector store priced first** (Lesson 6). It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
+| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps: a Bedrock knowledge base, its data source and execution role, an OpenSearch Serverless collection and two Lambdas (the index and the ingestion trigger) with their role, per AWS's blueprint page (read 2026-10-12); the IDE's form also offers S3 Vectors and Neptune Analytics as the store | **Per use plus the store**: the embeddings are token-billed (Titan Text Embeddings V2 **0.00002 USD per 1K tokens**, `AmazonBedrock` offer of 2026-10-10) and the vector store is the shape that can bill while idle — **measured 2026-10-12**: OpenSearch Serverless **0.24 per OCU-hour** plus 0.024 per GB-month (a classic collection holds 1-2 OCU, 5.76-11.52 a day; a next-generation one scales to zero), S3 Vectors **0.06 per GB-month** plus requests (`PRICING.md` §5) | **[Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 7, decision 1 taken 2026-10-12**: a chat agent over the repository's runbooks, S3 Vectors the recommended store (its decision 12) and the embeddings model admitted at the SCP (its decision 11); the category-2 checklist in one change with `MLflowApp`. It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
 | `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | **1** |
 | `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5a built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
@@ -429,8 +429,8 @@ can be diffed against this table directly.
 | `EmrServerless` | An EMR Serverless application per project — the VPC-capable Spark runtime replacing the Athena-Spark default (open question 12), and **the only engine whose compute connection documents an LF fine-grained mode** (`project.spark.fineGrained`; the notebook Spark Connect path is full-table on every engine). Under `VpcOnly` it asks for **four** optional endpoints against Glue interactive sessions' one (≈USD 0.06/h across both Interactive accounts under Stage 3's single-AZ rule, while the `egress/` slices are up) | **Per use**: **USD 0.0526/vCPU-h + 0.0058/GB-h** (x86; ARM cheaper), billed only while a session runs (`PRICING.md` §5). Near-standing tail: a **started** interactive application keeps one 4 vCPU/16 GB kernel worker even with no *pre-initialized capacity* configured (`autoStop` 30 min idle; the 60-min kernel timeout is not configurable) | default — **Stage 6 decision 1, taken 2026-08-21 as KEEP-or-REMOVE**: enabled at 1.4, and removed if either of the two in-stage readings comes out against it | **1** |
 | `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* An automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
 | `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path; the RPU-hour rate is now measured (`PRICING.md` §5) and the base capacity this blueprint would pick is not | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake`. **D40 does not reach this row**: it admits a warehouse Terraform sizes, not a catalog a blueprint provisions on Redshift-managed storage | **3** |
-| `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage; **not measured**. Known floor under `VpcOnly`: the `aws.sagemaker.us-west-2.mlflow` interface endpoint, +USD 0.010/h per account | experiment tracking concretely needed; **measure the tracking-server price first** (Lesson 6) | **2** |
-| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice** — categorise the pair together, so enabling one does not quietly imply the other | Not measured. App-shaped rather than server-shaped, so probably per app-hour — **unread** | — | **2** |
+| `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage. **Measured 2026-10-12** in the `AmazonSageMaker` offer (`us-west-2`, published 2026-10-12T18:05:38Z): Small **0.60**, Medium **1.04**, Large **1.91** USD/h, storage 0.10 USD/GB-month (`PRICING.md` §8). Known floor under `VpcOnly`: its interface endpoint, +USD 0.010/h per account — the tracking server's service name is `aws.sagemaker.us-west-2.experiments`; `aws.sagemaker.us-west-2.mlflow` is the MLflow App's (read 2026-10-12) | a tracking need the MLflow App does not meet: [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 2 took the app over the server on 2026-10-12, the offering AWS's own MLflow page says to prefer (read 2026-10-12) | **2** |
+| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice**, and the pair was categorised together so enabling one would not quietly imply the other, until Stage 17 decision 2 took the app and left the server in category 2. Serverless: `CreateMlflowApp` makes `mlflow-app/<id>` with an S3 artifact store and a role, reached from a VPC through the `aws.sagemaker.<region>.mlflow` interface endpoint and from the portal through a presigned URL minted on `sagemaker.api` (read 2026-10-12) | **No usage type in the `AmazonSageMaker` offer of 2026-10-12** (the tracking-server sizes, its storage and the partner-app SKUs are there; nothing for the app), and AWS's launch post of 2025-12-02 says no additional cost beyond the artifact store. **Measured in the bill at [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 8.2** | **Fired: Stage 17 decision 2** (taken 2026-10-12, the app over the server). Pass 1's change was written 2026-10-17 (PR #157) and is **not applied**: the three roster copies (`sagemaker-prereqs-v0.5.0`, the profile, `US-3`) and the `mlflow` endpoint group (`vpc-egress-v0.18.0`, its decision 4); the checklist's template and wizard readings (steps 3 and 4) were made on 2026-10-18, with nothing to declare | **1** |
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 40-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
@@ -443,11 +443,12 @@ can be diffed against this table directly.
 **All 23 rows carry a category** (user, 2026-08-21), settled against the measured roster rather than
 against the console grouping decision 5 had addressed: closed at 12/5/6 and re-cut to 11/5/7 the same
 day, when step 1.5's refusal measured `ToolingLite` as a second base (its row above), then to 11/4/8
-when D7's amendment removed the `Workflows` trigger (its row above).
-**Category 1 is eleven**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless` and
-six of the seven `AmazonBedrock*`. Category 2 is four, category 3 is eight, and **no row is
-`undefined`** — which is what step 1.4 needed, because `US-3` fails on an uncategorised blueprint as
-it fails on a forbidden one.
+when D7's amendment removed the `Workflows` trigger (its row above), then to 12/3/8 when Stage 17
+decision 2 took `MLflowApp` (its row above; written 2026-10-17, not applied).
+**Category 1 is twelve**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless`,
+six of the seven `AmazonBedrock*` and `MLflowApp`. Category 2 is three, category 3 is eight, and
+**no row is `undefined`** — which is what step 1.4 needed, because `US-3` fails on an
+uncategorised blueprint as it fails on a forbidden one.
 
 **`AmazonBedrockKnowledgeBase` is in category 2 and its six siblings are in category 1**, so nothing
 downstream may reason about "the Bedrock blueprints" as one thing. The reason is billing shape: the
@@ -527,6 +528,14 @@ workflow a person authored in the portal on 2026-08-27.
   controls, `PythonOperator` and `BashOperator` among them. Other operators do run: a portal-authored
   `S3CopyObjectOperator` task finished `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10).
   Query-book and Visual ETL tasks are unmeasured.
+- **A Visual ETL flow is documented to run as a notebook**, and a query book's editor schedule too
+  (read 2026-10-13; unmeasured). A flow is the file `<name>.vetl` in the project's repository, under
+  `src/dataflows/`, authored on Glue interactive sessions. The editor's schedule is an EventBridge
+  Scheduler schedule whose target is `CreateTrainingJob`, and the documented workflow route is a DAG whose
+  `NOTEBOOK_PATH` names the `.vetl`; MWAA Serverless lists `SageMakerNotebookOperator` as its only Unified
+  Studio artifact executor. A scheduled flow is therefore expected to meet the boundary a notebook task
+  meets. What reaches a deployment target is the generated script, as a Glue job of the application (D28
+  class (2c), Stage 10 step 2.2).
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 
@@ -555,13 +564,26 @@ shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-w
 - **A run's state lags its task instances**: `RunState` read `QUEUED` after the first task had
   finished.
 
-## The CI/CD tool is an exporter
+## The CI/CD tool deploys between projects
 
-The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and it deploys only
-into projects that already exist. A deployment target under D26 has no project and no domain
-association, so the tool cannot reach one: on the Sandbox side it exports a project's artifacts, and
-the GitLab pipeline stays the deployer (D28). Stage 8 step 5.6 writes the lint that enforces the
-difference.
+The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and AWS's guide says
+it deploys only into projects that already exist; its 1.0.9 code also creates one when a stage says
+`project.create: true`, and its `destroy` then deletes it (read 2026-10-17, Stage 18 step 0.1).
+A deployment target under D26 has no project and no domain
+association, so the tool cannot reach one: it deploys an application from its repository into the
+Sandbox projects, `dev` and `test`, and makes the bundle, and the GitLab pipeline stays the deployer in
+Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the manifest's
+`storage` content into the project's S3 and the workflow is born by the bootstrap action
+`workflow.create`, which resolves the YAML's variables, rewrites it at the same key and calls
+`CreateWorkflow` with the project role, the Tooling subnets, security group and key, no `TriggerMode`
+(so `manual_only`), the log group `/aws/mwaa-serverless/<domain>-<project>/<name>` and six tags
+(`AmazonDataZoneProject`, `AmazonDataZoneDomain`, `Target`, `CreatedBy=SMUS-CICD`, `STAGE`, `Pipeline`);
+the name is `<application>_<project>_<workflow>`, every other character turned into `_`. The CLI's
+pre-deployment validation simulates the role's policies with no context keys, so every SCP conditioned
+on `aws:RequestedRegion` or `aws:ResourceOrgID` reads denied and the deploy runs with
+`--skip-validation`; `--no-events` keeps its `PutEvents` off the default bus; its boto3 ignores the
+`aws` CLI's SSO cache. Stage 8 step 5.6 writes the lint that enforces the difference, on the rendered
+file.
 
 ## The catalog surface
 
@@ -978,12 +1000,15 @@ hand step against an object `Tooling` owns, and `UpdateDomain` replaces `Default
 has neither `CustomImages` nor `LifecycleConfigArns` — **but it does name one image and one version**,
 in `DefaultResourceSpec`, and that copy **overrides the domain's default for that space** (measured
 2026-09-12, correcting the 2026-09-10 reading above, which said a space cannot name an image at all).
-The copy is written when the space is created and never revisited, so an image bump reaches new
-spaces only and leaves existing ones naming a version the bump destroyed — `AWS_STATE.md` `EXC-09`,
-[Lesson 63](plan/lessons.md), and the sweep is [`dev-env.md`](plan/runbooks/dev-env.md) §B step 6.
-**AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather than a version
-ARN, which is what makes them survive a bump; `aws_sagemaker_image_version.dev_env` sets
-`aliases = []`. Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
+The copy is written when the space is created and never revisited, so a release reaches new spaces
+only, and a deleted version strands the spaces that name it — `AWS_STATE.md` `EXC-09`,
+[Lesson 63](plan/lessons.md), and the move is [`dev-env.md`](plan/runbooks/dev-env.md) §B, *Moving a
+space*. **A domain entry with no `ImageVersionNumber` offers every version of the image** in the
+picker, newest first, and the portal's `CreateSpace` pins the chosen one (measured 2026-10-15), which is
+how this estate attaches the house image since Stage 8 decision 7: a release is a new version and no
+domain write. **AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather
+than a version ARN; a custom image's alias works the same way in a space's spec, and the portal then
+banners that space as an outdated SageMaker Distribution (2026-10-15). Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
 `RoleArn` reads it **by tag** and pins the version to a digest; when a space starts, the **project
 role** reads it **by digest**, so a space never sees the tag. Both a **JupyterLab** and a **Code
 Editor** space started on this image (2026-09-10) from the `DefaultUserSettings` block, with
@@ -995,13 +1020,13 @@ Editor** space started on this image (2026-09-10) from the `DefaultUserSettings`
 1,514 characters (52 entries, 2026-09-12), so the mechanism Stage 6c step 5.6 and Stage 6d step 8.4
 both assumed does not exist. 6d
 decision 8 (2026-09-10) puts the six variables in the **image** instead — `ENV` in
-`images/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
-estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and a
-re-attach.
+`gitlab/awsds/dev-env/dev-env/Dockerfile`, the bypass list a dated literal there — which makes the image
+estate-shaped: an endpoint added to the account's list is a Dockerfile edit, a rebuild, a new tag and
+every space moved to the new version.
 
 **What such an image must satisfy** — the `public.ecr.aws/sagemaker/sagemaker-distribution` ancestor at
 ≥ `2.6-cpu`, **no `ENTRYPOINT`**, AWS's three owned paths, the EBS mount at `/home/sagemaker-user`, the
-activity-monitor extension idle shutdown reads — is [`images/README.md`](../images/README.md)'s and
+activity-monitor extension idle shutdown reads — is [`gitlab/awsds/dev-env/README.md`](../gitlab/awsds/dev-env/README.md)'s and
 Stage 6 step 5.0's, and is not repeated here. This section owns the **naming**: Stage 8 step 1's
 pipeline inherits whatever convention the first push wrote, and both repositories are
 **tag-immutable**, so a tag is spent the first time it lands.
@@ -1030,7 +1055,11 @@ So the repository already answers *what the image is*. Putting that word back in
 
 #### The tag rule
 
-**`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.**
+**`<flavour>-v<major>.<minor>.<patch>`, and the same number in both repositories.** That is the
+release, the protected tag on the GitLab project `awsds/dev-env`; the images its pipeline pushes carry
+`-<short sha>` after it, the commit built, so two builds of one release never meet in a tag-immutable
+repository (Stage 8 step 1.1). The hand builds, `default-v0.1.0` to `default-v0.6.0`, carry none. The
+first release the pipeline registered is `default-v0.7.1-c268de48`, Sandbox's version 7 (2026-10-15).
 
 The **flavour** is the axis this estate branches on, decided by the user on 2026-08-22 while choosing
 the first tag: a project wanting **GPUs**, one wanting **Spark** libraries, and one wanting neither
@@ -1063,8 +1092,8 @@ are selected"* — an **AND** where a list reads like an OR.
 **Why one number across both repositories.** `dev-env` is `FROM base`, so a change to `base` rebuilds
 `dev-env` from its first layer — Julia, R and Rust download again. The two therefore never move alone,
 and a shared number says so; **Stage 7 step 2.6**, which fills the CA-install layer with the internal
-PKI root, is a scheduled bump and takes both to the next free minor. The tags spent so far, with their
-dates and what each changed, are [`buildbox.md`](plan/runbooks/buildbox.md) §P.
+PKI root, took both to the next free minor, `default-v0.6.0` (2026-10-12). The tags spent so far, with their
+dates, digests and what each changed, are [`gitlab/awsds/dev-env/README.md`](../gitlab/awsds/dev-env/README.md) §*The releases*.
 
 **When a flavour graduates from a tag to its own repository.** The trigger is reaching for a knob that
 exists **per repository and not per tag**: a different set of accounts allowed to pull (the repository

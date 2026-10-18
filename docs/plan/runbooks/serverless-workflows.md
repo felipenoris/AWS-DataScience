@@ -9,15 +9,18 @@ code is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) (§T
 
 A serverless workflow is a MWAA Serverless workflow that the project's *Workflows* page creates: a YAML
 definition (Airflow 3.0.6 through dag-factory), run by workers the service starts per task, as the
-project role, inside the project's network. This runbook covers the three task kinds Stage 6i
-exercised: a SageMaker processing job in the house image, a `PythonOperator` and a `BashOperator`.
+project role, inside the project's network. Since [D41](../decisions/D41-sagemaker-application.md)
+(2026-10-15) an application's workflow is created instead from its repository by the CI/CD CLI, which
+deploys it to the `dev` and `test` projects (Stage 10 steps 2.1-2.2; the deploy to `dev` measured in the
+lab that day). This runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in
+the house image, a `PythonOperator` and a `BashOperator`.
 
 | Section | Audience | What it holds |
 |---|---|---|
 | **§O** | both | the pieces: where the definition, the code, the logs and the runs live |
 | **§T** | both | the tool, `awsds-workflows`: installing it, where it runs, and this lab's values |
 | **§G** | infrastructure | the grant a project needs before its first processing task, once per project |
-| **§A** | the data scientist | authoring rules every workflow obeys: the editor, the import, the templates, the sensor |
+| **§A** | the data scientist | authoring rules every workflow obeys: the editor, the import, a workflow the CI/CD CLI made, the templates, the sensor |
 | **§J** | the data scientist | a processing task in the house image, under the D13 boundary; a project with dependencies through `awsds-workflows package-job` |
 | **§C** | the data scientist | code for a Python or Bash task: what the worker expects, packaging a uv project with `awsds-workflows package-task`, the upload |
 | **§V** | both | reading a run back, one instrument per question |
@@ -109,10 +112,11 @@ which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
 - **the laptop**: the readings below ran there on 2026-10-12. uv reaches PyPI, and `--profile` reads the
   account;
 - **a space**: not run there yet, its installation included. The script `package-job` replaced built a
-  job folder in a space (Stage 6i step 3.6). uv in a house-image space finds no CPython 3.13
-  ([`images/README.md`](../../../images/README.md)), so a project that asks for it is packaged with
-  `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set. `package-uv-job.py` set it on its own; the package
-  passes on what the environment sets, which its documentation measured in a simulated space.
+  job folder in a space (Stage 6i step 3.6). uv in a house-image space finds the distribution's
+  interpreter only ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), so a project is packaged for the
+  house environment with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set: 3.13 up to `default-v0.6.0`,
+  3.12 from `default-v0.7.0`. `package-uv-job.py` set it on its own; the package passes on what the
+  environment sets, which its documentation measured in a simulated space.
 
 **This lab's values** are read as the infrastructure user (`felipenoris+infrastructure_user@…`), profile
 `awsds-infra-sandbox-1`, account `Sandbox Account 1`, permission set `InfrastructureAccess`, with STS,
@@ -158,8 +162,8 @@ that hour, against the scripts at `c0baddd`, with the same results at both commi
 
 ## §G — The grant a project needs, once per project
 
-A project role cannot run `SageMakerProcessingOperator` with the blueprint's policies alone, for two
-reasons measured on 2026-10-10:
+A project role cannot run `SageMakerProcessingOperator`, nor create a Glue job from `GlueJobOperator`,
+with the blueprint's policies alone, for three reasons, two measured on 2026-10-10 and one on 2026-10-16:
 
 - **The operator describes the job name before creating it**, and the blueprint lets a project role
   describe only a job tagged with its own project. A name not yet taken carries no tag, so the first run
@@ -167,6 +171,10 @@ reasons measured on 2026-10-10:
 - **A create that carries tags is also authorized as `sagemaker:AddTags`**, and the blueprint excludes
   every `AmazonDataZone*` key from `AddTags` while requiring the job to carry `AmazonDataZoneProject`. The
   second run fails with `AccessDeniedException` on `sagemaker:AddTags`.
+- **`GlueJobOperator` reads the job it names with `glue:GetJob` before it creates or updates it**, and the
+  blueprint lets a project role read only a job tagged with its own project. A name not yet taken
+  carries no tag, so the first run fails with `AccessDenied` on `glue:GetJob` before any job exists
+  (the CI/CD CLI's run `u4AFogXA74olkqo`, 2026-10-16).
 
 The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
@@ -175,9 +183,12 @@ The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment 
 2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
    lives in. A precondition refuses a role without the D13 boundary.
 
-The policy allows `DescribeProcessingJob` on a job with no project tag, and `AddTags` of the caller's own
-project tag alone, on a job with no project tag or with the caller's. Another project's jobs stay out of
-reach.
+The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
+project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
+project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach. The Glue statement is written
+and waits on an apply and a run that creates the job: whether `CreateJob` with the project tag then
+passes with nothing more, unlike the processing job's `AddTags`, is unmeasured.
 
 ---
 
@@ -213,6 +224,22 @@ name already exists` (measured 2026-10-11). Delete the old workflow first (*Work
 workflow*, type "confirm"), then save: CloudTrail reads `DeleteWorkflow` then `CreateWorkflow`, the ARN
 suffix changes and the run and version history restart. The log group is named after the workflow and
 keeps every run's logs.
+
+**A workflow the CI/CD CLI made is read in the portal, never saved or run there.** It is named
+`<application>_<project>_<workflow>`, carries the tag `CreatedBy=SMUS-CICD`, and its YAML lives where
+the application's manifest put it, under the project's `shared/` in the lab's deploy (D41). Change it in
+the application's repository and deploy again with the CLI.
+
+- **A save from the portal** replaces the workflow whole (Lesson 60) and writes the editor's copy under
+  `dev/workflows/`, a second definition beside the CLI's. Its Tags tab shows the CLI's six tags under a
+  notice that tags come from the definition file, where the CLI never wrote them (it tags by
+  `TagResource`), so the save would also drop the tags the CLI's `monitor` and `logs` filter by. Read in
+  the portal on 2026-10-15 with no save; no save has measured either.
+- **A run started from the portal** passes no `OverrideParameters`. The CLI writes each `{env.VAR}` of
+  the workflow as `{{ params.VAR }}` and fills it only in a run it starts, from the stage's
+  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values;
+  what it renders in their place is [Stage 10](../stages/stage-10-orchestration-promotion.md)
+  verification xxix. Start the run from the CLI.
 
 **Save errors and their way through:**
 
@@ -295,49 +322,51 @@ Environment:
 - `exec` hands the job the interpreter's exit code;
 - the interpreter is named by absolute path, because a `ContainerEntrypoint` replaces the image's entry
   point and its `PATH`;
-- `/opt/awsds/venv/bin/python` is the house environment (Python 3.13); `/opt/conda/bin/python` is the
-  distribution's (3.12).
+- `/opt/awsds/venv/bin/python` is the house environment (Python 3.13 up to `default-v0.6.0`, 3.12 from
+  `default-v0.7.0`); `/opt/conda/bin/python` is the distribution's (3.12).
 
 ### J1 — A project with dependencies: `awsds-workflows package-job`
 
 The job has no network, so a project's dependencies either come with the house environment or travel in
 the code input; nothing is installed at run time. Three things differ from a Python task's archive (§C):
 
-- **The interpreter is the house environment's**, CPython 3.13 on Linux x86_64 today, not the worker's.
+- **The interpreter is the house environment's**, not the worker's: CPython on Linux x86_64 at the image's
+  `ARG PYTHON_VERSION`, 3.13 up to `default-v0.6.0` and 3.12 from `default-v0.7.0`.
 - **The code input is a folder, not an archive.** A `ProcessingInput` downloads an S3 prefix, and an
   extension module cannot be imported from a zip on `sys.path`.
 - **The precedence is the worker's reversed.** `PYTHONPATH` comes before the house environment's
   site-packages, so a package in both would shadow the image's copy, the failure
-  `images/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
+  `gitlab/awsds/dev-env/dev-env/python/pyproject.toml` documents for numpy. The folder may hold only what the image
   lacks, and the project's versions must equal the image's for everything they share.
 
 `awsds-workflows package-job` (§T) applies the three to a project uv manages, against a file that lists
 the image's environment. Run it from a clone of this repository, for the house environment's lock: on
 the laptop, carrying the folder to `shared/` afterwards, or in a space, where the project's storage
-(`~/shared/`) is at hand. In a house-image space uv finds no CPython 3.13 of its own, since the image
-sets `UV_PYTHON_DOWNLOADS=never` and puts the house interpreter on no search path, so `package-job` runs
-there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has not run in a space yet.
+(`~/shared/`) is at hand. In a house-image space uv finds only the distribution's interpreter, since the
+image sets `UV_PYTHON_DOWNLOADS=never` and puts the house interpreter on no search path, so `package-job`
+runs there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has not run in a space yet.
 
 1. **Prepare the project.**
    - It has a `pyproject.toml` and a current `uv.lock`.
-   - Its `requires-python` admits the image's Python, 3.13 today.
+   - Its `requires-python` admits the image's Python: 3.12 from `default-v0.7.0`, 3.13 up to `default-v0.6.0`.
    - Its own code is pure Python, and it runs as `python -m my_package` (a `__main__.py`).
 2. **Export the house environment, then check the project against it and build the folder**, from the
-   commit that built the image the job names:
+   recipe at the commit that built the image the job names: this repository's copy when
+   `gitlab/mirror.json` names that commit, a clone of the GitLab project `awsds/dev-env` at it otherwise:
 
    ```bash
-   uv export --frozen --no-dev --no-emit-project --no-hashes --directory images/dev-env/python > /tmp/house-env.txt
+   uv export --frozen --no-dev --no-emit-project --no-hashes --directory gitlab/awsds/dev-env/dev-env/python > /tmp/house-env.txt
    ```
 
    ```bash
-   awsds-workflows package-job ~/src/my-project /tmp/my-job --environment /tmp/house-env.txt --python 3.13
+   awsds-workflows package-job ~/src/my-project /tmp/my-job --environment /tmp/house-env.txt --python 3.12
    ```
 
    The lock is the house environment: the image installs it with `uv sync --frozen`
-   ([`images/README.md`](../../../images/README.md)). The export reads the lock and needs no
+   ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)). The export reads the lock and needs no
    interpreter: it ran with downloads off and none to find (2026-10-12). `--python` is the
-   `ARG PYTHON_VERSION` of `images/dev-env/Dockerfile`, 3.13 today, which `package-uv-job.py` read on its
-   own. The output folder must not exist yet. `--platform` defaults to `x86_64-manylinux_2_28`: the house
+   `ARG PYTHON_VERSION` of `gitlab/awsds/dev-env/dev-env/Dockerfile` at that commit, 3.12 from `default-v0.7.0` and 3.13
+   up to `default-v0.6.0`; `package-uv-job.py` read it on its own. The output folder must not exist yet. `--platform` defaults to `x86_64-manylinux_2_28`: the house
    environment holds `onnxruntime` 1.30.0, which publishes no wheel older than `manylinux_2_28`, so the
    image's glibc is at least 2.28 and `manylinux2014` cannot describe it (measured 2026-10-11).
 3. **If it reports a disagreement**, paste the block it prints into the project's `pyproject.toml`, run
@@ -355,7 +384,7 @@ there with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set (§T); the package has
    the project's local tests on the versions the job imports. A lower bound
    of the project above an image version fails that lock, and then the dependency belongs in the image (a
    new image version, through [`dev-env.md`](dev-env.md)), not in the job.
-   `awsds-workflows job-constraints --environment /tmp/house-env.txt --python 3.13` prints every image
+   `awsds-workflows job-constraints --environment /tmp/house-env.txt --python 3.12` prints every image
    version in requirements form, for `uv pip compile -c` or `uv add -c`.
 4. **Read what it printed**: the folder and its size, what comes from the image (`da imagem`), what the
    folder carries (`na pasta`), and the top level (`raiz`), which is the project and the vendored
@@ -403,7 +432,7 @@ uv's own messages arrive in English, after `uv ... falhou:`.
 | `o lock do projeto e o ambiente da imagem discordam` | a shared package at another version | step 3 |
 | `não é Python puro` | the project has extension modules | build its wheel on the target platform, in a pipeline (Stage 8) |
 | `no wheels with a matching platform tag` | a vendored dependency publishes no wheel for the target | another version or another package, or the image |
-| `No interpreter found for Python 3.13` (or `>=3.13`) | uv found no CPython 3.13 for the project's lock check and build | in a house-image space, `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"`; a space on another image has no `AWSDS_PYTHON_ENV`, so a house-image space or the laptop |
+| `No interpreter found for Python <version>` | uv found no interpreter at the house environment's version for the project's lock check and build | in a house-image space, `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"`; a space on another image has no `AWSDS_PYTHON_ENV`, so a house-image space or the laptop |
 
 **Measured 2026-10-11** with `package-uv-job.py`, on a throwaway uv project depending on `petl`,
 `requests`, `boto3` and `pyyaml`: its fresh lock disagreed with the image on `boto3`, `botocore`,
@@ -450,7 +479,9 @@ through the S3 gateway endpoint. Where the endpoint's policy does not admit
 `mwaa-serverless-code-files-*-<region>-prod` (any VPC on `vpc-v0.3.1`, Staging and Production today), a
 workflow with a code archive fails before its first task with `Execution environment preparation failed
 due to an internal server error`, and only a CloudTrail network activity event names the refusal. C6's
-recipe built the archive that ran; no archive of C2's `package-task` has run on a worker yet (§T).
+recipe built the archive that ran here. Archives of C2's `package-task` ran on a worker on 2026-10-12,
+in a Python task and a Bash task outside this lab
+([the package's documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#o-codigo-de-uma-task-python-ou-bash)).
 
 ### C1 — What the worker expects
 
@@ -460,11 +491,14 @@ recipe built the archive that ran; no archive of C2's `package-task` has run on 
   worker extracts the archive to `/usr/local/airflow/dags`, which is on `sys.path`, so a module at the
   root imports by its name.
 - **Third-party packages built for the worker**: CPython 3.12 on Linux x86_64 today. A package installed
-  for your laptop or for the house environment (Python 3.13) does not import there.
-- **No package the worker already has.** A pre-installed package wins over the archive's copy (measured
-  2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2): Airflow, the Amazon provider, boto3
-  and botocore, dag-factory, PyYAML, lz4 and the AWS encryption SDK family. Write against the worker's
-  boto3 1.43.1.
+  for your laptop does not import there, nor one built for the house environment of `default-v0.6.0` or
+  earlier (Python 3.13).
+- **No package the worker already has**: Airflow, the Amazon provider, boto3 and botocore, dag-factory,
+  PyYAML, lz4 and the AWS encryption SDK family. In a Python task the pre-installed package wins over the
+  archive's copy (measured 2026-10-11: the archive's PyYAML 6.0.1 lost to the worker's 6.0.2). A Bash
+  task's `python3` imports the archive's copy first, since its `PYTHONPATH` starts with
+  `/usr/local/airflow/dags` (measured outside this lab on 2026-10-12: the archive's `six` 1.16.0
+  imported, though Airflow requires a `six` of its own). Write against the worker's boto3 1.43.1.
 - **No `__pycache__` or `.pyc`**: bytecode from another platform may not load.
 - **No secret**: the archive is copied by the service and stored outside the account.
 
@@ -532,7 +566,7 @@ documentation lists every one
 | `acima do limite de 250000000 bytes do worker` | the archive is too big | `--omit` more, or drop dependencies |
 | `já está na raiz do .zip` | the entry module or an `--include` file has the name of a package or of another file at the root | rename the file |
 | `unrecognized arguments` | an option sits between the paths | put it after the archive |
-| `No interpreter found for Python <version>` | uv finds no interpreter the project accepts and may not download one, as in a space | `UV_PYTHON` naming one: in a house-image space `/opt/conda/bin/python` is 3.12 and `$AWSDS_PYTHON_ENV/bin/python` 3.13 |
+| `No interpreter found for Python <version>` | uv finds no interpreter the project accepts and may not download one, as in a space | `UV_PYTHON` naming one: in a house-image space `/opt/conda/bin/python` is 3.12, and `$AWSDS_PYTHON_ENV/bin/python` is 3.12 from `default-v0.7.0` and 3.13 up to `default-v0.6.0` |
 
 **What it does**, each step one rule of C1:
 
@@ -584,9 +618,10 @@ run_project:
 ```
 
 `python_callable` is `<module>.<function>`. The function receives `op_kwargs` as keyword arguments, and
-the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`; a script from the
-archive runs with `/usr/local/airflow/dags` as its working directory, the guide says. Measured
-2026-10-11:
+the Airflow context too if it accepts `**kwargs`. A Bash task names `bash_command`. The guide says a
+script from the archive runs with `/usr/local/airflow/dags` as its working directory; every form
+measured ran in the task's temporary folder instead, an inline command here on 2026-10-11 and a script
+called by its full path outside this lab on 2026-10-12. Measured 2026-10-11:
 
 - **A command that is a script's name** (`bash_command: reach_pypi.sh`) is rendered as a Jinja template
   from the archive into a temporary file, which the operator runs with `bash`; the script carries no
@@ -595,6 +630,10 @@ archive runs with `/usr/local/airflow/dags` as its working directory, the guide 
   the service renders it through Jinja too.
 - **A Bash task's `PYTHONPATH` carries `/usr/local/airflow/dags`**, so `python3 -m <package>` imports the
   archive's package from any folder.
+
+Outside this lab, on 2026-10-12, `python3 -m <package>` ran without a `cd`, and a script the archive
+stored executable ran by its path, `/usr/local/airflow/dags/<script>.sh`: the worker keeps each file's
+mode when it extracts the archive.
 
 The templates are `examples/sandbox-orchestration/operators/python/demo-python-operator.yaml`,
 `operators/bash/demo-bash-operator.yaml` and, with no archive, `operators/bash/demo-bash-operator.probe.yaml`.

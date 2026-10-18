@@ -66,3 +66,14 @@ output "staging_awsds_internal_zone_id" {
   description = "staging.awsds.internal - associated with this VPC and with VPC-Networking (INT-22)."
   value       = aws_route53_zone.staging_awsds_internal.zone_id
 }
+
+# Stage 8 step 4 - the Staging leg's deploy role, and the alerts topic later stages adopt (decision 5).
+output "deploy_role_arn" {
+  description = "awsds-deploy-staging - assumed only by the deploy runner's role (INT-08)."
+  value       = module.deploy_role.role_arn
+}
+
+output "alerts_topic_arn" {
+  description = "awsds-<env>-alerts - the misuse rule's target, adopted by Stage 9, Stage 10 and Stage 12 (Stage 8 decision 5)."
+  value       = aws_sns_topic.alerts.arn
+}

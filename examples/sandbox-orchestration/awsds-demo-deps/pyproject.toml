@@ -11,11 +11,11 @@
 name = "awsds-demo-deps"
 version = "0.1.0"
 description = "One CSV in, a Parquet table and a JSON summary out, with dependencies the house image lacks"
-requires-python = ">=3.13"
+requires-python = ">=3.12,<3.13"
 dependencies = ["msgspec>=0.19", "petl>=1.7", "pyarrow>=20"]
 
 # Every package the project shares with the house environment, at the image's version: the block
-# `awsds-workflows package-job` prints against images/dev-env/python/uv.lock (section J1 step 3).
+# `awsds-workflows package-job` prints against gitlab/awsds/dev-env/dev-env/python/uv.lock (section J1 step 3).
 [tool.uv]
 constraint-dependencies = [
   "pyarrow==24.0.0",

@@ -66,15 +66,8 @@ terraform-modules/*/.terraform.lock.hcl
 # another account's vpn/ slice. Named in full rather than globbed: the negation must not admit
 # the generated terraform.auto.tfvars sitting beside it, which holds the region and the CIDR.
 !terraform-live/sandbox/vpn/instance_type.auto.tfvars
-# The SECOND exception, and the same shape as the first (Stage 6 step 5.0, 2026-08-21): the
-# build host's machine size and disk size, two decisions worth having in git history rather
-# than in somebody's shell. No account id, no address, no key material - and
-# ./scripts/check-tfvars-shape.py holds it to exactly those two keys. THE PATH MOVED WITH THE
-# HOST (6c step 5.8, 2026-09-06) and this line did not follow until 2026-09-08: meanwhile the
-# file under production/buildbox/ was caught by the wholesale rule above and lived on one disk.
-!terraform-live/production/buildbox/instance_type.auto.tfvars
-# THE THIRD AND FOURTH, AND THEY ARE THE SECOND ACCOUNT RATHER THAN A NEW PATTERN (6c step
-# 4.7, 2026-09-06): the tunnel moves to the hub, so its size file and its ROSTER move with it.
+# The same pattern in the second account (6c step 4.7, 2026-09-06): the tunnel moves to the hub,
+# so its size file and its roster move with it.
 # The roster is here rather than left to `git add -f` for exactly the reason the first exception
 # was written down - an arrangement carried only in somebody's shell says nothing to whoever
 # creates the file the next time this pattern is copied, and this IS that next time.

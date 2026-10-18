@@ -342,6 +342,21 @@ detached.
 > SSM, a subnet from `describe-subnets`, the account's own id in an ARN. Recording *untested* on the first
 > error understates the ceiling and carries an exercised statement in the notes as unproven.
 
+**The Stage 6e step 7.5 amendment to `awsds-org-scp-baseline`** — `DenyBedrockRetentionModeOtherThanNone`
+and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
+([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M3). These rows are that measurement in
+`probes.py`, run with `--phase root`; the battery ran them on 2026-10-17, every row as expected
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)).
+
+| Probe (from `awsds-policy-canary`, `--region us-west-2`) | Expected | Statement it answers |
+|---|---|---|
+| `aws bedrock put-account-data-retention --mode inherit` | `AccessDenied` naming the baseline | `DenyBedrockRetentionModeOtherThanNone`. **`creates`**: with the deny lifted it sets the canary's mode, and the next row writes `none` back |
+| `aws bedrock put-account-data-retention --mode none` | succeeds, writing the value set on 2026-09-12 | none: the contrast, and the reading that the condition key is still published, since a `StringNotEquals` over an absent key would refuse this call too |
+| `aws bedrock-runtime invoke-model --model-id <profile> --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}' /dev/null`, once for each of `us.` and `global.` `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1` | `AccessDenied` naming the baseline | `DenyInvokingModelsThatRetain`. With the deny lifted the canary still cannot answer, having no use-case form and no agreement, so a gate refusal reads `ALLOWED`. A profile routes to other Regions, where the canary's own Region control may refuse a destination first: read the policy id |
+
+If the `inherit` row reads `ALLOWED` and the run stopped before the next row, put the mode back by hand:
+`aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
+
 ### Phase 4b — re-probing an amended document, in place
 
 **An amendment is phase 4 with a shorter probe list.** Once a document sits on its real OU, the update
@@ -373,6 +388,51 @@ a last measurement describing a version that no longer exists.
 **The guard's own effect cannot be probed from a CLI session**, because `aws:PrincipalIsAWSService` is set
 by AWS, not by the caller: there is no way to present as a service principal on purpose. The re-run above
 proves the regression half — adding the guard did not open the deny for people.
+
+**The Stage 9 step 3.5 and 3.7 amendment — `awsds-org-scp-ou-workloads` gains sagemaker-denies' five
+statements and `DenySageMakerServerlessInference`.** Run as `awsds-infra-prod` with `--phase ou`, after the
+`identity/org-policies/` apply and before `production/sagemaker/` is applied (Stage 9 step 3.4). Each deny
+row breaks one setting and keeps the other four, because AWS names the policy and never the statement
+(Lesson 20); the two allow rows are the same calls with nothing broken. Every call is `blocked`: the role,
+the image, the security group, the key and the model named do not exist, and the subnet is the account's
+own, so a VPC check that ran before authorization would read as a validation error, never as the deny.
+
+| Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | Statement it answers |
+|---|---|---|
+| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` (authorized) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
+| the same, without `VpcConfig` | `AccessDenied` naming the policy | `DenySageMakerJobsOffVpc` |
+| the same, on `ml.m5.2xlarge` | `AccessDenied` | `DenySageMakerInstanceCeiling` |
+| the same, `EnableNetworkIsolation: false` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation` |
+| the same, `EnableInterContainerTrafficEncryption: false` | `AccessDenied` | `DenySageMakerJobsWithoutInterContainerEncryption` |
+| the same, without `VolumeKmsKeyId` | `AccessDenied` | `DenySageMakerJobsWithoutVolumeEncryption` |
+| `create-endpoint-config` with a `ServerlessConfig` variant | `AccessDenied` | `DenySageMakerServerlessInference` |
+| `create-endpoint-config` with an `ml.m5.large` variant | `ValidationException` (authorized) | none: the contrast for the serverless row |
+
+**A `ValidationException` on a deny row records it untested, not passed** (the box above), and here no
+retry is safe: a role that exists would let an authorized call create a job, which makes the row
+`creates`, refused outside `Policy Canary`. The question then moves to Stage 10's first submitted job, read
+from CloudTrail. The compliant row turning into a deny is the finding that matters most: either the volume
+key stopped populating under its old name, or another statement reaches further than written.
+
+**The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
+`DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as
+`awsds-infra-sandbox-1` with `--phase ou`; the battery ran these rows on 2026-10-17, every one as
+expected, and the `eu-west-1` row is the Region statement's first reading
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)). On 2026-09-12 the first row's call was
+exercised by hand against a before/after control. `Sandbox Account 1` holds the use-case form and the
+agreements, so an authorized call answers. Every row is `ro`; the allow invocations bill one output token
+each and land in `AWS/Bedrock`'s per-model metrics, which carry no principal, so a run stays out of 6e
+step 6.4's measurement window.
+
+| Probe (from `awsds-infra-sandbox-1`) | Expected | Statement it answers |
+|---|---|---|
+| `aws bedrock-runtime invoke-model --model-id amazon.nova-lite-v1:0 … --region us-west-2` | `AccessDenied` naming the Interactive document | `DenyBedrockInvocationOutsideTheScopedModels`. Nova Lite needs no agreement, so with the deny lifted it answers |
+| the same, on each profile the house image pins, read from `managed-settings.json` when `probes.py` is imported | answers | none: the contrast, and the reading that the scoped set is not dark. A gate refusal after authorization still reads `ALLOWED`; `./aws/bedrock-scope.py` `BS-5` reads the agreements |
+| `aws bedrock get-use-case-for-model-access --region eu-west-1` | `AccessDenied` naming the Interactive document | `DenyBedrockReadsOutsideTheRoutedRegions`, the only policy that can refuse it there: Control Tower's Region control exempts the action ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M5) and the model statement does not name it |
+| the same in `us-east-1` and `us-east-2` | answers | none: the routed Regions stay open, and the Control Tower exemption still holds |
+
+The rows read the image's pins rather than the statement's `NotResource`, which is the list under test: a
+row built from it would invoke a misspelt id and pass while the image's own call is refused.
 
 ## Phase 5 — step 7.8's documents, one attach at a time
 
@@ -508,6 +568,10 @@ The other three are in `probes.py` next to their probes: `enable-snapshot-block-
   probe; it needs a resource population that does not exist before Stage 2.
 - **The positive half of the `Data` OU's catalog-maintenance carve-out** — phase 4 says why, and Stage 5a is
   where it is answered.
+- **`bedrock:InvokeModelWithResponseStream`.** The CLI has no command for it, since it removes every
+  event-stream operation, so the Bedrock statements that name it are probed on `InvokeModel` alone.
+  The streaming action is the one every Claude Code session calls, and a session's CloudTrail events are
+  its reading (6e step 6).
 
 ### The class the battery cannot reach — verified by *reading*, never by attempting
 

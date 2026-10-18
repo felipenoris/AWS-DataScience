@@ -423,11 +423,13 @@ aws sagemaker describe-space --domain-id <domain-id> --space-name <space> \
 
 **Read the third field, not only the first two.** `DefaultResourceSpec` carries the space's **own
 copy of the image version number**, written when the space was created, and it **overrides the
-domain default** — so an image bump leaves it naming a version that no longer exists. Measured
-2026-09-12: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
+domain default** — so a release leaves it on its old version until it is moved, and a version
+deleted by hand leaves it naming one that no longer exists (`EXC-09`); since Stage 8 decision 18 no
+release deletes a version a space names. Measured 2026-09-12, when a release still replaced the
+version: after `default-v0.4.0` became image version 4, `remote-editor-claude` still pinned
 version 3, which the apply had destroyed, and **its app did not start** until the user edited the
 space to version 4 in the portal. That edit kept `RemoteAccess: ENABLED`, the EBS size and the
-project's S3 connection. Repairing it is [`dev-env.md`](dev-env.md) §B step 6, never a recreate —
+project's S3 connection. Repairing it is [`dev-env.md`](dev-env.md) §B, *Moving a space*, never a recreate —
 **those three fields live in the same block as the version number**, and a recreate loses the home
 directory with them.
 
@@ -494,7 +496,7 @@ ls ~/.vscode-server/extensions ~/sagemaker-code-editor-server-data/extensions
 | an extension installed but not running | it went to the other surface, or it is a UI extension. `Developer: Show Running Extensions` |
 | an extension is present in one surface and missing in the other | expected: two servers, two extension directories (§E). Install it in both, or pin the client so one set serves both |
 | `403` on `marketplace.visualstudio.com` in the access log **while the install succeeds** | expected, and measured with the client settings on: the remote still probes the gallery, the bytes come from the laptop. A `200` on that name would be the finding |
-| `rust-analyzer` logs `can't load standard library, try installing rust-src` | the image installs rustup's `minimal` profile, which omits `rust-src`; `std` is not indexed, and nothing else is affected. Fixed in `images/dev-env/Dockerfile` for the next build (2026-09-11). In the session at hand: `sudo rustup component add rust-src`, which works because the image's sudoers keeps the proxy variables and `static.rust-lang.org` is on the plane, and which dies with the container |
+| `rust-analyzer` logs `can't load standard library, try installing rust-src` | the image installs rustup's `minimal` profile, which omits `rust-src`; `std` is not indexed, and nothing else is affected. Fixed in `gitlab/awsds/dev-env/dev-env/Dockerfile` for the next build (2026-09-11). In the session at hand: `sudo rustup component add rust-src`, which works because the image's sudoers keeps the proxy variables and `static.rust-lang.org` is on the plane, and which dies with the container |
 | an R or conda package manager refused in a space | not this channel's: [`sg-proxy.md`](sg-proxy.md) carries what a space may fetch, and `docs/NETWORK.md` the list |
 | the connection times out on the monitored profile, with nothing in CloudTrail | the proxy did not reach the process: on macOS no system setting carries it while the tunnel is primary, so the client has to be launched from a terminal that ran `proxy-on`, or given `http.proxy` (§W). A refusal you cannot see is not silence (Lesson 55) |
 | `jq: command not found` or `curl: …` in `sagemaker.connect.log` | the `ProxyCommand` runs with the client process's `PATH`, not a login shell's. Launch the client from a terminal, or install the tool where that `PATH` reaches |

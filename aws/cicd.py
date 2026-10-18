@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --quiet
 # cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
-# (protected, [E]) and its narrow instance role, the four deploy roles with their permissions
+# (protected, [E]) and its narrow instance role, the three deploy roles with their permissions
 # boundaries and single-principal trust (INT-08, INT-18), the misuse-alarm rules, the
 # app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
 # side across the Interactive accounts (D17's identical-runtime claim), and the recent
@@ -17,7 +17,7 @@
 #   reads:    ec2:DescribeInstances, iam:GetRole, ListRolePolicies, GetRolePolicy,
 #             ListAttachedRolePolicies, events:ListRules, ecr:GetRepositoryPolicy,
 #             DescribeRepositories, DescribeImages, sagemaker:ListImages,
-#             ListImageVersions, cloudtrail:LookupEvents, sts:GetCallerIdentity.
+#             DescribeImageVersion, cloudtrail:LookupEvents, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything, and it never assumes a role:
 #             reading who assumed one is CloudTrail's job, and this file only looks it up.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
@@ -29,9 +29,12 @@
 #
 # Contracts this file reads, each named in the stage file so a rename fails loudly:
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
-#   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08) and
-#     awsds-deploy-devenv-sandbox, awsds-deploy-devenv-dev (step 4.2, INT-18)
-#   - the misuse-alarm rules carry "deploy-misuse" in their name (step 4.6)
+#   - the test runner's Name tag and role name are awsds-prod-runner-test (decision 11)
+#   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08),
+#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19)
+#   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
+#     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
+#     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
 #   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
 #
@@ -56,23 +59,58 @@ OUT_NAME = "cicd.txt"
 
 # The producer account and the deploy-role homes (D14; D35 - the sandbox side is per unit).
 PROD_PROFILE = "awsds-infra-prod"
-ROLE_BY_PROFILE = {
-    "awsds-infra-staging": "awsds-deploy-staging",
-    "awsds-infra-prod": "awsds-deploy-prod",
-    "awsds-infra-sandbox-1": "awsds-deploy-devenv-sandbox",
+ROLES_BY_PROFILE = {
+    "awsds-infra-staging": ["awsds-deploy-staging"],
+    "awsds-infra-prod": ["awsds-deploy-prod"],
+    "awsds-infra-sandbox-1": ["awsds-deploy-devenv-sandbox", "awsds-deploy-sandbox-test"],
 }
-# Interactive compute exists in Sandbox only, so the map holds one dev-env registration home.
+# Interactive compute exists in Sandbox only, so the map holds one dev-env registration home, and
+# Sandbox holds the one `test` project of D41, so its second role is the test deploy's (decision 19).
 # Staging is a deploy target and stays headless (D28); it appears one row up as
 # `awsds-deploy-staging`, a different role for a different job.
+# The accounts the application repository's grant admits (step 2.4, INT-07).
+SANDBOX_PROFILE = "awsds-infra-sandbox-1"
+STAGING_PROFILE = "awsds-infra-staging"
 # The two roles CloudTrail is asked about, in the account each lives in (INT-08).
 PROMOTION_PROFILES = ("awsds-infra-staging", "awsds-infra-prod")
 
 # The contracts (see header).
 RUNNER_NAME = "awsds-prod-runner-deploy"
+# The test runner (decision 11): unprotected, so its jobs must read no AWS identity. Its role holds the
+# boot's two reads and Session Manager, and nothing a job could use if the hop limit ever failed.
+TEST_RUNNER_NAME = "awsds-prod-runner-test"
+TEST_RUNNER_ACTIONS = {"secretsmanager:GetSecretValue", "ssm:GetParameter"}
+TEST_RUNNER_MANAGED = {"AmazonSSMManagedInstanceCore"}
 APP_REPO = "awsds-prod-ecr-app-etl"
 MISUSE_RULE_SUBSTR = "deploy-misuse"
+MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
+# Where the promotion chain's Staging leg keeps its application slices' state (step 3.2): the
+# discriminator of CI-5, whose grant belongs to step 3.0 and not to the deploy roles.
+STAGING_STATE_BUCKET = "awsds-staging-tfstate"
+STAGING_APP_STATE_PREFIX = "staging/app/"
 DEVENV_IMAGE_SUBSTR = "dev-env"
-LOOKUP_MAX = 50  # CloudTrail lookup page - 90 days of AssumeRole is small at lab scale
+# Stage 8 verification (xvi): the infrastructure user's deliberate assumptions of two deploy roles,
+# each trust widened for 15 s and restored (2026-10-13). CloudTrail keeps them for 90 days; the session
+# names and the minute they ran in excuse these and no later event.
+XVI_TEST_SESSIONS = ("xvi-misuse-same-account", "xvi-misuse-cross-account")
+XVI_TEST_WINDOW = ("2026-10-13T05:08:00Z", "2026-10-13T05:09:00Z")
+
+
+def misuse_caller_field(pattern_text: str, runner_role_id: str) -> str:
+    """Which caller field a misuse rule's pattern exempts the runner by: "principalId" when it is the
+    runner role's unique id, "arn" for the ARN pattern a cross-account record defeats, else "other"."""
+    try:
+        pattern = json.loads(pattern_text or "{}")
+    except ValueError:
+        return "other"
+    ident = (pattern.get("detail") or {}).get("userIdentity") or {}
+    for cond in ident.get("principalId") or []:
+        if (
+            isinstance(cond, dict)
+            and (cond.get("anything-but") or {}).get("prefix") == f"{runner_role_id}:"
+        ):
+            return "principalId"
+    return "arn" if "arn" in ident else "other"
 
 
 def main(argv: list) -> int:
@@ -121,8 +159,93 @@ def main(argv: list) -> int:
         elif not res.ok:
             logerr(PROD_PROFILE, "ec2 describe-instances (deploy runner)", res.stderr)
 
+    # ------------------------------------- the test runner (Production, [E], decision 11)
+    test_rows: list = []  # (id, state, http tokens, hop limit, instance-profile arn tail)
+    test_role_found = False
+    test_role_actions: set = set()
+    test_role_attached: list = []
+    if prod_live:
+        cli = cli_for(PROD_PROFILE)
+        res = cli.run(
+            "ec2",
+            "describe-instances",
+            "--filters",
+            f"Name=tag:Name,Values={TEST_RUNNER_NAME}",
+            "Name=instance-state-name,Values=pending,running,stopping,stopped",
+            "--query",
+            "Reservations[].Instances[].[InstanceId,State.Name,MetadataOptions.HttpTokens,"
+            "MetadataOptions.HttpPutResponseHopLimit,IamInstanceProfile.Arn]",
+            "--output",
+            "json",
+            log=False,
+        )
+        if res.ok and res.stdout:
+            for iid, state, tokens, hop, prof in json.loads(res.stdout or "[]"):
+                tail = str(prof).rsplit("/", 1)[-1] if prof else "(none)"
+                test_rows.append((str(iid), str(state), str(tokens), str(hop), tail))
+        elif not res.ok:
+            logerr(PROD_PROFILE, "ec2 describe-instances (test runner)", res.stderr)
+        res = cli.run(
+            "iam",
+            "get-role",
+            "--role-name",
+            TEST_RUNNER_NAME,
+            "--query",
+            "Role.RoleName",
+            "--output",
+            "text",
+            log=False,
+            tolerate="NoSuchEntity",
+        )
+        test_role_found = bool(res.ok and not res.tolerated)
+        if test_role_found:
+            res = cli.run(
+                "iam",
+                "list-attached-role-policies",
+                "--role-name",
+                TEST_RUNNER_NAME,
+                "--query",
+                "AttachedPolicies[].PolicyName",
+                "--output",
+                "json",
+                log=False,
+            )
+            if res.ok and res.stdout:
+                test_role_attached = [str(x) for x in json.loads(res.stdout or "[]")]
+            res = cli.run(
+                "iam",
+                "list-role-policies",
+                "--role-name",
+                TEST_RUNNER_NAME,
+                "--query",
+                "PolicyNames",
+                "--output",
+                "json",
+                log=False,
+            )
+            for pname in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+                r = cli.run(
+                    "iam",
+                    "get-role-policy",
+                    "--role-name",
+                    TEST_RUNNER_NAME,
+                    "--policy-name",
+                    pname,
+                    "--query",
+                    "PolicyDocument.Statement",
+                    "--output",
+                    "json",
+                    log=False,
+                )
+                for st in json.loads(r.stdout or "[]") if r.ok and r.stdout else []:
+                    if st.get("Effect") != "Allow":
+                        continue
+                    acts = st.get("Action") or []
+                    test_role_actions.update([acts] if isinstance(acts, str) else acts)
+
     # -------------- the runner's role: inline statements, and what AssumeRole may reach
     runner_role_found = False
+    runner_role_id = ""
     runner_inline: list = []  # (policy name, actions, resources) for sts statements
     runner_attached: list = []
     runner_bad_resources: list = []
@@ -134,13 +257,16 @@ def main(argv: list) -> int:
             "--role-name",
             RUNNER_NAME,
             "--query",
-            "Role.RoleName",
+            "Role.RoleId",
             "--output",
             "text",
             log=False,
             tolerate="NoSuchEntity",
         )
         runner_role_found = bool(res.ok and not res.tolerated)
+        # The role's unique id, which a trust policy stores, is the only name the role's own
+        # account records for a cross-account caller (CI-8).
+        runner_role_id = (res.stdout or "").strip() if runner_role_found else ""
         if runner_role_found:
             res = cli.run(
                 "iam",
@@ -201,62 +327,65 @@ def main(argv: list) -> int:
                         if s == "*" or "::*:" in s or "/awsds-deploy-" not in s:
                             runner_bad_resources.append((str(pname), s))
 
-    # ----------------------- the four deploy roles: existence, boundary, trust (per home)
+    # ---------------------- the deploy roles: existence, boundary, trust (per home)
     role_rows: list = []  # (profile, role, state, boundary tail, trust summary)
     trust_bad: list = []  # (role, principal or action that breaks the contract)
     roles_found = 0
-    for p, role in ROLE_BY_PROFILE.items():
+    deploy_role_arns: list = []  # what section 7 asks CloudTrail about, by resource
+    for p, roles in ROLES_BY_PROFILE.items():
         if p not in live:
             continue
         cli = cli_for(p)
-        note(f"measuring {p} ({role}) ...")
-        res = cli.run(
-            "iam",
-            "get-role",
-            "--role-name",
-            role,
-            "--query",
-            "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument]",
-            "--output",
-            "json",
-            log=False,
-            tolerate="NoSuchEntity",
-        )
-        if res.tolerated:
-            role_rows.append((p, role, "(absent)", "-", "-"))
-            continue
-        if not (res.ok and res.stdout):
-            role_rows.append((p, role, "(read failed)", "-", "-"))
-            continue
-        boundary, trust = json.loads(res.stdout)
-        roles_found += 1
-        btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
-        principals: list = []
-        stmts = (trust or {}).get("Statement", [])
-        if isinstance(stmts, dict):
-            stmts = [stmts]
-        for st in stmts:
-            actions = st.get("Action", [])
-            actions = [actions] if isinstance(actions, str) else actions
-            aws_p = (st.get("Principal", {}) or {}).get("AWS", [])
-            aws_p = [aws_p] if isinstance(aws_p, str) else aws_p
-            principals += [str(x) for x in aws_p]
-            for a in actions:
-                if str(a) not in ("sts:AssumeRole",):
-                    trust_bad.append((role, f"action {a}"))
-            for prin in aws_p:
-                if RUNNER_NAME not in str(prin):
-                    trust_bad.append((role, f"principal {prin}"))
-            if (st.get("Principal", {}) or {}).get("Service") or (
-                st.get("Principal", {}) or {}
-            ).get("Federated"):
-                trust_bad.append((role, "a non-AWS principal type in the trust policy"))
-        role_rows.append((p, role, "present", btail, " ".join(principals) or "(no principal)"))
+        for role in roles:
+            note(f"measuring {p} ({role}) ...")
+            res = cli.run(
+                "iam",
+                "get-role",
+                "--role-name",
+                role,
+                "--query",
+                "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument,Arn]",
+                "--output",
+                "json",
+                log=False,
+                tolerate="NoSuchEntity",
+            )
+            if res.tolerated:
+                role_rows.append((p, role, "(absent)", "-", "-"))
+                continue
+            if not (res.ok and res.stdout):
+                role_rows.append((p, role, "(read failed)", "-", "-"))
+                continue
+            boundary, trust, found_arn = json.loads(res.stdout)
+            roles_found += 1
+            deploy_role_arns.append(str(found_arn))
+            btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
+            principals: list = []
+            stmts = (trust or {}).get("Statement", [])
+            if isinstance(stmts, dict):
+                stmts = [stmts]
+            for st in stmts:
+                actions = st.get("Action", [])
+                actions = [actions] if isinstance(actions, str) else actions
+                aws_p = (st.get("Principal", {}) or {}).get("AWS", [])
+                aws_p = [aws_p] if isinstance(aws_p, str) else aws_p
+                principals += [str(x) for x in aws_p]
+                for a in actions:
+                    if str(a) not in ("sts:AssumeRole",):
+                        trust_bad.append((role, f"action {a}"))
+                for prin in aws_p:
+                    if RUNNER_NAME not in str(prin):
+                        trust_bad.append((role, f"principal {prin}"))
+                if (st.get("Principal", {}) or {}).get("Service") or (
+                    st.get("Principal", {}) or {}
+                ).get("Federated"):
+                    trust_bad.append((role, "a non-AWS principal type in the trust policy"))
+            role_rows.append((p, role, "present", btail, " ".join(principals) or "(no principal)"))
 
     built = roles_found > 0 or bool(runner_rows)
 
     # ------------------------------------------- the misuse-alarm rules (step 4.6, D14)
-    rule_rows: list = []  # (profile, rule, state)
+    rule_rows: list = []  # (profile, rule, state, event pattern)
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
@@ -265,19 +394,25 @@ def main(argv: list) -> int:
             "events",
             "list-rules",
             "--query",
-            "Rules[].[Name,State]",
+            "Rules[].[Name,State,EventPattern]",
             "--output",
             "json",
             log=False,
         )
-        for rname, state in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+        for rname, state, pattern in (
+            json.loads(res.stdout or "[]") if res.ok and res.stdout else []
+        ):
             if MISUSE_RULE_SUBSTR in str(rname):
-                rule_rows.append((p, str(rname), str(state)))
+                rule_rows.append((p, str(rname), str(state), str(pattern or "")))
 
-    # ------------------- the app-repository grant and the Staging read (INT-07's halves)
+    # ------- the app-repository grant and the reads from Sandbox (2.4) and Staging (INT-07)
     app_policy_state = "(not measured)"
+    app_policy_text = ""
     app_repo_exists = False
     staging_read = "(no staging profile)"
+    sandbox_read = "(no sandbox profile)"
+    staging_app_deployed = False
+    account_of = {c.profile: c.account for c in callers}
     if prod_live:
         cli = cli_for(PROD_PROFILE)
         res = cli.run(
@@ -309,8 +444,38 @@ def main(argv: list) -> int:
             app_repo_exists = bool(r.ok and not r.tolerated)
         elif res.ok:
             app_repo_exists = True
-            n = res.stdout.count('"AWS"')
-            app_policy_state = f"present ({n} principal block(s))"
+            app_policy_text = res.stdout or ""
+            admitted = [
+                name
+                for name, prof in (("Sandbox", SANDBOX_PROFILE), ("Staging", STAGING_PROFILE))
+                if account_of.get(prof) and account_of[prof] in app_policy_text
+            ]
+            app_policy_state = "present, admitting " + (
+                ", ".join(admitted) or "no measured account"
+            )
+    if SANDBOX_PROFILE in live and prod_account:
+        res = cli_for(SANDBOX_PROFILE).run(
+            "ecr",
+            "describe-images",
+            "--registry-id",
+            prod_account,
+            "--repository-name",
+            APP_REPO,
+            "--max-results",
+            "1",
+            "--query",
+            "length(imageDetails)",
+            "--output",
+            "text",
+            log=False,
+            tolerate="RepositoryNotFoundException|AccessDenied",
+        )
+        if res.tolerated:
+            sandbox_read = "(denied or no repository)"
+        elif res.ok:
+            sandbox_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
+        else:
+            sandbox_read = "(call failed)"
     if "awsds-infra-staging" in live and prod_account:
         cli = cli_for("awsds-infra-staging")
         res = cli.run(
@@ -332,12 +497,31 @@ def main(argv: list) -> int:
         if res.tolerated:
             staging_read = "(denied or no repository)"
         elif res.ok:
-            staging_read = f"ok ({res.stdout.strip()} image(s) visible)"
+            staging_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
         else:
             staging_read = "(call failed)"
+        # Whether the promotion chain has reached Staging: an application slice there holds state
+        # (step 3.2). The grant is step 3.0's, so its absence before then is the expected reading.
+        res = cli.run(
+            "s3api",
+            "list-objects-v2",
+            "--bucket",
+            STAGING_STATE_BUCKET,
+            "--prefix",
+            STAGING_APP_STATE_PREFIX,
+            "--max-items",
+            "1",
+            "--query",
+            "length(Contents || `[]`)",
+            "--output",
+            "text",
+            log=False,
+        )
+        if res.ok and res.stdout.strip().isdigit():
+            staging_app_deployed = int(res.stdout.strip()) > 0
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
-    image_rows: list = []  # (profile, image name, latest version, base image tail)
+    image_rows: list = []  # (profile, image name, latest version, container image tail)
     for p in ("awsds-infra-sandbox-1",):
         if p not in live:
             continue
@@ -361,66 +545,87 @@ def main(argv: list) -> int:
             image_rows.append((p, "(none)", "-", "-"))
             continue
         for iname in names:
+            # ListImageVersions carries no image reference at all. DescribeImageVersion with no
+            # version reads the latest, and its ContainerImage is the digest the version resolved
+            # to (BaseImage is the tag it was created from); devenv.py DE-5 reads the same field.
             r = cli.run(
                 "sagemaker",
-                "list-image-versions",
+                "describe-image-version",
                 "--image-name",
                 iname,
-                "--sort-by",
-                "CREATION_TIME",
-                "--sort-order",
-                "DESCENDING",
-                "--max-results",
-                "1",
                 "--query",
-                "ImageVersions[0].[Version,BaseImage]",
+                "[Version,ContainerImage]",
                 "--output",
                 "json",
                 log=False,
             )
             if r.ok and r.stdout:
-                version, base = json.loads(r.stdout or "[null,null]") or [None, None]
-                base_tail = str(base).rsplit("/", 1)[-1] if base else "-"
-                image_rows.append((p, iname, str(version), base_tail))
+                version, container = json.loads(r.stdout or "[null,null]") or [None, None]
+                tail = str(container).rsplit("/", 1)[-1] if container else "-"
+                image_rows.append((p, iname, str(version), tail))
             else:
                 image_rows.append((p, iname, "(read failed)", "-"))
 
     # --------------- who assumed a deploy role - CloudTrail's 90-day lookup (INT-08)
     event_rows: list = []  # (profile, time, role tail, caller tail)
     event_bad: list = []  # (profile, caller) for a non-runner caller
+    event_tests: list = []  # (profile, session) for verification (xvi)'s deliberate assumptions
+    # Looked up by each deploy role's ARN, every page: an account's AssumeRole events of all kinds
+    # outrun one page of 50 within hours. A refused assumption names no resource and is not here.
+    raw_events: list = []  # (profile, CloudTrail record as text)
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
         cli = cli_for(p)
         note(f"measuring {p} (AssumeRole events) ...")
-        res = cli.run(
-            "cloudtrail",
-            "lookup-events",
-            "--lookup-attributes",
-            "AttributeKey=EventName,AttributeValue=AssumeRole",
-            "--max-results",
-            str(LOOKUP_MAX),
-            "--query",
-            "Events[].CloudTrailEvent",
-            "--output",
-            "json",
-            log=False,
-        )
-        for raw in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
-            try:
-                ev = json.loads(raw)
-            except (TypeError, ValueError):
-                continue
-            role_arn = str(((ev.get("requestParameters") or {}).get("roleArn")) or "")
-            if "/awsds-deploy-" not in role_arn:
-                continue
-            caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
-            when = str(ev.get("eventTime") or "-")
-            event_rows.append(
-                (p, when, role_arn.rsplit("/", 1)[-1], caller.rsplit("/", 1)[-1][:40])
+        for arn in deploy_role_arns:
+            res = cli.run(
+                "cloudtrail",
+                "lookup-events",
+                "--lookup-attributes",
+                f"AttributeKey=ResourceName,AttributeValue={arn}",
+                "--query",
+                "Events[?EventName=='AssumeRole'].CloudTrailEvent",
+                "--output",
+                "json",
+                log=False,
             )
-            if RUNNER_NAME not in caller:
-                event_bad.append((p, caller))
+            raw_events += [(p, r) for r in (json.loads(res.stdout or "[]") if res.ok else [])]
+    for p, raw in raw_events:
+        try:
+            ev = json.loads(raw)
+        except (TypeError, ValueError):
+            continue
+        role_arn = str(((ev.get("requestParameters") or {}).get("roleArn")) or "")
+        if "/awsds-deploy-" not in role_arn:
+            continue
+        # The deploy role's own account records a cross-account caller with no `arn`, whatever its
+        # type (AWSAccount for the runner, AssumedRole for an SSO session, 2026-10-13), and a
+        # principalId of "<role unique id>:<session name>".
+        ident = ev.get("userIdentity") or {}
+        caller_arn = str(ident.get("arn") or "")
+        principal_id = str(ident.get("principalId") or "")
+        if caller_arn:
+            caller, shown = caller_arn, caller_arn.rsplit("/", 1)[-1]
+            by_runner = RUNNER_NAME in caller_arn
+        else:
+            caller = principal_id or "(unknown)"
+            shown = f"{principal_id.split(':', 1)[-1]} (by role id)"
+            by_runner = bool(runner_role_id) and principal_id.startswith(f"{runner_role_id}:")
+        when = str(ev.get("eventTime") or "-")
+        session = str(((ev.get("requestParameters") or {}).get("roleSessionName")) or "")
+        is_test = (
+            not by_runner
+            and session in XVI_TEST_SESSIONS
+            and XVI_TEST_WINDOW[0] <= when <= XVI_TEST_WINDOW[1]
+        )
+        if is_test:
+            shown = f"{session} (xvi)"
+            event_tests.append((p, session))
+        event_rows.append((p, when, role_arn.rsplit("/", 1)[-1], shown[:40]))
+        if not by_runner and not is_test:
+            event_bad.append((p, caller))
+    event_rows.sort(key=lambda r: (r[0], r[1]), reverse=True)
 
     # -------------------------------------------------------------------------- the checks
 
@@ -500,25 +705,57 @@ def main(argv: list) -> int:
     elif prod_live and built:
         checks.note("CI-4", f"role {RUNNER_NAME}", "absent - expected before step 4.3.")
 
-    # CI-5: the app-repository grant (INT-07's enabling half) and the Staging-side read.
+    # CI-5: the app-repository grant and the reads it admits - Sandbox's since step 2.4, Staging's
+    # (INT-07's enabling half) from step 3.0. The discriminator is the account the policy names, never
+    # the policy's presence: a policy admitting Sandbox alone is the expected reading before 3.0
+    # (Lesson 50).
+    admits = {
+        prof: bool(account_of.get(prof)) and account_of[prof] in app_policy_text
+        for prof in (SANDBOX_PROFILE, STAGING_PROFILE)
+    }
     if prod_live:
         if app_policy_state.startswith("present"):
             checks.ok("CI-5", f"policy on {APP_REPO}", app_policy_state)
         elif app_repo_exists:
-            (checks.fail if built else checks.note)(
+            (checks.fail if staging_app_deployed else checks.note)(
                 "CI-5",
                 f"policy on {APP_REPO}",
-                "repository exists with no policy - Staging cannot pull (step 3.0).",
+                "repository exists with no policy - Staging cannot pull (step 3.0)"
+                + (
+                    ", and an application slice already holds state in Staging."
+                    if staging_app_deployed
+                    else "; expected before the promotion chain reaches Staging."
+                ),
             )
         else:
             checks.note("CI-5", f"repository {APP_REPO}", "absent - Stage 7 step 5.1 creates it.")
+    # Each read is refused until its grant exists: a refusal the policy explains is a note, one the
+    # policy does not explain is a failure.
+    if sandbox_read.startswith("ok"):
+        checks.ok("CI-5", "the Sandbox cross-account read", sandbox_read)
+    elif SANDBOX_PROFILE in live and app_repo_exists:
+        (checks.fail if admits[SANDBOX_PROFILE] else checks.note)(
+            "CI-5",
+            "the Sandbox cross-account read",
+            f"{sandbox_read} - "
+            + (
+                "the policy names Sandbox, so the read should answer."
+                if admits[SANDBOX_PROFILE]
+                else "the policy does not name Sandbox yet, expected before step 2.4's apply."
+            ),
+        )
     if staging_read.startswith("ok"):
         checks.ok("CI-5", "the Staging cross-account read", staging_read)
-    elif "awsds-infra-staging" in live and app_repo_exists:
-        checks.fail(
+    elif STAGING_PROFILE in live and app_repo_exists:
+        (checks.fail if admits[STAGING_PROFILE] or staging_app_deployed else checks.note)(
             "CI-5",
             "the Staging cross-account read",
-            f"{staging_read} - the repository exists, so the 3.0 grant is missing.",
+            f"{staging_read} - "
+            + (
+                "the policy names Staging, so the read should answer."
+                if admits[STAGING_PROFILE]
+                else "the policy does not name Staging yet, expected before step 3.0."
+            ),
         )
 
     # CI-6: the registered dev-env versions agree across the Interactive accounts -
@@ -527,14 +764,16 @@ def main(argv: list) -> int:
     if len(real) >= 2:
         tails = {r[3] for r in real}
         if len(tails) == 1:
-            checks.ok("CI-6", "dev-env parity", f"one base image everywhere: {tails.pop()}")
+            checks.ok("CI-6", "dev-env parity", f"one container image everywhere: {tails.pop()}")
         else:
             checks.fail(
                 "CI-6",
                 "dev-env parity",
-                f"{len(tails)} different base images across the Interactive accounts - "
+                f"{len(tails)} different container images across the Interactive accounts - "
                 "D17's premise; re-run step 1.6 on the lagging account.",
             )
+    elif len(real) == 1:
+        checks.note("CI-6", "dev-env parity", f"N = 1, parity trivially true: {real[0][3]}")
     elif image_rows and built:
         checks.note(
             "CI-6",
@@ -543,7 +782,11 @@ def main(argv: list) -> int:
             "Stage 8 step 1.6.",
         )
 
-    # CI-7: the misuse-alarm rules exist and are enabled in both promotion accounts (4.6).
+    # CI-7: the misuse-alarm rules exist in both promotion accounts, receive AssumeRole, and exempt
+    # the runner by its role's unique id (4.6). EventBridge classes STS AssumeRole as a read-only
+    # management event, and a rule in plain ENABLED state matches every event except those, so it is
+    # a rule that never fires. A pattern on userIdentity.arn cannot see a caller from another account,
+    # which the deploy role's own account records by its principal id alone.
     for p in PROMOTION_PROFILES:
         if p not in live:
             continue
@@ -556,11 +799,41 @@ def main(argv: list) -> int:
                 + ("step 4.6's compensation is absent." if built else "expected before 4.6."),
             )
         else:
-            for _p, rname, state in mine:
-                if state != "ENABLED":
-                    checks.fail("CI-7", f"rule {rname}", f"state {state} - not watching.")
+            for _p, rname, state, pattern in mine:
+                field = misuse_caller_field(pattern, runner_role_id) if runner_role_id else ""
+                if state == MISUSE_RULE_STATE and field == "principalId":
+                    checks.ok(
+                        "CI-7", f"rule {rname} ({p})", f"{state}, the runner exempt by role id"
+                    )
+                elif state == MISUSE_RULE_STATE and not field:
+                    checks.note(
+                        "CI-7",
+                        f"rule {rname} ({p})",
+                        f"{state}; the pattern is unread without the runner role's id.",
+                    )
+                elif state == MISUSE_RULE_STATE and field == "arn":
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "it exempts the runner by userIdentity.arn, which this account does not record "
+                        "for a caller from another account; deploy-role-v0.2.0 reads the principal id.",
+                    )
+                elif state == MISUSE_RULE_STATE:
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "its pattern does not exempt the runner role's unique id: the runner would "
+                        "fire it, or another caller would not.",
+                    )
+                elif state == "ENABLED":
+                    checks.fail(
+                        "CI-7",
+                        f"rule {rname}",
+                        "state ENABLED - it receives no AssumeRole, which EventBridge classes "
+                        f"as a read-only management event; {MISUSE_RULE_STATE} does.",
+                    )
                 else:
-                    checks.ok("CI-7", f"rule {rname} ({p})", "ENABLED")
+                    checks.fail("CI-7", f"rule {rname}", f"state {state} - not watching.")
 
     # CI-8: every recorded AssumeRole of a deploy role was made by the deploy runner. A
     # different caller is exactly what 4.6 alarms on - visible here too, after the fact.
@@ -575,8 +848,53 @@ def main(argv: list) -> int:
         checks.ok(
             "CI-8",
             "deploy-role assumptions",
-            f"{len(event_rows)} event(s), every caller is the deploy runner",
+            f"{len(event_rows) - len(event_tests)} event(s), every caller is the deploy runner",
         )
+    if event_tests:
+        checks.note(
+            "CI-8",
+            "verification (xvi)",
+            f"{len(event_tests)} deliberate assumption(s) of 2026-10-13, excused by session name "
+            "and minute.",
+        )
+
+    # CI-9: the test runner gives a job nothing (decision 11). Hop limit 1 is the control: a token's
+    # response dies at the docker bridge. The role is read as the second line, so a hop limit that ever
+    # moved would hand a job two reads and Session Manager, not a registry or a deploy role.
+    if prod_live:
+        if not test_rows:
+            checks.note(
+                "CI-9",
+                f"the test runner {TEST_RUNNER_NAME}",
+                "absent - [E] between sessions, or before decision 11's first apply.",
+            )
+        for iid, state, tokens, hop, _prof in test_rows:
+            if tokens != "required" or hop != "1":
+                checks.fail(
+                    "CI-9",
+                    f"metadata on {iid}",
+                    f"HttpTokens={tokens}, hop limit {hop} - a job container can read the role; "
+                    "decision 11 needs required and 1.",
+                )
+            else:
+                checks.ok(
+                    "CI-9", f"the test runner ({iid})", f"{state}, IMDSv2 required, hop limit 1"
+                )
+        if test_role_found:
+            extra = sorted(test_role_actions - TEST_RUNNER_ACTIONS)
+            extra += sorted(set(test_role_attached) - TEST_RUNNER_MANAGED)
+            if extra:
+                checks.fail(
+                    "CI-9",
+                    f"role {TEST_RUNNER_NAME}",
+                    f"grants {', '.join(extra)} - beyond its token, the CA root and Session Manager.",
+                )
+            else:
+                checks.ok(
+                    "CI-9",
+                    f"role {TEST_RUNNER_NAME}",
+                    "its token, the CA root and Session Manager, nothing else",
+                )
 
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -590,8 +908,8 @@ produced  : aws/cicd.py   (index: aws/INDEX.md)
 
 SECTIONS
   1. Which accounts were measured, and as whom
-  2. The deploy runner and its role (Production, [E])
-  3. The four deploy roles: boundary and trust (INT-08, INT-18)
+  2. The deploy runner and its role, and the test runner (Production, [E])
+  3. The three deploy roles: boundary and trust (INT-08, INT-18)
   4. The misuse-alarm rules (step 4.6)
   5. The application repository: the grant, and the read from Staging (INT-07)
   6. The dev-env registrations, side by side (INT-17/INT-18, D17)
@@ -626,7 +944,7 @@ never a compliant one.
         )
 
         # ==============================================================================
-        rep.h1("2. The deploy runner and its role (Production, [E])")
+        rep.h1("2. The deploy runner and its role, and the test runner (Production, [E])")
         if not prod_live:
             rep.line(f"{PROD_PROFILE} was not measured - nothing to show.")
         else:
@@ -649,9 +967,19 @@ never a compliant one.
                 )
             else:
                 rep.line(f"No role named {RUNNER_NAME}. Expected before step 4.3.")
+            rep.line()
+            if test_rows:
+                rep.tabulate(
+                    ["TEST RUNNER\tSTATE\tIMDSV2\tHOP LIMIT\tINSTANCE PROFILE"]
+                    + ["\t".join(r) for r in test_rows]
+                )
+            else:
+                rep.line(
+                    f"No instance named {TEST_RUNNER_NAME}. [E] between sessions (decision 11)."
+                )
 
         # ==============================================================================
-        rep.h1("3. The four deploy roles: boundary and trust (INT-08, INT-18)")
+        rep.h1("3. The three deploy roles: boundary and trust (INT-08, INT-18)")
         if role_rows:
             rep.tabulate(
                 ["PROFILE\tROLE\tSTATE\tBOUNDARY\tTRUSTED PRINCIPAL(S)"]
@@ -661,8 +989,8 @@ never a compliant one.
             rep.line("No deploy-role home was measured.")
         rep.text("""
 The trust contract (4.1-4.2): exactly the deploy runner's role, sts:AssumeRole
-only, never a wildcard account. Staging's row is absent until the vend; the
-sandbox row is per business unit and grows with the D35 map.""")
+only, never a wildcard account. The sandbox row is per business unit and grows
+with the D35 map.""")
 
         # ==============================================================================
         rep.h1("4. The misuse-alarm rules (step 4.6)")
@@ -672,8 +1000,9 @@ sandbox row is per business unit and grows with the D35 map.""")
             rep.line("No *deploy-misuse* rule in any measured promotion account (pre-4.6).")
 
         # ==============================================================================
-        rep.h1("5. The application repository: the grant, and the read from Staging (INT-07)")
+        rep.h1("5. The application repository: the grant, and the reads it admits (2.4, INT-07)")
         rep.line(f"{APP_REPO} policy: {app_policy_state}")
+        rep.line(f"Sandbox cross-account read: {sandbox_read}")
         rep.line(f"Staging cross-account read: {staging_read}")
         rep.text("""
 Presence, never sufficiency: the behavioural INT-07 proof is 3.2's pull under
@@ -684,12 +1013,13 @@ D35 Interactive consumer map (supplychain.py section 9 records why).""")
         rep.h1("6. The dev-env registrations, side by side (INT-17/INT-18, D17)")
         if image_rows:
             rep.tabulate(
-                ["PROFILE\tIMAGE\tLATEST VERSION\tBASE IMAGE"] + ["\t".join(r) for r in image_rows]
+                ["PROFILE\tIMAGE\tLATEST VERSION\tCONTAINER IMAGE"]
+                + ["\t".join(r) for r in image_rows]
             )
         else:
             rep.line("No Interactive account was measured.")
         rep.text("""
-D17's claim is the BASE IMAGE column agreeing across every row: the same digest
+D17's claim is the CONTAINER IMAGE column agreeing across every row: the same digest
 registered everywhere, promoted by approval rather than pushed by whoever built
 last. One row lagging after a 1.6 run is the registration failing quietly.""")
 
@@ -704,7 +1034,9 @@ last. One row lagging after a 1.6 run is the registration failing quietly.""")
         rep.text("""
 This is the record INT-08's two-name design exists for: which role ran which
 leg, answerable per event. Every caller should be the deploy runner; anything
-else is what 4.6's alarm fires on, and CI-8 fails on it here.""")
+else is what 4.6's alarm fires on, and CI-8 fails on it here. In a deploy role's
+own account a cross-account call carries no caller ARN: "(by role id)" marks a
+caller read from the principal id, the runner role's unique id and the session.""")
 
         # ==============================================================================
         rep.h1("8. CHECKS")
@@ -718,10 +1050,11 @@ What the checks are, and where each comes from:
   CI-2  every deploy role carries a permissions boundary (4.1-4.2)
   CI-3  every trust policy: the runner's role only, sts:AssumeRole only (4.1-4.2)
   CI-4  the runner role assumes ONLY the enumerated awsds-deploy-* ARNs (4.3)
-  CI-5  the app-repository grant, and the read from Staging (3.0, INT-07)
-  CI-6  the dev-env base image agrees across Interactive accounts (1.6, D17)
-  CI-7  the *deploy-misuse* rules exist and are ENABLED (4.6)
-  CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)""")
+  CI-5  the app-repository grant, and the reads from Sandbox (2.4) and Staging (3.0, INT-07)
+  CI-6  the dev-env container image agrees across Interactive accounts (1.6, D17)
+  CI-7  the *deploy-misuse* rules receive read-only management events and exempt the runner by role id (4.6)
+  CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)
+  CI-9  the test runner: hop limit 1, and a role holding its boot reads alone (decision 11)""")
 
         # ==============================================================================
         rep.h1("9. The accounts nothing here is measuring")

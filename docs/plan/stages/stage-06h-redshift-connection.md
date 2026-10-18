@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 waits for a second project. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b with a second project), 0.4's portal reading, 6.4 (the user's keep-or-drop of `lab`), and verifications x, xii and xv. The audit export a DLP feed would read has stopped (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
+| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 waits for a second project. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b with a second project), 0.4's portal reading, 6.4 (the user's keep-or-drop of `lab`), and verifications x and xii. The audit export a DLP feed would read carries nothing while a workgroup exists (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
 | **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all. **And [5b](stage-05b-redshift-serverless.md) 1.10's endpoint group**, raised with `make up ENV=sandbox GROUPS=redshift`: without it a `redshift-serverless:GetCredentials` call — layer 2, and the whole IAM-credentials path — leaves through the proxy as a public request, which is 6e's *wrong door* repeated. The 5439 data path needs no endpoint, only the security group. **The compute slice must be up**: a `make down` leaves the namespace and removes the workgroup, so a connection to a destroyed workgroup fails the way a space started while `sandbox/egress` is down hangs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
@@ -371,10 +371,11 @@ picks one.
   and not an assumption: `StartSession` turned out to be called **as the project role**, so 6a's tag pair
   never evaluated. The same question here is *whose identity reaches the database*, and the answer decides
   whether layer 3's user is per project or per person.
-- **3.6 — Settled 2026-10-10 as `EXC-16`: the export has stopped.** `connectionlog`'s last event is
-  2026-10-10T03:09:06Z and no group has carried an event of any kind since, across 142+ queries and DDL
-  through both doors; every record before it is `rdsdb`'s. So the groups have never held a user
-  connection or a line of user SQL, and the DLP feed is still a claim (verification ix).
+- **3.6 — Read 2026-10-17 as `EXC-16`: the export carries nothing while a workgroup exists.** Over the
+  groups' 30-day retention, no record of any kind arrived during a workgroup's lifetime after
+  2026-09-21 05:43:33Z, so no session through the Data page or JupyterLab was ever logged. The only user
+  records are the admin's Data API sessions of 2026-09-21 03:00–03:23Z, and the namespace's own `rdsdb`
+  sessions arrive only while no workgroup exists. The DLP feed is still a claim (verification ix).
   **[Claude] Read the three audit log groups** for this session: `connectionlog` has the connection,
   `useractivitylog` has the SQL. This is the first content those groups have ever had
   ([5b](stage-05b-redshift-serverless.md) 6.1 created them empty), and it is where the DLP feed stops being a
@@ -430,8 +431,9 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 - **5.3 — [user] The project cannot administer the warehouse**: `UpdateWorkgroup` denied (the policy does not
   grant it), `DeleteUsageLimit` denied (5b 3.2's SCP, if applied), and the admin secret unreadable.
 - **5.4 — [user] The persona cannot mint a database session**: `redshift-serverless:GetCredentials` as
-  `DataScientistAccess` is denied — an **implicit** deny, absence of grant, which is a different wording from
-  an SCP's and worth recording as such (the distinction 6g 1.4 turned on).
+  `DataScientistAccess` is denied by an **explicit** deny in an identity-based policy,
+  `DenyMintingARedshiftDatabaseSession` in the persona set (written at 5b). Its wording differs from an
+  SCP's and from an implicit deny's, which is worth recording (the distinction 6g 1.4 turned on).
 
 ### 6. Close
 
@@ -555,9 +557,9 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    and layer 2's `sts:AssumeRole` were all in place, so this is a convention in how a notebook connects
    (§P step 3a). The costs, stated before it was taken: in-database attribution becomes per project;
    the chain is a convention with a loud failure rather than a control; and a helper belongs in the
-   image if it becomes the house path. **Whether CloudTrail still names the person is unread**
-   (verification xv): the trust policy admits `sts:SetSourceIdentity` from the `datazone:userId` tag,
-   and §J's `assume_role` passes no `SourceIdentity`.
+   image if it becomes the house path. **CloudTrail still names the person** (verification xv, read
+   2026-10-17): the chained session carries the space's `sourceIdentity`, the data scientist's Identity
+   Center user id, although §J's `assume_role` passes none.
    **The paths not taken, each for a measured reason:**
    - **`RedshiftDbUser` on the project role**, collapsing both doors onto one user (8b). SMUS sets
      `RedshiftDbUser` as a **session** tag, per person, on every `AssumeRole` of the project role, and a
@@ -621,12 +623,12 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 | vii | Does the admitted project reach `warehouse` — and if it reads it, which default grant did 1.2's `REVOKE` miss? | 5.2 |
 | xiii | **Answered 2026-10-10**: the role's `USAGE, CREATE` lets the project create tables in `lab` with no further grant, each owned by the database user that created it, and its sessions on `sandbox` needed nothing beyond the role. Reading another creator's tables needs the default privilege written for that creator (runbook §T) | 1.5, 3.3 |
 | xiv | **Mostly answered without the project.** It refuses **at commit**, with the wording in the log, and the usage **overshoots the quota inside the transaction**. `SVV_SCHEMA_QUOTA_STATE` **cannot be read at all** — refused to a superuser — so neither it nor the violations view is an instrument here. Owed: that `ALTER SCHEMA … QUOTA` fails for a non-superuser, which the project's own session can now attempt | 5.2a |
-| viii | Is `GetCredentials` an **implicit** deny for the persona, or does something name a policy? | 5.4 |
-| ix | **Answered 2026-10-10: no.** The export stopped at 03:09:06Z that day (`EXC-16`), and no user connection or SQL text has ever reached the groups | 3.6 |
+| viii | Does the persona's `GetCredentials` refusal name the identity-based policy? The set carries an explicit `Deny`, `DenyMintingARedshiftDatabaseSession`, so it should | 5.4 |
+| ix | **Answered: no, read 2026-10-17.** Nothing reaches the groups while a workgroup exists, so no session through either door has been logged; the only user records are the admin's Data API sessions of 2026-09-21 (`EXC-16`) | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |
 | xi | Does anything at the domain level stop a project member creating a connection of their own? | 0.4 |
-| xii | What did the stage's queries cost, read from the bill rather than predicted? The 2026-10-10 reading, 100 RPU-seconds = 0.0100 USD, came from `ComputeSeconds` | 6.4 |
-| xv | Does CloudTrail name the person on a notebook's chained session? The access role's trust policy admits `sts:SetSourceIdentity` from the `datazone:userId` tag, and §J's `assume_role` passes no `SourceIdentity` | 8a |
+| xii | What did the stage's queries cost, read from the bill rather than predicted? **2026-10-10 burned 24,359 RPU-seconds = 2.44 USD by `ComputeSeconds`** (read by the hour on 2026-10-17): 109 in the morning session, whose 100 the log recorded as the day's, and 24,220 between 16:00Z and 18:59Z. The free trial absorbed it ([5b](stage-05b-redshift-serverless.md) verification xiii), so the bill can answer only after 2026-12-19 | 6.4 |
+| xv | **Answered 2026-10-17: yes.** All 148 `GetCredentials` of 2026-10-10 to 2026-10-16 carry one `sourceIdentity`, the data scientist's Identity Center user id: the portal's sessions, the space's project-role session and the chained `redshift-per-project` one, which carries it although §J passes none | 8a |
 
 ## Risks
 

@@ -1,8 +1,8 @@
-"""Hygiene over the Terraform trees: convention greps, policy JSON, backend literals.
+"""Hygiene over the Terraform trees: convention greps, policy JSON, backend literals, HCL.
 
 The library behind ``check-tf-conventions.py``, ``check-iam-wildcards.py``,
-``gen-backend-hcl.py``, ``gen-tfvars.py``, ``check-ou-coverage.py`` (its authored-map half)
-and ``check-index.py``:
+``gen-backend-hcl.py``, ``gen-tfvars.py``, ``check-ou-coverage.py`` (its authored-map half),
+``check-index.py``, ``check-sg-descriptions.py`` and ``check-gitlab-pins.py``:
 
     scan         collect ``.tf`` files with ``.terraform/`` pruned, and the comment-aware
                  line scanner the convention checks share
@@ -13,6 +13,8 @@ and ``check-index.py``:
                  ``terraform.auto.tfvars`` - the two files a slice cannot interpolate its
                  way to, written from one table so they cannot disagree
     attachments  the authored per-OU attachment map, loaded and shape-checked
+    hcl          a reader of HCL native syntax: a file's blocks and arguments, and which parts
+                 of a string argument are literal text
 
 No AWS session, no subprocess, nothing imported from ``awslib`` or ``repohygiene``. Everything
 here reads files it is given and returns data; exit codes and report text belong to the scripts.

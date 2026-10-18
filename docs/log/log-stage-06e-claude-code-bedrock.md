@@ -1553,3 +1553,104 @@ are Claude's own, read-only, from `awsds-infra-sandbox-1` (`Sandbox Account 1`, 
 - **[Claude] Plans, read-only**: `identity/org-policies` `0 to add, 1 to change, 0 to destroy` (`awsds-org-scp-ou-interactive` in place, the six 5.5 ARNs and nothing else); `sandbox/bedrock` `0 to add, 1 to change, 0 to destroy` (`awsds-sandbox-bedrock-assistant`, a new policy version, the attachment untouched).
 - **Next, in order**: the three agreements (user, M4); the SCP apply; one M6 invocation per 5.5 model
   as the infrastructure user; then, only if all three answer, the grant apply and the image release.
+
+## 2026-10-17 — decision 13's evidence over five weeks, and the data plane silent since 2026-09-12
+
+*Written by Claude in a session with the environment down, at the user's request to advance what needs
+no environment. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`): CloudTrail `lookup-events` for `bedrock.amazonaws.com` from
+2026-09-12, and `get-model-invocation-logging-configuration`.*
+
+### The control-plane endpoint still carries one action
+
+930 `bedrock.amazonaws.com` events between 2026-09-12 00:04:52 and 2026-10-17 21:07:28, every one in
+`us-west-2`. **Through a VPC endpoint, the only control-plane action is still `ListInferenceProfiles`**,
+by the project role from `10.20.x` addresses, every call answered: 23 calls over four endpoint ids (16 on
+2026-09-12, 2 on 2026-09-14, 5 on 2026-09-19 and 2026-09-20), each id one `make up`'s endpoint. Every
+other control-plane call came with no endpoint: the infrastructure user's CLI from a laptop
+(`GetFoundationModelAvailability` 81 times, `GetFoundationModel` 41, `GetInferenceProfile` 29,
+`GetAccountDataRetention` 17, and the four `CreateFoundationModelAgreement` of 2026-09-12),
+`AWSServiceRoleForConfig`, and Resource Explorer. No SMUS blueprint role appears, and no
+`PutModelInvocationLoggingConfiguration` was ever called.
+
+So decision 13's evidence now covers five weeks instead of three days and reads the same: a scope of
+`bedrock:ListInferenceProfiles` on that endpoint would have broken nothing measured. The decision is
+still the user's to review.
+
+### No invocation since 2026-09-12
+
+The data plane holds 156 events, **all on 2026-09-12**: 130 `InvokeModelWithResponseStream` and 26
+`InvokeModel`, no `Converse*`. Answered: 90 through `vpce-0a35133bc322e1769` between 21:35 and 22:16
+(Opus 4.5, Sonnet 4.5 and Haiku 4.5 by their `us.` profiles), 18 through `vpce-0171b785473053321` at
+06:44–06:45 (Haiku 4.5), and 6 from the laptop. Refused: 22 `InvokeModelWithResponseStream` and one
+`InvokeModel` by an SCP between 05:33 and 05:44, the routed `us-east-1` calls among them; 18 `InvokeModel`
+with *"no identity-based policy"* between 06:27:51 and 06:43:50, minutes before the first answered call
+(Opus 4.1, 4.5, 4.6, 4.7 and 4.8, Sonnet 4 and 4.5, Nova Lite); and one laptop call by an SCP. A
+successful invocation writes two events, one carrying the profile in `requestParameters` and one
+carrying the model in `resources`.
+
+So no Claude Code session has reached Bedrock in Sandbox since 2026-09-12. The session of 2026-09-19 ran
+on Anthropic's own API, and CloudTrail is empty for it, as that day's entry recorded.
+
+### Invocation logging is not configured
+
+`get-model-invocation-logging-configuration` returned an empty body: still off, as 7.4 left it, and
+[Stage 11](../plan/stages/stage-11-dlp.md) decision 11 is where it is decided.
+
+## 2026-10-17 — the battery's rows for 7.5 and decision 15, run
+
+*The run is the user's, on the laptop, from a `main` checkout carrying PR #159, which wrote the rows:
+`./aws/probes/scp-battery.py --phase root` and then `--phase ou`, as the infrastructure user through the
+driver's profiles (`awsds-policy-canary` on `Policy Canary` with `AWSAdministratorAccess`,
+`awsds-infra-sandbox-1` on `Sandbox Account 1` with `InfrastructureAccess`, and the other accounts' own).
+The driver stamps the laptop's clock; the output reached the thread at 23:22:24 UTC, so the runs are about
+23:20 and 23:21 UTC. Below are the rows of this stage's statements, copied verbatim from the user's paste
+with each phase's stamp and totals; the other rows are left out.*
+
+- **[user] The two phases**, excerpt:
+
+  ```
+  SCP battery - 2026-10-17 20:20:32  (phase root)
+    MARK PHASE    ACCOUNT   EXPECT OUTCOME       DETAIL                 PROBE
+    ok   root     canary    deny   DENY-SCP      p-1fp032g8             bedrock:PutAccountDataRetention to inherit (7.5 mode ceiling)
+    ok   root     canary    allow  ALLOWED       succeeded              bedrock:PutAccountDataRetention to none still works (7.5 contrast, the value already set)
+    ok   root     canary    deny   DENY-SCP      p-1fp032g8             bedrock:InvokeModel on us.anthropic.claude-fable-5 (7.5 retaining model)
+    ok   root     canary    deny   DENY-SCP      p-1fp032g8             bedrock:InvokeModel on us.anthropic.claude-fable-5-1 (7.5 retaining model)
+    ok   root     canary    deny   DENY-SCP      p-1fp032g8             bedrock:InvokeModel on global.anthropic.claude-fable-5 (7.5 retaining model)
+    ok   root     canary    deny   DENY-SCP      p-1fp032g8             bedrock:InvokeModel on global.anthropic.claude-fable-5-1 (7.5 retaining model)
+  24 as expected, 0 unexpected, 0 not measured
+  ```
+
+  ```
+  SCP battery - 2026-10-17 20:21:03  (phase ou)
+    MARK PHASE    ACCOUNT   EXPECT OUTCOME       DETAIL                 PROBE
+    ok   ou       sandbox1  deny   DENY-SCP      p-tgda7n58             interactive (inherited): bedrock:InvokeModel outside the scoped set (decision 15)
+    ok   ou       sandbox1  allow  ALLOWED       succeeded              interactive (inherited): bedrock:InvokeModel on us.anthropic.claude-haiku-4-5-20251001-v1:0, an image pin
+    ok   ou       sandbox1  allow  ALLOWED       succeeded              interactive (inherited): bedrock:InvokeModel on us.anthropic.claude-opus-4-5-20251101-v1:0, an image pin
+    ok   ou       sandbox1  allow  ALLOWED       succeeded              interactive (inherited): bedrock:InvokeModel on us.anthropic.claude-sonnet-4-5-20250929-v1:0, an image pin
+    ok   ou       sandbox1  deny   DENY-SCP      p-tgda7n58             interactive (inherited): bedrock:GetUseCaseForModelAccess in eu-west-1 (decision 15)
+    ok   ou       sandbox1  allow  ALLOWED       succeeded              interactive (inherited): bedrock:GetUseCaseForModelAccess in us-east-1 still works
+    ok   ou       sandbox1  allow  ALLOWED       succeeded              interactive (inherited): bedrock:GetUseCaseForModelAccess in us-east-2 still works
+  32 as expected, 1 unexpected, 13 not measured
+  ```
+
+- **[Claude] Every row of 7.5 and decision 15 reads as written**, and each refusal names the document its
+  statement is in: `p-1fp032g8`, the baseline, for 7.5; `p-tgda7n58`, the `Interactive` document, for
+  decision 15. The `none` row succeeded, so `bedrock:DataRetentionMode` is still published, and it wrote
+  the value the canary already held. The re-probe of 2026-09-12 read one of the four retaining profiles;
+  this run read all four. **`DenyBedrockReadsOutsideTheRoutedRegions` is read for the first time**:
+  `GetUseCaseForModelAccess` was refused in `eu-west-1`, where Control Tower's Region control exempts it,
+  and answered in `us-east-1` and `us-east-2`.
+
+- **[Claude] The run put invocations in the data plane.** The three image pins answered for
+  `InfrastructureAccess` in `Sandbox Account 1` at about 23:21 UTC, one output token each, and Nova Lite
+  was refused the same minute. The entry above counted no invocation after 2026-09-12; these are the
+  battery's, not a session's, and `AWS/Bedrock`'s per-model metrics, which `aws/bedrock-usage.py` reads,
+  count them.
+
+- **[Claude] What the run did not cover.** `scp-battery.py` runs `readback.py` only without `--phase`, so
+  the attached documents were not compared with `policies/`; the policy ids and the outcomes are the
+  reading. The streaming action has no row (`scp-battery.md`). The phases' other rows belong to other
+  stages: the `ou` phase's one `FAIL` and six of its `note` rows are Stage 9's, whose statements are
+  written and not applied ([its log](log-stage-09-deployment-targets.md)); four `note` rows are `EXC-03`'s
+  Athena rows and three are the standing `no subnet in us-west-2` rows in Data Governance and Identity.

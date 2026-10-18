@@ -32,15 +32,28 @@ module "ecr_dev_env" {
 }
 
 # The first application repository (Stage 7 step 5.1, the 5.b half): one per application, the same
-# three settings. No cross-account pull principal - decision 7's reading: a deployment target pulls
-# an application image through Stage 8's own deploy grant, never through the consumer map, which
-# keeps Staging off the dev-env image and the package proxy. The runner pushes in this account by
-# its identity policy (6.1).
+# three settings. Its cross-account pullers are Stage 8's app-consumer list, never the consumer map
+# above, which keeps a deployment target off the dev-env image and the package proxy (Stage 7 decision
+# 7): Sandbox, whose job role runs the image while the application is engineered (step 2.4), and
+# Staging from step 3.0 (INT-07). The runner pushes in this account by its identity policy (6.1).
 module "ecr_app_etl" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/ecr-repo?ref=ecr-repo-v0.1.0"
 
   name                = "awsds-${var.env}-ecr-app-etl"
+  kms_key_arn         = module.registry_key.key_arn
+  pull_principal_arns = local.app_consumer_account_arns
+}
+
+# The deploy image (Stage 8 steps 3.1 and 4.3): the toolbox the deploy runner's jobs run in, built by the
+# GitLab project awsds/deploy-image on the build runner. No cross-account pull principal: only the
+# deploy runner in this account pulls it, by its identity policy (production/foundation/'s anchors), and
+# by digest.
+module "ecr_deploy" {
+  # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/ecr-repo?ref=ecr-repo-v0.1.0"
+
+  name                = "awsds-${var.env}-ecr-deploy"
   kms_key_arn         = module.registry_key.key_arn
   pull_principal_arns = []
 }

@@ -93,3 +93,30 @@ variable "peerings" {
   }))
   nullable = false
 }
+
+# Stage 8 step 4 - the deploy credential layer, generated from DEPLOY_ROLES in
+# scripts/tfhygiene/backend.py and never authored here (deploy-role.tf).
+variable "deploy_role_name" {
+  description = "This account's deploy role - a contract with ./aws/cicd.py."
+  type        = string
+  nullable    = false
+}
+
+variable "deploy_runner" {
+  description = "The deploy runner's home, keyed by account folder, with the profile the alias in deploy-role.tf resolves its account id from: the trust names awsds-<env>-runner-deploy there."
+  type        = map(object({ profile = string, env = string }))
+  nullable    = false
+
+  validation {
+    condition     = length(var.deploy_runner) == 1
+    error_message = "One deploy runner home (D14): the trust names one role in one account."
+  }
+}
+
+# Stage 8 decision 5 - who awsds-<env>-alerts reaches. Never committed and never generated: the user
+# writes it into an untracked alerts.auto.tfvars.
+variable "alert_email" {
+  description = "The address awsds-<env>-alerts sends to. Unset, the topic exists with no subscriber, which a check block reports on every plan."
+  type        = string
+  default     = null
+}

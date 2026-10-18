@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **What this is** | One picture of every network this project builds: five VPCs and their address plan, every element that holds an internal address, the route tables, **the estate's single internet egress** and the explicit proxy that is it, the VPN, the DNS layer with its association matrix, and the security groups — and the two questions the picture answers: **how a SageMaker app sees the internet**, and **what can reach a SageMaker app** |
-| **What it is not** | A procedure. Connecting a device and the session's up/down order: [`plan/runbooks/client-vpn-proxy-configuration.md`](plan/runbooks/client-vpn-proxy-configuration.md); the VPN host itself, building an image, applying a slice: [`plan/runbooks/vpn.md`](plan/runbooks/vpn.md), [`plan/runbooks/buildbox.md`](plan/runbooks/buildbox.md), [`plan/runbooks/terraform-changes.md`](plan/runbooks/terraform-changes.md). The design argument is [`plan/architecture.md`](plan/architecture.md); the build steps are [`plan/stages/stage-03-networking.md`](plan/stages/stage-03-networking.md) and [`plan/stages/stage-04-vpn.md`](plan/stages/stage-04-vpn.md). Whether a reading is *expected* is [`AWS_STATE.md`](AWS_STATE.md)'s invariants and exceptions, and the slice tree is [`plan/conventions.md`](plan/conventions.md)'s |
+| **What it is not** | A procedure. Connecting a device and the session's up/down order: [`plan/runbooks/client-vpn-proxy-configuration.md`](plan/runbooks/client-vpn-proxy-configuration.md); the VPN host itself, building an image, applying a slice: [`plan/runbooks/vpn.md`](plan/runbooks/vpn.md), [`../gitlab/awsds/dev-env/README.md`](../gitlab/awsds/dev-env/README.md), [`plan/runbooks/terraform-changes.md`](plan/runbooks/terraform-changes.md). The design argument is [`plan/architecture.md`](plan/architecture.md); the build steps are [`plan/stages/stage-03-networking.md`](plan/stages/stage-03-networking.md) and [`plan/stages/stage-04-vpn.md`](plan/stages/stage-04-vpn.md). Whether a reading is *expected* is [`AWS_STATE.md`](AWS_STATE.md)'s invariants and exceptions, and the slice tree is [`plan/conventions.md`](plan/conventions.md)'s |
 | **Kept true, and how** | **Reviewed in the same sitting as any change to a network-bearing slice or module** — the rule is `CLAUDE.md`'s upkeep table, and §2.1 below is the list this file must keep naming. **`./scripts/check-network-doc.py` decides the mechanical half**: every allocated CIDR, every per-tier subnet **recomputed from the `vpc` module's own arithmetic**, and every slice that declares a network object or calls a network module has to appear here. Whether a sentence is still *true* is the reading, which no check makes; the **measured** date in the row below is what a reader compares against `aws/output/` |
-| **Where each fact comes from** | Two kinds, marked throughout. **As code** — read from [`../terraform-modules/vpc/`](../terraform-modules/vpc/main.tf), [`../terraform-modules/vpc-egress/`](../terraform-modules/vpc-egress/endpoints.tf), [`../terraform-modules/wireguard/`](../terraform-modules/wireguard/main.tf), [`../terraform-modules/sagemaker-prereqs/`](../terraform-modules/sagemaker-prereqs/blueprints.tf) and the `foundation/`, `egress/`, `vpn/`, `buildbox/`, `probes/` and `sagemaker/` slices under [`../terraform-live/`](../terraform-live/README.md); the address allocation from [`../scripts/tfhygiene/backend.py`](../scripts/tfhygiene/backend.py). **Measured** — read back from the accounts on **2026-09-07** with `./aws/networking.py`, `./aws/proxy.py`, `./aws/vpn.py`, `./aws/dns-allowlist.py` and direct read-only `describe-*` calls, as the infrastructure user. A measured value that is `[E]` or `[D]` describes **that session**, never the design — §13 says which |
+| **Where each fact comes from** | Two kinds, marked throughout. **As code** — read from [`../terraform-modules/vpc/`](../terraform-modules/vpc/main.tf), [`../terraform-modules/vpc-egress/`](../terraform-modules/vpc-egress/endpoints.tf), [`../terraform-modules/wireguard/`](../terraform-modules/wireguard/main.tf), [`../terraform-modules/sagemaker-prereqs/`](../terraform-modules/sagemaker-prereqs/blueprints.tf) and the `foundation/`, `egress/`, `vpn/`, `tooling/`, `runners/`, `probes/` and `sagemaker/` slices under [`../terraform-live/`](../terraform-live/README.md); the address allocation from [`../scripts/tfhygiene/backend.py`](../scripts/tfhygiene/backend.py). **Measured** — read back from the accounts on **2026-09-07** with `./aws/networking.py`, `./aws/proxy.py`, `./aws/vpn.py`, `./aws/dns-allowlist.py` and direct read-only `describe-*` calls, as the infrastructure user. A measured value that is `[E]` or `[D]` describes **that session**, never the design — §13 says which |
 | **Written** | 2026-08-23, Claude, at the user's request; rewritten 2026-09-07 at [6c](plan/stages/stage-06c-networking-hub.md) step 6.7 from the readings. Stable ids (`D38`, `INT-22`, `NT-12`, `Lesson 44`) are the references; section numbers in other files are not |
 
 ---
@@ -35,8 +35,8 @@ the plan.
 | VPC | CIDR | Account | What it holds |
 |---|---|---|---|
 | Sandbox 1 | `10.20.0.0/16` | Sandbox | SMUS project apps, the probes |
-| **VPC-SharedServices** | `10.30.0.0/16` | Production | GitLab, Pages, the runners, the build host — *the VPC Stage 3 built, re-labelled at 6c step 1.1* |
-| **VPC-Networking** | `10.31.0.0/16` | Production | **the estate's only internet gateway route**; the WireGuard host; the Squid proxy |
+| **VPC-SharedServices** | `10.30.0.0/16` | Production | GitLab, Pages, the build runner — *the VPC Stage 3 built, re-labelled at 6c step 1.1* |
+| **VPC-Networking** | `10.31.0.0/16` | Production | **the only internet gateway that serves a host**; the WireGuard host; the Squid proxy |
 | **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers — *nothing runs in it yet* |
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
@@ -78,9 +78,9 @@ module's arithmetic:
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
 | **SMUS project app ENIs** | Sandbox · private · both AZs offered | one per running app | created by the blueprint, not by this repository |
 | **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
-| **Build host** `awsds-prod-buildbox` | **VPC-SharedServices · private** · az1 | `[E]` | `[E]` `production/buildbox/` |
 | **GitLab** `awsds-prod-gitlab` | **VPC-SharedServices · private** · az1 | one primary private IPv4, kept across stop/start; `gitlab.awsds.internal` and `*.awsds-pages.internal` both carry it (Stage 7 step 1.4) | `[D]` `production/tooling/` |
 | **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 7 step 6.1) | `[E]` `production/runners/` |
+| **Deploy runner** `awsds-prod-runner-deploy` and **test runner** `awsds-prod-runner-test` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 8 step 4.3 and decision 11) | `[E]` `production/runners/` |
 | **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path**. From a space on 2026-10-10 it answered two private addresses, the workgroup's own managed-endpoint ENIs, never the `redshift-serverless` API endpoint's | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
 
 **No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
@@ -93,15 +93,14 @@ module's arithmetic:
 |---|---|---|
 | `sandbox/foundation/` · `staging/foundation/` | `[P]` | one VPC 3×2, its gateway endpoints, its flow log, the per-account child zone |
 | `production/foundation/` | `[P]` | **VPC-SharedServices**, the `awsds.internal` **apex** and `awsds-pages.internal`, the cross-account authorisation for the apex, four peering ends |
-| `production/networking/` | `[P]` | **VPC-Networking** — the estate's only IGW route — both hub security groups, the WireGuard Elastic IP, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
+| `production/networking/` | `[P]` | **VPC-Networking** — the only IGW that serves a host — both hub security groups, the WireGuard Elastic IP, the proxy's allow-list parameter and access log, the zone associations that make the hub resolve everything |
 | `production/workloads/` | `[P]` | **VPC-Workloads** and `prod.awsds.internal` |
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
 | `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
-| `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs, the DNS Firewall |
+| `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs and VPC-Workloads, the DNS Firewall |
 | `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
-| `production/buildbox/` | `[E]` | the build host and its egress-only security group — **and no route at all** |
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
-| `production/runners/` | `[E]` | the build runner, in the group `tooling/` declares - and no route at all, like the buildbox it succeeds (Stage 7 step 6.1) |
+| `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
@@ -147,7 +146,7 @@ construction.
 | Route table | What is in it | What is NOT |
 |---|---|---|
 | **VPC-Networking · public** | `0.0.0.0/0` → IGW · the two gateway prefix lists · **`10.90.0.0/24` → the WireGuard ENI** | — |
-| **every other public tier** | `0.0.0.0/0` → that VPC's IGW · the gateway prefix lists | nothing reaches those IGWs: no host sits in those tiers |
+| **every other public tier** | `0.0.0.0/0` → that VPC's IGW · the gateway prefix lists; `workloads-public` carries no default route (read 2026-10-17) | nothing reaches those IGWs: no host sits in those tiers |
 | **every private tier** | the peer VPCs' ranges via peering · the gateway prefix lists | **no `0.0.0.0/0`, in any account** — design B in one line |
 | **every isolated tier** | the gateway prefix lists, and nothing else, ever | no peering route, no default |
 
@@ -187,7 +186,10 @@ literal in the image (6d decision 8), and since 2026-10-10 it carries **every** 
 proxy, and a group left off times out on its names instead. That literal is generated too: the second
 output, `no_proxy_all_groups` (`vpc-egress-v0.17.0`), reads every declarable service's names from the
 endpoint-service catalog at plan time, which returns the names `dns_entry` carries (compared on seven
-services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named.
+services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named. The `mlflow` group of
+`vpc-egress-v0.18.0` (Stage 17, written 2026-10-17, not applied) is outside the 70 entries until an
+image carries the next literal: the MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is
+under `.app.aws`, so a space on the 70-entry image is refused for it with a 403 (Stage 17 decision 4).
 
 **A missing entry fails two different ways and only one of them is visible:**
 
@@ -279,9 +281,8 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-vpn` `[P]` | UDP/51820 from `0.0.0.0/0` — **the estate's one world-open rule** |
 | `awsds-prod-proxy` `[P]` | TCP/3128 from the four spoke CIDRs **and the tunnel range**, and nothing else |
 | `awsds-<env>-endpoints` `[P]` | TCP/443 from that VPC's own range |
-| `awsds-prod-buildbox` `[E]` | **nothing** — no ingress rule at all; Session Manager needs none |
 | `awsds-prod-gitlab` `[D]` | TCP/443 from **three sources and nothing else** (Stage 7 step 1.2): the WireGuard host's group `awsds-prod-vpn` — a same-account, cross-VPC group reference over the peering, since the host masquerades every tunnel packet not bound for the proxy and a laptop arrives as its address; the Interactive **private tiers** by CIDR (`10.20.0.0/18`, `10.20.64.0/18` today, generated from the allocation table), where a SMUS project's app ENI is the source of the INT-09 clone; and the runners' group. No port 22, no port 80 |
-| `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` |
+| `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` to all three runners |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
 
@@ -318,10 +319,14 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
-**The DNS Firewall** is in the two **compute** VPCs only, its allow-list is **fourteen** entries —
-AWS's own namespaces and this estate's private zones — and its job is **closing the recursive resolver
-as an exfiltration channel** rather than filtering the internet, which the proxy does.
-`VPC-Networking` carries none: the proxy has to resolve.
+**The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
+job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
+which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and
+this estate's private zones. VPC-Workloads' is **four**, AWS's namespaces only, so `gitlab`, `proxy`
+and every `prod.awsds.internal` name answer NXDOMAIN there: GitLab is in a VPC it has no peering to,
+and the proxy refuses its plane everything. VPC-Workloads' six interface endpoints are the jobs' set:
+`sts`, `logs`, `kms`, `glue`, `sagemaker.api` and `secretsmanager`. `VPC-Networking` carries none: the
+proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:
@@ -449,7 +454,7 @@ are not fetch paths either: `ghcr.io` makes an arbitrary container image pullabl
 `production-foundation` is `open`.
 
 **The build plane is not an allow-list** (D38 §6, amended 2026-09-08): `VPC-SharedServices` holds the
-tooling that **builds** the restricted environment — the buildbox today, the GitLab runners from Stage 7 —
+tooling that **builds** the restricted environment — the build runner since Stage 7, the buildbox before it —
 and its control is the reviewed Dockerfile in git, not a hostname list. `open` here still means the three
 global denies apply (private destinations, unsafe ports, `CONNECT` to anything but 443), there is still no
 default route in that VPC, and the security group still admits only 3128. **`sandbox-foundation` is

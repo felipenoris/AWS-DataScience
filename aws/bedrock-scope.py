@@ -60,53 +60,25 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from datetime import UTC, datetime
-from pathlib import Path
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog
-from awslib.bedrockscope import SCP_PATH, SID_REGIONS, scp_declaration
+from awslib.bedrockscope import (
+    GRANT_VARS,
+    SCP_PATH,
+    SID_REGIONS,
+    grant_models,
+    scp_declaration,
+    settings_pins,
+)
+from awslib.devenvrecipe import SETTINGS
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "bedrock-scope.txt"
 
-GRANT_VARS = "terraform-live/sandbox/bedrock/variables.tf"
-SETTINGS = "images/dev-env/claude-code/managed-settings.json"
-
-# `default = { "model" = "profile" ... }` inside the models block of the grant slice. Anchored on
-# the variable name so another map in the same file cannot be picked up by accident.
-MODELS_RE = re.compile(r'variable\s+"models"\s*\{.*?default\s*=\s*\{(?P<body>.*?)\}', re.S)
-PAIR_RE = re.compile(r'"(?P<model>[^"]+)"\s*=\s*"(?P<profile>[^"]+)"')
-
 DEFAULT_PROFILE = "awsds-infra-sandbox-1"
-
-
-def grant_models(path: Path) -> dict | None:
-    if not path.is_file():
-        return None
-    match = MODELS_RE.search(path.read_text(encoding="utf-8"))
-    if not match:
-        return None
-    return {m.group("model"): m.group("profile") for m in PAIR_RE.finditer(match.group("body"))}
-
-
-def settings_pins(path: Path) -> dict | None:
-    """The distinct profile ids the image's managed settings pin, by key."""
-    if not path.is_file():
-        return None
-    try:
-        env = json.loads(path.read_text(encoding="utf-8")).get("env", {})
-    except json.JSONDecodeError:
-        return None
-    keys = (
-        "ANTHROPIC_MODEL",
-        "ANTHROPIC_DEFAULT_OPUS_MODEL",
-        "ANTHROPIC_DEFAULT_SONNET_MODEL",
-        "ANTHROPIC_DEFAULT_HAIKU_MODEL",
-    )
-    return {k: env[k] for k in keys if k in env}
 
 
 def main(argv: list) -> int:

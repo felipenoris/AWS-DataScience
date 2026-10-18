@@ -1329,3 +1329,93 @@ pass 5 and pass 3b met no S3 endpoint refusal.
 - **After:** `state list` empty; `describe-trails` lists `aws-controltower-BaselineCloudTrail` alone;
   `head-bucket` on `awsds-sandbox-endpoint-refusals` answers `404 Not Found`; the state object
   `sandbox/endpoint-audit/terraform.tfstate` stays in `awsds-sandbox-tfstate`, 540 bytes.
+
+## The Glue job's birth in `dev` and `test` (2026-10-16)
+
+### [user] The decision
+
+**[user]**, in the project thread, closing the question the CI/CD CLI's measurement of 2026-10-16 left
+(run `u4AFogXA74olkqo`: `glue:GetJob` refused to the project role on a job that does not exist yet, so
+`GlueJobOperator` never reached its `CreateJob`): "Sobre como o job glue nasce, vamos pela opção 1: um
+grant de glue:GetJob".
+
+### [Claude] The `GetJob` statement, written and not applied
+
+- **`sandbox/workflows/` gains `GetAGlueJobNoProjectHolds`**: `glue:GetJob` on
+  `job/*-${aws:PrincipalTag/AmazonDataZoneProject}` with `Null aws:ResourceTag/AmazonDataZoneProject`,
+  the shape of `DescribeAProcessingJobNoProjectHolds` narrowed to the names an application gives its job
+  (`<app>-<project id>`, D41). Another project's job stays out of reach by its tag, an untagged job of
+  another name by its name.
+- **The boundary admits it**: `awsds-sandbox-project-boundary` v2 denies no Glue call (read 2026-10-16).
+- **The apply is the user's.** The measurement after it: delete the `dev` project's job, one `run` of
+  `houseprice-etl` in `dev`, and read whether `GetJob` answers `EntityNotFoundException` and whether the
+  `CreateJob` with the project tag passes with nothing more, unlike the processing job's `AddTags`
+  (decision 6). The negative control is a `simulate-principal-policy` of the `dev` role against the
+  `test` project's job, expected `implicitDeny`.
+
+### [Claude] The statement applied, and the run that measured it
+
+Applied and run by Claude on the user's laptop, authorized by the user in the project thread ("Autorizo
+as leituras e applies necessários", 14:52 UTC; "Autorizado, pode apagar o job e rodar.", 15:18 UTC), as
+the infrastructure user on Sandbox (`awsds-infra-sandbox-1`, `InfrastructureAccess`). Every time is UTC
+on 2026-10-16.
+
+- **[Claude] The apply**, Recipe A from the worktree `.claude/worktrees/lab-glue-getjob-apply` on `main`'s
+  `081f835` (PR #143 merged): the plan `1 to change`, `aws_iam_policy.workflows`, applied at 14:54:25Z;
+  `awsds-sandbox-workflows` is at `v3` with `GetAGlueJobNoProjectHolds`. The plan file
+  `~/tmp/sandbox-workflows-getjob.tfplan` and the worktree stay on the laptop.
+- **[Claude] The negative control, by `simulate-principal-policy` on the `dev` project's role**, read
+  only: `glue:GetJob` on the `test` project's job `implicitDeny`; on a free name ending in the `test`
+  project's id `implicitDeny`; on a free name ending in its own id `allowed`, by
+  `awsds-sandbox-workflows`; on its own tagged job `allowed`, by the managed policy; on a name with
+  another suffix `implicitDeny`.
+- **[Claude] The environment**, by the user's word of 15:01: `make hub-up` (`awsds-prod-vpn`,
+  `awsds-prod-proxy`) at 15:02Z, then `make up ENV=sandbox ONLY=egress AUTO=1` from 15:03Z to 15:06Z,
+  `27 added`, 20 interface endpoints `available` (`glue`, `logs`, `sts` and `kms` among them, with the S3
+  gateway).
+- **[Claude] The job deleted** at 15:18:14Z: `delete-job` exit 0, and `get-job` then
+  `EntityNotFoundException`.
+- **[Claude] A first run, `fQnckqWJpIAnCCX`, from the awsds-workflows example's folder (its PR #20),
+  failed at the render, before any task**: `User template error: DAG template rendering failed: 'dict
+  object' has no attribute 'GLUE_UPDATE_CONFIG'`. The `dev` workflow is still the morning's experiment,
+  `update_config: "{{ params.GLUE_UPDATE_CONFIG }}"` (version `b69b708f`), and that manifest declares no
+  such variable; no worker ran and no Glue call was made. A run without a parameter the definition
+  references fails there, and does not render it empty; a portal run, which passes no
+  `OverrideParameters`, would do the same (inferred, not measured).
+- **[Claude] The run `JO9MJ2BMRo7RL1Z`**, from the lab's D41 copy, whose manifest declares the variable:
+  15:21:56Z to 15:24:15Z (`Duration: 139`), `SUCCESS`, the Glue run `jr_84830791…` `SUCCEEDED`.
+- **[Claude] CloudTrail, the project role's `AmazonMWAAServerless` session**, at 15:22:42Z: `GetJob`
+  `EntityNotFoundException` ("Job not found."), no longer `AccessDenied`; `CreateJob` `ok`;
+  `StartJobRun` `ok`. The task's log: "Checking if job already exists", then "Creating job". The job
+  created carries the project role, the script under `glue/`, the connections rendered,
+  `PythonVersion: "3"` filled by the service, and the tag `AmazonDataZoneProject=avhvbqn37ty7m8`.
+  `CreateJob` with the tag passed under the managed policy's `GlueCreateAndTagPermissions` alone, with
+  nothing like the processing job's `AddTags` (decision 6). With the negative control, the grant is
+  measured on both sides.
+- **[Claude] What stays**: the `dev` workflow in the experiment's form, which a `deploy` of PR #20's
+  example returns to the canonical one at the cost of a version, and whose next run would read PR #20's
+  `PythonVersion`, whether `UpdateJob` stops; the job `houseprice-etl-avhvbqn37ty7m8`, re-created by the
+  operator with the project tag; the policy at `v3`, a `[P]` slice `make down` does not touch.
+- **[Claude] The environment down**, by the user's word of 15:29, the other sessions on the laptop told
+  first: `make down ENV=sandbox ONLY=egress AUTO=1` from 15:30:08Z to 15:40:22Z, the dry run touching
+  `sandbox/egress` alone, no Studio app running, the plan `27 to destroy` and `Destroy complete!
+  Resources: 27 destroyed`, 2 endpoints `available` after it, the baseline before the `make up`; `make
+  hub-down` at 15:40:39Z, `awsds-prod-vpn` and `awsds-prod-proxy` both `stopped` at 15:41:28Z. The
+  day's readings are in `/tmp/medicao-cli/` on the laptop (`d*` the apply, `e*` the `make up`, `f*` the
+  runs, `g*` the `make down`), with the worktree and the plan file, to remove on the user's word.
+- **[Claude] The orphan object deleted**, by the user's word of 23:04 ("pode apagar o arquivo órfão
+  etl_houseprice.py"), as `awsds-infra-sandbox-1`, the other sessions on the laptop told first:
+  `shared/exemplos/houseprice-etl/jobs/etl_houseprice.py` in the `dev` project's `shared/`, `delete-
+  object` at 23:05:58Z. The bucket is versioned, so a delete marker sits over the version of
+  2026-10-15 (`Pwx9Avjf…`), recoverable, and its permanent removal is the user's own act;
+  `glue/etl_houseprice.py`, the layout in use, is untouched, and the `test` project held no orphan.
+- **[Claude] The laptop's copies**, by the user's words of 23:04: `/tmp/medicao-cli/` (1.6 MB) and
+  the lab copies `/tmp/houseprice-etl`, `/tmp/houseprice-etl-d41`, `/tmp/awsds-workflows` and
+  `/tmp/valores-lab.json` moved to `~/.Trash/tmp-lab-residues-2026-10-16` (3.6 MB), and the 80 plan
+  files of `~/tmp` (2026-08-19 to 2026-10-15) to `~/.Trash/tmp-tfplans-2026-10-16` (4.0 MB), nothing
+  deleted for good: the Trash is the user's to empty.
+- **[Claude] What stays in Sandbox**, idle at no cost, since the user's word named the files: the
+  two workflows the CLI deployed, `houseprice_etl_eighth_experimentation_houseprice_etl` in `dev`
+  and `houseprice_etl_test_experimentation_houseprice_etl` in `test`, the two Glue jobs `houseprice-
+  etl-<project id>` and `shared/exemplos/houseprice-etl/` in both projects. Deleting a workflow
+  takes the measurement's run history with it; the logs stay in CloudWatch.

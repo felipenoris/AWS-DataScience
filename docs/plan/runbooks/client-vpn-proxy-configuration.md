@@ -304,5 +304,5 @@ secure" and `git clone` refuses the certificate; the tunnel and the proxy are no
 
 ---
 
-*Runbooks: [`vpn.md`](vpn.md) · [`buildbox.md`](buildbox.md) · [`sandbox-lake.md`](sandbox-lake.md) ·
+*Runbooks: [`vpn.md`](vpn.md) · [`gitlab.md`](gitlab.md) · [`sandbox-lake.md`](sandbox-lake.md) ·
 [`terraform-changes.md`](terraform-changes.md) · Plan core: [`GENERAL_PLAN.md`](../../GENERAL_PLAN.md)*

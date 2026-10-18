@@ -35,6 +35,12 @@ variable "consumers" {
   nullable    = false
 }
 
+variable "app_consumers" {
+  description = "The accounts that pull an application image (APP_REGISTRY_CONSUMERS in scripts/tfhygiene/backend.py, Stage 8 step 2.4): Sandbox while an application is engineered, Staging from step 3.0. A different list from `consumers`, which carries the dev-env image and the packages (Lesson 51). Each key needs an aliased identity in providers.tf."
+  type        = map(object({ profile = string, env = string }))
+  nullable    = false
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
   type        = string

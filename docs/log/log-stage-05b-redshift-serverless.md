@@ -957,3 +957,109 @@ update operations" once it returns.*
   `enable_large_strings_opt_in`, so the key is withdrawn as the notice says.
 - `terraform plan -detailed-exitcode` on 6.68.0 against that workgroup: **`No changes`**, exit 0.
 - Owed: the same plan after 2026-10-13, the reading that shows the key returned and ignored.
+
+## 2026-10-17 — 6.1 answered, the admin secret's first rotation dated, and the bill carries no Redshift line
+
+*Written by Claude in a session with the environment down, at the user's request to advance what needs
+no environment. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`). Two Cost Explorer calls were spent, at 0.01 USD each.*
+
+### 6.1 — the Data API path can be logged, and mostly was not
+
+The three groups, read over their whole retention, hold one window of user activity: the `dbadmin`
+sessions of 2026-09-21 03:00:23 → 03:23:32 through the Data API, 180 records in `connectionlog`
+(password authentication from `127.0.0.1`, `application_name` *Amazon Redshift Data API - <statement
+id>*) and their 108 statements in `useractivitylog`. Against CloudTrail's 268 `ExecuteStatement` calls
+of 2026-09-20 and 2026-09-21, matched by statement id, that window holds 36 and misses 232, every call
+of this stage's sitting among them: they ran from 06:18:01, after the export's 2026-09-20 window had closed at 06:16:11. So the
+open half of 6.1 is answered: the path is logged when the export carries anything, and the export
+carries little. Nothing reaches any group while a workgroup exists after 2026-09-21 05:43:33, which is
+`EXC-16` as it now stands; the tables and the reasoning are in
+[6h's log](log-stage-06h-redshift-connection.md), entry of 2026-10-17. `AUDITMARKER20260920` is in no
+record of the window.
+
+### `EXC-13` — the first rotation is due by 2026-10-20 01:59:59Z
+
+`describe-secret` on `redshift!awsds-sandbox-warehouse-dbadmin`, 21:08Z:
+
+| Field | Value |
+|---|---|
+| `RotationEnabled` | `true` |
+| `RotationRules` | `rate(30 days)`, `Duration: 2h` |
+| `LastRotatedDate` | none |
+| `NextRotationDate` | 2026-10-20T01:59:59Z |
+| `CreatedDate` | 2026-09-20T06:00:44Z |
+| `OwningService` | `redshift` |
+
+So the first rotation falls in a two-hour window that ends 2026-10-20 01:59:59Z. If the `[E]` workgroup
+is down then, `EXC-13` predicts that rotation fails. The reading after that time is `LastRotatedDate`
+and the secret's rotation events in CloudTrail.
+
+### The bill — Cost Explorer carries no Amazon Redshift line for Sandbox
+
+`ce get-cost-and-usage` for `<Sandbox Account 1>`, 2026-09-18 → 2026-10-18:
+
+- filtered to `SERVICE = Amazon Redshift`, daily, grouped by `USAGE_TYPE`: **no group on any day**;
+- grouped by `SERVICE`, monthly: 2026-09-18 → 09-30 is not estimated and carries twelve services, the
+  largest Amazon Virtual Private Cloud 5.3826, Amazon SageMaker 4.5196 and AWS Config 1.9260 USD;
+  2026-10-01 → 10-17 is estimated and carries fourteen. Amazon Redshift is in neither.
+
+Against that, `ComputeSeconds` measured 94,767 RPU-seconds on 2026-09-20 alone (9.4767 USD at the
+offer's rate), the workgroup existed again on 2026-09-23, 2026-10-10, 2026-10-11 and 2026-10-16, with
+queries on 2026-10-10 and 2026-10-16, and RMS storage bills with no workgroup at all. September is a closed month and every other service is in it,
+so Cost Explorer's lag does not explain the absence.
+
+**So the bill and the credits page disagree.** AWS writes that free-trial usage *"does not appear in
+the billing console"* until the trial ends, and an absent line is what that looks like. On 2026-09-20
+the user read the Management credits page and it showed no credit, which is why verification xiii was
+taken as *no trial* and the 9.4767 USD as billed. Neither reading settles the other.
+
+**Owed to the user**: the trial's status in the Redshift Serverless console of `<Sandbox Account 1>`
+(its free-trial notice and credit balance), or the September invoice read in Management. Until then
+the stage's cost figures are `ComputeSeconds` figures, verification x cannot be read from the bill, and
+`WH-15` stays the instrument.
+
+## 2026-10-17 — the free trial is active, and the compute reconciles with it
+
+*The reading is the user's, in the Redshift Serverless console of `<Sandbox Account 1>`, Serverless
+dashboard, pasted verbatim in the project thread at 23:19Z. The reconciliation under it is Claude's, as
+`awsds-infra-sandbox-1` (permission set `InfrastructureAccess`), from CloudWatch.*
+
+**[user]**
+
+```
+Free trial credits remaining $287.90 out of $300.00
+Free trial expiration December 19, 2026
+```
+
+**[Claude] What it settles.**
+
+- **Verification xiii: the trial is active.** The Management credits page that showed no credit on
+  2026-09-20 does not carry this trial; the Redshift console does, as AWS's console page says
+  (*"Free trial – This section shows the free trial credits remaining in your AWS account"*). So none of
+  this stage's spend was billed, and Cost Explorer's missing Redshift line is the trial, as AWS writes.
+- **When the 90 days started (0.3a): at first use.** 2026-12-19 is 90 days after 2026-09-20, the day the
+  namespace and the first workgroup were created; no earlier act in this account touched the service.
+- **12.10 USD consumed, and `ComputeSeconds` accounts for 11.91 of it.** The metric's sum since
+  2026-09-19, by the hour, on `Workgroup=awsds-sandbox-warehouse` (the other dimension, `default`,
+  holds zero):
+
+  | UTC | RPU-seconds |
+  |---|---|
+  | 2026-09-20 06:00 → 13:59 (the runaway query of 5.3) | 94,767 |
+  | 2026-09-20 15:00 | 3 |
+  | 2026-09-21 03:00 (the admin's Data API session) | 9 |
+  | 2026-10-10 03:00 → 06:59 | 109 |
+  | 2026-10-10 16:00 → 18:59 | 24,220 |
+  | 2026-10-10 20:00 | 30 |
+  | **total** | **119,138 = 33.0939 RPU-hours = 11.9138 USD** |
+
+  The remaining 0.19 USD fits RMS storage, at most 1,596 MB for four weeks, and rounding (inferred). So
+  the console's balance and the metric agree within two percent, and `ComputeSeconds` stays the
+  instrument while the trial runs.
+- **Decision 9 is live again.** 287.90 USD and 63 days remain; the second window, Production's, opens
+  at that account's first use (Stage 9 pass 6), and its balance is read there before and after.
+- **What the bill will show after 2026-12-19** is the first Redshift line this estate pays; verification
+  x reads it then.
+
+The console page: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.

@@ -302,8 +302,8 @@ locals {
     # points a reader at the R version instead of at the perimeter.
     #
     # What it does not buy: CRAN serves SOURCE packages, so anything with C or Fortran compiles in
-    # the space, and `images/dev-env/r/conda-packages.txt` stays the delivery path for the binary
-    # half. The pure-R half now installs from a notebook.
+    # the space, and `gitlab/awsds/dev-env/dev-env/r/conda-packages.txt` stays the delivery path for
+    # the binary half. The pure-R half now installs from a notebook.
     "cloud.r-project.org",
     # conda stays OFF, by the same decision. `repo.anaconda.com` and `conda.anaconda.org` are the
     # image build's channel and `production-foundation` is `open`, so a build reaches them; a solver
@@ -409,11 +409,11 @@ locals {
     "openvsx.eclipsecontent.org",
     # Anthropic's direct API, allowed 2026-09-19 (the user). Claude Code reaches this family when it
     # is not pointed at Amazon Bedrock. `CLAUDE_CODE_USE_BEDROCK` is the first entry in the client's
-    # credential precedence and it lives in `images/dev-env/claude-code/managed-settings.json`, so a
-    # space whose copy of that file is edited or removed falls back to the OAuth login these names
-    # serve. The house image as shipped reaches none of them: its call goes to the `bedrock-runtime`
-    # endpoint, and `skipWebFetchPreflight` closes the one call that would come here whatever the
-    # provider.
+    # credential precedence and it lives in
+    # `gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`, so a space whose copy of
+    # that file is edited or removed falls back to the OAuth login these names serve. The house
+    # image as shipped reaches none of them: its call goes to the `bedrock-runtime` endpoint, and
+    # `skipWebFetchPreflight` closes the one call that would come here whatever the provider.
     #
     # The four are the sign-in half of the vendor's network table (`docs/REFERENCES.md`, read
     # 2026-09-19), and the first two are what the space itself needs:
@@ -474,9 +474,8 @@ locals {
   # reachable from a notebook.
   #
   # The plane is a CIDR, not a host (Lesson 29), which is the sentence to re-read before adding
-  # anything to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC - the buildbox today, the
-  # GitLab runners when Stage 7 puts them there - and anything else that lands in it inherits
-  # `open` too. A host that should not have the open internet belongs in a VPC with its own plane.
+  # anything to `VPC-SharedServices`. `10.30.0.0/16` is the whole VPC - GitLab and the build runner
+  # since Stage 7 - and anything else that lands in it inherits `open` too. A host that should not have the open internet belongs in a VPC with its own plane.
   #
   # Empty, like the tunnel's: everything permitted, everything logged, and this list filled when
   # there is a written policy to fill it from. An entry here would be a name a build may not fetch,

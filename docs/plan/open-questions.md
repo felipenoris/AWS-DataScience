@@ -22,8 +22,8 @@ follows is still unanswered:
    failed run — Serverless has run/task APIs, a console page, per-task log streams and (since 2026-06)
    EventBridge events, but no Airflow web interface (read 2026-08-16). Stage 10 measures it in step 3.2's
    diagnosis session and answers it in its decision 11. Keep application entry points as plain containers
-   so design B (INT-14's terminal fallback), SageMaker Pipelines and self-managed Airflow, all documented
-   and not built, remain viable.
+   so SageMaker Pipelines and self-managed Airflow, both documented and not built, remain viable; design
+   B is the chain layer above the workflows since D41 (2026-10-15), not a replacement for them.
 3. ~~**AZ name-to-ID mapping across accounts**~~ — **measured 2026-08-12 in Stage 1b step 6.** Every
    account that has a profile returns an identical mapping (`us-west-2a` → `usw2-az2`, `b` → `az1`,
    `c` → `az3`, `d` → `az4`; the names are *not* in ID order). The full table is in
@@ -634,6 +634,21 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     the document for an unrelated reason, and the prose version number in `s3.tf:15` was stale for an
     unknown part of that window. **Scope, storage and procedure are still the user's to decide**; the
     frequency argument is no longer hypothetical.
+    **Read again 2026-10-17: three of the four had moved, and nothing removed a permission.**
+    `SageMakerStudioProjectUserRolePolicy` **v75** (2026-08-27: `glue:RefreshOAuth2Tokens` on two Glue
+    connection statements; 6d step 10.1 read that version on 2026-09-12).
+    `SageMakerStudioProjectRoleMachineLearningPolicy` **v45** (2026-10-14): `DataZoneUserPermissions`, on
+    `*`, gains `datazone:Get*`, `*Agent*`, `*DataApp*`, `CreateSubscriptionRequest`, `RevokeSubscription`
+    and `CreateListingChangeSet`; a new `SSOReadOnlyPermissions` statement; `s3:GetAccessGrantsInstance`
+    and `ListAccessGrants` in `ConsumerS3AGPermission`; and `sagemaker:UpdateUserProfile` and
+    `DescribeAppImageConfig`. `SageMakerStudioProjectProvisioningRolePolicy` **v84** (2026-10-12): a new
+    `DataZoneEnvironmentResources` statement (`datazone:*Connection`, `*DataSource`,
+    `*SubscriptionTarget` on `*`), `glue:UpdateDatabase` beside `DeleteDatabase`, `datazone.amazonaws.com`
+    as a pass-role target, and `aws:cloudformation:*` tag keys on `EmrSCreate`. The knowledge-base policy is
+    still v9, and `GetS3GenAI` is still byte-identical, so `s3.tf`'s argument stands again. One addition
+    meets a question this file holds: the project role's `datazone:Get*` now covers
+    `GetEnvironmentCredentials`, which question 20 asks of the governance manager's set. Again it was read
+    by hand, for an unrelated sweep.
 
 ### Raised by the 2026-08-25 objectives clarification
 
@@ -711,6 +726,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     The seats have so far served the projects' own storage and databases, never the lake. What stays
     open is whether a subscription changes that, and whether a permission narrower than an administrator
     seat would carry what the trail shows. `./aws/datalake.py` `DL-14` reads the registrations.
+    **Re-read 2026-10-17, unchanged**: the same three admins, and over 142 Lake Formation and 2,062 Glue
+    events since 2026-09-12 neither seat touched `raw` or `curated`. The provisioning seat's second burst,
+    2026-10-15 06:05–06:08Z, served the new project `test-experimentation` in the same pattern: its `dev/`
+    registered, grants under the `projectId` condition, a database `test`, and a Glue `UntagResource`
+    refused.
 
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
@@ -722,7 +742,8 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     The reading that answered verification (xviii) found the bucket has **no expiry on
     current objects** (versioning, a 90-day noncurrent rule and MPU abort are all the house module gives
     it) and that **deleting a project leaves its whole prefix behind** — five project prefixes stood
-    against one live project, one orphan carrying a complete `.git` tree and a notebook. Neither is a
+    against one live project, one orphan carrying a complete `.git` tree and a notebook (re-read
+    2026-10-17: six prefixes against two live projects, so four orphans still, lifecycle unchanged). Neither is a
     defect: no step ever decided this bucket's lifecycle, because until the same reading it
     was believed to be a service's working area rather than a **designed destination for query results
     over governed data** (the project's own enforced Athena workgroup writes into it —
@@ -757,10 +778,17 @@ policy set lives in code, which is Stage 2 step 5's mandate.
 ### Raised by the user, 2026-08-26 — the promotion half of the re-homing
 
 26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
-    **Half of this is answered (2026-09-05):** the SageMaker Unified Studio CI/CD CLI is what carries a
-    project's content, and it is an **exporter** here, because it deploys only into existing SMUS
-    projects and a deployment target has none (D26/D28 amended). The `gitConnectionArn`-is-createOnly
-    half stays open.
+    **The mechanism half is answered (2026-09-05, revised 2026-10-15 by
+    [D41](decisions/D41-sagemaker-application.md)):** the repository holds the application, the SageMaker
+    Unified Studio CI/CD CLI deploys it from the repository into the `dev` and `test` projects and makes
+    the bundle the pipeline promotes; what a space produces reaches the repository by `git` from the space
+    (INT-13's accepted path). The CLI deploys only into existing SMUS projects and a deployment target
+    has none, so the pipeline stays the deployer there (D26/D28 amended). The
+    `gitConnectionArn`-is-createOnly half stays open at the service: the CloudFormation schema of
+    `AWS::DataZone::ProjectProfile` (read 2026-10-17) is `FULLY_MUTABLE` with only `DomainIdentifier` and
+    `UseDefaultConfigurations` create-only, and names no git property, so `gitConnectionArn` can only be a
+    parameter override inside the mutable `EnvironmentConfigurations`; whether the service refuses changing
+    it is not readable from the schema.
     The re-homing made the SMUS project path the derived zone ([D19](decisions/D19-derived-zone.md)
     revised), so a scientist's output now lives in `dev/sys/athena/` (where the project's enforced
     workgroup writes) and `shared/` (the folder JupyterLab mounts). **The promotion contract on the
@@ -799,7 +827,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
       which **already happens**: an orphaned project prefix carries a complete `.git` tree, put there
       from inside the notebook by no mechanism this plan designed (Stage 6 step 2.4's reading). The
       choice is between a designed door and an undesigned one that is already open.
-    - **Which of D28's six classes a project can produce at all.** Application code and a workflow
+    - **Which of D28's classes a project can produce at all.** Application code and a workflow
       definition, yes. **A model version, not without deciding who registers it** — D28 item 6 gives
       registration and approval to the *pipeline*, so a model trained interactively has no stated path
       into the Production registry except a pipeline that re-trains it, and nothing has ever said which

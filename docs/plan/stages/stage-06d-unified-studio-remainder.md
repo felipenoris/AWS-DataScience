@@ -63,6 +63,11 @@ contrast: the **wording** is the evidence, not the exit code.
   session in the Sandbox project. Read the refusal wording — it must name the policy.
 - **1.2 — [user] Submit the accepted job**: the same job with the project's subnets and an allowed instance
   type. It runs.
+- **1.3 — recorded 2026-10-17 for the project role, from the trail.** Every `CreateTrainingJob` since
+  2026-08-20 (six, the portal's notebook task) is refused *"with an explicit deny in a permissions
+  boundary"* naming `awsds-sandbox-project-boundary`; 6i's four accepted `CreateProcessingJob` of
+  2026-10-11 carry network isolation and both private subnets. The wordings are in the log. The persona's
+  pair is still 1.1's.
 - **1.3 — [Claude] Record the contrast**: both wordings into the log. If the refusal names a different
   document than expected, the attribution is a contrast probe, not a re-reading (Lesson 24).
 
@@ -151,7 +156,10 @@ work at all* — is still open.
   whether it appears in the list without any further act.
 - **2.4 — the before half read 2026-09-12; the after half waits on a reconciliation.** `./aws/studio.py`:
   `US-1`..`US-10` pass, the domain's `DefaultUserSettings` naming image version 4 on both app types. Nothing
-  here provokes a reconciliation, so the diff is taken the first time one happens.
+  here provokes a reconciliation, so the diff is taken the first time one happens. **Re-read 2026-10-17:
+  one happened and did not write the domain.** DataZone updated the environment's stack on 2026-10-11
+  22:05:48Z through the provisioning role, and no `UpdateDomain` by a service followed; both domains still
+  name the image with no version number. A reconciliation that rewrites the domain is still unseen.
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
 - **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
@@ -190,7 +198,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   are image-delivered, so the step stands narrowed to those ecosystems. The sitting is
   [`log-stage-06d`](../../log/log-stage-06d-unified-studio-remainder.md), 2026-09-08.
 - **3.1 closed for `uv` and Julia, 2026-09-10, in a space on the house image.** `uv` is
-  `/opt/conda/bin/uv` 0.12.5 (the base's, `images/base` section 3): `uv init` + `uv add pandas`
+  `/opt/conda/bin/uv` 0.12.5 (the base's, `gitlab/awsds/dev-env/base` section 3): `uv init` + `uv add pandas`
   resolved and installed **5 packages in 1.56 s** once the six variables were exported — and failed
   before that, which is the same reading 3.1 took on the stock image in another form. Julia 1.12.7
   from the baked depot added `InterestRates` with its four dependencies and precompiled them in 4 s,
@@ -201,7 +209,7 @@ is the one the environment will have. A denied name is a decision to take, not a
 - **The image's Python layer was rewritten the same day, on the user's decision.** No package of ours
   goes into the distribution's environment any more and its default kernel is untouched: uv builds a
   **second, independent** environment under `/opt/awsds` on a uv-managed CPython, from
-  `images/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
+  `gitlab/awsds/dev-env/dev-env/python/pyproject.toml` and its committed `uv.lock`, and registers a second Launcher
   kernel (`awsds-python`, *Python (awsds dev-env)*). The list is seeded to the distribution's own
   library surface, and then **diffed against it**: `cpu.env.in` for SMD 4.3.0 names 71 packages, of
   which 30 were already covered and 6 are tooling rather than libraries. Of the 36 missing, 24 are
@@ -216,7 +224,8 @@ is the one the environment will have. A denied name is a decision to take, not a
   (`aws-glue-sessions` → `notebook`; the SMUS sessions package → `sparkmagic` → `notebook`): files on
   disk that nothing starts, since the server a space runs is the base environment's. Three measurements came out of writing it, all from `uv lock` on the laptop rather
   than from a build: **TensorFlow has no wheel past `cp313`**, which is what set the interpreter —
-  the user kept the framework and moved the Python to **3.13** rather than the newest; the default
+  the user kept the framework and moved the Python to **3.13** rather than the newest (and to the
+  distribution's **3.12** on 2026-10-14, Stage 8 decision 13, from `default-v0.7.0`); the default
   PyPI `torch` pulls **3.03 GiB of `nvidia-*`** into a CPU image, so torch and torchvision come from
   PyTorch's CPU index; and `xgboost` pulls `nvidia-nccl` (241 MiB), so the dependency is
   `xgboost-cpu` — which is the same choice the distribution makes (`py-xgboost-cpu` in its own
@@ -250,7 +259,7 @@ is the one the environment will have. A denied name is a decision to take, not a
     read `403` fourteen minutes earlier. conda's
     two names stay off: the build plane is `open` and reaches them, and a solver run inside a space would
     move the distribution's own pins. What CRAN does not buy is the compiled half — it serves source
-    packages, so `images/dev-env/r/conda-packages.txt` stays the delivery path for anything with C or
+    packages, so `gitlab/awsds/dev-env/dev-env/r/conda-packages.txt` stays the delivery path for anything with C or
     Fortran in it.
 - **Rust is read in a remote session, 2026-09-11, and it names an image defect.** `cargo` fetched
   `index.crates.io` (2.07 MiB) and `static.crates.io` (0.34 MiB) through the proxy while
@@ -259,7 +268,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   `sysroot_path=/opt/rust/rustup/toolchains/1.98.0-…`: the image installs the toolchain with rustup's
   **`minimal` profile**, which does not carry `rust-src`, so the standard library is not indexed —
   completion, hover and go-to-definition for `std` are lost, and nothing else is. Fixed in
-  `images/dev-env/Dockerfile` (`--component rust-src`), which means the **next build**; it is not
+  `gitlab/awsds/dev-env/dev-env/Dockerfile` (`--component rust-src`), which means the **next build**; it is not
   repairable from a space, since `RUSTUP_HOME` is root-owned under `/opt` and a `sudo rustup component
   add` dies with the container.
 - **3.1 — [user] Install packages** from a JupyterLab terminal, one ecosystem per command, and paste each
@@ -269,7 +278,7 @@ is the one the environment will have. A denied name is a decision to take, not a
   and Rust (`crates.io`, `rust-lang.org`) **are on it**; **`conda` (`repo.anaconda.com`,
   `conda.anaconda.org`) and CRAN (`cloud.r-project.org`) are not** — each is a `403` naming the host in
   the proxy's log, and a decision (due 6): allow the name on the compute plane, or record the loss and
-  keep the ecosystem image-delivered (`images/dev-env/`'s premise). CodeArtifact needs no endpoint in
+  keep the ecosystem image-delivered (`gitlab/awsds/dev-env/dev-env/`'s premise). CodeArtifact needs no endpoint in
   Sandbox: `.amazonaws.com` is on the plane, so INT-02's consumer half is proved **through the proxy**.
 - **3.2 done 2026-09-08, on two channels.** The instrument was `sts:GetCallerIdentity` rather than
   `aws s3 ls` — the call the session made — and CloudTrail carries **`vpcEndpointId`
@@ -441,8 +450,9 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   - **The scope is the whole estate, not this object.** The refusal is on the **project role** under the
     **project boundary**, and every Sandbox project gets both from the same blueprint: this is **every
     SMUS workflow whose task is a notebook execution, in every project here**, reproducible by
-    re-authoring in the portal. **Other task types**: a query book or a visual ETL task is unmeasured
-    and may never reach `CreateTrainingJob`; a portal-authored `S3CopyObjectOperator` task finished
+    re-authoring in the portal. **Other task types**: a query book or a visual ETL task is unmeasured,
+    and the documentation read 2026-10-13 schedules both as a training job ([`docs/SMUS.md`](../../SMUS.md),
+    the workflow surface); a portal-authored `S3CopyObjectOperator` task finished
     `SUCCESS` as the project role (`simple-s3-copy`, 2026-09-10, read 2026-10-10 in the log's sixteenth
     sitting). Everything else on the surface works: authoring, versioning,
     triggering, logging, the workers' network and the identity (4.1, 4.4, 4.6). One act fails, the
@@ -494,9 +504,16 @@ neither has been measured once.
   `AWSServiceRoleForAmazonSageMakerNotebooks` deleted the JupyterLab space's app at 20:40:30 −03 and the
   `editor` Code Editor app at 20:47:20 −03, `FailureReason` null on both; the Code Editor app had run 63
   minutes. The **threshold** stays unanswered: neither app was watched against its configured value, and
-  one deletion time is not the measurement of an interval. The step stands for that half.
+  one deletion time is not the measurement of an interval. The step stands for that half. By 2026-10-17
+  the same role had deleted 23 apps since 2026-09-12, so the mechanism fires routinely; the threshold is
+  still unread.
 - **5.1 — [user] Observe idle shutdown**: leave a space idle past its threshold and read the app's
   disappearance (verification (x)'s second half).
+- **5.2 — read from the trail 2026-10-17, half of it.** Ten of the fifteen endpoint teardowns since
+  2026-09-12 follow the infrastructure user's `DeleteApp`, 1 min 57 s to 9 min 28 s before the first
+  `DeleteVpcEndpoints`; in the other five no such call appears, twice because the project role had
+  deleted its own apps. Whether an app was left running is not readable from the trail, so `US-10`
+  after a teardown is still the reading.
 - **5.2 — [user] Run the teardown**: `make down ENV=sandbox` deletes every running app and touches nothing
   else; `US-10` reads zero running apps (verification (xi)).
 - **5.3 — done 2026-09-12**, into [`conventions.md`](../conventions.md) §5.1 as a table of owner, layer,
@@ -527,9 +544,11 @@ than intended.
   portal creates. **(xix) an S3 call from a project subnet presents `vpce-0cc3e139c1167ca83`**, the
   account's S3 gateway endpoint, measured on every `GetDataAccess` from a space. Read in the same
   call and recorded because nothing else names them: `AllowExternalDataFiltering` false, and
-  `Parameters` carrying `CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE`. **Still owed: (iii) and
-  (viii), which need a space; (xvi), which needs a subscription and belongs with
-  [6f](stage-06f-data-governance.md) step 2.2; and (xvii), which is an attempt rather than a read.**
+  `Parameters` carrying `CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE`. **(iii) answered 2026-10-17
+  by reading**: both SageMaker domains, the second project's included, are `VpcOnly` on one subnet in
+  `usw2-az1` and one in `usw2-az2`. **Still owed: (viii), which needs a space; (xvi), which needs a
+  subscription and belongs with [6f](stage-06f-data-governance.md) step 2.2; and (xvii), which is an
+  attempt rather than a read.**
 - **6.1 — [Claude and user] Answer iii, viii, xiv, xv, xvi, xvii and xix**: the two-AZ blueprint acceptance;
   a VPC-only space starting on the endpoint set under design B; whether the blueprint's manage-access role
   must be a Lake Formation administrator (open question 24's other half); whether a blueprint-created
@@ -1224,6 +1243,9 @@ second. Opening the ceiling before 10.2 is answered would turn an accident into 
   | the D13 boundary | allows: its one deny keys on `sagemaker:InstanceTypes`, absent from a `q:` request, so the `ForAnyValue` condition is false |
   | SMUS | *"by default, all users of an Amazon SageMaker unified domain have access to the Free Tier release of Amazon Q"*. The vendor names two SSM parameters, `/amazon/datazone/q/<domain-id>` and `…/q-enabled`, as the domain's switch. **Neither exists**: a direct `get-parameter` on both returned `ParameterNotFound` in `Data Governance`, where the domain lives, and in `Sandbox` — a named refusal rather than an empty listing, so the absence is read, not inferred (`AccessDenied` would have been the other answer). The switch was never created, so the default holds |
 
+  **Re-read 2026-10-17, unchanged:** v75 without `q:PassRequest`, v23 with it, 92 `NotAction` entries
+  with no `q:` or `codewhisperer:`, and both SSM parameters `ParameterNotFound`.
+
   **What this does not establish (Lesson 20):** the refusal names the SCP. Whether the service accepts
   the call past it is unknown until the ceiling opens, and 10.7 is the reading.
 
@@ -1410,7 +1432,9 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    already passes every name Amazon Q uses, and what refused it was the Control Tower Region ceiling. The
    question that remains is decision 9's.
 2. **Which portal surfaces of the optional endpoint table this estate actually uses** (3.6) — each one used
-   is an endpoint to add, each one unused is a line not to pay for.
+   is an endpoint to add, each one unused is a line not to pay for. Read 2026-10-17: the Query editor's
+   239 `sqlworkbench` calls since 2026-09-12 all came from the browser, none through an endpoint, so that
+   surface needs none.
 3. **Whether a space is created with remote access enabled, and whether that becomes the default** (7.3).
    Recommended: one space by hand, default off until 7.7 reads the 12-hour residual.
 4. **Which connection method is the estate's, and where the tag-scoped `StartSession` pair belongs** —
@@ -1526,7 +1550,7 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    suffix form** (fits, and `UpdateAppImageConfig` would make a change an in-place apply — at the price
    of a perimeter change, since every AWS name in the Region would then bypass the proxy and a service
    with no endpoint would become a silent timeout rather than a public call).
-   **Delivered in code the same day**: [`images/dev-env/Dockerfile`](../../../images/dev-env/Dockerfile)
+   **Delivered in code the same day**: [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile)
    §6 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
    **`NO_PROXY` as a dated literal** — Sandbox's, 50 entries, sha256 `856bc57bb…` — and the command
    that refreshes it in the comment beside it; the `ARG` stays as its default, so another account
@@ -1537,8 +1561,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    re-attach, and no gate sees it. Two readings make it visible instead — `./aws/devenv.py`
    (`DE-1`..`DE-4`) compares the literal with the account's current output and names each side's extra
    entries, and `/opt/awsds-proxy.txt` inside a space carries the digest of what was actually baked;
-   [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Owed: the rebuild.** `default-v0.1.1` predates this, so `image_tag` stays where
-   it is until a buildbox session pushes the next tag.
+   [`runbooks/dev-env.md`](../runbooks/dev-env.md) §E carries the chain and both comparisons. **Rebuilt**: `default-v0.2.0` (2026-09-11) was the first image to carry the literal, and every release
+   since has ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) §*The releases*).
 9. **Whether Amazon Q Developer's Free tier is opened at all** (10.2). As written, it does not meet the
    persistence clause Stage 6e was built to satisfy: the content is stored in AWS's `us-east-1`, outside
    the estate, under no setting this estate can declare. Open it as a `Sandbox` residual with its own row in
@@ -1572,6 +1596,11 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     alias, which is how the distribution is referenced. The deny would sit on the D13 boundary, which
     reaches the project role that creates apps. **Its cost is the SMUS default JupyterLab space**, which
     runs `sagemaker-distribution-cpu` and would stop starting unless AWS's image is exempted by ARN.
+    **Read from the trail 2026-10-17** (113 `CreateApp` since 2026-09-12): a start a person makes always
+    names `sageMakerImageArn`, AWS's image by an alias and never by a version ARN; the service's own
+    start when a space is created, `invokedBy` SageMaker on the project role's session, sends
+    `resourceSpec: {}`, 26 times. So the deny meets an absent key on one start in four and needs a `Null`
+    case, or that start runs on the space's default image.
     Recommended: probe it in `Policy Canary` first, then choose between house-image-only and
     house-image-plus-AWS's-distribution.
 14. **Whether the portal's notebook operator runs in this estate** (step 4, the 2026-09-10 re-runs). A
@@ -1585,7 +1614,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     not offer. **(c)** Record the loss. **Recommended: (b)**: the boundary stays intact, and Stage 10
     authors its own DAGs anyway. The refusal belongs to this operator, not to the surface: a
     portal-authored `S3CopyObjectOperator` task finished `SUCCESS` as the same role (`simple-s3-copy`,
-    2026-09-10). Query-book and Visual ETL tasks are unmeasured and may never reach `CreateTrainingJob`.
+    2026-09-10). Query-book and Visual ETL tasks are unmeasured; the documentation read 2026-10-13
+    schedules both as a training job ([`docs/SMUS.md`](../../SMUS.md), the workflow surface).
     **Taken 2026-10-10 (the user): (b).** The boundary stays as it is, and *Workflows → notebook task* is
     a portal feature this estate does not offer. Workflows orchestrate with operators this repository
     controls, and the implementation explores `PythonOperator` and `BashOperator`, whose code travels as

@@ -266,15 +266,16 @@ Consequences this file has to carry rather than leave to a stage:
   CREATE` and nothing at table level, so a table belongs to the database user that created it, and another
   project reads it only through a default privilege written for that creator: `SELECT`, never `INSERT` or
   `DROP`, and widening it is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8's. Measured
-  2026-10-10 on the first tables a project wrote; the second project that would exercise it does not exist
-  yet (6h 5.2b).
+  2026-10-10 on the first tables a project wrote; no second project is admitted to exercise it (6h 5.2b).
+  The account's second project, `test-experimentation` (2026-10-15), is D41's `test` project, not admitted
+  to the warehouse.
 - **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
   assumes the project's access role, reach the database as one per-project user; a notebook that connects
   directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
-  2026-10-10). So the database attributes work to a project, never to a person, and whether CloudTrail
-  still names the person on the chained session is unread (6h verification xv). The SQL itself would be in
-  the warehouse's audit export, which has been stopped since 2026-10-10T03:09:06Z (`EXC-16`), so
-  [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
+  2026-10-10). So the database attributes work to a project, never to a person, while CloudTrail still
+  names the person on every door, the chained session included (6h verification xv, read 2026-10-17).
+  The SQL itself would be in the warehouse's audit export, which carries nothing while a workgroup exists
+  (`EXC-16`), so [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
   federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
@@ -704,18 +705,24 @@ flowchart LR
 
 ### Promotion — Sandbox → Staging → Production
 
-- **The repository is the promotion vehicle** (D21, D28). The application follows the `app-etl` template
-  in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's artifact classes — the image,
-  the workflow definition, a per-workflow execution role, the orchestration resource, its log group and,
-  for ML, the model package group — carried by the repository, never by the portal.
+- **The repository is the promotion vehicle** (D21, D28, D41). The application is a SageMaker application
+  on the `app-etl` template in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's
+  artifact classes — the image, the workflow definition, the code its tasks read from S3, a per-workflow
+  execution role, the orchestration resource with its chain's state machine and schedule, its log group
+  and, for ML, the model package group — carried by the repository, never by the portal.
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
-  Steward's gate; the application pipeline tests, lints and builds the image on a release tag; the
-  promotion pipeline applies the tag into Staging, runs the integration tests, tears Staging down,
-  pauses at the Deployment Manager's manual gate with the test results and the Production plan in front
-  of them, and applies into Production as `awsds-deploy-prod`.
-- **A workflow is authored in a Sandbox project and rewritten into the repository** (Stage 10 steps
-  2.1-2.2): the D28 lint refuses anything portal-scoped, and the definition is deployed to
-  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role.
+  Steward's gate; the application pipeline tests, lints and builds the image and the application's code
+  package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
+  the Sandbox `test` project and run it there, and stores the bundle in Production's releases bucket,
+  which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20); the
+  promotion pipeline applies the tag and that bundle into Staging, runs the integration tests, tears
+  Staging down, pauses at the Deployment Manager's manual gate with the test results and the Production
+  plan in front of them, and applies into Production as `awsds-deploy-prod`.
+- **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
+  deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
+  portal-scoped in the copy rendered per account, and in Production the definition is deployed to
+  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
+  by its chain's state machine.
 - **Staging tests against a mirror.** Its databases carry the lake's names, definitions and LF-Tag keys
   and values over sampled or synthetic rows (Stage 9 4.1), and no share reaches it (D20). The integration
   test catches schema, permission and wiring errors against the same definitions; the cross-account

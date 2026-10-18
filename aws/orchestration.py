@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run --quiet
 # orchestration.py - Stage 10's evidence: the MWAA Serverless workflows in Staging and
-# Production (D7 amended: one orchestrator, design B not built), with their per-workflow roles
-# (boundary, trust, the D13 absences), their NetworkConfiguration (present, two AZs, no default
-# route), the named log groups with retention (D28 item 5), the failure rules and the
-# model-approval rule, recent runs (the schedule evidence), the absence of any provisioned MWAA
-# environment, the definitions home, and the registry's register/approve record (INT-07's
-# registry half, consumed).
+# Production (D7 amended: one orchestrator; D41's chain layer above them is OR-9 once built),
+# with their per-workflow roles (boundary, trust, the D13 absences), their NetworkConfiguration
+# (present, two AZs, no default route), the named log groups with retention (D28 item 5), the
+# failure rules and the model-approval rule, recent runs with their type, the absence of any
+# provisioned MWAA environment, the definitions home, and the registry's register/approve
+# record (INT-07's registry half, consumed).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -34,16 +34,20 @@
 # The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - workflows, their roles and their failure rules carry awsds-<env>-wf- (steps 1.1, 1.3, 3.1)
 #   - log groups: /awsds/<env>/wf/ (step 1.1)
-#   - the definitions home is s3://awsds-prod-outputs/workflows/, with the object's S3
-#     VersionId pinned (steps 1.1, 2.4, decision 1)
+#   - each account's definitions home is workflows/ in its own outputs bucket,
+#     awsds-prod-outputs or awsds-staging-outputs, with the object's S3 VersionId pinned
+#     (steps 1.1, 2.4, decisions 1, 6 and 17)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
+#   - no workflow carries a cron of its own: a chain's Scheduler schedule starts every
+#     production workflow (decision 13), so OR-1 fails on one
+#   - the chain layer carries awsds-<env>-chain- (steps 3.4, 3.5; OR-9, not written)
 #   - the lake buckets carry awsds-data- (Stage 5a), so OR-3 can read D13's absence
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - Sandbox's portal-authored workflows. The Studio surface has no switch to read (6d step
 #     4.1), and what it creates bills task-hours in Sandbox, outside these contracts.
-#   - The behavioural proofs (an unattended scheduled run, the failure rules firing, the
-#     lint rejecting a bad artifact) are the stage's own (Lesson 20).
+#   - The behavioural proofs (a chain's schedule firing unattended, the failure rules firing,
+#     the lint rejecting a bad artifact) are the stage's own (Lesson 20).
 #   - Whether the awscc apply lands under the deploy role's boundary (INT-14) is pass 2's
 #     pipeline run; this file only shows what exists afterwards.
 
@@ -68,7 +72,8 @@ SANDBOX_PREFIX = "awsds-infra-sandbox-"
 # The contracts (see header).
 AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
-DEF_BUCKET = "awsds-prod-outputs"
+# Each account holds its own rendered copy in its own outputs bucket (decisions 6 and 17).
+DEF_BUCKETS = {"staging": "awsds-staging-outputs", "prod": "awsds-prod-outputs"}
 DEF_PREFIX = "workflows/"
 LAKE_FRAG = "awsds-data-"
 WF_PRINCIPAL = "airflow-serverless.amazonaws.com"
@@ -506,14 +511,14 @@ def main(argv: list) -> int:
             state = "(read failed)"
         slr_rows.append((env, state))
 
-    # --------------------------------------- the definitions home (step 2.4, decision 1)
-    def_rows: list = []  # (key, size)
-    if prod_live:
-        res = cli_for(PROD_PROFILE).run(
+    # ------------------------ each account's definitions home (step 2.4, decisions 1, 6, 17)
+    def_rows: list = []  # (env, bucket, key, size)
+    for env, p in measured:
+        res = cli_for(p).run(
             "s3api",
             "list-objects-v2",
             "--bucket",
-            DEF_BUCKET,
+            DEF_BUCKETS[env],
             "--prefix",
             DEF_PREFIX,
             "--max-keys",
@@ -525,7 +530,7 @@ def main(argv: list) -> int:
             log=False,
             tolerate="NoSuchBucket|AccessDenied",
         )
-        def_rows = [(str(k), str(s)) for k, s in _json(res, [])]
+        def_rows += [(env, DEF_BUCKETS[env], str(k), str(s)) for k, s in _json(res, [])]
 
     # -------------- the registry record: who registered, who approved (INT-07's registry half)
     reg_rows: list = []  # (time, event, caller tail)
@@ -619,6 +624,13 @@ def main(argv: list) -> int:
                     "OR-1",
                     f"{env}: {name}",
                     f"status {d['status']} - mid-transition; re-run once it settles.",
+                )
+            elif d["cron"] != "-":
+                checks.fail(
+                    "OR-1",
+                    f"{env}: {name}",
+                    f"cron {d['cron']} - a chain's schedule starts every production "
+                    "workflow, and the rendered copy carries no schedule (decision 13).",
                 )
             else:
                 checks.ok(
@@ -725,18 +737,19 @@ def main(argv: list) -> int:
     if prod_live and not any(r == APPROVAL_RULE for _, r, _ in rule_rows):
         checks.note("OR-4", f"prod: rule {APPROVAL_RULE}", "absent - expected before step 5.3.")
 
-    # OR-5: each definition sits in the definitions home with its S3 version pinned.
+    # OR-5: each definition sits in its own account's definitions home with its S3 version pinned.
     for env, ws in workflows.items():
+        home = DEF_BUCKETS[env]
         for name, d in ws.items():
             if not d["def_bucket"]:
                 continue
             what = f"definition of {env}: {name}"
             loc = f"s3://{d['def_bucket']}/{d['def_key']}"
-            if d["def_bucket"] != DEF_BUCKET or not d["def_key"].startswith(DEF_PREFIX):
+            if d["def_bucket"] != home or not d["def_key"].startswith(DEF_PREFIX):
                 checks.fail(
                     "OR-5",
                     what,
-                    f"{loc} - outside s3://{DEF_BUCKET}/{DEF_PREFIX} (decision 1).",
+                    f"{loc} - outside s3://{home}/{DEF_PREFIX} (decisions 1, 6 and 17).",
                 )
             elif not d["def_version"]:
                 checks.fail(
@@ -835,7 +848,7 @@ SECTIONS
   4. The per-workflow roles: boundary, trust, the D13 absences
   5. Log groups and retention (D28 item 5)
   6. The EventBridge rules: failures and the approval rule
-  7. Recent runs (the schedule evidence)
+  7. Recent runs
   8. Provisioned MWAA environments - the absence reading
   9. The service-linked role, and the definitions home
  10. The registry record: who registered, who approved (INT-07)
@@ -850,7 +863,7 @@ HOW TO READ THIS FILE
   - AN ABSENT slice is [E] working between sessions, not an outage. What must NOT
     appear at rest is a provisioned MWAA environment (OR-6) or an auto-created
     /aws/mwaa-serverless/ log group in Staging or Production (OR-2).
-  - THIS IS A CONTROL-PLANE READING. Whether a SCHEDULED run fires unattended,
+  - THIS IS A CONTROL-PLANE READING. Whether a chain's schedule fires unattended,
     a failure rule pages, or the lint rejects a bad artifact is behavioural -
     the stage's own proofs (Lesson 20). INT-14's apply-under-boundary proof is
     pass 2's pipeline run, not this file's.
@@ -886,8 +899,9 @@ never a compliant one.
                 + ["\t".join(r) for r in wf_table]
             )
         rep.text("""
-The cron column is the schedule: it lives in the YAML definition and the service
-runs it through EventBridge Scheduler internally; TriggerMode is the pause lever.
+The cron column reads "-" for every workflow here: a chain's Scheduler schedule
+starts each one, the pause is that schedule's state (decision 13, OR-9 once
+built), and a workflow with no schedule carries TriggerMode manual_only.
 Staging is applied first (pass 2), so a Production workflow with no Staging twin
 is worth a second look, not a failure - the [E] slices come and go by session.""")
 
@@ -916,9 +930,10 @@ association is read against its VPC's main table.""")
             rep.line("No awsds-<env>-wf-* role.")
         rep.text(f"""
 The contract (step 1.3): trust in {WF_PRINCIPAL} alone, a permissions
-boundary (the pipeline creates these under Stage 8 4.1's condition), and no data
-reach - no s3 allow naming a lake bucket, no lakeformation:GetDataAccess. The
-orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
+boundary (the pipeline creates these under Stage 8 4.1's condition), and no lake
+reach - no s3 allow naming a lake bucket, no lakeformation:GetDataAccess; its S3
+is its application's result and inbox prefixes (D41 item 10). The orchestrator
+starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
 
         # ==============================================================================
         rep.h1("5. Log groups and retention (D28 item 5)")
@@ -935,7 +950,7 @@ orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up)."
             rep.line("No awsds-<env>-wf-* or model-approval rule (pre-step-3.1/5.3).")
 
         # ==============================================================================
-        rep.h1("7. Recent runs (the schedule evidence)")
+        rep.h1("7. Recent runs")
         if run_rows:
             rep.tabulate(
                 ["ENV\tWORKFLOW\tRUN\tTYPE\tSTATUS\tSTARTED"]
@@ -946,9 +961,11 @@ orchestrator starts jobs; awsds-<env>-job-exec touches data (D13 one level up)."
         else:
             rep.line("No recorded run.")
         rep.text("""
-Verification (v) wants at least one TYPE=SCHEDULED row with nobody at the
-keyboard. The type is read per run with get-workflow-run: list-workflow-runs
-returns RunType null for every run (measured 2026-10-10). Runs and their history
+A run a chain's machine starts is expected to read ON_DEMAND, the type of a
+StartWorkflowRun call, inferred until verification xxiv reads it; the unattended
+proof is the machine's execution the schedule started (OR-9 once built). The type
+is read per run with get-workflow-run: list-workflow-runs returns RunType null for
+every run (measured 2026-10-10). Runs and their history
 die with the [E] slice (Lesson 4) - 6.3 writes the disposition into the log
 before the first make down.""")
 
@@ -972,16 +989,15 @@ once applied. This section is the reading behind that control.""")
             rep.line(f"{SLR_NAME}: not measured.")
         rep.line()
         if def_rows:
-            rep.tabulate(
-                [f"s3://{DEF_BUCKET}/{DEF_PREFIX}* KEY\tSIZE"] + ["\t".join(r) for r in def_rows]
-            )
+            rep.tabulate(["ENV\tBUCKET\tKEY\tSIZE"] + ["\t".join(r) for r in def_rows])
         else:
-            rep.line(f"No object under s3://{DEF_BUCKET}/{DEF_PREFIX} (pre-2.4).")
+            rep.line(f"No object under {DEF_PREFIX} in any definitions home read (pre-2.4).")
         rep.text("""
 The SLR appears at the first CreateWorkflow in each account (Lesson 17), Staging
 before Production - 0.3 records the absent baseline, 1.6 the enumerated arrival.
-The definitions home is decision 1's: versioned, CMK-protected, perimeter-branched
-since Stage 9 1.1.""")
+Each account's definitions home is its own outputs bucket (decisions 6 and 17):
+Production's, decision 1's, is versioned, CMK-protected and perimeter-branched since
+Stage 9 1.1, and Staging's, awsds-staging-outputs, is built by the same module call.""")
 
         # ==============================================================================
         rep.h1("10. The registry record: who registered, who approved (INT-07)")
@@ -1017,13 +1033,14 @@ any account.""")
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  OR-1  each account's workflows exist and rest READY (step 1.1)
+  OR-1  each account's workflows exist, rest READY and carry no cron (step 1.1,
+        decision 13)
   OR-2  named log groups with retention; no /aws/mwaa-serverless/ orphan (D28 item 5)
   OR-3  per-workflow roles bounded, airflow-serverless trust only, no lake reach;
         NetworkConfiguration set, two AZs, no default route (steps 1.2, 1.3)
   OR-4  the *-failed rules and awsds-prod-model-approval ENABLED (steps 3.1, 5.3)
-  OR-5  definitions under s3://awsds-prod-outputs/workflows/, VersionId pinned
-        (steps 1.1, 2.4, decision 1)
+  OR-5  definitions under workflows/ in each account's own outputs bucket,
+        VersionId pinned (steps 1.1, 2.4, decisions 1, 6 and 17)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)
   OR-8  every registry write was awsds-deploy-prod (INT-07, Stage 9 3.2)""")

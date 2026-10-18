@@ -1,0 +1,109 @@
+# app-etl's manifest (Stage 8 step 2.5, D41): what the CI/CD CLI copies to a project, in the notation
+# the CLI resolves. The storage items are folders of this tree: `deploy` syncs each to its stage's
+# `targetDirectory` under the project's shared prefix, a directory include keeping the paths inside the
+# folder and a glob include flattened to the file's name. The stages read `${VAR}` from the shell, and
+# each `{env.VAR}` the workflow names is a stage variable of both stages, filled on a run the CLI
+# starts. The workflow's `code` is the worker's package, which the pipeline builds before any deploy.
+applicationName: app-etl
+
+content:
+  storage:
+    - name: code
+      include:
+        - code/app-etl.zip
+    - name: src
+      include:
+        - "src/"
+      exclude:
+        - __pycache__/
+        - "*.pyc"
+    - name: glue
+      include:
+        - "glue/"
+      exclude:
+        - __pycache__/
+        - "*.pyc"
+    - name: samples
+      include:
+        - "samples/"
+    - name: workflows
+      include:
+        - "workflows/"
+  workflows:
+    - workflowName: app-etl
+      connectionName: default.workflow_serverless
+      code: code/app-etl.zip
+
+stages:
+  dev:
+    stage: DEV
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: ${DEV_PROJECT_NAME}
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      SUBNET_AZ1: ${SUBNET_AZ1}
+      SUBNET_AZ2: ${SUBNET_AZ2}
+      PROJECT_SG: ${DEV_PROJECT_SG}
+      PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-etl
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/src
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/workflows
+
+  test:
+    stage: TEST
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: ${TEST_PROJECT_NAME}
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      SUBNET_AZ1: ${SUBNET_AZ1}
+      SUBNET_AZ2: ${SUBNET_AZ2}
+      PROJECT_SG: ${TEST_PROJECT_SG}
+      PROJECT_KEY_ARN: ${TEST_PROJECT_KEY_ARN}
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-etl
+        - type: workflow.run
+          workflowName: app-etl
+          trailLogs: true
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/src
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/workflows

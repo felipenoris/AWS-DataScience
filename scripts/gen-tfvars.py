@@ -3,6 +3,7 @@
 #
 #   ./scripts/gen-tfvars.py <account-folder> <slice>
 #   ./scripts/gen-tfvars.py sandbox bootstrap
+#   ./scripts/gen-tfvars.py --pipeline sandbox dev-env   # on the deploy runner (Stage 8 decision 14)
 #
 # Two of a slice's inputs may not be literals in a .tf file: the region (region portability, scanned
 # by step 9.1's check) and the <env> name token, because step 3.3 forbids writing this slice as *the*
@@ -30,13 +31,16 @@ from tfhygiene import backend
 def main(argv: list) -> int:
     os.chdir(Path(__file__).resolve().parents[1])
 
+    pipeline = bool(argv) and argv[0] == "--pipeline"
+    if pipeline:
+        argv = argv[1:]
     if len(argv) != 2:
-        print("usage: gen-tfvars.py <account-folder> <slice>", file=sys.stderr)
+        print("usage: gen-tfvars.py [--pipeline] <account-folder> <slice>", file=sys.stderr)
         return 2
     account, slice_name = argv
 
     try:
-        values = backend.tfvars_values(account, slice_name)
+        values = backend.tfvars_values(account, slice_name, pipeline)
     except backend.UnknownAccountFolder:
         print(f"unknown account folder: {account}", file=sys.stderr)
         return 2
@@ -47,7 +51,7 @@ def main(argv: list) -> int:
         return 2
 
     (slice_dir / "terraform.auto.tfvars").write_text(
-        backend.render_tfvars(account, slice_name), encoding="utf-8"
+        backend.render_tfvars(account, slice_name, pipeline), encoding="utf-8"
     )
 
     print(f"wrote {slice_dir}/terraform.auto.tfvars")

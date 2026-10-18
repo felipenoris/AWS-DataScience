@@ -88,10 +88,12 @@ variable "models" {
 
   # TWO GENERATIONS WHILE THE SET MOVES FROM 4.5 TO 5.5 (Stage 6e decision 17). The running image
   # pins the 4.5 three, so they stay until a release pinning 5.5 is the domain's default; removing
-  # them first would refuse every running space at the first prompt. Sonnet 4.5 is LEGACY
-  # since 2026-10-08 and reaches end of life 2027-04-08. The 5.5 three route to the same us-east-1,
-  # us-east-2, us-west-2 (read 2026-10-11) and are NOT YET PROVEN BY INVOCATION: their ids have the
-  # shape EXC-08 found refused for this account with every reading green, and only a call answers.
+  # them first would refuse every running space at the first prompt. The pins live in the private
+  # GitLab's awsds/dev-env, mirrored at gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json.
+  # Sonnet 4.5 is LEGACY since 2026-10-08 and reaches end of life 2027-04-08. The 5.5 three route to
+  # the same us-east-1, us-east-2, us-west-2 (read 2026-10-11) and are NOT YET PROVEN BY INVOCATION:
+  # their ids have the shape EXC-08 found refused for this account with every reading green, and
+  # only a call answers.
   default = {
     "anthropic.claude-opus-4-5-20251101-v1:0"   = "us.anthropic.claude-opus-4-5-20251101-v1:0"
     "anthropic.claude-sonnet-4-5-20250929-v1:0" = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"

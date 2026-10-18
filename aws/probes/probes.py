@@ -32,8 +32,8 @@
 #                             one step later. The reason is written next to it.
 #                    creates  mutating, and it would really do something if the deny were
 #                             absent. **The driver refuses to run these outside Policy
-#                             Canary.** There are seven in this file and each is argued:
-#                             three in `root`, four in `decl`.
+#                             Canary.** There are nine in this file and each is argued:
+#                             five in `root`, four in `decl`.
 #
 #     @AMI@ @SUBNET@ @ACCT@ are substituted with real ids from the probed account.
 #
@@ -41,6 +41,13 @@
 #
 # This file keeps a compact one-probe-per-block layout and is excluded from `ruff format`
 # (pyproject.toml): it is edited as a table, not as code.
+
+from pathlib import Path
+
+from awslib.bedrockscope import settings_pins
+from awslib.devenvrecipe import SETTINGS
+
+REPO = Path(__file__).resolve().parents[2]
 
 PROBES = []
 
@@ -146,6 +153,57 @@ probe("root", "canary", "deny", None, "creates", "ecr-public:CreateRepository",
       ["ecr-public", "create-repository", "--repository-name", "awsds-canary-probe",
        "--region", "us-east-1"])
 
+# --- `creates` #4 and #5. DenyBedrockRetentionModeOtherThanNone (Stage 6e step 7.5), a pair that
+#     undoes itself in the order it runs. The deny row asks for `inherit`: if the deny lifts, it
+#     really sets the canary's us-west-2 mode, and the allow row after it writes back `none`, the
+#     value the canary was set to on 2026-09-12. The allow row is also the reading that the
+#     condition key is still published: a StringNotEquals over an absent key would refuse `none`
+#     too (claude-code-sagemaker.md, M3). The canary holds no agreement and no use-case form, so
+#     neither mode changes what it can invoke.
+# undo: aws bedrock put-account-data-retention --mode none --region us-west-2
+probe("root", "canary", "deny", None, "creates",
+      "bedrock:PutAccountDataRetention to inherit (7.5 mode ceiling)",
+      ["bedrock", "put-account-data-retention", "--mode", "inherit", "--region", "us-west-2"])
+probe("root", "canary", "allow", None, "creates",
+      "bedrock:PutAccountDataRetention to none still works (7.5 contrast, the value already set)",
+      ["bedrock", "put-account-data-retention", "--mode", "none", "--region", "us-west-2"])
+
+# --- DenyInvokingModelsThatRetain (7.5). The canary is where it is attributable: Policy Test
+#     carries no Interactive document, so the baseline is the only document naming these profiles.
+#     One row per profile ARN the statement lists, each id written here rather than read from the
+#     document: a row built from the statement's own list would be refused on a misspelt ARN and
+#     pass while the real route stayed open. The 2026-09-12 re-probe was refused on the first
+#     row's inference-profile ARN.
+#
+#     `ro`: an invocation changes nothing, and these cannot answer even with the deny lifted,
+#     because the canary has no use-case form and no agreement. The allowed regex is the refusals
+#     Bedrock gives after authorization, so a lifted deny reads ALLOWED instead of a note. The
+#     interlock: a profile routes to other Regions, where the canary's own Region control carries
+#     no Bedrock exemption and may refuse a destination first. The policy id in the detail column
+#     tells the two apart (Lesson 20).
+_ANTHROPIC_BODY = ('{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,'
+                   '"messages":[{"role":"user","content":"ping"}]}')
+# The refusals after authorization, in order: the use-case form missing, the commercial gate of
+# AWS_STATE.md EXC-08 (read 2026-09-12) and an agreement missing. The first and the last are AWS's
+# wording, never read here; one the regex misses reads DENY-NOT-SCP, a note on a deny row and a
+# FAIL on an allow row. A deny row also accepts a malformed request or an unknown id.
+_GATES = "use case details|not available for this account|have access to the model"
+_AFTER_AUTHORIZATION = "ValidationException|ResourceNotFoundException|" + _GATES
+
+
+def _invoke(model_id, body):
+    """bedrock-runtime invoke-model argv in us-west-2, the response body discarded."""
+    return ["bedrock-runtime", "invoke-model", "--model-id", model_id,
+            "--cli-binary-format", "raw-in-base64-out", "--body", body,
+            "--region", "us-west-2", "/dev/null"]
+
+
+for _profile in ("us.anthropic.claude-fable-5", "us.anthropic.claude-fable-5-1",
+                 "global.anthropic.claude-fable-5", "global.anthropic.claude-fable-5-1"):
+    probe("root", "canary", "deny", _AFTER_AUTHORIZATION, "ro",
+          f"bedrock:InvokeModel on {_profile} (7.5 retaining model)",
+          _invoke(_profile, _ANTHROPIC_BODY))
+
 # --- DenyRedshiftProvisionedClusters (Stage 5b step 3.1). `blocked`, and the reason is the
 #     negative control Lesson 26 asks for: the snapshot named does not exist, so lifting the deny
 #     leaves the call failing one step later with ClusterSnapshotNotFound - a different wording
@@ -240,6 +298,74 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
 probe("ou", "staging", "deny", None, "ro",
       "workloads: datazone:ListDomains in the account Stage 6b moved",
       ["datazone", "list-domains", "--region", "us-west-2"])
+
+# --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
+#     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
+#     statement and keeps the other four, so a refusal names the statement it was written for
+#     (AWS names the policy, never the Sid - Lesson 20); the two allow rows are the same calls
+#     with nothing broken, which is what proves the document leaves a compliant job and an
+#     instance-backed endpoint configuration alone. The compliant job is also the reading of
+#     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
+#     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
+#     row into a deny.
+#
+#     `blocked`: the role, the image, the security group, the key and the model named exist
+#     nowhere, so an authorized call fails validation and creates nothing. The subnet is real,
+#     so a VPC check that runs before authorization cannot be mistaken for the deny.
+_JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
+# The registry host is joined to the placeholder rather than written beside it, which
+# ./scripts/check-identifiers.py would read as an e-mail address.
+_JOB_REGISTRY = "@ACCT@" + ".dkr.ecr.us-west-2.amazonaws.com"
+_JOB_IMAGE = '{"ImageUri":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest"}'
+_JOB_KEY = "arn:aws:kms:us-west-2:@ACCT@:key/00000000-0000-0000-0000-000000000000"
+_JOB_VPC = '"VpcConfig":{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+
+
+def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
+    """create-processing-job argv with each of the five settings chosen by the caller."""
+    cluster = '{"InstanceCount":1,"InstanceType":"' + instance_type + '","VolumeSizeInGB":1'
+    cluster += (',"VolumeKmsKeyId":"' + _JOB_KEY + '"}') if volume_key else "}"
+    network = ('{"EnableInterContainerTrafficEncryption":' + encryption
+               + ',"EnableNetworkIsolation":' + isolation + ((',' + _JOB_VPC) if vpc else "") + "}")
+    return ["sagemaker", "create-processing-job", "--processing-job-name", "awsds-canary-probe",
+            "--role-arn", _JOB_ROLE, "--app-specification", _JOB_IMAGE,
+            "--processing-resources", '{"ClusterConfig":' + cluster + "}",
+            "--network-config", network, "--region", "us-west-2"]
+
+
+probe("ou", "prod", "allow", "ValidationException", "blocked",
+      "workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)",
+      _processing_job("ml.m5.large", True, "true", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)",
+      _processing_job("ml.m5.large", True, "true", "true", False))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
+      _processing_job("ml.m5.2xlarge", True, "true", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+      _processing_job("ml.m5.large", True, "false", "true", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
+      _processing_job("ml.m5.large", True, "true", "false", True))
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)",
+      _processing_job("ml.m5.large", False, "true", "true", True))
+
+probe("ou", "prod", "deny", "ValidationException", "blocked",
+      "workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)",
+      ["sagemaker", "create-endpoint-config", "--endpoint-config-name", "awsds-canary-probe",
+       "--production-variants",
+       '[{"VariantName":"probe","ModelName":"awsds-canary-probe",'
+       '"ServerlessConfig":{"MemorySizeInMB":1024,"MaxConcurrency":1}}]',
+       "--region", "us-west-2"])
+probe("ou", "prod", "allow", "ValidationException", "blocked",
+      "workloads: instance-backed CreateEndpointConfig still authorized (3.7 contrast)",
+      ["sagemaker", "create-endpoint-config", "--endpoint-config-name", "awsds-canary-probe",
+       "--production-variants",
+       '[{"VariantName":"probe","ModelName":"awsds-canary-probe",'
+       '"InstanceType":"ml.m5.large","InitialInstanceCount":1}]',
+       "--region", "us-west-2"])
 
 # --- Interactive: the allows say decision 1 costs no feature. The nonexistent domain keeps an
 #     "allowed" outcome from billing a space.
@@ -336,6 +462,66 @@ probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found",
 #     down. A second label on the same call in the same account would make a count of probes
 #     stop meaning a count of questions. If 1.6 ever breaks D13's read, that row is what goes
 #     red.
+
+# --- The Stage 6e decision 15 amendment - DenyBedrockInvocationOutsideTheScopedModels and
+#     DenyBedrockReadsOutsideTheRoutedRegions. Sandbox Account 1 holds the use-case form and the
+#     agreements, so an authorized call really answers. Every row is `ro`: an invocation changes
+#     nothing and bills at most one output token. The allow rows' invocations land in AWS/Bedrock's
+#     per-model metrics, which carry no principal, so a run stays out of 6e step 6.4's window.
+#
+#     The CLI has no invoke-model-with-response-stream (it removes event-stream operations), so
+#     both statements are probed on InvokeModel alone; the streaming action is the one every
+#     Claude Code session calls.
+#
+#     The model statement, in us-west-2, where the Region statement cannot fire. The deny row's
+#     sample is amazon.nova-lite-v1:0, which the account may invoke with no agreement
+#     (claude-code-sagemaker.md, M4): it answered as InfrastructureAccess on 2026-09-12 and was
+#     refused an hour later, after the attach, naming the Interactive document. A sample from
+#     outside Anthropic keeps the row true whatever the scoped set becomes.
+_NOVA_BODY = ('{"messages":[{"role":"user","content":[{"text":"ping"}]}],'
+              '"inferenceConfig":{"max_new_tokens":1}}')
+probe("ou", "sandbox1", "deny", "ValidationException", "ro",
+      "interactive (inherited): bedrock:InvokeModel outside the scoped set (decision 15)",
+      _invoke("amazon.nova-lite-v1:0", _NOVA_BODY))
+
+# The allow rows invoke each profile the house image pins, read from its managed settings, so they
+# follow the scoped set when the image moves. The statement's NotResource is the list under test:
+# a row built from it would invoke a misspelt id and never meet the refusal the image's own call
+# would. A gate after authorization reads ALLOWED, since the ceiling let the call through, and
+# ./aws/bedrock-scope.py BS-5 reads the agreements. A malformed or unknown id is left out of the
+# regex, so it reads UNTESTED rather than a pass.
+_PINS = settings_pins(REPO / SETTINGS)
+if not _PINS:
+    raise SystemExit(f"probes.py: no model pin readable in {SETTINGS}, so the Bedrock allow rows"
+                     " have nothing to invoke")
+for _profile in sorted(set(_PINS.values())):
+    probe("ou", "sandbox1", "allow", _GATES, "ro",
+          f"interactive (inherited): bedrock:InvokeModel on {_profile}, an image pin",
+          _invoke(_profile, _ANTHROPIC_BODY))
+
+
+def _use_case(region):
+    """get-use-case-for-model-access argv printing the response's keys, never the form, which
+    carries a name and a website."""
+    return ["bedrock", "get-use-case-for-model-access", "--query", "keys(@)",
+            "--output", "text", "--region", region]
+
+
+# The Region statement, on bedrock:GetUseCaseForModelAccess. Control Tower's Region control exempts
+# the action (claude-code-sagemaker.md, M5) and the model statement does not name it, so in
+# eu-west-1 this statement is the only policy that can refuse it; the two US rows say it leaves the
+# routed Regions alone and that the exemption still holds there. The call takes no resource, so no
+# id can be rejected before authorization, and the form read back in all three routed Regions on
+# 2026-09-12 (M4).
+probe("ou", "sandbox1", "deny", "ResourceNotFoundException", "ro",
+      "interactive (inherited): bedrock:GetUseCaseForModelAccess in eu-west-1 (decision 15)",
+      _use_case("eu-west-1"))
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:GetUseCaseForModelAccess in us-east-1 still works",
+      _use_case("us-east-1"))
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:GetUseCaseForModelAccess in us-east-2 still works",
+      _use_case("us-east-2"))
 
 # --- Data: nothing runs in the lake account
 probe("ou", "data", "deny", None, "dryrun", "data: ec2:RunInstances",

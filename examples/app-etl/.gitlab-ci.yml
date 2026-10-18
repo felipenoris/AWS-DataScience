@@ -1,0 +1,249 @@
+# app-etl's pipeline (Stage 8 steps 2.2 and 2.5), the application build pipeline the objectives name.
+#
+#   every push            the tests, ruff, the workflow lint and the gates (Secret Detection on branches,
+#                         pip-audit)
+#   the default branch    and the docs, published to Pages
+#   a tag v<semver>       and the image: FROM base by digest, smoke-tested with networking off, pushed
+#                         to awsds-prod-ecr-app-etl as v<semver>-<short sha>, then the scan gate; then
+#                         the application: the worker's package built, the bundle for the `test` project
+#                         built and deployed there with a run of the workflow, the bundle stored in
+#                         awsds-prod-releases and the tag's GitLab release, which names it (D41,
+#                         decisions 19 and 20)
+#
+# Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
+# test runner, whose jobs hold no AWS identity. build-image, the scan gate, store-bundle and release are
+# untagged, so only the build runner takes them, a protected runner that serves protected refs alone;
+# test-deploy carries tag awsds-deploy, the deploy runner, and runs as awsds-deploy-sandbox-test
+# (decision 19). The tag v* is protected, created by Maintainers only (step 2.1), which in CE is the
+# whole of the release gate.
+
+include:
+  - project: awsds/ci-gates
+    ref: 6fcea132896746c3938411c0d081f4421ca0dce8 # gates-v0.4.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify, deploy, release]
+
+variables:
+  GATES_UV_PROJECTS: "."
+  IMAGE_REPO: awsds-prod-ecr-app-etl
+  # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
+  # a SageMaker application (D28), offline.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/3c1708eb0fcff1d7f4d14e3e59cdd69bad83e033.zip"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+test:
+  extends: .gates-uv
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run ruff check
+    - uv run ruff format --check
+    - uv run pytest
+    - uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint .
+
+pages:
+  extends: .gates-uv
+  stage: build
+  script:
+    - uv sync --locked
+    - uv run pdoc app_etl --output-directory public
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# BuildKit rootless, as Stage 7's pipelines run it: v0.34.0, the release `rootless` named on 2026-10-12,
+# by digest. Two builds share the job's cache: `smoke` first, which builds `app` and runs the job's command
+# on it, then `app` itself, pushed. The digest goes to the scan gate and to test-deploy as a dotenv
+# report. The job is not named `image`: at the top level that is the global keyword, and GitLab refuses
+# the file.
+build-image:
+  stage: build
+  image:
+    name: moby/buildkit:v0.34.0-rootless@sha256:65eca3c01cd1180c8f64565c4e3c5983af5145818b0e6fa863385d099eb73855
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      mkdir -p ~/.docker
+      printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+      proxy_args="--opt build-arg:http_proxy=$http_proxy --opt build-arg:https_proxy=$https_proxy --opt build-arg:HTTP_PROXY=$HTTP_PROXY --opt build-arg:HTTPS_PROXY=$HTTPS_PROXY --opt build-arg:no_proxy=$no_proxy --opt build-arg:NO_PROXY=$NO_PROXY"
+      ref="$ECR_REGISTRY/$IMAGE_REPO:$CI_COMMIT_TAG-$CI_COMMIT_SHORT_SHA"
+      echo "== smoke: the job's command as the image's user, networking off, the output owned by root"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=smoke --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args
+      echo "== push: $ref"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=app --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args \
+        --opt label:org.opencontainers.image.revision="$CI_COMMIT_SHA" \
+        --opt label:org.opencontainers.image.version="$CI_COMMIT_TAG" \
+        --output type=image,name="$ref",push=true --metadata-file image.json
+      digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' image.json | grep -o 'sha256:[0-9a-f]*')"
+      echo "SCAN_DIGEST=$digest" > image.env
+      echo "== pushed $ref@$digest"
+  artifacts:
+    reports:
+      dotenv: image.env
+
+scan-gate:
+  extends: .gates-ecr-scan
+  stage: verify
+  needs: [build-image]
+  variables:
+    SCAN_REPOSITORY: awsds-prod-ecr-app-etl
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+
+# The worker's package (D28 class 2b): the module of code/ alone, zipped, since it needs only the boto3
+# the MWAA Serverless worker carries. `bundle` builds nothing, so the zip is built here, into the folder
+# the manifest includes, and imported once from the zip on the worker's Python minor version.
+build-task-code:
+  extends: .gates-uv
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
+    - python3 -m zipfile -l code/app-etl.zip
+    - PYTHONPATH=code/app-etl.zip python3 -c "import app_etl_tasks; print(app_etl_tasks.__file__)"
+  artifacts:
+    paths: [code/app-etl.zip]
+
+# The application in the `test` project (step 2.5, decision 19): the bundle built over the folders the
+# manifest includes, failing on the warning `bundle` prints for a missing include, then `deploy`, which
+# copies the folders, creates the workflow and runs it (`workflow.run` with `trailLogs`), the run read
+# back by `get-workflow-run`. The job runs on the deploy runner as awsds-deploy-sandbox-test, the
+# profile the runner's AWS config carries; its first calls are readings that fail in seconds when the
+# hub or Sandbox's egress is down (verification xxiv). The `test` project's prefix is emptied before the
+# deploy, so no file of an earlier release survives beside this one's (verification xxvi). The job's
+# variables: DOMAIN_ID, DOMAIN_REGION, DEV_PROJECT_NAME, TEST_PROJECT_NAME, SUBNET_AZ1, SUBNET_AZ2,
+# DEV_PROJECT_SG, TEST_PROJECT_SG, DEV_PROJECT_KEY_ARN, TEST_PROJECT_KEY_ARN and TEST_PROJECT_S3_URI are
+# CI/CD variables of the GitLab project; JOB_IMAGE_URI is the image build-image pushed, by digest, which
+# the stage passes to the run.
+test-deploy:
+  stage: deploy
+  needs: [build-image, build-task-code]
+  tags: [awsds-deploy]
+  resource_group: app-etl-test
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    AWS_PROFILE: awsds-deploy-sandbox-test
+  script:
+    - |
+      set -eu
+      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME TEST_PROJECT_NAME SUBNET_AZ1 SUBNET_AZ2 DEV_PROJECT_SG TEST_PROJECT_SG DEV_PROJECT_KEY_ARN TEST_PROJECT_KEY_ARN TEST_PROJECT_S3_URI; do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
+      done
+      export JOB_IMAGE_URI="$ECR_REGISTRY/$IMAGE_REPO@$SCAN_DIGEST"
+      echo "== the hub: the proxy answers for the SageMaker API"
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/")"
+      if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      echo "== Sandbox's egress: the interface endpoints the run needs"
+      for service in sagemaker.api glue logs; do
+        state="$(aws ec2 describe-vpc-endpoints --filters "Name=service-name,Values=com.amazonaws.$DOMAIN_REGION.$service" "Name=vpc-endpoint-type,Values=Interface" --query 'VpcEndpoints[0].State' --output text)"
+        echo "$service: $state"
+        if [ "$state" != "available" ]; then echo "FATAL: no $service endpoint: is Sandbox's egress up (make up ENV=sandbox ONLY=egress)?"; exit 1; fi
+      done
+      echo "== the test project's prefix, emptied"
+      aws s3 rm --recursive "${TEST_PROJECT_S3_URI%/}/app-etl/"
+      echo "== bundle"
+      aws-smus-cicd-cli bundle --manifest manifest.yaml --targets test > bundle.log 2>&1
+      cat bundle.log
+      if grep -q "Pattern not found" bundle.log; then echo "FATAL: an include of the manifest is missing"; exit 1; fi
+      test -s artifacts/app-etl.zip
+      sha256sum artifacts/app-etl.zip > artifacts/app-etl.zip.sha256
+      cat artifacts/app-etl.zip.sha256
+      echo "BUNDLE_SHA256=$(cut -d' ' -f1 artifacts/app-etl.zip.sha256)" > bundle.env
+      echo "JOB_IMAGE_URI=$JOB_IMAGE_URI" >> bundle.env
+      echo "== deploy to test: the folders copied, the workflow created and run"
+      rc=0
+      aws-smus-cicd-cli deploy --manifest manifest.yaml --targets test --skip-validation --no-events > deploy.log 2>&1 || rc=$?
+      cat deploy.log
+      arn="$(grep -o 'ARN: arn:[^ ]*' deploy.log | tail -1 | cut -d' ' -f2)"
+      run_id="$(grep -o 'Run ID: [^ ]*' deploy.log | tail -1 | cut -d' ' -f3)"
+      echo "deploy: exit $rc, run $run_id of $arn"
+      aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > run.json
+      cat run.json
+      if [ "$rc" -ne 0 ]; then echo "FATAL: the deploy or the run failed"; exit "$rc"; fi
+      grep -q '"RunState": "SUCCESS"' run.json
+  artifacts:
+    paths: [artifacts/, bundle.log, deploy.log, run.json]
+    reports:
+      dotenv: bundle.env
+    expire_in: 1 year
+
+# The release's bundle (decision 20): the bytes `test` ran, checked against the SHA256 test-deploy
+# computed, copied to awsds-prod-releases with the build runner's own role. The aws CLI image the scan
+# gate uses, by digest.
+store-bundle:
+  stage: release
+  needs: [test-deploy]
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      echo "$BUNDLE_SHA256  artifacts/app-etl.zip" | sha256sum -c -
+      object="s3://awsds-prod-releases/app-etl/$CI_COMMIT_TAG/app-etl.zip"
+      aws s3 cp artifacts/app-etl.zip "$object"
+      echo "BUNDLE_OBJECT=$object" > release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+# The tag's GitLab release, whose notes name the bundle's object, its SHA256 and the image: what a leg
+# of the promotion reads (Stage 10). The `release` keyword runs glab, which GitLab's own cli image
+# carries, pinned by digest (v1.120.0, released 2026-09-29); a tag whose `test` failed gets no release.
+release:
+  stage: release
+  needs: [store-bundle, test-deploy, build-image]
+  image: registry.gitlab.com/gitlab-org/cli:v1.120.0@sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - echo "release $CI_COMMIT_TAG, bundle $BUNDLE_OBJECT, sha256 $BUNDLE_SHA256, image $JOB_IMAGE_URI"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "app-etl $CI_COMMIT_TAG"
+    description: |
+      Bundle: `$BUNDLE_OBJECT`
+
+      Bundle SHA256: `$BUNDLE_SHA256`
+
+      Image: `$JOB_IMAGE_URI`
+
+# Verification (xiii), run by hand: the pip-audit gate with the proxy variables removed. No route leaves
+# VPC-SharedServices but the proxy, so the job must fail, and the time it takes says whether it failed or
+# hung until the bound.
+gate-without-proxy:
+  extends: .gates-uv
+  stage: verify
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  allow_failure: true
+  script:
+    - |
+      set -u
+      start=$(date +%s)
+      rc=0
+      env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy timeout 300 \
+        uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
+      echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
+      [ "$rc" -ne 0 ]

@@ -4,13 +4,23 @@
 
 **Amended 2026-09-05:** the associated set is **N Sandboxes**, not N + 1 — the `engineering` project profile and the second member's eleven blueprint configurations are unwound at [6b](../stages/stage-06b-development-becomes-staging.md). A deployment target is still never associated: the SageMaker Unified Studio CI/CD CLI deploys only into existing SMUS **projects**, so using it as the promotion path would require a domain association, the Tooling blueprint and a `datazone:*` carve-out in `Workloads`. It is used at most as an **exporter** on the Sandbox side; the pipeline stays the deployer (D28).
 
+**Amended 2026-10-15 ([D41](D41-sagemaker-application.md)):** the CI/CD CLI is the deployer between the
+Sandbox projects: it puts an application from its repository into the `dev` project and the `test`
+project and makes the bundle the pipeline promotes, measured in the lab on 2026-10-15. A deployment
+target is still never associated, and the pipeline stays the deployer in Staging and Production (D28).
+
+**Amended 2026-10-17 ([Stage 18](../stages/stage-18-staging-deployment-project.md)):** `Staging Account`
+is associated for the length of one measurement, a project whose only member is the identity that
+deploys, and the association is removed at that stage's pass 8. Production is not associated, and the
+sentence above holds unless the stage's verdict reopens D41 item 2.
+
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
-**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to Sandbox and Development; a registry, never a runtime.
+**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.
 
-**Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md)
+**Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md), [D41](D41-sagemaker-application.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 4](../stages/stage-04-vpn.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 7](../stages/stage-07-gitlab-runners-ecr.md), [Stage 8](../stages/stage-08-cicd-pipelines.md), [Stage 10](../stages/stage-10-orchestration-promotion.md), [Stage 18](../stages/stage-18-staging-deployment-project.md)
 
 ---
 

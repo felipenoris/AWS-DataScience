@@ -14,3 +14,13 @@ output "role_arn" {
   description = "The runner's role - push to the image repositories, pull through the cache, its token, the CA root, Session Manager. No deploy permission, by design (6.1)."
   value       = module.role.role_arn
 }
+
+output "deploy_runner_instance_id" {
+  description = "The deploy runner, or null while no deploy image is pinned. Its first boot assumes each deploy role once and logs the result to /var/log/awsds-runner-boot.log."
+  value       = one(aws_instance.deploy_runner[*].id)
+}
+
+output "test_runner_instance_id" {
+  description = "The test runner (Stage 8 decision 11). Its first boot reads, from a container, that the metadata service gives a job no token, and logs the result to /var/log/awsds-runner-boot.log."
+  value       = aws_instance.test_runner.id
+}

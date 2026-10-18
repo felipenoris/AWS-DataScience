@@ -11,21 +11,26 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # gitlab/ holds copies of GitLab projects (gitlab/README.md): a fixer that edits one makes it
+      # differ from the commit it copies, so the fixers skip the folder and the checks still read it.
       - id: end-of-file-fixer
+        exclude: ^gitlab/[^/]+/[^/]+/
       - id: trailing-whitespace
+        exclude: ^gitlab/[^/]+/[^/]+/
       - id: check-merge-conflict
       # The image's managed-settings.json reaches /etc/claude-code/ by COPY, and Claude Code
       # IGNORES AN UNPARSEABLE ONE SILENTLY: every key in it stops applying and the session runs
-      # on the client's own defaults, against api.anthropic.com. A trailing comma has to fail
-      # here, in review, rather than in a space three weeks later (Stage 6e step 5.2).
+      # on the client's own defaults, against api.anthropic.com. A trailing comma that reached the
+      # copy of the recipe fails here (Stage 6e step 5.2); scripts/check-gitlab-mirror.py GM-6 reads
+      # the same file.
       - id: check-json
-        files: ^images/.*\.json$
+        files: ^gitlab/.*\.json$
       - id: check-added-large-files
-        # The one file over 500 KB that belongs in git: images/dev-env/python/uv.lock, ~900 KB of
-        # resolved hashes for 363 packages. It is the reproducibility of the image's Python
-        # environment - the thing `uv sync --frozen` refuses to build without - so it is admitted by
-        # name rather than by raising the limit for everything.
-        exclude: ^images/dev-env/python/uv\.lock$
+        # The one file over 500 KB that belongs in git: the house environment's uv.lock, ~900 KB of
+        # resolved hashes for 453 packages, in the copy of awsds/dev-env. It is the reproducibility of
+        # the image's Python environment - the thing `uv sync --frozen` refuses to build without - so
+        # it is admitted by name rather than by raising the limit for everything.
+        exclude: ^gitlab/awsds/dev-env/dev-env/python/uv\.lock$
       # D36 puts the internal CA's root private key inside a Terraform state file. State is
       # gitignored (6.2), but this is the cheap second net for a key that arrives some other
       # way - a scratch .pem, a copied output, a paste into a .tf.
@@ -39,9 +44,15 @@ repos:
       # -backend=false because a slice's backend is partial configuration + a gitignored
       # backend.hcl (2.5), and because validate must not need AWS credentials: a check that
       # only runs for someone holding a session is not a repository check.
+      #
+      # Three folders at a time. The hook's default is one per CPU less one: on an 11-core,
+      # 18 GB laptop, `--all-files` ran ten at once and five module folders failed with
+      # "Failed to load plugin schemas" in each of two runs (2026-10-12, AWS provider 6.68.0);
+      # three at a time passed in 27 s with a warm plugin cache.
       - id: terraform_validate
         args:
           - --tf-init-args=-backend=false
+          - --hook-config=--parallelism-limit=3
 
       - id: terraform_tflint
         args:
@@ -66,17 +77,19 @@ repos:
         entry: uv run --quiet ruff check
         language: system
         types: [python]
+        exclude: ^gitlab/[^/]+/[^/]+/
 
       - id: ruff-format
         name: ruff (format check)
         entry: uv run --quiet ruff format --check
         language: system
         types: [python]
+        exclude: ^gitlab/[^/]+/[^/]+/
 
       # ---------------------------------------------------------------- step 9's own checks
       # THE SAME SCRIPTS `make check` CALLS, and that is the point: a commit gate and a target
-      # that disagree are two rules. Stage 8 step 6 adds a third caller - .gitlab-ci.yml - and
-      # it is a line, not a rewrite. Step 9.3 is deliberately absent: it needs an SSO session,
+      # that disagree are two rules. The third caller is .github/workflows/offline-gates.yml
+      # (Stage 8 step 6.2), which runs `pre-commit run --all-files` and `make check`. Step 9.3 is deliberately absent: it needs an SSO session,
       # and a commit gate that demands one is a gate nobody can run offline (`make check-ou`).
       - id: check-tf-conventions
         name: no region literals, indexed AZs or account-level BPA (9.1)
@@ -172,6 +185,40 @@ repos:
         language: system
         pass_filenames: false
         files: (\.terraform\.lock\.hcl|versions\.tf)$
+
+      # GitLab refuses a pipeline at creation when a job is named after a global keyword or a
+      # `needs:` names a job the pipeline lacks, and its CI Lint answers only through the VPN and
+      # parses no shell: a script item bash cannot parse fails its job when the job runs. Every
+      # YAML file triggers it, since a `local:` include may carry any name.
+      - id: check-gitlab-ci
+        name: no GitLab CI job named after a global keyword, no need on a missing job, no script bash cannot parse
+        entry: ./scripts/check-gitlab-ci.py
+        language: system
+        pass_filenames: false
+        files: (\.ya?ml|scripts/check-gitlab-ci\.py)$
+
+      # 2026-10-14 - EC2 takes a group or rule description from one character set, and `validate`
+      # holds only the inline blocks and aws_security_group_rule to it. A refused description on
+      # the group itself or on an aws_vpc_security_group_*_rule fails at apply, after the resources
+      # ahead of it exist: sandbox/app/app-etl/'s first apply stopped there on an apostrophe. The
+      # hook fires on the script and its HCL reader too, so a change to either runs before it lands.
+      - id: check-sg-descriptions
+        name: security group and rule descriptions EC2 accepts
+        entry: ./scripts/check-sg-descriptions.py
+        language: system
+        pass_filenames: false
+        files: (\.tf|scripts/check-sg-descriptions\.py|scripts/tfhygiene/hcl\.py)$
+
+      # GitLab keeps a runner's major.minor with the server's. The server's release is
+      # production/tooling/'s gitlab_ce_version (Stage 7 decision 10), the runners' is
+      # production/runners/'s gitlab_runner_version (Stage 8 decision 24), and an upgrade moves
+      # both; the hook fails a commit that moves one and leaves the other a minor behind.
+      - id: check-gitlab-pins
+        name: the runners' gitlab-runner release keeps the GitLab server's major.minor
+        entry: ./scripts/check-gitlab-pins.py
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/production/(tooling|runners)/variables\.tf|scripts/check-gitlab-pins\.py|scripts/tfhygiene/hcl\.py)$
 
       - id: checkov
         name: checkov (terraform)

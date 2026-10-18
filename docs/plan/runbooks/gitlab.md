@@ -4,7 +4,7 @@
 |---|---|
 | **Scope** | The GitLab host (`production/tooling/`, `[D]`), its anchors (`production/foundation/`), the internal CA that certifies it (`production/pki/`), the build runner (`production/runners/`, `[E]`) and the acts a person performs on them. Built by [Stage 7](../stages/stage-07-gitlab-runners-ecr.md); the design is in the stage file and the slices' own comments, and this file repeats none of it |
 | **Operator** | The **infrastructure user** through `awsds-infra-prod` (Production, `InfrastructureAccess`) for every AWS act; GitLab's local administrator (`felipenoris`, §I) or a SAML user for everything inside GitLab's UI |
-| **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-12`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end |
+| **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-13`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end; `./scripts/check-gitlab-pins.py` offline, in `make check` |
 
 ## S. The pieces
 
@@ -18,6 +18,7 @@
 | `awsds-prod-gitlab-secrets` (`gitlab-secrets.json`), `awsds-prod-runner-token` | `production/foundation/`, containers only | `[P]` |
 | the root CA, the two leaves, their keys in `awsds-prod-tls-gitlab` / `awsds-prod-tls-pages`, the certificates in `/datascience/prod/pki/*-pem` and `s3://awsds-prod-gitlab-objects/pki/` | `production/pki/` | `[P]`, never destroyed |
 | the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/` |
+| the deploy runner `awsds-prod-runner-deploy` and the test runner `awsds-prod-runner-test`, two `t3a.small` | the same | `[E]` `production/runners/`; their token containers in `production/foundation/` |
 | the `secretsmanager` endpoint beside 6c's thirteen | `production/egress/` | `[E]` |
 
 Everything reaches the internet through `proxy.awsds.internal:3128` and nothing else: there is no default route in the VPC (D38). Everything reaches AWS through the VPC's endpoints and the S3 gateway, which is what the bypass list says.
@@ -46,15 +47,19 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-up
    ```
 
-   Until the runner's token is in its container (§K), the same without the runner, or a runner boots that cannot register and bills until `gitlab-down`:
+   Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
+   `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
+   applied that checkout's `egress/` and runner.
+
+   Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
 
    ```bash
-   ./scripts/slices.py up --env production --only tooling,egress
+   make gitlab-up RUNNERS=0
    ```
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears in **Admin area → CI/CD → Runners** within a minute of its own boot.
+5. `https://gitlab.awsds.internal` answers two to three minutes after a start (a start reconfigures nothing); the runner appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
 
 **Down**, in the reverse order:
 
@@ -76,18 +81,18 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make status
    ```
 
-Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 14 at 0.010 USD/h each, the SageMaker pair and the data-plane three included (Stage 7 decision 9): a GitLab session carries them whether or not anything in the VPC calls them.
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
 ```bash
-aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)" --latest --output text
+aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)" --latest --output text
 ```
 
-**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`:
+**A shell** is Session Manager, from any network, as the infrastructure user; you land as `ssm-user` with passwordless `sudo`. The host is found by its Name tag, which works from any folder; `terraform output` answers only in a folder where `production/tooling/` was initialised, and elsewhere hands the command an empty target (2026-10-12):
 
 ```bash
-aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
 ```
 
 ## P. The installation
@@ -102,7 +107,7 @@ There is no hand installation. A GitLab host is built by Terraform and configure
    1. the proxy into `/etc/environment`: the explicit proxy and the generated `NO_PROXY`;
    2. the data volume: the one disk that is not the root, formatted XFS only when it carries no filesystem (a re-attached volume keeps its data), mounted at `/var/opt/gitlab` by UUID through `/etc/fstab`;
    3. `jq` from the AL2023 repositories (S3, no proxy);
-   4. the GitLab package repository for Amazon Linux 2023 with its three keys and `proxy=` set per repository, then `dnf install gitlab-ce` under `/etc/gitlab/skip-auto-reconfigure`, so the package installs without configuring;
+   4. the GitLab package repository for Amazon Linux 2023 with its three keys and `proxy=` set per repository, then `dnf install gitlab-ce-<release>-ce.0.amazon2023`, the release `tooling/variables.tf` pins (`gitlab_ce_version`, Stage 7 decision 10), under `/etc/gitlab/skip-auto-reconfigure`, so the package installs without configuring; a release the repository lacks stops the boot here;
    5. the fetch: `gitlab.rb` from `s3://awsds-prod-gitlab-objects/config/gitlab.rb`; the root into `/etc/gitlab/trusted-certs/`; the two leaves from their SSM parameters into `/etc/gitlab/ssl/<host>.crt`, each followed by the root, which is the chain the host serves; the two keys from Secrets Manager into `/etc/gitlab/ssl/<host>.key` at mode 600; `update-ca-trust`;
    6. `gitlab-secrets.json`: restored from `awsds-prod-gitlab-secrets` when the container holds a value, otherwise left for the reconfigure to generate;
    7. `gitlab-ctl reconfigure`, the first and the long one: Chef converges every service, initialises PostgreSQL and runs the migrations (5 min 03 s on 2026-10-12). `gitlab.rb` orders the supervisor after `network-online.target`, since Omnibus's default `After=multi-user.target` waits for cloud-init, which is waiting for this step;
@@ -114,7 +119,9 @@ There is no hand installation. A GitLab host is built by Terraform and configure
 
 4. **Then §I**: the root trusted on the laptop, the initial password, the first sign-in, the first refresh, the instance settings, the namespace.
 
-**A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors.
+**A rebuild.** `terraform apply -replace=aws_instance.gitlab` replaces the host and keeps the data volume: the bootstrap finds a formatted volume and mounts it, restores `gitlab-secrets.json` from its container, and the repositories, the database and the local Pages deployments are where they were. Adding `-replace=aws_ebs_volume.data` discards them, which is what the recovery from the first boot's deadlock did while the host held nothing (the stage log), and what the restore rehearsal in §B follows with a restore from the backup bucket. Neither touches `pki/` or the anchors. Both install `gitlab_ce_version`, the release the host runs.
+
+**An upgrade** follows GitLab's upgrade page and its upgrade path, with a backup before it and another after (§B), so the newest backup is the new release's. The bootstrap leaves `/etc/gitlab/skip-auto-reconfigure` on the host, so the new package does not reconfigure by itself. The same sitting moves `gitlab_ce_version` to the new release and `runners/variables.tf`'s `gitlab_runner_version` to the newest runner of its major.minor (§K). The plan reads `No changes`, since the user data is held: the commit is the record. `./scripts/check-gitlab-pins.py` fails `make check` while the two pins' major.minor differ, and `./aws/supplychain.py` `SC-13` fails while the newest backup's release differs from `gitlab_ce_version`.
 
 ## I. The initial setup, on a fresh host
 
@@ -141,7 +148,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
 3. **Read the initial password** in the shell; the file self-deletes 24 hours after the boot:
 
    ```bash
-   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling output -raw instance_id)"
+   aws ssm start-session --profile awsds-infra-prod --region us-west-2 --target "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)"
    ```
 
    ```bash
@@ -194,7 +201,7 @@ aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /data
 
 **Trusting the root on a laptop** (step 2.5, INT-19's first surface; §I step 2 is the occasion). A browser's "Not secure" on `gitlab.awsds.internal`, `https` struck through, means the root is in no store the browser reads; the host's chain is not the suspect while step 4 passes with `--cacert`. Done on 2026-10-12 on the user's macOS laptop: Chrome stopped warning after steps 1-2.
 
-1. Fetch the root from its one source (the same bytes are tracked as `images/base/ca-certificates/awsds-root.crt`; the fingerprint command above is the check that the two agree):
+1. Fetch the root from its one source (the same bytes are tracked as `gitlab/awsds/dev-env/base/ca-certificates/awsds-root.crt`; the fingerprint command above is the check that the two agree):
 
    ```bash
    aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text > "$HOME/awsds-root.crt"
@@ -252,52 +259,360 @@ sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitla
 
 The backup file is fetched first from the backup bucket into `/var/opt/gitlab/backups/`, as `git` (`aws s3 cp` as root, then `chown git:git`). A restore proves itself by a pre-backup repository cloning cleanly.
 
+**The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy: `./aws/supplychain.py` `SC-13` compares them for the newest backup. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
+
 ## K. The runner
 
-The runner is created in GitLab first (step 6.1): **Admin area → CI/CD → Runners → New instance runner**, no tags, run untagged jobs, description `awsds-prod-runner`. GitLab hands back an authentication token (`glrt-…`), which goes into its container once, by hand, as the infrastructure user; it never enters a file in this repository:
+The runner is a **protected project runner** of `awsds/app-etl`, never an instance runner (step 6.1). Any job on the host reads the instance role's credentials through the metadata service, and the role pushes to the three image repositories. An instance runner serves every project on the instance, including a self-registered account's while sign-up is open; a protected project runner serves only the protected branches and tags of the projects it is enabled in, so whoever can push an image is whoever can push a protected ref there.
 
-```bash
-aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: no tags, **Run untagged jobs** checked, description `awsds-prod-runner`, **Protected** checked. GitLab shows the authentication token (`glrt-…`) once.
+
+2. **Put the token into its container**, once, by hand, as the infrastructure user; it never enters a file in this repository. The command waits for a paste and echoes nothing:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)).
+
+Every `make gitlab-up` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+
+**What a job can rely on**:
+
+- the proxy in both cases, `HTTP_PROXY`/`http_proxy`, `HTTPS_PROXY`/`https_proxy` and `NO_PROXY`/`no_proxy`; a build that pulls or installs anything passes them on as build arguments;
+- the CA root at `/etc/gitlab-runner/certs/ca.crt` (the helper installs it for the clone; a script copies it into its own store);
+- `ECR_REGISTRY`, this account's registry host;
+- `/usr/local/bin/docker-credential-ecr-login`, mounted read-only from the host: Amazon's ECR credential helper, pinned by digest in `runners/variables.tf`. A job writes `{"credHelpers":{"<ECR_REGISTRY>":"ecr-login"}}` into `~/.docker/config.json`, and every pull and push on that registry signs in as the instance role, whose credentials the helper reads from the metadata service two hops away. The build image, `moby/buildkit:rootless`, runs as UID 1000 and cannot install a client of its own.
+
+**The first pipeline** (step 6.4) is three files on `app-etl`'s `main`, and Stage 8 step 2.2 replaces them with the application template, [`examples/app-etl/`](../../../examples/app-etl/README.md), whose pipeline includes §G's gates (the procedure: "The application template" below); what follows is the first pipeline's record. It answers verification viii (registration, and BuildKit rootless building and pushing without privileged mode), verification vii (the cache's first pull with no route, on all three upstreams, which turns `SC-12` green), the pipeline deliverable (the push, then the immutable tag) and INT-21's proxy pair. Stage 8 owns the pipeline types; this is the shape that proves the runner.
+
+`Dockerfile`, the image: its base comes through the cache, its `RUN` through the proxy:
+
+```dockerfile
+ARG REGISTRY
+FROM ${REGISTRY}/ecr-public/docker/library/alpine:3.22
+RUN apk add --no-cache ca-certificates
 ```
 
-Every `make gitlab-up` then boots a new instance that reads the token, registers as a new runner manager under the same runner, and appears in the admin area within a minute. `make gitlab-down` destroys it; the stale manager row in GitLab clears itself. The runner's first-boot log is `/var/log/awsds-runner-boot.log`; `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+`ci/cache-probe.Dockerfile`, one image from each cache rule; it is built and discarded:
 
-**What a job can rely on**: the proxy in `HTTP_PROXY`/`http_proxy` and `NO_PROXY`/`no_proxy`, the CA root at `/etc/gitlab-runner/certs/ca.crt` inside the container (the helper installs it for the clone; a script copies it into its own store), and the instance role's credentials through the metadata service two hops away. A build that pulls or installs anything passes the proxy on as a build argument.
+```dockerfile
+ARG REGISTRY
+FROM ${REGISTRY}/k8s/pause:3.10 AS k8s
+FROM ${REGISTRY}/quay/prometheus/busybox:latest AS quay
+FROM ${REGISTRY}/ecr-public/docker/library/busybox:1.37 AS ecr
+FROM scratch
+COPY --from=k8s /pause /probe/k8s-pause
+COPY --from=quay /bin/busybox /probe/quay-busybox
+COPY --from=ecr /bin/busybox /probe/ecr-busybox
+```
 
-**The first pipeline** (step 6.4), a `.gitlab-ci.yml` on `app-etl` that builds and pushes an image with BuildKit rootless, no privileged mode, the registry login minted from the instance role. Stage 8 owns the three pipeline types; this is the shape that proves the runner:
+`.gitlab-ci.yml`:
 
 ```yaml
 stages: [build]
 
 variables:
-  AWS_REGION: us-west-2
   IMAGE_REPO: awsds-prod-ecr-app-etl
+  BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
 
-build-image:
-  stage: build
+.buildkit:
   image:
     name: moby/buildkit:rootless
     entrypoint: [""]
-  variables:
-    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
   before_script:
-    - apk add --no-cache aws-cli
-    - export ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
-    - export REGISTRY="$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com"
     - mkdir -p ~/.docker
-    - >
-      printf '{"auths":{"%s":{"auth":"%s"}}}' "$REGISTRY"
-      "$(printf 'AWS:%s' "$(aws ecr get-login-password --region "$AWS_REGION")" | base64 -w0)" > ~/.docker/config.json
+    - printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+
+build-image:
+  extends: .buildkit
+  stage: build
   script:
     - >
       buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=.
+      --opt build-arg:REGISTRY="$ECR_REGISTRY"
       --opt build-arg:http_proxy="$http_proxy" --opt build-arg:https_proxy="$https_proxy" --opt build-arg:no_proxy="$no_proxy"
-      --output type=image,name="$REGISTRY/$IMAGE_REPO:v0.1.0-$CI_COMMIT_SHORT_SHA",push=true
+      --output type=image,name="$ECR_REGISTRY/$IMAGE_REPO:v0.1.0-$CI_COMMIT_SHORT_SHA",push=true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+cache-probe:
+  extends: .buildkit
+  stage: build
+  script:
+    - >
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=ci
+      --opt filename=cache-probe.Dockerfile --opt build-arg:REGISTRY="$ECR_REGISTRY"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: [ci/cache-probe.Dockerfile]
+
+proxy-pair:
+  stage: build
+  image: public.ecr.aws/amazonlinux/amazonlinux:2023
+  script:
+    - curl -sS -o /dev/null -w 'through the proxy -> %{http_code}\n' --max-time 20 https://pypi.org/
+    - >
+      if env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY curl -sS -o /dev/null --max-time 20 https://pypi.org/;
+      then echo "FAIL: the internet answered with no proxy, so a route exists"; exit 1;
+      else echo "no proxy, no answer: the proxy is the only way out"; fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+```
+
+The readings, in order:
+
+1. `build-image` and `cache-probe` run on the push; the protected runner takes the first push's pipeline, since `main` is protected before that pipeline exists. `moby/buildkit:rootless` and the job images come from Docker Hub and ECR Public through the proxy (the plane is `open`); every `FROM` is a pull through a cache rule, which ECR answers by creating `<prefix>/<upstream path>` from the rule's creation template and importing every platform of the upstream index; the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. A `FROM` that reads `not found` while the runner's `GetAuthorizationToken` succeeds is ECR failing to create the cache's repository: CloudTrail names the refusal under `AWSServiceRoleForECRTemplate`, and a creation template that carries tags or a KMS key needs a creation role (`registry/cache.tf`).
+2. **Retry** `build-image`: the same commit builds the same tag, and ECR refuses the push: *"The image tag '…' already exists in the 'awsds-prod-ecr-app-etl' repository and cannot be overwritten because the tag is immutable."* That refusal is the deliverable's second half.
+3. Run `proxy-pair` by hand: `through the proxy -> 200`, then `curl: (28) Connection timed out` and `no proxy, no answer`.
+
+Measured 2026-10-12 (the stage log): `build-image` in about 8 s, the cache's first pull 1.3 s with the import, and all three readings as written here.
+
+**Pages** (step 4.2): a job carrying `pages: true` publishes its `public/` directory; GitLab adds `pages:deploy`, and the site lives at `$CI_PAGES_URL`, a unique domain under the wildcard (`https://app-etl-ffa1fa.awsds-pages.internal` for `app-etl`, shown under **Deploy → Pages**). The jobs added to the first pipeline, with `stages: [build, verify]`:
+
+```yaml
+pages:
+  stage: build
+  image: public.ecr.aws/docker/library/alpine:3.22
+  script:
+    - mkdir -p public
+    - >
+      printf '<!doctype html><title>app-etl</title><h1>app-etl</h1><p>Published by job %s on %s from commit %s.</p>\n'
+      "$CI_JOB_ID" "$CI_RUNNER_DESCRIPTION" "$CI_COMMIT_SHORT_SHA" > public/index.html
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+pages-readback:
+  stage: verify
+  image: public.ecr.aws/amazonlinux/amazonlinux:2023
+  needs: [pages]
+  script:
+    - echo "CI_PAGES_URL=$CI_PAGES_URL"
+    - sleep 30
+    - >
+      curl -sS -o /dev/null --cacert /etc/gitlab-runner/certs/ca.crt --max-time 20
+      -w 'pages: http=%{http_code} ssl_verify=%{ssl_verify_result} redirect=%{redirect_url}\n' "$CI_PAGES_URL/"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 ```
 
-`aws-cli` and `moby/buildkit:rootless` arrive through the proxy (the plane is `open`); the push leaves by the `ecr.api`/`ecr.dkr` endpoints and the layers by the S3 gateway, since the job carries the host's `NO_PROXY`. The tag is immutable: a second push of the same tag is refused, which is the deliverable's second half. If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
+Access control answers an unauthenticated read with `302` to `https://projects.awsds-pages.internal/auth`, so the read-back's proof is `ssl_verify=0`, not the status. A browser's first visit asks the user to authorize **GitLab Pages**, the OAuth application Omnibus registers at the first reconfigure (scope `api`; for an administrator GitLab warns that it can then act as one); each user authorizes it once.
+
+If rootless BuildKit fails with `operation not permitted` under the runner's `seccomp=unconfined`, verification viii records it and the fallback is rootless Buildah.
+
+### The application template
+
+Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples/app-etl/`](../../../examples/app-etl/README.md). Three things come first: `awsds/ci-gates` tagged (§G), its commit in the template's `include:` `ref`, and the test runner registered (below). The commands run on the laptop with the tunnel up and git trusting the root (§C step 3), from a checkout of this repository that carries that `ref`.
+
+1. **Clone the project and branch off `main`**:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/app-etl.git "$HOME/tmp/app-etl"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" switch -c application-template
+   ```
+
+2. **Swap the files**: the project's tracked files go and the template's tracked files arrive, so nothing untracked comes along (`.venv/`, an `out/`). The archive is written to a file and then extracted, in two steps, so a failed `git archive` cannot hand `tar` an empty input:
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" rm -q -r .
+   ```
+
+   ```bash
+   git archive --format=tar -o "$HOME/tmp/app-etl-template.tar" HEAD:examples/app-etl
+   ```
+
+   ```bash
+   tar -x -f "$HOME/tmp/app-etl-template.tar" -C "$HOME/tmp/app-etl"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" add -A
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" commit -m "The application template, in place of the first pipeline (Stage 8 step 2.2)"
+   ```
+
+3. **Push the branch**. Its pipeline runs `test`, `secret_detection` with its gate and `pip-audit`, all on the test runner, and offers the manual `gate-without-proxy` (verification xiii):
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" push -u origin application-template
+   ```
+
+4. **Merge it into `main`** through a merge request. `main`'s pipeline adds `pages`, published at `$CI_PAGES_URL` (**Deploy → Pages**).
+
+5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner; the scan gate informs, so its failure leaves the pipeline going (Stage 8 decision 1):
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" tag v0.1.0 && git -C "$HOME/tmp/app-etl" push origin v0.1.0
+   ```
+
+   The `build-image` job's last line, `== pushed <reference>@sha256:…`, carries the digest that `terraform-live/<env>/app/app-etl/release.tf` records (Stage 8 step 2.4).
+
+### The deploy runner
+
+The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
+
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-deploy`, **Run untagged jobs** unchecked, description `awsds-prod-runner-deploy`, **Protected** checked, maximum job timeout `3600`.
+2. **Put the token into its container**, as for the build runner:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-deploy-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `awsds/dev-env`** and **Lock to current projects**, as step 3 above.
+
+A runner created twice leaves the first one in GitLab with no manager; it is deleted from **Admin → CI/CD → Runners** once the instance has registered under the current token.
+
+**What a deploy job can rely on**:
+
+- the deploy image, `awsds-prod-ecr-deploy@<deploy_image_digest>`, as the default image; an `image:` keyword naming anything outside `awsds-prod-ecr-deploy` is refused by the runner's `allowed_images`, and the runner pulls through the ECR credential helper as the instance role;
+- `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
+- `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
+
+**The probe** (Stage 8 verifications ii and iii, answered 2026-10-13) was `deploy-runner-probe`, a job of the first pipeline's `.gitlab-ci.yml`, tag `awsds-deploy`, created only in a pipeline that set `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the first pipeline's five jobs each opened their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe ran alone. On `main` it printed the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stayed `pending` under GitLab's stuck notice, which is the protection working, and was cancelled by hand. It leaves `main` with the first pipeline's files (the application template above), and `awsds/app-etl`'s history keeps it.
+
+The first boot assumes each profile once and prints the resulting ARN into `/var/log/awsds-runner-boot.log`, readable through the serial console (§U's command with the Name `awsds-prod-runner-deploy`), then registers as `awsds-prod-runner-deploy-<instance id>`.
+
+### The test runner
+
+The test runner (Stage 8 decision 11) is the one runner that serves an **unprotected** branch: a project runner of `awsds/app-etl`, linked to `awsds/dev-env` and `awsds/ci-gates` and locked, with the tag `awsds-test` and no untagged jobs. Whoever can push a branch can run code on it, so its jobs get nothing: the instance's metadata hop limit is 1, a token's response dies at the docker bridge, and a job container reads no AWS identity. The host's role holds Session Manager, its token and the CA root, read by the boot. Its jobs pull public images through the proxy.
+
+1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-test`, **Run untagged jobs** unchecked, description `awsds-prod-runner-test`, **Protected** unchecked, maximum job timeout `3600`.
+2. **Put the token into its container**, as for the build runner:
+
+   ```bash
+   aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-test-token --secret-string "$(read -rs T && printf '%s' "$T")"
+   ```
+
+3. **Link it to `awsds/dev-env` and `awsds/ci-gates`** and **Lock to current projects**, as step 3 above.
+
+**What a test job can rely on**: the proxy variables in both cases and the CA root at `/etc/gitlab-runner/certs/ca.crt`; no `ECR_REGISTRY`, no credential helper and no AWS identity. The shared gates name its tag (§G).
+
+The first boot reads the control it exists for, from a container: `no token from a container: the jobs hold no AWS identity` in `/var/log/awsds-runner-boot.log` (§U's console command with the Name `awsds-prod-runner-test`), then registers as `awsds-prod-runner-test-<instance id>`. `./aws/cicd.py` `CI-9` reads the hop limit and the role back.
+
+## G. The gates project
+
+`awsds/ci-gates` holds the security gates every pipeline includes (Stage 8 step 5, decision 10); its content is [`ci-gates/`](../../../ci-gates/README.md) in this repository, reviewed here and pushed there. A pipeline includes it at a commit, so a change to a gate or a baseline reaches a pipeline only when that pipeline's `ref` moves.
+
+1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `ci-gates`, visibility **Private**, no README.
+2. **Members**: **Manage → Members → Invite a group**: `awsds/data-scientists`, `awsds/deployment-managers`, `awsds/dev-env-stewards` and `awsds/governance-managers` as **Reporter**. `include:project` resolves with the permissions of whoever starts the pipeline, so a persona that cannot read this project cannot run a pipeline that includes it. Only Maintainers change it.
+3. **Protection**: **Settings → Repository → Protected branches**: `main`, allowed to push and merge **Maintainers**; **Protected tags**: `gates-v*`, allowed to create **Maintainers**.
+4. **Push the files**, from a clone on the laptop with the tunnel up and git trusting the root (§C step 3); the `cp` runs from a checkout of this repository that carries `ci-gates/`:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/ci-gates.git "$HOME/tmp/ci-gates"
+   ```
+
+   ```bash
+   cp ci-gates/README.md ci-gates/gates.gitlab-ci.yml ci-gates/baselines.gitlab-ci.yml ci-gates/.gitlab-ci.yml "$HOME/tmp/ci-gates/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" add -A
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" commit -m "gates-v0.1.0: the gates and the decision 1 baselines"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" push origin main
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" tag gates-v0.1.0 && git -C "$HOME/tmp/ci-gates" push origin gates-v0.1.0
+   ```
+
+5. **Read the commit back** and write it into each consumer's `include:` `ref`, the tag in the comment beside it; the push's own pipeline runs the gates on the project itself and the baselines' shape check, on the test runner (§K, which links the runner to this project):
+
+   ```bash
+   git -C "$HOME/tmp/ci-gates" rev-parse HEAD
+   ```
+
+A finding enters a baseline the same way: a commit to this project whose message names who accepted it and why, a new `gates-v*` tag, and each consumer's `ref` moved in a commit of its own (`ci-gates/README.md`).
+
+## M. The image projects, and the infrastructure mirror
+
+Two copies, in opposite directions. The image recipes live in GitLab since Stage 8 decision 16, `awsds/dev-env` and `awsds/deploy-image`, and this repository keeps a copy of each under `gitlab/` ([`gitlab/README.md`](../../../gitlab/README.md)). The infrastructure repository lives on GitHub, and `awsds/infrastructure` is the copy the dev-env pipeline's registration job clones (decision 2).
+
+### The copies under `gitlab/`
+
+1. **A change** is a merge request on the GitLab project. After the merge, from a checkout of this repository with the tunnel up, `--dry-run` first lists what the copy gains and loses:
+
+   ```bash
+   ./scripts/gitlab-mirror.py --dry-run
+   ```
+
+   ```bash
+   ./scripts/gitlab-mirror.py
+   ```
+
+   Then commit the copy and `gitlab/mirror.json`. `./scripts/check-gitlab-mirror.py` reads the house recipe's `NO_PROXY` and Bedrock settings against the estate, and names the change to make in GitLab when they differ.
+2. **A pipeline file is linted before it is pushed**: the project's **Build → Pipeline editor → Validate**, which creates nothing.
+3. **The seed**, once: what GitLab did not hold yet was the copy itself, pushed from a clone as the local administrator, from a checkout of this repository carrying it:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/dev-env.git "$HOME/tmp/dev-env"
+   ```
+
+   ```bash
+   rsync -a --delete --exclude .git gitlab/awsds/dev-env/ "$HOME/tmp/dev-env/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/dev-env" add -A && git -C "$HOME/tmp/dev-env" commit -m "The recipe, moved from AWS-DataScience's images/"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/dev-env" push origin main
+   ```
+
+   The same for `awsds/deploy-image`, from `gitlab/awsds/deploy-image/`. `./scripts/gitlab-mirror.py` then reads both back unchanged and writes `gitlab/mirror.json`. The seed's first `main` pipeline on `awsds/dev-env` fails at `pip-audit`, on the lock's 73 findings with a fixed version: the gate working, until the release's merge request.
+
+### The infrastructure mirror
+
+1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
+2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job clones with its job token, which carries the permissions of whoever ran the release gate. `awsds/deployment-managers` joins at pass 4.
+3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`.
+4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
+
+   ```bash
+   git remote add gitlab https://gitlab.awsds.internal/awsds/infrastructure.git
+   ```
+
+5. **The push**, `main` alone, in the same sitting as any merge the pipelines consume:
+
+   ```bash
+   git push gitlab main
+   ```
+
+   The registration job prints the commit it cloned, so a stale mirror shows in its log.
+
+### Stage 8 pass 3's session, in order
+
+1. `make hub-up`, then `make gitlab-up` from a checkout carrying `production/runners/`' runner profile (decision 14): this worktree until PR #131 merges.
+2. `gates-v0.3.0`: §G step 4 with this repository's four `ci-gates/` files, then the tag, and read its commit back.
+3. The seeds of `awsds/dev-env` and `awsds/deploy-image` (above), then `./scripts/gitlab-mirror.py`.
+4. Stage 8 step 1.0's owed reading: as the data-scientist persona, a Developer, create the tag `default-v0.0.0` on `awsds/dev-env`; GitLab must refuse it.
+5. The release's merge request, as the data-scientist persona, on a branch of `awsds/dev-env`: the lock moved past every finding it can leave, and the `include` moved to `gates-v0.3.0`'s commit. Its pipeline's `pip-audit` reads 8 accepted findings and none blocking.
+
+   ```bash
+   uv lock --directory dev-env/python --upgrade-package fsspec --upgrade-package jupyterlab --upgrade-package mako --upgrade-package multidict --upgrade-package notebook --upgrade-package oauthlib --upgrade-package pyjwt --upgrade-package setuptools --upgrade-package sqlparse --upgrade-package torch --upgrade-package torchvision --upgrade-package tornado --upgrade-package urllib3 --upgrade-package virtualenv --upgrade-package werkzeug
+   ```
+
+6. The steward merges the merge request and tags the release; [`dev-env.md`](dev-env.md) §B is the order around its gate. The registration runs from the project's own checkout since Stage 8 decision 18 (2026-10-15), so it reads no mirror.
 
 ## A. SAML
 
@@ -313,7 +628,7 @@ Stage 7 step 3 makes Identity Center the sign-in; the local administrator (§I) 
 
 3. **Assign users and groups**: the four persona groups among the five `sso-group-*` groups (`INV-04`), `sso-group-infrastructure` left out, since GitLab's administrator is the local account.
 
-4. **The two values**, typed once into `terraform-live/production/tooling/saml.auto.tfvars`, which `.gitignore` refuses; the certificate is public, the file is the record. Both are in the application's metadata, the **IAM Identity Center metadata** URL on the application's page (public, no sign-in): the `SingleSignOnService` with the HTTP-POST binding is the sign-in URL and `X509Certificate` the certificate, which is how 2026-10-12's file was written (`curl`, then a parse). The file exists only in the checkout that wrote it (Lesson 61): a plan from another checkout proposes removing the `omniauth` block from the object, and that plan is the signal to copy the file, never a change to apply:
+4. **The two values**, typed once into `saml.auto.tfvars`, which `.gitignore` refuses; the certificate is public, the file is the record. Both are in the application's metadata, the **IAM Identity Center metadata** URL on the application's page (public, no sign-in): the `SingleSignOnService` with the HTTP-POST binding is the sign-in URL and `X509Certificate` the certificate, which is how 2026-10-12's file was written (`curl`, then a parse). The file lives in the project folder's `secrets/` since 2026-10-13, outside every worktree (Lesson 61), and every plan of `production/tooling/` names it with `-var-file=<project folder>/secrets/saml.auto.tfvars`. A plan without it proposes removing the `omniauth` block from the object, and that plan is the signal to add the flag, never a change to apply. Its content:
 
    ```hcl
    saml_idp_sso_target_url = "https://portal.sso.us-west-2.amazonaws.com/saml/assertion/<application id>"
@@ -336,10 +651,12 @@ A loop at sign-in has two suspects, an untrusted certificate and the browser's p
 
 | Instrument | Reads |
 |---|---|
-| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`) |
+| `./aws/supplychain.py` | the host and its `[D]` state (`SC-1`), the groups (`SC-2`), the anchors (`SC-3`), the repositories (`SC-4`, `SC-5`), CodeArtifact (`SC-6`), the consumer reads (`SC-7`), the leaves' runway (`SC-8`), the root parameter (`SC-9`), the runner (`SC-10`), the proxy configuration (`SC-11`), the cache's first pull (`SC-12`), the newest backup's release against `gitlab_ce_version` (`SC-13`) |
 | `./aws/proxy.py` | the proxy and its planes, `PX-1`..`PX-4` |
-| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten runner is 0.2117 USD/h |
+| `./aws/egress.py` §6 | what is still up at the session's end — a forgotten build runner is 0.2117 USD/h, the deploy and test runners 0.0188 each |
+| the help page | the release the host runs now, with no GitLab sign-in: `https://gitlab.awsds.internal/help` publishes `gon.revision` to an anonymous visitor, matched against `gitlab-foss`'s tag on gitlab.com (`ecff27ae760` is `v19.4.2`, read 2026-10-16); `SC-13`'s reading is as old as the newest backup |
+| `./scripts/check-gitlab-pins.py` | offline, in `make check` and the commit gate: `gitlab_ce_version`'s major.minor against `gitlab_runner_version`'s |
 
 ---
 
-*Runbooks: [buildbox](buildbox.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*
+*Runbooks: [dev-env](dev-env.md) · [terraform-changes](terraform-changes.md) · [vpn](vpn.md) · Images: [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md) · Stage: [Stage 7](../stages/stage-07-gitlab-runners-ecr.md)*

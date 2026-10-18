@@ -333,6 +333,12 @@ DATA_LAKE = ["data-governance"]
 # two intents apart (Lesson 51). N Sandboxes, N = 1.
 REGISTRY_CONSUMERS = ["sandbox"]
 
+# The accounts that pull an APPLICATION image (`awsds-prod-ecr-app-*`): Stage 8's app-consumer entry,
+# authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
+# (Lesson 51). Sandbox runs the image by hand while the application is engineered (step 2.4); Staging
+# joins at step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
+APP_REGISTRY_CONSUMERS = ["sandbox"]
+
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.
 # Consumed by each member's dev-env/ slice (Stage 6d step 2.1), which reads the repository URL the
@@ -445,6 +451,48 @@ PERSONA_VENDING_POLICY_NAME = "awsds-org-project-storage-vending"
 # The next account to leave re-opens the same window between its 1.2 and its 2.1.
 PERSONA_VENDING_ACCOUNTS = list(SMUS_MEMBERS)
 
+# ------------------------------------------------- Stage 8 step 4: the deploy credential layer
+#
+# The deploy runner lives in the registry's account (D14), and its role is the one principal every
+# deploy role trusts (INT-08, INT-18). The rows are the deploy roles, keyed by the account folder
+# each lives in; the names are contracts with ./aws/cicd.py. Two emissions, both to foundation/: the
+# runner's home gets every other row with its profile, so the runner role's AssumeRole list is
+# built from account ids its aliased providers resolve (aws/INDEX.md rule 1 keeps ids out of
+# tracked files), and every row's own foundation/ gets its role's name and, outside the home, the
+# home's profile, from which its trust names the runner's role.
+#
+# A vended Sandbox unit adds a row (D35) and an alias in production/foundation/deploy-anchors.tf,
+# since Terraform cannot for_each a provider. Development has no row: 6b made it Staging, which
+# registers no image.
+DEPLOY_RUNNER_HOME = ["production"]
+DEPLOY_ROLES = {
+    "staging": "awsds-deploy-staging",
+    "production": "awsds-deploy-prod",
+    "sandbox": "awsds-deploy-devenv-sandbox",
+}
+
+# Stage 8 decision 19 - a deploy role outside its account's foundation/, keyed by the (account,
+# slice) that builds it: the role that deploys an application's release to D41's `test` project. The
+# slice gets its name and the home's profile, as a foundation/ does, and the home lists it in that
+# account's `other_roles`, so the runner's AssumeRole list and its profiles carry it. The account
+# holds a DEPLOY_ROLES row and is not the home: the home lists only the targets.
+DEPLOY_ROLES_BY_SLICE = {
+    ("sandbox", "workflows"): "awsds-deploy-sandbox-test",
+}
+for _account, _slice in DEPLOY_ROLES_BY_SLICE:
+    if _account not in DEPLOY_ROLES or _account in DEPLOY_RUNNER_HOME:
+        raise ValueError(
+            f"DEPLOY_ROLES_BY_SLICE: {_account}/{_slice} needs a DEPLOY_ROLES row outside "
+            "DEPLOY_RUNNER_HOME, the deploy_targets row that lists it"
+        )
+
+# Stage 8 decision 14 - the profile a pipeline job reads the registry's state through. The registry
+# lives in the runner's home (D14), so the runner's own role reads that one state object, under a
+# profile of the runner's AWS configuration named after the role and carrying the instance's
+# credentials (production/runners/deploy-runner.tf). `gen-tfvars.py --pipeline` writes it where a
+# laptop's tfvars name PROFILES' entry, an SSO profile the runner does not hold.
+DEPLOY_RUNNER_PROFILE = f"awsds-{ENV_TOKENS[DEPLOY_RUNNER_HOME[0]]}-runner-deploy"
+
 # Subnets anchor on zone ids, never on AZ names and never on list position (Stage 3 step 1.5,
 # settled by 1b step 6; ./aws/AZs.py is the measurement). Authored per account because a
 # vended account is assigned its own name->id mapping and may legitimately differ (INV-08);
@@ -464,7 +512,6 @@ NETWORK_SLICES = {
     "egress",
     "vpn",
     "probes",
-    "buildbox",
     # 6c step 0.3's slices, declared here with their ranks. `networking` and `workloads` are
     # VPC-bearing; `proxy` and `workloads-egress` ride inside one and read its state, exactly
     # as `egress` and `vpn` do.
@@ -473,7 +520,7 @@ NETWORK_SLICES = {
     "proxy",
     "workloads-egress",
     # Stage 7's two hosts in VPC-SharedServices: GitLab ([D]) and the build runner ([E]). Both
-    # read production/foundation/'s state for the subnet and anchor on a zone id, like `buildbox`.
+    # read production/foundation/'s state for the subnet and anchor on a zone id.
     "tooling",
     "runners",
 }
@@ -580,12 +627,15 @@ def backend_values(account: str, slice_name: str) -> dict:
     }
 
 
-def tfvars_values(account: str, slice_name: str) -> dict:
+def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict:
     """region, env token, Environment tag - plus, for a network slice, the allocation.
 
     The extras are emitted only where a consumer exists, per slice: an emitted value no
     variable declares is a Terraform warning on every plan, and a declared variable nothing
     consumes is a tflint failure - either way, noise that trains the reader to stop reading.
+
+    `pipeline` is a deploy job's run on the deploy runner (Stage 8 decision 14): the registry's
+    state is read through DEPLOY_RUNNER_PROFILE instead of the laptop's SSO profile.
     The D22 guard covers every network slice: Data Governance has no VPC and no CIDRS row,
     so a network slice there fails loudly here rather than applying with a hole.
     """
@@ -698,12 +748,6 @@ def tfvars_values(account: str, slice_name: str) -> dict:
                 # And the ULA: the module takes both, and an IPv4-only tunnel is what let a
                 # device's IPv6 leave outside it entirely.
                 values["peer_cidr_v6"] = WIREGUARD_PEER_CIDR_V6
-            # Nothing extra for `buildbox`, and the absence is a decision. It briefly took
-            # WIREGUARD_PEER_CIDR, to admit the tunnel's clients on its security group, and the
-            # requirement behind that was withdrawn by the user the same day, once a measurement
-            # showed the rule did not gate the one path anybody uses: `ssm start-session` reaches
-            # the agent's outbound channel and no security group sees it. The buildbox has no
-            # ingress rule at all, so an emission here would feed a variable that feeds nothing.
             # Stage 7 step 1.2 - GitLab's security group admits HTTPS from the Interactive
             # accounts' private tiers, where a project's app ENI is the source (INT-09). The
             # list is derived (private_tier_cidrs above), never typed into the slice.
@@ -784,14 +828,45 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     # names are read from production/registry/'s state, so neither is a literal here.
     if slice_name == "dev-env":
         values["registry"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in REGISTRY_HOME
+            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_HOME
         }
 
-    # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4).
+    # Stage 6 pass 0 - production/registry/'s consumer map (Stage 7 step 5.4), and the application
+    # images' own (Stage 8 step 2.4).
     if account == "production" and slice_name == "registry":
         values["consumers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
             for acct in REGISTRY_CONSUMERS
+        }
+        values["app_consumers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in APP_REGISTRY_CONSUMERS
+        }
+
+    # Stage 8 step 2.4 - an application slice reads its account's foundation/ and data/ states (the
+    # subnets, the VPC, the data key, the outputs bucket) and the registry's (the repository its job
+    # pulls), so it takes the folder and the registry map, as dev-env/ does.
+    if slice_name.startswith("app/"):
+        values["account_folder"] = account
+        values["registry"] = {
+            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_HOME
+        }
+
+    # Stage 9 step 3 - a deployment target's sagemaker/ slice, the runtime half of D17: the job
+    # role, the Model Registry and the debug role. It reads its own foundation/ and registry/
+    # states by the account folder (the deploy roles, the alerts topic, the application
+    # repository), the lake's state for the drop-box pickup, and the account id of each account
+    # whose data scientists read model status (decision 10) through `readers`, one aliased
+    # provider per key. The readers are the SMUS members, the accounts with projects.
+    if slice_name == "sagemaker" and account in DATA_PRODUCERS:
+        values["account_folder"] = account
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["readers"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
         }
 
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
@@ -799,7 +874,7 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     # network slice takes: this slice reads its own foundation/ state for the VPC, the subnets
     # and the endpoint security group, and the state key is keyed by the account folder, which
     # no .tf file may re-derive from the env token (Lesson 14).
-    if slice_name == "sagemaker":
+    elif slice_name == "sagemaker":
         values["account_folder"] = account
         # Two maps at the same account, and they are not one map. `lake` is the governed lake's
         # state (the registered bucket ARNs the D13 boundary excludes, the drop-box prefix, the
@@ -840,6 +915,35 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     if slice_name == "foundation" and account in PERSONA_VENDING_ACCOUNTS:
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
 
+    # Stage 8 step 4 - the deploy credential layer, both ends (the table above carries the
+    # argument). The home builds the runner's role and lists every other target, each with the
+    # roles its other slices hold; each target builds its own deploy role, whose trust names the
+    # home's runner role, and a slice of DEPLOY_ROLES_BY_SLICE builds its role the same way.
+    if slice_name == "foundation" and account in DEPLOY_ROLES:
+        values["deploy_role_name"] = DEPLOY_ROLES[account]
+        if account in DEPLOY_RUNNER_HOME:
+            values["deploy_targets"] = {
+                acct: {
+                    "profile": PROFILES[acct],
+                    "env": ENV_TOKENS[acct],
+                    "role": role,
+                    "other_roles": [r for (a, _s), r in DEPLOY_ROLES_BY_SLICE.items() if a == acct],
+                }
+                for acct, role in DEPLOY_ROLES.items()
+                if acct not in DEPLOY_RUNNER_HOME
+            }
+        else:
+            values["deploy_runner"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                for acct in DEPLOY_RUNNER_HOME
+            }
+    if (account, slice_name) in DEPLOY_ROLES_BY_SLICE:
+        values["deploy_role_name"] = DEPLOY_ROLES_BY_SLICE[(account, slice_name)]
+        values["deploy_runner"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+            for acct in DEPLOY_RUNNER_HOME
+        }
+
     if account == "identity" and slice_name == "sso":
         # Stage 5a pass 4c put two cross-account reads here. The `data_consumers` map (each
         # consumer's workgroup + derived-bucket ARNs) left on 2026-08-26 with the derived zone
@@ -857,12 +961,18 @@ def tfvars_values(account: str, slice_name: str) -> dict:
     return values
 
 
-def render_tfvars(account: str, slice_name: str) -> str:
+def registry_profile(account: str, pipeline: bool) -> str:
+    """The profile the registry account's state is read through: the laptop's, or the runner's."""
+    return DEPLOY_RUNNER_PROFILE if pipeline else PROFILES[account]
+
+
+def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
     """The full terraform.auto.tfvars content for one slice, regeneration note included."""
-    v = tfvars_values(account, slice_name)
+    v = tfvars_values(account, slice_name, pipeline)
+    flag = "--pipeline " if pipeline else ""
     out = (
         "# GENERATED by scripts/gen-tfvars.py - do not edit, and do not commit (.gitignore).\n"
-        f"# Regenerate with: ./scripts/gen-tfvars.py {account} {slice_name}\n"
+        f"# Regenerate with: ./scripts/gen-tfvars.py {flag}{account} {slice_name}\n"
         "# Auto-loaded by terraform: the name ends in .auto.tfvars, so no -var-file is needed.\n"
         f'region          = "{v["region"]}"\n'
         f'env             = "{v["env"]}"\n'
@@ -933,6 +1043,12 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["consumers"].items()
         )
         out += f"consumers = {{\n{rows}}}\n"
+    if "app_consumers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["app_consumers"].items()
+        )
+        out += f"app_consumers = {{\n{rows}}}\n"
     if "registry" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
@@ -973,10 +1089,33 @@ def render_tfvars(account: str, slice_name: str) -> str:
             for acct, p in v["lake"].items()
         )
         out += f"lake = {{\n{rows}}}\n"
+    if "readers" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["readers"].items()
+        )
+        out += f"readers = {{\n{rows}}}\n"
     if "persona_vending_policy_name" in v:
         out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
     if "identity_profile" in v:
         out += f'identity_profile = "{v["identity_profile"]}"\n'
+    if "deploy_role_name" in v:
+        out += f'deploy_role_name = "{v["deploy_role_name"]}"\n'
+    if "deploy_targets" in v:
+        rows = ""
+        for acct, p in v["deploy_targets"].items():
+            other_roles = ", ".join(f'"{r}"' for r in p["other_roles"])
+            rows += (
+                f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}", '
+                f'role = "{p["role"]}", other_roles = [{other_roles}] }}\n'
+            )
+        out += f"deploy_targets = {{\n{rows}}}\n"
+    if "deploy_runner" in v:
+        rows = "".join(
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            for acct, p in v["deploy_runner"].items()
+        )
+        out += f"deploy_runner = {{\n{rows}}}\n"
     return out
 
 

@@ -118,7 +118,8 @@ connect but sees nothing"* as the expected state for a while — which is the am
    the IAM policy and its attachment, the **access role** the portal's form demands, and the `5439`
    ingress rule, so they cannot drift apart. `[P]` is never touched by `make up`, so this apply is by
    hand (`runbooks/terraform-changes.md` §2). **EC2 refuses a rule description containing `>`** — the
-   permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` and the apply is the only validator.
+   permitted set is `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`. `validate` does not check this resource;
+   `make check` and the commit gate do, through `scripts/check-sg-descriptions.py`.
 3a. **Tell the project's notebooks to chain through the access role**, which is what makes the
    schema work from a space (measured 2026-10-10, §V step 4). Redshift grants to database users and
    never to an IAM role, and the space's session carries a **per-person** `RedshiftDbUser` that SMUS
@@ -127,8 +128,9 @@ connect but sees nothing"* as the expected state for a while — which is the am
    because **no session tag is transitive**, so the per-person value does not follow into the chain.
    A notebook that connects directly still gets a user holding nothing and still fails at the schema,
    so this is a convention with a loud failure rather than a control. In-database attribution becomes
-   per project; whether CloudTrail still names the person on the chained session is unread (6h
-   verification xv): the trust policy admits `sts:SetSourceIdentity`, and §J's call passes none.
+   per project, and CloudTrail still names the person: the chained session carries the space's
+   `sourceIdentity`, the data scientist's Identity Center user id, although §J's call passes none (6h
+   verification xv, read 2026-10-17).
 4. **The connection, in the portal**, by the project member — it cannot be done any other way:
    `datazone list-connections` is refused to the account's administrator by **DataZone's own**
    authorization layer, because that identity is not a project member. *Compute → Data warehouse →
@@ -249,7 +251,7 @@ workgroup, and that is a decision with a written argument, not a map entry.
 
 **For a data scientist in a space.** `import redshift_connector, boto3` works in a new notebook on the
 `Python (awsds dev-env)` kernel with nothing installed: both are declared in
-`images/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
+`gitlab/awsds/dev-env/dev-env/python/pyproject.toml`. The driver was already arriving transitively through
 `amazon-sagemaker-sql-execution`; it is named there now so a resolution change cannot remove it
 silently.
 
@@ -423,7 +425,7 @@ without that endpoint there is no door to the API and no fallback — step 3 fai
 which reads like a network fault and is a missing endpoint.
 
 **`redshift_connector` is already importable in the image** (measured 2026-10-10). It is not in
-`images/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
+`gitlab/awsds/dev-env/dev-env/python/pyproject.toml`, so it arrives **transitively** — most likely through
 `sagemaker-studio-dataengineering-sessions` or `aws-glue-sessions`. The script's install step is
 therefore a no-op in practice and stays only as the fallback. A transitive driver is a dependency
 nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by name, plus
@@ -554,7 +556,7 @@ except OSError as exc:
 # summary at the end is the verdict.
 #
 # redshift_connector is importable in the image: the lock installs it through
-# amazon-sagemaker-sql-execution (measured 2026-10-10), and images/dev-env/python/pyproject.toml
+# amazon-sagemaker-sql-execution (measured 2026-10-10), and gitlab/awsds/dev-env/dev-env/python/pyproject.toml
 # names it since. The install below is the fallback for a kernel without it, normally a no-op.
 driver = None
 try:
