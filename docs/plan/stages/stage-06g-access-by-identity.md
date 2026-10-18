@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer, and **1.4 closed the same day on the monitored profile** — the calls answer through the proxy and the access log attributes each to the device. Owed: 2.4's Athena read from a Sandbox space |
-| **Prerequisites** | **None that block.** The hub up (`make hub-up`) only for the monitored-profile halves of 1.4 and 2.4 |
+| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer, and **1.4 closed the same day on the monitored profile** — the calls answer through the proxy and the access log attributes each to the device. Owed: 2.4's Athena read from a Sandbox space, which as written is refused rather than answered, since the project role holds no Lake Formation grant on the lake (step 2.4); and decision 1's replacement of the proxy host, which the next `production/proxy/` apply makes and which starts a host, so it belongs to a hub session |
+| **Prerequisites** | **None that block.** The monitored-profile halves of 1.4 and 2.4 were measured on 2026-09-18; what remains, 2.4's Athena read, needs the hub and a Sandbox space up |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
 
@@ -115,7 +115,7 @@ exercised both (Lesson 20's mirror).
   `DenyControlPlaneOffVpn` alone (273 bytes; every other statement identical); applied; re-plan
   `No changes`. Read back on the nine provisioned persona roles in Sandbox, Staging, Production and Data
   Governance: no `DenyControlPlaneOffVpn` and no network-origin key on any (`DataScientistAccess` 19 →
-  18 statements). 1.4 is owed: it needs the Data Scientist User's session.
+  18 statements). 1.4 needed the Data Scientist User's session, and was measured on 2026-09-18 (below).
 - **1.1 [Claude] The code, in one commit.** The `control_plane_vpn` document in `policies-shared.tf` and its
   composition into the six sets (`policies-data-scientists.tf`, `policies-approvers.tf`); the two
   preconditions in `permission-sets.tf`; the `vpn_egress_cidrs` and `vpn_egress_vpc_ids` locals; the
@@ -136,7 +136,7 @@ exercised both (Lesson 20's mirror).
   refusal (Lesson 24). Neither `proxy.awsds.internal` nor `vpn.awsds.internal` resolves with the tunnel
   down, so the private network stays closed. A list of either lake bucket is refused at the **identity**
   layer (`s3:ListBucket`, implicit) and never reaches the bucket policy (Lesson 28) — which is why 2.4's
-  evidence has to be the two `PutObject`s. Owed: the monitored-profile half, which needs the hub up.
+  evidence has to be the two `PutObject`s. The monitored-profile half followed the same day (the next item).
 - **1.4's monitored-profile half, partly measured 2026-09-18** with the hub up and the full tunnel
   connected. The private names resolve again — `proxy.awsds.internal` → `10.31.160.140`,
   `vpn.awsds.internal` → `10.31.160.22` — and an AWS call through
@@ -175,7 +175,8 @@ exercised both (Lesson 20's mirror).
   `DenyPutOutsideTheLetterboxOffTrustedNetworks`, which keeps the exemption on the prefix. `VPN_HOMES`
   left `backend.py` with its renderer. Plan `0 to add, 5 to change, 0 to destroy`, read statement by
   statement against this design; applied; re-plan `No changes`. The five deployed policies read back with
-  no `aws:SourceIp` and no hub endpoint, the drop-box at nine statements. 2.4 is owed with 1.4.
+  no `aws:SourceIp` and no hub endpoint, the drop-box at nine statements. 2.4's laptop half was measured
+  with 1.4 on 2026-09-18.
 - **2.1 [Claude] The code, in one commit.** `DenyOutsideTrustedNetworks` loses the `aws:SourceIp` branch
   and `vpn_home_vpce_ids` (`trusted_vpce_ids` keeps `consumer_vpce_ids`). On the drop-box, a principal
   branch admits `s3:PutObject` from the principal `AllowInteractiveWriterPutOnly` already names, bound to
@@ -200,7 +201,10 @@ exercised both (Lesson 20's mirror).
   deliberate cleanup. **The same put through the tunnel** (`…/awsds-6g-24-probe-tunnel.txt`) also
   succeeded, so the exemption is the principal and not the path — that write was Claude's, beyond the
   two the user authorized, and its object is in `EXC-02` for the same reason. Owed: the Athena read
-  from a Sandbox space, which needs the hub and a space up.
+  from a Sandbox space, which needs the hub and a space up, **and a grant the step assumed**: the project
+  role holds no Lake Formation grant on `curated` (6f 0.7 and `CT-7`; 6h read *Required Describe on raw*
+  on 2026-10-10), so as written the query is refused, not answered. It needs the user's choice: the
+  persona's Athena read from a laptop, or the project role after 6f decision 1's re-grants.
 - **The perimeter itself stayed unexercised, and 2026-09-18 says why.** With the tunnel down and the hub
   up, `InfrastructureAccess` in Sandbox — identity allows it, the network does not — put the same file into
   `awsds-data-raw` and was refused by the **key** policy: `kms:GenerateDataKey … no resource-based policies
@@ -276,12 +280,12 @@ exercised both (Lesson 20's mirror).
 
 | # | Question | Step |
 |---|---|---|
-| i | Does a persona call from outside the VPN, with no proxy configured, answer after 1.3, and what did the same call's refusal name before it? | 0.2, 1.4 |
+| i | Does a persona call from outside the VPN, with no proxy configured, answer after 1.3, and what did the same call's refusal name before it? **Answered 2026-09-18**: `describe-log-groups` answers off the VPN with no proxy, where the deleted deny refused it explicitly before 1.3 | 0.2, 1.4 |
 | ii | Did the removal open anything 0.1 did not list? | 0.1, 1.4 |
-| iii | Does the drop-box take the persona's write from any network while the same persona's write to another lake bucket still fails, and which policy refuses it? | 2.4 |
+| iii | Does the drop-box take the persona's write from any network while the same persona's write to another lake bucket still fails, and which policy refuses it? **Answered 2026-09-18**: yes, the drop-box took the `PutObject` off the VPN and through the tunnel, and `awsds-data-raw` refused it at the identity layer, so `DenyOutsideTrustedNetworks` is attached, not exercised, for this principal | 2.4 |
 | iv | Is the lake's read path from a Sandbox space unchanged? | 2.4 |
-| v | Does the private network stay closed off the VPN? | 1.4 |
-| vi | Does the monitored profile still work end to end, its access log attributing each device? | 1.4 |
+| v | Does the private network stay closed off the VPN? **Answered 2026-09-18**: yes, neither `proxy.awsds.internal` nor `vpn.awsds.internal` resolves with the tunnel down | 1.4 |
+| vi | Does the monitored profile still work end to end, its access log attributing each device? **Answered 2026-09-18**: yes, the calls answer through the proxy and the access log attributes each line to the device, `10.90.0.2` | 1.4 |
 
 ## Decisions due
 
