@@ -9,6 +9,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 
 | Item | Where | What it holds up |
 |---|---|---|
+| The apply of `production/sagemaker/`'s `awsds-prod-model-approval` rule and its target, planned `2 to add, 0 to change, 0 to destroy` on 2026-10-18 and refused to Claude by the auto-mode classifier (*Production Deploy*): run as the infrastructure user in `Production` (`InfrastructureAccess`, `awsds-infra-prod`), then a re-plan reading `No changes` | [Stage 10](stages/stage-10-orchestration-promotion.md) 5.3, PR #188 | `OR-4`, and the model chain's notifications to `awsds-prod-alerts` |
 | The portal reading before `MLflowApp` exists, as the data scientist (no environment needed) | [Stage 17](stages/stage-17-sandbox-machine-learning.md) 1.1 | the one apply of `sandbox/sagemaker/` and `data-governance/governance/`, which carries `MLflowApp` and `TM-21`'s narrowing of the Sandbox project key, whose two statements still name `Principal *` with no organization condition. Accepting the loss of verification i releases the apply too |
 | Which principal the data cells filters bind | [Stage 11](stages/stage-11-dlp.md) decision 12, with 6f decision 1 | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
 | SageMaker processing-job quota increases in Production and Staging (`ml.m5.large`, `ml.m5.xlarge`, `ml.m5.2xlarge` read 0 on 2026-10-18) | [Stage 9](stages/stage-09-deployment-targets.md), [Stage 10](stages/stage-10-orchestration-promotion.md) | every SageMaker job in either account, the promotion's processing step included |
@@ -52,6 +53,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | The three persona memberships in GitLab; Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
+| Open the PR for the pushed branch `claude/stage-14-vending-instrument` (`./aws/vending.py`, Stage 14's first log, a unit's cost): the auto-mode classifier refused `gh pr create` to Claude on 2026-10-18 | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Push `examples/app-etl/.gitlab-ci.yml` and its README to GitLab's `awsds/app-etl` at a GitLab session, so GitLab's pipeline runs the lint with its two options (PR #186) | [Stage 8](stages/stage-08-cicd-pipelines.md) 5.6 |
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |

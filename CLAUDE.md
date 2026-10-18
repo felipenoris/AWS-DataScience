@@ -219,11 +219,14 @@ per laptop, never one per session.
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
-  message began: a turn begun right after `/compact` is refused, and so is a request the user sends
-  mid-turn, so the session is proposed as a card the user starts. Its auto-mode classifier refused to
-  hand an SCP apply to a started session (*Protected-Scope IaC Apply*), refused one session's apply of
-  a new slice carrying an e-mail subscription, and refused one session's `git push` (*Out-of-Place
-  Publication*); the orchestrating session ran each itself on the user's authorization in its own chat. Sessions told not to edit
+  message began: a turn begun right after `/compact` is refused, and so are a request the user sends
+  mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
+  the tasks run as subagents in worktrees of their own, at the user's choice, and open their own PRs.
+  Its auto-mode classifier refused to hand an SCP apply to a started session (*Protected-Scope IaC
+  Apply*), refused one session's apply of a new slice carrying an e-mail subscription, and refused one
+  session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
+  user's authorization in its own chat. It also refused the orchestrating session's own apply of a
+  saved plan in Production (*Production Deploy*, 2026-10-18), which is then the user's to run. Sessions told not to edit
   `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
   conflict on adjacent lines. Their notes land in
@@ -306,7 +309,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` (`[E]`) rises with the next
   Production `make up`. Pass 2 waits on decision 3. **Stage 10**: pass 0 read and 4.3's
   `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
-  Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict.
+  Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict. 5.3's `awsds-prod-model-approval`
+  is written and planned, 2 to add (PR #188); the auto-mode classifier refused its apply to Claude
+  (*Production Deploy*), so it is the user's to run.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -374,7 +379,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   waits on 1.1's portal reading (Lesson 69). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red.
   **Stage 18**: pass 0 in progress, no decision taken; an associated account no person works in goes
-  in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`.
+  in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`. Its 4.4 needs Stage 8 3.0's first half
+  and Stage 10 1.2's `vpc-v0.4.0` on `staging/foundation/` first (PR #188).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
