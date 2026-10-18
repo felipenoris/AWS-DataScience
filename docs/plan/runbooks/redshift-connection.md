@@ -133,8 +133,8 @@ connect but sees nothing"* as the expected state for a while — which is the am
    verification xv, read 2026-10-17).
 4. **The connection, in the portal**, by a project member — this repository does not author it.
    DataZone's own authorization layer refused the account's administrator `datazone list-connections`
-   three times, and answers it since a group was made contributor to both Sandbox projects on
-   2026-10-15, so `WH-9` reads the object. *Compute → Data warehouse →
+   three times, and answers it since Sandbox's `InfrastructureAccess` role was made contributor to both
+   Sandbox projects on 2026-10-15, as a group profile, so `WH-9` reads the object. *Compute → Data warehouse →
    Add compute → Connect to existing compute resources*, credential type **IAM credentials**. Three
    things the form does that no AWS page describes (measured 2026-09-21):
 

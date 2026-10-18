@@ -461,8 +461,8 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   projects come and go against it.
 - **6.2 — Done 2026-10-10**: `WH-11` and `WH-12`, plus `WH-14`, which the plan did not have. `WH-9` reads
   the connection object since 2026-10-18: `datazone list-connections`, refused to `InfrastructureAccess` by
-  DataZone's own authorization layer three times, answers since a group was made contributor to both
-  Sandbox projects on 2026-10-15. `WH-10` was not written, because `WH-7` already compares the tag pair on both
+  DataZone's own authorization layer three times, answers since Sandbox's `InfrastructureAccess` role was
+  made contributor to both Sandbox projects on 2026-10-15, as a group profile. `WH-10` was not written, because `WH-7` already compares the tag pair on both
   objects with the authored map. `./aws/warehouse.py --sql`: 14 pass, 2 notes.
   **[Claude] Extend `./aws/warehouse.py`** with `WH-9`..`WH-12` (the connection, the tag pair, the
   project role's reach and boundary, the database/grant inventory).

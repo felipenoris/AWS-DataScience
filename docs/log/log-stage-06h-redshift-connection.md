@@ -2198,3 +2198,22 @@ session's `GetCredentials` and ended on no call, the length of the idle-session 
 date). The driver opens a transaction at the first statement, reads included (§J), and AWS bills an open
 transaction, so §J now says to end a cell's work with `commit()` or `rollback()` or to close the
 connection. Which session held the compute is not readable now.
+
+## 2026-10-18 — amendment: the group is Sandbox's `InfrastructureAccess` role
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", after the sessions "Stage
+6f: catalog readings and text" and "Stage 8: readings, NO_PROXY proposal, text fixes" reported the same
+group. The readings below are this session's own. It amends the entry above, whose "an inference from the
+timing" stays as written.*
+
+- `get-group-profile` on the group added on 2026-10-15 answers `awsds-infra-data` (account
+  `<Data Governance Account>`) and is refused to `awsds-infra-sandbox-1`. Its `rolePrincipalArn` is an
+  `AWSReservedSSO_InfrastructureAccess_<suffix>` role, and compared without printing either: the role's
+  account is `<Sandbox Account 1>` and its name is the role `awsds-infra-sandbox-1` signs in as, not Data
+  Governance's.
+- `list-connections` on `eighth-experimentation` as `awsds-infra-data`: *"User is not permitted to
+  perform operation: ListConnections"*.
+
+So the cause is read, not inferred: Sandbox's `InfrastructureAccess` role is a `PROJECT_CONTRIBUTOR` of
+both Sandbox projects, through a group profile, since 2026-10-15 06:15Z, and Data Governance's is still
+in no project. The stage file, `EXC-17`, the runbook and `WH-9`'s comment name the role.

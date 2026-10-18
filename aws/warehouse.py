@@ -984,9 +984,9 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
     #
     # DataZone's own authorization layer decides whether this identity may list a project's
     # connections, and no IAM policy reaches it. It refused three times while the identity was in no
-    # project (2026-09-21, twice on 2026-10-10) and answers since 2026-10-15, when a group was made
-    # contributor to both Sandbox projects (6h log, 2026-10-18). A refusal is therefore a note naming
-    # that cause, never a fail.
+    # project (2026-09-21, twice on 2026-10-10) and answers since 2026-10-15, when Sandbox's
+    # InfrastructureAccess role was made contributor to both Sandbox projects as a group profile (6h
+    # log, 2026-10-18). A refusal is therefore a note naming that cause, never a fail.
     #
     # What is compared: the workgroup and the host the connection names, and the access role, which
     # must be the one sandbox/warehouse/ authors for that project - any other role is a database
