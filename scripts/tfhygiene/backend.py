@@ -577,7 +577,7 @@ def interactive_private_cidrs() -> list[str]:
 # (10.30) and `probe_peer_cidrs("production")` admits `10.20.0.0/16` and `10.31.0.0/16` - Sandbox,
 # which is both the peering the Deliverables measure and INT-09 since 3.1 re-homed it, and the hub
 # itself. Staging peers only with `VPC-Networking`, so it neither reaches this host nor is admitted
-# by it; `staging/probes` was written when it did, and its header says so.
+# by it, and holds no probe slice.
 #
 # The hand-kept `PROBE_PEERS` table was deleted at 6c step 6.3, and the reading that forced it
 # arrived as a timeout rather than as a diff: the Sandbox peering probe could not reach the proxy

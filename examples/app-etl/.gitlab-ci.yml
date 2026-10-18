@@ -30,6 +30,11 @@ variables:
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
   # a SageMaker application (D28), offline.
   AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/3c1708eb0fcff1d7f4d14e3e59cdd69bad83e033.zip"
+  # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
+  # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
+  # holds (allowed_instance_types) in the infrastructure repository. A copy, since the application's
+  # repository cannot read that module: a change to its list is a change here.
+  LINT_INSTANCE_TYPES: "ml.t3.medium ml.t3.large ml.t3.xlarge ml.m5.large ml.m5.xlarge ml.c5.large ml.c5.xlarge"
 
 workflow:
   rules:
@@ -44,7 +49,14 @@ test:
     - uv run ruff check
     - uv run ruff format --check
     - uv run pytest
-    - uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint .
+    # The lint with a processing job's two ceilings (Stage 8 step 5.6, clauses (e) and (f)): a literal
+    # ImageUri names IMAGE_REPO, never the notebook image, and an InstanceType is one of
+    # LINT_INSTANCE_TYPES. Without the options the lint reads neither.
+    - |
+      set -eu
+      set --
+      for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . --image-repository "$IMAGE_REPO" "$@"
 
 pages:
   extends: .gates-uv

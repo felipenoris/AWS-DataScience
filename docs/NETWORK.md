@@ -77,7 +77,7 @@ module's arithmetic:
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
 | **SMUS project app ENIs** | Sandbox · private · both AZs offered | one per running app | created by the blueprint, not by this repository |
-| **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
+| **Probe hosts** | Sandbox/Production, private + isolated | `[E]`, new every session | `[E]` `sandbox/probes/` and `production/probes/` |
 | **GitLab** `awsds-prod-gitlab` | **VPC-SharedServices · private** · az1 | one primary private IPv4, kept across stop/start; `gitlab.awsds.internal` and `*.awsds-pages.internal` both carry it (Stage 7 step 1.4) | `[D]` `production/tooling/` |
 | **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 7 step 6.1) | `[E]` `production/runners/` |
 | **Deploy runner** `awsds-prod-runner-deploy` and **test runner** `awsds-prod-runner-test` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 8 step 4.3 and decision 11) | `[E]` `production/runners/` |
@@ -98,7 +98,7 @@ module's arithmetic:
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
 | `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs and VPC-Workloads, the DNS Firewall |
-| `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
+| `sandbox/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |

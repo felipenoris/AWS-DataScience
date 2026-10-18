@@ -53,11 +53,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   slices and the two `identity/` slices of Stage 2 — `sso/`, the seven permission sets and their
   assignments, and `org-policies/`, the ten organization policy documents (SCP, RCP, tag, declarative EC2)
   with `POLICIES.md` indexing every statement and its reason; Stage 3's network in the three VPC accounts
-  (`foundation/` `[P]`; `egress/` and `probes/` `[E]`, destroyed between sessions); Stage 4's
-  `sandbox/vpn/`, the tree's first `[D]` slice, whose host moved to `production/vpn/` at 6c beside
-  `production/proxy/`; Stage 5a's three `data/` slices — the governed lake in `data-governance/`, and its
-  consumer half in `sandbox/` and `development/`, one module (`consumer-data`) applied twice, the second
-  destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
+  (`foundation/` `[P]`; `egress/` `[E]`, and `probes/` `[E]` in Sandbox and Production, destroyed
+  between sessions); Stage 4's `sandbox/vpn/`, the tree's first `[D]` slice, whose host moved to
+  `production/vpn/` at 6c beside `production/proxy/`; Stage 5a's three `data/` slices — the governed
+  lake in `data-governance/`, and its consumer half in `sandbox/` and `development/`, one module
+  (`consumer-data`) applied twice, the second destroyed 2026-09-06, so `sandbox/data/` is the only
+  caller left; and Stage 6's five:
   `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
   `sandbox/sagemaker/` (the `sagemaker-prereqs` module; `development/sagemaker/` went with the account at
   Stage 6b), and the `[E]` build host, which moved to Production at 6c step 5.8 and retired into Stage 7's

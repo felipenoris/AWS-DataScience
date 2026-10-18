@@ -90,7 +90,7 @@ reference for every option and every message; this section says how this lab use
 | `package-job` | builds a processing job's code folder for the job's image (§J1) | `operators/package-uv-job.py` |
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
-| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s CI runs `lint .` | — |
+| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` with both, the application's repository and the ceiling's instance types | — |
 
 **Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
 else published there under it would install instead (the package's documentation, read 2026-10-11).

@@ -312,7 +312,9 @@ terraform-live/
 │   │                     # destroyed at 6b 1.7 and 2.4, foundation/, egress/ and probes/
 │   │                     # migrated here at 4.3, and bootstrap/ - which owned
 │   │                     # awsds-dev-tfstate, the bucket every migration read from - went
-│   │                     # last at 4.7
+│   │                     # last at 4.7. probes/ left at Stage 8 step 3.1 with no state:
+│   │                     # its target sits in VPC-SharedServices, which this VPC does
+│   │                     # not peer with
 │   ├── bootstrap/        # [P] awsds-staging-tfstate + its key (6b 4.2, applied 2026-09-06)
 │   ├── foundation/       # [P] VPC, subnets, KMS, IAM roles - migrated from
 │   │                     #     development/foundation/ with its VPC and its [P] gateway
@@ -321,7 +323,6 @@ terraform-live/
 │   │                     #     this account's whole internet, and there is no default route.
 │   │                     #     And awsds-deploy-staging with awsds-staging-alerts (Stage 8
 │   │                     #     step 4.1, decision 5), the deploy-role module
-│   ├── probes/           # [E] migrated; re-aimed at the proxy path and the peering
 │   ├── data/             # [P] S3 + Glue catalog mirroring production's schema, sampled or
 │   │                     #     synthetic data only, under alias/awsds-staging-data - a new
 │   │                     #     key created at Stage 9, never the dev-named one 6b destroys

@@ -85,10 +85,12 @@ plus the peerings and zone associations pass 2 adds on a second apply of the sam
 `[E]` — the interface endpoints (and a NAT gateway, whose code 6c step 5.1 removed), which are this
 tree's entire hourly bill. `probes/` is `[E]` as well and is an **instrument rather than infrastructure**:
 the hosts the perimeter, both peerings and the flow logs were measured from, kept on disk because a probe
-that has to be rewritten is a probe nobody re-runs. **`data-governance/` has no `foundation/` and never
-will** (D22 — a registry needs no VPC), which is why `layers.py` carries an explicit comment where its row
-would be. What stands right now is the `[P]` half alone: the `[E]` slices are destroyed and the tree bills
-**USD 0.0000/h** between sessions, while `foundation/` re-plans `No changes` — that pair is D11's proof.
+that has to be rewritten is a probe nobody re-runs. Staging's left at Stage 8 step 3.1: its target is in
+`VPC-SharedServices`, which Staging stopped peering with at 6c. **`data-governance/` has no
+`foundation/` and never will** (D22 — a registry needs no VPC), which is why `layers.py` carries an
+explicit comment where its row would be. What stands right now is the `[P]` half alone: the `[E]`
+slices are destroyed and the tree bills **USD 0.0000/h** between sessions, while `foundation/`
+re-plans `No changes` — that pair is D11's proof.
 
 **Stage 5a put the lake on disk in the one account that has no network — `data-governance/data/`**
 (2026-08-18/19, applied in three passes). It is all `[P]`, and nothing in it is ever torn down: the
