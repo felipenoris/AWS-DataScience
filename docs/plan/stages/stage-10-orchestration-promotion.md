@@ -499,9 +499,10 @@ state machine (3.5) and what carries data between them is a contract on S3 (3.6)
   over from [6f](stage-06f-data-governance.md) step 6.2 (2026-09-18) rather than left in that stage's log
   (Lesson 34). What the vendor page **does** say: DataZone captures lineage automatically from Glue and
   Redshift databases added to the domain, from **Spark ETL job runs in AWS Glue v5.0 and higher**, and from
-  anything that posts to its **OpenLineage-compatible API**; the automatic half is switched on **in the
-  blueprint configuration**, which in this estate is Terraform (`sandbox/sagemaker/`) and reaches Sandbox's
-  data sources only. What it **does not** say is whether **MWAA Serverless** emits anything. **Production
+  anything that posts to its **OpenLineage-compatible API**. The automatic half is not a blueprint setting
+  and no Terraform declares it: each Sandbox project's `LAKEHOUSE` and `IAM` connections carry
+  `glueLineageSyncEnabled: true` from their creation, and the project's Redshift connection carries a
+  `lineageSync` job of its own (6f and 6h, read 2026-10-18); it reaches Sandbox's data sources only. What it **does not** say is whether **MWAA Serverless** emits anything. **Production
   cannot post at all**: lineage is a DataZone call, and the `Workloads` OU denies `datazone:*`
   (`DenyDataZoneEntirely`, whose own revision trigger is the first time Production must publish); 6f
   settled that Production publishes through the lake, not through an association. So the reading is taken

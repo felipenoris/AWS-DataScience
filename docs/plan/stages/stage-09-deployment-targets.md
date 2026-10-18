@@ -363,7 +363,8 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   alone refuses a notebook's call. The account comes from the D35 map in `backend.py` and the role is
   matched by `aws:PrincipalArn`; the statement carries no `arn:aws:iam::*:`, so
   `./scripts/check-iam-wildcards.py` has nothing to whitelist. When the registry first holds a version,
-  re-read `EXC-11` (`./aws/catalog.py` `CT-6`), whose trigger is the Model Registry being used.
+  re-read nothing for `EXC-11`: its trigger is the Sandbox registry's first version (Stage 17 3.2), and
+  this registry is Production's, in an account the domain does not know.
 - **3.3 — [Claude] Write the escape hatch** (step 6's resources — same slice, same apply).
 - **3.3a — [Claude] Complete `production/workloads-egress/`.** `VPC-Workloads` is where Production's jobs
   and Stage 10's workers run, and 6c created the slice empty, with `core_services = []`. Bump it from
@@ -467,7 +468,10 @@ behind the approval gate.
   `DataScientistStagingAccess` carries no Athena at all (Stage 2 wrote it that way: a query writes its result
   somewhere, and this set writes nothing). An enforced workgroup cannot exist without an output location,
   which nothing supplies since `consumer-data-v0.6.0`.
-- **4.3 — [Claude] Write `staging/sagemaker/`**: `awsds-staging-job-exec`, 3.1's shape and permissions,
+- **4.3 — [Claude] Write `staging/sagemaker/`** with a `backend.py` row of its own: today
+  `elif slice_name == "sagemaker"` hands any `sagemaker` slice the blueprint prerequisites' inputs, and
+  Staging is not in `DATA_PRODUCERS` (read 2026-10-18 by the Stage 18 session). The slice holds
+  `awsds-staging-job-exec`, 3.1's shape and permissions,
   no registry, no domain — the approved model version is read from Production's registry — and the
   SageMaker job log groups pre-created with a retention, as 3.1 does. The job settings bind whoever submits
   the job (3.5), so this role carries nothing of them; under decision 9's (a) the `Workloads` OU SCP covers

@@ -141,6 +141,7 @@ are never cut; the words around them are.
 | [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) and [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) | The same discipline for the lake, producer and consumer side: one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute; the module README is what its calling slice (`sandbox/data/`) points at. Reviewed in the same sitting as a change to the `.tf` files. No mechanical check exists; the `.tf` comments carry the reasoning, these files the index |
 | [`docs/NETWORK.md`](docs/NETWORK.md) | The network as built: addresses, routes, both egress paths, VPN, DNS, security groups, the two reach questions. Reviewed in the same sitting as any change to a network-bearing slice or module (its §2.1 names them). `./scripts/check-network-doc.py` is the mechanical half; whether a sentence is still true is the reading, and a moved `[P]` fact is re-measured with the `aws/` instruments |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
+| [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) | Every item only the user can take, across stages, with what it holds up. A row is added when a session stops on one and removed in the sitting that takes it |
 
 # Claude memory
 
@@ -217,6 +218,15 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
+- **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
+  message began. Its auto-mode classifier refused to hand an SCP apply to a started session
+  (*Protected-Scope IaC Apply*), refused one session's apply of a new slice carrying an e-mail
+  subscription, and refused one session's `git push` (*Out-of-Place Publication*); the orchestrating
+  session ran each itself on the user's authorization in its own chat. Sessions told not to edit
+  `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
+  their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
+  conflict on adjacent lines. Their notes land in
+  `~/Library/Application Support/Claude/side-session-notes/<orchestrator session id>/`.
 
 ## Claude LOG
 
@@ -250,6 +260,7 @@ This table is the only routing map; every other file points here rather than rep
 | Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes. Read it whenever a snapshot is read |
 | A data-leakage channel, its control or its accepted residual (`TM-nn`), before a proxy plane is edited | [`docs/plan/threat-model.md`](docs/plan/threat-model.md) |
 | Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
+| What waits on the user's decision or act, across stages | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) |
 | Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md); open a decision file only for its reasoning |
 | Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
 | Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
@@ -281,211 +292,199 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c, 6i are done.** Battery 100 (92/0 after 5b's two statements). Stage 5a register 13 rows / 24
-  triples. Gates: `make check`, `make check-ou`. The chain is Sandbox → Staging → Production: no
-  Development account, ever; interactive compute is Sandbox only. All 41 decisions are closed. Needed from the user: the domain name (blocks Stage 13); **6h step 5's negatives** (5.2, 5.2a, 5.3 from the project, 5.4 as the persona, 5.1 from `test-experimentation`; 5.2b waits on decision 8), 0.4's portal reading and 6.4's keep-or-drop of `lab`, each session after `make hub-up` and `make up ENV=sandbox GROUPS=redshift`.
-- **Stages 5b and 6h: the Sandbox warehouse is BUILT (2026-09-20); 6h's passes 0-2 and 6.1-6.3 are done, its negatives are not.** Two slices:
-  `sandbox/warehouse/` rank **53** `[P]` (namespace + admin secret + 3 audit groups at 30 d + exec role with
-  **no policy** + SG + 2 alarms) and `sandbox/warehouse-compute/` rank **54** `[E]` (workgroup `base 4 / max 8`
-  + usage limit **10 RPU-h monthly `deactivate`**, lowered from 40 by the user 2026-09-20 after the runaway). `vpc-egress-v0.15.0` adds the `redshift` group
-  (`redshift-serverless` only). SCP root: `DenyRedshiftProvisionedClusters` +
-  `DenyRedshiftCostGuardTamperingExceptInfrastructure`, battery **92/0**. `identity/sso` denies the persona
-  `GetCredentials`, the **`redshift-data:` family** and the nine cost-guard calls. `aws/warehouse.py`
-  **14 pass / 1 note**. Layer 3 in SQL: database `sandbox`, schema `lab` QUOTA 1 TB, `sbx_lab_owner` (user),
-  `sbx_lab_rw` (role). **Project `avhvbqn37ty7m8` admitted 2026-09-21**: the tag on both objects, layer 2's
-  two-statement policy on the project role (**no `redshift-data:`**, so 3.4's refusal is the measurement
-  that decides it), the `5439` rule, and **BOTH candidate database users**
-  (`IAMR:datazone_usr_role_<project>_<env>` and the same unprefixed, 2026-10-10), each holding `sbx_lab_rw`
-  with no `admin_option`, so the first connection cannot land on a user with no privileges — the tag's
-  resolution is **read from `pg_user` after 3.2** and the loser is one `DROP USER`. `WH-12` reads 2 grants
-  until then. The D13 boundary and the SCP narrow neither
-  `redshift-serverless:` nor `redshift-data:`, so layer 2 is not inert. `PUBLIC` already holds `USAGE` and
-  not `CREATE` in all three databases. **The portal then demanded an `Access role ARN` on a SAME-ACCOUNT connection** (user, 2026-09-21) which AWS's same-account procedure and the field's help both call unnecessary - and `AWS Secret` is optional beside it. `create-connection`'s `credentials` union has **only `secretArn` and `usernamePassword`**, so "IAM credentials" IS the access role plus the `RedshiftDbUser` tag: **no standing credential**, decision 2 answered and its secret fallback withdrawn unbuilt. `ListConnections` is refused to InfrastructureAccess by **DataZone's own** authorization layer, so the portal is the only path (decision 1 answered). The access role is **applied 2026-10-09** (`awsds-sandbox-warehouse-access-<project>`, both policies attached, `No changes` on re-plan) and its ARN is the output `project_access_role_arns`; `RedshiftDbUser` carries the project role's NAME so both candidate spellings land on granted users. The dropdown offers database `dev` and `lab` is in `sandbox`. **The connection exists since 2026-10-10** (`redshift-serverless.redshift`, `Available`, created by the user) and 3.5's attribution is read: **`GetCredentials` is called by the ACCESS ROLE** - not the project role, not the person - so that is the database identity; the project role's own calls are `ListWorkgroups` plus the assume. **`Available` mints NO database session** (`pg_user` unchanged), so the `RedshiftDbUser` resolution and the `DROP USER` wait on a real query. **No provisioned-cluster API was called**, closing 5b 1.10's third endpoint. Refusals fixed by `-access-portal-<project>` **v2**: `sqlworkbench:CreateConnection`, `DriverExecute`, `glue:GetCatalogs`, `redshift-serverless:GetNamespace`. **A CloudTrail `eventName` is NOT the IAM action** - events `GetResources`/`ExecuteQuery` authorize `CreateConnection`/`DriverExecute`, so v1 granted two non-actions and the next refusal was identical; `errorMessage` is the authority. **`Failed to fetch database` in the Query editor is LAKE FORMATION, not IAM** - `Required Describe on raw` to the project role - and it stays refused, being the perimeter working. **The editor answers since 2026-10-10**: `sandbox -> lab` visible and empty (the three layers meeting), `awsdatacatalog` failing **by design** (the namespace role holds no policy, 5b dec 5). **`RedshiftDbUser` is honoured and its VALUE is prefixed `IAMR:`** - 142 queries as `IAMR:datazone_usr_role_<project>_<env>`; had the tag been ignored it would read the access role's own name. The unprefixed scaffolding user is **dropped**, `WH-12` back to 1 grant. `CreateConnection` **cannot** take the managed policy's owner-tag condition: the portal sends no `sqlworkbench-resource-owner` tag, so that policy would have left it refused - the containment is the trust policy. **3.4 DONE 2026-10-10** (the Data page's door, NOT 3.3's): the project wrote `lab.hello` from the Query editor and it is owned by `IAMR:datazone_usr_role_<project>_<env>` - the three layers produced an object. **A shared schema shares NOTHING in it**: the role carries `USAGE, CREATE ON SCHEMA` and nothing at table level, the new table's `relacl` was null and `pg_default_acl` empty, so a second project would have had `CREATE` and read none of it. Closed the READ half (table `GRANT SELECT` + `ALTER DEFAULT PRIVILEGES` per creating USER, Lesson 14); write-across is decision 8's. **`pg_default_acl` is EMPTY on this platform - `svv_default_privileges` is the only reader.** New check **`WH-14`** fails when a themed relation is reachable by no role. The day burned 24,359 RPU-seconds = 2.44 USD (the 100 recorded was the morning's). **3.3's SESSION WORKS 2026-10-10**: **the grantee depends on the DOOR** - the Data page resolves to `IAMR:<project role name>` via the access role's tag, JupyterLab **auto-creates `IAMR:user-<IdC user id>@<project id>` holding NOTHING**. A grant for one door does not serve the other, and this one cannot be pre-made. Unblocked with a per-person `GRANT`, which is a **stopgap, not the procedure** - the fitting mechanism is `RedshiftDbRoles` on the project role (the tag 6h refused for the access role), not applied, belongs with decision 8. **3.3 CLOSED 2026-10-10**: write and read over `5439`, `2b` confirming the listener speaks the protocol and requires TLS - both doors now exercised and read apart. **`WH-14` FAILS for real** (exit 2) on `lab.hello_jupyter`, owned by the per-person user whom the default privilege does not name: **`EXC-15`**, left red deliberately. The structural finding: a shared schema needs two per-principal halves and **only one is declarative** - `RedshiftDbRoles` can carry the role grant, `ALTER DEFAULT PRIVILEGES` is per creating USER with no `FOR ROLE`, no wildcard and no tag, so **read-across cannot be declarative while the grantee is per person**. **Decision 8a taken 2026-10-10, and NOT the way it was approved.** `RedshiftDbUser` is a **SESSION tag** SMUS sets per person on every assume of the project role, so it overrides the role tag and collapsing the two doors is **unavailable** (the role already carries `RedshiftDbUser=user-project@<proj>`); `aws_iam_role_tag` does not exist in the provider either. The same session carries **`RedshiftDbRoles = datazone_env_<environmentId>`**, which SMUS passes and Redshift **silently ignored because no such role existed**. **Decision 8a TAKEN and PROVEN 2026-10-10: a notebook chains through the access role.** Assuming `awsds-sandbox-warehouse-access-<project>` from a space lands on `IAMR:<project role name>`, which holds `sbx_lab_rw` already and is the owner the default privilege names - so it **FIRES** and read-across needs no per-person statement. Measured in one run against the direct session as control. `WH-14` **2 relations each reachable**, **14 pass**, `EXC-15` **closed**. Nothing in AWS changed: tag, trust policy and `sts:AssumeRole` were all in place, so it is a **convention** (`§P` step 3a) with a loud failure, not a control. Costs: in-database attribution is per project, while CloudTrail still names the person (6h xv, 2026-10-17: every door's `GetCredentials` carries the data scientist's `sourceIdentity`); a helper belongs in the image. **`pg_class.relacl` is BLIND to role grants** - `svv_` views are the only reader. Earlier, applied `CREATE ROLE datazone_env_<env>` + nesting - **never fires, UNEXERCISED**: `RedshiftDbRoles` is carried by the **PORTAL's** session (named `<user id>@<env id>`) and **not** by the **SPACE's** (named `SageMaker`). **So both halves are non-declarative on the JupyterLab door**: the `RedshiftDbUser` session tag overrides the role's, `RedshiftDbRoles` is not passed, a role tag has no provider resource, and `ALTER DEFAULT PRIVILEGES` is per creating user. What is left is a per-person `GRANT` after each first connect (guards: `WH-14`, an empty `3c`) or a reconciler covering both halves at the cost of a recurring act. **Read-across is NOT solved**: `ALTER DEFAULT PRIVILEGES` is per creating user and nesting does not change ownership, so `EXC-15` stands. `inet_server_addr()` returns NULL on Serverless. The portal's `getMetadataErrorAccessDenied` is the **Lake Formation `raw`** refusal surfacing as a UI string; `Redshift Clusters is unreachable` produced **no `redshift.amazonaws.com` event at all**, so it is cosmetic. The morning's `BrokenPipe` did NOT reproduce - the workgroup was rebuilt with new ENIs, so it is transient and unexplained, not solved. **Earlier attempt 2026-10-10**: from a space, DNS resolves to the **workgroup's own** managed endpoint ENIs carrying the warehouse SG (not the API endpoint - that hypothesis was killed by measurement), TCP opens on 5439 from a **container-NAT source that is not a VPC address**, `connect()` RETURNS (so `GetCredentials` and startup worked), and the first `begin transaction` dies `BrokenPipe`. No limit breach, workgroup AVAILABLE. `stl_connection_log` is **refused to a superuser**; `sys_connection_log` has never held an external session so its silence is not evidence. **`redshift_connector` IS in the image, transitively** - not in its `pyproject.toml`. §V's script gained **step 2b**, a raw `SSLRequest`. **3.6 and `EXC-16`, re-read 2026-10-17 over 30 days with Logs Insights: the audit export carries nothing while a workgroup exists** - no record of any kind in seven lifetimes after 2026-09-21; the namespace's own `rdsdb` sessions arrive only while none exists; the only user records are 36 of 268 Data API calls of 2026-09-21, gone on 2026-10-21. The 2026-10-10 "155 records, ~2h25m heartbeat, stopped" was a sampler's (inference). **Stage 11 must not rest its DLP feed here.** **`WH-9` is a permanent note**: `datazone list-connections` is refused to InfrastructureAccess by DataZone's own layer, three times, and no `aws sqlworkbench` CLI exists. The connection object itself is `EXC-17`. **`redshift-connector` is now DECLARED** in the image's `pyproject.toml` (it arrived transitively via `amazon-sagemaker-sql-execution`); it rides the next recipe change, with no rebuild of its own (6d). Runbook **§J** carries the notebook recipe. the owner-scoped `sqlworkbench` half is withheld so one project cannot read another's notebooks. Layer 2's `ListTagsForResource` and `ListNamespaces` are attached and **unexercised**. Measured spend **9.4767 USD** = 26.32 RPU-h by `ComputeSeconds`, 19% of the D12 ceiling in one sitting, **absorbed by the free trial**: 287.90 of 300 USD left on 2026-10-17, expiring 2026-12-19 (the console; 5b xiii).
-- **What the execution measured that the plan had wrong.** **Two subnets accepted** (AWS's page right, the
-  provider's wrong). **`price_performance_target` is ENABLED by default at Balanced** → decision 2's letter
-  impossible, intent is `enabled = false`. **The endpoint HOST survives a destroy/re-create; the workgroup ID
-  does not**, and the ARN carries it → every policy wildcards the id. **`AmazonDataZoneProject` is a
-  single-valued tag KEY on both objects** → layer 1 admits **one** project; "one tag per admitted project" is
-  not expressible, and 6h **decision 8** (new) owns the second. **`AUTHORIZATION` takes a USER, not a role.**
-  **Quota range 2048–524288000 MB**; the quota **refuses at commit** (usage overshoots inside the transaction;
-  1 KB rows read as 2.4 KB of disk). **The ceiling refuses** — `ERROR: Query reached usage limit` — with
-  `get-workgroup` still `AVAILABLE`, **leader-node queries still answering**, and **recovery immediate on
-  raising the amount**. A second `deactivate` limit is refused; a second `log` one is not. **Six
-  `config_parameter` defaults** the service fills and the provider planned to delete forever (`auto_mv` is
-  **on** — unasked compute on the 1.44/h meter); provider ≥ 6.66.0 ignores undeclared keys, and
-  `warehouse-compute` locks 6.68.0 since 2026-10-11, ahead of `enable_large_strings_opt_in` (2026-10-13). **`db_name` adds a database, it does not replace `dev`** →
-  the `PUBLIC` revoke is owed twice. **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser** → `WH-13` can only
-  ever be a note.
-- **The Data API is the session, and that is a control question.** `redshift-data execute-statement` +
-  `--secret-arn` runs SQL on a `publiclyAccessible: false` workgroup **from a laptop outside every VPC** — no
-  security group sees it, the 5439 door is irrelevant. It is how `warehouse.py --sql` and the runbook read
-  `SVV_*`, and why the persona is **denied** the family rather than merely not granted it. Asynchronous with
-  **no waiter**: a poll without a sleep reports empty for a warehouse that is answering.
-- **The warehouse's residuals.** `EXC-12` **closed 2026-09-20** — the orphan secret (`…-whadmin`) from a failed
-  `CreateNamespace` that rolled the namespace back and kept the secret is scheduled for deletion 2026-09-27,
-  7-day window; `OwningService: redshift` did **not** refuse `DeleteSecret`. `EXC-13` the
-  admin secret **will stop rotating**, because rotation fails permanently if it lands while the `[E]` workgroup
-  is down; its first rotation is due by 2026-10-20 01:59:59Z (read 2026-10-17).
-- **Redshift cost.** **0.36 USD/RPU-h** (offer file 2026-09-11, re-read 2026-09-20) → 4 RPU = **1.44/query-h,
-  0.00 idle**; the **ratchet** past 4 never returns. **No pause exists**, so `make down` is the hard guarantee
-  and **RMS keeps billing** (0.024/GB-mo; a filled 1 TB schema = 24.58/mo, half the D12 ceiling, with no
-  workgroup at all). `UsageLimitConsumed` rounds **up** to whole RPU-hours, so a limit of N bites between N−1
-  and N. **Quotas**: 25 namespaces, 25 workgroups, 3200 RPU, 100 databases and 9,900 schemas per namespace;
-  idle-session 1 h, idle-transaction 6 h, max query 86,399 s. **Free trial USD 300 / 90 days per account**, from
-  first use — **not readable from any API**, only the console's Serverless dashboard, and invisible in the
-  billing console, so every cost figure comes from `ComputeSeconds`; Sandbox's runs to 2026-12-19.
-- **`Data Governance` gets no warehouse** and the reason is architecture, not control: `redshift` appeared in
-  **no** policy before 5b 3 and that account has no VPC (decision 6 stands, reading recorded). Stage 9 step 9
-  owns `production/warehouse{,-compute}/` and the `governed` class; `INT-24` is unproven.
-- **Stage 6d is in progress.** Steps 9, 3, 8 and 2 are closed; step 4 exercised 2026-09-09/10 and closed as
-  a decision. `sandbox/dev-env/` (rank 49, `[P]`) registers `awsds-sandbox-dev-env`; version **9** is
-  **`default-v0.8.0-7c59998c`** (2026-10-16, the pipeline's `register`, the CLI 1.0.9 in; 8 and 7 kept),
-  frozen to its digest, attached with no version number (Stage 8 dec 7): the picker offers every version.
-  INT-01/INT-17 closed (image role by tag, project role by digest). **The app image config caps each env
-  value at 256 chars** vs a `NO_PROXY` of ~2,300, so decision 8 put the six variables in the Dockerfile as
-  `ENV`, a dated literal; `./aws/devenv.py` reads the drift, `DE-5` green on version 9. The image (every
-  Python on 3.12) is SMD **`4.5.2-cpu`** pinned by digest, the CA root in the OS store and OpenSSL,
-  `requests`, curl and Node pointed at it; uv stays the distribution's **0.12.17** (a downgrade is
-  refused), and the literal carries **every optional group's names** (70 entries, `aafa08da98a61f5c`),
-  since `no_proxy` names only the last apply's groups; `devenv.py` compares it with `no_proxy_all_groups`.
-  `redshift-connector` is declared since v0.6.0. **3.4, 6.3 and three of 6.1's rows closed 2026-09-18,
-  read-only**: both SMUS components take a private door (the agent its endpoint, the Access Grants plugin
-  the **S3 gateway endpoint**, the id 6.1 (xix) wanted); the blueprint's manage-access role **is** an LF
-  admin (OQ 24's other half); a blueprint database arrives with no `IAMAllowedPrincipals`; and
-  `q:PassRequest` is granted today on the domain execution role (v23), the door 10.5 closes. Owed: 2.4's
-  after half; 1.1's persona half, 1.2/1.3; 5.2, 5.4; 6.1's (iii)/(viii)/(xvi)/(xvii); 7.6, 7.7; step 10
-  (dec 9 first). Apps log to a never-expiring group (`EXC-10`).
+- **Stages 0-1d, 2, 3, 4, 5a, 5b, 16, 6a, 6b, 6c, 6i are done.** The chain is Sandbox → Staging →
+  Production: no Development account, ever; interactive compute is Sandbox only. All 41 decisions are
+  closed. Gates: `make check`, `make check-ou`. **What waits on the user is
+  [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)** (recorded 2026-10-18 at the
+  user's request, to be taken later): read it before asking the user anything, and remove a row in the
+  sitting that takes it.
+- **The SCP battery** read `ou` 39 as expected / 0 unexpected / 7 not measured and `root` 25 / 0 / 0 on
+  2026-10-18, after Stage 9's `Workloads` document and Stage 10's `DenyProvisionedMwaa`. **SageMaker
+  processing-job quotas are 0 in Production and Staging** (`ml.m5.large`, `.xlarge`, `.2xlarge`): the
+  probes read `ResourceLimitExceeded` as authorized, and no job runs there until the user requests them.
+- **Stage 9: pass 1 applied 2026-10-18.** `awsds-org-scp-ou-workloads` carries nine statements
+  (sagemaker-denies v0.2.0's five job settings, `DenySageMakerServerlessInference` keyed on
+  `sagemaker:ServerlessMemorySize`); `production/sagemaker/` (rank 46, `[P]`) holds `awsds-prod-job-exec`,
+  `awsds-prod-debug` (window closed, two rules), `awsds-prod-model-app-etl` and six job log groups at 30 d.
+  `production/workloads-egress/` (`[E]`) plans 15 to add and rises with the next Production `make up`.
+  Pass 2 waits on decision 3. Inside an account a resource policy constrains nobody an identity policy
+  admits, so "approve only as `awsds-deploy-prod`" binds cross-account callers only.
+- **Stage 10: pass 0 read and 4.3 applied 2026-10-18.** The root baseline's thirteenth statement is
+  `DenyProvisionedMwaa` (`airflow:CreateEnvironment`), probed from Production (the canary has no subnet),
+  `OR-6` passing; `awscc` v1.106.0 carries the workflow's `code` while both locks read 1.98.0; the MWAA
+  Serverless SLR is absent in Production and Staging. Passes 1-2 follow Stage 9 with Stage 8's pass 4
+  (its decision 23) and Stage 18's verdict.
+- **Stages 5b and 6h: the Sandbox warehouse.** `sandbox/warehouse/` rank 53 `[P]` (namespace, admin
+  secret, 3 audit groups at 30 d, exec role with no policy, SG, 2 alarms) and `sandbox/warehouse-compute/`
+  rank 54 `[E]` (workgroup base 4 / max 8, usage limit 10 RPU-h monthly `deactivate`). Layer 3: database
+  `sandbox`, schema `lab` QUOTA 1 TB, `sbx_lab_owner`, `sbx_lab_rw`. Layer 1 admits one project per tag
+  key: `avhvbqn37ty7m8`; decision 8 owns the second (`test-experimentation`, since 2026-10-15). **The
+  grantee depends on the door**: the Data page resolves through the per-project access role's
+  `RedshiftDbUser` tag to `IAMR:datazone_usr_role_<project>_<env>`, a direct notebook session to a
+  per-person user holding nothing, so a notebook chains through the access role (decision 8a, runbook §J).
+  The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run failing** (decision 3
+  re-opened 2026-10-18); `WH-9` reads it since Sandbox's `InfrastructureAccess` became a contributor of
+  both projects on 2026-10-15 (a portal act; whether it stays is the user's). The Data API with
+  `--secret-arn` is a database session from any network, so the persona is denied the `redshift-data:`
+  family; it is asynchronous with no waiter, so a poll without a sleep reads empty. `Failed to fetch
+  database` in the Query editor is Lake Formation's refusal on `raw`, not IAM. The governed class lives in
+  Production (Stage 9 step 9); Data Governance gets no warehouse, having no VPC. The audit export carries nothing while a workgroup exists (`EXC-16`): Stage 11 must not rest a
+  DLP feed on it. `max_query_execution_time`'s reach is unproven: the 2026-09-20 runaway was a leader-node
+  catalog query that kept running through a usage-limit breach. **Cost**: 0.36 USD/RPU-h, 1.44/query-h
+  at 4 RPU, 0.00 idle; the ratchet past 4 never returns; no pause, so `make down` is the guarantee; RMS
+  0.024/GB-mo; the free trial (300 USD/90 d per account, readable only in the console) absorbed every
+  figure to 2026-12-19. **`EXC-13`**: the admin secret's first rotation, due by 2026-10-20 01:59:59Z,
+  fails with the workgroup down and does not retry.
+- **What 5b's execution measured that the plan had wrong.** Two subnets accepted;
+  `price_performance_target` is enabled by default (the intent is `enabled = false`); the endpoint host
+  survives a re-create, the workgroup id does not, so every policy wildcards it; `AmazonDataZoneProject`
+  is a single-valued tag key; `AUTHORIZATION` takes a user; the schema quota refuses at commit; a breach
+  refuses compute queries while `get-workgroup` reads `AVAILABLE`; the service fills six
+  `config_parameter` defaults (provider ≥ 6.66.0 ignores undeclared keys; `warehouse-compute` locks
+  6.68.0); `db_name` adds a database beside `dev`; `SVV_SCHEMA_QUOTA_STATE` is refused to a superuser.
+- **Stage 6d in progress.** Steps 3, 4, 8 and 9 closed; step 2 closed but 2.4's after half (a
+  reconciliation that writes the domain; 2026-10-11's portal `UpdateProject` rewrote only the project
+  role's trust). `sandbox/dev-env/` (rank 49) registers `awsds-sandbox-dev-env`; version 9 is
+  `default-v0.8.0-7c59998c` (2026-10-16), attached with no version number (Stage 8 decision 7): SMD
+  `4.5.2-cpu` by digest, every Python on 3.12, the CA root trusted by OpenSSL, `requests`, curl and Node,
+  uv the distribution's 0.12.17. The app
+  image config caps each env value at 256 chars, so the proxy variables are `ENV` in the Dockerfile, a
+  literal of every optional group's names: 70 (`aafa08da98a61f5c`) through version 9, while main's
+  `vpc-egress-v0.18.0` makes 72 (`6faf2e4761622508`, proposed under `gitlab/`), so the next Sandbox
+  `make up` reads `DE-5` red until that image ships (Stage 17 decision 4: the image first). The D28 lint
+  refuses every portal-saved definition; the promotable one is the application repository's (D41).
+  `q:PassRequest` sits on the domain execution role in Data Governance, out of 10.5's `Interactive` deny.
+  Apps log to a never-expiring group (`EXC-10`); running apps are metered in `AWS/Usage`.
 - **The remote IDE works** (6d step 7, 2026-09-11, a Windows laptop off the VPN). `StartSession` is
-  called **as the project role**, by the Toolkit or from the browser, so 6a's tag pair never evaluates:
-  *whose space* is AWS's tag-scoped Allow (`remote-ide.py` `RI-3`). The space's own fetch of the server
-  and each `.vsix` is refused (`403`) and Remote - SSH copies both from the laptop — **no Microsoft name
-  joins the plane**, and the session is a **file channel in both directions that no hostname list
-  describes**. **Two IDE servers run in one container**. A remote space needs **≥ 8 GB**.
-- **Stage 6e: a session answered from a space 2026-09-12** — Haiku 4.5, project role, via the
-  `bedrock-runtime` endpoint. **The agreement enables a model, not the form**. CT's `CT.MULTISERVICE.PV.1` on `Interactive` carries
-  six `bedrock:` `NotAction`s — **a cross-region profile is authorized per destination region** — with
-  dec 15's compensating deny. **Retention mode is per
-  account AND region**: `none` in all 17, frozen by 7.5, which also denies the Fable pair by ARN. **`claude-opus-5`/`claude-sonnet-5` are refused for this account**, every instrument green
-  (`EXC-08`); the set is the 4.5 generation (dec 14), in the image since `v0.4.0`. Grant per project, `sandbox/bedrock/` (rank 52, `[P]`); **the endpoint pair is the optional group `bedrock-base` since 2026-10-09** (user; `vpc-egress-v0.16.0`, applied), so a session with the assistant is `GROUPS=bedrock-base`;
-  the SCP's `NotResource` is the ceiling every script **reads the set from**. The `us.` profiles route
-  to three US regions (D1's exception).
-- **Stage 6f: step 1 is done, no access act has run.** `./aws/catalog.py` (`CT-1`..`CT-9`) is the
-  instrument; publishing is metadata only (no grant) and **`CT-7` says the catalog road has not
-  reached the lake**. Nothing at the domain level restricts a direct Share and
-  `ADD_TO_PROJECT_MEMBER_POOL` is open to every user, so decision 5's control is a deny on the
-  **domain execution role** — which itself holds `AddPolicyGrant`, `GetEnvironmentCredentials` and
-  `q:PassRequest` at policy v23. A published asset shows **no** LF-Tag (verification vi), and Sandbox
-  defines no ontology at all. The `Tooling` blueprint creates a data source on a **daily cron**
-  nobody wrote — and it has **failed every day since 2026-08-24** (`EXC-11`), invisible in its own
-  `status` field because each run stops when its successor starts. Five decisions due; `INT-23` new. **Decision 1 now recommends (c)** (2026-09-18): *managed* is a property of the **asset type**, so (d) needs a custom type; and **(a) writes LF grants at creation**, over every table in the database named, before any subscription — plus the tag `DataZoneDiscoverable_<domain>` on the database (Lesson 29).
-- **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps `ServiceEnabled: true` with no standard, so the hub answers everywhere and no check runs. The window closed 2026-09-20 and FSBP billed ~0.45 USD/day for the organization (13.5/month against a floor row of 1-2). `DL-11` reads the pause as a note; revert is `runbooks/security-hub.md` §R, from Audit.
+  called as the project role, so 6a's tag pair never evaluates: *whose space* is AWS's tag-scoped Allow
+  (`RI-3`). The space's own fetch of the server and each `.vsix` is refused and Remote - SSH copies them
+  from the laptop: no Microsoft name joins the plane, and the session is a file channel in both
+  directions. A remote space needs ≥ 8 GB.
+- **Stage 6e** is held by PR #108 (decision 17, waiting on the user's 5.5 agreements; Sonnet 4.5 is
+  Legacy since 2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the project role,
+  the `bedrock-runtime` endpoint). The agreement enables a model, not the form; retention mode `none` is
+  per account and Region, in all 17, frozen by 7.5, which also denies the Fable pair;
+  `claude-opus-5`/`claude-sonnet-5` are refused for this account (`EXC-08`). Grant per project,
+  `sandbox/bedrock/` (rank 52); the endpoint pair is the optional group `bedrock-base`; the SCP's
+  `NotResource` is the ceiling every script reads. The `us.` profiles route to three US regions (D1's
+  exception). The policy simulator needs `aws:RequestedRegion` in its context, or the Region SCP reads as
+  an explicit deny (Stage 11, 2026-10-18).
+- **Stage 6f in progress** (`./aws/catalog.py` `CT-1`..`CT-9`): publishing is metadata only, and `CT-7`
+  says the catalog road has not reached the lake; decision 1 recommends (c). Each project's `Tooling`
+  data source has failed daily since creation (`EXC-11`: two sources, 57 failed runs on 2026-10-18). The
+  Glue lineage sync is `glueLineageSyncEnabled: true` on each project's connections, no blueprint field.
+  The domain execution role holds `AddPolicyGrant`, `GetEnvironmentCredentials` and `q:PassRequest` (v23).
+- **6g**: the persona deny is gone (2026-09-17). Owed: 2.4's Athena read, refused as written (the
+  project role holds no Lake Formation grant on the lake), and decision 1's replacement of the proxy host
+  at the next `production/proxy/` apply, which starts a host.
+- **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps `ServiceEnabled: true` with no
+  standard; revert is `runbooks/security-hub.md` §R. FSBP billed ~0.45 USD/day for the organization.
 - **The hub (D38, 6c).** Five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`), Staging 11, SharedServices 12,
-  Workloads 0 (6 once Stage 9 pass 1 is applied); estate fixed rate 0.410/h; DNS Firewall 14 domains. `make hub-up` / `hub-down` start and
-  stop the two hub hosts, and a spoke `make up` refuses while one is stopped. `./aws/proxy.py`
-  PX-1..PX-4; NT-11/NT-12 are two-sided, by CIDR. `10.40.0.0/16` stays unallocated.
-- **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it
-  (`proxy_allow_by_plane` / `proxy_deny_by_plane`, preconditions on both). The client plane and the build
-  plane (`production-foundation` = all of `VPC-SharedServices`) are `open`: any public name, logged. The
-  compute plane `sandbox-foundation` is an allow-list of 29 names (`docs/NETWORK.md` counts it, dated);
-  **four of them are Anthropic's direct API, applied 2026-09-19** (`api.anthropic.com`,
-  `platform.claude.com`, `claude.ai`, `claude.com`), for a measurement, so 6e's "no Anthropic host"
-  no longer holds and `CLAUDE_CODE_USE_BEDROCK` in the image is the only thing keeping a session on
-  Bedrock; parameter v10 after the GitHub restore, `DN-1`..`DN-4` and `PX-1`..`PX-3` all green 2026-09-19.
-  **Both exercised from a space that evening by the user**: GitHub connects, and Claude Code answered on
-  the direct API with `managed-settings.json` deleted by hand — so 6e verification (v) is false and a
-  session can run outside every Bedrock control — **read back 2026-09-19**: one space address,
-  `api.anthropic.com` 298 requests, `platform.claude.com` **2** (needed), `claude.ai`/`claude.com`
-  **never touched** (so two entries no measurement justifies), `mcp-proxy` refused twice and the Datadog
-  intake 98 times, and **CloudTrail empty** — the access log is the only record of that hour. On the
-  GitHub side ten family names were refused and **nine were added 2026-09-19** (parameter v11, 41 entries, `DN-1`..`DN-4` and `PX-1`..`PX-3` green), `release-assets.githubusercontent.com` the most-refused at 18; **`ssh.github.com` stays off by the user's decision** — it serves SSH on 443 and the port guard permits `CONNECT` there, so it would open `git` over SSH from a space. **All nine exercised from a space 2026-09-20**, each `200 TCP_TUNNEL`, both redirect chains complete, `ssh.github.com` refused `403`;
-  the three GitHub names were removed 2026-09-09 and **restored 2026-09-19 by the user**, applied
-  (parameter v10; `codeload.github.com` and `objects.githubusercontent.com` were never on it, so a
-  redirected download still fails), CRAN added 2026-09-11, conda refused. **An empty
-  allow-list refuses everything and an empty deny-list permits everything**. `DN-4` reads "no plane is
-  `open` except the ones a decision names" (`OPEN_BY_DECISION`). **A plane edit bites at the next
-  half-hourly association tick**, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running
-  file) are two questions. **`make hub-up` renders nothing**: the host serves its previous session's
-  `squid.conf` for up to one interval, whatever the edit's age (measured 2026-09-19), and the
-  association reports `Success` with empty stdout.
-- **Squid matches the name the client requested, never a DNS answer** (2026-09-08): a CNAME is invisible,
-  an HTTP redirect is a new name, and a bare entry matches exactly (`github.com` covers neither
-  `api.github.com` nor `raw.githubusercontent.com`). A refusal over https reads `000` at the client. A missing name can also fail **without** a `403`: the
-  second instrument is `/awsds/sandbox/dns-firewall`, and the hub carries no DNS Firewall, so an
-  `ENOTFOUND` comes from a compute VPC.
-- **`NO_PROXY` is generated** (`vpc-egress` output), never written: it reads each endpoint's `dns_entry`
-  rather than the service's one canonical name, and a gateway endpoint has no private DNS at all, so
-  S3/DynamoDB are hand-named in both spellings. `no_proxy` names only the optional groups of the last
-  apply (51 entries under `GROUPS=redshift`, 2026-10-10); the image's literal is `no_proxy_all_groups`
-  (`vpc-egress-v0.17.0`, applied 2026-10-10), every group's names from the catalog's `private_dns_names` at plan
-  time, which matches `dns_entry` without an apply - the authoring plan printed the literal byte for byte
-  (70, `aafa08da98a61f5c`). **The first question about a `403`
-  is whether the name has an endpoint**; `streaming-logs` is still unexercised.
-- **Inside a space**: since `default-v0.2.0` nothing is exported — `apt`, `uv`, Julia, Rust and the
-  four kernels work as they are. A space started while
-  `sandbox/egress` is down hangs at "IDE configuration in progress". CRAN is on the plane since
-  2026-09-11 and needs a writable per-space library; `conda` is not, by decision.
-- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour), exercised 6d step 4 (2026-09-09/10) by
-  two `manual_only` portal workflows in Sandbox, deleted by the user 2026-10-10 (log groups kept). It runs
-  as the project role in the D13 boundary, workers with no proxy (a priced D9 exception). **6d decision due
-  14 took (b)** (user, 2026-10-10): no portal notebook task, a `CreateTrainingJob` the boundary's
-  `DenySageMakerJobsOffVpc` refuses (Lesson 20); `PythonOperator`/`BashOperator` instead, and the lint
-  refuses `SageMakerNotebookOperator` by name. **Stage 6i (done 2026-10-12)**: a portal workflow whose
-  `SageMakerProcessingOperator` runs a Python project in the house image under the boundary's four job
-  settings, then both worker operators; it took Stage 10's verifications (i), (xv) and 0.2's CLI half.
-  `update-workflow` is a full replace (Lesson 60). The `Workflows` blueprint is category 3;
-  `DenyProvisionedMwaa` and Stage 10's slices are unwritten. **`PythonOperator`/`BashOperator` are
-  supported** (AWS, 2026-08-17; the code a separate `Code` S3 object, class 2b; `awscc` ≥ 1.99.0, the
-  laptop's CLI 2.37.12). Stage 10 decision 6: one YAML cannot name both accounts, so it is rendered per
-  environment. **What 6i left**: four workflows kept in the Sandbox project; `sandbox/workflows/` (rank 56,
-  `[P]`, policy v2) grants the operator's existence check and the project tag on create, and since
-  2026-10-16 (policy v3, applied 14:54Z) Glue's `GetJob` on an untagged job named `<app>-<project id>`, the
-  `GlueJobOperator`'s existence check, measured that day (run `JO9MJ2BMRo7RL1Z`: `EntityNotFoundException`,
-  then the job created with the project tag under the managed policy alone; an undeclared run parameter
-  fails at the render, before any task). 6i's log groups sit under `EXC-10`. Stage 10 decision 7 (D41 item
-  7): a promoted job's dependencies in its image, its code in its input. **The workflow tooling is
-  `awsds-workflows` since 2026-10-12** (user; the runbook's §T has its URL), installed by URL from its
-  `main` in place of `render.py`, `package-uv.sh` and `package-uv-job.py`; the example YAML carry its
-  placeholder names, `operators/build.sh` stays (`examples/sandbox-orchestration/README.md`). **D41
-  (2026-10-15)**: the SageMaker application (manifest + the CI/CD CLI) is the deployable unit: the CLI
-  deploys it between the two Sandbox projects (`dev`, `test`) and bundles it, the pipeline deploys the
-  bundle; design B is **built as the chain layer**: a Step Functions machine per chain starts the
-  workflows, a Scheduler schedule the machine (Stage 10 3.4-3.7, decisions 13-18 taken; Stage 8 2.5,
-  decisions 19-20 taken). The first CLI deploy ran 2026-10-15 with `--skip-validation` (`docs/SMUS.md`).
-- **Stage 7 in progress: passes 1-2 closed 2026-10-12, pass 3 nearly done, pass 4 not started.** Production holds `pki/` (root to 2036, leaves to 2027-10-22, `/datascience/prod/pki/*-pem`), `tooling/` (GitLab **CE v19.4.2** `[D]`, host `awsds-prod-gitlab`, `gitlab.rb` an S3 object, `sudo awsds-gitlab-refresh` after an apply), `runners/` (`[E]`, a **protected project runner** of `app-etl`, linked to `dev-env` and locked; jobs log in to ECR through Amazon's credential helper mounted from the host; `make gitlab-up RUNNERS=0` leaves it out), `egress/` (12 endpoints) and `registry/` 5.b (`app-etl`, three cache rules whose creation templates carry no tags). In GitLab: the local administrator `felipenoris`, `awsds/` with four persona subgroups, `app-etl` (the first pipeline; Pages at `app-etl-ffa1fa.awsds-pages.internal`) and `dev-env` (the protected tag `*-v*`; the recipe's home since Stage 8 dec 16; its release chain built `default-v0.7.1-c268de48`, Sandbox's image version 7); SAML through the Identity Center application `GitLab`; sign-up and Auto DevOps left on by the user. Decisions 1-10 taken (9: the SageMaker endpoint pair dropped; the host loaded the 56-entry bypass list 2026-10-12; 10: the CE release pinned). **Measured**: cloud-init deadlocks a reconfigure on Omnibus's `After=multi-user.target` (fixed in `gitlab.rb`); `/-/readiness` answers `404` outside the monitoring allowlist; a first boot takes ~9 min to reconfigure; the `awsds` SSO token lives about an hour; the cache's first pull needs no route, and a pull imports every platform of an index. **`saml.auto.tfvars` lives in the project folder's `secrets/`**, never copied: a `tooling/` plan passes `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block. The buildbox is retired (6.5, 2026-10-12). **Owed**: INT-09's clone from a notebook on version 7, the other personas' memberships, pass 4 (8.x). `ENV=production` never touches the hub (refusal 6).
-- **Stage 8 in progress since 2026-10-12.** Passes 0 and 1 done. **Pass 2 done 2026-10-14 (PR #125)**: `awsds/ci-gates` (dec 10); the unprotected test runner #4, its jobs with no AWS identity (dec 11); `awsds/app-etl` on `examples/app-etl/`, `v0.1.0` run in Sandbox by `sandbox/app/app-etl/` (dec 12, (xviii)); refusals 7 and 8, `ONLY=`/`PROFILE=`. Decision 1 amended: the ECR scan informs, never blocks; the other gates do. Decs 1-25 taken. **Pass 3 run 2026-10-15**: Python 3.12 (dec 13); `images/` in GitLab, copied under `gitlab/` (dec 16); `default-v0.7.1` = version 7 by the pipeline; MR to version 38 min (1.7). **Decs 7, 18 applied 2026-10-15**: a release adds a version (`release/versions.py`), `retire` deletes past 10 that no space names; first run `default-v0.7.3` = version 8, no domain write, tag to version 29 min (vii). **Dec 15 amended**: `gates-v0.4.0` accepts a pip-audit finding by any of its ids (OSV re-keys them). **2.5 written and applied 2026-10-16** (PR #145): `examples/app-etl/` is an application (manifest, the 4-task workflow, `code/`, `glue/`, four tag jobs), run on no tag; decs 19/20's Terraform (2.5a: `awsds-deploy-sandbox-test` in `sandbox/workflows/` on `deploy-role-v0.5.0`; `awsds-prod-releases` in `registry/`; the runner's fourth profile), the CLI in the deploy image `v0.2.0`. **Decs 21-23 taken 2026-10-16** as recommended: `sandbox/app/app-etl/` retired (the bucket emptied, `sandbox/data/` applied the same day); the `dev` deploy from a space as the project role with the CLI in the house image; pass 4 after Stage 9 with Stage 10 passes 1-2. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**, never copied: `production/foundation` and `staging/foundation` plans pass `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the email subscription.
-- **Stage 17 pass 0 in progress, pass 1 planned, unapplied**: the portal's AI/ML and Generative AI menus exercised in the Sandbox project ([`stage-17`](docs/plan/stages/stage-17-sandbox-machine-learning.md)), nothing promotable. `./aws/sandbox-ml.py` (`ML-1`..`ML-9`) and `examples/sandbox-ml/` (XGBoost `3.0-5`, not the recipe's `1.7-1`) written 2026-10-17; their first run read the `ml.m5.xlarge` training and `ml.m5.large` endpoint and transform quotas at 0 (increases requested; 20, 8 and 8 on 2026-10-18, the requests still open), the ML tag `true` on both project roles and the managed ML policy at v45. Pass 1 (PR #157): `vpc-egress-v0.18.0` (`mlflow`) and `sagemaker-prereqs-v0.5.0` (`MLflowApp`), on origin and both slices planned 2026-10-18; decision 4 (the user, 2026-10-18) puts the new `NO_PROXY` image before the group's first apply. Planned: `AmazonBedrockKnowledgeBase` out of category 2, `amazon.titan-embed-text-v2:0` in the Bedrock SCP's `NotResource` (decision 11), and `sandbox/ml/` (rank 57, `[P]`) only if a training job measures 6i's `AddTags` gap. Decisions 1-3 (2026-10-12): Generative AI in with a knowledge base and a chat agent over the runbooks (S3 Vectors recommended, decision 12), `MLflowApp` over a tracking server, the recipe's Telco churn CSV via the proxy.
-- **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` =
-  the five VPC CIDRs + `10.90.0.0/24`), same key, same `DNS`, laptop-only; they differ only in whether the
-  laptop's internet is monitored (D39). The tunnel is dual-family (`wireguard-v0.6.0`) and rejects IPv6
-  (Lesson 56). macOS's system proxy is not consulted while the tunnel is primary (issue #67), and with
-  the tunnel down it breaks the `aws` CLI — `NO_PROXY='*'` is the override. 6c decision due 4 taken as (c). `aws sso logout` invalidates
-  every cached session's token, not only the one named, so switching persona costs the other
-  identity's session; a browser sign-out invalidates none. A CLI login answered in the browser that
-  holds a SageMaker portal session as another user ends that portal session (seen twice 2026-10-11,
-  cause inferred), so `aws/login.py` passes `--no-browser` and its URL goes to another browser.
-- **Module tags**: `vpc-egress-v0.17.0` (`no_proxy_all_groups`, applied on `sandbox/egress` 2026-10-10), `wireguard-v0.6.0`, `vpc-v0.4.0` (`sandbox/foundation` only, 2026-10-11; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`
-  (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`).
-  `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit code matters;
-  a module change is exercised by planning a caller, never by `validate`.
+  proxy, no interface endpoint in the hub. Endpoint sets: Sandbox 18 (20 with `GROUPS=bedrock-base`),
+  Staging 11, SharedServices 12, Workloads 6 while Production's `[E]` slices are up. `make hub-up` /
+  `hub-down` start and stop the two hosts; a spoke `make up` refuses on the proxy alone (6g decision 2).
+  `10.40.0.0/16` stays unallocated.
+- **Proxy planes.** A plane is a CIDR, not a host (Lesson 29); its mode is decided by which map holds it.
+  The client plane and the build plane are `open`; the compute plane `sandbox-foundation` is an
+  allow-list of 41 names (`docs/NETWORK.md`), four of them Anthropic's direct API (`TM-04`:
+  `CLAUDE_CODE_USE_BEDROCK` in the image is all that keeps a session on Bedrock), nine GitHub family
+  names and CRAN; `ssh.github.com` stays off by the user's decision (SSH on 443); conda is refused. An
+  empty allow-list refuses everything and an empty deny-list permits everything. A plane edit bites at the
+  next half-hourly association tick, and `make hub-up` renders nothing: the host serves its previous
+  session's `squid.conf`, so `DN-3` (code vs parameter) and `PX-3` (parameter vs the running file) are two
+  questions. The access log is the only record of a direct-API session; CloudTrail holds none. The GitLab host sends product usage events to `events.gitlab.net` (17.3 MB,
+  2026-10-12..16): the user's to stop.
+- **Squid matches the name the client requested, never a DNS answer**: a CNAME is invisible, an HTTP
+  redirect is a new name, and a bare entry matches exactly. A refusal over https reads `000` at the
+  client; an `ENOTFOUND` comes from a compute VPC's DNS Firewall (`/awsds/sandbox/dns-firewall`).
+- **`NO_PROXY` is generated** (`vpc-egress` outputs): `no_proxy` names only the last apply's optional
+  groups, `no_proxy_all_groups` every group's, from the catalog's `private_dns_names`; a gateway endpoint
+  has no private DNS, so S3/DynamoDB are hand-named in both spellings. The first question about a `403` is
+  whether the name has an endpoint.
+- **Inside a space**: since `default-v0.2.0` nothing is exported; a space started while `sandbox/egress`
+  is down hangs at "IDE configuration in progress"; CRAN needs a writable per-space library.
+- **Orchestration is MWAA Serverless only** (USD 0.088/task-hour; provisioned MWAA denied at the root).
+  6d decision 14 took (b): no portal notebook task, `PythonOperator`/`BashOperator` instead. Stage 6i
+  (done 2026-10-12) runs a `SageMakerProcessingOperator` in the house image under the boundary's four job
+  settings; `update-workflow` is a full replace (Lesson 60); `sandbox/workflows/` (rank 56, policy v3)
+  grants the operators' existence checks; workers run with no proxy (a priced D9 exception). Stage 10
+  decision 6 renders one YAML per environment, and decision 7 puts a promoted job's dependencies in its
+  image and its code in its input. The tooling is `awsds-workflows` (runbook §T); its `lint` at
+  `3c1708e` is what `app-etl`'s CI runs. **D41 (2026-10-15)**: the SageMaker application is the
+  deployable unit; the CLI deploys it between the two Sandbox projects and bundles it, the pipeline
+  deploys the bundle, and a Step Functions machine per chain with a Scheduler schedule starts the
+  workflows.
+- **Stage 7 in progress: passes 1-2 closed 2026-10-12 (three persona memberships owed), pass 3 nearly
+  done, pass 4 not started.** Production holds `pki/` (root to 2036, leaves to 2027-10-22), `tooling/`
+  (GitLab CE v19.4.2 `[D]`, `gitlab.rb` an S3 object, `sudo awsds-gitlab-refresh` after an apply),
+  `runners/` (`[E]`, build, deploy and test runners; `make gitlab-up RUNNERS=0` leaves them out),
+  `egress/` (12 endpoints) and `registry/`; `SC-11` reads the deployed `gitlab.rb` since 2026-10-18. In
+  GitLab: the local administrator, `awsds/` with four persona subgroups, `app-etl`, `dev-env` (protected
+  tag `*-v*`, the recipe's home), SAML through Identity Center; sign-up kept on by the user, Auto DevOps
+  still on (§I step 6 owed); decisions 1-10 taken (10 pins the CE release). Measured: `/-/readiness`
+  answers `404` outside the monitoring allowlist, a first boot takes about 9 min to reconfigure, and a
+  pull-through pull imports every platform of an index. **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/`
+  plan passes `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block. Owed:
+  INT-09's clone from a notebook (no space uses the house image), the memberships, pass 4. The GitLab
+  backups leave the bucket on 2026-11-13 and 2026-11-15. `ENV=production` never touches the hub
+  (refusal 6).
+- **Stage 8 in progress since 2026-10-12.** Passes 0-3 done: `awsds/ci-gates` (the ECR scan informs, the
+  other gates block), the test runner, the house image on Python 3.12 with its recipe in GitLab (copied
+  under `gitlab/`); a release adds an image version (`release/versions.py`) and `retire` deletes past 10.
+  Four deploy roles, `awsds-deploy-sandbox-test` (2.5a) held to the `test` project and never used; 2.5
+  makes `examples/app-etl/` an application, its first tag owed; the deploy image `v0.2.0` carries the CLI,
+  bundles land in `awsds-prod-releases`, and decision 22 runs the `dev` deploy from a space as the
+  project role. `gates-v0.4.0` accepts a pip-audit finding by any of its ids. Decisions 1-25 taken; pass 4 runs after
+  Stage 9 with Stage 10's passes 1-2 (decision 23). **`alerts.auto.tfvars` lives in the project folder's
+  `secrets/`**: `production/foundation`, `staging/foundation` and `sandbox/observability` plans pass
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-21`). `TM-17`'s identity half: the project
+  role's AWS-managed policy admits `sqs:SendMessage` to other accounts' `airflow-celery-*` queues and
+  Bedrock's cross-account `lambda:InvokeFunction`, and no SCP narrows it (the user's decision). `TM-21`
+  (the project key's `Principal *` statements) shares `sandbox/sagemaker/`'s one apply with Stage 17's
+  `MLflowApp` and waits on Stage 17 1.1. The data cells filters are code that creates nothing until
+  decision 12; `dlp.py` gained `DP-8`. The internal-access analyzer bills on each 1st: run it after
+  2026-11-01.
+- **Stage 12 in progress since 2026-10-18.** `production/observability/` and `sandbox/observability/`
+  (rank 70, `[P]`) applied: `awsds-prod-hub`, the proxy log's `AWSDS/Proxy` filters,
+  `awsds-prod-proxy-refusals` (50/h), quota alarms, and `awsds-sandbox-alerts`, whose e-mail subscription
+  awaits the user; `awsds-prod-alerts` admits CloudWatch. **The bill passes D12**: 53.31 USD in August and
+  74.48 in September from the accounts with a profile, and D12's budget still notifies nobody. `OB-3` fails by design (`EXC-19`) until the `[D]` hosts' alarms
+  are wired at a hub session.
+- **Stage 17 pass 0 in progress, pass 1 merged and unapplied**: `./aws/sandbox-ml.py` (`ML-1`..`ML-9`),
+  `examples/sandbox-ml/` (XGBoost `3.0-5`); quotas 20, 8 and 8 with the requests open. Main pins
+  `vpc-egress-v0.18.0` (`mlflow`) and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`),
+  so `sandbox/sagemaker`'s one apply waits on 1.1's portal reading (Lesson 69). Planned:
+  `AmazonBedrockKnowledgeBase` out of category 2 (7.0a, 7.0b), the embeddings model in the Bedrock SCP
+  (decision 11; `awslib/bedrockscope.py` learns the difference first, or `BS-2`, `BS-7` and `BR-4` go
+  red), `sandbox/ml/` (rank 57) only if a training job measures 6i's `AddTags` gap.
+- **Stage 18 pass 0 in progress, no decision taken**: an associated account no person works in goes in
+  `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`; Staging admits ten SageMaker AI domains.
+- **VPN.** Two client profiles (vpn.md §C7): monitored (full tunnel) and split-tunnel (`AllowedIPs` = the
+  five VPC CIDRs + `10.90.0.0/24`), same key, laptop-only; they differ only in whether the laptop's
+  internet is monitored (D39). The tunnel is dual-family and rejects IPv6 (Lesson 56). macOS's system
+  proxy is not consulted while the tunnel is primary, and with the tunnel down it breaks the `aws` CLI:
+  `NO_PROXY='*'` is the override. `aws sso logout` invalidates every cached session's token; a CLI login
+  answered in a browser holding a portal session as another user ends that session, so `aws/login.py`
+  passes `--no-browser`.
+- **Module tags**: `vpc-egress-v0.18.0` (`mlflow`, unapplied), `sagemaker-prereqs-v0.6.0` (unapplied),
+  `wireguard-v0.6.0`, `vpc-v0.4.0` (`sandbox/foundation` only; the other callers `vpc-v0.3.1`),
+  `sagemaker-denies-v0.2.0` (abandoned on origin, Lesson 46: `vpc-egress` v0.9.0, v0.11.0,
+  v0.12.0-v0.14.0, `vpc-v0.3.0`). `-input=false` on every plan and apply (Lesson 47); never pipe a command
+  whose exit code matters; a module change is exercised by planning a caller, never by `validate`.
 - **SMUS mechanics**: a blueprint configuration is applied from the member account; an existing one is
   immutable via `awscc`; the D13 boundary field is write-only (always `get-role`); an incomplete
   configuration pins its projects both ways. SMUS is a Lake Formation admin in Sandbox (OQ 24);
-  `-refresh=false` is forbidden on that slice. A denied call does not always name the policy.
-  SMUS LF-registers each project's `dev/` under the project role and grants to `IAMPrincipals` under a
-  `context.datazone.projectId` condition (`DL-14`, SMUS.md §S3 1b). Querybook quotas read 0: the
-  2026-09-13 requests closed 2026-09-24 without an increase, and the compute's first run is unmeasured.
+  `-refresh=false` is forbidden on that slice. SMUS LF-registers each project's `dev/` under the project
+  role (`DL-14`). A denied call does not always name the policy. Querybook quotas read 0.
 - **Standing rules**: never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion
   note; resolve an account by exact vended name; subnets anchor on AZ `zone_id`; read the denial wording,
-  never the exit code; account-level BPA **and the Bedrock retention mode** are hand-managed; Log
-  Archive and Audit hold no CLI profile; auto-enrollment is on; `INV-09` is ten principals. Before
-  reporting a gap, read the file that owns it:
-  unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings → OQ 12-15, 20,
-  21. From Stage 5a: no principal can start the crawlers (OQ 19); `EXC-02`; no Athena in Data
+  never the exit code; account-level BPA and the Bedrock retention mode are hand-managed; Log Archive and
+  Audit hold no CLI profile; auto-enrollment is on; `INV-09` is ten principals. Before reporting a gap,
+  read the file that owns it: unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`;
+  SMUS findings → OQ 12-15, 20, 21. No principal can start the crawlers (OQ 19); no Athena in Data
   Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
-  left alone (it bills per `[E]` cycle, USD 0.36-0.87 per Sandbox up/down, 10.88 in 2026-09; Stage 12
-  step 6 revisits). **D12's budget notifies nobody — 6e 8.3 re-opens it**, Bedrock billing per use with no
-  ceiling.
+  left alone (USD 0.36-0.87 per Sandbox up/down; Stage 12 step 6 revisits).
 
 Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a
 stale copy of something that lives elsewhere. Re-trim whenever a stage closes.
@@ -613,6 +612,10 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     made in GitLab's UI.**
 68. **An `[E]` host's first boot runs every session: what it reads unpinned is a release, and what it
     reads without waiting is a race.**
+69. **Two stages' unapplied changes to one slice become one apply the moment both are on main — each
+    stage's text still describes its own half.**
+70. **A refusal attributed to the identity's class was a membership, and memberships change in a portal
+    nobody watches.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
