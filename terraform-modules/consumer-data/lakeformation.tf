@@ -215,3 +215,60 @@ resource "aws_lakeformation_permissions" "shared_tables" {
 
   depends_on = [aws_lakeformation_data_lake_settings.this]
 }
+
+# -------------------------------------------------- the filtered re-grants (Stage 11 step 2.1b)
+#
+# The second hop of an explicit restricted grant. The lake account grants SELECT through a data
+# cells filter to this account with the grant option (data-governance/data/filters.tf), and this
+# account's administrator passes it to one local principal. The filter is addressed through the
+# owner's catalog id, because Lake Formation supports no cell-level security on a resource link
+# (AWS's data filtering limitations page). AWS: when a row filter granted to an account is
+# regranted inside it, the principal's predicate is the intersection of the account's and any
+# predicate granted to the principal directly.
+#
+# A row filter narrows nothing for a principal that also holds an unfiltered SELECT on the table:
+# AWS documents the all-rows grant as prevailing. The persona holds one through `shared_tables`, so a
+# row filter regranted to it changes no row it sees.
+
+resource "aws_lakeformation_permissions" "filter_select" {
+  for_each = var.data_cells_filter_grants
+
+  principal   = each.value.principal_arn
+  permissions = ["SELECT"]
+
+  data_cells_filter {
+    table_catalog_id = var.lake_catalog_id
+    database_name    = each.value.database_name
+    table_name       = each.value.table_name
+    name             = each.value.filter_name
+  }
+
+  depends_on = [aws_lakeformation_data_lake_settings.this]
+}
+
+# A reader that is not the persona holds no DESCRIBE on the link, and without it sees no database.
+# The persona's comes from link_describe: a second resource for the same triple would revoke it for
+# both on destroy. A database with no link here fails the plan by name.
+locals {
+  links_by_name = { for k, db in aws_glue_catalog_database.link : db.name => db }
+
+  # Keyed by role name and database, so no account id enters a resource address.
+  filter_readers = {
+    for g in values(var.data_cells_filter_grants) :
+    "${basename(g.principal_arn)}/${g.database_name}" => { principal_arn = g.principal_arn, database_name = g.database_name }...
+    if g.principal_arn != var.data_scientist_role_arn
+  }
+}
+
+resource "aws_lakeformation_permissions" "filter_link_describe" {
+  for_each = local.filter_readers
+
+  principal   = each.value[0].principal_arn
+  permissions = ["DESCRIBE"]
+
+  database {
+    name = local.links_by_name[each.value[0].database_name].name
+  }
+
+  depends_on = [aws_lakeformation_data_lake_settings.this]
+}

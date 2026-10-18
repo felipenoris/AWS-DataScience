@@ -34,6 +34,17 @@ variable "data_scientist_role_arn" {
   nullable    = false
 }
 
+variable "data_cells_filter_grants" {
+  description = "Stage 11 step 2.1b: SELECT through a data cells filter the lake account shared with this one, regranted to a local principal - the second hop of an explicit restricted grant. Keyed by a stable name; each entry names the reader, the lake database and table the filter belongs to, and the filter. A reader other than data_scientist_role_arn also receives DESCRIBE on that database's resource link. Empty by default, which keeps a caller that passes nothing byte-identical across the tag bump; who reads a filter is a choice the calling slice's README row records."
+  type = map(object({
+    principal_arn = string
+    database_name = string
+    table_name    = string
+    filter_name   = string
+  }))
+  default = {}
+}
+
 variable "additional_data_key_policy_statements" {
   description = "Extra statements appended to the account data CMK's policy - KMS holds one policy per key, so a second reader can only arrive through the module (the same constraint s3-bucket's additional_policy_statements answers for buckets). Empty by default, which is what keeps a consumer that adds nothing byte-identical across the tag bump. Type `any`, deliberately: IAM statements are heterogeneous objects and the module only ever concat()s and jsonencode()s them. The first caller is Stage 16's sandbox lake, admitting its access role; anything passed here is a widening of D31's read control and belongs in the calling slice's README row."
   type        = any
