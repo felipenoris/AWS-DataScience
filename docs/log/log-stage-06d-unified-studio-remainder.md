@@ -3021,3 +3021,121 @@ Nothing moved. `SageMakerStudioProjectUserRolePolicy` is still v75 (2026-08-27) 
 The three requests of 2026-09-13 (`L-F63F402C` and `L-B3401D17` at 5, `L-85C9EC5A` at 15) are
 `CASE_CLOSED` since 2026-09-24 07:49Z, and the applied values still read 0 on all three. So the
 portal's Querybook has no capacity in this account, and a new request is the user's if it is wanted.
+
+## 2026-10-18 — the trail, the simulator and the lint, with the environment down
+
+*Written by Claude, session "Stage 6d: readings, the lint of portal workflows, text", at the
+orchestrating session's request. Every reading is Claude's own, as the infrastructure user with
+`InfrastructureAccess`: `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`) unless named, and
+`awsds-infra-data`, `awsds-infra-identity`, `awsds-infra-prod` and `awsds-infra-staging` for
+`<Data Governance Account>`, `<Identity Account>`, `<Production Account>` and `<Staging Account>`.
+Account ids are replaced by those names and Identity Center user ids by `<idc-user-id>`. The hub was
+stopped and every `[E]` slice destroyed; nothing was written to AWS.*
+
+### 2.4 — the reconciliation of 2026-10-11, attributed
+
+- `./aws/studio.py` at 19:50Z: `US-1`..`US-10` pass; the failed calls are the seven persona and
+  Control Tower profiles with no session.
+- Since 2026-10-16 one `UpdateDomain`, the infrastructure user's through the CLI (2026-10-16
+  00:31:25Z, `d-lfgbdrjncmsu`), and no `UpdateStack`. In 90 days the first project's stack,
+  `DataZone-Env-5hkjdsy3umpi1c`, was updated twice by `awsds-sandbox-smus-provisioning` with
+  `invokedBy` DataZone: 2026-08-25 00:08:30Z and 2026-10-11 22:05:48Z.
+- The cause, in `<Data Governance Account>`'s trail: `UpdateProject` at 22:05:20Z on
+  `avhvbqn37ty7m8`, as `awsds-data-studio-domain-execution` with session `user-<idc-user-id>`, the
+  project's creator, from a browser (Chrome on macOS), with `projectProfileVersion: latest` and the
+  environment's ten user parameters as they stood (`idleTimeoutInMinutes` 60,
+  `enableNetworkIsolation` true, `logGroupRetention` 731 among them); the response read
+  `projectStatus: UPDATING`. `GetUpdateEligibility` came before it, nine times on the project from
+  21:28:55Z and once on the environment blueprint at 22:05:08Z. No other DataZone write in either
+  account between 21:00Z and 22:10Z.
+- `describe-stack-events`: `CDKMetadata` created; 13 resources `UPDATE_COMPLETE`, and only
+  `ToolingUserRole` passed through `UPDATE_IN_PROGRESS`. `SageMakerSpacesDefaultDomain` read
+  `UPDATE_COMPLETE` at 22:06:16Z with no `UPDATE_IN_PROGRESS`.
+- IAM, from `us-east-1`: on the project role, `UpdateAssumeRolePolicy` at 22:05:59Z and `TagRole` at
+  22:06:31Z (`SageMakerSpacesDomainId`, the value it already carried); no boundary call. Against the
+  document `CreateRole` sent on 2026-08-23, the trust policy's one difference is
+  `elasticmapreduce.amazonaws.com` added to the service statement. `get-role` shows it on the role,
+  and on the second project's role, created 2026-10-15; both carry `awsds-sandbox-project-boundary`.
+- `get-template`: the domain resource's `DefaultUserSettings` holds no `CustomImages` key.
+
+### 5.2 — the last teardown
+
+- The sweep on 2026-10-16, 21:15:48-21:15:59Z, as the infrastructure user through the CLI:
+  `ListDomains` ×2, `ListApps` ×5, `DeleteApp` ×2 (the two `JupyterLab` apps on the
+  `default-<idc-user-id>` spaces) and no other SageMaker call. The first `DeleteVpcEndpoints`
+  followed at 21:18:52Z, the last at 21:23:54Z.
+- That day's ledger: 12 apps created, 12 deleted: 7 by `AWSServiceRoleForAmazonSageMakerNotebooks`,
+  3 by the project roles from the portal, 2 by the sweep.
+- `US-10` at 2026-10-18 19:50Z: zero running apps. No `CreateApp` after 2026-10-16 21:15:57Z; the
+  SageMaker writes since are `CreateImageVersion` (2026-10-16 22:03:16Z, `awsds-deploy-devenv-sandbox`),
+  and a `CreateSpace` refused `ValidationException` and a `CreateNotebookInstance` refused
+  `AccessDenied`, both the infrastructure user's at 2026-10-17 23:21Z.
+
+### 1.3 — the persona's half, by simulation
+
+`iam simulate-custom-policy` over `DataScientistAccess`'s three documents as provisioned: the inline
+policy read from `<Identity Account>`, `awsds-org-project-storage-vending` v1 and
+`CloudWatchLogsReadOnlyAccess` v12, resource `*`:
+
+| Case | Request | Decision | Statements matched |
+|---|---|---|---|
+| A | `CreateProcessingJob`; `NetworkIsolation` and `InterContainerTrafficEncryption` `true`, a `VolumeKmsKey`, `InstanceTypes` `ml.t3.medium`; no `VpcSubnets` | `explicitDeny` | `DenySageMakerJobsOffVpc` |
+| B | A plus two `VpcSubnets` and a `VpcSecurityGroupIds` | `implicitDeny` | none |
+| C | `CreateProcessingJob`, no context | `explicitDeny` | the four job denies |
+| F | B at `ml.p4d.24xlarge` | `explicitDeny` | `DenySageMakerInstanceCeiling` |
+| D | `iam:PassRole`, `iam:PassedToService` `sagemaker.amazonaws.com` | `implicitDeny` | none |
+| E | `DescribeProcessingJob` | `allowed` | `ReadSageMakerStatus` |
+
+The six persona sets' inline documents, read the same sitting, hold no Allow on a SageMaker create or
+start, nor on `iam:PassRole`. With `ResourceArns` naming a `processing-job/…` or `training-job/…` ARN,
+the simulator matched a `Deny` on `Null sagemaker:VolumeKmsKey` (and on `Null
+sagemaker:OutputKmsKey`) with the key supplied, and did not with `*`; `sagemaker:VpcSubnets` was read
+both ways.
+
+### 4.3 — the portal's definitions through the D28 lint
+
+- `mwaa-serverless list-workflows`: six, `READY`, `manual_only`: 6i's four and the two
+  `houseprice_etl_*` the CI/CD CLI deployed on 2026-10-15/16. `get-workflow` on 6i's four:
+  `DefinitionS3Location` carries no `VersionId`; `demo-python-operator` and `demo-bash-operator` carry
+  a `Code` location with one.
+- `s3api get-object` of each definition from `awsds-sandbox-smus-projects` (`aws:kms`, saved
+  2026-10-11): each equals `get-workflow`'s `WorkflowDefinition` but for a trailing newline.
+- `awsds-workflows lint` at `3c1708e`, through `uvx` with a uv cache of its own outside the
+  repository; exit 1 on all four:
+
+| Definition | Authoring mode | `--promoted --prefix s3://awsds-prod-releases/workflows/<name>/v0.0.0/` adds |
+|---|---|---|
+| `demo-devenv-job` | `projeto`: `datazone_usr_role_`; `dzd-d8yrvx1ko7im6o`; `smus-projects` | `projeto`: `AmazonDataZoneProject`; `codigo`: `a entrada de código s3://awsds-sandbox-smus-projects/…/shared/awsds-demo-job/ está fora de s3://awsds-prod-releases/workflows/demo-devenv-job/v0.0.0/` |
+| `demo-devenv-deps` | the same three | the same two |
+| `demo-python-operator` | `projeto`: `dzd-d8yrvx1ko7im6o`; `smus-projects` | nothing |
+| `demo-bash-operator` | the same two | nothing |
+
+- With `--image-repository awsds-prod-ecr-app-etl --instance-type ml.m5.large`, `demo-devenv-job`
+  adds `imagem: task run_project: ImageUri do repositório awsds-prod-ecr-dev-env, e não de
+  awsds-prod-ecr-app-etl` and `job: task run_project: InstanceType ml.t3.medium fora de ml.m5.large`;
+  without the flags neither fires.
+- The control, offline: the same lint over `examples/app-etl/` prints `ok: 6 arquivo(s)`, exit 0.
+
+### 10.6 — no Amazon Q endpoint from `us-west-2`
+
+`describe-vpc-endpoint-services` in `us-west-2`: no `codewhisperer` service, the one Amazon Q name
+being `aws.api.us-west-2.qbusiness`. With `--service-regions us-east-1`: 92 `us-east-1` services
+offered across Regions, `sagemaker.api` and `sagemaker.runtime` among them, and no Amazon Q one. The
+same call in `us-east-1` is refused by `p-umksvu5a`, *"with an explicit deny in a service control
+policy"*.
+
+### Decision due 6's residual, and the image's list
+
+- `/awsds/prod/proxy` as `awsds-infra-prod`, the last 30 days: 21 lines `CONNECT
+  dzd-<id>.sagemaker.us-west-2.on.aws:443 403 … TCP_DENIED`, from 21 Sandbox addresses, 2026-09-19 to
+  2026-10-16.
+- Image version 9: `CREATED`, `STABLE`, alias `0.8.0`, `sha256:b788dbd9c7cf…`, tagged
+  `default-v0.8.0-7c59998c` in `<Production Account>`'s `awsds-prod-ecr-dev-env`. Both domains' four
+  `CustomImages` entries name `awsds-sandbox-dev-env` with no `ImageVersionNumber`.
+- `./aws/devenv.py`: `DE-1` pass (70 entries, `aafa08da98a61f5c`), `DE-4` pass, `DE-5` pass (version 9,
+  70 names at `aafa08da98a61f5c`); `DE-2` fails because `sandbox/egress` holds no outputs while it is
+  down, so `DE-3` and `DE-6` compared nothing.
+- `<Staging Account>`'s trail holds no `CreateVpcEndpoint` since 2026-09-09, so `staging/egress` has not
+  been applied since `vpc-egress-v0.11.1`.
+
+---

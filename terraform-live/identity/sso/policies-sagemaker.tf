@@ -13,10 +13,11 @@
 # nothing, the module having no resources at all, only a document.
 #
 # The persona sets need it even though the boundary covers the project roles, because the two
-# govern different principals. A data scientist signed in to the console can call
-# CreateTrainingJob directly, with their own network configuration and their own instance type,
-# without any project role being involved. The persona set is what stops that; the boundary is
-# what stops the same call made by the role SMUS provisions. Neither covers the other.
+# govern different principals. A persona's own CreateTrainingJob, with its own network
+# configuration and instance type, needs a SageMaker create and an iam:PassRole that no set in this
+# slice grants (DataScientistAccess holds ReadSageMakerStatus alone), so it fails for want of an
+# Allow; these denies keep the call inside the perimeter once a set grants one. The boundary does
+# the same for the call made by the role SMUS provisions. Neither covers the other.
 #
 # Not here: the Athena Spark deny. That is an OU SCP (Stage 6 step 1.6,
 # awsds-org-scp-ou-interactive) because it must reach every principal in the member accounts,

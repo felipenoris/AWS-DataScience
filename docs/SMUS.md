@@ -983,14 +983,17 @@ attempts by the project role):
   request below the default is refused with `IllegalArgumentException` (*"You must provide a quota value
   greater than the default quota value of 5.0"*), and a request equal to the default is accepted. An
   approval turns on a compute surface this estate has not measured. The query editor runs Athena
-  through SQL Workbench without it (§S3 item 1b).
+  through SQL Workbench without it (§S3 item 1b). The three requests were closed on 2026-09-24 07:49Z
+  without an increase, and the applied values still read 0 on 2026-10-17 (6d log), so the Querybook
+  has no capacity in this account until a new request.
 
 ### Custom images (BYOI) — and how they are named
 
 A project's spaces run the **SageMaker Distribution** unless a custom image is attached to the
 SageMaker AI domain `Tooling` provisions in the member account: an image, an image version and an app
-image config, then the domain's `CustomImages` (Stage 6 step 5.1; INT-01/INT-17 are the open ends and
-verification (vi) is where the working mechanism gets recorded).
+image config, then the domain's `CustomImages` (Stage 6 step 5.1). INT-01 closed on 2026-09-10 (6d
+step 2.5); INT-17's open half is whether the attachment survives a blueprint reconciliation, which is
+verification (vi) and 6d step 2.4.
 
 **Three of the four objects are Terraform's, and the fourth is the blueprint's** (measured 2026-09-10,
 Stage 6d step 2). `sandbox/dev-env/` holds the image, the version and one app image configuration per

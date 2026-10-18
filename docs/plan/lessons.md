@@ -1766,6 +1766,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Chrome held the Data Scientist User's portal session, and the next portal act landed on the sign-in
   page. The shared browser is the inferred cause, not an isolated one. Where: `aws/AWS-CLI.md`, "Signing
   in".
+- **A project update in the portal reconciles the environment's stack, and the stack writes only what
+  its template changed** (measured 2026-10-18, 6d step 2.4). An `UpdateProject` with
+  `projectProfileVersion: latest` and the parameters unchanged, made by a person in the portal, was
+  followed 28 s later by an `UpdateStack` by the provisioning role. The new template added
+  `elasticmapreduce.amazonaws.com` to the project role's trust policy, the one IAM write besides a
+  `TagRole` of a value the role already carried; the SageMaker domain resource read `UPDATE_COMPLETE`
+  with no `UPDATE_IN_PROGRESS` and no `UpdateDomain`, so an attachment made by hand outside the template
+  survives a reconciliation that leaves the domain's properties alone. Where: 6d step 2.4, INT-15,
+  INT-17.
 
 ### MWAA Serverless
 
@@ -1846,6 +1855,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   xvi). `msgspec`'s `_core.cpython-313-x86_64-linux-gnu.so` loaded from `/opt/ml/processing/code`, which
   SageMaker had downloaded from S3 with the prefix's folder markers. No page says whether the input
   volume admits executable mappings. Where: `runbooks/serverless-workflows.md` §J1.
+- **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey` when the
+  resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key matched
+  a `CreateProcessingJob` or `CreateTrainingJob` that supplied the key against `processing-job/…` or
+  `training-job/…`, and did not match against `*`; `sagemaker:VpcSubnets` was read both ways. The real
+  call reads the key: 6i's four jobs carried `VolumeKmsKeyId` past the boundary's copy of the same deny.
+  A simulation of a job's settings runs with the default resource `*`. Where: 6d step 1.3.
 
 ### Athena
 
