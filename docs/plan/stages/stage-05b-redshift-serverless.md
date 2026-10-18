@@ -597,8 +597,8 @@ the limit restored in the same sitting.
 **Action:** confirm the three log groups receive events, and put an alarm on the one metric that reveals the
 irreversible thing. **Why:** a log switched on at 1.1 that carries nothing is a control that reads as
 working (Lesson 13 — a verification that returns empty on both success and failure is not a verification).
-**Explanation:** the alarm notifies nobody: Sandbox has no SNS topic, so its state is what `WH-4b` and the
-console read (`sandbox/warehouse/alarms.tf`), and a destination is [Stage 12](stage-12-observability-finops.md)'s.
+**Explanation:** the alarm notifies nobody: it carries no action (`sandbox/warehouse/alarms.tf`), so its
+state is what `WH-4b` and the console read, and a destination is [Stage 12](stage-12-observability-finops.md)'s.
 
 - **6.1 — Answered 2026-10-17: the Data API path can be logged, and 232 of its 268 calls were not.**
   Over the groups' 30-day retention, the only user records are the admin's Data API sessions of
