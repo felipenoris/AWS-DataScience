@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 is live, since a second project, `test-experimentation`, exists from 2026-10-15 and is in no map; and **decision 3 is re-opened**: the connection object, readable since 2026-10-15, carries `lineageSync` enabled on a daily schedule the form never showed, and all eight runs to 2026-10-18 failed without minting a database session. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b from `test-experimentation`), 0.4's portal half, 6.4 (the user's keep-or-drop of `lab`), decision 3's `lineageSync`, and verifications x and xii. The audit export a DLP feed would read carries nothing while a workgroup exists (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
+| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 is live, since a second project, `test-experimentation`, exists from 2026-10-15 and is in no map; and **decision 3 is re-opened**: the connection object, readable since 2026-10-15, carries `lineageSync` enabled on a daily schedule the form never showed, and all eight runs to 2026-10-18 failed without minting a database session. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b from `test-experimentation`); the policy simulator read 5.3 and 5.4 as designed on 2026-10-18, so those two owe their refusals' wording, and the same reading found AWS's managed project policy granting `GetCredentials` and the Data API through layer 1's tag, which bears on decision 8; 0.4's portal half, 6.4 (the user's keep-or-drop of `lab`), decision 3's `lineageSync`, and verifications x and xii. The audit export a DLP feed would read carries nothing while a workgroup exists (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
 | **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all. **And [5b](stage-05b-redshift-serverless.md) 1.10's endpoint group**, raised with `make up ENV=sandbox GROUPS=redshift`: without it a `redshift-serverless:GetCredentials` call — layer 2, and the whole IAM-credentials path — leaves through the proxy as a public request, which is 6e's *wrong door* repeated. The 5439 data path needs no endpoint, only the security group. **The compute slice must be up**: a `make down` leaves the namespace and removes the workgroup, so a connection to a destroyed workgroup fails the way a space started while `sandbox/egress` is down hangs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
@@ -300,7 +300,7 @@ the two cannot drift by an edit that still plans clean.
   requirement names both objects) and to one IAM policy attached to that project's role.
   **The wide form stays refused**: `for-use-with-all-datazone-projects=true` appears nowhere, and `WH-7`
   fails if it does.
-- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and the Data API path is not granted; 3.4's refusal, if it comes, is what decides whether the family joins. **3.4 needed none** (2026-10-10): the Data page reaches the database through `sqlworkbench`, so the family stays out. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
+- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and this slice grants no Data API path; 3.4's refusal, if it comes, is what decides whether the family joins. **3.4 needed none** (2026-10-10): the Data page reaches the database through `sqlworkbench`, so the family stays out. **AWS's managed policy grants it anyway** (simulated 2026-10-18, [log](../../log/log-stage-06h-redshift-connection.md)): `SageMakerStudioProjectUserRolePolicy` v75's `RedshiftDataActions` allows `redshift-data:ExecuteStatement` and five more on a workgroup tagged with the caller's project, and `ComputeCredentials` allows `GetCredentials` on the same tag, so layer 1's tag opens both to the admitted project without this policy. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
   `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListWorkgroups`, `ListTagsForResource`, and — only
   if 0.3's answer needs it — the `redshift-data:ExecuteStatement`/`GetStatementResult`/`DescribeStatement`
   family. **Nothing on the namespace's own management APIs**, no `UpdateWorkgroup`, and **no
@@ -415,7 +415,12 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   does not appear and a hand-made connection to the same workgroup fails. This is layer 1 alone, and it is the
   reading that says the tag is a control rather than a label.
   A second project exists since 2026-10-15, `test-experimentation`, in no map, so 5.1 is runnable from it
-  with the compute up.
+  with the compute up. **Its IAM half, simulated 2026-10-18**: that project's role reads `implicitDeny`
+  for `GetCredentials` and `redshift-data:ExecuteStatement` on a workgroup tagged for the first project,
+  and `allowed` for `GetCredentials` that arrives through `sqlworkbench` or the Data API
+  (`SageMakerStudioProjectUserRolePolicy` v75's `RssCreds`, any workgroup in any account); the same
+  policy grants it `sqlworkbench:CreateConnection` and `DriverExecute` with no condition. So the query-editor door is open to it at the IAM layer, and which
+  layer refuses a hand-made connection is this step's reading.
 - **5.2 — [user] The admitted project reaches the schema its map row names, and no other.** From the project
   that *is* admitted: the schema it holds the role for works; a **second schema in the same database**, whose
   role it does not hold, does not; and the namespace's own first database does not either. This is layer 3
@@ -437,8 +442,32 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   > next. So the expected answer is **nothing at all** (no grant, no access), and a *read* succeeding would
   > mean a default grant exists that 1.2's `REVOKE` did not reach. Either outcome is a finding; only one is
   > the design.
+- **5.3 — the decisions by simulation, 2026-10-18** (Lesson 22; the tables are in the
+  [log](../../log/log-stage-06h-redshift-connection.md)). `iam simulate-principal-policy` on the project
+  role and on its access role, which a notebook assumes (8a), with `aws:RequestedRegion`,
+  `aws:PrincipalArn` and the roles' and the secret's tags in the context, against a workgroup ARN with a
+  made-up id (the workgroup is down). `UpdateWorkgroup` and `DeleteUsageLimit` read `explicitDeny` from
+  the organization for both roles. With the carve-out's `InfrastructureAccess` ARN forced into the
+  context, the project role's reading becomes `implicitDeny` matching no statement; with the project
+  role's ARN forced onto `InfrastructureAccess`, its `allowed` becomes the organization's deny. So the SCP
+  verdict is 5b 3.2's `DenyRedshiftCostGuardTamperingExceptInfrastructure`, and no identity policy of
+  either role grants either action. `GetSecretValue` on the admin secret reads `implicitDeny` for both,
+  with the boundary and the SCPs admitting it. **The secret's tags are what keep it closed**: AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 allows `GetSecretValue` on a secret tagged with the caller's
+  project (`AllowGetSecretForRedShift`) or with `for-use-with-all-datazone-projects=true`
+  (`DataConnectionAllProjectResources`); the first tag simulated on the secret reads `allowed` for the
+  admitted project, the second for `test-experimentation`; and the Redshift-managed secret carries
+  neither, while its namespace carries the project's tag. Each verdict covers the identity policies, the D13 boundary (the access role
+  has none) and the SCPs, whose statement the simulator never names; it covers no RCP, no session tag and
+  no KMS key policy, and the secret has no resource policy. The refusals' wording is the real attempt's.
 - **5.3 — [user] The project cannot administer the warehouse**: `UpdateWorkgroup` denied (the policy does not
   grant it), `DeleteUsageLimit` denied (5b 3.2's SCP, if applied), and the admin secret unreadable.
+- **5.4 — the decision by simulation, 2026-10-18.** The same simulator on
+  `AWSReservedSSO_DataScientistAccess_*` in Sandbox, whose inline policy equals the permission set's in
+  Identity: `GetCredentials` reads `explicitDeny` matching `DenyMintingARedshiftDatabaseSession`,
+  `redshift-data:ExecuteStatement` the same statement, and the control, `GetWorkgroup`, `allowed` by
+  `ReadRedshiftServerlessStatus`; the organization admits all three. The persona's real call, and with it
+  verification viii's wording, stays the user's.
 - **5.4 — [user] The persona cannot mint a database session**: `redshift-serverless:GetCredentials` as
   `DataScientistAccess` is denied by an **explicit** deny in an identity-based policy,
   `DenyMintingARedshiftDatabaseSession` in the persona set (written at 5b). Its wording differs from an
@@ -542,7 +571,8 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 4. **Whether a persona ever queries the warehouse directly** (step 4). **Taken 2026-09-20: no**, as 5b 2.3
    applied it: the persona keeps the read side and is denied `GetCredentials` and the `redshift-data:`
    family. Every query arrives through a project, which keeps the `GRANT` register complete and the shared
-   RPU meter attributable. 5.4 is the measurement still owed.
+   RPU meter attributable. 5.4 reads `explicitDeny` in the policy simulator (2026-10-18); the refusal's
+   wording is the measurement still owed.
 5. **~~One database per project, or shared databases with a schema per project~~ — answered by the brief**
    (2026-09-20): *a schema is a base*, one database holds them all, and **a schema may be shared with more than
    one project**. What remains is the mechanism, and it is 1.5's: **a database role per schema**, granted to each
@@ -625,12 +655,18 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    register of who may actually connect"*, which is a real loss of one independent check. **Live and not
    taken**: a second project, `test-experimentation`, exists since 2026-10-15 and is in no map. Whether it
    needs the warehouse is the user's to say, and the shape follows that requirement rather than preceding it.
+   **Under (a) the argument's layer 2 does not hold** (simulated 2026-10-18): AWS's
+   `SageMakerStudioProjectUserRolePolicy` v75, on both Sandbox project roles, carries
+   `ExistingRedshiftCompute`, which allows `GetCredentials` and the Data API on a workgroup tagged
+   `for-use-with-all-datazone-projects=true` that carries no `AmazonDataZoneEnvironment` tag, and
+   `test-experimentation`'s role reads `allowed` for both under that tag. So with the wide tag every
+   project role holds layer 2, and layer 3 is the only per-project gate left.
 
 ## Verifications to answer while executing
 
 | # | Question | Step |
 |---|---|---|
-| i | **Answered 2026-10-10**: the boundary is **attached** to the project role (INT-15 holds, and the slice's own precondition checks it) and it **admits** `redshift-serverless:GetCredentials`: the project role called it from a space at 3.3 and was answered. `redshift-data:` is granted to no role, so the boundary's answer for that family is unread | 0.2 |
+| i | **Answered 2026-10-10**: the boundary is **attached** to the project role (INT-15 holds, and the slice's own precondition checks it) and it **admits** `redshift-serverless:GetCredentials`: the project role called it from a space at 3.3 and was answered. The boundary admits `redshift-data:ExecuteStatement` too (simulated 2026-10-18), which AWS's `SageMakerStudioProjectUserRolePolicy` grants on a workgroup tagged with the project (2.2) | 0.2 |
 | ii | **Answered 2026-09-21**: the compute is offered from a dropdown, as database `dev`; the form demands `Access role ARN`, leaves `AWS Secret` optional and offers no `lineageSync` toggle. The object it wrote has `lineageSync` **enabled**, read 2026-10-18 (decision 3) | 3.1, 3.2 |
 | iii | **Answered 2026-10-10**: the user is `IAMR:` plus the `RedshiftDbUser` value the calling session carries — `IAMR:datazone_usr_role_<project>_<env>` through the access role, `IAMR:user-<Identity Center user id>@<project id>` on a direct notebook session, auto-created holding nothing. Read first on 2026-09-20: `pg_user` already carries `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>`, created by nobody and **`usesuper = true`**, so an `InfrastructureAccess` session that reaches the database by IAM is a **superuser** session | 1.4, 3.3 |
 | iv | **Answered 2026-10-10: both doors work**, JupyterLab over `5439` inside the VPC and the Data page through `sqlworkbench` | 3.3, 3.4 |
@@ -639,7 +675,7 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 | vii | Does the admitted project reach `warehouse` — and if it reads it, which default grant did 1.2's `REVOKE` miss? | 5.2 |
 | xiii | **Answered 2026-10-10**: the role's `USAGE, CREATE` lets the project create tables in `lab` with no further grant, each owned by the database user that created it, and its sessions on `sandbox` needed nothing beyond the role. Reading another creator's tables needs the default privilege written for that creator (runbook §T) | 1.5, 3.3 |
 | xiv | **Mostly answered without the project.** It refuses **at commit**, with the wording in the log, and the usage **overshoots the quota inside the transaction**. `SVV_SCHEMA_QUOTA_STATE` **cannot be read at all** — refused to a superuser — so neither it nor the violations view is an instrument here. Owed: that `ALTER SCHEMA … QUOTA` fails for a non-superuser, which the project's own session can now attempt | 5.2a |
-| viii | Does the persona's `GetCredentials` refusal name the identity-based policy? The set carries an explicit `Deny`, `DenyMintingARedshiftDatabaseSession`, so it should | 5.4 |
+| viii | Does the persona's `GetCredentials` refusal name the identity-based policy? The set carries an explicit `Deny`, `DenyMintingARedshiftDatabaseSession`, so it should. **The decision is read, 2026-10-18**: the policy simulator returns `explicitDeny` matching that statement in the provisioned inline policy, with the organization admitting the call. The simulator gives no wording, so the persona's real call stays owed | 5.4 |
 | ix | **Answered: no, read 2026-10-17.** Nothing reaches the groups while a workgroup exists, so no session through either door has been logged; the only user records are the admin's Data API sessions of 2026-09-21 (`EXC-16`) | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |
 | xi | Does anything at the domain level stop a project member creating a connection of their own? **The API half answered 2026-10-18: no** — no policy type and no domain setting governs `CreateConnection` (0.4). The portal half, whether a contributor can, is the user's | 0.4 |

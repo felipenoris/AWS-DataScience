@@ -688,3 +688,31 @@ paraphrased here; [`REFERENCES.md`](../REFERENCES.md) lists them. Times are UTC.
   cell, three sentences that still called 4.1 and decision 1 open or `(d)` recommended), `AWS_STATE.md`
   `EXC-11`, `SMUS.md`'s catalog-surface section, `REFERENCES.md`, `PRICING.md`'s compute row,
   `aws/INDEX.md` and `catalog.py`.
+
+## 2026-10-18 — decision due 3's last input: no condition key reaches business-name generation
+
+*Claude's reading, in the task `stages-06fgh-readings` the orchestrating session ran on the user's
+approval of 2026-10-18, with no AWS call: the Service Authorization Reference page for Amazon DataZone and
+its machine-readable copy, read with the web fetch tool and paraphrased here, and the DataZone model of
+the laptop's CLI, 2.37.12. [`REFERENCES.md`](../REFERENCES.md) lists both sources.*
+
+- **[Claude] The condition keys.** The page defines six: `aws:RequestTag/${TagKey}`,
+  `aws:ResourceTag/${TagKey}`, `aws:TagKeys`, `datazone:domainId`, `datazone:projectId` and
+  `datazone:userId`, and one resource type, `domain`, with `aws:ResourceTag`. No action row names any of
+  the three `datazone:` keys: the action-level keys are the tag keys on `CreateDomain`, `TagResource` and
+  `UntagResource`, and `aws:ResourceTag` reaches the domain's own actions through `domain`. The
+  machine-readable copy agrees, the three `datazone:` keys in its top-level list and in no action's
+  `ActionConditionKeys`.
+- **[Claude] The actions that carry the switch.** `CreateAsset`, `CreateAssetRevision`,
+  `CreateDataSource`, `UpdateDataSource` and `StartDataSourceRun` take no resource type and no condition
+  key. In the CLI model the switch is `--prediction-configuration businessNameGeneration={enabled=…}` on
+  `create-asset` and `create-asset-revision`, and `--recommendation enableBusinessNameGeneration=…` on
+  `create-data-source` and `update-data-source`.
+- **[Claude] The generation's own actions.** `StartMetadataGenerationRun`, `CancelMetadataGenerationRun`,
+  `GetMetadataGenerationRun`, `ListMetadataGenerationRuns`, `AcceptPredictions` and `RejectPredictions`
+  take no resource type and no condition key. The CLI model gives `start-metadata-generation-run` a
+  `--type` or `--types` of `BUSINESS_DESCRIPTIONS`, `BUSINESS_NAMES` or `BUSINESS_GLOSSARY_ASSOCIATIONS`,
+  and no key reads it.
+- **[Claude] What it leaves for the decision.** An IAM deny reaches generation only as a whole action,
+  and no policy reaches the flag. Whether a data source's own run calls any IAM action to generate is not
+  on the page. The decision stays the user's; the stage file's decision due 3 carries the reading.

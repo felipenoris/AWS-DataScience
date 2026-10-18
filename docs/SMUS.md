@@ -659,10 +659,13 @@ project*, and no single mechanism expresses that:
    **access role** the form demands (below). On the Data page `GetCredentials` is called by the access
    role; on a direct notebook session, by the project role (measured 2026-10-10). The project role must
    also fit inside the **D13 project boundary** (INT-15), which is a ceiling, so a grant the boundary does
-   not admit reaches nothing; it admits `GetCredentials`. `redshift-data:` is granted to neither role and
-   neither door needed it. The Query editor adds `sqlworkbench:CreateConnection` and `DriverExecute` on
-   the access role, which CloudTrail records as the events `GetResources` and `ExecuteQuery`: a refusal's
-   `errorMessage` names the action, its `eventName` does not.
+   not admit reaches nothing; it admits `GetCredentials`. This repository grants `redshift-data:` to
+   neither role and neither door needed it, while AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
+   the project role the Data API and `GetCredentials` on a workgroup tagged with its project (simulated
+   2026-10-18, [6h](plan/stages/stage-06h-redshift-connection.md) 2.2). The Query editor adds
+   `sqlworkbench:CreateConnection` and `DriverExecute` on the access role, which CloudTrail records as the
+   events `GetResources` and `ExecuteQuery`: a refusal's `errorMessage` names the action, its `eventName`
+   does not.
 3. **A Redshift `GRANT`** decides the database, schema and tables. This is the requirement's own grain, it is
    SQL rather than Terraform, and **nothing in a plan shows it** — including its absence after a project is
    unwired.
