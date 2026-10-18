@@ -1695,6 +1695,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   3.2, which had flagged the timing as undocumented): the console act and the `organizations
   list-accounts` read agreed in the same sitting. Recorded as a measured absence, so that nobody
   builds a wait into a procedure that does not need one.
+- **`iam simulate-principal-policy` reads the Control Tower Region ceiling as an explicit deny for every
+  regional action unless the context names `aws:RequestedRegion`** (measured at Stage 11 pass 0,
+  2026-10-18). Without the key, `sns:Publish` and `glue:GetDatabases` from a Sandbox project role return
+  `explicitDeny` with `AllowedByOrganizations: false`, and `MissingContextValues` stays empty, since it
+  lists the identity policies' keys and not the SCPs'. With `--context-entries
+  ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string` the same calls read
+  the identity layer. Stage 6e 3.1a recorded the first shape as the organization verdict being unusable
+  from a member account. Where: `log-stage-11`, 2026-10-18.
 
 ### Lake Formation and SageMaker Unified Studio
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Pass 0 in progress: step 3's skeleton is written and 2.1.1 is read** (2026-10-17). [`threat-model.md`](../threat-model.md) drafts 3.1 to 3.7 and 2.1.2's resource types as entries `TM-01`..`TM-20`; the user's Audit snapshot of that evening fills the reachability table's outside column, and its one active finding beyond `INV-16`'s shape, the Sandbox project key, is `TM-21` and `EXC-18`, open until the key policy's narrowing is applied: the user chose it on 2026-10-18, and `sagemaker-prereqs-v0.6.0` carries it (PR #166). The inside column and the residuals of steps 4 to 6 are pending. Re-reading 3.1 opened two entries nothing had weighed: the proxy's own half of the raw-address row below, a `dstdomain` without `-n` matching an address by its reverse name (`TM-01`), and the hosts third parties control under the compute plane's `.amazonaws.com` entry (`TM-03`). **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch (exported to Log Archive) as the evidence its threat model reasons over. **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
+| **Status** | **Pass 0's readings are taken and pass 1 is written, not applied** (2026-10-18). [`threat-model.md`](../threat-model.md) drafts 3.1 to 3.7 and 2.1.2's resource types as `TM-01`..`TM-21`. The outside column is the user's Audit snapshot of 2026-10-17 (2.1.1), whose one active finding beyond `INV-16`'s shape, the Sandbox project key, is `TM-21` and `EXC-18`: `sagemaker-prereqs-v0.6.0` narrows it and `sandbox/sagemaker/` plans `2 to add, 1 to change`, not applied, because the same apply creates Stage 17's `MLflowApp` configuration before that stage's 1.1 reads the portal. Read on 2026-10-18 ([log](../../log/log-stage-11-dlp.md)): the lake CMK's decrypt list (2.1.5's key half), RAM refusing outside principals on the lake shares, and `TM-17`'s identity half, where the project role's managed policy admits `sqs:SendMessage` to any other account's `airflow-celery-*` queue; `./aws/dlp.py` took its before-run and gained `DP-8` for 5.6. Pass 1's filters and filtered grants create nothing until the user names the filtered principal in Sandbox (step 2's choice, same log). The inside column and the residuals of steps 4 to 6 are pending. 3.1's re-reading opened `TM-01` (a `dstdomain` without `-n` matching an address by its reverse name) and `TM-03` (hosts third parties control under the compute plane's `.amazonaws.com` entry). **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch, `/awsds/prod/proxy` in Production, as the evidence its threat model reasons over; it has no export until step 5.1 settles the mechanism (6c decision due 4). **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half |
 | **Prerequisites** | Stages 5a, 6, 9 — by named input: Stage 5a's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5a's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5a decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
@@ -21,8 +21,10 @@ it — and the honest ledger of what has no control at all.
 **The client plane's egress control is this stage's to monitor, not to build.** A client on the monitored VPN profile has its *whole* internet run
 through the cloud's single egress behind an institutional **HTTP/HTTPS proxy**, and **[6c](stage-06c-networking-hub.md)
 builds it** — open question 23 is closed. What arrives here is a **Squid access log** in CloudWatch,
-exported to Log Archive so the author of the allow-list does not own its record (Lesson 18), carrying time,
-source, CONNECT host, status and byte counts. That log is the evidence this stage's threat model reasons
+`/awsds/prod/proxy` in Production, carrying time, source, CONNECT host, status and byte counts. It has no
+export: 6c decision due 4 (taken 2026-09-08 as (c)) leaves the mechanism to step 5.1, so until then the
+author of the allow-list owns its record (Lesson 18) and a deletion is visible on the organization trail
+(`./aws/proxy.py` `PX-4`, a note). That log is the evidence this stage's threat model reasons
 over, and the two filters the objectives require (the proxy's list for people, SageMaker's stricter list
 for notebooks) are **source-scoped Squid ACLs** rather than anything this stage creates. The closed circuit
 it belongs to closes on the identity ([D39](../decisions/D39-access-by-identity.md)): an Identity Center
@@ -41,7 +43,7 @@ in 1b is finally *collected on*: a service that emits findings nobody reads is L
 | Where | What | Layer |
 |---|---|---|
 | `data-governance/data/` (amended) | LF data cells filters + the filtered grants; the data-events trail; the `awsds-data-logs` delivery statements; EventBridge rules, SNS topic, alarms | `[P]` |
-| `sandbox/data/`, `staging/data/`, `production/data/` (amended, one module — every `consumer-data` caller that exists by then) | each consumer account's data-events trail on its derived bucket; the mass-read rule + alarm + SNS | `[P]` |
+| `sandbox/data/`, and `production/data/` once Stage 9 writes it (amended, one module — every `consumer-data` caller that exists by then; `sandbox/data/` alone on 2026-10-18) | each consumer account's data-events trail on its monitored buckets; the mass-read rule + alarm + SNS; the filtered re-grants of step 2.1b | `[P]` |
 | Management + Audit, by hand | Macie delegation, members and the discovery job; the internal-access analyzer; GuardDuty's two paid features org-wide | — (no slice, no profile) |
 | `identity/org-policies/` (amended — decision 6) | the CloudTrail-tampering statement, through battery phases 1-3 | `[P]` |
 | `aws/`, `docs/` | `./aws/dlp.py` (pre-written); the `GD-3` flip in `./aws/guardduty.py` (`VP-8` until the 2026-08-18 split); the `audit-iam-analyser.sh` second-analyzer expectation; the threat model `docs/plan/threat-model.md` | — |
@@ -59,8 +61,9 @@ principals, and log files that survive to be read. Enabling one does not dischar
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
 | **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and every log entry |
 
-Hand applies run as the **infrastructure user**: `awsds-infra-data`, `awsds-infra-sandbox-1`,
-`awsds-infra-staging` (the trail slices), `awsds-infra-identity` (the org-policies amendment). Every Macie,
+Hand applies run as the **infrastructure user**: `awsds-infra-data` and `awsds-infra-sandbox-1` (the
+lake and trail slices; `awsds-infra-prod` joins when Stage 9 writes `production/data/`),
+`awsds-infra-identity` (the org-policies amendment). Every Macie,
 analyzer and GuardDuty act is `AWS Control Tower Admin`, console or CloudShell, in **`us-west-2`** — the
 Region ceiling does not exempt any of the three (open question 16's closure).
 
@@ -76,7 +79,7 @@ passes**:
 |---|---|---|---|---|
 | **0** | 2.1 (first half), 3 | the readings: external findings triaged, the Stage 5a/6 outcomes collected, the threat-model skeleton | snapshots + paper | Claude reads; **user** runs the Audit snapshot |
 | **1** | 2 | the filters: LF column/row/cell restrictions and the filtered grants | `data-governance/data/` `[P]` | `awsds-infra-data` |
-| **2** | 5 | the record and the alarms: trails, rules, SNS, thresholds — and decision 6's SCP amendment | the three `data/` slices `[P]`; `identity/org-policies/` | the three infra profiles; `awsds-infra-identity` |
+| **2** | 5 | the record and the alarms: trails, rules, SNS, thresholds — and decision 6's SCP amendment | the `data/` slices `[P]`; `identity/org-policies/` | `awsds-infra-data`, `awsds-infra-sandbox-1`; `awsds-infra-identity` |
 | **3** | 1, 2.1 (second half) | Macie delegated, members added, the job run and mapped; the internal analyzer created, read and retired | by hand in Management + Audit | **user**, `AWS Control Tower Admin` |
 | **4** | 4, 6, 3 (close) | GuardDuty's two features against the real bill; the third-party question; the threat model finished | by hand in Audit; `docs/` | **user**; Claude writes |
 
@@ -113,9 +116,9 @@ discount, not a measurement window).
   organization's accounts — the CLI (`create-member`) requires each account's **e-mail address**, which
   must never be copied out of `secrets/`. Set auto-enable for new accounts **on** (a Stage 14 vend arrives
   covered), **automated sensitive data discovery off** (decision 1). Management, Log Archive, Audit's
-  siblings and Staging stay out — nothing governed sits in them. **Production is in the moment
-  `awsds-prod-derived` exists** (Stage 9's `consumer-data` call; the pre-declared scope of
-  `GOVERNANCE.md` §Derived zone), and `awsds-prod-outputs` joins when decision 3 adds it.
+  siblings and Staging stay out — nothing governed sits in them. **Production joins the day Stage 9
+  decides where its results land** (decision 3; `awsds-prod-derived` will not exist, since D19 revised
+  removed the zone from `consumer-data`), and `awsds-prod-outputs` joins when decision 3 adds it.
 - **1.3 — [user] Run one one-time discovery job from Audit**, every wizard field decided in advance
   (Lesson 16): scope = the lake buckets (`awsds-data-raw`, `awsds-data-curated`, the drop-box)
   **plus `awsds-sandbox-lake`**
@@ -192,12 +195,23 @@ people is Lesson 5 with a `WHERE` clause.
 
 - **2.1b — [Claude] Write the filtered grants**, replacing the corresponding explicit `restricted` grants
   in the Stage 5a share map: `aws_lakeformation_permissions` with the `data_cells_filter` block, to the consumer
-  accounts with grant option; the consumer-side regrant lands in the same slice pattern Stage 9 2.3 used.
+  accounts with grant option; the consumer-side regrant is the consumer slice's, the pattern Stage 9 2.3
+  writes for `production/data/` and has not run: in Sandbox, `consumer-data`'s `data_cells_filter_grants`.
   Column-only restrictions that the LF-Tag ontology already expresses stay on tag-scoped grants — one
   mechanism per dimension, stated in the module comments.
 - **2.2 — [Claude⚡] Apply as `awsds-infra-data`, inside `DL-5`'s bracket** (read
   `DataLakeSettings.Parameters` before and after — every `data-governance/data/` apply can silently reset
   INT-11's values).
+
+  > **2.1a and 2.1b are written and create nothing yet** (2026-10-18,
+  > [log](../../log/log-stage-11-dlp.md)). `data-governance/data/filters.tf` declares
+  > `awsds-flt-sample_trades-counterparty` (a column include list) and
+  > `awsds-flt-sample_trades-trade-id-le-6` (a row predicate) with their grant to the consumer account,
+  > all keyed on `filter_shares`, which is empty; `consumer-data` gains `data_cells_filter_grants`,
+  > untagged. Both slices plan `No changes`; with Sandbox in the map the producer plans `4 to add`.
+  > Two of 2.1b's premises do not hold: the share map carries **no** explicit `restricted` grant to
+  > replace (4d's was revoked on 2026-08-19), so the filtered grant is a new one; and the filtered
+  > principal is decision 12's. The apply, the module tag and the caller's pin wait on it.
 - **2.3 — [user] Prove the filter pair from a consumer session**: the filtered principal's Athena query
   returns the restricted columns/rows and nothing else; the same table read with pandas against S3 still
   fails (Stage 5a's negative, re-run — the filter tightened the entitlement, not the perimeter). Record
@@ -256,12 +270,14 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
 - **2.1.3 — [user] Create the internal-access analyzer in Audit** — console, **`us-west-2`**, zone of
   trust **Entire organization** (Audit is already the Access Analyzer delegated administrator; **only one
   org-level internal analyzer can exist per organization**). Resources by **exact bucket ARN** (account id
-  + ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the two
-  registered lake buckets and **every derived zone that exists at run time, which is
-  `awsds-<env>-smus-projects` and not `awsds-<env>-derived`** ([D19 revised](../decisions/D19-derived-zone.md):
+  and ARN pairs; prefixes are not supported): the map of decision 3 — recommended minimum: the three
+  lake buckets of the map (`awsds-data-raw`, `awsds-data-curated`, the drop-box) and **every derived zone
+  that exists at run time, which is `awsds-<env>-smus-projects` and not `awsds-<env>-derived`** ([D19 revised](../decisions/D19-derived-zone.md):
   the Interactive derived buckets were destroyed, and neither deployment target has a named results home
-  until Stage 9 re-decides), plus `awsds-sandbox-lake` if item 3's map keeps it. At USD 9 per
-  resource-month the recommended minimum is **five resources, USD 45 for the month**. No new principals
+  until Stage 9 re-decides), plus `awsds-sandbox-lake`, which the map keeps. At USD 9 per
+  resource-month the recommended minimum is **five resources, USD 45 for the month**. The charge lands at
+  setup and again on each 1st (`docs/PRICING.md`), so the analyzer is created after 2026-11-01 and deleted
+  before 2026-12-01: one charge for the month. No new principals
   arrive:
   `AWSServiceRoleForAccessAnalyzer` exists org-wide since 1b (Lesson 17, checked not assumed).
 - **2.1.4 — [Claude] Amend the instruments in the same sitting**: `audit-iam-analyser.sh` expects the
@@ -418,18 +434,18 @@ bus** (data events are matched by ordinary `ENABLED` rules once the trail logs t
 are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestion anywhere.
 
 - **5.1 — [Claude] Write the trail module and the slice amendments** — `awsds-<env>-data-events` in
-  `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/`,
-  `staging/data/`, `production/data/` after Stage 9): **advanced event selectors only** —
+  `data-governance/data/` and every `consumer-data` caller that exists by then (`sandbox/data/` on
+  2026-10-18, `production/data/` after Stage 9): **advanced event selectors only** —
   `resources.type = AWS::S3::Object`, `resources.ARN` starts-with the account's monitored buckets (the
   decision 3 map: lake + drop-box in Data Governance;
   **`awsds-sandbox-lake` in Sandbox** — its reads are the exfiltration signal for the
   one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** — the
   derived zone itself since the D19 revision, and the only monitored
   bucket whose contents never expire, orphaned project prefixes included) —
-  **no management-event selector**, reads and writes both, log file validation on. Delivery: all three
-  cross-account into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), with the bucket-policy
-  statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the three account ids —
-  written in `data-governance/data/` beside the bucket they amend. **And the proxy's access log joins
+  **no management-event selector**, reads and writes both, log file validation on. Delivery: every trail
+  into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), the consumers' cross-account, with
+  the bucket-policy statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the
+  trail accounts' ids — written in `data-governance/data/` beside the bucket they amend. **And the proxy's access log joins
   this delivery (6c decision due 4, taken 2026-09-08 as (c))**: `/awsds/prod/proxy` in Production is
   the log whose author must not own its record (Lesson 18), so the mechanism that lands the trails
   somewhere the infrastructure user cannot delete — Log Archive by hand, or `awsds-data-logs` if this
@@ -455,8 +471,13 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
     the signal (read `POLICIES.md` to confirm which); if it stayed open for Athena-based maintenance, the
     rule excludes the maintenance role and alarms on everyone else. The inversion is deliberate: in every
     *other* account Athena is the normal way to read.
-- **5.3 — [Claude⚡] Apply the three slices** — `awsds-infra-data`, `awsds-infra-sandbox-1`,
-  `awsds-infra-staging`; `DL-5` brackets the Data Governance apply as always. **[user]** Record in the log.
+    **Outcome, read 2026-10-18: closed.** `DenyUserCompute` on the `Data` OU denies
+    `athena:StartQueryExecution` to every principal, the infrastructure user included, exercised 2026-08-20
+    (Stage 5a pass 4e, `POLICIES.md`), so the rule alarms on any occurrence and verification x reads that
+    branch.
+- **5.3 — [Claude⚡] Apply the trail slices** — `awsds-infra-data`, `awsds-infra-sandbox-1`, and
+  `awsds-infra-prod` once Stage 9 writes `production/data/`; `DL-5` brackets the Data Governance apply as
+  always. **[user]** Record in the log.
 - **5.4 — [Claude] Write the tampering statement the trigger demands** (decision 6): `POLICIES.md` records
   "no CloudTrail statement" with the revision trigger *"the first trail this project creates in a member
   account"* — which is this step. Recommended `Sid` **`DenyCloudTrailKill`** in `awsds-org-scp-baseline`:
@@ -504,9 +525,11 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   written down with its date** — and if it stays off, the threat model carries the residual explicitly
   rather than by silence.
 
-  Its instrument is `get-model-invocation-logging-configuration` per account and Region; `dlp.py` gains
-  the check either way, because a configuration that appeared without a decision is the finding
-  (Lesson 17).
+  Its instrument is `get-model-invocation-logging-configuration` per account and Region, `./aws/dlp.py`
+  `DP-8` since 2026-10-18, which fails on a configuration that appeared without a decision (Lesson 17).
+  Its first run read none in `us-west-2` in any of the six profiled accounts; in `us-east-1` and
+  `us-east-2` the Control Tower Region ceiling refuses the read, and the write with it, since neither
+  logging-configuration action is among its six Bedrock exemptions.
 
 ### 6. The third-party question, answered last
 
@@ -564,7 +587,7 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 
 | Item | Cost | Note |
 |---|---|---|
-| Macie bucket inventory | USD 0.0033/bucket-day (~0.10/bucket-month) | ~10-15 buckets across the three members — ~USD 1-1.50/month; 30-day free trial per account |
+| Macie bucket inventory | USD 0.0033/bucket-day (~0.10/bucket-month) | 9 buckets across the two members (6 in Data Governance, 3 in Sandbox Account 1, read 2026-10-18) — ~USD 0.90/month; 30-day free trial per account |
 | Macie discovery job | USD 1.00/GB inspected | the sampling depth (decision 1) is the lever; lab-scale lake ≈ cents per run |
 | Internal-access analyzer | **USD 9.00/resource-month, charged at setup** | 5 resources = USD 45 for the one month it lives (2.1.3's map; 2.1.6 retires it) |
 | GuardDuty S3 Protection | USD 0.80/1M S3 data events | 30-day free trial; the real driver is job read volume |
@@ -575,8 +598,8 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 
 ## Decisions due while executing
 
-**Blocking questions for the user: none.** Each is decided during the stage and written into
-`docs/log/log-stage-11-dlp.md` (Lesson 16), with a recommendation stated.
+**Blocking question for the user: decision 12**, which holds pass 1's apply (2026-10-18). Each is decided
+during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), with a recommendation stated.
 
 1. **Macie mechanism and sampling depth** (1.2, 1.3) — one-time scoped jobs versus automated discovery.
    Recommended: **one-time jobs on the decision 3 map, automated discovery off** — a standing sampler is a
@@ -621,11 +644,25 @@ Measured (`docs/PRICING.md` §6), us-west-2; everything here is `[P]`-shaped mon
 10. **INT-16's choice** — closed by D39, which removed the requirement the portal's ingress deviated from;
     3.4 writes the premise that replaced it.
 11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)
-    step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`, and still absent on
-   2026-10-17). Recommended: **on in
+    step 7.4 on 2026-09-11, with its before-reading taken (absent in `Sandbox`, still absent on
+   2026-10-17, and absent in all six profiled accounts on 2026-10-18, `DP-8`). Recommended: **on in
     `Sandbox` only, to S3 with the account's CMK and a lifecycle**, inside decision 3's map — the
     assistant is the one channel where a model sees governed data and nothing today can say what it saw.
     If the answer is off, the threat model carries the residual by name rather than by silence.
+12. **The filtered principal in Sandbox** (2.1b, 2.3) — Stage 5a decision 6 puts the grain at the
+    role or the project, and the two candidates fail differently (read 2026-10-18).
+    `DataScientistAccess`, the only principal holding the lake's regrants, has had no `athena:` action
+    since D19's revision, so 2.3's Athena query cannot run as it; it also holds the default share's
+    `SELECT` on the table, and AWS documents an all-rows grant as prevailing over a row filter, so the
+    row filter would narrow nothing and the column filter would add `counterparty` for every holder of
+    the set. A **project role** holds no lake grant today, so both filters discriminate, and 2.3 runs
+    from the project's own Athena workgroup; but it is the first lake grant to a project role, which is
+    [Stage 6f](stage-06f-data-governance.md) decision 1's (its shape (c) regrants to project roles in
+    `sandbox/data/`), the role is shared by every project member, and AWS's filtered-query page lists
+    four `lakeformation:` actions (`StartQueryPlanning`, `GetQueryState`, `GetWorkUnits`,
+    `GetWorkUnitResults`) neither candidate holds, which 2.3 measures as needed or not.
+    Recommended: **the project role of `avhvbqn37ty7m8`, taken together with 6f decision 1 as (c)**,
+    the filter read as the project's and said so.
 
 ## Verifications to answer while executing
 
@@ -660,8 +697,8 @@ Record every answer, including the ones that come out fine.
   GuardDuty's anomaly half (step 4), and the threat model's residual column is the honest boundary between
   the two.
 - **`./aws/dlp.py` cannot see Audit** (no profile, by design): Macie's job history, the analyzer and the
-  org configuration are verified in the Audit console/CloudShell — section 8 of the report names what it
-  is not measuring, so a green run is not over-read.
+  org configuration are verified in the Audit console/CloudShell — the report's section "The accounts nothing
+  here is measuring" names them, so a green run is not over-read.
 
 ---
 

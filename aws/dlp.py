@@ -66,18 +66,14 @@ DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 
-# The DLP-scoped accounts (decision 3's map at N=1): the lake account, every sandbox ordinal
-# (D35), whose projects bucket D19 puts in scope, and Staging, which the data-event trails reach
-# (step 5.1). Production joins when decision 3 adds awsds-prod-outputs.
+# The DLP-scoped accounts (decision 3's map at N=1): the lake account and every sandbox ordinal
+# (D35), whose projects bucket D19 puts in scope. Staging holds no monitored bucket and no consumer
+# slice; Staging and Production join when decision 3 names their results homes, with
+# awsds-prod-outputs among them.
 def env_token(profile: str) -> str | None:
     if profile.startswith("awsds-infra-sandbox"):
         return "sandbox"
-    return {
-        DATA_PROFILE: "data",
-        # Stage 6b step 4.4 flips the env token before Stage 11 builds anything, so the
-        # objects this file looks for in that account are named `awsds-staging-*`.
-        "awsds-infra-staging": "staging",
-    }.get(profile)
+    return {DATA_PROFILE: "data"}.get(profile)
 
 
 # The contracts (see header).
@@ -87,8 +83,8 @@ FILTER_PREFIX = "awsds-flt-"
 TAMPER_SID = "DenyCloudTrailKill"
 BASELINE_POLICY = "awsds-org-scp-baseline"
 
-# Macie's member set is narrower than the trails' (step 1.2): nothing governed sits in Staging, so
-# DP-1 reads Macie only where step 1.2 enables it.
+# Macie's members are step 1.2's, the accounts that hold governed or derived data; DP-1 reads
+# Macie only where that step enables it, which can stay narrower than the trails' scope.
 MACIE_ENVS = ("data", "sandbox")
 
 # The two detector features step 4 enables (Stage 15 step 3 switches them off by name;

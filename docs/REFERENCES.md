@@ -1279,6 +1279,16 @@
   only; the mechanism behind Stage 11 step 2:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering.html>.
 
+- Lake Formation data filtering limitations (read 2026-10-18, for Stage 11 2.1a/2.1b and decision 12): a
+  column filter granted with the grant option takes an include list; an all-rows grant prevails over
+  every row filter; a row filter granted to an account and regranted inside it intersects with the
+  principal's own; no cell-level security on resource links; 100 filters per principal per table:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering-notes.html>. PartiQL in row filter
+  expressions, whose type list has no `DATE` and which calls a row filter on a table containing an
+  unsupported type an error: <https://docs.aws.amazon.com/lake-formation/latest/dg/partiql-support.html>.
+  The four `lakeformation:` actions listed for querying a table with cell-level filtering:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/row-filtering-prereqs.html>.
+
 - Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
