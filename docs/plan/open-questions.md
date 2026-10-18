@@ -229,7 +229,10 @@ load-bearing against principle 4.
     **all three engines** (Glue, EMR Serverless, EMR on EC2 — full-table access), so the TIP lever is
     SQL/query-path only; the one documented notebook-side fine-grained route is an EMR-S **compute
     connection** in `project.spark.fineGrained` mode — whether an IdC-domain notebook can actually use it
-    is Stage 6 decision 1's second in-stage reading.
+    is Stage 6 decision 1's second in-stage reading. **Read again 2026-10-18** (the upstream readings,
+    PR #189): since 2026-08-19 the native notebooks carry the Identity Center identity to Athena,
+    Redshift and EMR Serverless in a TIP profile, while Glue, EMR on EC2 and JupyterLab do not, and remote
+    space connections are still unsupported in a TIP profile, so Stage 6 decision 2 holds.
     **A second mapped option, 2026-08-24, on the S3 surface:** S3 Access Grants takes grantees of
     `DIRECTORY_USER`/`DIRECTORY_GROUP` (the CLI's own model, not prose), which would make a
     project-storage grant per-person or per-IdC-group and CloudTrail attribution per-human — the TIP

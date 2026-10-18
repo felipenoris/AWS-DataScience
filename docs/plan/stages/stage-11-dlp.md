@@ -183,6 +183,10 @@ people is Lesson 5 with a `WHERE` clause.
   on the tables whose classification requires one (start with the sample `curated` table: one
   column-restriction filter, one row filter), named `awsds-flt-<table>-<what>` — a contract with
   `./aws/dlp.py` (`DP-2`).
+  Lake Formation's row-level security policies (API of 2026-10-13: `CreateRLSPolicy`, then
+  `AttachRLSPolicy` to a resource for a principal, with an optional condition or as the default) are a
+  second mechanism for the row half; no CloudFormation type or Terraform resource carries them (read
+  2026-10-18, PR #189), so the filters stay `aws_lakeformation_data_cells_filter` and decision 12 weighs both.
 > **What pass 4 measured on 2026-08-19 constrains this whole step.** The `restricted`
 > column does not cross the account line **at all** under the default share: read as its own
 > `InfrastructureAccess`, `curated.sample_trades` shows six columns in Data Governance and **five** in
