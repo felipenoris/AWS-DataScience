@@ -71,10 +71,12 @@ serves the documentation the default branch publishes to Pages.
 
 The workflow tooling is [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows), installed
 as a tool (`docs/plan/runbooks/serverless-workflows.md` §T). Its lint reads the manifest and the
-workflow against the rules of a SageMaker application, offline; the pipeline runs it on every push:
+workflow against the rules of a SageMaker application, offline; the pipeline runs it on every push,
+with the application's repository as the one a literal `ImageUri` may name and the instance types of
+the ceiling (`LINT_INSTANCE_TYPES` in `.gitlab-ci.yml`) as the ones a processing job may ask for:
 
 ```bash
-awsds-workflows lint .
+awsds-workflows lint . --image-repository awsds-prod-ecr-app-etl --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) with the shell variables

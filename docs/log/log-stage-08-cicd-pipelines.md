@@ -1918,3 +1918,76 @@ UTC.*
   `refuse_if_hub_down` exercised with stubbed reads: a dry run, a failed read (the old wording), both
   hosts running, the proxy stopped and the proxy absent (refused), the tunnel stopped (proceeds), and
   `make hub-up` itself (skipped).
+
+## 2026-10-18 — `staging/probes/` retired, the lint's two ceilings, and verification xxi's simulator half
+
+*Provenance. Claude, in a side session of the orchestrating session (worktree `agent-a00b8f159703aa2af`,
+branch `claude/stage-08-probes-lint` from `origin/main` `28f340c`), with the whole environment down. The
+AWS calls were reads as the infrastructure user with `InfrastructureAccess`: `awsds-infra-staging` in
+`Staging`, `awsds-infra-prod` in `Production` and `awsds-infra-sandbox-1` in `Sandbox Account 1`;
+nothing applied and nothing written in AWS. Roles are named by their permission set, and no quoted line
+carries an account id or an e-mail address. Times are UTC.*
+
+- **[Claude] The Staging state bucket** (22:21:04). `aws s3 ls s3://awsds-staging-tfstate/ --recursive`
+  lists two objects, `staging/bootstrap/terraform.tfstate` and `staging/foundation/terraform.tfstate`;
+  `list-object-versions` with the prefix `staging/probes` returns no version and no delete marker, and
+  over the whole bucket the other keys are those two objects' lock files and
+  `staging/egress/terraform.tfstate.tflock`, lock versions of 2026-09-06 and 2026-09-09 with no state
+  object beside them. `staging/probes/` never held a state here, so step 3.1 retired it as code
+  alone: `make up ENV=staging DRY=1` listed `ephemeral [E] (2)`, `staging/egress` and `staging/probes`,
+  before the folder left, and `ephemeral [E] (1)`, `staging/egress`, after (22:36:17); `make down
+  ENV=staging DRY=1` the same.
+- **[Claude] `./aws/devenv.py`** as `awsds-infra-sandbox-1` (22:31:42 to 22:31:49): exit 2, 4 passed or
+  noted, 2 FAILED:
+
+  ```
+  fail    DE-2  the account's list is readable                      the state holds neither `no_proxy_all_groups` nor `no_proxy`: the slice is DOWN (an [E] destroy leaves the object and removes the outputs). `make up ENV=sandbox` first - the comparison below is not a divergence, it is an absence
+  fail    DE-5  the registered image carries the account's list     version 9 (sha256 aafa08da98a61f5c) against the Dockerfile's (sha256 6faf2e4761622508): 2 name(s) the image lacks, 0 it has and should not - DE-3 may pass while the domain serves this
+  pass    DE-1  the Dockerfile declares one NO_PROXY_LIST           72 entries, sha256 6faf2e4761622508
+  ```
+
+  With `sandbox/egress` down, `DE-5` compares version 9 with the 72 names of the copy under `gitlab/`,
+  so it reads red with the environment down as well as up.
+- **[Claude] The lint's two ceilings, offline.** `awsds-workflows` at `3c1708e` extracted with `git
+  archive` from the user's checkout into the scratchpad and run by `uvx` with `UV_OFFLINE=1` from that
+  source, built from uv's cache; the user's installed tool not touched. `--image-repository` takes one
+  repository, compared with the repository of a literal `ImageUri` that is an ECR URI by digest, a
+  placeholder passing in the authoring mode; `--instance-type` repeats, and a
+  `SageMakerProcessingOperator`'s `ProcessingResources.ClusterConfig.InstanceType` must be one of the
+  values. `examples/app-etl/.gitlab-ci.yml`'s `test` job gained `--image-repository "$IMAGE_REPO"` and
+  one `--instance-type` per name of `LINT_INSTANCE_TYPES`, the seven of `terraform-modules/sagemaker-denies`'
+  `allowed_instance_types` at `sagemaker-denies-v0.2.0`, the list the `Workloads` SCP carries. The job's
+  last script item, read from the file and run with bash over scratch copies of `examples/app-etl/`
+  (22:37:13 to 22:37:14):
+
+  | Copy | The job's line | `lint .` |
+  |---|---|---|
+  | the example | exit 0, `ok: 6 arquivo(s)` | exit 0 |
+  | `InstanceType: ml.m5.2xlarge` | exit 1, `job: task process: InstanceType ml.m5.2xlarge fora de ml.t3.medium, ml.t3.large, ml.t3.xlarge, ml.m5.large, ml.m5.xlarge, ml.c5.large, ml.c5.xlarge` | exit 0 |
+  | `InstanceType: ml.g5.xlarge` | exit 1, `job` | — |
+  | a literal `awsds-prod-ecr-dev-env` image by digest | exit 1, `imagem: task process: ImageUri do repositório awsds-prod-ecr-dev-env, e não de awsds-prod-ecr-app-etl` | exit 0 |
+  | a literal `awsds-prod-ecr-app-etl` image by digest | exit 0 | — |
+  | the example, `LINT_INSTANCE_TYPES` unset | exit 1, `LINT_INSTANCE_TYPES: unbound variable` | — |
+
+  Nothing was pushed to GitLab: `awsds/app-etl` runs `lint .` until the user pushes the file.
+- **[Claude] Verification xxi's simulator half** (22:30:47 to 22:30:52). `iam simulate-principal-policy`
+  on `s3://awsds-prod-releases/app-etl/v0.0.0/app-etl.zip`, with the bucket's live policy from
+  `get-bucket-policy` as the resource policy (two statements, `DenyInsecureTransport` and
+  `DenyDeletesExceptInfrastructure`), the context `aws:PrincipalArn` (the simulated role),
+  `aws:RequestedRegion`, `aws:SecureTransport` true, `aws:PrincipalOrgID` and `aws:ResourceOrgID`, and a
+  simulated IAM user as the caller a resource policy requires:
+
+  | Principal | Calls | Decision | Matched |
+  |---|---|---|---|
+  | Production's `AWSPowerUserAccess` role, `PowerUserAccess` attached | `s3:DeleteObject`, `s3:DeleteObjectVersion` | `explicitDeny` | the resource policy's second statement, `DenyDeletesExceptInfrastructure` |
+  | Production's `InfrastructureAccess` role | the same | `allowed` | `AdministratorAccess` |
+  | Sandbox's `InfrastructureAccess` role, Production the resource owner | `s3:GetObject`; `s3:ListBucket` on the bucket | `implicitDeny` | none: the resource policy `implicitDeny`, the identity policy `allowed` |
+  | `awsds-deploy-sandbox-test`, Production the resource owner | `s3:GetObject` | `implicitDeny` | none: both policies `implicitDeny`, its boundary `allowed` |
+  | Sandbox's `InfrastructureAccess` role, Sandbox the resource owner | `s3:GetObject` | `allowed` | `AdministratorAccess` |
+  | `awsds-prod-runner-deploy` | `s3:GetObject` | `allowed` | its inline `releases` |
+
+  `AllowedByOrganizations` is true on every row. The `InfrastructureAccess` contrast reads `allowed` only
+  if the simulator took `aws:PrincipalArn` from the context rather than from the simulated user, so the
+  delete refusal is the deny's condition; the two Sandbox rows put the read refusal on the account
+  boundary. The simulator evaluates no key policy. The attempt half and the `If-None-Match` half stay
+  owed.
