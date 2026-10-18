@@ -696,8 +696,11 @@ sufficiency, and the behavioural proofs — the in-project read/write through th
 
 `observability.py` was written 2026-10-17 from [Stage
 12](../docs/plan/stages/stage-12-observability-finops.md)'s step 10, in a cloud session with no AWS
-credentials, before the stage runs: its first run is the laptop's, and `OB-2`'s is the `-` run in Log
-Archive's CloudShell. Steps 2 and 8 are not built, so `OB-3` reads `note` until some alarm measured carries
+credentials, before the stage runs. Its first runs, on 2026-10-18
+([the log](../docs/log/log-stage-12-observability-finops.md)), were the `-` run in Log Archive's
+CloudShell, which passed `OB-2` with the bucket as `INV-14` records it, and the laptop's over the five
+profiles with the environment down, every verdict the one predicted; no call failed. Steps 2 and 8
+are not built, so `OB-3` reads `note` until some alarm measured carries
 an SNS action and `OB-4` until the `[D]` hosts' account holds a backup plan; from then on an alarm that
 notifies nobody, or a volume no plan covers, fails (Lesson 50). Its contracts: the project's namespace
 (`/awsds/`, `awsds-`) and the `Project` tag every slice's `default_tags` stamps; the trail
