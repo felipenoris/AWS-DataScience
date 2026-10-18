@@ -97,29 +97,33 @@ removes only what exists, in its order.
 ### 0. Preflight
 
 - **0.1 — [Claude] The CLI 1.0.9's code, for what the passes rely on** (viii, ix): read 2026-10-17 from
-  its sdist, nothing executed; the log records the file and line of each answer.
+  its sdist and again 2026-10-18, nothing executed; the log records the file and line of each answer.
   - **A stage names its project** by name, or with `create`, `profileName`, `owners`, `contributors` and
     `role`, and its domain by id, name or tags with a region and no account (`application_manifest.py`).
     The CLI calls AWS with the caller's credentials in that region and assumes no role, and a `deploy`
     takes the first stage `--targets` names, so one call deploys one stage in one account.
   - **With `create: false` a missing project stops the deploy** (*"make sure the SMUS project is
     pre-created manually"*). With `create: true` it calls `CreateProject` with the profile named, or the
-    domain's only profile, and an unknown profile name takes the first profile silently; `role.policies`
-    without an ARN creates an IAM role `smus-<project>-role`. It never enables a blueprint
+    domain's only profile; an unknown profile name takes the first profile the domain lists, with a
+    printed warning, and the deploy goes on. `role.policies` without an ARN creates an IAM role,
+    `smus-<project>-role` unless `role.name` names it. It never enables a blueprint
     (`project_manager.py`).
   - **Two applications in one project** differ by the workflow name `<application>_<project>_<workflow>`
-    and the tags `Pipeline` and `Target`. Their files share the project's storage root with no
-    application prefix, and `workflow.create` scans that whole root and takes the first file per DAG id,
-    so two applications with one DAG id can take each other's file [inferred from the code]. The copies
-    under `operatorFiles/` are never pruned; a bundle lookup falls back to any zip in its folder; a name
-    keeps only letters, digits and `_` at creation while `run` and `destroy` map only `-`, so an
-    application's name stays within letters, digits and `-` (`deploy.py`, `bundle_storage.py`).
+    and the tag `Pipeline`; the tag `Target` names the project they share. Their files share the
+    project's storage root with no application prefix, and `workflow.create` scans that whole root and
+    takes the first file per DAG id, so two applications with one DAG id can take each other's file
+    [inferred from the code]. The copies under `operatorFiles/` are never pruned; a bundle lookup falls
+    back to any zip in its folder; a name keeps only letters, digits and `_` at creation while `run` and
+    `destroy` map only `-`, so an application's name stays within letters, digits and `-` (`deploy.py`,
+    `bundle_storage.py`).
   - **`destroy` removes what the manifest declares**, never what a deploy recorded: the workflows by
     name; the S3 prefix `<root>/<targetDirectory>` with no trailing slash, so `exemplos/demo` also covers
-    `exemplos/demo-x/` [inferred]; every catalog object the project owns unless `catalog.disable: true`;
-    and the whole project when `project.create` is true. It deletes no IAM role
+    `exemplos/demo-x/` [inferred]; every catalog object the project owns, manual ones included, when the
+    stage declares `deployment_configuration.catalog` without `disable: true`, which `app-etl`'s manifest
+    does not; and the whole project when `project.create` is true. It deletes no IAM role
     (`destroy_validator.py`, `destroy_executor.py`).
-  - **`run` starts one workflow per call** (`StartWorkflowRun`, the stage's variables as overrides) and
+  - **`run` starts the workflow `--workflow` names in each stage `--targets` lists**, and in every stage
+    of the manifest when it lists none (`StartWorkflowRun`, the stage's variables as overrides), and
     returns without waiting; its `--command` reaches the Airflow CLI on provisioned MWAA only. Nothing in
     the code starts a notebook, a pipeline, a training job or an endpoint, and `destroy` knows only the
     `GlueJobOperator`'s job (`run.py`, `operator_registry.py`). The CLI's own ML examples train and
