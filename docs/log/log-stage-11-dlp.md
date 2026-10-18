@@ -50,3 +50,18 @@ Account ids are replaced by the account's name. All times UTC.*
   not `awsds-sandbox-lake`. None names the lake's data CMK `alias/awsds-data-data`, Sandbox's
   `alias/awsds-sandbox-data`, a function, a topic, a snapshot or a file system. The threat model's
   outside column is filled from this reading.
+
+## 2026-10-18 — `TM-21`: the Sandbox project key's narrowing chosen
+
+Written by Claude in the cloud session of the project thread, with no AWS identity, in PR #164; nothing
+changed in AWS.
+
+- **[user] The choice** (00:02:46, on a card): narrow the project key policy's two
+  `Principal: {"AWS": "*"}` statements to this organization's principals, rather than archive the
+  finding individually.
+- **[Claude] What the change waits on.** The statement the finding carries, which `get-finding-v2` in
+  Audit names, asked of the user at 00:03:35. And Stage 17's pass 1 (PR #157), which moves the same
+  module, `terraform-modules/sagemaker-prereqs/`, to `v0.5.0`, a tag not yet on origin: the narrowing
+  is the module's next tag after it, read from `git ls-remote --tags origin` when it is tagged, and its
+  `sandbox/sagemaker/` apply runs from the laptop. `TM-21` and `EXC-18` stay open until a snapshot
+  reads the finding `RESOLVED`.
