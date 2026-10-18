@@ -168,6 +168,15 @@
 
 - IAM permissions boundaries: <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html>.
 
+- The IAM policy simulator (read 2026-10-18, for Stage 6h steps 5.3 and 5.4): it evaluates identity
+  policies, a permissions boundary and the SCPs in scope, their condition keys and resource scoping
+  included, reports an SCP's verdict without its statement, and supports no RCP. It populates the
+  principal keys `aws:PrincipalAccount`, `aws:PrincipalId`, `aws:PrincipalType`, `aws:Type`,
+  `aws:UserId` and `aws:UserName` and the three `aws:PrincipalOrg*` keys; every other key is the
+  caller's to supply. Measured the same day, the SCP evaluation read `aws:PrincipalArn` as the role's own
+  ARN when the context gave none:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html>.
+
 - Granting a user permissions to pass a role (`iam:PassRole`): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>.
 
 - `aws organizations` CLI reference (the calls `aws/list-identities.py` uses to walk the OU tree and list the accounts): <https://docs.aws.amazon.com/cli/latest/reference/organizations/>.
@@ -1108,6 +1117,13 @@
   leader-node queries or superusers:
   <https://docs.aws.amazon.com/redshift/latest/dg/cm-c-wlm-query-monitoring-rules.html>.
 
+- **Redshift Serverless — the actions, resources and condition keys (read 2026-10-18, for
+  [Stage 6h](plan/stages/stage-06h-redshift-connection.md) 5.3's simulation).** `UpdateWorkgroup` and
+  `GetCredentials` take the `workgroup` resource type, whose ARN carries the workgroup id;
+  `DeleteUsageLimit` and `UpdateUsageLimit` take none, and the service defines no usage-limit resource
+  type, so a policy names them on `*`:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_redshift-serverless.html>.
+
 - **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
   [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the
   tags are the first layer: the admin *"adds 1 of the following tags to the Amazon Redshift cluster or workgroup
@@ -1800,7 +1816,7 @@
   - *MWAA Serverless execution role* — trust `airflow-serverless.amazonaws.com`, one role per workflow, `logs:CreateLogStream`/`PutLogEvents` required: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>; the service-linked role `AWSServiceRoleForAmazonMWAAServerless`, auto-created at the first `CreateWorkflow` (Lesson 17): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/using-service-linked-roles.html>.
   - *MWAA Serverless observability* — run/task APIs, per-task log streams, the auto-created `/aws/mwaa-serverless/<id>/` group when none is named: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/observe-with-cloudwatch.html>; EventBridge events since 2026-06 (source `aws.airflow-serverless`, 15 detail types): <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-airflow-serverless.html> and <https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-mwaa-serverless-eventbridge/>.
   - *The actions, resources and condition keys of MWAA Serverless* (service prefix `airflow-serverless`; read 2026-10-16, for Stage 8 decision 19's role): one resource type, `workflow`, `arn:${Partition}:airflow-serverless:${Region}:${Account}:workflow/${WorkflowId}`, with `aws:ResourceTag/${TagKey}`; `ListWorkflows` and `CreateWorkflow` take no resource type, and `CreateWorkflow` the keys `aws:RequestTag` and `aws:TagKeys`; the workflow-scoped actions take `aws:ResourceTag`; `CreateWorkflow` and `UpdateWorkflow` need `iam:PassRole` with `iam:PassedToService = airflow-serverless.amazonaws.com`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_mwaa-serverless.html>. A third-party listing of the same actions, read first: <https://www.awsfundamentals.com/iam/airflow-serverless>.
-  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>.
+  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>. Read again 2026-10-18 for [Stage 6f](plan/stages/stage-06f-data-governance.md) decision due 3: six condition keys, the three tag keys and `datazone:domainId`, `datazone:projectId` and `datazone:userId`, the last three on no action; `CreateAsset`, `CreateAssetRevision`, `CreateDataSource`, `UpdateDataSource`, `StartDataSourceRun`, `StartMetadataGenerationRun`, `AcceptPredictions` and `RejectPredictions` take no resource type and no key. The machine-readable copy agrees: <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>.
   - *The Python→YAML converter* — `python-to-yaml-dag-converter-mwaa-serverless` (dag-factory 1.0 target; AWS-provider operators only; no dynamic task mapping): <https://github.com/awslabs/python-to-yaml-dag-converter-mwaa-serverless>.
   - *Serverless workflows in SageMaker Unified Studio* — and the two-way sync ("create workflows in either platform and access them from both"): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-workflows.html> and <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows.html>.
   - *The OnDemand Workflows blueprint* — the provisioned-MWAA flavour of the Studio's Workflows tool, refused at Stage 10 step 0.4: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/modify-on-demand-workflows-blueprint.html>.

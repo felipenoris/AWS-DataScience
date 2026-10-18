@@ -2217,3 +2217,106 @@ timing" stays as written.*
 So the cause is read, not inferred: Sandbox's `InfrastructureAccess` role is a `PROJECT_CONTRIBUTOR` of
 both Sandbox projects, through a group profile, since 2026-10-15 06:15Z, and Data Governance's is still
 in no project. The stage file, `EXC-17`, the runbook and `WH-9`'s comment name the role.
+
+## 2026-10-18 — 5.3 and 5.4 by the policy simulator, and what AWS's project policy grants on the warehouse
+
+*Written by Claude, in the task `stages-06fgh-readings` the orchestrating session ran on the user's
+approval of 2026-10-18, with the environment down and no apply. Every reading is Claude's own, as
+`awsds-infra-sandbox-1` (account `<Sandbox Account 1>`, permission set `InfrastructureAccess`), and, for
+the permission set's own document, `awsds-infra-identity` (`<Identity Account>`, the same permission
+set). All reads: `iam simulate-principal-policy`, `iam get-role`, `list-role-tags`, `get-policy-version`
+and `get-role-policy`, `sso-admin` reads, `redshift-serverless get-namespace` and
+`list-tags-for-resource`, `secretsmanager describe-secret` and `get-resource-policy`. Account ids are
+replaced by the account's name.*
+
+### The method, and what a verdict covers
+
+- **The context of every call**: `aws:RequestedRegion=us-west-2`, without which the Control Tower Region
+  ceiling reads as an explicit deny (`lessons.md`'s platform list), and `aws:PrincipalArn`; on the project
+  roles, each role tag as `aws:PrincipalTag/<key>`; on a workgroup, `aws:ResourceTag/AmazonDataZoneProject`
+  = `avhvbqn37ty7m8`, the tag layer 1 puts on it; on the admin secret, its three tags as
+  `aws:ResourceTag/<key>`. The workgroup is `[E]` and was down, so its ARN carries a made-up id; every
+  policy on the path wildcards the id.
+- **What the simulator evaluates** (the IAM user guide's simulator page, read the same day): the identity
+  policies, the permissions boundary and the SCPs in scope, condition keys included, the SCPs' verdict as
+  one boolean, `AllowedByOrganizations`, that names no statement; no RCP. It reads no session tag and no
+  KMS key policy, and a role's simulation takes a resource policy only with an IAM user as caller. The
+  admin secret has no resource policy: `get-resource-policy` returns its ARN and name and no policy.
+- **When the organization denies, the simulator names no identity statement**: the persona's
+  `GetCredentials` without the Region key read `explicitDeny`, organizations `false`, nothing matched;
+  with the key, the inline policy's deny matched.
+
+### 5.3 — the project's two roles against the warehouse's administration
+
+| Principal | Action | Resource | Decision | Organizations | Boundary | Statement matched |
+|---|---|---|---|---|---|---|
+| project role | `redshift-serverless:UpdateWorkgroup` | the workgroup | `explicitDeny` | `false` | not reported | none |
+| project role | `redshift-serverless:DeleteUsageLimit` | `*` | `explicitDeny` | `false` | not reported | none |
+| project role | `secretsmanager:GetSecretValue` | the admin secret | `implicitDeny` | `true` | `true` | none |
+| project role | `redshift-serverless:GetCredentials`, the control | the workgroup | `allowed` | `true` | `true` | `MintADatabaseSessionOnThisAccountsWarehouse`; `SageMakerStudioProjectUserRolePolicy`'s `ComputeCredentials` |
+| access role | `UpdateWorkgroup` | the workgroup | `explicitDeny` | `false` | none attached | none |
+| access role | `DeleteUsageLimit` | `*` | `explicitDeny` | `false` | none attached | none |
+| access role | `GetSecretValue` | the admin secret | `implicitDeny` | `true` | none attached | none |
+| access role | `GetCredentials`, the control | the workgroup | `allowed` | `true` | none attached | `MintADatabaseSessionOnThisAccountsWarehouse` |
+
+The project role is `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` under
+`awsds-sandbox-project-boundary` v2; the access role is `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`,
+with no boundary. `UpdateWorkgroup` takes the `workgroup` resource type and `DeleteUsageLimit` none, so
+the second runs on `*` (the Service Authorization Reference for Redshift Serverless, read the same day).
+`GetSecretValue` with `aws:ResourceAccount` and `aws:PrincipalAccount` added read `implicitDeny` again.
+
+**Which SCP denies, read by moving the principal's ARN alone:**
+
+| Simulated role | `aws:PrincipalArn` in the context | `UpdateWorkgroup` | `DeleteUsageLimit` |
+|---|---|---|---|
+| project role | the `InfrastructureAccess` role's | `implicitDeny`, organizations `true`, boundary `true`, nothing matched | the same |
+| `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d` | its own | `allowed`, `AdministratorAccess` | `allowed`, `AdministratorAccess` |
+| the same | none | `allowed`, organizations `true` | not run |
+| the same | the project role's | `explicitDeny`, organizations `false` | `explicitDeny`, organizations `false` |
+
+`DenyRedshiftCostGuardTamperingExceptInfrastructure` is the only statement in this repository's SCPs on
+Sandbox's path that names either action, and it is conditioned on `aws:PrincipalArn`, so the
+organization's deny is that statement; the project role's own policies grant neither action. The
+simulator used the `aws:PrincipalArn` the context gave, and with none it evaluated the SCP as if the key
+carried the role's own ARN, since an absent key makes `ArnNotLike` true and the deny would apply. The
+page's list of keys the simulator populates does not name `aws:PrincipalArn`.
+
+### 5.4 — the persona
+
+`AWSReservedSSO_DataScientistAccess_37932702010107f8` in `<Sandbox Account 1>`. Its inline policy equals
+the permission set's in `<Identity Account>` (`sso-admin get-inline-policy-for-permission-set`, 21
+statements), beside `CloudWatchLogsReadOnlyAccess` v12 and `awsds-org-project-storage-vending` v1.
+
+| Action | Decision | Organizations | Statement matched (inline policy, line 1) |
+|---|---|---|---|
+| `redshift-serverless:GetCredentials` | `explicitDeny` | `true` | columns 4931-5235, `DenyMintingARedshiftDatabaseSession` |
+| `redshift-data:ExecuteStatement` | `explicitDeny` | `true` | the same columns |
+| `redshift-serverless:GetWorkgroup`, the control | `allowed` | `true` | columns 4625-4931, `ReadRedshiftServerlessStatus` |
+
+The stored policy is one line: re-minified in its stored order, `ReadRedshiftServerlessStatus` spans
+columns 4626-4930 and `DenyMintingARedshiftDatabaseSession` 4932-5234, one column inside each simulated
+span. The refusal's wording, verification viii, is the persona's real call.
+
+### What `SageMakerStudioProjectUserRolePolicy` v75 grants on the warehouse
+
+Both Sandbox project roles carry it. Each statement below was matched by its column span in the stored
+one-line document, the persona's method:
+
+| Statement | Grants | Condition | Simulated |
+|---|---|---|---|
+| `ComputeCredentials` | `redshift-serverless:GetCredentials`, with EMR and provisioned-cluster calls, on `*` | the resource's `AmazonDataZoneProject` equals the caller's | `allowed` for the admitted project's `GetCredentials` |
+| `RedshiftDataActions` | `redshift-data:ExecuteStatement`, `BatchExecuteStatement`, `DescribeTable`, `ListDatabases`, `ListSchemas`, `ListTables`, on `*` | the same | admitted project `allowed`; `test-experimentation` `implicitDeny`; an untagged workgroup `implicitDeny` for both |
+| `RssCreds` | `GetCredentials` on any workgroup in any account | `aws:ViaAWSService` true and `aws:CalledVia` naming `redshift-data.amazonaws.com` or `sqlworkbench.amazonaws.com` | `allowed` for `test-experimentation` on the first project's workgroup, through `sqlworkbench` |
+| `ExistingRedshiftCompute` | `GetCredentials`, the Data API, `GetWorkgroup`, `GetNamespace`, `ListTagsForResource` and provisioned-cluster calls, on `*` | `for-use-with-all-datazone-projects=true` and no `AmazonDataZoneEnvironment` tag | `allowed` for `test-experimentation`'s `GetCredentials` and `ExecuteStatement` |
+| `AllowGetSecretForRedShift` | `secretsmanager:GetSecretValue`, `PutSecretValue` on any secret | the secret's `AmazonDataZoneProject` equals the caller's, same account | the admin secret given that tag: `allowed` for the admitted project |
+| `DataConnectionAllProjectResources` | `GetSecretValue`, `PutSecretValue`, `glue:GetConnections` on `*` | `for-use-with-all-datazone-projects=true` | the admin secret given that tag: `allowed` for `test-experimentation` |
+
+The same policy grants `sqlworkbench:CreateConnection`, `DriverExecute` and eleven more query-editor
+actions on `*` with no condition (`SQLWorkBench`), and no `secretsmanager:TagResource`. The namespace
+carries `AmazonDataZoneProject=avhvbqn37ty7m8` among its tags; the Redshift-managed admin secret carries
+only `aws:secretsmanager:owningService`, `aws:redshift-serverless:namespaceArn` and `Redshift`, rotation
+on, next rotation 2026-10-20 01:59:59Z (`EXC-13`).
+
+What the readings change in the stage file: 2.2, whose Data API path AWS's policy grants; verification
+i's `redshift-data:` clause; 5.1's IAM half; and decision 8's argument for (a), whose layer 2 the wide tag
+grants to every project.

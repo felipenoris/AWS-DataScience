@@ -1766,7 +1766,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   lists the identity policies' keys and not the SCPs'. With `--context-entries
   ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string` the same calls read
   the identity layer. Stage 6e 3.1a recorded the first shape as the organization verdict being unusable
-  from a member account. Where: `log-stage-11`, 2026-10-18.
+  from a member account. Where: `log-stage-11`, 2026-10-18. Two more readings of the same day: while the
+  organization denies, the result names no identity statement, so the identity layer under an SCP deny is
+  read by forcing the SCP's carve-out into the context; and the SCP evaluation reads `aws:PrincipalArn`
+  as the role's own ARN when the context gives none, a key the simulator's page does not list among
+  those it populates. Where: `log-stage-06h`, 2026-10-18.
 
 ### Lake Formation and SageMaker Unified Studio
 
