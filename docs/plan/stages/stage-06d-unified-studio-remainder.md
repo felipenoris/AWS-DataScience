@@ -1635,7 +1635,8 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
    **Delivered in code the same day**: [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile)
    §7 sets the six variables plus `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`, with
    **`NO_PROXY` as a dated literal** — Sandbox's, 50 entries and sha256 `856bc57bb…` when first written,
-   70 entries and `aafa08da98a61f5c` since 2026-10-10, the output `no_proxy_all_groups` verbatim — and
+   70 entries and `aafa08da98a61f5c` from 2026-10-10 through version 9 (`default-v0.8.0`), the output
+   `no_proxy_all_groups` verbatim — and
    the command that refreshes it in the comment beside it; the `ARG` stays as its default, so another account
    overrides it at build time without editing the file, and an empty override still **fails** the
    build, because an image carrying a proxy and no bypass list works while losing the perimeter.
