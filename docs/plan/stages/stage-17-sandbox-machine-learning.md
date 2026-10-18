@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Not started. Written 2026-10-12** from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each, a chat agent over a knowledge base of the user's own documents among them (pass 7, decision 1). The Terraform changes planned are `MLflowApp` and `AmazonBedrockKnowledgeBase` promoted out of category 2 (decisions 2 and 1), an `mlflow` endpoint group in `vpc-egress` (decision 4) and the embeddings model admitted by the SCP `DenyBedrockInvocationOutsideTheScopedModels` (decision 11); the `[P]` grant slice `sandbox/ml/` joins them if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Pre-instrumented at pass 0 by `./aws/sandbox-ml.py` (`ML-1`..`ML-9`), written and run as the before. Decisions 1-3 were taken by the user on 2026-10-12: the Generative AI menu in, with a knowledge base; the `MLflowApp`; the public CSV of AWS's XGBoost recipe |
+| **Status** | **Pass 0 in progress, pass 1 written and not applied, passes 2 to 5 stopped on three quotas at zero** ([the log](../../log/log-stage-17-sandbox-machine-learning.md)): `./aws/sandbox-ml.py` (`ML-1`..`ML-9`, step 0.1) and `examples/sandbox-ml/` (0.6) were written 2026-10-17 (PR #157) from a cloud session with no AWS credentials, and the instrument's first run, on the laptop that evening with the session down, read `ml.m5.xlarge for training job usage`, `ml.m5.large for endpoint usage` and `ml.m5.large for transform job usage` at 0 (0.2); the user requested the three increases the same evening, their status unread. Pass 1's change was written the same evening in PR #157 and nothing of it is applied: `vpc-egress-v0.18.0` with the `mlflow` group and `sagemaker-prereqs-v0.5.0` with `MLflowApp`, the two callers pointed at them, the governance profile and `US-3` moved with them (1.2, 1.4); 1.2's plans and the checklist's template and wizard readings come before any apply, and decision 4, taken by the user on 2026-10-18, releases the image with the new literal in the sitting of the group's first apply. The same run read `EnableSageMakerMLWorkloadsPermissions` `true` on both project roles (decision 9 does not arise), the managed ML policy at v45 against the v44 of AWS's pages, and `enableNetworkIsolation` `true` in both Tooling stacks (0.8). The user's readings 0.3 and 0.7 and 0.5's interface half wait on a raised session. Step 2.2's image is XGBoost `3.0-5`, since the recipe's `1.7-1` writes a model the house interpreter's `xgboost-cpu` 3.3.0 refused on a build host (the log). The plan was written 2026-10-12 from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each, a chat agent over a knowledge base of the user's own documents among them (pass 7, decision 1). The Terraform changes planned are `MLflowApp` and `AmazonBedrockKnowledgeBase` promoted out of category 2 (decisions 2 and 1), an `mlflow` endpoint group in `vpc-egress` (decision 4) and the embeddings model admitted by the SCP `DenyBedrockInvocationOutsideTheScopedModels` (decision 11); the `[P]` grant slice `sandbox/ml/` joins them if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Decisions 1-3 were taken by the user on 2026-10-12: the Generative AI menu in, with a knowledge base; the `MLflowApp`; the public CSV of AWS's XGBoost recipe |
 | **Prerequisites** | **[6a](stage-06a-unified-studio.md) and [6d](stage-06d-unified-studio-remainder.md)**: the Sandbox project, its project role under the D13 boundary, the house image selectable in a space. **[6c](stage-06c-networking-hub.md)**: the private tier with no default route, and a raised session, `make hub-up` then `make up ENV=sandbox GROUPS=mlflow` for passes 1-6 and `GROUPS=mlflow,bedrock-base,bedrock-agent` for pass 7, because `sagemaker.api`, `sagemaker.runtime`, `ecr.api`, `ecr.dkr`, `logs`, `kms` and `sts` are `[E]` endpoints of `sandbox/egress` and only the gateway endpoints are `[P]`. **[6e](stage-06e-claude-code-bedrock.md)** for pass 7: the use-case form, the retention mode `none`, the three scoped models and the grant slice `sandbox/bedrock/`. **[6i](stage-06i-sandbox-orchestration.md)**: the measurements this stage reuses rather than repeats, a processing job admitted under the four settings, the house image pulled cross-account by a job, and the tag gap on create. **Stage 3's S3 gateway allow-list**, which has named `jumpstart-cache-prod-<region>` and `sagemaker-<region>` since it was written and has never been exercised for either (verification iii) |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the project, the jobs, the models, the endpoint and the apps are all in Sandbox). It answers the reading [Stage 9](stage-09-deployment-targets.md) 3.7 asks for before its decision, whether `DenySageMakerJobsOffVpc` on `CreateModel` already refuses serverless inference (4.4), and it gives the Model Registry its first version, the event `EXC-11` names as the one that turns the `Tooling` data source's daily failure into a gap (3.3) |
@@ -42,7 +42,7 @@ names the control that admits, refuses or sizes it. A row that says "read" is ex
 |---|---|---|---|---|
 | **MLflow** (Compute → AI/ML → MLflow → *Create MLflow App*) | an MLflow App, `mlflow-app/<id>`, serverless; its artifact store an S3 prefix, its role an IAM role | the tracking calls from a space through the `aws.sagemaker.<region>.mlflow` interface endpoint (new group `mlflow`); `CreatePresignedMlflowAppUrl` through `sagemaker.api`; the UI from the laptop over the client plane | the `MLflowApp` blueprint, category 2 until decision 2; the project role's `SageMakerMlflowServerlessPermission`, conditioned on the project tag | 1 |
 | **JumpStart models** (AI/ML → JumpStart models → *Trainable* → *Train*) | a training job from the public hub's recipe, its artifacts read from `jumpstart-cache-prod-<region>` | `sagemaker.api`; the hub reads on `SageMakerPublicHub`; the artifacts through the S3 gateway endpoint, whose list names the bucket | the form's fields (Lesson 16): a job the form cannot give the four settings is refused by the boundary; the form's default instance type against the ceiling | 2 |
-| **Training** (IDEs → JupyterLab, the SageMaker SDK) | `CreateTrainingJob`: XGBoost `1.7-1` from AWS's algorithm registry on `ml.m5.xlarge`, inside the project's subnets, network-isolated, inter-container encryption on, the volume under the project key | `sagemaker.api` from the space; the job's own interfaces in the private tier; the data and the output through the S3 gateway endpoint; the image pulled by the platform as the project role (6i iv) | the boundary's four job statements and `DenySageMakerInstanceCeiling` (`ml.m5.xlarge` is on the list, `ml.m5.2xlarge` is not); the project role's `SageMakerCreatePermissions` (the tag on create) and its `SageMakerTagPermissions`, which excludes `AmazonDataZone*` keys (6i iii) | 2 |
+| **Training** (IDEs → JupyterLab, the SageMaker SDK) | `CreateTrainingJob`: XGBoost `3.0-5` from AWS's algorithm registry on `ml.m5.xlarge`, inside the project's subnets, network-isolated, inter-container encryption on, the volume under the project key | `sagemaker.api` from the space; the job's own interfaces in the private tier; the data and the output through the S3 gateway endpoint; the image pulled by the platform as the project role (6i iv) | the boundary's four job statements and `DenySageMakerInstanceCeiling` (`ml.m5.xlarge` is on the list, `ml.m5.2xlarge` is not); the project role's `SageMakerCreatePermissions` (the tag on create) and its `SageMakerTagPermissions`, which excludes `AmazonDataZone*` keys (6i iii) | 2 |
 | **Model registry** (AI/ML → Model registry → *Register*, *Collections*) | a model package group, versions with an approval status, a collection | `sagemaker.api` | `SageMakerCreatePermissions`; `EXC-11`'s data source tracks the group type (3.3) | 3 |
 | **Inference endpoints** (AI/ML → Inference endpoints → *Create endpoint*, *Add model*) | `CreateModel` (with `VpcConfig` and network isolation), `CreateEndpointConfig` (`ml.m5.large`, one instance), `CreateEndpoint`; `InvokeEndpoint` | `sagemaker.api` for the control plane; `sagemaker.runtime` for the invocations, one AZ (6a's affinity note) | `DenySageMakerJobsOffVpc` and `DenySageMakerJobsWithoutNetworkIsolation` on `CreateModel`; the ceiling on `CreateEndpointConfig`; the form's fields; an endpoint bills every hour it exists, so it dies in its sitting (decision 6) | 4 |
 | **Batch transform** (the SDK; no menu entry) | `CreateTransformJob` on `ml.m5.large`, the volume under the project key | `sagemaker.api`; the model's `VpcConfig` | `DenySageMakerJobsWithoutVolumeEncryption` names `CreateTransformJob`; the ceiling | 4 |
@@ -81,10 +81,10 @@ the notebook must.
 
 | Where | What | Layer |
 |---|---|---|
-| `terraform-live/sandbox/sagemaker/` (through `sagemaker-prereqs`) | `MLflowApp` and `AmazonBedrockKnowledgeBase` join `blueprint_names` (decisions 2 and 1): a blueprint configuration and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant per blueprint arrive in one apply (`grants.tf`'s `for_each`). The roster has three copies, the module default, the governance profile and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`, and they move in one commit (Lesson 14). `kms.tf` is untouched: AWS's key-permissions page for the Tooling blueprint names no MLflow statement (read 2026-10-12); whether it names a knowledge-base statement is read at 1.2 (the checklist's step 2), and a refusal naming KMS at 1.5 or 7.4a reopens it | `[P]` |
+| `terraform-live/sandbox/sagemaker/` (through `sagemaker-prereqs`) | `MLflowApp` and `AmazonBedrockKnowledgeBase` join `blueprint_names` (decisions 2 and 1), `MLflowApp` at `sagemaker-prereqs-v0.5.0` (pass 1, written 2026-10-17): a blueprint configuration and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant per blueprint arrive in one apply (`grants.tf`'s `for_each`). The roster has three copies, the module default, the governance profile and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`, and they move in one commit (Lesson 14). `kms.tf` is untouched: AWS's key-permissions page for the Tooling blueprint names no MLflow statement (read 2026-10-12); whether it names a knowledge-base statement is read at 1.2 (the checklist's step 2), and a refusal naming KMS at 1.5 or 7.4a reopens it | `[P]` |
 | `terraform-live/data-governance/governance/` | the `experimentation` profile gains `MLflowApp` and `AmazonBedrockKnowledgeBase`, `deployment_mode = ON_DEMAND`, like the six Bedrock blueprints already there | `[P]` |
-| `terraform-modules/vpc-egress` (new tag, `v0.18.0`) and `terraform-live/sandbox/egress/` | the optional group `mlflow`, one endpoint, `aws.sagemaker.<region>.mlflow`: the module's `sagemaker.studio` special case in `service_names_all_groups` generalised to every `sagemaker.*` short name. `no_proxy_all_groups` grows by the endpoint's names, so the house image's dated literal (70 entries, `aafa08da98a61f5c`, 6d decision 8) goes stale and `DE-5` reads the drift until the next image version (decision 4). Raised per session with `GROUPS=mlflow` | `[E]` |
-| `terraform-live/identity/org-policies/` | `DenyBedrockInvocationOutsideTheScopedModels` in `awsds-org-scp-ou-interactive.json` gains the embeddings model's `foundation-model` ARN in its `NotResource` (decision 11), the first entry there outside the scoped set's six spellings; `POLICIES.md`'s row gains the second trigger, `./scripts/check-index.py` reads it, and the battery runs with its Bedrock rows, owed since 6e ([`scp-battery.md`](../runbooks/scp-battery.md); `aws/probes/probes.py` has none, read 2026-10-12). Applied from `Identity` with `awsds-infra-identity`, the slice's profile precondition | `[P]` |
+| `terraform-modules/vpc-egress` (new tag, `v0.18.0`) and `terraform-live/sandbox/egress/` | the optional group `mlflow`, one endpoint, `aws.sagemaker.<region>.mlflow`: the module's `sagemaker.studio` special case in `service_names_all_groups` becomes a list of the `aws.sagemaker.` short names, `sagemaker.studio` and `sagemaker.mlflow`, since `sagemaker.api` and `sagemaker.runtime` are `com.amazonaws.` names and a prefix match would rename them (written 2026-10-17). `no_proxy_all_groups` grows by the endpoint's names whatever `GROUPS=` names, so the house image's dated literal (70 entries, `aafa08da98a61f5c`, 6d decision 8) goes stale and `DE-5` reads the drift until an image carries the new one (decision 4). Raised per session with `GROUPS=mlflow` | `[E]` |
+| `terraform-live/identity/org-policies/` | `DenyBedrockInvocationOutsideTheScopedModels` in `awsds-org-scp-ou-interactive.json` gains the embeddings model's `foundation-model` ARN in its `NotResource` (decision 11), the first entry there outside the scoped set's six spellings; `POLICIES.md`'s row gains the second trigger, `./scripts/check-index.py` reads it, and the battery runs with its Bedrock rows ([`scp-battery.md`](../runbooks/scp-battery.md); PR #159 wrote those of 6e 7.5 and decision 15 on 2026-10-17), plus one allow row on the embeddings model, which no image pin names (7.4a). Applied from `Identity` with `awsds-infra-identity`, the slice's profile precondition | `[P]` |
 | `terraform-live/sandbox/ml/` (new, rank 57, decision 7, only if 2.2 measures the gap) | the grants the project role lacks for the exercise, in `sandbox/workflows/`'s shape: `sagemaker:AddTags` of the key `AmazonDataZoneProject` with the caller's own value, alone, on a resource that carries no project tag or already the caller's, for each resource type the measurements name (training jobs, models, endpoint configurations, endpoints, transform jobs, model package groups, pipelines, MLflow apps). Attached to the project roles, each checked for the D13 boundary as `sandbox/workflows/` checks them | `[P]` |
 | `aws/sandbox-ml.py` (new) | `ML-1`..`ML-9`, the evidence: the project role's tags and policy version, the MLflow App, each training job against the five statements and the tag, the registry, the serving objects (no endpoint may survive a sitting), the pipeline, the read-only entries and the quotas, the Generative AI objects and their doors, the session's `mlflow` endpoint and the DNS Firewall list | — |
 | `examples/sandbox-ml/` (new) | the notebook as scripts a person reviews: `data.py` (the recipe's CSV fetched, prepared and split), `train.py` (the estimator, the MLflow run, the negatives), `register.py`, `serve.py` (the endpoint, the transform, the serverless negative), `pipeline.py` and `pipeline/definition.json` with a placeholder for every account-scoped value (6i decision 1's shape), `bedrock/` for the prompt, guardrail, flow and evaluation definitions the portal exports, the knowledge base's document list and the chat agent's exported snapshot, and a `README.md` | — |
@@ -224,13 +224,26 @@ inside pass 7, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a
   governance profile's blueprint list with `ON_DEMAND`, and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`; the
   `US-3` message and `docs/SMUS.md`'s row change with it. Plan both slices and read the diff: a
   configuration and a grant added in `sandbox/sagemaker/`, a profile changed in the governance slice.
+  **Written 2026-10-17** (PR #157): the module default at `sagemaker-prereqs-v0.5.0`, appended last so
+  the governance list keeps every `deployment_order`, and `SMUS.md`'s row and counts (category 1
+  twelve, category 2 three); the `US-3` message prints the tuple and needed no change. Before the
+  apply, the checklist's step 3 (the template's required parameters without a default, which
+  `blueprint_parameters` would declare for `UpdateProjectProfile`) and step 4 (the console's
+  enable-wizard fields, which `blueprints.tf`'s regional parameters would carry, since an applied
+  configuration cannot be updated through `awscc`) are read and recorded; `kms.tf` stays as it is
+  (step 2). The plans are the laptop's.
 - **1.3 — [Claude⚡] Apply**, with the user's authorization: the infrastructure user, `InfrastructureAccess`,
   on `Sandbox` for `sandbox/sagemaker/` and on `Data Governance` for the governance slice. Re-plan both to
-  `No changes`.
+  `No changes`. `docs/SMUS.md`'s object table and its profile paragraph then count twelve configurations
+  and twelve environment configurations where they count eleven.
 - **1.4 — [Claude⚡] The endpoint group**: tag `vpc-egress-v0.18.0` with the `mlflow` group (the two-commit
   tag order of `terraform-changes.md` Recipe B, the version read from `git ls-remote --tags origin`), point
-  `sandbox/egress` at it, and raise the session with `GROUPS=mlflow`. `EG-1`..`EG-4` green with the new
-  endpoint; `DE-5` red by decision 4, recorded as such.
+  `sandbox/egress` at it, and raise the session with `GROUPS=mlflow`. **The tag and the pointer were
+  written 2026-10-17** (PR #157). The service name came from AWS's pages, so the first plan of
+  `sandbox/egress` at the new tag is the catalog's reading: a name the Region does not offer fails it,
+  and its `no_proxy_all_groups` prints the names the endpoint answers for (verification vi). Decision 4
+  orders the rest: the image that carries the new literal is released in the sitting of the first
+  apply, and `EG-1`..`EG-4` and `DE-5` are green at its end.
 - **1.5 — [user] Add the capability and create the app.** The project's capabilities page offers the
   blueprint; adding it deploys the environment (what it provisions, a role among it or not, is read by
   `ML-2` and the trail). Then *Create MLflow App*: the name, the artifact store under the project's
@@ -259,11 +272,14 @@ inside pass 7, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a
   `train.csv`, `validation.csv` and `test.csv` in XGBoost's CSV layout (label first, no header), under
   `shared/ml-demo/data/`. Nothing enters through the lake.
 - **2.2 — [user] The job, three times, one change each** (Lesson 20: a refusal proves one statement when
-  one thing differs). The estimator: XGBoost `1.7-1` from AWS's algorithm registry for the Region,
-  `ml.m5.xlarge`, one instance, 30 GB volume under the project key, `max_run` 600 s, the project's subnets
-  and security group, network isolation and inter-container encryption on, the output under
-  `shared/ml-demo/models/`, the recipe's hyperparameters `objective=binary:logistic`, `eval_metric=auc`,
-  `num_round=200`, `max_depth=5`, `eta=0.2`, `subsample=0.8`; the MLflow run opened before the call. (a)
+  one thing differs). The estimator: XGBoost `3.0-5` from AWS's algorithm registry for the Region (the
+  recipe's `1.7-1` writes the binary format XGBoost 3.1 removed, and the house environment's lock pins
+  `xgboost-cpu` 3.3.0, which refused such a booster on a build host on 2026-10-17, so 3.1 could not log
+  it; `examples/sandbox-ml/README.md`, "The model format"), `ml.m5.xlarge`, one instance, 30 GB volume
+  under the project key, `max_run` 600 s, the project's subnets and security group, network isolation and
+  inter-container encryption on, the output under `shared/ml-demo/models/`, the recipe's hyperparameters
+  `objective=binary:logistic`, `eval_metric=auc`, `num_round=200`, `max_depth=5`, `eta=0.2`,
+  `subsample=0.8`; the MLflow run opened before the call. (a)
   **With no project tag**: expected
   `AccessDeniedException` from `SageMakerCreatePermissions`' `aws:ResourceTag` condition. (b) **With
   `AmazonDataZoneProject` set to the project's id**: expected refused as `sagemaker:AddTags`, the gap 6i
@@ -414,9 +430,15 @@ inside pass 7, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a
   `errorMessage`. Then [Claude⚡] **the amendment** from `Identity`, the infrastructure user,
   `InfrastructureAccess`, `AWS_PROFILE=awsds-infra-identity`: the embeddings model's `foundation-model`
   ARN into the statement's `NotResource`, `POLICIES.md`'s row with the second trigger,
-  `./scripts/check-index.py`, and the battery with its Bedrock rows, owed since 6e 7.5 and written now
-  (`probes.py` has none, read 2026-10-12). Sync again: expected `COMPLETE`, with the document count and
-  the time. [Claude] `ML-8` reads the knowledge base, its role with the role's policies and boundary, the
+  `./scripts/check-index.py`, and the battery with its Bedrock rows: those of 6e 7.5 and decision 15 are
+  in `probes.py` since PR #159 (2026-10-17), and their allow rows invoke the image's pins, so this sitting
+  adds one, an allow row of `invoke-model` on `amazon.titan-embed-text-v2:0` from `Sandbox Account 1`
+  with Titan's body (`{"inputText":"ping"}`). The amendment waits for Stage 9 pass 1's apply of the same
+  slice and the battery after it, neither run on 2026-10-17 (items 2 and 3 of the laptop list in
+  [its log](../../log/log-stage-09-deployment-targets.md)): an apply attaches every change pending in
+  the slice, and this one's plan changes `awsds-org-scp-ou-interactive.json` alone. Sync again:
+  expected `COMPLETE`, with the document count and the time. [Claude] `ML-8` reads the knowledge base,
+  its role with the role's policies and boundary, the
   data source, the two Lambdas and their role, the store (which OpenSearch Serverless kind or which S3
   Vectors bucket the IDE created, as which identity, and what it bills at idle: decision 12's reading), and
   whether every object carries the project tag (verification xxiii).
@@ -563,14 +585,24 @@ recommendation stated (Lesson 16).
    recommendation had been **(a)** synthetic data generated in the notebook, because the exercise
    measures the SageMaker doors and a dataset entering through the proxy adds a measurement 6d made;
    **(c)** was a table the user places in `awsds-sandbox-lake`, read through the S3 gateway endpoint.
-4. **The `mlflow` group against the image's `no_proxy` literal** (1.4). Recommended: **(a) add the group
-   now and accept `DE-5` red until the next image version** carries the new `no_proxy_all_groups`, with
-   the red recorded as a dated exception in `AWS_STATE.md`; the literal is read by the image's processes,
-   and the MLflow client in a space resolves the endpoint's name whether or not `no_proxy` lists it, since
-   the space exports no proxy variable (6d, `default-v0.2.0`). The alternatives: **(b)** rebuild the image
-   first, a 16-minute pipeline on Stage 7's runner, then the group; **(c)** the endpoint in
-   `sandbox/egress`'s always-on list, which 6e decision 12 refused for the Bedrock pair and is refused
-   here for the same reason.
+4. **The `mlflow` group against the image's `no_proxy` literal** (1.4). **Taken by the user 2026-10-18
+   (00:04 UTC), as recommended: (b) the image first, in the sitting of the group's first apply**:
+   `./scripts/check-gitlab-mirror.py --plan` reads the
+   new `no_proxy_all_groups` from a plan of `sandbox/egress` and writes the line the Dockerfile must
+   carry, a `dev-env` release registers the next image version (29 minutes from tag to version in Stage
+   8, 1.6), the project's spaces move to it and restart
+   ([`dev-env.md`](../runbooks/dev-env.md), "What an endpoint change costs"), and then `make up
+   ENV=sandbox GROUPS=mlflow`; `DE-5` is green at the end. A session raised from a checkout that pins
+   `vpc-egress-v0.18.0` reads `DE-5` red against the 70-entry image whatever `GROUPS=` it names, so PR
+   #157's merge belongs to that sitting. **(a) was the recommendation until 2026-10-17**: the group now,
+   with `DE-5` red until the next image, on the premise that the space exports no proxy variable. The
+   premise is false. 6d decision 8 put `HTTPS_PROXY` and `NO_PROXY` in the image as `ENV`
+   (`dev-env/Dockerfile`, read 2026-10-17), and `sagemaker-mlflow` 0.5.0 sends an app's calls to
+   `mlflow.sagemaker.<region>.app.aws`, under `.app.aws`, which no compute plane admits: a client that
+   honours the proxy variables and lacks the host in `NO_PROXY` is refused by the proxy with a 403,
+   group or no group (`docs/NETWORK.md`). So (a) also means a per-process `NO_PROXY` addition in 1.6's
+   notebook. **(c)** the endpoint in `sandbox/egress`'s always-on list, which 6e decision 12 refused for
+   the Bedrock pair and is refused here for the same reason.
 5. **Keep or delete at close** (7.6, 8.3). Recommended: **keep the MLflow App, the model package group and
    its versions, the Bedrock objects and the knowledge base if its store read zero at idle; delete every
    endpoint, model and endpoint configuration, and a store with a minimum OCU.** The kept objects bill
@@ -590,7 +622,8 @@ recommendation stated (Lesson 16).
 8. **Serverless inference's outcome** (4.4). Recommended: **recorded as evidence in Stage 9 3.7, the
    decision left there.** If `DenySageMakerJobsOffVpc` refuses the serverless model, 3.7's (b) is a
    reading and not a second statement; if the service admits what the boundary admits, 3.7 decides.
-9. **If `EnableSageMakerMLWorkloadsPermissions` is absent from the project role** (0.1). Recommended:
+9. **If `EnableSageMakerMLWorkloadsPermissions` is absent from the project role** (0.1). **Did not arise:
+   the tag read `true` on both project roles on 2026-10-17.** Recommended:
    **(a) read the Tooling template** (`templateUrl` from `get-environment-blueprint`, the way 6a read
    `AllowedValues` on 2026-08-22) for the parameter or profile setting that writes the tag, and change the
    profile. The alternatives: **(b)** a second profile and a second project; **(c)** the tag set by hand on
@@ -609,7 +642,7 @@ recommendation stated (Lesson 16).
 11. **The embeddings model at the SCP** (7.4a). Recommended: **(a) the `foundation-model` ARN of
     `amazon.titan-embed-text-v2:0` added to `DenyBedrockInvocationOutsideTheScopedModels`'s
     `NotResource`**, region-less like the six entries there, applied from `Identity` with the battery's
-    Bedrock rows written in the same sitting (6e 7.5's standing rule). It is the first entry of that list
+    row for it written in the same sitting (6e 7.5's standing rule; 7.4a says which). It is the first entry of that list
     outside the scoped set of 6e decision 14, so the two lists that were one diverge (Lesson 51):
     `sandbox/bedrock/`'s `models` map, the image's pins and the `bedrock-runtime` endpoint policy stay as
     they are, since none of them invokes an embeddings model, and `POLICIES.md`'s row names both
@@ -638,7 +671,7 @@ recommendation stated (Lesson 16).
 | iii | Do the hub reads and the `GetObject` on `jumpstart-cache-prod-<region>` succeed through the S3 gateway endpoint, whose list has named the bucket since Stage 3 without a measurement? | 2.4 |
 | iv | Does the MLflow App's artifact store encrypt under the project key, and what does the app's role hold? | 1.7, 3.1 |
 | v | After a model package group exists, does `EXC-11`'s data source still fail on the RAM share, or ingest the group into the catalog? | 3.3 |
-| vi | Which name does the MLflow client resolve from a space, does the `mlflow` endpoint carry its bytes, and does the DNS Firewall list need an entry? | 1.6 |
+| vi | Which name does the MLflow client resolve from a space, does the `mlflow` endpoint carry its bytes, and does the DNS Firewall list need an entry? **The client's half read from source 2026-10-17**: `sagemaker-mlflow` 0.5.0 dials `https://mlflow.sagemaker.<region>.app.aws` for an `mlflow-app` ARN (its `_get_endpoint`), and `sandbox/egress`'s DNS Firewall list carries `app.aws.` and `*.app.aws.`. Whether the endpoint answers for that host is the catalog's, printed by the first plan at `vpc-egress-v0.18.0` (1.4); the bytes are 1.6's | 1.4, 1.6 |
 | vii | What does the space's SDK configuration inject into a create: subnets, security group, key, tags, isolation? | 0.3 |
 | viii | Does a notebook's `CreateTrainingJob` carrying the project tag meet the `AddTags` refusal 6i measured on a worker's `CreateProcessingJob`? | 2.2 |
 | ix | Does each of the boundary's five statements refuse the request that lacks its field, by a wording that names it? | 2.3 |
@@ -653,7 +686,7 @@ recommendation stated (Lesson 16).
 | xviii | As whom, and through which door, does the portal create and invoke a prompt, a guardrail, an agent, a flow and an evaluation: the project role, a project Bedrock role, a `vpcEndpointId` or none? | 7.5 |
 | xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? | 7.3 |
 | xx | What did the MLflow App bill on the sitting's day, read in Cost Explorer? | 8.2 |
-| xxi | Which quotas does a young account hold for the four instance types, and is any zero? | 0.2 |
+| xxi | Which quotas does a young account hold for the four instance types, and is any zero? **Answered 2026-10-17: three are zero**, `ml.m5.xlarge for training job usage` (`L-CCE2AFA6`), `ml.m5.large for endpoint usage` (`L-614B09FD`) and `ml.m5.large for transform job usage` (`L-236AE59F`); `ml.t3.medium for processing job usage` (`L-0CE343FE`) is 4 | 0.2 |
 | xxii | Does the knowledge base's first sync fail on the SCP's explicit deny of `InvokeModel` on the embeddings model, as which role, and does the second sync complete after decision 11's apply? | 7.4a |
 | xxiii | Which vector store does the IDE create for the knowledge base, as which identity, under which key, with the project tag or not, and what does it bill at idle? | 7.4a, 8.2 |
 | xxiv | Does the project role reach the knowledge base from a space with `Retrieve` through the `bedrock-agent-runtime` endpoint, and does the shared chat agent's snapshot appear in the project's catalog? | 7.4b |
@@ -682,8 +715,9 @@ recommendation stated (Lesson 16).
   `errorMessage` is read for every portal attempt (Lesson 42).
 - **A peer's endpoint groups.** A bare `make up ENV=sandbox` removes the groups a peer session raised; the
   session is raised with the union, after telling the peers (6i's rule).
-- **The image's `no_proxy` literal goes stale by one name** (decision 4). `DE-5` reads red until the next
-  image version, and a reader of that check must know why; the exception row is the record.
+- **The image's `no_proxy` literal goes stale by the `mlflow` group's names** (decision 4). A session
+  raised at `vpc-egress-v0.18.0` before an image carries them reads `DE-5` red, and a space on the old
+  image is refused the app's host with a 403; decision 4's order closes both in one sitting.
 - **The Generative AI roles are outside the reading until 7.0.** A project Bedrock role the Tooling
   template creates without the D13 boundary would be the first interactive principal outside it; 7.0 reads
   before 7.2 deploys anything.

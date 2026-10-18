@@ -100,6 +100,32 @@ locals {
     # service token in one and after it in the other, so they are different subtrees and this
     # endpoint's private DNS does not shadow the workgroup's address.
     redshift = ["redshift-serverless"]
+
+    # Stage 17 pass 1 - the MLflow App's door (Stage 17 decision 2). `sagemaker-mlflow`, the plugin
+    # in the house image (0.5.0 in its lock), sends an `mlflow-app` ARN's tracking calls to
+    # `https://mlflow.sagemaker.<region>.app.aws` (its `_get_endpoint`, read 2026-10-17), and the
+    # interface endpoint AWS names for an MLflow App is `aws.sagemaker.<region>.mlflow`. The calls
+    # are authorized as `sagemaker:CallMlflowAppApi` on `mlflow-app/*` (AWS's MLflow endpoint-policy
+    # page, read 2026-10-17), which the endpoint policy below admits with its `Action = "*"` for an
+    # organization principal.
+    #
+    # The only group name read from AWS's pages rather than from the Region's catalog. The catalog
+    # reading is the first plan of any caller: no-proxy.tf looks up every group's service whatever
+    # the apply names, so a name the Region does not offer fails that plan, and the names the plan
+    # prints in `no_proxy_all_groups` say whether the endpoint answers for the plugin's host.
+    #
+    # ONE TOKEN, and each absence is a reading:
+    #
+    #   sagemaker.mlflow       HERE. The app's tracking API.
+    #   sagemaker.experiments  NOT here. A tracking server's door, and `MLExperiments` stays in
+    #                          category 2: Stage 17 decision 2 took the app over the server.
+    #   sagemaker.api          NOT here: in sandbox/egress's always-on list, and the door of
+    #                          `CreatePresignedMlflowAppUrl` and the app's control plane.
+    #
+    # The client's name is under `.app.aws`, which no compute plane admits, so a space whose
+    # NO_PROXY lacks it reaches the proxy and gets a 403 naming the host (no-proxy.tf), group or no
+    # group.
+    mlflow = ["sagemaker.mlflow"]
   }
 
   services = distinct(concat(
@@ -117,18 +143,24 @@ locals {
     flatten(values(local.optional_services)),
   ))
 
-  # The service name is regional and almost uniform - `com.amazonaws.<region>.<token>` -
-  # with one measured exception (verification (i), answered 2026-08-15 from the region's
-  # catalog, aws/egress.py 7): SageMaker Studio is `aws.sagemaker.<region>.studio`. The same
-  # catalog run measured that every service both lists carry supports an endpoint policy, so
-  # the document below is attached unconditionally.
+  # The service name is regional and almost uniform - `com.amazonaws.<region>.<token>` - with one
+  # family of exceptions, `aws.sagemaker.<region>.<name>`: SageMaker Studio, measured
+  # (verification (i), answered 2026-08-15 from the region's catalog, aws/egress.py 7), and the
+  # MLflow App, read on AWS's interface-endpoint page (Stage 17, 2026-10-12). The same catalog run
+  # measured that every service both lists carried supports an endpoint policy, so the document
+  # below is attached unconditionally; AWS's MLflow endpoint-policy page documents one for the
+  # app's endpoint too, and an apply that names `mlflow` is its measurement.
   #
-  # Built over the wider list and selected for the endpoints, so the exception is written once.
+  # The exceptions are listed by short name, never matched on a `sagemaker.` prefix:
+  # `sagemaker.api` and `sagemaker.runtime` are `com.amazonaws.` names. Built over the wider list
+  # and selected for the endpoints, so the exception is written once.
+  aws_sagemaker_services = ["sagemaker.studio", "sagemaker.mlflow"]
+
   service_names_all_groups = {
     for s in local.services_all_groups :
     s => (
-      s == "sagemaker.studio"
-      ? "aws.sagemaker.${data.aws_region.current.region}.studio"
+      contains(local.aws_sagemaker_services, s)
+      ? "aws.sagemaker.${data.aws_region.current.region}.${trimprefix(s, "sagemaker.")}"
       : "com.amazonaws.${data.aws_region.current.region}.${s}"
     )
   }

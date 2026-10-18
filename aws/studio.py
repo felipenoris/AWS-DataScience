@@ -97,6 +97,9 @@ BLUEPRINT_ALLOWLIST = (
     "AmazonBedrockFunction",
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
+    # Out of category 2 at Stage 17 pass 1 (decision 2); MLExperiments, the tracking server,
+    # stays in category 2 and fails here.
+    "MLflowApp",
 )
 # `experimentation` provisions into Sandbox. `engineering` was retired at Stage 6b step 1.1:
 # Development became the headless `Staging`, so nothing provisions a Studio project there. The

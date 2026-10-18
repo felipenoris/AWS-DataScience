@@ -156,5 +156,11 @@ variable "blueprint_names" {
     "AmazonBedrockFunction",
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
+    # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12): a
+    # serverless MLflow App per project, which reaches a space through vpc-egress's `mlflow` group.
+    # MLExperiments, the tracking server the same capability arrives as, stays category 2: it bills
+    # per hour while it exists. No kms.tf statement comes with it, since AWS's key-permissions page
+    # for the Tooling blueprint names none for MLflow (read 2026-10-12).
+    "MLflowApp",
   ]
 }

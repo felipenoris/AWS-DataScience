@@ -861,6 +861,28 @@
   `SageMakerMlflowServerlessPermission` admits `CreateMlflowApp` on the project's tag; no statement names
   `lambda:` or `bedrock:`:
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- **The same policy's documentation, re-read 2026-10-17** after Stage 17's first run read v45 in Sandbox:
+  the reference page above still showed v44, last edited 2026-09-14, with `SageMakerCreatePermissions`
+  at 14 actions, `SageMakerTagPermissions` at 2 and `SageMakerMlflowServerlessPermission` at 6; the admin
+  guide's table of managed-policy updates, whose newest row for this policy is 2026-06-25 (Feature Store,
+  the public model hub, pipeline schedules):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-updates.html>.
+  Read again the same evening against the user's `diff` of v44 and v45, still at v44:
+  `DataZoneUserPermissions` holds nine actions ending in `datazone:*Compute*` on `Resource` `*`, and
+  `ConsumerS3AGPermission` holds `s3:GetAccessGrantsInstanceForPrefix`, `s3:GetDataAccess`,
+  `s3:ListCallerAccessGrants` and `ram:GetResourceShareInvitations` (the Stage 17 log names the change).
+- **The quota requests' missing output** (read 2026-10-17): AWS CLI v2 sends its output through `less`,
+  with the `FRX` flags only when `LESS` is unset, and `--no-cli-pager`, `cli_pager` or `AWS_PAGER` turn
+  it off <https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-pagination.html>; oh-my-zsh sets
+  `LESS=-R` when it is unset <https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/lib/misc.zsh>.
+- **The MLflow App's door, for Stage 17 pass 1** (read 2026-10-17): the interface endpoint pages above,
+  re-read, name the service `aws.sagemaker.<region>.mlflow` and no hostname; an endpoint policy may be
+  attached to the MLflow endpoints, and an MLflow App's calls are authorized as
+  `sagemaker:CallMlflowAppApi` on `mlflow-app/*`
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-private-link-policy.html>. The client's
+  hostname is read in `sagemaker-mlflow` 0.5.0's `_get_endpoint`: `https://mlflow.sagemaker.<region>.app.aws`
+  for an `mlflow-app` ARN and `https://<region>.experiments.sagemaker.aws` for a tracking server, unless
+  `SAGEMAKER_MLFLOW_CUSTOM_ENDPOINT` names another (the wheel listed below).
 
 - **SageMaker AI pricing** (read 2026-10-12): the public page <https://aws.amazon.com/sagemaker/ai/pricing/>,
   and the `AmazonSageMaker` offer file for `us-west-2`, published `2026-10-12T18:05:38Z`, which gave
@@ -913,6 +935,34 @@
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonES/current/us-west-2/index.json> and
   `AmazonS3` (`2026-10-12T17:53:18Z`)
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>.
+
+- **What Stage 17 pass 0's scripts were written against** (read 2026-10-17):
+  - The XGBoost recipe, re-read: `image_uris.retrieve(framework="xgboost", region=region,
+    version="1.7-1")`, the SDK 2.x `Estimator` on `ml.m5.xlarge` with the hyperparameters step 2.2 names,
+    `ml.m5.large` for the endpoint, `mlflow.register_model` on the job's `model.tar.gz` with no
+    `log_model`, and `%pip install --upgrade sagemaker` unpinned
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>;
+    its CSV, fetched that day (7,043 rows, 970,457 bytes)
+    <https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv>.
+  - The interface endpoints' metrics, which `ML-5` and `ML-9` read: the namespace
+    `AWS/PrivateLinkEndpoints`, `BytesProcessed` among five metrics, published only for a minute with
+    traffic, the dimensions `Endpoint Type`, `Service Name`, `Subnet Id`, `VPC Endpoint Id` and `VPC Id` in
+    two combinations, no unit stated
+    <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-cloudwatch-metrics.html>.
+  - Unread that day: the SageMaker registry paths for `us-west-2`, a server error twice
+    <https://docs.aws.amazon.com/sagemaker/latest/dg-ecr-paths/ecr-us-west-2.html>; AWS's XGBoost
+    algorithm pages, refused by the session's proxy
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-previous-versions.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost-how-it-works.html>; and the container's
+    source, outside the session's GitHub scope <https://github.com/aws/sagemaker-xgboost-container>.
+  - The wheels read in place of those pages: `sagemaker-core` 2.21.0, whose image table puts `xgboost`
+    `1.7-1`, `3.0-5` and `3.2-0` in the repository `sagemaker-xgboost` under one `us-west-2` registry
+    <https://pypi.org/project/sagemaker-core/2.21.0/>; `sagemaker-mlflow` 0.5.0, which takes an
+    `mlflow-app` ARN as the tracking URI and registers the `arn` model registry store and a presigned S3
+    artifact repository <https://pypi.org/project/sagemaker-mlflow/0.5.0/>; and `xgboost` 1.7.6 and 3.0.5
+    and `xgboost-cpu` 3.3.0, installed in scratch environments for the model-format probe
+    <https://pypi.org/project/xgboost/>, <https://pypi.org/project/xgboost-cpu/>.
 
 - **Visual ETL in an Identity Center domain** (read 2026-10-13; documentation, nothing measured): a flow
   is authored on AWS Glue interactive sessions, Glue 4.0, 5.0 or 5.1
