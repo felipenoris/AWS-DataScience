@@ -134,3 +134,84 @@ readings are given here in English.*
 - **[Claude] These were the instrument's first runs against AWS.** Its readers had met only a
   fabricated `aws` ([`aws/INDEX.md`](../../aws/INDEX.md)); here they parsed real responses from six
   accounts, under CloudShell's `python3` and the laptop's `uv`.
+
+## 2026-10-18 — the `[P]` slices, the quotas and the bill
+
+*Claude, session "Stage 12: observability [P] slices, alarms, quotas, cost", started by the orchestrating
+session on the user's authorization of that day, in a worktree of `origin/main` at `2074b1b`, from about 19:50
+UTC. Every AWS call ran as the infrastructure user with `InfrastructureAccess`, through the
+five `awsds-infra-*` profiles and, for one Cost Explorer read, `awsds-policy-canary`, in `us-west-2` (Cost
+Explorer in `us-east-1`). The environment was down throughout: the hub and GitLab stopped, no `[E]` slice
+up.*
+
+### Readings
+
+- **[Claude] The estate held no dashboard and five alarms**, Production's three hosts' and Sandbox's two
+  warehouse alarms, none with an action; the only topics were `awsds-prod-alerts` and
+  `awsds-staging-alerts`, one confirmed subscription each, and Control Tower's `SecurityNotifications`.
+- **[Claude] Prices**, the `AmazonCloudWatch` bulk offer for `us-west-2` (published
+  2026-10-07T11:55:40Z) and the global `aws-other` one: standard alarm 0.10 and composite alarm 0.50 per
+  alarm-month, Contributor Insights rule 0.50 a month plus 0.02 per million matched events, dashboard 3.00
+  a month with three free of up to 50 metrics, free tiers of ten alarms, ten custom metrics and 5 GB of
+  Logs Insights scans.
+- **[Claude] The proxy access log**, Logs Insights over `/awsds/prod/proxy` from 2026-09-01 (3.1 MB
+  scanned): September 12,829 requests and 1,597 refused, 66 active hours, ten of them with 50 refusals or
+  more, the highest 367 at 2026-09-11 16:00; October 10,919 requests and 53 refused, 54 active hours. The
+  most-requested destination in October is `events.gitlab.net`, 4,049 `CONNECT`s from the GitLab host's
+  address between 2026-10-12 and 10-16, 17.3 MB sent by the client.
+- **[Claude] The usage metrics.** `AWS/Usage` `ResourceCount` carries one metric per SageMaker app and job
+  type with data in the 14 days to 2026-10-18 (`studio/JupyterLab-ml.t3.medium` at most 3,
+  `processing-job/ml.t3.medium` at most 1, `studio/total_volume_size_in_gb` 368 on 2026-10-15 and 32 now),
+  `InterfaceVPCEndpointsPerVPC` per VPC (Sandbox's at most 24) and `VPCsPerRegion` (Production 3 every
+  hour). `SERVICE_QUOTA()` answered over each: 30 %, 48 % and 60 % at their peaks. `AWS/Route53Resolver`
+  `VpcFirewallQueryVolume` carries the VPC id, and `AWS/Bedrock` the token counts with no dimension.
+- **[Claude] The Athena workgroups**: Sandbox holds `primary` and each project's SQL and Spark
+  workgroups; the SQL ones publish no metric and set no per-query cutoff, and the account lists no
+  `AWS/Athena` metric.
+- **[Claude] The SageMaker quotas**, `list-service-quotas` in the five accounts, 2,417 each and 2,324 with
+  a usage metric: Sandbox reads 10 for each Studio type in use and for `ml.t3.medium` processing, 20, 8
+  and 8 for Stage 17's three types; Production, Staging, Data Governance and Identity read 6, 4 and 0 for
+  the same codes. `L-0263D0A3` (Elastic IPs) and `L-1B52E74A` (gateway endpoints) carry no usage metric.
+- **[Claude] The bill**, one `get-cost-and-usage` per account by service and usage type, 2026-08-01 to
+  10-17, six requests:
+
+  | Account | August | September | October 1-17 |
+  |---|---|---|---|
+  | Sandbox | 43.81 | 45.55 | 21.50 |
+  | Production | 4.11 | 21.31 | 29.19 |
+  | Staging | 2.93 | 2.82 | 1.83 |
+  | Data Governance | 1.36 | 2.82 | 2.00 |
+  | Identity | 0.77 | 1.50 | 1.12 |
+  | Policy Canary | 0.33 | 0.47 | 0.50 |
+  | **Six accounts** | **53.31** | **74.48** | **56.15** |
+
+  Net equals unblended in every account: no credit reaches these lines. The alarms' line,
+  `USW2-CW:AlarmMonitorUsage`, billed 0.00 for 1.61 alarm-months in Production and 0.91 in Sandbox in
+  September. The classification by usage type is `cost-model.md`'s.
+- **[Claude] IAM**: 147 roles and no user in the five `awsds-infra-*` accounts, 60 of them
+  service-linked.
+- **[Claude] Hosted zones**: Staging holds `staging.awsds.internal`, billed 0.50 a month.
+
+### Applies
+
+- **[Claude] `production/foundation`, Production**: `awsds-prod-alerts`' policy gained
+  `CloudWatchAlarmsOfThisAccount`. Baseline plan `No changes`; plan and apply `0 added, 1 changed, 0
+  destroyed`, with `-var-file` on the project folder's `alerts.auto.tfvars`; re-plan `No changes`.
+- **[Claude] `production/observability`, Production, new**: the dashboard `awsds-prod-hub`, the metric
+  filters `awsds-prod-proxy-requests` and `awsds-prod-proxy-refusals`, the alarms `awsds-prod-proxy-refusals`
+  and `awsds-prod-quota-vpcs-per-region`. `5 added, 0 changed, 0 destroyed`; re-plan `No changes`.
+- **[Claude] `sandbox/observability`, Sandbox, new**: planned `9 to add, 0 to change, 0 to destroy` (the
+  topic `awsds-sandbox-alerts`, its policy and e-mail subscription, the dashboard
+  `awsds-sandbox-environment`, five quota alarms). **The apply did not run**: the session's auto-mode
+  classifier refused it, and it is the user's.
+- **[Claude] Before the applies** every peer session on the laptop was told the three slices and what each
+  changes.
+
+### After the applies
+
+- **[Claude] `./aws/observability.py`** over the five profiles, report stamped 2026-10-18T20:30:17Z: the
+  two new alarms `resolves`; `OB-3`
+  fails in Production for `awsds-prod-gitlab-status-check`, `awsds-prod-proxy-status-check` and
+  `awsds-prod-vpn-health` and in Sandbox for the two warehouse alarms, all unwired while one alarm notifies
+  (`EXC-19`); `OB-1` passes with Production at 11 groups; `OB-4` notes and `OB-5` passes as at the first
+  runs. Exit 2, no call failed.

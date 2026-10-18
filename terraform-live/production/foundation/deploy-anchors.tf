@@ -295,9 +295,9 @@ module "deploy_role" {
 # --------------------------------------------------------------- the alerts topic (decision 5)
 #
 # awsds-<env>-alerts: the misuse rule's target here, and the account's topic Stage 9, Stage 10 and
-# Stage 12 adopt. Its subscriber is the operator's address, which no tracked file may carry: it arrives
-# from an untracked alerts.auto.tfvars the user writes, and the check below says on every plan when it
-# has not.
+# Stage 12 adopt; production/observability/'s alarms publish to it. Its subscriber is the operator's
+# address, which no tracked file may carry: it arrives from an untracked alerts.auto.tfvars the user
+# writes, and the check below says on every plan when it has not.
 resource "aws_sns_topic" "alerts" {
   # checkov:skip=CKV_AWS_26:EventBridge cannot publish to a topic under the AWS-managed SNS key, whose policy admits no service, and a key of its own costs 1 USD a month per account; the messages are CloudTrail event metadata
   name = "awsds-${var.env}-alerts"
@@ -322,7 +322,20 @@ resource "aws_sns_topic_policy" "alerts" {
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }
-      }
+      },
+      # Stage 12 step 2.2: an alarm's notification is published by CloudWatch, which a topic policy
+      # admits only by name. The source conditions are CloudWatch's confused-deputy pair.
+      {
+        Sid       = "CloudWatchAlarmsOfThisAccount"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.alerts.arn
+        Condition = {
+          ArnLike      = { "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:cloudwatch:${var.region}:${data.aws_caller_identity.current.account_id}:alarm:*" }
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      },
     ]
   })
 }

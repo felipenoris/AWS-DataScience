@@ -2282,6 +2282,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. Where:
   `docs/PRICING.md` §5, `log-stage-05b`'s three amendments to 5.3.
 
+### CloudWatch and Service Quotas
+
+- **SageMaker's running apps and jobs are counted in `AWS/Usage`, not in an `AWS/SageMaker` namespace**
+  (measured 2026-10-18, Stage 12 step 1.1). `ResourceCount` with `Service=SageMaker` carries one metric
+  per app or job type, `studio/JupyterLab-ml.t3.medium` or `processing-job/ml.t3.medium`, with data while
+  one runs; Service Quotas names it as the quota's usage metric, and `SERVICE_QUOTA()` divides it by the
+  applied value. A reading that looked for a SageMaker namespace recorded "no running-app metric exists"
+  (`EXC-10`, 2026-09-12), Lesson 62's wrong path. Where: `log-stage-12-observability-finops.md`, the
+  2026-10-18 entry.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

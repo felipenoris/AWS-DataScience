@@ -212,7 +212,7 @@ no `rotation_period_in_days`, the 365-day default — measured live 2026-08-21, 
 count cell above is therefore a year-one figure: the Stage 2 bootstrap keys (created 2026-08-15) reach
 2 versions around 2027-08 and 3 around 2028-08, and the same clock starts for each later key on its own
 creation date. The multi-year consequence belongs to `docs/plan/cost-model.md`'s Floor row, which defers a
-full recompute to Stage 12 step 5. The levers: fewer keys; rotation disabled on a named key — not free,
+full recompute to Stage 12 step 4. The levers: fewer keys; rotation disabled on a named key — not free,
 because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a policy edit
 that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
@@ -243,7 +243,7 @@ and the organization is billing **~USD 0.5**. The rate was right and the shape w
 treated configuration items as a rate per account per month, and they are an event per change. Nine
 accounts recording once, at enrollment, cost USD 2.20 in a single day and then almost nothing. The row is
 sensitive to churn, so it moves with the build-out and not with the account count; the range stays beside
-the measurement, and Stage 12 step 5 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady
+the measurement, and Stage 12 step 6 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady
 state. `recordingFrequency: DAILY` is not the cheaper mode at this change rate (priced in §4): USD 0.012
 per item-day against USD 0.003 per change puts the break-even at four changes per resource per day.
 
@@ -270,7 +270,7 @@ account plus the D31 data keys, so ~USD 3 went back in.
 A third correction the same date restated the `us-west-2` floor from ~USD 24-30 to ~USD 25-34: the earlier
 figure was carried over rather than summed, and adding this table's `us-west-2` column row by row gives
 25.25 at the low end and 33.75 at the high end. The `sa-east-1` column was already consistent with its own
-rows. These are list rates, not an invoice; the number to trust is the one Stage 12 step 5 measures against
+rows. These are list rates, not an invoice; the number to trust is the one Stage 12 step 4 measures against
 the real bill.
 
 ---
@@ -775,6 +775,11 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | CloudWatch Logs Insights scanned (USD/GB) | 0.009 | 0.005 | 1.80 |
 | CloudWatch standard alarm (USD/alarm-mo) | 0.135 | 0.10 | 1.35 |
 | CloudWatch **custom metric**, first 10 000 (USD/metric-mo) | 0.30 | 0.30 | **1.00** |
+| CloudWatch **composite alarm** (USD/alarm-mo) | 0.675 | 0.50 | 1.35 |
+| CloudWatch **dashboard** (USD/dashboard-mo), past the free three of up to 50 metrics each; a dashboard of more than 50 metrics bills from the first | 3.00 (global) | 3.00 (global) | **1.00** |
+| CloudWatch Contributor Insights rule on a log group (USD/rule-mo) · matched events (USD per million) | 0.50 · 0.036 | 0.50 · 0.02 | 1.00 · 1.80 |
+| CloudWatch free tier, every month: ten standard alarms, ten custom metrics, 5 GB of Logs Insights scans, three dashboards | `Global-*` SKUs | `Global-*` SKUs | — |
+| **Cost Explorer** API request (each), `USE1-APIRequest`; the console is free | 0.01 (global) | 0.01 (global) | **1.00** |
 | **SNS** API requests, above the first 1M/month (each) | 0.0000005 | 0.0000005 | **1.00** |
 | SNS e-mail / e-mail-JSON notifications, above the first 1 000/month (each) | 0.00002 | 0.00002 | **1.00** |
 | SNS HTTP/HTTPS notifications, above the first 100 000/month (each) | 0.0000006 | 0.0000006 | **1.00** |
@@ -782,6 +787,14 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | **Route 53** hosted zone, first 25 (USD/zone-mo) | 0.50 (global) | 0.50 | **1.00** |
 | Route 53 Resolver DNS Firewall, first 1B queries (USD per million) | 0.60 | — | |
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
+
+The composite alarm, dashboard, Contributor Insights and free-tier rows were read on **2026-10-18** for
+Stage 12 step 1 from the `AmazonCloudWatch` bulk offers for `us-west-2` and `sa-east-1` and the global
+`aws-other` one, all published 2026-10-07T11:55:40Z. The free tier carries `Global-*` SKUs, so it is
+counted once per bill (inferred), and the alarms' half is measured: `USW2-CW:AlarmMonitorUsage` billed
+0.00 for 1.61 alarm-months in Production and 0.91 in Sandbox in September. The Cost Explorer row is
+the `AWSCostExplorer` offer of 2026-09-11T12:45:38Z, read the same day as the others; Service Quotas and
+its `AWS/Usage` metrics have no offer file in the index and bill nothing.
 
 6c decision due 4's inputs — the proxy access log's road to Log Archive, `us-west-2`, **measured
 2026-09-08** (the bulk API's `AmazonKinesisFirehose`, `AmazonCloudWatch`, `AWSEvents` and `AWSLambda`

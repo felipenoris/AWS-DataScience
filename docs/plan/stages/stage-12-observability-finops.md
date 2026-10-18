@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started but for step 10, whose `./aws/observability.py` was written 2026-10-17 and first run 2026-10-18 ([log](../../log/log-stage-12-observability-finops.md)): `OB-1`, `OB-2` and `OB-5` pass, `OB-3` and `OB-4` read `note` until steps 2 and 8; scoped against [D38](../decisions/D38-single-egress-hub.md): the dashboards carry no NAT panels (there is no NAT), and gain three lines the hub creates — the **proxy's access log and its refusal rate**, the **DNS Firewall's per-query charge** in each compute VPC (whose job is now closing DNS exfiltration rather than filtering the internet, so if the query bill outweighs what it catches, retiring it is a decision this stage's reading informs), and the **peering bytes**, which the hub makes a real line for the first time |
-| **Prerequisites** | any stage that created resources — and **one real invoice**, which is what separates this stage from a projection |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` is written and planned** (9 to add) and its apply is the user's: the auto-mode classifier refused it in the session. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the five older alarms are wired (`EXC-19`). Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
+| **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
 
@@ -26,8 +26,8 @@ from the plan.
 
 ## Step numbers are identifiers, not an order
 
-Steps 1-3 are the observability half, 4-6 the cost half, 7-9 the governance half; **step 8 is the one with
-a hard prerequisite** (a real bill) and step 3 the one with an irreversible floor.
+Steps 1-3 are the observability half, 4-6 the cost half, 7-9 the governance half; **step 4 is the one with
+a hard prerequisite** (a real bill) and steps 3.2 and 8.2 the ones with an irreversible floor.
 
 ---
 
@@ -43,29 +43,65 @@ of every other account's session. **Explanation:** the panels are chosen so that
 - **1.1 — [Claude] Write the per-environment dashboard**: SageMaker app and job hours, Athena bytes
   scanned against the workgroup limit, GitLab instance and EBS, the `[E]` endpoint count, and — replacing
   the NAT panels that no longer have a resource — **the DNS Firewall query count** for that VPC.
+  **Written 2026-10-18**: `awsds-sandbox-environment` in `sandbox/observability/` (planned, apply owed)
+  and Production's panels inside `awsds-prod-hub` (1.2), one dashboard for both because CloudWatch's free
+  tier holds three, counted once per bill (inferred, `docs/PRICING.md` §6); Staging gets its own with Stage 9's
+  runtime, the third. **App and job hours have a source**: `AWS/Usage` `ResourceCount`, `Service=SageMaker`,
+  one metric per app or job type (`studio/JupyterLab-ml.t3.medium`, `processing-job/ml.t3.medium`),
+  read with data on 2026-10-18, so `EXC-10`'s "no running-app metric exists" read only the `AWS/SageMaker`
+  namespace. The endpoint count is the same family's `InterfaceVPCEndpointsPerVPC` by `[P]` VPC id, and the
+  DNS Firewall count `AWS/Route53Resolver` `VpcFirewallQueryVolume` by VPC id. **Athena against a workgroup
+  limit has no source**: the enforced workgroup left with the derived zone (`AWS_STATE.md`, `DL-8`), and the
+  project workgroups SMUS provisions publish no metric and set no `BytesScannedCutoffPerQuery`
+  (`workgroup-<project>-<env>`, read 2026-10-18). GitLab's host is on the hub dashboard; its disk is not,
+  since no host publishes a disk metric.
 - **1.2 — [Claude] Write the hub dashboard**: the WireGuard host's state and handshake age, the **proxy's
   request rate, its 403 rate and its top destinations**, and **peering bytes cross-AZ**. The 403 rate
   reads as a design signal rather than a fault: a rising refusal rate means the allow-list is behind the
-  work.
+  work. **Applied 2026-10-18** in `production/observability/`: the host states through their alarms'
+  graphs (a stopped host is a gap, a failing one is 1), the handshake age from `/awsds/prod/vpn`'s
+  `handshake_age_s=` lines, `Requests` and `Refused` from two metric filters on `/awsds/prod/proxy`, and the
+  destinations and refusals as Logs Insights tables with bytes each way. **Peering bytes have no metric**:
+  they are a flow-log query over `awsds-prod-networking-vpc-flow-logs` and the spokes' groups, left as
+  design.
 - **1.3 — [Claude] Point every panel at a `[P]` log group or metric**, never at an `[E]` resource's id
-  (Lesson 4) — a dashboard that empties on `make down` is a dashboard nobody trusts afterwards.
+  (Lesson 4) — a dashboard that empties on `make down` is a dashboard nobody trusts afterwards. **Held**:
+  every panel reads a `[P]` group, an `AWS/Usage` metric by `[P]` VPC id, a SEARCH over dimension names,
+  the warehouse's name or an alarm by name; the observability slices never read a `[D]` state.
 
 ### 2. Wire the alarms to a human
 
-**Action:** alarms to the Stage 1b SNS pattern for the failures nobody would otherwise notice. **Why:** D12
-deliberately left the budget notifying nobody, and every stage since has added a thing that can fail
-quietly. **Explanation:** each alarm names the runbook that answers it, or it is not worth creating.
+**Action:** alarms to the account's `awsds-<env>-alerts` topic (Stage 8 decision 5) for the failures nobody
+would otherwise notice. **Why:** D12 deliberately left the budget notifying nobody, and every stage since
+has added a thing that can fail quietly. **Explanation:** each alarm names the runbook that answers it, or
+it is not worth creating.
 
-- **2.1 — [Claude] Alarm the budget thresholds** — this is where D12's deferral is closed, with the real
-  spend curve in hand rather than a guess.
+- **2.1 — [user] Alarm the budget thresholds.** The D12 budget is a Management console object, and its
+  threshold is [Stage 6e](stage-06e-claude-code-bedrock.md) decision 6's (8.3), so this step supplies the
+  spend curve and the act is the user's. **The curve, read 2026-10-18 (4.2)**: at least USD 53.31 in August,
+  74.48 in September and 56.15 for October 1-17, so D12's revision trigger (*"the first month the real bill
+  exceeds the USD 29-43 projection"*) fired in August and nobody was told.
 - **2.2 — [Claude] Alarm the hub**: either hub host stopped while a spoke session is up, and the proxy's
   403 rate over a threshold. Both point at [`runbooks/vpn.md`](../runbooks/vpn.md) and `./aws/proxy.py`.
   **Read 2026-10-18**: `awsds-prod-proxy-status-check` is in `ALARM` whenever the hub is stopped, its
   missing data `breaching` by design (`production/proxy/main.tf`), so an action on it as it stands
   would notify at every `make hub-down` (inferred); a hub host stopped while a spoke session is up is
-  not the condition that alarm reads.
+  not the condition that alarm reads. **The `[P]` half applied 2026-10-18**: `awsds-prod-alerts` admits
+  `cloudwatch.amazonaws.com` (`CloudWatchAlarmsOfThisAccount`, `aws:SourceArn` on this account's alarms and
+  `aws:SourceAccount`), and `awsds-prod-proxy-refusals` alarms at **50 refusals in one hour**: from
+  `/awsds/prod/proxy`, September refused 1,597 of 12,829 requests with ten hours at 50 or more, all during
+  the allow-lists' build-out, and October 53 of 10,919 with none. `OB-3` reads both new alarms `resolves`.
+  **The `[D]` half is owed at the next hub session**: an SNS action on `awsds-prod-vpn-health`,
+  `awsds-prod-proxy-status-check` and `awsds-prod-gitlab-status-check`, applied in `production/vpn/`,
+  `production/proxy/` and `production/tooling/` with the hosts started, since a `[D]` apply re-plans the
+  SSM-resolved AMI and may replace the host; the proxy's alarm waits on decision due 1 first. **The
+  composite is not built**: no account holds both halves. The hub's state is Production's and a spoke
+  session's is Sandbox's or Staging's (each spoke's `InterfaceVPCEndpointsPerVPC`), so the composite needs a
+  signal across an account boundary, which this stage does not cross.
 - **2.3 — [Claude] Alarm the pipelines and GitLab**: a failed promotion, a GitLab health-check failure, an
-  unusual Athena scan volume.
+  unusual Athena scan volume. **Read 2026-10-18**: GitLab's health check is `awsds-prod-gitlab-status-check`,
+  2.2's `[D]` half; an Athena scan volume has no metric while the project workgroups publish none (1.1); a
+  failed promotion waits on Stage 10's chain, whose failure rule targets the account's topic.
 - **2.4 — [Claude⚡] Apply, then [user] provoke one alarm of each class once** — an alarm that has never
   fired is a configuration, not an alarm (Lesson 13).
 
@@ -95,14 +131,26 @@ instrumentation around this step.
 
 - **4.1 — [user] Activate the cost allocation tags in Billing** (Management account, console only).
 - **4.2 — [Claude] Reconcile the invoice line by line against `cost-model.md`**, and rewrite the model from
-  the invoice rather than patching it.
+  the invoice rather than patching it. **Done 2026-10-18** from Cost Explorer in every account with a
+  profile (one `get-cost-and-usage` each, by service and usage type, August 1 to October 17; six requests,
+  USD 0.06): **53.31 in August, 74.48 in September, 56.15 for October 1-17**, of which the monthly floor was
+  9.90, 32.47 and 21.79 and the sessions 43.22, 41.93 and 34.11. `cost-model.md` is rewritten from those
+  lines, each row naming its usage type. **Owed to the user**: Management, Log Archive and Audit, which hold
+  no profile; Management's Cost Explorer reads the whole organization in one view, and September's Security
+  Hub line alone was about 13.5 there against 4.48 in the accounts read.
 - **4.3 — [Claude reads, user decides] Re-open the two estimates most likely to be wrong**: the interface
   endpoints (the largest hourly item, and since 6c there are more VPCs holding them) and GitLab's EBS (the
-  largest idle item). Update `conventions.md` §5.1 with measured numbers.
+  largest idle item). Update `conventions.md` §5.1 with measured numbers. **Read 2026-10-18**: the
+  endpoints are the bill's largest line, 10.16, 19.92 and 9.70 USD, Sandbox's 1,945 endpoint-hours in
+  September being about 108 hours of its 18-endpoint session against the model's 20 lab hours a month;
+  the `[D]` volumes billed 1.15, 1.38 and 1.98 (GitLab's 62 GiB since 2026-10-12). The §5.1 edit waits on
+  the decision.
 - **4.4 — [Claude reads, user decides] Settle the DNS Firewall's per-query bill.** Its job changed at 6c:
   it no longer filters the internet, it closes the recursive resolver as an exfiltration channel. If the
   query charge outweighs what it catches, retiring it is a legitimate outcome — but it is a decision with
-  a recorded reason, not a silent deletion.
+  a recorded reason, not a silent deletion. **Read 2026-10-18**: `USW2-DNS-FirewallQueries` and
+  `-FirewallDomainName` together billed 0.0417, 0.0152 and 0.0076 USD in Sandbox (64,114, 23,724 and 12,238
+  queries) and 0.0001 in Staging in August, so the money does not decide it.
 
 ### 5. Re-check the layer assignments against the bill
 
@@ -112,6 +160,10 @@ rule 7 says a layer choice is re-opened by measurement, and this is the first me
 that is up so often it may as well be `[D]`.
 
 - **5.1 — [Claude] Produce the per-slice actual spend** from the invoice plus `make status`' history.
+  **The usage-type half, read 2026-10-18** (`cost-model.md`): every line is classed as floor or session
+  by its usage type, which maps onto layers without tags (`VpcEndpoint-Hours` is the `egress/` slices,
+  `BoxUsage:t3.micro` the proxy, `Studio:VolumeUsage.gp3` the spaces). The per-slice split by tag waits on
+  4.1, the user's activation in Management.
 - **5.2 — [Claude reads, user decides] Propose any letter changes**, each with the arithmetic beside it.
 
 ### 6. Review the Config recorder scope against what it actually cost
@@ -123,7 +175,9 @@ real cost supports it. The first bill reading, 2026-10-14 (`docs/PRICING.md` §2
 September, almost all of it `[E]` cycles at USD 0.36-0.87 per Sandbox `make up` + `make down`: the EC2/ENI
 churn Stage 1d decision 4 named as its revision signal.
 
-- **6.1 — [Claude] Read the recorder's actual line** from the invoice.
+- **6.1 — [Claude] Read the recorder's actual line** from the invoice. **Done 2026-10-14** (`docs/PRICING.md`
+  §2), and re-read 2026-10-18 over the accounts read: `USW2-ConfigurationItemRecorded` 9.61 in August, 10.87
+  in September and 9.77 for October 1-17, so October runs above September.
 - **6.2 — [Claude reads, user decides] Add conformance packs, or record why not.**
 
 ### 7. Tighten the permission sets against real usage
@@ -133,8 +187,15 @@ reports what a reader thinks the policy says; the analyzer reports what was gran
 **Explanation:** the personas were written narrow and then widened by six stages of "the object now
 exists"; this is where the widening is paid back.
 
-- **7.1 — [Claude] Enable an unused-access analyzer and read its findings** — note that it is a *different*
-  analyzer from Stage 11's internal-access one, and priced differently.
+- **7.1 — [user] Enable an unused-access analyzer, then [Claude] read its findings** — note that it is a
+  *different* analyzer from Stage 11's internal-access one, and priced differently. The analyzers are
+  Audit's, the `access-analyzer` delegation (`INV-09`), which no profile reaches. **Counted 2026-10-18**:
+  147 IAM roles and no IAM user across the `awsds-infra-*` accounts (Sandbox 43, Production 36, Staging 25,
+  Data Governance 24, Identity 19), 60 of them service-linked. At USD 0.20 per role or user per month,
+  charged at setup and then on the first of each month (the pricing page), one analyzer over these accounts
+  is up to 29.40 USD at its creation, whether it is deleted the same day or kept; the page does not say
+  whether service-linked roles count. The analyzer's exclusions (accounts, tags) are the cost lever, and
+  the scope is the user's decision.
 - **7.2 — [Claude] Propose the removals**, then **[Claude⚡] apply `identity/sso/`** as
   `awsds-infra-identity`, `terraform output inline_policy_bytes` still under the ceiling.
 
@@ -153,13 +214,25 @@ Stage 7 step 8.2 applies to GitLab.
   2026-10-18** (`OB-4`): Production holds no backup plan, and its own opt-in reads EBS and EC2 on; the
   `[D]` hosts' volumes are four, 78 GiB of `gp3` in all (`production/vpn` and `production/proxy` 8 GiB
   each, `production/tooling` 50 GiB of data and 12 GiB of root), and the only snapshots are DLM's of
-  the GitLab data volume.
+  the GitLab data volume. **Its prerequisites are Management acts, the user's**: enabling the
+  `BACKUP_POLICY` type on the root; trusted access for AWS Backup, an eleventh service principal in
+  `INV-09`; a delegation that writes backup policies from Identity, since `INV-15`'s policy-lifecycle
+  statement is conditioned on the four types in use; and Management's resource opt-in for EBS and EC2.
+  Control Tower's own AWS Backup integration is the alternative, `backup` disabled in the landing zone
+  manifest (`INV-17`): it puts its central vault in a Central Backup account and its reports in a Backup
+  Administrator account, both in the Security OU, two accounts this estate does not have with the
+  account quota spent.
 - **8.2 — [Claude⚡] Apply Vault Lock on the backup vault**, so a compromised administrator cannot delete
   the backups. **Read the lock's own irreversibility before applying it** — this is the second
   compliance-mode object in the estate, and 3.2's lesson applies.
 - **8.3 — [Claude⚡] Configure cross-region copies** for every account's state bucket and the GitLab backup.
-- **8.4 — [user] State and test the RTO, once each**: GitLab (Stage 7 8.2 already measured it — reuse the
-  number), the Terraform state, and the data lake. Write the three numbers in the log.
+  **It meets the Region ceiling first**: `CT.MULTISERVICE.PV.1` allows `us-west-2` alone on every governed
+  OU but `Sandboxes` (`INV-12`), and the landing zone governs that Region alone (`INV-17`), so the
+  destination vault or bucket cannot be created in another Region. The copy is cross-account inside
+  `us-west-2`, or D1 is re-opened: a decision, recorded before this step is written.
+- **8.4 — [user] State and test the RTO, once each**: GitLab, the Terraform state, and the data lake. Write
+  the three numbers in the log. GitLab's is Stage 7 step 8.2's rehearsal, which has not run: its
+  verification (v), *"in how long?"*, is unanswered.
 
 ### 9. Alarm the quotas that would silently break a session
 
@@ -172,10 +245,24 @@ way to learn a limit. **Explanation:** the candidates are the ones this estate h
   address at 6g)**, VPC endpoints per VPC, and hosted zones. **Read ahead on 2026-10-17, environment
   down**: Elastic IPs 1 of 5 in Production; interface endpoints 0 of 50 in every VPC, so the reading that
   matters is taken with the environment up; hosted zones 3 of 500 in Production and 1 in Sandbox and in
-  Staging. SageMaker instance quotas were not read. **`OB-5`, 2026-10-18, environment down**: the
-  highest use is gateway endpoints, 6 of 20 in Production and 2 of 20 in Sandbox and in Staging; the
-  reading with the environment up is still owed.
+  Staging. **`OB-5`, 2026-10-18, environment down**: the highest use is gateway endpoints, 6 of 20 in
+  Production and 2 of 20 in Sandbox and in Staging; the reading with the environment up is still owed.
+  **SageMaker, read 2026-10-18 in every `awsds-infra-*` account** (`list-service-quotas`, 2,417 quotas
+  each, 2,324 of them with an `AWS/Usage` usage metric): Sandbox's Studio app quotas read 10 per type for
+  the types in use (`L-71FAF417`, `L-2733D4D5`, `L-656A17FA`), processing on `ml.t3.medium` 10, and Stage
+  17's three 20, 8 and 8; the other accounts read AWS's default for the same codes, **0 for `ml.m5.xlarge`
+  training and for `ml.m5.large` endpoints and transform**, 4 for `ml.t3.medium` processing and 6 for each
+  Studio type. The 14 days of usage metrics peak at 3 of 10 apps of one type and 1 processing instance;
+  Sandbox's VPC at 24 of 50 interface endpoints; Production's VPCs at 3 of 5 every hour. The Elastic IP
+  and gateway-endpoint quotas carry no usage metric.
 - **9.2 — [Claude⚡] Set CloudWatch alarms** on each at 80 %, pointing at the request-increase path.
+  **Applied in Production 2026-10-18**: `awsds-prod-quota-vpcs-per-region`, the one quota of 9.1 here with
+  a usage metric and a measured approach. **Written and planned in Sandbox**: five alarms, the three Studio
+  types, the processing type and the VPC's interface endpoints, apply owed with the slice. Each alarm
+  reads its quota back from Service Quotas by code (Lesson 38), takes the quota's own usage metric and
+  divides by `SERVICE_QUOTA()`, so an increase needs no apply. An 80 % alarm cannot see a quota of 0,
+  which refuses the first use before any datapoint: reading the quota before a stage's first use is the
+  control there, and Staging's and Production's zeros are Stage 9's to read before its first job.
 
 ### 10. Write `./aws/observability.py`
 
@@ -207,8 +294,44 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
   `OB-1` and `OB-5` pass, `OB-3` a note for Production's three alarms and Sandbox's two, none with an
   action, and `OB-4` a note for the `[D]` hosts' four volumes. No call failed. Validation 4 waits on
   steps 2 and 8.
+- **After the Production apply, 2026-10-18**: `OB-3` reads `awsds-prod-proxy-refusals` and
+  `awsds-prod-quota-vpcs-per-region` `resolves` (`awsds-prod-alerts`, 1 confirmed subscription, admitted
+  by `CloudWatchAlarmsOfThisAccount`, no key), and **fails** in Production and Sandbox for the five alarms
+  that still notify nobody, the half-built state Lesson 50 asks the check to name (`EXC-19`). Exit 2, no
+  call failed.
 
 ---
+
+## Decisions due
+
+1. **The proxy status-check alarm's action** (2.2, the `[D]` half). As it stands the alarm is in `ALARM`
+   every hour the hub is stopped, so an SNS action notifies at every `make hub-down`. (a) Wire it as it
+   is; (b) make its missing data `notBreaching`, as the tunnel's and GitLab's are, and accept that a
+   stopped proxy and a dead one read alike until a session starts it; (c) leave it unwired by decision
+   and teach `OB-3` the exception. **Recommended: (b).** Stopping the proxy is D11's idle state rather
+   than a failure, and the failure the `breaching` setting guarded against, a session that needs a
+   stopped proxy, is already an error: a spoke's `make up` refuses while the proxy is stopped
+   (`scripts/slices.py`, 6c step 7.2 as 6g decision 2 left it).
+2. **D12's revision trigger fired** (2.1, 4.2): the bill exceeded the projection in August and in
+   September. Raising the ceiling, cutting the session hours that dominate the bill, or wiring the budget
+   (6e decision 6) are D12's to choose, the user's.
+
+## Cost
+
+Priced 2026-10-18 from the Price List: the `AmazonCloudWatch` offer for `us-west-2` (published
+2026-10-07T11:55:40Z) and the dashboards' global `aws-other` offer (`docs/PRICING.md` §6). Nothing here
+bills by the hour.
+
+| What | Count | USD/month |
+|---|---|---|
+| Dashboards, 3.00 each past the three free ones of up to 50 metrics, counted once per bill | 2 | 0 |
+| Standard alarms, 0.10 each past the ten free ones | 7 (5 existed in the readable accounts) | 0.40-0.70 |
+| Custom metrics from the two filters, 0.30 each past ten free, metered only for hours with data | 2 | 0 |
+| The Sandbox topic, its e-mails and the Logs Insights scans of a dashboard view | 1 | 0 |
+
+The low end assumes Management's two alarms, `RootActivityCount` (Stage 1a) and `IdentityCenterChangeCount`
+(Stage 1b), are the only others; the high end bills every new alarm. A fourth dashboard anywhere in the
+organization would cost 3.00 a month.
 
 ## Deliverables
 

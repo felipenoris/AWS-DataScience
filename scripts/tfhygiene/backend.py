@@ -817,6 +817,11 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         if slice_name == "warehouse-compute":
             values["zone_ids"] = ZONE_IDS[account]
 
+    # Stage 12 step 1 - observability/ reads the [P] states of the slices it watches (foundation/,
+    # networking/, workloads/, warehouse/), by the account folder for the same reason.
+    if slice_name == "observability":
+        values["account_folder"] = account
+
     # Stage 7 step 2.1 - production/pki/ reads production/foundation/'s state for the bucket its
     # certificates are published into, and the state key is built from the account folder, which
     # no .tf file may re-derive from the env token (Lesson 14).

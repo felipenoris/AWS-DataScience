@@ -218,6 +218,11 @@ RANKS = {
     # above it, so `down` removes a workflow before the application the workflow starts.
     "app/app-etl": 58,
     "probes": 60,
+    # Stage 12 step 1 - the dashboards and the alarms no other slice owns, one [P] slice per account
+    # with something to watch. It reads the [P] states of the slices it watches and names the [D]
+    # hosts' alarms by name, never by state (Lesson 4), so it ranks after every one of them; up/down
+    # skip it like every [P] row.
+    "observability": 70,
 }
 
 
@@ -574,6 +579,22 @@ SLICES = [
         EPHEMERAL,
         "the 4-RPU workgroup + its serverless-compute usage limit - no pause exists, so [E]",
         usd_per_hour=1.44,
+    ),
+    # Stage 12 steps 1, 2 and 9 - a dashboard, alarms and quota alarms. Nothing here bills by the
+    # hour: a dashboard and an alarm bill by the month past CloudWatch's free tier (three dashboards,
+    # ten alarms, counted once per bill, docs/PRICING.md 6), and a metric filter's metric only for the
+    # hours the proxy writes a log line.
+    Slice(
+        "production",
+        "observability",
+        PERSISTENT,
+        "the hub dashboard, the proxy log's 2 metric filters, 2 alarms",
+    ),
+    Slice(
+        "sandbox",
+        "observability",
+        PERSISTENT,
+        "the alerts topic, the account dashboard, 5 quota alarms",
     ),
 ]
 
