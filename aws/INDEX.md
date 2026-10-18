@@ -73,6 +73,7 @@ two identity columns below therefore read *none*.
 | [`sandbox-orchestration.py`](sandbox-orchestration.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | one profile, `awsds-infra-sandbox-1`: the workflows, the processing jobs, the project role, the project bucket and the trail events of [Stage 6i](../docs/plan/stages/stage-06i-sandbox-orchestration.md) are all in the Sandbox account | `output/sandbox-orchestration.txt`, and every version of each contract workflow's definition under `output/sandbox-orchestration/<workflow>/`, as served and with the account ids replaced by placeholders | Stage 6i's evidence: the exercise's three workflows against their project (role, the private tier with no default route, the project key: `SO-2`), where each definition and `Code` object lives and every version (`SO-3`; `demo-bash-operator`'s probe must carry no `Code`), the latest run read per run with each task's last attempt (`SO-4`; for `demo-bash-operator` the PyPI task must fail and every other task succeed), each `demo-devenv-` processing job against the D13 boundary's four job settings, the project's key and tag and the registered house image's digest (`SO-5`), the log groups the exercise makes (`SO-6`, a missing retention is a note, `EXC-10`'s shape), the `shared/orchestration-demo/` prefixes and their encryption (`SO-7`), and CloudTrail's `CreateProcessingJob`: caller, session and `vpcEndpointId` (`SO-8`). Needs a CLI that knows the workflow's `Code` field (2.37.12 does) |
 | [`sandbox-ml.py`](sandbox-ml.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user) | one profile, `awsds-infra-sandbox-1` by default (the argument names another, `-` CloudShell's ambient identity): the project and its roles, the jobs, the registry, the serving objects, the pipelines, the MLflow App and the Bedrock objects of [Stage 17](../docs/plan/stages/stage-17-sandbox-machine-learning.md) are all in the Sandbox account | `output/sandbox-ml.txt`, and each pipeline's live definition under `output/sandbox-ml/` | Stage 17's evidence. `ML-1` the project roles: the tag `EnableSageMakerMLWorkloadsPermissions`, which every create of `SageMakerStudioProjectRoleMachineLearningPolicy` needs as `true` (absent, the stage stops at 0.1), that policy's live default version against the v45 read 2026-10-17 and its `AddTags` condition, the D13 boundary's five statements with the exercise's four instance types read against its ceiling, and the Tooling stack's `enableNetworkIsolation` (0.8). `ML-2` the MLflow Apps: status, the artifact store under a project's prefix, the project key. `ML-3` every training job against the boundary's four job settings, the ceiling, the project role, key and tag and the image's repository, with CloudTrail's `CreateTrainingJob`, admitted or refused: caller, session and `vpcEndpointId`. `ML-4` the group `ml-demo-xgboost`, its tag, its versions and the key on each version's model data. `ML-5` serving: any endpoint fails, since none may outlive its sitting (decision 6), each transform job is read against the key, prefix and tag, and the `Invocations` and `BytesProcessed` metrics are printed. `ML-6` each pipeline against the project role, the four settings and the steps of `examples/sandbox-ml/pipeline/definition.json`. `ML-7` no HyperPod cluster, no Partner AI app, and step 0.2's four quotas, where a zero fails, each beside AWS's default, an increase request's floor, and its newest increase request with the request's status. `ML-8` the Generative AI menu: the `AmazonBedrock*` roles' boundary, the Lambda functions but Control Tower's own, knowledge bases with their embeddings model and store, collections and vector buckets, and the embeddings model against the repository's SCP. `ML-9` the session's interface endpoints, the `mlflow` group, the S3 gateway's `AllowAwsOwnedServiceBuckets`, the DNS Firewall list and `DE-5` from `output/devenv.txt`. "Not built yet" is a note; exits 2 when a check fails. What it cannot see: the space (0.3), the portal's forms (0.7), and the MLflow data plane's calls and `InvokeEndpoint`, which write no management event |
 | [`dlp.py`](dlp.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for `-` runs | the same multi-profile shape: the lake and drop-box live in Data Governance, the derived zone (D19; the SMUS project path since 2026-08-26) in the Interactive accounts, and the GuardDuty feature state is org-wide, where one account silently uncovered is the finding | `output/dlp.txt` | [Stage 11](../docs/plan/stages/stage-11-dlp.md)'s evidence, per account, side by side. Macie's per-account state and its delegation, the LF data cells filters under their name contract, the data-event trails (data-only, validated, scoped by `resources.ARN`, delivering into `awsds-data-logs`), the EventBridge rules, alarms and SNS topics of the exfiltration patterns, the two GuardDuty paid features (`DISABLED` before step 4, `ENABLED` everywhere after; the partial state fails in both directions), and the `DenyCloudTrailKill` Sid owed the moment the first member trail exists. Checks `DP-1`–`DP-7`; exits 2 when a check fails. Audit is outside every profile: the job history, the internal analyzer and the org configuration are read in its console or CloudShell (`audit-iam-analyser.sh` covers the analyzer half) |
+| [`observability.py`](observability.py) | [Infrastructure](../docs/ORGANIZATION.md#infrastructure-user); [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33) for the `-` run in Log Archive | every `awsds-infra-*` profile, or the ones named; multi-profile because retention, alarms and quotas are per-account facts and the `[D]` hosts are Production's, while the organization trail's bucket is Log Archive's, which holds no profile and is read only by `-` in its CloudShell | `output/observability.txt` | [Stage 12](../docs/plan/stages/stage-12-observability-finops.md)'s evidence (step 10), per account, side by side. The log groups and their retention, this project's (the `/awsds/` and `awsds-` namespace, or the `Project` tag) apart from the services' own, whose never-expiring groups are a note, `EXC-10`'s decision (`OB-1`); the organization trail's bucket read off the trail, with its versioning, its Object Lock and a lifecycle that expires nothing sooner than 90 days or the lock's retention (`OB-2`, INV-14, decided only by the `-` run in Log Archive); every alarm's SNS target, resolved as a topic of the same account and Region with a confirmed subscription, a policy that admits CloudWatch and a key CloudWatch can use (`OB-3`); the volumes of the `[D]` hosts that `scripts/tfhygiene/layers.py` lists, against the AWS Backup selections that cover them, with DLM as context (`OB-4`); and step 9.1's quotas against 80 % of their limits, each code's name read back (`OB-5`). `OB-3` and `OB-4` read `note` until steps 2 and 8 wire their first alarm or write their first backup plan, then `fail` per alarm or volume left out; exits 2 when a check fails |
 | [`cloudshell/management-landing-zone-drift.sh`](cloudshell/management-landing-zone-drift.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33), no laptop path | no profile: CloudShell on Management. Takes a profile if one ever exists there | `output/cloudshell/management-landing-zone-drift.txt` | Stage 2 verification (iii): whether the Organizations resource policy of step 5.1 shows up as landing-zone drift. The `driftStatus` flag, the manifest that says what the flag compares, the operation history (an update that ran after the delegation and succeeded is the only positive evidence available without writing), and whether the document is still there and still narrowed to two statements. Sections 2-4 are suppressed outside Management and the run exits 2: from a member account both landing-zone calls succeed and return empty, so an unguarded report would state "the landing zone has never run". Section 5 answers from Identity too, because the delegation grants it. It also answers Stage 6b step 0.5b: section 2's `remediationTypes` is the account auto-enrollment switch, and the report says what each state costs. |
 | [`cloudshell/management-quotas.sh`](cloudshell/management-quotas.sh) | [`AWS Control Tower Admin`](../docs/ORGANIZATION.md#aws-control-tower-admin-d33), no laptop path | no profile: CloudShell on Management. Takes a profile if one ever exists there | `output/cloudshell/management-quotas.txt` | Whether the account-cap increase has landed, the number the `Staging` vend is held on: the applied value (not the default), how much of it is spent, and any pending request. Refuses to interpret the number outside Management, where the same quota reads `0.0`. |
 
@@ -204,6 +205,7 @@ itself:
 
 ```bash
 ./aws/dlp.py
+./aws/observability.py
 ```
 
 ```bash
@@ -236,9 +238,9 @@ reports land in `aws/output/cloudshell/`. All three refuse to interpret a result
 the calls do not error there, they answer with something meaningless that looks like an answer.
 
 A Python script run in CloudShell needs the whole `aws/` folder: the `-` modes of `account-bpa.py`,
-`declarative-ec2.py`, `networking.py`, `egress.py` and the `org-*` scripts import `awslib`, so the system
-`python3` runs them as long as the folder is present (clone the repository, or upload it zipped and
-unzip). A single `.py` file alone does not work.
+`declarative-ec2.py`, `networking.py`, `egress.py`, `observability.py` and the `org-*` scripts import
+`awslib`, so the system `python3` runs them as long as the folder is present (clone the repository, or
+upload it zipped and unzip). A single `.py` file alone does not work.
 
 They need a live SSO session. If the run stops with `cannot authenticate`:
 
@@ -649,6 +651,22 @@ there.
 | Does the `Workloads` OU document carry the five job settings and the serverless-inference deny, and is it attached? | 10, decided by `DT-11` |
 | Which accounts is nobody measuring? | 12 — Staging until the vend; Development appears only as a principal in the group policies |
 
+## Finding an answer in `output/observability.txt`
+
+| Question | Section |
+|---|---|
+| Does every log group this project creates carry a retention, and which? | 2, decided by `OB-1`; the `OWNER` and `BY` columns say why a group counts as the project's |
+| Which never-expiring groups are the services' own, and how much do they store? | 2, a note of `OB-1`: no slice declares them, and `EXC-10` records the decision Sandbox's wait on |
+| Which bucket does the organization trail deliver to, and which account holds it? | 3, the `BUCKET` and `OWNER` columns, read off `aws-controltower-BaselineCloudTrail` |
+| Does the trail's bucket expire a version sooner than 90 days or the lock's retention (`INV-14`)? | 3, decided by `OB-2` in the `-` run in Log Archive's CloudShell; a laptop run notes where the bucket lives |
+| Does an alarm notify nobody, or a topic that cannot deliver? | 4, decided by `OB-3`: a `note` until some alarm carries an SNS action, then a `fail` per alarm left out |
+| Why does a topic not resolve: its subscription, its policy or its key? | 4, the topic table's `VERDICT` column; the policies are read as shapes, not evaluated |
+| Is every volume of the `[D]` hosts in an AWS Backup selection, and what does DLM snapshot today? | 5, decided by `OB-4`: a `note` while the hosts' account holds no backup plan |
+| Is a quota of step 9.1 at 80 % of its limit or above? | 6, decided by `OB-5`; with the environment down the counts say little |
+| Does each quota code name the quota it stands for (Lesson 38)? | 6, the `QUOTA NAME` column; a code whose name does not match is a note of `OB-5`, never a limit |
+| What does a pass here not prove? | 7 |
+| Which calls failed, and which checks did they leave unread? | 9 |
+
 ## Finding an answer in `output/orchestration.txt`
 
 | Question | Section |
@@ -726,6 +744,32 @@ different key fails rather than passing silently) and the two grantee classes (`
 `datazone_usr_role_*`). Two of its checks are halves: `SL-1`'s policy reading is presence, never
 sufficiency, and the behavioural proofs — the in-project read/write through the S3 connection, the
 `s3-read-write` vend, the two refusals — are the stage's own (Lesson 20).
+
+## `observability.py`, written for Stage 12
+
+`observability.py` was written 2026-10-17 from [Stage
+12](../docs/plan/stages/stage-12-observability-finops.md)'s step 10, in a cloud session with no AWS
+credentials, before the stage runs. Its first runs, on 2026-10-18
+([the log](../docs/log/log-stage-12-observability-finops.md)), were the `-` run in Log Archive's
+CloudShell, which passed `OB-2` with the bucket as `INV-14` records it, and the laptop's over the five
+profiles with the environment down, every verdict the one predicted; no call failed. Steps 2 and 8
+are not built, so `OB-3` reads `note` until some alarm measured carries
+an SNS action and `OB-4` until the `[D]` hosts' account holds a backup plan; from then on an alarm that
+notifies nobody, or a volume no plan covers, fails (Lesson 50). Its contracts: the project's namespace
+(`/awsds/`, `awsds-`) and the `Project` tag every slice's `default_tags` stamps; the trail
+`aws-controltower-BaselineCloudTrail`, whose `S3BucketName` names the bucket, and step 3.2's 90-day floor;
+the `[D]` rows of `scripts/tfhygiene/layers.py`, with `DORMANT_HOST_NAMES`, and `ENV_TOKENS` and
+`PROFILES` from `backend.py`, all read as text so `aws/` still imports nothing from `scripts/`; the quota
+codes `L-0263D0A3`, `L-29B6F2EB` and `L-1B52E74A`, each name read back; and the SageMaker usage quotas by
+their names (`<type> for endpoint usage`). Its parsing and its verdicts were exercised that day against a
+fabricated `aws` executable, under Python 3.13 and under 3.9, CloudShell's. It reads past step 10's wording
+in three places: `OB-2` also holds the lifecycle to the lock's own retention, `OB-3` reads a topic's
+subscription, policy and key rather than its existence, and `OB-5` adds the gateway endpoints' Regional
+quota beside 9.1's per-VPC one. Two of its checks are halves: `OB-3` reads the topic and key policies as
+shapes, so a `Deny` or a narrower condition elsewhere is not seen, and the delivery itself is step 2.4's;
+`OB-4` matches a backup selection with `*` as its only wildcard, takes a plan an Organizations backup
+policy made (id `orgs/`) on its selection alone, since Management's opt-in governs it and no profile reads
+that, and leaves whether a plan restores to step 8.4.
 
 ## `orchestration.py`, written for Stage 10
 
