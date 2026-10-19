@@ -398,7 +398,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   folder, the CLI reading local content from the manifest's; 4.4's run `SUCCESS` once the user applied
   `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant; pass 5's 5.1-5.3 run: the CLI 1.0.9
   scans a project's whole `shared/` root, so applications sharing a workflow name or DAG id take each
-  other's file, and `dagid-copy`'s destroy plan holds `app-etl`'s Glue job (decision 8);
+  other's file, and `dagid-copy`, whose destroy plan held `app-etl`'s Glue job, was removed by direct
+  calls (decision 8, the user's);
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

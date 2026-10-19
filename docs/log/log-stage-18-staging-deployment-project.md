@@ -876,3 +876,14 @@ are UTC.*
   `operatorFiles/demo-python-operator-<n>.zip` and its log group, no retention. `app-etl`'s workflow
   (version 2), its two runs, its Glue job with its one job run, and its files survived, and so did the
   copy; the project owns no catalog object.
+- **[user] Decision 8 taken**: *"remove dagid-copy with direct calls only, delete-workflow for its workflow
+  and s3 rm for its dagid-copy/ prefix, leaving app-etl's Glue job in place."*
+- **[Claude] The copy removed**, the Stage 17 session told first, as `awsds-infra-staging`: the workflow
+  `dagid_copy_deploy_staging_app_etl` read `READY` with no run, and its prefix two objects, the copy's
+  `dagid-copy.zip` and its own YAML, 795 bytes, never resolved, since its deploy had read `app-etl`'s;
+  `delete-workflow` at 21:34:37Z, exit 0, then `s3 rm --recursive` on `shared/dagid-copy/` at 21:34:38Z,
+  the two objects deleted, exit 0. Against a snapshot taken before: the workflow and the two objects
+  gone, nothing else changed; `app-etl`'s workflow at version 2, its Glue job with its one job run. Left
+  behind, as `destroy` would leave them: the copy's `operatorFiles/app-etl-<n>.zip` beside `app-etl`'s two,
+  `orchestration-demo`'s `operatorFiles/` copy, and the two applications' log groups, empty and with no
+  retention. 5.3 is done.
