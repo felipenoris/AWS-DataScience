@@ -69,11 +69,11 @@ locals {
     staging = data.aws_caller_identity.staging.account_id
   }
 
-  # The IAM principal a profile with no `group` grants project creation to: the InfrastructureAccess
-  # role of the profile's own account (Stage 18 decision 3). Keyed by account folder; a profile
-  # pinned to an account absent here fails at plan.
-  infrastructure_access_role_arns = {
-    staging = one(data.aws_iam_roles.staging_infrastructure_access.arns)
+  # The DataZone group a profile with no `group` grants project creation to: the IAM role session
+  # group of the InfrastructureAccess role in the profile's own account (Stage 18 decision 3). Keyed
+  # by account folder; a profile pinned to an account absent here fails at plan.
+  infrastructure_access_group_ids = {
+    staging = data.awscc_datazone_group_profile.staging_infrastructure_access.group_profile_id
   }
 
   # The `deployment` row below exists while this is true: Stage 18's window, from step 2.7 to

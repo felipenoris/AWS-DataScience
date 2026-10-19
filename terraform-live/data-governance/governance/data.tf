@@ -16,12 +16,18 @@ data "aws_caller_identity" "staging" {
 
 # The role granted the `deployment` profile (Stage 18 decision 3): Staging's InfrastructureAccess,
 # resolved by name so neither the account id nor the role's suffix enters a tracked file. `one()`
-# refuses a second match. Its ARN carries the SSO path, the form the domain's IAM user profile for
-# it holds (read 2026-10-19).
+# refuses a second match.
 data "aws_iam_roles" "staging_infrastructure_access" {
   provider    = aws.staging
   name_regex  = "AWSReservedSSO_InfrastructureAccess_.*"
   path_prefix = "/aws-reserved/sso.amazonaws.com/"
+}
+
+# The DataZone group that role is: an IAM_ROLE_SESSION_GROUP profile, which every session of the
+# role belongs to. Cloud Control resolves `<domain>|<role ARN>` to it (read 2026-10-19), so the
+# group profile's id stays out of tracked files like the role's.
+data "awscc_datazone_group_profile" "staging_infrastructure_access" {
+  id = "${aws_datazone_domain.this.id}|${one(data.aws_iam_roles.staging_infrastructure_access.arns)}"
 }
 
 

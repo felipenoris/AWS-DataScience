@@ -34,14 +34,16 @@ resource "awscc_datazone_policy_grant" "create_project_from_profile" {
   policy_type       = "CREATE_PROJECT_FROM_PROJECT_PROFILE"
 
   # A profile with a null `group` grants its own account's InfrastructureAccess role (Stage 18
-  # decision 3). DataZone takes an IAM role ARN as a user identifier; the domain holds an IAM user
-  # profile for Staging's role, ACTIVATED (read 2026-10-19).
+  # decision 3), as the role's IAM role session group. The role's ARN as a user principal is refused,
+  # "Group profile already exists for the given User profile": it resolves to one session's user
+  # profile, a member of that group (measured 2026-10-19).
   principal = {
-    group = each.value.group == null ? null : {
-      group_identifier = data.aws_identitystore_group.profile_creators[each.value.group].group_id
-    }
-    user = each.value.group != null ? null : {
-      user_identifier = local.infrastructure_access_role_arns[each.value.account]
+    group = {
+      group_identifier = (
+        each.value.group != null
+        ? data.aws_identitystore_group.profile_creators[each.value.group].group_id
+        : local.infrastructure_access_group_ids[each.value.account]
+      )
     }
   }
 

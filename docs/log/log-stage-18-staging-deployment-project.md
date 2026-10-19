@@ -530,3 +530,31 @@ are UTC.*
   apply, Stage 17's with the hazard that its checkout, cut from `main` without PR #196, would plan
   the profile's destruction after the apply; it answered that it plans `governance/` no more until
   PR #196 is in its branch. The apply is the user's.
+
+## 2026-10-19 — 2.7's first apply: the profile created, the grant refused, the grant re-planned
+
+- **[user] 2.7's apply, from the saved plan**, in the app's terminal on the worktree, as
+  `awsds-infra-data`: *"awscc_datazone_project_profile.this["deployment"]: Creation complete after
+  7s"*, then the grant refused, *"Group profile already exists for the given User profile (Service:
+  DataZone, Status Code: 400 ...) ErrorCode: InvalidRequest"*, at `grants.tf` line 28.
+- **[Claude] What the apply left**, read at 05:43 to 05:50 UTC: `governance/`'s state holds the
+  `deployment` profile and no grant for it; the root domain unit holds one
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant, `experimentation`'s, so nothing was half-created. The
+  profile is `ENABLED`, created 05:47:08Z, `Tooling` `ON_CREATE` at order 0 in Staging's account,
+  with `experimentation`'s six Tooling overrides and `enableSpaces` `false`, locked.
+- **[Claude] Why the grant was refused.** The role's ARN names two DataZone objects.
+  `get-user-profile` with it returns an `IAM` user profile whose `principalId` and `sessionName`
+  carry one session, the infrastructure user's, and whose `groupProfileId` points at a group profile;
+  `get-group-profile` with the same ARN returns that group profile, `ASSIGNED`, with
+  `rolePrincipalArn` the role and no group name: an `IAM_ROLE_SESSION_GROUP`, which
+  `search-group-profiles` lists beside the two other accounts' InfrastructureAccess roles. A grant to
+  the ARN as a user lands on the session's profile, which a group profile already covers. The service
+  model admits the ARN as a user identifier and documents nothing of the group.
+- **[Claude] The grant re-written to the group.** `grants.tf` names a group in every grant again:
+  the IdC group for `experimentation`, the role's session group for `deployment`, its id read by
+  `awscc_datazone_group_profile`, since Cloud Control's `GetResource` for
+  `AWS::DataZone::GroupProfile` resolves `<domain>|<role ARN>` to the profile (read before the
+  edit). With no lock on the state at 05:51:29Z, re-planned at 05:52:00Z as `awsds-infra-data`, saved
+  to `$HOME/tmp/stage18-governance-27b.tfplan`: 1 to add, 0 to change, 0 to destroy, the grant on the
+  root unit for the `deployment` profile, its `group_identifier` the session group's id;
+  `experimentation`'s grant untouched. The apply is the user's.
