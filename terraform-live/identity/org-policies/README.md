@@ -38,7 +38,8 @@ Paste the *rendered* files, never the templates:
 ```
 
 `<ORG_ID>`, `<ROOT_ID>`, `<OU_ID_DATA>`, `<ORG_PATH_DATA>` and **`<ACCOUNT_ID_DATA>`** are filled from the
-Organizations API. The last one is the one whose omission bites hardest: it sits inside the D27 crawler
+Organizations API, and `<ACCOUNT_ID_STAGING>` with them since Stage 18 step 1.1, for that stage's window: the
+account `DenyDataZoneEntirely` carves out, resolved by its vended name. The last one is the one whose omission bites hardest: it sits inside the D27 crawler
 carve-out in `awsds-org-scp-ou-data.json`, so a document shipped with it unsubstituted has an
 `ArnNotEquals` comparing against a literal string and a carve-out that matches nothing, silently. It is
 derived **from the OU, never from an account name** (the rule `aws/import-ids.py` states), and the result

@@ -309,9 +309,19 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
 # acquired it - a membership question rather than a policy one, kept permanently because this
 # account will hold deploy credentials. `datazone:ListDomains` is the decisive row: it is `ro`,
 # it costs nothing, and DataZone is the surface Stage 6b pass 1 removed from the account by hand.
-probe("ou", "staging", "deny", None, "ro",
-      "workloads: datazone:ListDomains in the account Stage 6b moved",
+#
+# Stage 18 step 1.1 (2026-10-19) carves Staging Account out of DenyDataZoneEntirely for that
+# stage's window, so the row reads `allow` until step 8.7 puts the deny back: the call answers
+# with the account's own domains, an empty list, and the organization no longer refuses it. The
+# `prod` row above is the reading that the carve-out does not leak past the one account, and the
+# CreateSpace row below that the rest of the document still binds Staging.
+probe("ou", "staging", "allow", None, "ro",
+      "workloads: datazone:ListDomains in Staging, carved out for Stage 18's window (8.7 restores the deny)",
       ["datazone", "list-domains", "--region", "us-west-2"])
+probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not exist", "blocked",
+      "workloads: sagemaker:CreateSpace in Staging (no such domain) - the document still binds the account",
+      ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
+       "--space-name", "awsds-canary-probe", "--region", "us-west-2"])
 
 # --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one

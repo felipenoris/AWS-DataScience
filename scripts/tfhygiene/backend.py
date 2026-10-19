@@ -907,6 +907,21 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         }
         values["blueprints_enabled"] = account in SMUS_ASSOCIATED
 
+    # Stage 18 step 2.4 - the deployment project's prerequisites in a Workloads account, for that
+    # stage's life: the four values the member branch above emits, under a slice name of its own
+    # because staging/sagemaker/ is Stage 9's job-role slice and a slice destroyed whole at 8.6
+    # cannot share a folder with one that stays. blueprints_enabled follows SMUS_ASSOCIATED as it
+    # does for a member; the row that flips it is written after the console association (2.3).
+    elif slice_name == "studio":
+        values["account_folder"] = account
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+        values["blueprints_enabled"] = account in SMUS_ASSOCIATED
+
     # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
     # profiles' environment configurations are built from (one per member account); the flag is
     # a SMUS_ASSOCIATED reading over the same members, so the profiles cannot be written before

@@ -145,6 +145,24 @@ def main(argv: list) -> int:
         )
     account_id_data = acct_ids[0]
 
+    # Stage 18 step 1.1: the account DenyDataZoneEntirely carves out for that stage's window, by
+    # its exact vended name and ACTIVE status, as locals.tf resolves it. Exactly one is expected;
+    # any other count would render the carve-out as a literal, so the run stops.
+    staging_ids = text_of(
+        "organizations",
+        "list-accounts",
+        "--query",
+        "Accounts[?Name=='Staging Account' && Status=='ACTIVE'].Id",
+        "--output",
+        "text",
+    ).split()
+    if len(staging_ids) != 1:
+        die(
+            f"expected exactly ONE active account named 'Staging Account', found "
+            f"{len(staging_ids)} - Stage 18 step 1.1's carve-out cannot be rendered"
+        )
+    account_id_staging = staging_ids[0]
+
     note(f"org    : {org_id}")
     note(f"root   : {root_id}")
     note(f"Data OU: {ou_id_data}")
@@ -153,6 +171,7 @@ def main(argv: list) -> int:
     # id is one of the three things `CLAUDE.md` keeps out of tracked files. The full id is in
     # the rendered document under aws/output/, which is untracked.
     note(f"Data ac: ...{account_id_data[-4:]}")
+    note(f"Staging: ...{account_id_staging[-4:]}")
     note("")
 
     # ------------------------------------------------------------------------- rendering
@@ -162,6 +181,7 @@ def main(argv: list) -> int:
         "<OU_ID_DATA>": ou_id_data,
         "<ORG_PATH_DATA>": org_path_data,
         "<ACCOUNT_ID_DATA>": account_id_data,
+        "<ACCOUNT_ID_STAGING>": account_id_staging,
     }
 
     rendered = 0

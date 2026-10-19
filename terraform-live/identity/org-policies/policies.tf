@@ -63,6 +63,14 @@ resource "aws_organizations_policy" "this" {
       error_message = "${each.key} is ${length(each.value)} characters minified, over the ${var.policy_max_bytes} this slice enforces. Split the document or move a statement - an RCP node also has a limit of 5 documents, so splitting is not free."
     }
 
+    # A placeholder that survives the rendering is uploaded as a literal string: a condition
+    # that matches nothing, with no error at upload and none at evaluation (Lesson 35).
+    # render.py's survivor check guards the hand path; this guards the apply.
+    precondition {
+      condition     = length(regexall("<[A-Z_]+>", each.value)) == 0
+      error_message = "${each.key} still carries a placeholder after rendering: ${join(", ", regexall("<[A-Z_]+>", each.value))}. locals.tf's rendered map and render.py substitute the same tokens; add the missing one to both."
+    }
+
     # The repository-integrity checks. They are preconditions rather than a script because a
     # check that ran yesterday is not a precondition. They do not depend on `each`, so a failure
     # prints once per instance - ten identical messages, taken over a silent pass.
