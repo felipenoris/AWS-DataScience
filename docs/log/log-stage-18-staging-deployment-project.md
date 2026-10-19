@@ -443,3 +443,33 @@ are UTC.*
   role; `experimentation`'s grant is unchanged. `./aws/studio.py`'s `US-4` passed with any extra
   profile, reporting "one, as contracted"; it now fails on a profile outside the contract and reads
   `deployment` as Stage 18's window.
+
+## 2026-10-19 — 2.5's second half, by the user's hand, and its read-back
+
+- **[user] 2.5's second apply, from the saved plan**, in the app's terminal on the worktree, as
+  `awsds-infra-staging`. The output, ids left out: the project key *"Modifications complete after 6s"*,
+  the `Tooling` configuration *"Creation complete after 17s"*, its grant *"Creation complete after
+  6s"*, and *"Apply complete! Resources: 2 added, 1 changed, 0 destroyed."* The outputs name the two
+  roles, the boundary, the key and the regional parameters as the first half's did. The session had
+  said the apply takes decision 1's base, `Tooling`, and that another base had to be named before
+  it; none was, so the base is decided on the recommendation of 2026-10-19.
+- **[Claude] Read back, 04:32 to 04:36 UTC**, as the infrastructure user. `staging/studio/` re-plans
+  `No changes` (04:32:40Z). `get-environment-blueprint-configuration` for `Tooling` from Staging: created
+  04:31:00Z, `enabledRegions` `us-west-2`, the provisioning and manage-access roles,
+  `environmentRolePermissionBoundary` `awsds-staging-project-boundary`, and the regional parameters
+  `AZs` `usw2-az1,usw2-az2`, the project key, `S3Location` `s3://awsds-staging-smus-projects`,
+  Staging's two private subnets and its VPC; `list-environment-blueprint-configurations` holds that one
+  configuration and no other. `list-policy-grants` on it: one `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant
+  to `CONTRIBUTOR` projects of the root domain unit, child units excluded, created 04:31:00Z. The key
+  behind `alias/awsds-staging-project` holds nine statements, the domain execution role in
+  `AllowKmsKeyUsageForSageMakerDomain` and `AllowSageMakerDomainKmsGrantPermissions`, and
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles` among them. Staging
+  holds no SageMaker AI domain, and its live CloudFormation stacks are Control Tower's five baseline
+  stack sets of 2026-08-09. `./aws/studio.py` on the four infrastructure profiles: `all checks
+  passed`, `US-4` reading `experimentation` alone.
+- **[Claude] The boundary is readable, by one of the two reads.** DataZone's own
+  `get-environment-blueprint-configuration` returns `environmentRolePermissionBoundary` in Staging, and
+  in Sandbox for the `Tooling` configuration of 2026-08-22, where `list-environment-blueprint-configurations`
+  returns it too. Cloud Control's `get-resource` for `AWS::DataZone::EnvironmentBlueprintConfiguration`,
+  the read `awscc` makes, omits it. `lessons.md`'s entry of 2026-08-22, *"no read returns it"*, carries
+  this reading now; a plan still cannot show the field's drift.

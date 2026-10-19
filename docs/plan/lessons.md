@@ -1830,7 +1830,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   accepts it and no read returns it (Stage 6a, 2026-08-22). Boundary drift can never appear in a
   `terraform plan`; the only door is `iam get-role` per role, since `list-roles` omits
   `PermissionsBoundary` by documented contract. A control that cannot be read back needs a sentinel,
-  which is `US-8`.
+  which is `US-8`. Read again 2026-10-19 (Stage 18 2.5): DataZone's own `get-` and
+  `list-environment-blueprint-configurations` return `environmentRolePermissionBoundary`, in Sandbox
+  and in Staging; Cloud Control's `get-resource`, the read `awscc` makes, omits it. So drift still
+  never appears in a plan, the configuration's value is a DataZone read away, and a role's own
+  boundary is still `get-role`'s.
 - **An associated DataZone domain lists from every member account, with an ARN naming the owning
   account.** A check that counts domains per account therefore reports the association working as a
   finding. Measured when `./aws/studio.py` failed because the step succeeded (Lesson 31).
