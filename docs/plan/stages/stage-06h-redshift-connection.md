@@ -37,7 +37,7 @@ the database*, which is the same symptom three times over (Lesson 28's intersect
 | # | Layer | Written where | Grain | What its absence looks like |
 |---|---|---|---|---|
 | 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup**, and ***one project only*** *[corrected 2026-09-20]* — it is a tag key, so AWS's alternative for more than one is the wide form. Decision 8 | the compute does not appear in the project's dropdown at all |
-| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, and no `redshift-data:`, which neither door needed (2.2) | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted and to the per-project access role the form demands (3.1) | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
+| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, and no `redshift-data:`, which neither door needed (2.2). **Two principals hold it differently** (simulated 2026-10-18): the access role, which the Data page calls `GetCredentials` as, holds this slice's policy alone; the project role, which a notebook calls it as, also carries AWS's `SageMakerStudioProjectUserRolePolicy`, whose `ComputeCredentials` and `RedshiftDataActions` grant `GetCredentials` and the Data API on a workgroup tagged with its project, so for that role this policy is the declared duplicate of a grant AWS's text carries and moves (open question 22) | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted and to the per-project access role the form demands (3.1) | per **workgroup**, per **project role** | the connection is created and every query fails at authentication: on the Data page that is this slice's policy missing from the access role; from a notebook as the project role, AWS's policy answers for a tagged workgroup, so the symptom there means the tag is gone too |
 | 3 | **A database role per schema**, holding `USAGE, CREATE` on it, granted to each admitted project's database user — the schema itself carrying a `QUOTA` | SQL, run once per schema from the admin credential; one `GRANT ROLE` per admitted project | per **schema × project**, many-to-many | the project connects, sees the cluster, and the schema is invisible or read-only |
 
 **Layer 3 is the requirement's grain.** Layers 1 and 2 are gates in front of it, and they are per-warehouse:
@@ -661,6 +661,13 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `for-use-with-all-datazone-projects=true` that carries no `AmazonDataZoneEnvironment` tag, and
    `test-experimentation`'s role reads `allowed` for both under that tag. So with the wide tag every
    project role holds layer 2, and layer 3 is the only per-project gate left.
+   **The recommendation stands as (a), on a narrower argument.** With the wide tag, layer 2 holds for the
+   Data page alone, whose `GetCredentials` the per-project access role makes (3.1, `SMUS.md` §Connections)
+   and no AWS policy grants; a direct notebook session or a Data API call as the project role reaches the
+   compute under `ExistingRedshiftCompute`, so for those doors the schema `GRANT` is the only per-project
+   gate. The register of who may connect is then the map's access roles for the Data page and `WH-12`'s
+   roles for everything else, `WH-7` inverts as written above, and 5.2b, a project in no map reading
+   nothing from a notebook, is the check that carries the design. (b) and (c) keep their objections.
 
 ## Verifications to answer while executing
 

@@ -403,7 +403,11 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    `StartMetadataGenerationRun` refuses business names, descriptions and glossary associations together,
    since no key reads its `type`, and a deny on the four create and update actions would stop the
    publishing that carries the flag. "Off per data source" is a setting no policy enforces, which
-   `catalog.py` `CT-5` reports as a note. The decision stays the user's.
+   `catalog.py` `CT-5` reports as a note. Recommended: **off per data source on the sources over the
+   governed lake until what DataZone sends to Bedrock, and under which retention, is read** (5.1 read where
+   the generation runs, not what it keeps), the setting read by `CT-5` as an intention rather than a
+   control (Lesson 5); not the action-level deny, which refuses descriptions and glossary associations with
+   the names and leaves a data source's own run untouched. The decision stays the user's.
 4. **Whether a deployment target is ever associated.** Recommended: no, as a standing association.
    Production publishes through the lake, and `DenyDataZoneEntirely` stands with its revision trigger.
    [Stage 18](stage-18-staging-deployment-project.md) (written 2026-10-17, pass 0 in progress since
