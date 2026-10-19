@@ -488,7 +488,8 @@ deploys.
   *"Network is unreachable"*, no event and no CloudTrail call in either account. `staging/egress/` then
   gained `datazone`, by the user's `make up`. Run B: 12 events `SUCCESS`, posted by the project role's IAM
   profile, S3 dataset nodes and job-run nodes the domain links, and no graph in the portal, since no
-  node is an asset.
+  node is an asset. CloudTrail read each post as `PostLineageEvent` by the role's `GlueJobRunnerSession`
+  through the new endpoint, and the 12 events again after a delay.
 - **7.2 — [user + Claude reads] A subscription across accounts** (x, decision 5): the Staging project
   publishes the Glue task's output table, sample data; the Sandbox project subscribes and the Staging
   owner approves; read the grants DataZone writes in each account and through RAM (INT-23's claim), and

@@ -949,3 +949,10 @@ are UTC.*
   `DatasetLineageNodeType` whose `sourceIdentifier` is the output's S3 URI. No node is an asset, and the
   portal draws lineage only on an asset's page, so this run gives the portal no graph; 7.2's
   publication is where one would appear. CloudTrail held no lineage call in either account at 22:59Z.
+- **[Claude] Run B's end and the second reading**: `V4eBnEgINa6pd4U` `SUCCESS`, 22:54:43 to 23:08:24Z,
+  820 s. At 23:10:59Z the domain's `list-lineage-events` read the same 12 events from both accounts.
+  CloudTrail had delivered the calls by then: in Staging, twelve `PostLineageEvent` by the project role's
+  session `GlueJobRunnerSession`, each through `vpce-0fc40278dfb516cc8`, the new endpoint; in Data
+  Governance, DataZone's own processing as `datazone.amazonaws.com` (`CreateLineageNode` 2,
+  `CreateLineageNodeVersion` 3, `UpdateLineageEvent` 6, `UpdateLineageNode` 11,
+  `UpdateLineageNodeVersion` 9), and this session's reads logged in both accounts. 7.1 is done.
