@@ -31,11 +31,11 @@ output "domain_service_role_arn" {
 }
 
 output "project_profile_ids" {
-  description = "The two profiles, by name - empty until pass 2c."
+  description = "The profiles, by name - empty until pass 2c."
   value       = { for k, p in awscc_datazone_project_profile.this : k => p.project_profile_id }
 }
 
 output "project_profile_creators" {
-  description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by group name rather than group id (aws/INDEX.md rule 1). Empty until pass 2c."
-  value       = { for k, p in local.project_profiles : k => p.group if var.profiles_enabled }
+  description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by group name rather than group id (aws/INDEX.md rule 1), or the InfrastructureAccess role of the profile's account where the group is null (Stage 18 decision 3). Empty until pass 2c."
+  value       = { for k, p in local.project_profiles : k => coalesce(p.group, "InfrastructureAccess (${p.account})") if var.profiles_enabled }
 }

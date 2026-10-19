@@ -33,9 +33,15 @@ resource "awscc_datazone_policy_grant" "create_project_from_profile" {
   entity_identifier = aws_datazone_domain.this.root_domain_unit_id
   policy_type       = "CREATE_PROJECT_FROM_PROJECT_PROFILE"
 
+  # A profile with a null `group` grants its own account's InfrastructureAccess role (Stage 18
+  # decision 3). DataZone takes an IAM role ARN as a user identifier; the domain holds an IAM user
+  # profile for Staging's role, ACTIVATED (read 2026-10-19).
   principal = {
-    group = {
+    group = each.value.group == null ? null : {
       group_identifier = data.aws_identitystore_group.profile_creators[each.value.group].group_id
+    }
+    user = each.value.group != null ? null : {
+      user_identifier = local.infrastructure_access_role_arns[each.value.account]
     }
   }
 

@@ -10,6 +10,20 @@ data "aws_caller_identity" "sandbox" {
   provider = aws.sandbox
 }
 
+data "aws_caller_identity" "staging" {
+  provider = aws.staging
+}
+
+# The role granted the `deployment` profile (Stage 18 decision 3): Staging's InfrastructureAccess,
+# resolved by name so neither the account id nor the role's suffix enters a tracked file. `one()`
+# refuses a second match. Its ARN carries the SSO path, the form the domain's IAM user profile for
+# it holds (read 2026-10-19).
+data "aws_iam_roles" "staging_infrastructure_access" {
+  provider    = aws.staging
+  name_regex  = "AWSReservedSSO_InfrastructureAccess_.*"
+  path_prefix = "/aws-reserved/sso.amazonaws.com/"
+}
+
 
 # The blueprint ids, resolved by name on the domain (pass 2c only). Terraform's project-profile
 # resource takes ids; the decision, the documentation and ./aws/studio.py all speak names, so
@@ -37,7 +51,7 @@ data "aws_ssoadmin_instances" "this" {
 # `one()` rather than `[0]`: a second IdC instance must raise here instead of silently taking
 # the first, which is the shape identity/sso/locals.tf argues for at length.
 data "aws_identitystore_group" "profile_creators" {
-  for_each = var.profiles_enabled ? toset([for p in local.project_profiles : p.group]) : toset([])
+  for_each = var.profiles_enabled ? toset([for p in local.project_profiles : p.group if p.group != null]) : toset([])
 
   provider          = aws.identity
   identity_store_id = one(data.aws_ssoadmin_instances.this.identity_store_ids)

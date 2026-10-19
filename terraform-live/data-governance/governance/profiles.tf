@@ -11,7 +11,7 @@
 # A profile fixes the blueprint set (which capabilities a project born of it can ever exercise),
 # the account and Region it provisions into, and the Tooling parameters with their Editable
 # flags. The levers this design pulls are the account and the parameters the creator can no
-# longer change.
+# longer change. Each profile names its own blueprints and overrides (locals.tf).
 #
 # deployment_mode = ON_CREATE for Tooling, ON_DEMAND for the rest. Tooling provisions the working
 # environment, so a project without it is not a project; the others are capabilities a project
@@ -27,20 +27,31 @@ resource "awscc_datazone_project_profile" "this" {
   status            = "ENABLED"
 
   environment_configurations = [
-    for bp in local.category_one_blueprints : {
+    for bp in each.value.blueprints : {
       name                     = bp
       environment_blueprint_id = data.aws_datazone_environment_blueprint.enabled[bp].id
       deployment_mode          = bp == "Tooling" ? "ON_CREATE" : "ON_DEMAND"
-      deployment_order         = index(local.category_one_blueprints, bp)
+      deployment_order         = index(each.value.blueprints, bp)
 
       aws_account = { aws_account_id = local.member_account_ids[each.value.account] }
       aws_region  = { region_name = var.region }
 
       # locals.blueprint_parameters says which blueprints carry overrides and why the two
-      # non-Tooling entries exist (the UpdateProjectProfile required-parameter validation).
-      configuration_parameters = contains(keys(local.blueprint_parameters), bp) ? {
-        parameter_overrides = local.blueprint_parameters[bp]
+      # non-Tooling entries exist (the UpdateProjectProfile required-parameter validation);
+      # locals.profile_parameters says which a profile passes.
+      configuration_parameters = contains(keys(local.profile_parameters[each.key]), bp) ? {
+        parameter_overrides = local.profile_parameters[each.key][bp]
       } : null
     }
   ]
+
+  lifecycle {
+    precondition {
+      condition = (
+        each.value.blueprints[0] == "Tooling" &&
+        alltrue([for bp in each.value.blueprints : contains(local.category_one_blueprints, bp)])
+      )
+      error_message = "A profile bundles blueprints of decision 5's category 1 only, Tooling first (locals.tf)."
+    }
+  }
 }

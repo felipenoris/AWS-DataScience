@@ -390,3 +390,56 @@ are UTC.*
   Production's `datazone:ListDomains` `DENY-SCP p-83t232f4`, and Sandbox's `ListDomains` still
   `ALLOWED`; the seven not measured are the ones Stage 9's log names, the processing-job rows whose
   quotas read 0 in Production. 1.3 is done; 1.1's `EXC-nn` is `EXC-20`.
+
+## 2026-10-19 — the association read back, 2.3's rows, 2.5's second half planned, 2.6 written
+
+- **[user] 2.1, the association.** The user associated `Staging Account` to `awsds-studio` in Data
+  Governance's DataZone console, by the path the 6a log records, and wrote in chat *"Fiz a associação,
+  pode continuar"*. RAM dates the act: the domain's share gained Staging as a principal at 04:03:13Z.
+- **[Claude] 2.2, read back from 04:05 UTC** as the infrastructure user. `datazone
+  list-environment-blueprint-configurations --domain-identifier dzd-d8yrvx1ko7im6o` as
+  `awsds-infra-staging` exits 0 with `{"items": []}`, where it read `UnauthorizedException` at 03:52Z.
+  `ram get-resource-shares --resource-owner OTHER-ACCOUNTS` there holds
+  `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, `ACTIVE`, created 2026-08-21, and no
+  invitation exists. Read from Data Governance, the share's principals are Staging (04:03:13Z) and
+  Sandbox (2026-08-21). Its permission is `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
+  at version 10, the default and the only `ATTACHABLE` version, created 2026-06-04: the share carries
+  the current version, so the release note's *"Existing RAM resource shares do not auto-update"* does
+  not reach it. `./aws/studio.py` with the four infrastructure profiles writes `all checks passed`:
+  `US-2` reads Staging seeing the shared domain and owning none, `US-6` Production's DataZone reads
+  denied, and Staging holds no SageMaker AI domain. Run with every `awsds-*` profile it exits 1, the
+  persona, deploy and Control Tower sessions not being signed in. `search-user-profiles --user-type
+  DATAZONE_IAM_USER` as `awsds-infra-data` lists an `ACTIVATED` IAM user profile for Staging's
+  InfrastructureAccess role, its ARN carrying the SSO path: the principal decision 3 names.
+- **[Claude] 2.3's rows.** `SMUS_ASSOCIATED` gained `staging`, then `SMUS_DEPLOYMENT_MEMBERS`. After
+  each row, every declared slice's generated tfvars, laptop and pipeline, and refusal 8's answers for
+  every profile were compared with the previous set, 38 slices: the first row changes
+  `staging/studio/`'s `blueprints_enabled` from false to true and nothing else, the second adds
+  `staging` to `governance/`'s `members` map and nothing else, and refusal 8 is unchanged. Re-planned
+  at 04:15Z: `sandbox/foundation/`, `production/tooling/` (the SAML var-file) and `staging/foundation/`
+  (the alerts var-file) `No changes`; `governance/` 0 to add, 1 to change, 0 to destroy, the
+  `MLflowApp` configuration of `experimentation` alone (Stage 17 pass 1's, `deployment_order` 11), as
+  on 2026-10-18.
+- **[Claude] 2.5's second half planned at 04:13:56Z** as `awsds-infra-staging`, saved to
+  `$HOME/tmp/stage18-studio-2.tfplan`: 2 to add, 1 to change, 0 to destroy. The `Tooling`
+  configuration takes region `us-west-2`, the boundary `awsds-staging-project-boundary`, the two
+  roles, and the regional parameters `AZs` `usw2-az1,usw2-az2`, the project key, `S3Location`
+  `s3://awsds-staging-smus-projects`, Staging's two private subnets and its VPC. Its
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant goes to `CONTRIBUTOR` projects of the root domain unit,
+  child units excluded. The project key's policy gains the domain execution role in two statements,
+  and `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, which the module
+  writes once a domain id exists. The apply is the user's; it takes decision 1's base, `Tooling`.
+- **[Claude] 2.6 written behind a switch.** `governance/`'s `locals.tf` holds
+  `deployment_profile_enabled = false`, the `deployment` row (Staging, `["Tooling"]`, a null `group`)
+  and each profile's own overrides; `profiles.tf` reads each profile's blueprint list under a
+  precondition holding Tooling first and category 1 only; `providers.tf` gains the `staging` alias,
+  `data.tf` Staging's identity and its InfrastructureAccess role by name; `grants.tf` grants a profile
+  with no group to that role's ARN as DataZone's user identifier. Planned at 04:21:26Z with the switch
+  off: 0 to add, 1 to change, `MLflowApp` alone, as before. Set true in the working copy and back
+  afterwards, at 04:21:59Z: 2 to add, 1 to change. The profile holds `Tooling` alone, `ON_CREATE`,
+  order 0, in Staging's account, with `experimentation`'s six Tooling overrides and `enableSpaces`
+  `"false"` locked (the template's AllowedValues are `"true"` and `"false"`, default `"true"`); the
+  grant is `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root unit to Staging's InfrastructureAccess
+  role; `experimentation`'s grant is unchanged. `./aws/studio.py`'s `US-4` passed with any extra
+  profile, reporting "one, as contracted"; it now fails on a profile outside the contract and reads
+  `deployment` as Stage 18's window.
